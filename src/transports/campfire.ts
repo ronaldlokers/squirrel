@@ -37,7 +37,11 @@ function identifier(value: number | string | undefined): string | null {
 export function captureFrom(body: string, receivedAt: Date): Capture {
   let payload: CampfirePayload;
   try {
-    payload = JSON.parse(body) as CampfirePayload;
+    const parsed: unknown = JSON.parse(body);
+    // JSON.parse("null") succeeds and yields JS null. typeof null ===
+    // "object", so a naive cast would sail through and blow up on
+    // payload.message below — guard it into an empty payload instead.
+    payload = (typeof parsed === "object" && parsed !== null ? parsed : {}) as CampfirePayload;
   } catch {
     return {
       transport: NAME,

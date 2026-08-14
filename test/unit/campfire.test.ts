@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import type { Capture, CaptureSink, Outcome } from "../../src/capture/capture.js";
 import type { CampfireConfig } from "../../src/config.js";
@@ -87,6 +87,24 @@ describe("captureFrom", () => {
   it("treats a missing plain body as an empty capture rather than an error", () => {
     expect(captureFrom(JSON.stringify({ ...PAYLOAD, message: { id: 42 } }), AT).text).toBe("");
   });
+
+  // JSON.parse("null") succeeds and yields JS null, which the catch block
+  // never sees. Accessing payload.message on a null payload must not throw.
+  it("fails open on a body that parses to null, rather than throwing", () => {
+    expect(() => captureFrom("null", AT)).not.toThrow();
+    const capture = captureFrom("null", AT);
+    expect(capture.externalId).toBeNull();
+    expect(capture.conversationId).toBeNull();
+    expect(capture.senderId).toBeNull();
+  });
+
+  it("fails open on a body that parses to a JSON array, rather than throwing", () => {
+    expect(() => captureFrom("[]", AT)).not.toThrow();
+    const capture = captureFrom("[]", AT);
+    expect(capture.externalId).toBeNull();
+    expect(capture.conversationId).toBeNull();
+    expect(capture.senderId).toBeNull();
+  });
 });
 
 describe("respond", () => {
@@ -160,5 +178,22 @@ describe("createCampfireTransport", () => {
     const { mount } = mountOne();
     const stop = await createCampfireTransport(config).start(sinkReturning("stored"), mount);
     await expect(stop()).resolves.toBeUndefined();
+  });
+
+  // A body of `null` parses successfully; it must reach the sink as a
+  // fail-open capture, not be reported as "failed" by an internal throw.
+  it("reaches the sink on a body of null instead of reporting failed", async () => {
+    const { mount, handler } = mountOne();
+    const sink = sinkReturning("stored");
+    const transport = createCampfireTransport(config);
+    await transport.start(sink, mount);
+
+    const response = await handler()(
+      new Request("http://test/transports/campfire", { method: "POST", body: "null" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("🐿️");
+    expect(sink.seen).toHaveLength(1);
   });
 });
