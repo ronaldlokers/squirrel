@@ -124,6 +124,25 @@ func TestServerSurvivesAPanickingHandler(t *testing.T) {
 	require.Empty(t, res.Header.Get("Content-Type"))
 }
 
+// A handler that sets a Content-Type before panicking must not leak it into
+// the recovered 500 — Campfire uploads any non-200 that carries a content
+// type into the room as a file attachment.
+func TestServerPanicAfterContentTypeSendsNoContentType(t *testing.T) {
+	s := squirrel.NewServer(writable(true))
+	s.Post("/transports/boom-with-header", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		panic("handler exploded after setting a header")
+	})
+	base := listen(t, s)
+
+	res, err := http.Post(base+"/transports/boom-with-header", "text/plain", nil)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
+	require.Empty(t, res.Header.Get("Content-Type"))
+}
+
 func TestServerReportsTheBoundPort(t *testing.T) {
 	s := squirrel.NewServer(writable(true))
 	port, err := s.Listen("127.0.0.1:0")
