@@ -1,7 +1,9 @@
 # Squirrel — phase 1: the capture path
 
 Status: approved 2026-08-14; revised the same day to make the transport a
-replaceable adapter and to state how "direct messages only" is enforced.
+replaceable adapter, to state how "direct messages only" is enforced, and to
+make the transport boundary symmetric — outbound in the interface, and identity
+promoted out of transport-local ids into people.
 
 Scope is one thing: a direct message arrives, its raw text is stored durably,
 and the conversation gets a 🐿️ back.
@@ -48,7 +50,7 @@ things make it defensible rather than speculative:
    travelling in the HTTP response body, non-200 responses becoming file
    uploads. Without a boundary those quirks end up smeared through the storage
    code, where a second transport cannot dislodge them.
-3. The interface is one method and one data type. If it turns out wrong, the
+3. The interface is two methods and one data type. If it turns out wrong, the
    second transport reshapes it cheaply.
 
 The known risk is the usual one: an abstraction designed against a single
@@ -84,12 +86,30 @@ export interface Transport {
   readonly name: string;
   /** Begin receiving. `http` may be ignored by a transport that polls. */
   start(sink: CaptureSink, http: HttpMount): Promise<() => Promise<void>>;
+  /**
+   * Send a message the system initiated, rather than one it is answering.
+   * Null when this transport cannot initiate — a bot that can only reply has
+   * to be able to say so rather than fail at the moment it matters.
+   */
+  readonly send: ((conversationId: string, text: string) => Promise<void>) | null;
 }
 ```
 
 The process owns one HTTP server, for `/healthz` and for any transport that
 receives over HTTP. A polling transport — Matrix, or Telegram in long-poll mode
 — takes `http` and does nothing with it.
+
+`send` has no caller in phase 1. It exists because the shape of outbound is not
+obvious and differs sharply between transports: Campfire answers inside the HTTP
+response *and* offers a separate endpoint for initiating, while most systems
+have only the second. Getting that asymmetry into the interface now costs one
+nullable method; discovering it while building the scheduler would mean
+reshaping the transport boundary at the same time as the thing using it. It is
+implemented and tested, and nothing calls it until firings exist.
+
+The nullability is not decoration. `send` is null unless the Campfire adapter
+has been given a bot key, and phase 1 ships without one — so the honest answer
+to "can this bot nudge me?" is currently *no*, and the type says so.
 
 **The rule that keeps the boundary honest:** a column in the database or a field
 on `Capture` exists only if every plausible transport can fill it. Everything
@@ -152,9 +172,26 @@ Outcomes map to responses entirely within the adapter:
 error page into the room. That inversion is a Campfire quirk and it does not
 leave this table.
 
-The outbound endpoint, `POST /rooms/:id/:bot_key/messages` with the raw text as
-the body, is not used in phase 1. It is noted because `room.path` already
-embeds the bot key, so a future proactive nudge needs no credential of its own.
+### Outbound, and the credential it costs
+
+`send` posts the raw text as the body of
+`${CAMPFIRE_BASE_URL}/rooms/${conversationId}/${CAMPFIRE_BOT_KEY}/messages`.
+
+The obvious cheaper route is to reuse `room.path` out of a stored payload, which
+already embeds the bot key and would need no secret at all. It is rejected:
+outbound would then only reach rooms Squirrel had recently heard from, and a
+9am nudge would depend on the capture history rather than on configuration.
+Coupling "where can I speak" to "who has spoken to me" is the kind of thing that
+works in testing and fails on a quiet Monday.
+
+The cost is real and worth naming. Today this pod holds **no** Campfire
+credential — every reply travels back inside the request it is answering. A bot
+key changes that: it is a credential that can post as Squirrel into any room in
+the account. It is therefore optional, absent in phase 1, and when present it
+comes from SOPS like every other secret, with egress restricted to Campfire.
+
+When `CAMPFIRE_BOT_KEY` is unset, `send` is `null`. The transport does not
+half-work.
 
 ## Direct messages only
 
@@ -206,6 +243,44 @@ Failing closed on *"I understood it and it is the wrong room"* is the opposite
 case and is correct: that is a message the system genuinely was not addressed
 with.
 
+## Identity
+
+A `senderId` means "user 1, in Campfire". It is a transport-local coordinate and
+nothing joins two of them. Add a second transport and the same person arrives as
+two unrelated strings, with the items table unable to say they are one.
+
+So a person is a first-class row, and a transport identity points at it:
+
+- `people` — one row, the owner, seeded from configuration.
+- `identities` — `(transport, external_id) → person_id`, unique on the pair.
+- `items.person_id` — nullable, resolved at drain time.
+
+**Resolution happens in the drain loop, never on the request path.** This is not
+a detail. The request path deliberately does not touch Postgres, because that is
+what makes a database outage survivable, and a person lookup is a database read.
+The two paths therefore ask different questions:
+
+| Path | Question | Answered from |
+|---|---|---|
+| Request | Is this addressed to us? | Config allowlist, no I/O |
+| Drain | Whose is this? | `identities` join |
+
+An unresolved identity leaves `person_id` null and logs at warn. **Unknown
+identities are never auto-created.** Auto-vivifying a person on first sight
+would quietly re-admit anyone the allowlist just turned away, which would make
+the guard decorative.
+
+Seeding is declarative rather than administrative: at boot, `OWNER_HANDLE` plus
+each enabled transport's configured sender id are upserted into `people` and
+`identities`. Adding a transport means adding its sender id to configuration in
+Git and letting Flux apply it — there is no admin screen to forget about, and
+the desired state is reviewable in a diff.
+
+Phase 1 has exactly one person and one identity. The tables are still the right
+shape, because the retrofit is the expensive direction: rewriting captured rows
+to point at people invented later means reconstructing, months on, which id
+meant whom.
+
 ## Request path
 
 1. The adapter reads the raw request body as a string. Nothing is parsed yet.
@@ -254,8 +329,14 @@ instead.
 Every `DRAIN_INTERVAL_MS` (default 1000):
 
 1. List `*.json`, sorted.
-2. For each: `INSERT … ON CONFLICT (transport, external_id) DO NOTHING`.
-3. On success, delete the file.
+2. For each, resolve `(transport, sender_id)` against `identities` to a
+   `person_id`, or null with a warn log if it is unknown.
+3. `INSERT … ON CONFLICT (transport, external_id) DO NOTHING`.
+4. On success, delete the file.
+
+An unknown identity is **not** a permanent error. It leaves `person_id` null,
+the row still lands, and the file is still deleted — a capture is never held
+hostage to knowing whose it was.
 
 Error handling splits by kind, and the split matters:
 
@@ -272,12 +353,28 @@ crash window between inserting a row and deleting its file is real, if small.
 ## Data model
 
 ```sql
+create table people (
+  id         bigint generated always as identity primary key,
+  handle     text        not null unique,
+  created_at timestamptz not null default now()
+);
+
+create table identities (
+  id          bigint generated always as identity primary key,
+  person_id   bigint      not null references people (id),
+  transport   text        not null,
+  external_id text        not null,
+  created_at  timestamptz not null default now(),
+  unique (transport, external_id)
+);
+
 create table items (
   id              bigint generated always as identity primary key,
   transport       text        not null,
   external_id     text,
   conversation_id text,
   sender_id       text,
+  person_id       bigint      references people (id),
   raw_text        text        not null,
   payload         jsonb       not null,
   received_at     timestamptz not null,
@@ -305,6 +402,12 @@ Notes, including where this departs from the sketch in the kickoff:
 - `external_id`, `conversation_id` and `sender_id` are nullable so the fail-open
   path has somewhere to land. The partial unique index still enforces one row
   per real message.
+- **`sender_id` survives alongside `person_id`**, rather than being replaced by
+  it. `person_id` is an interpretation and can be wrong or absent; `sender_id`
+  is what the transport actually said. Keeping both means a mis-seeded identity
+  is a backfill rather than an archaeology exercise.
+- `person_id` is nullable because a capture that fails open has no known sender,
+  and because an identity may arrive before anyone has bound it to a person.
 - `raw_text` stays `not null` and maps to an empty string when the transport
   found no text. An empty capture is still a capture, and `payload` holds
   whatever did arrive.
@@ -345,11 +448,14 @@ health belongs in logs, not in a readiness gate.
 |---|---|---|---|
 | `PORT` | no | `8080` | Shared HTTP server |
 | `TRANSPORTS` | no | `campfire` | Comma-separated; each validates its own block |
+| `OWNER_HANDLE` | no | `owner` | Seeds `people`; identities bind to it |
 | `SPOOL_DIR` | no | `/var/spool/squirrel` | PVC mount point |
 | `DRAIN_INTERVAL_MS` | no | `1000` | |
 | `CAMPFIRE_PATH` | no | `/transports/campfire` | Webhook route |
 | `CAMPFIRE_CONVERSATION_ID` | yes | — | **Must be a direct room** |
-| `CAMPFIRE_SENDER_ID` | yes | — | |
+| `CAMPFIRE_SENDER_ID` | yes | — | Guard, and the seeded identity |
+| `CAMPFIRE_BASE_URL` | no | — | Required only for `send` |
+| `CAMPFIRE_BOT_KEY` | no | — | SOPS. Absent in phase 1, so `send` is null |
 | `POSTGRES_SERVER` | yes | — | `postgres-cluster-rw.database.svc.cluster.local` |
 | `POSTGRES_PORT` | no | `5432` | |
 | `POSTGRES_DB` | yes | — | `squirrel` |
@@ -375,6 +481,8 @@ src/
     sink.ts               CaptureSink over the spool
     spool.ts              write, list, read, remove, quarantine
     drain.ts              the loop
+  people/
+    identities.ts         resolve, and seed from config
   db/
     schema.ts  client.ts  migrate.ts
   transports/
@@ -382,8 +490,8 @@ src/
     campfire.ts           the only implementation
 ```
 
-Nothing under `capture/` or `db/` imports from `transports/`. That is the whole
-boundary, and it is worth a lint rule rather than a convention.
+Nothing under `capture/`, `people/` or `db/` imports from `transports/`. That is
+the whole boundary, and it is worth a lint rule rather than a convention.
 
 ## Testing
 
@@ -409,6 +517,21 @@ Campfire adapter:
   explicitly, because a framework that helpfully adds one would post junk into
   the room.
 - A sink that throws still yields 200 and never a 500.
+- `send` is `null` with no bot key configured, and a function with one.
+- `send` posts the text to `/rooms/:id/:bot_key/messages`, asserted against a
+  stub HTTP server rather than against Campfire.
+
+Identity:
+
+- A configured owner and sender id seed one `people` row and one `identities`
+  row; running the seed twice changes nothing.
+- A known identity resolves to a `person_id` on the drained row.
+- An unknown identity leaves `person_id` null, still stores the row, still
+  deletes the spool file, and creates **no** new person — the test that keeps
+  the guard from being decorative.
+- The same external id under two transports resolves to two identities, and
+  binding both to one person makes a single person's captures queryable across
+  transports.
 
 Against a real Postgres:
 
@@ -461,6 +584,11 @@ The homelab side, as a separate change:
 - ClusterIP Service, no Ingress.
 - NetworkPolicy: ingress only from the Campfire pod; egress only to
   `postgres-cluster-rw` and DNS.
+
+No `CAMPFIRE_BOT_KEY` Secret in phase 1. Adding one later also adds an egress
+rule to the Campfire pod, and turns this from a workload holding no Campfire
+credential into one that can post as Squirrel anywhere in the account. That is a
+deliberate step to take when firings need it, not a box to tick early.
 
 A second transport that talks to something outside the cluster would need its
 own egress rule, and — if it polls rather than receives — no ingress at all.
