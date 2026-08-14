@@ -54,6 +54,18 @@ describe("createSink", () => {
     expect(onIgnored.mock.calls[0]?.[0]).toMatchObject({ conversationId: "8" });
   });
 
+  // A hook is observability. It must never be able to turn a real outcome
+  // into a thrown rejection that a transport then misreports to the user.
+  it("still ignores and writes nothing when onIgnored throws", async () => {
+    const onIgnored = vi.fn(() => {
+      throw new Error("logging backend unreachable");
+    });
+    const sink = createSink(spool, allows, { onIgnored });
+
+    expect(await sink.accept(capture({ conversationId: "8" }))).toBe("ignored");
+    expect(await spool.list()).toEqual([]);
+  });
+
   it("stores a fail-open capture", async () => {
     const sink = createSink(spool, allows);
     expect(await sink.accept(capture({ conversationId: null, senderId: null }))).toBe("stored");
@@ -72,5 +84,20 @@ describe("createSink", () => {
 
     expect(await sink.accept(capture())).toBe("failed");
     expect(onError).toHaveBeenCalledOnce();
+  });
+
+  // Same guarantee on the failure path: a throwing onError must not mask the
+  // fact that the capture was not saved.
+  it("still reports failure when onError itself throws", async () => {
+    const broken: Spool = {
+      ...spool,
+      write: () => Promise.reject(new Error("ENOSPC: no space left on device")),
+    };
+    const onError = vi.fn(() => {
+      throw new Error("logging backend unreachable");
+    });
+    const sink = createSink(broken, allows, { onError });
+
+    expect(await sink.accept(capture())).toBe("failed");
   });
 });

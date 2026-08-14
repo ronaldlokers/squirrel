@@ -22,16 +22,28 @@ export function createSink(
   return {
     async accept(capture: Capture): Promise<Outcome> {
       if (decide(capture, allows) === "ignore") {
-        hooks.onIgnored?.(capture);
+        notify(() => hooks.onIgnored?.(capture));
         return "ignored";
       }
       try {
         await spool.write(capture);
         return "stored";
       } catch (error) {
-        hooks.onError?.(error);
+        notify(() => hooks.onError?.(error));
         return "failed";
       }
     },
   };
+}
+
+/**
+ * A hook is observability, not part of the path it observes. A throwing hook
+ * must never turn a stored or ignored capture into a rejected promise.
+ */
+function notify(run: () => void): void {
+  try {
+    run();
+  } catch {
+    // Swallowed on purpose: see the doc comment above.
+  }
 }
