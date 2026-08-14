@@ -65,6 +65,20 @@ export async function openSpool(dir: string): Promise<Spool> {
         await handle.close();
       }
       await rename(temporary, join(dir, name));
+
+      // The file's own contents are already fsynced above, and the rename is
+      // atomic, so a process crash loses nothing. But a directory entry lives
+      // in the directory's inode, not the file's, and a bare rename does not
+      // force that to disk — a host power loss (this runs on Pis with no
+      // UPS) can still lose the rename itself, taking the capture with it.
+      // Do not remove this as redundant with the fsync above; it is a
+      // different inode.
+      const dirHandle = await open(dir, "r");
+      try {
+        await dirHandle.sync();
+      } finally {
+        await dirHandle.close();
+      }
       return name;
     },
 

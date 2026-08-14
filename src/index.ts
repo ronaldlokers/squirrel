@@ -141,8 +141,20 @@ export async function boot(env: Record<string, string | undefined>): Promise<Squ
 
 // Entry point when run as a program rather than imported by a test.
 if (process.argv[1]?.endsWith("index.js")) {
-  boot(process.env).catch((error: unknown) => {
+  try {
+    const squirrel = await boot(process.env);
+    // Node's default action on SIGTERM is immediate termination. Without
+    // this, every rollout, node drain or eviction severs whatever webhook is
+    // in flight, and Campfire does not retry it. `stop()` already stops
+    // accepting new connections and waits for in-flight requests via
+    // `serving.close()`.
+    for (const signal of ["SIGTERM", "SIGINT"] as const) {
+      process.once(signal, () => {
+        void squirrel.stop().then(() => process.exit(0));
+      });
+    }
+  } catch (error: unknown) {
     process.stderr.write(`${JSON.stringify({ event: "boot.failed", error: String(error) })}\n`);
     process.exit(1);
-  });
+  }
 }

@@ -50,12 +50,28 @@ function number(env: Env, name: string, fallback: number): number {
   return parsed;
 }
 
+/** The only names `index.ts` knows how to build a transport for. */
+const KNOWN_TRANSPORTS = new Set(["campfire"]);
+
 function transportsFrom(env: Env): readonly string[] {
   const raw = env.TRANSPORTS ?? "campfire";
-  return raw
+  const names = raw
     .split(",")
     .map((name) => name.trim())
     .filter((name) => name !== "");
+
+  // An unrecognised name would otherwise boot with zero transports for it,
+  // silently: a healthy /healthz, no route mounted, and every webhook to it
+  // answered by the 404 handler — which Campfire then uploads into the room
+  // as a file attachment. Missing/wrong configuration exits non-zero at boot
+  // rather than degrading quietly.
+  for (const name of names) {
+    if (!KNOWN_TRANSPORTS.has(name)) {
+      throw new ConfigError(`TRANSPORTS names an unknown transport: ${JSON.stringify(name)}`);
+    }
+  }
+
+  return names;
 }
 
 function campfireFrom(env: Env): CampfireConfig {

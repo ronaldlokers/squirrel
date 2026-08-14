@@ -64,6 +64,26 @@ describe("createHttp", () => {
     }
   });
 
+  // The defect this exists to catch: Hono's default 404 (and its default
+  // onError 500) carry a `Content-Type`, so on the Campfire route an
+  // unrouted or throwing request would be uploaded into the room as a file
+  // attachment instead of staying silent — and the message that triggered it
+  // is lost with no retry. `app.request(...)` never crosses a socket, so it
+  // cannot see this; it has to be asserted on a real response.
+  it("carries no content-type on a 404 over the wire", async () => {
+    const { app } = createHttp(writableSpool);
+
+    const server = await startHttp(app, 0);
+    try {
+      const response = await fetch(`http://127.0.0.1:${server.port}/transports/campfire/`);
+      expect(response.status).toBe(404);
+      expect(response.headers.get("content-type")).toBeNull();
+      expect(await response.text()).toBe("");
+    } finally {
+      await server.close();
+    }
+  });
+
   it("rejects rather than hanging when the port is already in use", async () => {
     const { app: firstApp } = createHttp(writableSpool);
     const first = await startHttp(firstApp, 0);

@@ -62,4 +62,15 @@ describe("loadConfig", () => {
   it("rejects a non-numeric port", () => {
     expect(() => loadConfig({ ...minimal, PORT: "eight" })).toThrow(/PORT/);
   });
+
+  // Otherwise this boots with zero transports, a healthy /healthz, and every
+  // webhook answered by the bare 404 — which Campfire uploads as a file.
+  it("rejects an unrecognised transport name", () => {
+    expect(() => loadConfig({ ...minimal, TRANSPORTS: "campfre" })).toThrow(ConfigError);
+    expect(() => loadConfig({ ...minimal, TRANSPORTS: "campfre" })).toThrow(/campfre/);
+  });
+
+  it("rejects an unrecognised transport name alongside a valid one", () => {
+    expect(() => loadConfig({ ...minimal, TRANSPORTS: "campfire,matrix" })).toThrow(/matrix/);
+  });
 });

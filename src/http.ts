@@ -32,6 +32,15 @@ export function createHttp(spool: Pick<Spool, "writable">): { app: Hono; mount: 
     },
   };
 
+  // Hono's default 404 and 500 both carry a `Content-Type`, which is the same
+  // defect that got `@hono/node-server` removed: on the Campfire route, a
+  // non-200 (or any 404) with a content type is uploaded into the room as a
+  // file attachment, and the message that triggered it is lost with no
+  // retry. Bare responses here keep every unrouted or throwing request
+  // genuinely silent on the wire.
+  app.notFound(() => new Response(null, { status: 404 }));
+  app.onError(() => new Response(null, { status: 500 }));
+
   return { app, mount };
 }
 
@@ -104,12 +113,28 @@ export function startHttp(app: Hono, port: number): Promise<Serving> {
 
     server.listen(port, () => {
       // Listening succeeded: a later error (e.g. a client reset) is no
-      // longer a startup failure, so stop treating it as one.
+      // longer a startup failure, so stop treating it as one. But an
+      // EventEmitter with zero `error` listeners throws on the next `error`
+      // event instead of just emitting it, which would kill the whole
+      // process — and every in-flight webhook with it. Swap in a listener
+      // that logs rather than leaving the server bare.
       server.off("error", reject);
+      server.on("error", (error) => {
+        process.stderr.write(`http: server error: ${String(error)}\n`);
+      });
       const address = server.address() as AddressInfo;
       resolve({
         port: address.port,
-        close: () => new Promise((closed) => server.close(() => closed())),
+        close: () =>
+          new Promise((closed) => {
+            // `server.close()` stops accepting new connections and waits for
+            // in-flight requests, but a keep-alive connection sitting idle
+            // between requests is neither — it would hold the server open
+            // indefinitely. Idle ones only; a request actually in flight is
+            // left alone to finish.
+            server.closeIdleConnections?.();
+            server.close(() => closed());
+          }),
       });
     });
 
