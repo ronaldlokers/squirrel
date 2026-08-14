@@ -79,6 +79,29 @@ export function respond(outcome: Outcome): Response {
   }
 }
 
+/**
+ * Outbound, used when the system initiates rather than answers.
+ *
+ * Reusing `room.path` from a stored payload would need no credential at all,
+ * since that path already embeds a bot key. It is rejected on purpose: outbound
+ * would then only reach rooms Squirrel had recently heard from, and a morning
+ * nudge would depend on the capture history. That works in testing and fails on
+ * a quiet Monday.
+ */
+function sendVia(baseUrl: string, botKey: string) {
+  const base = baseUrl.replace(/\/+$/, "");
+  return async (conversationId: string, text: string): Promise<void> => {
+    const response = await fetch(`${base}/rooms/${conversationId}/${botKey}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      body: text,
+    });
+    if (!response.ok) {
+      throw new Error(`campfire: send failed with ${response.status}`);
+    }
+  };
+}
+
 export function createCampfireTransport(config: CampfireConfig): Transport {
   return {
     name: NAME,
@@ -99,8 +122,11 @@ export function createCampfireTransport(config: CampfireConfig): Transport {
       return Promise.resolve(() => Promise.resolve());
     },
 
-    // Filled in by Task 8. Null here because no bot key is configured, which
-    // is the honest answer to "can this bot start a conversation?".
-    send: null,
+    // Null unless a bot key is configured. Half-working outbound would fail at
+    // exactly the moment it is needed; absent outbound is at least honest.
+    send:
+      config.baseUrl !== null && config.botKey !== null
+        ? sendVia(config.baseUrl, config.botKey)
+        : null,
   };
 }
