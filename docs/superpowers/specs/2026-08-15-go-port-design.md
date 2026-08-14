@@ -59,7 +59,8 @@ makes illegal to misuse. That is a real loss, deferred to the phase that needs i
 ## Layout
 
 ```
-cmd/squirrel/main.go          boot, signals, entry point
+cmd/squirrel/main.go          signals, entry point
+internal/boot/boot.go         wiring: constructs transports, hands them the sink
 internal/squirrel/
   config.go                   environment parsing and validation
   capture.go                  Capture, Outcome, Sink
@@ -77,10 +78,17 @@ internal/transport/
   campfire.go                 the only implementation
 ```
 
-Two packages rather than the TypeScript version's five directories. Go tolerates
-a larger package than TypeScript tolerates a larger file, and `capture`, `people`
-and `store` are used together on every path — splitting them would buy plumbing,
+Two packages of substance rather than the TypeScript version's five
+directories, plus a third that holds nothing but wiring. Go tolerates a larger
+package than TypeScript tolerates a larger file, and `capture`, `people` and
+`store` are used together on every path — splitting them would buy plumbing,
 not clarity. `transport` stays separate because that separation is the design.
+
+`boot` exists because wiring needs both halves: it constructs transports and
+hands them the core's sink. The core may not import `transport`, so the wiring
+cannot live there; putting it in `transport` would make the adapter own the
+process. `boot` imports both and is imported by neither, which keeps the
+compiler enforcing the boundary while giving the wiring somewhere honest to sit.
 
 A second transport splits `campfire.go` into its own package. That is mechanical
 and can wait for the second case.
@@ -108,9 +116,20 @@ const (
 
 type Sink interface {
 	// Accept returns only once the capture is durable.
-	Accept(ctx context.Context, c Capture) (Outcome, error)
+	Accept(ctx context.Context, c Capture) Outcome
 }
 ```
+
+No error return. Every failure is already an `Outcome` — that is the whole
+point of `Failed` — and returning an error alongside it would tempt a caller to
+handle what is handled, which is how the TypeScript version nearly turned a
+stored capture into a `failed` reply.
+
+Both `Sink` and `Mount` are declared **in the `transport` package**, not shared
+with the core. Go satisfies interfaces structurally, so the core's types fit
+them without either package importing the other's declaration — and declaring
+`Mount` in the core would force `transport` and the core to agree on it, which
+is the coupling the layout exists to avoid.
 
 ```go
 type Mount interface {
