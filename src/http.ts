@@ -1,6 +1,6 @@
+import { type IncomingMessage, type ServerResponse, createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
 import type { Spool } from "./capture/spool.js";
@@ -35,12 +35,78 @@ export function createHttp(spool: Pick<Spool, "writable">): { app: Hono; mount: 
   return { app, mount };
 }
 
+/** GET and HEAD carry no body; every other method used here does. */
+function hasBody(method: string): boolean {
+  return method !== "GET" && method !== "HEAD";
+}
+
+function readBody(incoming: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    incoming.on("data", (chunk: Buffer) => chunks.push(chunk));
+    incoming.on("end", () => resolve(Buffer.concat(chunks)));
+    incoming.on("error", reject);
+  });
+}
+
+/**
+ * Node's request, translated into the web `Request` the router expects. The
+ * origin is a fixed placeholder — nothing downstream ever looks at it, only
+ * the path and query drive routing — and the body is buffered rather than
+ * streamed, which is fine at the sizes a webhook payload comes in.
+ */
+async function requestFrom(incoming: IncomingMessage): Promise<Request> {
+  const method = incoming.method ?? "GET";
+  const url = new URL(incoming.url ?? "/", "http://localhost");
+
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(incoming.headers)) {
+    if (value === undefined) continue;
+    for (const one of Array.isArray(value) ? value : [value]) headers.append(name, one);
+  }
+
+  const init: RequestInit = { method, headers };
+  if (hasBody(method)) init.body = await readBody(incoming);
+  return new Request(url, init);
+}
+
+/**
+ * Writes back exactly what the app produced: this status, these headers, and
+ * no others. Campfire's whole contract — stored, ignored, failed — is carried
+ * entirely in whether a content type is present, so nothing here may add one
+ * the handler did not set itself. That is precisely the job a convenience
+ * layer cannot be trusted with: `@hono/node-server` stamps a default
+ * `content-type` on any response that omits one, which would turn Squirrel's
+ * one deliberately silent response (`respond("ignored")`) into a `text/plain`
+ * message posted into the room. Hand-rolled here so the bytes on the wire are
+ * ours to control, not a library's to rewrite.
+ */
+async function writeResponse(response: Response, outgoing: ServerResponse): Promise<void> {
+  const headers: Record<string, string> = {};
+  for (const [name, value] of response.headers) headers[name] = value;
+
+  outgoing.writeHead(response.status, headers);
+  outgoing.end(Buffer.from(await response.arrayBuffer()));
+}
+
 export function startHttp(app: Hono, port: number): Promise<Serving> {
   return new Promise((resolve, reject) => {
-    const server = serve({ fetch: app.fetch, port }, (address: AddressInfo) => {
+    const server = createServer((incoming, outgoing) => {
+      void requestFrom(incoming)
+        .then((request) => app.fetch(request))
+        .then((response) => writeResponse(response, outgoing))
+        .catch((error: unknown) => {
+          if (!outgoing.headersSent) outgoing.writeHead(500);
+          outgoing.end();
+          process.stderr.write(`http: request failed: ${String(error)}\n`);
+        });
+    });
+
+    server.listen(port, () => {
       // Listening succeeded: a later error (e.g. a client reset) is no
       // longer a startup failure, so stop treating it as one.
       server.off("error", reject);
+      const address = server.address() as AddressInfo;
       resolve({
         port: address.port,
         close: () => new Promise((closed) => server.close(() => closed())),

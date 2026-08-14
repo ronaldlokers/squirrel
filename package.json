@@ -16,7 +16,6 @@
     "start": "node dist/src/index.js"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.7",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.6.14",
     "pg": "^8.13.1"

@@ -44,6 +44,26 @@ describe("createHttp", () => {
     await server.close();
   });
 
+  // The defect this exists to catch: a convenience HTTP layer stamping a
+  // default content-type on a response that deliberately has none, which
+  // would turn Campfire's one silent response into a posted message. Unit
+  // tests that never cross a socket (like the ones above, via `app.request`)
+  // cannot see this — it only shows up on a real response.
+  it("carries no content-type over the wire when the handler sets none", async () => {
+    const { app, mount } = createHttp(writableSpool);
+    mount.post("/silent", () => Promise.resolve(new Response(null, { status: 200 })));
+
+    const server = await startHttp(app, 0);
+    try {
+      const response = await fetch(`http://127.0.0.1:${server.port}/silent`, { method: "POST" });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBeNull();
+      expect(await response.text()).toBe("");
+    } finally {
+      await server.close();
+    }
+  });
+
   it("rejects rather than hanging when the port is already in use", async () => {
     const { app: firstApp } = createHttp(writableSpool);
     const first = await startHttp(firstApp, 0);
