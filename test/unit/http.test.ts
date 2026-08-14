@@ -43,4 +43,21 @@ describe("createHttp", () => {
     expect(await response.text()).toBe("ok");
     await server.close();
   });
+
+  it("rejects rather than hanging when the port is already in use", async () => {
+    const { app: firstApp } = createHttp(writableSpool);
+    const first = await startHttp(firstApp, 0);
+
+    const { app: secondApp } = createHttp(writableSpool);
+    const attempt = startHttp(secondApp, first.port);
+
+    try {
+      await expect(attempt).rejects.toThrow();
+    } finally {
+      await first.close();
+      // If the assertion above ever fails because startHttp regresses to
+      // resolving anyway, don't leave a second listening socket behind.
+      await attempt.then((server) => server.close()).catch(() => undefined);
+    }
+  }, 2000);
 });

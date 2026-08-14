@@ -36,12 +36,20 @@ export function createHttp(spool: Pick<Spool, "writable">): { app: Hono; mount: 
 }
 
 export function startHttp(app: Hono, port: number): Promise<Serving> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const server = serve({ fetch: app.fetch, port }, (address: AddressInfo) => {
+      // Listening succeeded: a later error (e.g. a client reset) is no
+      // longer a startup failure, so stop treating it as one.
+      server.off("error", reject);
       resolve({
         port: address.port,
         close: () => new Promise((closed) => server.close(() => closed())),
       });
     });
+
+    // EADDRINUSE or EACCES fire here, not through the listening callback.
+    // Without this, a failed bind never settles the promise and the caller
+    // hangs forever instead of getting an actionable startup error.
+    server.once("error", reject);
   });
 }
