@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -105,6 +106,39 @@ func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	}
 }
 
+// sendVia is outbound, used when the system initiates rather than answers.
+//
+// Reusing room.path from a stored payload would need no credential at all,
+// since that path already embeds a bot key. It is rejected on purpose:
+// outbound would then only reach rooms Squirrel had recently heard from, and a
+// morning nudge would depend on the capture history. That works in testing and
+// fails on a quiet Monday.
+func sendVia(baseURL, botKey string) func(context.Context, string, string) error {
+	base := strings.TrimRight(baseURL, "/")
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	return func(ctx context.Context, conversationID, text string) error {
+		url := fmt.Sprintf("%s/rooms/%s/%s/messages", base, conversationID, botKey)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(text))
+		if err != nil {
+			return fmt.Errorf("campfire: building send request: %w", err)
+		}
+		req.Header.Set("Content-Type", "text/plain; charset=utf-8")
+
+		res, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("campfire: send failed: %w", err)
+		}
+		defer res.Body.Close()
+		io.Copy(io.Discard, res.Body)
+
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			return fmt.Errorf("campfire: send failed with %d", res.StatusCode)
+		}
+		return nil
+	}
+}
+
 func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 	t := Transport{Name: CampfireName}
 
@@ -121,7 +155,11 @@ func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 		return func(context.Context) error { return nil }, nil
 	}
 
-	// Filled in by Task 8. Nil here because no bot key is configured, which is
-	// the honest answer to "can this bot start a conversation?".
+	// Nil unless a bot key is configured. Half-working outbound would fail at
+	// exactly the moment it is needed; absent outbound is at least honest.
+	if cfg.BaseURL != "" && cfg.BotKey != "" {
+		t.Send = sendVia(cfg.BaseURL, cfg.BotKey)
+	}
+
 	return t
 }
