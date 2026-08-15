@@ -1,25 +1,19 @@
-# Debian slim rather than Alpine, matching stringer: musl gives up the
-# better-trodden arm64 path, and the size it saves is nothing on three Pis
-# with NVMe.
-FROM node:24-bookworm-slim AS build
+# Static binary, so the final stage needs no libc and no runtime. This is the
+# whole footprint argument for Go: roughly 20MB of image against 200MB, and
+# nothing inside it to patch.
+FROM golang:1.26-bookworm AS build
 
 WORKDIR /app
-COPY package.json package-lock.json tsconfig.json ./
-RUN npm ci
-COPY src ./src
-COPY test ./test
-RUN npm run build && npm prune --omit=dev
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+# Migrations are embedded via embed.FS, so there is no directory to copy and
+# nothing to forget.
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /squirrel ./cmd/squirrel
 
-FROM node:24-bookworm-slim
+FROM gcr.io/distroless/static-debian12:nonroot
 
-WORKDIR /app
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist/src ./dist/src
-# Migrations are read from disk at boot, so they ship with the image rather
-# than being applied by a separate Job that Flux would have to reconcile.
-COPY drizzle ./drizzle
-COPY package.json ./
-
-# Nothing here needs to write outside the spool volume, and nothing needs a name.
-USER node
-CMD ["node", "dist/src/index.js"]
+COPY --from=build /squirrel /squirrel
+USER nonroot:nonroot
+ENTRYPOINT ["/squirrel"]
