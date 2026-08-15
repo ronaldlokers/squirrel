@@ -82,7 +82,10 @@ func TestBootCapturesEndToEnd(t *testing.T) {
 	res := post(t, s, payload)
 	body, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
-	require.Equal(t, "🐿️", string(body))
+	// Since the boost, the receipt is a reaction on the message rather than a
+	// reply, so the response posts nothing.
+	require.Empty(t, res.Header.Get("Content-Type"))
+	require.Empty(t, string(body))
 
 	require.Eventually(t, func() bool {
 		var n int
@@ -137,7 +140,10 @@ func TestBootServesWithTheDatabaseUnreachable(t *testing.T) {
 	res := post(t, s, payload)
 	body, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
-	require.Equal(t, "🐿️", string(body))
+	// Since the boost, the receipt is a reaction on the message rather than a
+	// reply, so the response posts nothing.
+	require.Empty(t, res.Header.Get("Content-Type"))
+	require.Empty(t, string(body))
 
 	health, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/healthz", s.Port()))
 	require.NoError(t, err)
