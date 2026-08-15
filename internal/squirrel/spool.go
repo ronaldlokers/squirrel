@@ -71,19 +71,33 @@ func (s *Spool) filename(c Capture) string {
 // atomic so the drain sees either nothing or a whole file. The directory sync
 // is what makes the rename survive a host power loss rather than only a
 // process crash — this runs on Raspberry Pis without a UPS.
+//
+// The temp file is exclusive to this call (os.CreateTemp, not a deterministic
+// "<name>.tmp" path): name is derived from safe(externalID), and safe is not
+// injective — two different external ids (e.g. two Matrix ids differing only
+// past the 64-byte truncation, or only in a character safe() maps to "_")
+// can produce the same name. net/http serves each request in its own
+// goroutine, so two such writes genuinely race. A shared, non-exclusive temp
+// path let concurrent writers truncate and overwrite each other's bytes on
+// the same inode, so both Write calls could return success while the surviving
+// file was a torn mix of neither payload. A unique temp file per call means
+// each writer's own bytes are only ever visible to itself until the final
+// rename, which is atomic — so once names collide, last-writer-wins is a
+// clean, whole-file overwrite rather than a corrupted one.
 func (s *Spool) Write(c Capture) (string, error) {
 	name := s.filename(c)
-	temporary := filepath.Join(s.dir, name+".tmp")
 
 	encoded, err := json.Marshal(c)
 	if err != nil {
 		return "", fmt.Errorf("encoding capture: %w", err)
 	}
 
-	f, err := os.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	f, err := os.CreateTemp(s.dir, name+".*.tmp")
 	if err != nil {
 		return "", fmt.Errorf("creating spool file: %w", err)
 	}
+	temporary := f.Name()
+
 	if _, err = f.Write(encoded); err == nil {
 		err = f.Sync()
 	}
@@ -91,10 +105,12 @@ func (s *Spool) Write(c Capture) (string, error) {
 		err = closeErr
 	}
 	if err != nil {
+		os.Remove(temporary)
 		return "", fmt.Errorf("writing spool file: %w", err)
 	}
 
 	if err := os.Rename(temporary, filepath.Join(s.dir, name)); err != nil {
+		os.Remove(temporary)
 		return "", fmt.Errorf("renaming spool file: %w", err)
 	}
 	if err := syncDir(s.dir); err != nil {

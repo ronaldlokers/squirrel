@@ -16,9 +16,19 @@ type DrainResult struct {
 	Deferred    int
 }
 
+// DrainStore is the subset of Store the drain depends on. *Store satisfies it
+// structurally, so production callers pass one unchanged; tests can
+// substitute a smaller implementation — e.g. one that fails a fixed number of
+// times before delegating to a real Store — to force a deferred pass without
+// needing an actually unreachable Postgres for a whole test.
+type DrainStore interface {
+	ResolvePerson(ctx context.Context, transport string, externalID *string) (*int64, error)
+	InsertItem(ctx context.Context, i Item) error
+}
+
 type DrainOptions struct {
 	Spool      *Spool
-	Store      *Store
+	Store      DrainStore
 	Interval   time.Duration
 	MaxBackoff time.Duration
 	OnError    func(error)
@@ -31,7 +41,16 @@ type Drain struct {
 	opts DrainOptions
 }
 
+// defaultInterval is used when Interval is left at its zero value. Run's
+// backoff starts at Interval and only ever grows by doubling it, so a zero
+// Interval never grows past zero either — every tick fires immediately,
+// hammering Postgres and the spool directory as fast as the CPU allows.
+const defaultInterval = time.Second
+
 func NewDrain(o DrainOptions) *Drain {
+	if o.Interval <= 0 {
+		o.Interval = defaultInterval
+	}
 	if o.MaxBackoff == 0 {
 		o.MaxBackoff = 30 * time.Second
 	}

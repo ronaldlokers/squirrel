@@ -143,6 +143,27 @@ func TestServerPanicAfterContentTypeSendsNoContentType(t *testing.T) {
 	require.Empty(t, res.Header.Get("Content-Type"))
 }
 
+// A registered route answering the wrong method still goes through
+// mux.Handler, which returns an empty pattern on a method mismatch just as it
+// does for an unrouted path — so the wrapper's no-Content-Type guard covers
+// this case too. This header family has produced three defects across two
+// builds, so it is worth pinning down explicitly rather than trusting the
+// unrouted-path test to imply it.
+func TestServerWrongMethodOnARegisteredRouteSendsNoContentType(t *testing.T) {
+	s := squirrel.NewServer(writable(true))
+	s.Post("/transports/fake", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		fmt.Fprint(w, "hello")
+	})
+	base := listen(t, s)
+
+	res, err := http.Get(base + "/transports/fake")
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	require.Empty(t, res.Header.Get("Content-Type"))
+}
+
 func TestServerReportsTheBoundPort(t *testing.T) {
 	s := squirrel.NewServer(writable(true))
 	port, err := s.Listen("127.0.0.1:0")

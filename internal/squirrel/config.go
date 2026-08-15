@@ -130,6 +130,12 @@ func LoadConfig(env map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	if drainMS == 0 {
+		// Interval == 0 never grows under Drain.Run's doubling backoff, so a
+		// deferred pass would hammer Postgres and the spool directory as fast
+		// as the CPU allows rather than backing off.
+		return Config{}, fmt.Errorf("%w: DRAIN_INTERVAL_MS must be greater than zero, got %q", ErrConfig, env["DRAIN_INTERVAL_MS"])
+	}
 	pgPort, err := number(env, "POSTGRES_PORT", 5432)
 	if err != nil {
 		return Config{}, err

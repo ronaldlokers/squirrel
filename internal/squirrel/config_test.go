@@ -102,3 +102,12 @@ func TestLoadConfigRejectsNegativeInterval(t *testing.T) {
 	_, err := squirrel.LoadConfig(minimalEnv(map[string]string{"DRAIN_INTERVAL_MS": "-1"}))
 	require.ErrorContains(t, err, "DRAIN_INTERVAL_MS")
 }
+
+// Interval == 0 never grows under Drain.Run's doubling backoff (0 * 2 stays
+// 0), so a deferred pass would hammer Postgres and the spool directory as
+// fast as the CPU allows instead of backing off.
+func TestLoadConfigRejectsZeroInterval(t *testing.T) {
+	_, err := squirrel.LoadConfig(minimalEnv(map[string]string{"DRAIN_INTERVAL_MS": "0"}))
+	require.ErrorIs(t, err, squirrel.ErrConfig)
+	require.ErrorContains(t, err, "DRAIN_INTERVAL_MS")
+}

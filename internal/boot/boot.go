@@ -59,7 +59,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	server := squirrel.NewServer(spool)
 	s := &Squirrel{server: server, drained: make(chan struct{})}
 
-	loopCtx, cancel := context.WithCancel(context.Background())
+	loopCtx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 
 	for _, t := range transportsFrom(config) {

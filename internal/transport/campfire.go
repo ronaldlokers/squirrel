@@ -90,6 +90,23 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 	return c
 }
 
+// accept calls the sink and converts a panic into squirrel.Failed. Nothing
+// may escape the handler: Sink is an interface supplied by the caller of
+// NewCampfire, not written by this package, and a panic in someone else's
+// implementation must still answer Campfire rather than unwind into the
+// server's own recover — which replies with a bare 500 and no Content-Type,
+// the one response Campfire treats as silence, so the sender never learns
+// their thought was dropped.
+func accept(ctx context.Context, sink Sink, c squirrel.Capture) (o squirrel.Outcome) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("campfire: sink panicked", "panic", r)
+			o = squirrel.Failed
+		}
+	}()
+	return sink.Accept(ctx, c)
+}
+
 func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	switch o {
 	case squirrel.Stored:
@@ -150,7 +167,7 @@ func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 				Respond(w, squirrel.Failed)
 				return
 			}
-			Respond(w, sink.Accept(r.Context(), CaptureFrom(body, time.Now().UTC())))
+			Respond(w, accept(r.Context(), sink, CaptureFrom(body, time.Now().UTC())))
 		})
 		return func(context.Context) error { return nil }, nil
 	}

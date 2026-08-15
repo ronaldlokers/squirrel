@@ -142,6 +142,35 @@ func TestCampfireStoresACapture(t *testing.T) {
 	require.NoError(t, stop(context.Background()))
 }
 
+type panickingSink struct{}
+
+func (panickingSink) Accept(context.Context, squirrel.Capture) squirrel.Outcome {
+	panic("sink exploded")
+}
+
+// Sink is supplied by the caller of NewCampfire, not written by this
+// package. A panicking Sink must still answer Campfire — nothing may throw
+// out of the handler — because unwinding into the server's own recover
+// answers with a bare 500 and no Content-Type, the one response Campfire
+// treats as silence, so the sender never learns their thought was dropped.
+func TestCampfireNeverPanicsOutOfTheHandlerEvenWhenTheSinkDoes(t *testing.T) {
+	mount := &oneMount{}
+
+	stop, err := transport.NewCampfire(config()).Start(context.Background(), panickingSink{}, mount)
+	require.NoError(t, err)
+	require.NotNil(t, mount.h)
+
+	rec := httptest.NewRecorder()
+	require.NotPanics(t, func() {
+		mount.h(rec, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(payload)))
+	})
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), "resend")
+
+	require.NoError(t, stop(context.Background()))
+}
+
 func TestCampfireHasNoSendWithoutABotKey(t *testing.T) {
 	require.Nil(t, transport.NewCampfire(config()).Send)
 }
