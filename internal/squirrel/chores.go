@@ -1,0 +1,133 @@
+package squirrel
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+)
+
+type Chore struct {
+	ID        int64
+	PersonID  int64
+	Name      string
+	Every     time.Duration
+	Tolerance time.Duration
+	Active    bool
+	// SinceDays is days since the baseline — the last completion, or creation
+	// if there has never been one. EveryDays is the interval. Both are what the
+	// renderer prints and neither is stored.
+	SinceDays int
+	EveryDays int
+}
+
+// DefaultTolerance is used when a definition does not carry one: a quarter of
+// the interval, never less than a day. A weekly chore then reappears every
+// other day once due; a quarterly one, every three weeks.
+func DefaultTolerance(every time.Duration) time.Duration {
+	t := every / 4
+	if t < 24*time.Hour {
+		return 24 * time.Hour
+	}
+	return t
+}
+
+func (s *Store) UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (Chore, error) {
+	const q = `
+		insert into chores (person_id, name, interval_seconds, tolerance_seconds)
+		values ($1, $2, $3, $4)
+		on conflict (person_id, lower(name)) do update
+		  set interval_seconds = excluded.interval_seconds,
+		      tolerance_seconds = excluded.tolerance_seconds,
+		      active = true,
+		      updated_at = now()
+		returning id, person_id, name, interval_seconds, tolerance_seconds, active`
+
+	var c Chore
+	var everySec, tolSec int64
+	err := s.pool.QueryRow(ctx, q, personID, name,
+		int64(every.Seconds()), int64(tolerance.Seconds()),
+	).Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &c.Active)
+	if err != nil {
+		return Chore{}, fmt.Errorf("upserting chore %q: %w", name, err)
+	}
+	c.Every = time.Duration(everySec) * time.Second
+	c.Tolerance = time.Duration(tolSec) * time.Second
+	c.EveryDays = int(c.Every.Hours() / 24)
+	return c, nil
+}
+
+func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
+	_, err := s.pool.Exec(ctx,
+		`update chores set active = false, updated_at = now() where id = $1`, choreID)
+	return err
+}
+
+// baselineCTE computes, per chore, the moment its clock last started: the most
+// recent completion event, or the chore's creation if it has never been
+// completed. Deriving it rather than storing it is what makes a sensor-written
+// event reset the clock with no extra code.
+const baselineCTE = `
+	with baseline as (
+	  select c.id,
+	         coalesce((select max(e.occurred_at) from events e where e.chore_id = c.id),
+	                  c.created_at) as since,
+	         (select max(p.sent_at)
+	            from prompt_lines l join prompts p on p.id = l.prompt_id
+	           where l.chore_id = c.id) as last_shown
+	    from chores c
+	   where c.person_id = $1 and c.active
+	)`
+
+func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([]Chore, error) {
+	const q = baselineCTE + `
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
+		       extract(epoch from ($2::timestamptz - b.since))::bigint
+		  from chores c join baseline b on b.id = c.id
+		 where c.person_id = $1 and c.active
+		   and $2::timestamptz >= b.since + make_interval(secs => c.interval_seconds)
+		   and (b.last_shown is null
+		        or $2::timestamptz >= b.last_shown + make_interval(secs => c.tolerance_seconds))
+		 order by extract(epoch from ($2::timestamptz - b.since)) / c.interval_seconds desc, c.name`
+
+	return s.scanChores(ctx, q, personID, now)
+}
+
+func (s *Store) ActiveChores(ctx context.Context, personID int64) ([]Chore, error) {
+	const q = baselineCTE + `
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
+		       extract(epoch from (now() - b.since))::bigint
+		  from chores c join baseline b on b.id = c.id
+		 where c.person_id = $1 and c.active
+		 order by c.name`
+
+	return s.scanChores(ctx, q, personID)
+}
+
+func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore, error) {
+	rows, err := s.pool.Query(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying chores: %w", err)
+	}
+	defer rows.Close()
+
+	chores := []Chore{}
+	for rows.Next() {
+		var c Chore
+		var everySec, tolSec, sinceSec int64
+		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &sinceSec); err != nil {
+			return nil, fmt.Errorf("scanning chore: %w", err)
+		}
+		c.Active = true
+		c.Every = time.Duration(everySec) * time.Second
+		c.Tolerance = time.Duration(tolSec) * time.Second
+		c.EveryDays = int(c.Every.Hours() / 24)
+		c.SinceDays = int(time.Duration(sinceSec) * time.Second / (24 * time.Hour))
+		chores = append(chores, c)
+	}
+	if err := rows.Err(); err != nil && err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("reading chores: %w", err)
+	}
+	return chores, nil
+}
