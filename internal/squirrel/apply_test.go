@@ -55,6 +55,20 @@ func TestApplyDefinesAChore(t *testing.T) {
 	require.Equal(t, "9", (*got)[0].conversationID)
 }
 
+// backdateChore pushes a chore's created_at into the past, the same way
+// TestApplyNvmDoesNotReachPastTheWindow backdates one to fall outside the
+// undo window. Here it is what makes the chore genuinely overdue before the
+// test ever calls Apply, so the later "not due" assertion can only pass if
+// completing it actually reset the clock — not because it was never due in
+// the first place.
+func backdateChore(t *testing.T, store *squirrel.Store, choreID int64, ago time.Duration) {
+	t.Helper()
+	_, err := store.Pool().Exec(context.Background(),
+		`update chores set created_at = now() - make_interval(secs => $2) where id = $1`,
+		choreID, int64(ago.Seconds()))
+	require.NoError(t, err)
+}
+
 func TestApplyCompletesByPosition(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -64,20 +78,25 @@ func TestApplyCompletesByPosition(t *testing.T) {
 
 	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
+	backdateChore(t, store, vac.ID, twoWeeks+24*time.Hour)
+
+	due, err := store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1, "backdated past its interval, it is due before completion")
+
 	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
 
 	require.NoError(t, applier.Apply(ctx, itemOf("done 1"), &p))
 
-	// Completing resets the baseline to now, so the chore is not due again
-	// until a fresh interval has elapsed. Checking at now+interval+1h (the
-	// offset TestNewChoreIsNotDueImmediately uses to prove a chore IS due)
-	// would cross that threshold and always come back due — it is the
-	// baseline reset itself that this test is verifying, so it must check
-	// before the next interval, not after it.
-	due, err := store.DueChores(ctx, p, time.Now())
+	// Past the tolerance gate the RecordPrompt call above just set (so this
+	// isn't accidentally passing because last_shown is recent), but still
+	// short of a full interval measured from the completion — so this can
+	// only be empty if the completion actually reset the clock, not because
+	// it was suppressed by the prompt's own tolerance window.
+	due, err = store.DueChores(ctx, p, time.Now().Add(oneWeek+time.Hour))
 	require.NoError(t, err)
-	require.Empty(t, due)
+	require.Empty(t, due, "completing it resets the clock")
 	require.Contains(t, strings.ToLower((*got)[len(*got)-1].text), "vacuum")
 }
 
@@ -90,16 +109,23 @@ func TestApplyBareDoneWithOneOutstanding(t *testing.T) {
 
 	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
+	backdateChore(t, store, vac.ID, twoWeeks+24*time.Hour)
+
+	due, err := store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1, "backdated past its interval, it is due before completion")
+
 	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
 
 	require.NoError(t, squirrel.NewApplier(store, send, nil).Apply(ctx, itemOf("done"), &p))
 
-	// See the comment in TestApplyCompletesByPosition: check before the next
-	// interval elapses, not a point that is guaranteed to be past it.
-	due, err := store.DueChores(ctx, p, time.Now())
+	// See the comment in TestApplyCompletesByPosition: past the tolerance
+	// gate the RecordPrompt call above set, still short of a full interval
+	// from the completion.
+	due, err = store.DueChores(ctx, p, time.Now().Add(oneWeek+time.Hour))
 	require.NoError(t, err)
-	require.Empty(t, due)
+	require.Empty(t, due, "completing it resets the clock")
 }
 
 // With several outstanding it lists rather than guessing.
