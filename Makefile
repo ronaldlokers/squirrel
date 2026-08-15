@@ -12,7 +12,10 @@ test:
 	go test ./...
 
 test-integration:
-	go test -tags=integration ./...
+	# -p 1: internal/boot and internal/squirrel both truncate the same live
+	# Postgres in their withStore setup, so their package test binaries must
+	# not run concurrently.
+	go test -tags=integration -p 1 ./...
 
 build:
 	CGO_ENABLED=0 go build -o squirrel ./cmd/squirrel
