@@ -20,6 +20,15 @@ type SchedulerOptions struct {
 
 type Scheduler struct {
 	opts SchedulerOptions
+
+	// sentDate is the local calendar date (YYYY-MM-DD) a digest has already
+	// gone out for, in this process's lifetime. It is purely an optimisation —
+	// the unique index on (person_id, sent_for_date) is what actually
+	// guarantees at most one digest a day, and stays authoritative across a
+	// restart that clears this field. Once set it lets a stray tick between
+	// the send and midnight skip the database entirely instead of running
+	// DueChores, CapturesSince and a doomed insert every minute.
+	sentDate string
 }
 
 func NewScheduler(o SchedulerOptions) *Scheduler {
@@ -42,6 +51,11 @@ func NewScheduler(o SchedulerOptions) *Scheduler {
 // reappear in a few hours anyway.
 func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
 	local := now.In(s.opts.Location)
+	dateKey := local.Format("2006-01-02")
+	if dateKey == s.sentDate {
+		return nil
+	}
+
 	midnight := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, s.opts.Location)
 
 	// The threshold is built as a wall-clock time in the target location, not
@@ -89,6 +103,10 @@ func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
 	if _, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
 		"digest", now, &forDate, due); err != nil {
 		if errors.Is(err, ErrDigestAlreadySent) {
+			// Some other process already recorded today's digest — most
+			// likely this same one, on an earlier tick. Either way, today is
+			// spoken for, so remember it and stop asking.
+			s.sentDate = dateKey
 			return nil
 		}
 		return err
@@ -101,6 +119,7 @@ func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
 		// the scheme of things.
 		return fmt.Errorf("sending digest: %w", err)
 	}
+	s.sentDate = dateKey
 	return nil
 }
 
