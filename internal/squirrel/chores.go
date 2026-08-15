@@ -131,3 +131,29 @@ func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore,
 	}
 	return chores, nil
 }
+
+// CapturesSince is the "Since yesterday" half of the digest — the raw text of
+// what was captured, with commands filtered out so the list is thoughts rather
+// than bookkeeping.
+func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Time) ([]string, error) {
+	rows, err := s.pool.Query(ctx, `
+		select raw_text from items
+		 where person_id = $1 and received_at >= $2 and raw_text <> ''
+		 order by received_at`, personID, since)
+	if err != nil {
+		return nil, fmt.Errorf("querying captures: %w", err)
+	}
+	defer rows.Close()
+
+	texts := []string{}
+	for rows.Next() {
+		var text string
+		if err := rows.Scan(&text); err != nil {
+			return nil, fmt.Errorf("scanning capture: %w", err)
+		}
+		if Match(text).Kind == IntentCapture {
+			texts = append(texts, text)
+		}
+	}
+	return texts, rows.Err()
+}
