@@ -35,6 +35,8 @@ type DrainOptions struct {
 	// OnUnknownIdentity is not an error channel. The row still lands; nobody
 	// knows whose it is yet.
 	OnUnknownIdentity func(transport, senderID string)
+	// Applier runs after a capture lands. Nil keeps phase-1 behaviour.
+	Applier *Applier
 }
 
 type Drain struct {
@@ -122,7 +124,7 @@ func (d *Drain) one(ctx context.Context, name string) Outcome {
 		safely(func() { d.opts.OnUnknownIdentity(capture.Transport, *capture.SenderID) })
 	}
 
-	if err := d.opts.Store.InsertItem(ctx, Item{
+	item := Item{
 		Transport:      capture.Transport,
 		ExternalID:     capture.ExternalID,
 		ConversationID: capture.ConversationID,
@@ -131,7 +133,8 @@ func (d *Drain) one(ctx context.Context, name string) Outcome {
 		RawText:        capture.Text,
 		Payload:        capture.Payload,
 		ReceivedAt:     capture.ReceivedAt,
-	}); err != nil {
+	}
+	if err := d.opts.Store.InsertItem(ctx, item); err != nil {
 		return d.handle(name, err)
 	}
 
@@ -139,6 +142,14 @@ func (d *Drain) one(ctx context.Context, name string) Outcome {
 		// The row landed. Leaving the file means one redelivery, which the
 		// ON CONFLICT makes harmless.
 		d.report(err)
+	}
+
+	if d.opts.Applier != nil {
+		if err := d.opts.Applier.Apply(ctx, item, personID); err != nil {
+			// The row landed and the file is gone. A failed reply is a lost
+			// answer, never a lost thought, so it is reported and not retried.
+			d.report(err)
+		}
 	}
 	return Stored
 }
