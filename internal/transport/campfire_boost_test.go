@@ -17,14 +17,43 @@ import (
 )
 
 func TestBoostURL(t *testing.T) {
-	require.Equal(t,
-		"http://campfire/rooms/7/3-abc/messages/42/boosts",
-		transport.BoostURL("http://campfire", "/rooms/7/3-abc/messages", "42"))
+	got, ok := transport.BoostURL("http://campfire", "/rooms/7/3-abc/messages", "42")
+	require.True(t, ok)
+	require.Equal(t, "http://campfire/rooms/7/3-abc/messages/42/boosts", got)
 
 	// A trailing slash on the base must not double up.
-	require.Equal(t,
-		"http://campfire/rooms/7/3-abc/messages/42/boosts",
-		transport.BoostURL("http://campfire/", "/rooms/7/3-abc/messages", "42"))
+	got, ok = transport.BoostURL("http://campfire/", "/rooms/7/3-abc/messages", "42")
+	require.True(t, ok)
+	require.Equal(t, "http://campfire/rooms/7/3-abc/messages/42/boosts", got)
+}
+
+// A room path rides in on the webhook payload, not configuration — treat it
+// as attacker-controlled. The bare "@" case is the sharpest: composed against
+// a real base URL it moves the host, not just the path.
+func TestBoostURLRejectsUnsafeRoomPaths(t *testing.T) {
+	cases := map[string]string{
+		"userinfo @ attack, moves the host": "@evil.com/rooms",
+		"protocol-relative //":              "//evil.com/rooms",
+		"traversal segment":                 "/rooms/../../../admin",
+		"query string":                      "/rooms/7/key/messages?x=1",
+		"no leading slash":                  "rooms/7/key/messages",
+		"embedded whitespace":               "/rooms/7/key/mess ages",
+	}
+
+	for name, roomPath := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ok := transport.BoostURL("http://campfire.internal", roomPath, "42")
+			require.False(t, ok, "roomPath %q must be rejected", roomPath)
+		})
+	}
+}
+
+// The specific attack the userinfo check exists for: composed naively, this
+// pair produces a URL whose host is evil.com and whose userinfo is the real
+// host — a different destination entirely.
+func TestBoostURLCatchesTheUserinfoHostSwap(t *testing.T) {
+	_, ok := transport.BoostURL("http://campfire.campfire.svc.cluster.local", "@evil.com/rooms", "42")
+	require.False(t, ok)
 }
 
 type boostRecorder struct {
@@ -177,4 +206,35 @@ func TestNoBoostWithoutABaseURL(t *testing.T) {
 		mount.h(rw, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(payload)))
 	})
 	require.Equal(t, http.StatusOK, rw.Code)
+}
+
+// A room.path crafted to move the host must still be treated as fail-open,
+// exactly like a missing room.path: the capture stores, the response is
+// unaffected, and only the boost is refused. BoostURL's rejection happens
+// synchronously — before the retry goroutine is ever spawned — so there is
+// nothing to wait for here; if that ever changed to a race, this assertion
+// would need require.Eventually instead of an immediate check.
+func TestStoredWithAnUnsafeRoomPathBoostsNothing(t *testing.T) {
+	base, rec := boostStub(t, http.StatusCreated)
+
+	mount := &oneMount{}
+	sink := &recordingSink{outcome: squirrel.Stored}
+	cfg := config()
+	cfg.BaseURL = base
+
+	_, err := transport.NewCampfire(cfg).Start(context.Background(), sink, mount)
+	require.NoError(t, err)
+
+	malicious := strings.Replace(payload,
+		`"path": "/rooms/7/3-abc/messages"`, `"path": "@evil.com/rooms"`, 1)
+	require.NotEqual(t, payload, malicious, "the replacement must actually apply")
+
+	rw := httptest.NewRecorder()
+	mount.h(rw, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(malicious)))
+
+	require.Equal(t, http.StatusOK, rw.Code)
+	require.Empty(t, rw.Header().Get("Content-Type"))
+	require.Empty(t, rw.Body.String())
+	require.Len(t, sink.seen, 1, "the capture still stored")
+	require.Empty(t, rec.paths(), "no boost anywhere for an unsafe room path")
 }

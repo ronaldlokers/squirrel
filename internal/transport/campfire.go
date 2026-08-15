@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -157,15 +159,66 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 	}
 }
 
+// safeRoomPath and safeMessageID bound what a boost URL is built from. Both
+// values ride in on the webhook payload, not from configuration, so they are
+// attacker-controlled input rather than a trusted constant — even though in
+// practice room.path comes from Campfire's own Rails route helper.
+var (
+	safeRoomPath  = regexp.MustCompile(`^/[A-Za-z0-9._~/-]+$`)
+	safeMessageID = regexp.MustCompile(`^[A-Za-z0-9._~-]+$`)
+)
+
 // BoostURL builds the reaction endpoint from what the payload already carries.
 // room.path is "/rooms/:id/:bot_key/messages", so the bot key needs no
 // configuration — it arrives with every message. Phase 1 rejected reusing
 // room.path for *initiating* a conversation, because outbound would then only
 // reach rooms we had recently heard from. Reacting to the message that just
 // arrived is the opposite case: the payload is the context.
-func BoostURL(baseURL, roomPath, messageID string) string {
-	return fmt.Sprintf("%s%s/%s/boosts",
-		strings.TrimRight(baseURL, "/"), roomPath, messageID)
+//
+// room.path is untrusted, so it is validated in two layers rather than
+// trusted and interpolated. First, the shape: the allowed character class
+// excludes "@" (and every other URL-special character) outright, so no
+// whitespace, no "//" (which would parse as a scheme-relative host), no ".."
+// segment (traversal), and the path must start with "/". Second — because a
+// regex is easy to loosen later without noticing what it re-admits — the
+// composed URL is re-parsed with a real URL parser and checked to still
+// address the configured scheme and host with no userinfo. That second check
+// is the one that would catch the classic bare "@" SSRF even if the character
+// class above stopped excluding it: a roomPath of "@evil.com/rooms" against
+// baseURL "http://campfire.internal" composes to
+// "http://campfire.internal@evil.com/rooms/42/boosts", which parses with host
+// evil.com and userinfo campfire.internal — a different destination entirely.
+//
+// A rejected input returns ok == false. That must mean no boost, silently —
+// exactly like a missing room.path already does — never a dropped capture
+// and never a request sent somewhere else.
+func BoostURL(baseURL, roomPath, messageID string) (built string, ok bool) {
+	if !safeRoomPath.MatchString(roomPath) || strings.Contains(roomPath, "//") {
+		return "", false
+	}
+	for _, segment := range strings.Split(roomPath, "/") {
+		if segment == ".." {
+			return "", false
+		}
+	}
+	if !safeMessageID.MatchString(messageID) {
+		return "", false
+	}
+
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return "", false
+	}
+
+	built = fmt.Sprintf("%s%s/%s/boosts", strings.TrimRight(baseURL, "/"), roomPath, messageID)
+	composed, err := url.Parse(built)
+	if err != nil {
+		return "", false
+	}
+	if composed.Scheme != base.Scheme || composed.Host != base.Host || composed.User != nil {
+		return "", false
+	}
+	return built, true
 }
 
 // boost reacts to a message. It is fired after the capture is durable and never
@@ -174,7 +227,7 @@ func BoostURL(baseURL, roomPath, messageID string) string {
 //
 // Two retries, then give up. A missing receipt is cosmetic — the capture is on
 // disk either way, and the daily digest lists it regardless.
-func boost(ctx context.Context, client *http.Client, url, content string) error {
+func boost(ctx context.Context, client *http.Client, dest, content string) error {
 	var lastErr error
 	for attempt := range 3 {
 		if attempt > 0 {
@@ -185,7 +238,7 @@ func boost(ctx context.Context, client *http.Client, url, content string) error 
 			}
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(content))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, dest, strings.NewReader(content))
 		if err != nil {
 			return err
 		}
@@ -223,12 +276,16 @@ func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, ca
 		return
 	}
 
-	url := BoostURL(cfg.BaseURL, p.Room.Path, *capture.ExternalID)
+	dest, ok := BoostURL(cfg.BaseURL, p.Room.Path, *capture.ExternalID)
+	if !ok {
+		slog.Warn("campfire: rejecting boost with an unsafe room path", "room_path", p.Room.Path)
+		return
+	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := boost(ctx, client, url, "🐿️"); err != nil {
-			slog.Error("campfire: boost failed", "error", err, "url", url)
+		if err := boost(ctx, client, dest, "🐿️"); err != nil {
+			slog.Error("campfire: boost failed", "error", err, "url", dest)
 		}
 	}()
 }
