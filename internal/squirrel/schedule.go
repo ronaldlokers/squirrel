@@ -43,7 +43,16 @@ func NewScheduler(o SchedulerOptions) *Scheduler {
 func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
 	local := now.In(s.opts.Location)
 	midnight := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, s.opts.Location)
-	if local.Before(midnight.Add(s.opts.At)) {
+
+	// The threshold is built as a wall-clock time in the target location, not
+	// by adding a Duration to the instant "midnight". Add moves an absolute
+	// instant, so across a DST transition midnight+8h lands an hour off
+	// 08:00 local — late in spring, early in fall. time.Date asks the zone
+	// database for "08:00 on this calendar date" directly, which is what the
+	// config actually promises.
+	hour, min, sec := clockParts(s.opts.At)
+	threshold := time.Date(local.Year(), local.Month(), local.Day(), hour, min, sec, 0, s.opts.Location)
+	if local.Before(threshold) {
 		return nil
 	}
 
@@ -78,6 +87,17 @@ func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
 		return fmt.Errorf("sending digest: %w", err)
 	}
 	return nil
+}
+
+// clockParts decomposes a Duration since midnight into hour, minute and
+// second components suitable for time.Date, so a threshold can be built as a
+// wall-clock time rather than by adding the Duration to an instant.
+func clockParts(d time.Duration) (hour, min, sec int) {
+	total := int(d / time.Second)
+	hour = total / 3600
+	min = (total % 3600) / 60
+	sec = total % 60
+	return
 }
 
 // Run ticks once a minute until the context is cancelled. A minute is fine
