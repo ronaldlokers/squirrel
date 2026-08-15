@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,7 +20,7 @@ func URLFor(c PostgresConfig) string {
 	u := url.URL{
 		Scheme: "postgres",
 		User:   url.UserPassword(c.User, c.Password),
-		Host:   fmt.Sprintf("%s:%d", c.Host, c.Port),
+		Host:   net.JoinHostPort(c.Host, strconv.Itoa(c.Port)),
 		Path:   "/" + c.Database,
 	}
 	return u.String()
