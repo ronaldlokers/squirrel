@@ -102,3 +102,27 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 
 	return s.scanChores(ctx, q, personID)
 }
+
+// LastDigestSentAt is the sent_at of the person's most recent digest — a
+// prompt with a non-null sent_for_date, which is exactly what distinguishes a
+// digest from a query prompt issued on demand. The scheduler anchors its
+// capture window to this instant rather than to a fixed "yesterday midnight"
+// offset, so a prompt with a null date (a query, not a digest) must never be
+// picked here: anchoring to one would shrink the window to however many
+// minutes ago the last "?" was sent and hide everything captured before it.
+func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time, bool, error) {
+	const q = `
+		select sent_at from prompts
+		 where person_id = $1 and sent_for_date is not null
+		 order by sent_at desc, id desc limit 1`
+
+	var sentAt time.Time
+	err := s.pool.QueryRow(ctx, q, personID).Scan(&sentAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return time.Time{}, false, nil
+	}
+	if err != nil {
+		return time.Time{}, false, fmt.Errorf("reading last digest: %w", err)
+	}
+	return sentAt, true, nil
+}

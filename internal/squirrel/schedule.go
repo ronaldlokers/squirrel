@@ -60,7 +60,22 @@ func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
 	if err != nil {
 		return err
 	}
-	captures, err := s.opts.Store.CapturesSince(ctx, s.opts.PersonID, midnight.AddDate(0, 0, -1))
+
+	// The capture window is anchored to the last digest that actually sent,
+	// not to a fixed "yesterday midnight" offset: a fixed offset either
+	// double-counts (every normal day's window overlaps the previous day's
+	// between local midnight and the send) or drops captures entirely (a
+	// missed day leaves a gap between where the last window ended and the
+	// next one begins). Anchoring to the real last send closes both gaps.
+	// Before any digest has ever gone out there is nothing to anchor to, so
+	// the window falls back to the last 24 hours.
+	since := midnight.AddDate(0, 0, -1)
+	if lastDigest, ok, err := s.opts.Store.LastDigestSentAt(ctx, s.opts.PersonID); err != nil {
+		return err
+	} else if ok {
+		since = lastDigest
+	}
+	captures, err := s.opts.Store.CapturesSince(ctx, s.opts.PersonID, since)
 	if err != nil {
 		return err
 	}

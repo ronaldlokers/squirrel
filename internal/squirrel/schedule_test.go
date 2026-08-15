@@ -148,6 +148,49 @@ func TestSchedulerFiresAtWallClockOnFallBack(t *testing.T) {
 	require.Len(t, *got, 1, "08:30 wall clock is past the 08:00 threshold")
 }
 
+// A fixed "yesterday midnight" window either double-counts (every normal
+// day's window overlaps the previous day's between local midnight and the
+// send) or, after a missed day, drops content in the gap between where the
+// old window ended and the new one begins. Anchoring to the last digest that
+// actually sent closes that gap.
+func TestSchedulerCarriesCapturesAcrossAMissedDay(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+
+	// Monday's digest sends normally.
+	monday := time.Date(2026, 8, 17, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, scheduler(t, store, p, send).Once(ctx, monday))
+	require.Len(t, *got, 1)
+
+	// Captured Monday afternoon, well after Monday's digest already sent.
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport:  "campfire",
+		PersonID:   squirrel.Ptr(p),
+		RawText:    "fixed the leaky tap",
+		Payload:    []byte(`{}`),
+		ReceivedAt: time.Date(2026, 8, 17, 15, 0, 0, 0, amsterdam(t)),
+	})
+	require.NoError(t, err)
+
+	// Tuesday is slept through entirely — no Once call lands in its window
+	// at all, simulating a missed day.
+
+	// Wednesday's digest is the next one that actually sends. A fixed
+	// "yesterday midnight" window would start this one at Tuesday 00:00,
+	// missing Monday afternoon's capture entirely.
+	wednesday := time.Date(2026, 8, 19, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, scheduler(t, store, p, send).Once(ctx, wednesday))
+	require.Len(t, *got, 2)
+	require.Contains(t, (*got)[1].text, "leaky tap")
+}
+
 func TestSchedulerRunStopsWithTheContext(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
