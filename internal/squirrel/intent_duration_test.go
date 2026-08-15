@@ -38,14 +38,16 @@ func TestParseEveryRejects(t *testing.T) {
 	for _, in := range []string{
 		"",
 		"every",
-		"every 2 weeks",          // no name
-		"every 2 weeks:",         // no name
-		"every fortnight vacuum", // unit not supported
-		"every 2 lightyears x",   // unit not supported
-		"everything is fine",     // must not match on a prefix
-		"i vacuum every 2 weeks", // must be the start of the message
-		"every 0 weeks vacuum",   // zero interval
-		"every -2 weeks vacuum",  // negative
+		"every 2 weeks",                  // no name
+		"every 2 weeks:",                 // no name
+		"every fortnight vacuum",         // unit not supported
+		"every 2 lightyears x",           // unit not supported
+		"everything is fine",             // must not match on a prefix
+		"i vacuum every 2 weeks",         // must be the start of the message
+		"every 0 weeks vacuum",           // zero interval
+		"every -2 weeks vacuum",          // negative
+		"every 200000 days water plants", // overflows a day-unit duration
+		"every 4000 months water plants", // overflows a month-unit duration
 		"buy milk",
 		"done",
 	} {

@@ -1,6 +1,7 @@
 package squirrel
 
 import (
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -40,6 +41,11 @@ func ParseEvery(s string) (string, time.Duration, bool) {
 	if m[1] != "" {
 		parsed, err := strconv.Atoi(m[1])
 		if err != nil || parsed < 1 {
+			return "", 0, false
+		}
+		// Guard the multiplication below against int64 overflow — not a
+		// human-scale cap, just the arithmetic's own ceiling.
+		if int64(parsed) > math.MaxInt64/int64(unit) {
 			return "", 0, false
 		}
 		count = parsed
