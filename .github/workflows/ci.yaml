@@ -15,9 +15,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # The integration suite refuses to run without TEST_DATABASE_URL rather
-    # than skipping, so a missing service here fails the build instead of
-    # producing a green run over nothing.
+    # The integration suite fails rather than skips without TEST_DATABASE_URL,
+    # so a missing service fails the build instead of producing a green run
+    # over nothing.
     services:
       postgres:
         image: postgres:17-alpine
@@ -36,16 +36,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-go@v5
         with:
-          node-version: "24"
-          cache: npm
+          go-version: "1.26"
+          cache: true
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run test:integration
+      - run: make check
+      - run: make test-integration
         env:
           TEST_DATABASE_URL: postgres://squirrel:squirrel@127.0.0.1:5432/squirrel_test
 

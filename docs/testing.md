@@ -2,7 +2,7 @@
 
 Unit tests need nothing:
 
-    npm test
+    make test
 
 Integration tests need a real Postgres. Start one:
 
@@ -13,10 +13,10 @@ Integration tests need a real Postgres. Start one:
 Then:
 
     TEST_DATABASE_URL=postgres://squirrel:squirrel@127.0.0.1:55432/squirrel_test \
-      npm run test:integration
+      make test-integration
 
 Stop it with `docker rm -f squirrel-test-db`.
 
-The integration suite refuses to run without `TEST_DATABASE_URL` rather than
-skipping, so a missing variable in CI is a failure rather than a green run over
-nothing.
+Integration tests are behind the `integration` build tag, so `make test` never
+needs a database. They fail rather than skip when `TEST_DATABASE_URL` is unset,
+so a missing variable in CI is a failure and not a green run over nothing.
