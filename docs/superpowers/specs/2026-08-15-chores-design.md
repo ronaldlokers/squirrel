@@ -30,6 +30,69 @@ So phase 2 is: **the bot speaks first, and the store becomes visible.** Chores
 carry it, because chores are the only part of the design where the bot has
 something to say without the user having said anything first.
 
+## Receipts become boosts
+
+The 🐿️ stops being a message and becomes a reaction on the message it
+acknowledges.
+
+Campfire gained a bot-accessible boosts endpoint:
+
+```
+POST /rooms/:room_id/:bot_key/messages/:message_id/boosts
+```
+
+The content is the raw request body, exactly as posting a message is. Empty body
+is `422`; success is `201`.
+
+**This needs no configured credential.** The webhook payload's `room.path` is
+already `/rooms/:id/:bot_key/messages`, so the boost URL is that path plus
+`/:message_id/boosts`. Phase 1 rejected reusing `room.path` for outbound, and
+that objection stands — a scheduled nudge that only reaches rooms we have
+recently heard from fails on a quiet Monday. Boosting the message that just
+arrived is the opposite case: the payload *is* the context, and there is nothing
+to remember.
+
+So boosts are independent of the bot key, the scheduler and the applier, and can
+land before any of them.
+
+### What each outcome does now
+
+| Outcome | HTTP response | Boost |
+|---|---|---|
+| stored | 200, **no** `Content-Type` | 🐿️ |
+| ignored | 200, **no** `Content-Type` | none |
+| failed | 200, `text/plain`, "couldn't save that — please resend" | none |
+
+Two things stay deliberately as they were.
+
+**`failed` remains a message.** It is the one path where the bot admits it could
+not do its job, and the capture genuinely is not durable. A reaction is too
+quiet for the only case that requires action.
+
+**The `Content-Type` contract is unchanged and still fully tested.** The common
+path now takes the same wire shape as `ignored` — a 200 with no header — which
+means an accepted capture and an ignored one are indistinguishable to Campfire.
+That is fine: the observable difference is the boost, and both correctly post no
+message. Every existing test about headers, the silent 404 and the panic path
+still applies, because the failure modes they guard have not moved.
+
+### The boost is fired after durability, and never blocks the response
+
+The boost means exactly what the 🐿️ meant: *this is on disk*. That fact is known
+when `spool.Write` returns, with no database involved, so the boost belongs on
+the request path and not in the applier — an acknowledgement that waits for
+Postgres would stop meaning "durable" and start meaning "durable and the
+database is up".
+
+It is fired in a goroutine and the response returns immediately. Campfire is
+waiting on our response with a seven-second deadline; making it wait on a second
+request to Campfire is a shape to avoid even when it would work.
+
+A boost that fails is retried twice with a short backoff and then logged. There
+is no text-message fallback: **the capture is durable regardless**, and a missing
+receipt is cosmetic. The daily digest's "Since yesterday" section is the backstop
+— anything captured appears there whether its boost landed or not.
+
 ## Scope: chores only
 
 Items keep sitting in `inbox` with no triggers. The general scheduler — arbitrary
@@ -283,7 +346,11 @@ the same guard `stringer` uses, for the same reason.
 
 ## Outbound
 
-`Send()` was implemented, tested and left nil in phase 1. It is configured now:
+Two different outbound paths now exist, and they are not the same thing.
+
+**Boosting needs no credential** — the key rides in on every payload, as above.
+
+**Initiating does.** `Send()` was implemented, tested and left nil in phase 1. It is configured now:
 `CAMPFIRE_BASE_URL` and `CAMPFIRE_BOT_KEY`, the latter a SOPS secret mirrored
 into the `campfire` namespace, plus a NetworkPolicy egress rule squirrel →
 campfire on port 80 and the matching ingress.
@@ -309,6 +376,10 @@ Beyond the usual, these carry the design:
 | An event with `source = 'sensor'` resets the clock with no chore code involved | Proves the derived-`last_done` claim rather than asserting it |
 | A chore never completed is first due one interval after creation | The confirmation message promises this |
 | Tolerance gaps the reappearance | Otherwise every overdue chore is a daily nag |
+| A stored capture answers 200 with no `Content-Type`, over a real socket | The common path changed shape; this is the family that has produced four defects across two builds |
+| The boost URL is built from `room.path` and the message id, asserted against a stub | Getting it wrong is silent — the capture still lands, the receipt just never appears |
+| A boost failure leaves the capture stored and returns `stored` anyway | The receipt is cosmetic; the thought is not |
+| A payload with no `room.path` still stores and still answers | Fail-open applies to the boost too: no path means no receipt, never a dropped capture |
 
 ## Deferred
 
