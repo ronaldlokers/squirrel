@@ -23,7 +23,10 @@ type DrainResult struct {
 // needing an actually unreachable Postgres for a whole test.
 type DrainStore interface {
 	ResolvePerson(ctx context.Context, transport string, externalID *string) (*int64, error)
-	InsertItem(ctx context.Context, i Item) error
+	// InsertItem reports whether it actually inserted a row, as opposed to
+	// silently absorbing a redelivery via ON CONFLICT DO NOTHING. The drain
+	// depends on that distinction to apply an intent at most once.
+	InsertItem(ctx context.Context, i Item) (bool, error)
 }
 
 type DrainOptions struct {
@@ -134,17 +137,24 @@ func (d *Drain) one(ctx context.Context, name string) Outcome {
 		Payload:        capture.Payload,
 		ReceivedAt:     capture.ReceivedAt,
 	}
-	if err := d.opts.Store.InsertItem(ctx, item); err != nil {
+	inserted, err := d.opts.Store.InsertItem(ctx, item)
+	if err != nil {
 		return d.handle(name, err)
 	}
 
 	if err := d.opts.Spool.Remove(name); err != nil {
-		// The row landed. Leaving the file means one redelivery, which the
-		// ON CONFLICT makes harmless.
+		// The row landed, or its redelivery was silently absorbed by ON
+		// CONFLICT. Leaving the file means the same message is read again on
+		// a later pass; that redelivery is harmless to the row either way,
+		// and inserted below keeps it harmless to the Applier too.
 		d.report(err)
 	}
 
-	if d.opts.Applier != nil {
+	// inserted is false when ON CONFLICT DO NOTHING absorbed a redelivery —
+	// the row already existed, so this message was already applied once.
+	// Gating on it here is what keeps a redelivered "done" from recording a
+	// second completion or sending a second reply.
+	if inserted && d.opts.Applier != nil {
 		if err := d.opts.Applier.Apply(ctx, item, personID); err != nil {
 			// The row landed and the file is gone. A failed reply is a lost
 			// answer, never a lost thought, so it is reported and not retried.

@@ -52,14 +52,16 @@ type Item struct {
 	ReceivedAt     time.Time
 }
 
-// InsertItem is idempotent for a real external id. Redelivery is harmless:
-// the window between a committed insert and deleting the spool file is small,
-// but it is real.
+// InsertItem is idempotent for a real external id. Redelivery is harmless to
+// the row: the window between a committed insert and deleting the spool file
+// is small, but it is real. The returned bool is what lets a caller tell a
+// fresh row from an ON CONFLICT no-op — the drain needs it to apply an intent
+// at most once per external id, not once per delivery.
 //
 // The `where external_id is not null` predicate is mandatory, not decoration.
 // The unique index is partial, and Postgres rejects an ON CONFLICT target
 // whose predicate does not match one.
-func (s *Store) InsertItem(ctx context.Context, i Item) error {
+func (s *Store) InsertItem(ctx context.Context, i Item) (bool, error) {
 	const q = `
 		insert into items (
 			transport, external_id, conversation_id, sender_id,
@@ -68,8 +70,11 @@ func (s *Store) InsertItem(ctx context.Context, i Item) error {
 		on conflict (transport, external_id) where external_id is not null
 		do nothing`
 
-	_, err := s.pool.Exec(ctx, q,
+	tag, err := s.pool.Exec(ctx, q,
 		i.Transport, i.ExternalID, i.ConversationID, i.SenderID,
 		i.PersonID, i.RawText, []byte(i.Payload), i.ReceivedAt)
-	return err
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }

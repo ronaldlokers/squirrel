@@ -100,6 +100,53 @@ func TestDrainDedupesARedeliveredMessage(t *testing.T) {
 	require.Equal(t, 1, countItems(t, store))
 }
 
+func countEvents(t *testing.T, store *squirrel.Store) int {
+	t.Helper()
+	var n int
+	require.NoError(t, store.Pool().QueryRow(context.Background(),
+		`select count(*) from events`).Scan(&n))
+	return n
+}
+
+// InsertItem's ON CONFLICT dedupes the row on redelivery, but before this
+// fix the drain could not tell that no-op apart from a fresh insert, so it
+// ran the Applier again anyway — a second completion event and a second
+// reply for the one "done". The row landing at most once must mean the
+// intent runs at most once too.
+func TestDrainAppliesARedeliveredMessageOnlyOnce(t *testing.T) {
+	store, sp, _ := drainFixture(t)
+	ctx := context.Background()
+
+	p, err := store.SeedOwner(ctx, "ronald",
+		[]squirrel.IdentitySeed{{Transport: "campfire", ExternalID: "1"}})
+	require.NoError(t, err)
+
+	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	_, err = store.RecordPrompt(ctx, p, "7", "digest", time.Now(), nil, []squirrel.Chore{vac})
+	require.NoError(t, err)
+
+	send, got := recorder()
+	drain := squirrel.NewDrain(squirrel.DrainOptions{
+		Spool: sp, Store: store, Interval: time.Second,
+		Applier: squirrel.NewApplier(store, send, nil),
+	})
+
+	done := capture(func(c *squirrel.Capture) { c.Text = "done 1" })
+
+	_, err = sp.Write(done)
+	require.NoError(t, err)
+	drain.Once(ctx)
+
+	// Redelivered: the same external id arrives a second time.
+	_, err = sp.Write(done)
+	require.NoError(t, err)
+	drain.Once(ctx)
+
+	require.Equal(t, 1, countEvents(t, store), "one completion, not two")
+	require.Len(t, *got, 1, "one reply, not two")
+}
+
 func TestDrainKeepsTransportsApart(t *testing.T) {
 	store, sp, _ := drainFixture(t)
 
@@ -188,7 +235,7 @@ func (f *flakyStore) ResolvePerson(ctx context.Context, transport string, extern
 	return f.real.ResolvePerson(ctx, transport, externalID)
 }
 
-func (f *flakyStore) InsertItem(ctx context.Context, i squirrel.Item) error {
+func (f *flakyStore) InsertItem(ctx context.Context, i squirrel.Item) (bool, error) {
 	return f.real.InsertItem(ctx, i)
 }
 
