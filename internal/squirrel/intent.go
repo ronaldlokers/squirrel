@@ -85,6 +85,16 @@ var (
 	bareNumber = regexp.MustCompile(`^(\d{1,3})$`)
 	doneNumber = regexp.MustCompile(`^done\s+(\d{1,3})$`)
 	stopNumber = regexp.MustCompile(`^stop\s+(\d{1,3})$`)
+
+	// ParseEvery answers "does this have the shape"; Match decides policy, and
+	// Match is its only caller. ParseEvery deliberately makes both the count and
+	// the colon optional, which leaves `every <unit> <rest>` matching ordinary
+	// prose — "every day i think about leaving" parses as a daily chore named "i
+	// think about leaving". A count or a colon is the mark of a deliberate
+	// definition, so Match requires one. The cost is that a bare "every day meds"
+	// is filed as a note; the alternative is a chore that nags forever with a
+	// sentence that was only ever a thought.
+	deliberateDefine = regexp.MustCompile(`^every\s+(?:\d+\s|[a-z]+\s*:)`)
 )
 
 // Match decides what a message is.
@@ -122,13 +132,7 @@ func Match(raw string) Intent {
 		return Intent{Kind: IntentStop, Position: atoi(m[1])}
 	}
 
-	// ParseEvery alone is too permissive for Match's purposes: its unit word
-	// ("day", "week", ...) is common enough that plain sentences like "every
-	// day i think about leaving" satisfy its pattern (colon and count are
-	// both optional there by design). A digit somewhere in the message is
-	// the signal that this is a deliberate "every N unit" definition and not
-	// prose that happens to start with "every <unit-word>".
-	if name, every, ok := ParseEvery(trimmed); ok && strings.ContainsAny(trimmed, "0123456789") {
+	if name, every, ok := ParseEvery(trimmed); ok && deliberateDefine.MatchString(lower) {
 		return Intent{Kind: IntentDefine, Name: name, Every: every}
 	}
 

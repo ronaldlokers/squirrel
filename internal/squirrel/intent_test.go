@@ -51,6 +51,9 @@ func TestMatchTreatsTheseAsCaptures(t *testing.T) {
 		"buy milk",
 		"i vacuum every 2 weeks",
 		"every day i think about leaving",
+		// No count and no colon, so this reads as prose, not a definition —
+		// deliberately outside what Match will treat as a chore.
+		"every day meds",
 	} {
 		require.Equal(t, squirrel.IntentCapture, squirrel.Match(in).Kind, in)
 	}
@@ -72,6 +75,13 @@ func TestMatchDefine(t *testing.T) {
 	require.Equal(t, squirrel.IntentDefine, got.Kind)
 	require.Equal(t, "vacuum", got.Name)
 	require.Equal(t, 14*24*time.Hour, got.Every)
+
+	// No count, but the colon marks it as deliberate: the boundary this
+	// guard exists to keep.
+	got = squirrel.Match("every day: meds")
+	require.Equal(t, squirrel.IntentDefine, got.Kind)
+	require.Equal(t, "meds", got.Name)
+	require.Equal(t, 24*time.Hour, got.Every)
 }
 
 func TestMatchCaptureKeepsTextVerbatim(t *testing.T) {
