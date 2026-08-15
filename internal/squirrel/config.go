@@ -103,9 +103,6 @@ func campfireFrom(env map[string]string) (*CampfireConfig, error) {
 	if botKey != "" && baseURL == "" {
 		return nil, fmt.Errorf("%w: CAMPFIRE_BOT_KEY requires CAMPFIRE_BASE_URL", ErrConfig)
 	}
-	if botKey == "" {
-		baseURL = ""
-	}
 
 	return &CampfireConfig{
 		Path:           optional(env, "CAMPFIRE_PATH", "/transports/campfire"),

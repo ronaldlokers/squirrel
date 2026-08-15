@@ -39,7 +39,6 @@ func TestLoadConfigLeavesSendUnconfigured(t *testing.T) {
 	got, err := squirrel.LoadConfig(minimalEnv(nil))
 	require.NoError(t, err)
 	require.Empty(t, got.Campfire.BotKey)
-	require.Empty(t, got.Campfire.BaseURL)
 }
 
 func TestLoadConfigCarriesBotKeyWithBaseURL(t *testing.T) {

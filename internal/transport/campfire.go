@@ -110,8 +110,9 @@ func accept(ctx context.Context, sink Sink, c squirrel.Capture) (o squirrel.Outc
 func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	switch o {
 	case squirrel.Stored:
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprint(w, "🐿️")
+		// The receipt is a boost on the message itself, fired separately. A 200
+		// with no Content-Type is Campfire's "post nothing", same as Ignored.
+		w.WriteHeader(http.StatusOK)
 	case squirrel.Ignored:
 		// No body and no Content-Type: the one path that says nothing at all.
 		// Never call Write here — Go sniffs a type when there are bytes.
@@ -156,8 +157,85 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 	}
 }
 
+// BoostURL builds the reaction endpoint from what the payload already carries.
+// room.path is "/rooms/:id/:bot_key/messages", so the bot key needs no
+// configuration — it arrives with every message. Phase 1 rejected reusing
+// room.path for *initiating* a conversation, because outbound would then only
+// reach rooms we had recently heard from. Reacting to the message that just
+// arrived is the opposite case: the payload is the context.
+func BoostURL(baseURL, roomPath, messageID string) string {
+	return fmt.Sprintf("%s%s/%s/boosts",
+		strings.TrimRight(baseURL, "/"), roomPath, messageID)
+}
+
+// boost reacts to a message. It is fired after the capture is durable and never
+// blocks the response: Campfire is waiting on us with a seven-second deadline,
+// and making it wait on a second call to Campfire is a shape to avoid.
+//
+// Two retries, then give up. A missing receipt is cosmetic — the capture is on
+// disk either way, and the daily digest lists it regardless.
+func boost(ctx context.Context, client *http.Client, url, content string) error {
+	var lastErr error
+	for attempt := range 3 {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Duration(attempt) * 200 * time.Millisecond):
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(content))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "text/plain; charset=utf-8")
+
+		res, err := client.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+
+		if res.StatusCode >= 200 && res.StatusCode <= 299 {
+			return nil
+		}
+		lastErr = fmt.Errorf("boost failed with %d", res.StatusCode)
+	}
+	return lastErr
+}
+
+// fireBoost reacts in the background. Everything it needs is in the payload, so
+// a missing room path or message id simply means no receipt — never a dropped
+// capture.
+func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, capture squirrel.Capture) {
+	if cfg.BaseURL == "" || capture.ExternalID == nil {
+		return
+	}
+	var p struct {
+		Room *struct {
+			Path string `json:"path"`
+		} `json:"room"`
+	}
+	if err := json.Unmarshal(body, &p); err != nil || p.Room == nil || p.Room.Path == "" {
+		return
+	}
+
+	url := BoostURL(cfg.BaseURL, p.Room.Path, *capture.ExternalID)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := boost(ctx, client, url, "🐿️"); err != nil {
+			slog.Error("campfire: boost failed", "error", err, "url", url)
+		}
+	}()
+}
+
 func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 	t := Transport{Name: CampfireName}
+	boostClient := &http.Client{Timeout: 5 * time.Second}
 
 	t.Start = func(_ context.Context, sink Sink, mount Mount) (func(context.Context) error, error) {
 		mount.Post(cfg.Path, func(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +245,14 @@ func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 				Respond(w, squirrel.Failed)
 				return
 			}
-			Respond(w, accept(r.Context(), sink, CaptureFrom(body, time.Now().UTC())))
+
+			capture := CaptureFrom(body, time.Now().UTC())
+			outcome := accept(r.Context(), sink, capture)
+			Respond(w, outcome)
+
+			if outcome == squirrel.Stored {
+				fireBoost(cfg, boostClient, body, capture)
+			}
 		})
 		return func(context.Context) error { return nil }, nil
 	}

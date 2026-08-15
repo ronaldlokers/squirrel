@@ -99,9 +99,10 @@ func TestRespondStored(t *testing.T) {
 	rec := httptest.NewRecorder()
 	transport.Respond(rec, squirrel.Stored)
 
+	// The receipt is a boost now. Nothing is posted into the room.
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, "text/plain; charset=utf-8", rec.Header().Get("Content-Type"))
-	require.Equal(t, "🐿️", rec.Body.String())
+	require.Empty(t, rec.Header().Get("Content-Type"))
+	require.Empty(t, rec.Body.String())
 }
 
 // Campfire turns any response carrying a Content-Type into a room message, so
@@ -135,7 +136,8 @@ func TestCampfireStoresACapture(t *testing.T) {
 	rec := httptest.NewRecorder()
 	mount.h(rec, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(payload)))
 
-	require.Equal(t, "🐿️", rec.Body.String())
+	require.Empty(t, rec.Header().Get("Content-Type"))
+	require.Empty(t, rec.Body.String())
 	require.Len(t, sink.seen, 1)
 	require.Equal(t, "buy milk", sink.seen[0].Text)
 
