@@ -85,6 +85,12 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 		return nil
 	}
 
+	// kind gates nudgeBack below: only a genuine capture ever carries a nudge
+	// back (see nudgeBack's own comment). A tap never sets it — see the
+	// action branch — so it stays its zero value, which is never
+	// IntentCapture.
+	var kind IntentKind
+
 	// An action is not a thought and never reaches the matcher. It is checked
 	// first so that a tap can never be reinterpreted as text. ParseAction
 	// matches on text alone, so it cannot by itself tell a genuine tap from
@@ -101,6 +107,7 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 		}
 	} else {
 		intent := matchFn(item.RawText)
+		kind = intent.Kind
 		m, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
 		if err != nil {
 			return err
@@ -134,7 +141,7 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	}
 
 	a.tick(ctx, item)
-	a.nudgeBack(ctx, item)
+	a.nudgeBack(ctx, kind)
 	return nil
 }
 
@@ -165,7 +172,7 @@ func (a *Applier) tick(ctx context.Context, item Item) {
 	if a.chat.Boost == nil || item.ExternalID == nil || item.ConversationID == nil {
 		return
 	}
-	if _, isTap := ParseAction(item.RawText); isTap {
+	if isTap(item) {
 		// A tap is not a message in the room; there is nothing to react to.
 		return
 	}
@@ -206,13 +213,20 @@ func (a *Applier) react(ctx context.Context, prompt Prompt) {
 // every other outbound: a nudge that cannot be sent must never turn a stored
 // capture into an error, and the budget means a missed one is simply not
 // replaced today.
-func (a *Applier) nudgeBack(ctx context.Context, item Item) {
-	if a.nudger == nil {
-		return
-	}
-	if _, isTap := ParseAction(item.RawText); isTap && isActionPayload(item.Payload) {
-		// A tap is not you opening the conversation, and nudging at one would
-		// turn a single completion into a chain.
+//
+// Gated to a plain capture — kind == IntentCapture — not merely "not a tap".
+// apply() already excludes IntentDefine from closePrevious for the same
+// reason, and the spec's own trigger table says "any inbound capture", not
+// "any inbound message". A command reply (?, done, stop 1, ...) opens its own
+// numbered surface — a list, a confirmation — and nudgeBack riding in right
+// behind it would open a second one a beat later, disabling the buttons the
+// reply itself just printed: typing `?` would list three chores and then,
+// via Nudge's own closePrevious, immediately un-list them, so `done 3`
+// answers "I don't have a line 3" until the next `?` spends the day's budget
+// and it happens not to recur. A tap never reaches here as a capture either —
+// see apply()'s action branch, which leaves kind at its zero value.
+func (a *Applier) nudgeBack(ctx context.Context, kind IntentKind) {
+	if a.nudger == nil || kind != IntentCapture {
 		return
 	}
 	if err := a.nudger(ctx, time.Now(), NudgeFromMessage); err != nil {
@@ -347,6 +361,16 @@ func isActionPayload(payload json.RawMessage) bool {
 		return false
 	}
 	return p.Type == "action"
+}
+
+// isTap reports whether item is a genuine tap rather than a lookalike
+// message — see isActionPayload. Text alone (ParseAction) is never enough on
+// its own: someone can type "!action 5 done:1 true" into the room and
+// produce text byte-identical to a real tap, so every caller that needs to
+// tell the two apart must check both.
+func isTap(item Item) bool {
+	_, ok := ParseAction(item.RawText)
+	return ok && isActionPayload(item.Payload)
 }
 
 // applyAction resolves a tap and applies it as a state assertion rather than a
