@@ -155,9 +155,9 @@ func truncateAll(t *testing.T, store *squirrel.Store) {
 //
 // PRESENCE_SECRET is set here too, so every test built on this helper gets a
 // live arrival route at presenceURL(s) without asking for it — a nudge test
-// is the only reason bootWithStore needed this, but every existing caller
-// (boot_actions_test.go and friends) still boots exactly the same server it
-// did before this task, just with one extra mounted route it never touches.
+// is the only reason bootWithStore needed this, but its one other caller,
+// TestBootAppliesATap, still boots exactly the same server it did before
+// this task, just with one extra mounted route it never touches.
 //
 // DIGEST_AT is pinned to 23:59 for the same reason: Scheduler.Run calls
 // Once synchronously before its first tick, and Once makes its own "last
@@ -173,6 +173,12 @@ func truncateAll(t *testing.T, store *squirrel.Store) {
 // keeps Once's own local.Before(threshold) guard skipping it for the whole
 // test, so a nudge landing in the stub can only be the one the test itself
 // triggered.
+//
+// PRESENCE_DELAY is pinned short: config.PresenceDelay now defaults to two
+// minutes in production (the "you have a coat on" delay PresenceOptions'
+// doc comment describes), which would blow TestBootNudgesOnArrival's 15s
+// Eventually budget many times over. One second keeps the arrival-to-nudge
+// gap real without making the test slow.
 func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 	t.Helper()
 	store := withStore(t)
@@ -180,6 +186,7 @@ func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 		"CAMPFIRE_CONVERSATION_ID": "9",
 		"PRESENCE_SECRET":          testPresenceSecret,
 		"DIGEST_AT":                "23:59",
+		"PRESENCE_DELAY":           "1s",
 	}))
 	return s, store
 }

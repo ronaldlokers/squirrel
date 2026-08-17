@@ -114,3 +114,67 @@ func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 		require.NoError(t, stopErr, "iteration %d", i)
 	}
 }
+
+// TestBootJoinsAnInFlightArrivalBeforeClosingTheStore proves Stop blocks on
+// an arrival's delayed nudge rather than outliving it — the guarantee
+// boot.go's Go hook on PresenceOptions exists to give, the same one wg
+// already gives the digest scheduler (TestBootJoinsTheSchedulerBeforeClosingTheStore
+// above).
+//
+// This does not chase the scheduler test's "closed pool" signature, and that
+// omission is deliberate, not an oversight: that race depends on a query's
+// Acquire call landing while Close is actually flipping the pool's closed
+// flag, and Stop cancels ctx well before it ever reaches Close (see Stop's
+// own doc comment) — puddle's Acquire checks ctx.Done() before it ever checks
+// the closed flag (jackc/puddle/v2's Pool.Acquire), so any query that starts
+// after cancellation, however briefly after, fails with "context canceled"
+// every time regardless of whether the goroutine that issued it was ever
+// joined. A deliberate PRESENCE_DELAY sleep — the only tool available here to
+// make the race land on demand rather than trusting scheduler-timing luck —
+// guarantees the query starts well after that cancellation, which makes
+// "closed pool" structurally unreachable through this path. Confirmed by
+// trial: with the Go hook reverted to a bare `go fn()`, twenty iterations of
+// the "closed pool" version of this test never produced that string once —
+// not a demonstration the bug is safe, just a demonstration that string is
+// the wrong signal for this particular timing shape.
+//
+// What the bug actually produces instead is Stop returning fast: an
+// unsupervised goroutine is invisible to wg, so wg.Wait() has nothing to wait
+// for and store.Close() runs on schedule regardless of whether the arrival's
+// sleep has elapsed. That is directly measurable — Stop, called immediately
+// after the arrival is acknowledged and well before PRESENCE_DELAY has had a
+// chance to elapse on its own, must take at least roughly that long to
+// return once the arrival is properly joined. Confirmed the other direction
+// too: with the bare `go fn()` above, this assertion fails (Stop returns in
+// well under the delay) every run.
+func TestBootJoinsAnInFlightArrivalBeforeClosingTheStore(t *testing.T) {
+	withStore(t)
+
+	const delay = 300 * time.Millisecond
+	s := boots(t, envFor(t, map[string]string{
+		"PRESENCE_SECRET": testPresenceSecret,
+		"PRESENCE_DELAY":  delay.String(),
+	}))
+
+	req, err := http.NewRequest(http.MethodPost, presenceURL(s), strings.NewReader(""))
+	require.NoError(t, err)
+	req.Header.Set("X-Squirrel-Token", testPresenceSecret)
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, res.StatusCode)
+	res.Body.Close()
+
+	// Immediately, not after any wait: the whole point is that Stop itself
+	// — not the test — is what has to wait out the arrival still asleep
+	// inside MountPresence's spawned goroutine.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	start := time.Now()
+	stopErr := s.Stop(ctx)
+	elapsed := time.Since(start)
+	cancel()
+
+	require.NoError(t, stopErr)
+	require.GreaterOrEqual(t, elapsed, delay-50*time.Millisecond,
+		"Stop returned before the arrival's delay could have elapsed — "+
+			"it outlived Stop instead of being joined by it")
+}

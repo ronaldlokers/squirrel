@@ -17,6 +17,13 @@ type PresenceOptions struct {
 	Delay    time.Duration
 	OnArrive func()
 	Now      func() time.Time
+	// Go runs the delayed OnArrive call — the sleep and the call together,
+	// as one unit of work — on whatever goroutine the caller wants it
+	// supervised by. Defaults to a bare `go fn()`, which is fire-and-forget.
+	// A caller that needs a clean shutdown (Nudge writes to the store)
+	// supplies one that registers with its own WaitGroup instead, so it can
+	// join an in-flight arrival before closing anything out from under it.
+	Go func(fn func())
 }
 
 // MountPresence adds the arrival route.
@@ -40,6 +47,9 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 	}
 	if o.Now == nil {
 		o.Now = time.Now
+	}
+	if o.Go == nil {
+		o.Go = func(fn func()) { go fn() }
 	}
 	var (
 		mu   sync.Mutex
@@ -66,7 +76,7 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 			return
 		}
 
-		// Always through a goroutine, even with no Delay: Go doesn't flush a
+		// Always through o.Go, even with no Delay: Go doesn't flush a
 		// bodyless response until the handler returns, so a synchronous call
 		// here would hold the response open despite reading as
 		// non-blocking. Recovering here matters too — OnArrive will touch
@@ -74,8 +84,10 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 		// the goroutine serving the mux, and an unrecovered panic in any
 		// goroutine takes the whole process down. That's not hypothetical:
 		// a byte-slicing bug in the chore-name parser did exactly that in
-		// phase 3.
-		go func() {
+		// phase 3. o.Go is called synchronously, before the handler
+		// returns, so a caller tracking it with a WaitGroup is guaranteed to
+		// have registered it before this response is flushed — see boot.go.
+		o.Go(func() {
 			defer func() {
 				if rec := recover(); rec != nil {
 					slog.Error("presence OnArrive panicked", "panic", rec)
@@ -85,6 +97,6 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 				time.Sleep(o.Delay)
 			}
 			o.OnArrive()
-		}()
+		})
 	})
 }

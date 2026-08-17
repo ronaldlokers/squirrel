@@ -15,18 +15,13 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/transport"
 )
 
-// presenceDebounce and presenceDelay are not configuration — see
-// PresenceOptions' own doc comment for what each does. Debounce absorbs the
-// rapid re-arrivals a flapping wifi/cellular handoff produces (Home Assistant
-// fires on every one), and matches the value presence_test.go itself
-// exercises. Delay is deliberately short rather than the "you have a coat on"
-// couple of minutes a real deployment might prefer, because it is not
-// configurable and this is the same duration the integration suite waits out
-// live over a real socket.
-const (
-	presenceDebounce = 10 * time.Minute
-	presenceDelay    = 2 * time.Second
-)
+// presenceDebounce is not configuration — see PresenceOptions' own doc
+// comment for what it does. It absorbs the rapid re-arrivals a flapping
+// wifi/cellular handoff produces (Home Assistant fires on every one), and
+// matches the value presence_test.go itself exercises. Unlike Delay, its
+// value does not need to differ between production and the integration
+// suite, so it stays a constant rather than joining config.PresenceDelay.
+const presenceDebounce = 10 * time.Minute
 
 // nudgeFunc matches Scheduler.Nudge's signature exactly, which is also what
 // Applier.SetNudger expects.
@@ -63,11 +58,12 @@ type Squirrel struct {
 	stops   []func(context.Context) error
 	cancel  context.CancelFunc
 	drained chan struct{}
-	// wg tracks background goroutines started after the store opens — today
-	// just the digest scheduler — so Stop can join them before closing the
-	// store. drained alone is not enough: it only covers connectAndDrain's own
-	// goroutine, and the scheduler runs concurrently with the drain loop on a
-	// shared ctx, not nested inside it.
+	// wg tracks background goroutines that touch the store outside the
+	// drain's own goroutine — the digest scheduler, and each presence
+	// arrival's delayed nudge — so Stop can join all of them before closing
+	// the store. drained alone is not enough: it only covers connectAndDrain's
+	// own goroutine, and both of these run concurrently with the drain loop
+	// on a shared ctx, not nested inside it.
 	wg sync.WaitGroup
 }
 
@@ -133,11 +129,29 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		squirrel.MountPresence(server, config.PresencePath, squirrel.PresenceOptions{
 			Secret:   config.PresenceSecret,
 			Debounce: presenceDebounce,
-			Delay:    presenceDelay,
+			Delay:    config.PresenceDelay,
 			OnArrive: func() {
 				if err := nudge.Nudge(loopCtx, time.Now(), squirrel.NudgeFromArrival); err != nil {
 					slog.Error("nudge", "error", err)
 				}
+			},
+			// Registers the delayed OnArrive call with s.wg instead of
+			// leaving it a bare goroutine, the same guarantee wg already
+			// gives the digest scheduler: Stop joins it before closing the
+			// store, so an arrival caught mid-Delay or mid-Nudge at
+			// shutdown finishes against a live pool rather than one Close
+			// has already torn down. Add runs synchronously inside the HTTP
+			// handler, before it returns — see presence.go's own comment on
+			// Go — so it is guaranteed to have registered before
+			// Shutdown's wait for in-flight handlers to return can be
+			// satisfied, closing the same window a plain `go fn()` leaves
+			// open between an arrival landing and Stop being called.
+			Go: func(fn func()) {
+				s.wg.Add(1)
+				go func() {
+					defer s.wg.Done()
+					fn()
+				}()
 			},
 		})
 	}

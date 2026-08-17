@@ -48,6 +48,13 @@ type Config struct {
 	PresenceSecret string
 	// PresencePath is where the arrival webhook is mounted.
 	PresencePath string
+	// PresenceDelay is how long an arrival waits before nudging — "you have
+	// a coat on" — see PresenceOptions' own doc comment. Configurable rather
+	// than a boot.go constant because production and the integration suite
+	// genuinely want different values here: a couple of minutes is the
+	// point for a real arrival, but that would blow any test budget built to
+	// wait one out over a real socket.
+	PresenceDelay time.Duration
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -89,6 +96,19 @@ func clockTime(env map[string]string, name string, fallback time.Duration) (time
 		return 0, fmt.Errorf("%w: %s must be HH:MM, got %q", ErrConfig, name, v)
 	}
 	return time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute, nil
+}
+
+// duration parses a Go duration string like "2m" or "500ms".
+func duration(env map[string]string, name string, fallback time.Duration) (time.Duration, error) {
+	v := env[name]
+	if v == "" {
+		return fallback, nil
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %s must be a duration like \"2m\", got %q", ErrConfig, name, v)
+	}
+	return d, nil
 }
 
 func transportsFrom(env map[string]string) ([]string, error) {
@@ -185,6 +205,10 @@ func LoadConfig(env map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("%w: DIGEST_TZ: %v", ErrConfig, err)
 	}
+	presenceDelay, err := duration(env, "PRESENCE_DELAY", 2*time.Minute)
+	if err != nil {
+		return Config{}, err
+	}
 
 	config := Config{
 		Port:          port,
@@ -200,6 +224,7 @@ func LoadConfig(env map[string]string) (Config, error) {
 		DigestLocation: location,
 		PresenceSecret: env["PRESENCE_SECRET"],
 		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
+		PresenceDelay:  presenceDelay,
 	}
 
 	if slicesContains(transports, "campfire") {
