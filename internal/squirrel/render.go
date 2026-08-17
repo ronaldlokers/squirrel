@@ -5,35 +5,6 @@ import (
 	"strings"
 )
 
-// RenderDigest is the daily message. Facts only: "19 days, usually 14" is the
-// entire editorial position, and it does not change as the number grows. No
-// streaks, no counts of times missed, no escalation. Shame is not a feature.
-//
-// Returns "" when there is nothing to say, because a daily "nothing to report"
-// is how you teach someone to skip the message.
-func RenderDigest(due []Chore, captures []string) string {
-	var b strings.Builder
-
-	if len(due) > 0 {
-		b.WriteString("Due\n")
-		for i, c := range due {
-			fmt.Fprintf(&b, " %d. %s\n", i+1, choreLine(c))
-		}
-	}
-
-	if len(captures) > 0 {
-		if b.Len() > 0 {
-			b.WriteString("\n")
-		}
-		b.WriteString("Since yesterday\n")
-		for _, c := range captures {
-			fmt.Fprintf(&b, " · %s\n", c)
-		}
-	}
-
-	return strings.TrimRight(b.String(), "\n")
-}
-
 func choreLine(c Chore) string {
 	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
 }
@@ -85,15 +56,6 @@ func actionsForChores(chores []Chore, kind, emoji string) []Action {
 		})
 	}
 	return out
-}
-
-func DigestMessage(due []Chore, captures []string) Message {
-	m := Message{Text: RenderDigest(due, captures)}
-	if len(due) > 0 {
-		m.SelectionMode = "multiple"
-		m.Actions = actionsForChores(due, "done", "✅")
-	}
-	return m.Capped()
 }
 
 func ListMessage(chores []Chore) Message {
