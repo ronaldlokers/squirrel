@@ -241,6 +241,42 @@ func (s *Store) ChoreOnPrompt(ctx context.Context, promptID int64, position int)
 	return c, true, nil
 }
 
+// ChoresOnPrompt is every chore a prompt carried, in the position order it
+// printed them. closePrevious uses it to rebuild the exact action values a
+// prompt was originally sent with — not a synthetic replacement — so that
+// disabling those buttons is the only thing the update changes.
+func (s *Store) ChoresOnPrompt(ctx context.Context, promptID int64) ([]Chore, error) {
+	const q = `
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds
+		  from prompt_lines l join chores c on c.id = l.chore_id
+		 where l.prompt_id = $1
+		 order by l.position`
+
+	rows, err := s.pool.Query(ctx, q, promptID)
+	if err != nil {
+		return nil, fmt.Errorf("reading prompt chores: %w", err)
+	}
+	defer rows.Close()
+
+	chores := []Chore{}
+	for rows.Next() {
+		var c Chore
+		var everySec, tolSec int64
+		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec); err != nil {
+			return nil, fmt.Errorf("scanning prompt chore: %w", err)
+		}
+		c.Active = true
+		c.Every = time.Duration(everySec) * time.Second
+		c.Tolerance = time.Duration(tolSec) * time.Second
+		c.EveryDays = int(c.Every.Hours() / 24)
+		chores = append(chores, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading prompt chores: %w", err)
+	}
+	return chores, nil
+}
+
 // CompletedSince reports whether the chore already has a live completion from
 // after this prompt was sent. It is what makes a repeated "selected" tap a
 // no-op instead of a second event.

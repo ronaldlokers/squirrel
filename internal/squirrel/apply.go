@@ -94,7 +94,7 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 			return err
 		}
 		if m.Text != "" {
-			messageID, err := a.chat.Send(ctx, *item.ConversationID, m)
+			messageID, err := a.sendMessage(ctx, *item.ConversationID, m)
 			if err != nil {
 				return err
 			}
@@ -123,6 +123,22 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 
 	a.tick(ctx, item)
 	return nil
+}
+
+// sendMessage sends through Chat when the transport supports it, and falls
+// back to the phase 2 plain-text Sender otherwise — Boost is already guarded
+// this way in tick, and Update is already guarded this way in closePrevious;
+// Send was the one field this method still called unconditionally, which is
+// exactly why every phase 2 test that reaches this path had to build a Chat
+// around its Sender in the first place. Falling back here instead makes
+// "degrade to phase 2 behaviour when Chat carries no Send" true by
+// construction, not by test scaffolding or deployment discipline, and gives
+// the send field a reason to still exist.
+func (a *Applier) sendMessage(ctx context.Context, conversationID string, m Message) (string, error) {
+	if a.chat.Send == nil {
+		return "", a.send(ctx, conversationID, m.Text)
+	}
+	return a.chat.Send(ctx, conversationID, m)
 }
 
 // tick is the second half of the receipt. 👀 said the thought was on disk; ✅

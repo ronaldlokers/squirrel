@@ -106,6 +106,26 @@ func TestUpdateDisablesActions(t *testing.T) {
 	require.Equal(t, true, first["disabled"], "Update is only ever used to close a surface")
 }
 
+// The fork's controller only touches keys actually present in the request
+// (ActionController::Parameters#permit), so omitting "body" is how an update
+// that only closes buttons leaves the message's existing text untouched.
+// Marshalling an explicit "" would instead wipe it.
+func TestUpdateWithNoTextOmitsTheBody(t *testing.T) {
+	base, got := chatStub(t, "")
+
+	cfg := config()
+	cfg.BaseURL, cfg.BotKey = base, "3-abc"
+	chat := transport.NewCampfire(cfg).Chat
+
+	require.NoError(t, chat.Update(context.Background(), "9", "451", squirrel.Message{
+		Actions: []squirrel.Action{{Label: "bin day", Value: "done:1", Emoji: "✅"}},
+	}))
+
+	require.Len(t, *got, 1)
+	_, hasBody := (*got)[0].body["body"]
+	require.False(t, hasBody, "no body key at all, not an empty string")
+}
+
 // The key is a path segment, so any error carrying the URL carries the key.
 func TestChatFailureDoesNotLeakTheBotKey(t *testing.T) {
 	cfg := config()

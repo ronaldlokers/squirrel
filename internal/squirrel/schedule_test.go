@@ -20,13 +20,10 @@ func amsterdam(t *testing.T) *time.Location {
 	return loc
 }
 
-// scheduler wraps send in a Chat via chatFor, since Once() sends through Chat
-// now rather than calling Send directly — the Sender parameter here stays a
-// Sender so every phase 2 test calling this helper is untouched.
 func scheduler(t *testing.T, store *squirrel.Store, p int64, send squirrel.Sender) *squirrel.Scheduler {
 	t.Helper()
 	return squirrel.NewScheduler(squirrel.SchedulerOptions{
-		Store: store, Chat: chatFor(send), PersonID: p, ConversationID: "9",
+		Store: store, Send: send, PersonID: p, ConversationID: "9",
 		At: 8 * time.Hour, Location: amsterdam(t),
 	})
 }

@@ -131,7 +131,7 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	messageID, err := s.opts.Chat.Send(ctx, s.opts.ConversationID, m)
+	messageID, err := s.sendDigest(ctx, m)
 	if err != nil {
 		// The prompt row is already committed, so the numbering stands and the
 		// digest will not be retried today. Reported rather than retried:
@@ -166,6 +166,19 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	return nil
 }
 
+// sendDigest sends through Chat when the transport supports it, and falls
+// back to the phase 2 plain-text Send otherwise — Boost and Update are
+// already guarded the same way, and Send was the one field this package
+// still called unconditionally. That makes "degrade to phase 2 behaviour
+// against a transport with no Chat" true by construction rather than by
+// deployment discipline, and gives the Send field a reason to still exist.
+func (s *Scheduler) sendDigest(ctx context.Context, m Message) (string, error) {
+	if s.opts.Chat.Send == nil {
+		return "", s.opts.Send(ctx, s.opts.ConversationID, m.Text)
+	}
+	return s.opts.Chat.Send(ctx, s.opts.ConversationID, m)
+}
+
 // clockParts decomposes a Duration since midnight into hour, minute and
 // second components suitable for time.Date, so a threshold can be built as a
 // wall-clock time rather than by adding the Duration to an instant.
@@ -180,6 +193,17 @@ func clockParts(d time.Duration) (hour, min, sec int) {
 // closePrevious disables the buttons on the numbered prompt before current, so
 // there is exactly one live surface. That bound is what makes undo safe
 // without any date arithmetic — there is nothing old left to un-tap.
+//
+// The update rebuilds the exact action values the previous prompt was
+// originally sent with — done:1, done:2, … with the same chore names and
+// emoji — rather than sending a synthetic replacement. Two reasons: the
+// transport forces disabled on every action regardless of what the values
+// say, so reusing the real values is free; and because the values match,
+// Campfire's per-user retained selection on the old message survives the
+// update instead of being wiped by a button it does not recognise. Text is
+// left empty, which chatVia's omitempty then leaves off the request
+// entirely — the fork's controller only touches keys actually present, so an
+// update carrying no body leaves the room's existing text alone.
 //
 // Shared by the scheduler and the applier, the only two places that ever open
 // a new numbered surface. A failure here is reported and swallowed: the old
@@ -197,8 +221,25 @@ func closePrevious(ctx context.Context, store *Store, chat Chat, onError func(er
 		}
 		return
 	}
+
+	chores, err := store.ChoresOnPrompt(ctx, prev.ID)
+	if err != nil {
+		onError(fmt.Errorf("loading prompt %d's chores: %w", prev.ID, err))
+		return
+	}
+	actions := actionsForChores(chores, "done", "✅")
+	if len(actions) == 0 {
+		// The prompt never carried a button to begin with — a query prompt
+		// that offered nothing, say. There is nothing to disable, and sending
+		// an update with zero actions would fall back to a plain-text body
+		// (chatVia only encodes JSON when there is at least one action),
+		// which would overwrite the old message with an empty string: the
+		// exact bug this rebuild exists to fix, for a different reason.
+		return
+	}
+
 	if err := chat.Update(ctx, prev.ConversationID, prev.ExternalMessageID, Message{
-		Actions: []Action{{Label: "closed", Value: "closed:0"}},
+		Actions: actions,
 	}); err != nil {
 		onError(fmt.Errorf("closing prompt %d: %w", prev.ID, err))
 	}

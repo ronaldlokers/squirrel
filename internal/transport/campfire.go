@@ -200,7 +200,12 @@ type campfireAction struct {
 }
 
 type campfireMessage struct {
-	Body          string           `json:"body"`
+	// omitempty: the fork's controller only touches the keys actually present
+	// in the request (ActionController::Parameters#permit), so a PATCH that
+	// omits "body" leaves the room's existing text alone rather than
+	// overwriting it with an empty string. That is what lets closePrevious
+	// send an update carrying only Actions.
+	Body          string           `json:"body,omitempty"`
 	SelectionMode string           `json:"selection_mode,omitempty"`
 	Actions       []campfireAction `json:"actions,omitempty"`
 }
