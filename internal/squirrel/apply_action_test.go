@@ -39,12 +39,24 @@ func TestTapCompletesTheChore(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, store.MarkPromptSent(ctx, id, "1", time.Now()))
 
+	// See the comment in TestApplyCompletesByPosition and TestUnTapRetracts:
+	// the digest just marked sent above starts its own tolerance window, so
+	// querying DueChores at time.Now() would read empty regardless of
+	// whether the tap did anything. Checking "due" before the tap, at an
+	// instant past that window, is what makes the "empty after" assertion
+	// below mean the tap actually completed it rather than the tolerance
+	// gate masking a no-op applyAction.
+	past := time.Now().Add(oneWeek + time.Hour)
+	due, err := store.DueChores(ctx, p, past)
+	require.NoError(t, err)
+	require.Len(t, due, 1, "backdated past its interval, it is due before the tap")
+
 	a := squirrel.NewApplier(store, send, squirrel.Chat{}, nil)
 	require.NoError(t, a.Apply(ctx, tapItem(p, "1", "done:1", true), squirrel.Ptr(p)))
 
-	due, err := store.DueChores(ctx, p, time.Now())
+	due, err = store.DueChores(ctx, p, past)
 	require.NoError(t, err)
-	require.Empty(t, due)
+	require.Empty(t, due, "completing it via a tap resets the clock")
 	require.Empty(t, *got, "a tap posts no reply — the boost is the receipt")
 }
 
