@@ -243,7 +243,12 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 	base := strings.TrimRight(baseURL, "/")
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	do := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (*http.Response, error) {
+	// roundTrip builds one request for m — JSON when it carries actions, plain
+	// text otherwise — sends it, and hands back the response with its status
+	// unexamined. do is what turns that into a result; keeping the status
+	// check out of here is what lets do retry a rejected JSON attempt without
+	// roundTrip knowing anything about retries.
+	roundTrip := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (res *http.Response, isJSON bool, err error) {
 		var (
 			body        io.Reader
 			contentType = "text/plain; charset=utf-8"
@@ -255,23 +260,53 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 				Actions:       actionsFor(m, disabled),
 			})
 			if err != nil {
-				return nil, fmt.Errorf("campfire: encoding message: %w", err)
+				return nil, false, fmt.Errorf("campfire: encoding message: %w", err)
 			}
-			body, contentType = bytes.NewReader(encoded), "application/json"
+			body, contentType, isJSON = bytes.NewReader(encoded), "application/json", true
 		} else {
 			body = strings.NewReader(m.Text)
 		}
 
 		req, err := http.NewRequestWithContext(ctx, method, dest, body)
 		if err != nil {
-			return nil, fmt.Errorf("campfire: building request: %w", stripURL(err))
+			return nil, isJSON, fmt.Errorf("campfire: building request: %w", stripURL(err))
 		}
 		req.Header.Set("Content-Type", contentType)
 
-		res, err := client.Do(req)
+		res, err = client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("campfire: request failed: %w", stripURL(err))
+			return nil, isJSON, fmt.Errorf("campfire: request failed: %w", stripURL(err))
 		}
+		return res, isJSON, nil
+	}
+
+	// do is the phase 3 -> phase 2 degrade, made true by construction rather
+	// than by prose: DefinedMessage always carries a button and DigestMessage
+	// carries one whenever anything is due, so those messages are always sent
+	// as JSON — but an upstream, unforked Campfire takes the raw request body
+	// as the message text and would post the JSON envelope itself into the
+	// room. A 4xx response to a JSON attempt is what an unforked instance
+	// looks like from here, so it is retried exactly once as the plain text
+	// phase 2 always sent. A non-4xx failure (5xx, a network error) is not
+	// retried: that is Campfire being unavailable, not a shape it refused.
+	do := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (*http.Response, error) {
+		res, isJSON, err := roundTrip(ctx, method, dest, m, disabled)
+		if err != nil {
+			return nil, err
+		}
+
+		if isJSON && res.StatusCode >= 400 && res.StatusCode < 500 {
+			io.Copy(io.Discard, res.Body)
+			res.Body.Close()
+			slog.Warn("campfire: message with actions was rejected, retrying as plain text",
+				"status", res.StatusCode)
+
+			res, _, err = roundTrip(ctx, method, dest, squirrel.Message{Text: m.Text}, disabled)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		if res.StatusCode < 200 || res.StatusCode > 299 {
 			io.Copy(io.Discard, res.Body)
 			res.Body.Close()

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -66,6 +67,51 @@ func TestSendPostsActionsAsJSON(t *testing.T) {
 	require.Equal(t, "bin day", first["label"])
 	require.Equal(t, "done:1", first["value"])
 	require.Equal(t, "✅", first["emoji"])
+}
+
+// DefinedMessage and a due DigestMessage always carry a button, which means
+// they are always sent as JSON — but the spec requires phase 3 to degrade to
+// phase 2 behaviour against an unforked Campfire, whose bot endpoint treats
+// the raw request body as the message text. Without a fallback, the room
+// would receive a literal "{"body":"…","actions":[…]}" instead of the
+// message. A stub that rejects JSON with a 4xx and accepts plain text is
+// what an unforked instance looks like from here, so a successful Send
+// against it — carrying the plain text, not the JSON envelope — is what
+// makes the degrade true by construction.
+func TestSendDowngradesToPlainTextWhenJSONIsRejected(t *testing.T) {
+	var mu []sentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		mu = append(mu, sentRequest{
+			method: r.Method,
+			path:   r.URL.Path,
+			body:   map[string]any{"raw": string(raw), "contentType": r.Header.Get("Content-Type")},
+		})
+		if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	t.Cleanup(srv.Close)
+
+	cfg := config()
+	cfg.BaseURL, cfg.BotKey = srv.URL, "3-abc"
+	chat := transport.NewCampfire(cfg).Chat
+
+	_, err := chat.Send(context.Background(), "9", squirrel.Message{
+		Text:          "Due\n 1. bin day — 8 days, usually 7",
+		SelectionMode: "multiple",
+		Actions:       []squirrel.Action{{Label: "bin day", Value: "done:1", Emoji: "✅"}},
+	})
+	require.NoError(t, err, "the retry must make the call succeed, not merely attempted")
+
+	require.Len(t, mu, 2, "one JSON attempt, then one plain-text retry")
+	require.True(t, strings.HasPrefix(mu[0].body["contentType"].(string), "application/json"))
+	require.True(t, strings.HasPrefix(mu[1].body["contentType"].(string), "text/plain"),
+		"the retry must fall back to plain text, not JSON again")
+	require.Equal(t, "Due\n 1. bin day — 8 days, usually 7", mu[1].body["raw"],
+		"the plain-text retry carries the message's own Text")
 }
 
 // A message with no actions stays a plain text post, exactly as phase 2 sent
