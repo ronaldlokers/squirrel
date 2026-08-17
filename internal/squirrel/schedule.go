@@ -114,8 +114,9 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	}
 
 	forDate := midnight
-	if _, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
-		"digest", now, &forDate, due); err != nil {
+	promptID, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
+		"digest", now, &forDate, due)
+	if err != nil {
 		if errors.Is(err, ErrDigestAlreadySent) {
 			// Some other process already recorded today's digest — most
 			// likely this same one, on an earlier tick. Either way, today is
@@ -130,10 +131,22 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		// The prompt row is already committed, so the numbering stands and the
 		// digest will not be retried today. Reported rather than retried:
 		// re-sending risks two messages, and the next day's is minutes away in
-		// the scheme of things.
+		// the scheme of things. delivered_at stays null, so LastDigestSentAt
+		// will skip straight past this row rather than anchoring the next
+		// digest's capture window to a message that never arrived.
 		return fmt.Errorf("sending digest: %w", err)
 	}
 	s.sentDate = dateKey
+
+	if err := s.opts.Store.MarkPromptDelivered(ctx, promptID, now); err != nil {
+		// The message is already out and the guard above is already armed, so
+		// this is reported rather than retried too. Worst case the row is
+		// never marked delivered and LastDigestSentAt anchors to whichever
+		// earlier digest it last saw as delivered instead — a capture window
+		// that overlaps and re-lists something already seen, never one that
+		// drops something unseen.
+		return fmt.Errorf("marking digest delivered: %w", err)
+	}
 	return nil
 }
 

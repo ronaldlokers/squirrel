@@ -4,6 +4,7 @@ package squirrel_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -317,6 +318,60 @@ func TestSchedulerGuardArmsOnErrDigestAlreadySent(t *testing.T) {
 
 	require.NoError(t, s.Once(ctx, at.Add(time.Minute)),
 		"the guard must have armed on the ErrDigestAlreadySent path too")
+}
+
+// RecordPrompt commits a digest's row before Send is even attempted — the
+// ordering that makes the unique index the idempotency guarantee — so a
+// failed send still leaves a row behind. Without a "was actually delivered"
+// predicate, LastDigestSentAt would anchor the next digest's capture window
+// to that row's sent_at anyway, and every capture made on the day the send
+// failed would fall before the (wrongly early) anchor of the next digest
+// that actually sent — gone from every digest for good.
+func TestSchedulerRecoversCapturesAfterAFailedSend(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+
+	// Captured before Monday's digest is attempted.
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport:  "campfire",
+		PersonID:   squirrel.Ptr(p),
+		RawText:    "before the outage",
+		Payload:    []byte(`{}`),
+		ReceivedAt: time.Date(2026, 8, 17, 7, 0, 0, 0, amsterdam(t)),
+	})
+	require.NoError(t, err)
+
+	failingSend := func(context.Context, string, string) error {
+		return errors.New("campfire unreachable")
+	}
+	monday := time.Date(2026, 8, 17, 8, 0, 1, 0, amsterdam(t))
+	require.Error(t, scheduler(t, store, p, failingSend).Once(ctx, monday),
+		"Send fails, so Once must report an error")
+
+	// Captured after Monday's failed send.
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport:  "campfire",
+		PersonID:   squirrel.Ptr(p),
+		RawText:    "after the outage",
+		Payload:    []byte(`{}`),
+		ReceivedAt: time.Date(2026, 8, 17, 15, 0, 0, 0, amsterdam(t)),
+	})
+	require.NoError(t, err)
+
+	send, got := recorder()
+	tuesday := time.Date(2026, 8, 18, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, scheduler(t, store, p, send).Once(ctx, tuesday))
+
+	require.Len(t, *got, 1)
+	require.Contains(t, (*got)[0].text, "before the outage",
+		"a capture from the day the send failed must not be lost")
+	require.Contains(t, (*got)[0].text, "after the outage")
 }
 
 func TestSchedulerRunStopsWithTheContext(t *testing.T) {

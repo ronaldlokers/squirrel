@@ -50,6 +50,21 @@ func (s *Store) RecordPrompt(ctx context.Context, personID int64, conversationID
 	return promptID, nil
 }
 
+// MarkPromptDelivered records that a prompt's Send actually succeeded.
+// RecordPrompt must commit before Send is attempted — that ordering is what
+// makes the unique index the idempotency guarantee — so a row can exist for
+// a date whose message never reached Campfire. delivered_at is how
+// LastDigestSentAt tells a genuinely sent digest apart from that phantom
+// case.
+func (s *Store) MarkPromptDelivered(ctx context.Context, promptID int64, deliveredAt time.Time) error {
+	_, err := s.pool.Exec(ctx,
+		`update prompts set delivered_at = $2 where id = $1`, promptID, deliveredAt)
+	if err != nil {
+		return fmt.Errorf("marking prompt delivered: %w", err)
+	}
+	return nil
+}
+
 const latestPrompt = `
 	select id, sent_at from prompts
 	 where person_id = $1 order by sent_at desc, id desc limit 1`
@@ -110,10 +125,18 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 // offset, so a prompt with a null date (a query, not a digest) must never be
 // picked here: anchoring to one would shrink the window to however many
 // minutes ago the last "?" was sent and hide everything captured before it.
+//
+// delivered_at is not null is required too. RecordPrompt commits a digest's
+// row before Send is attempted, so a row can exist for a date whose message
+// never reached Campfire. Anchoring to that row anyway would skip the
+// capture window right past every capture made on the day the send failed —
+// gone from every digest forever, since the next successful digest's window
+// starts from the (wrongly early) failed row's sent_at, not from the last
+// time a message actually arrived.
 func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time, bool, error) {
 	const q = `
 		select sent_at from prompts
-		 where person_id = $1 and sent_for_date is not null
+		 where person_id = $1 and sent_for_date is not null and delivered_at is not null
 		 order by sent_at desc, id desc limit 1`
 
 	var sentAt time.Time
