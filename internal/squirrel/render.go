@@ -119,3 +119,43 @@ func DefinedMessage(c Chore) Message {
 		}},
 	}
 }
+
+// EveningMessage is the once-a-day message that always runs: what you did,
+// what you captured, and — only when no nudge fired earlier — the chore that
+// would otherwise have arrived as a second notification a second apart.
+//
+// When nothing was completed the section is absent rather than empty. An empty
+// list is a scoreboard reading nil; an absent section says nothing about you.
+func EveningMessage(completed []string, captures []string, nudge *Chore) Message {
+	var b strings.Builder
+
+	if nudge != nil {
+		b.WriteString(choreSentence(*nudge))
+		b.WriteString("\n")
+	}
+	if len(completed) > 0 {
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString("Today\n")
+		for _, name := range completed {
+			fmt.Fprintf(&b, " · %s\n", name)
+		}
+	}
+	if len(captures) > 0 {
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString("Since yesterday\n")
+		for _, text := range captures {
+			fmt.Fprintf(&b, " · %s\n", text)
+		}
+	}
+
+	m := Message{Text: strings.TrimRight(b.String(), "\n")}
+	if nudge != nil {
+		m.SelectionMode = "single"
+		m.Actions = []Action{{Label: nudge.Name, Value: "done:1", Emoji: "✅"}}
+	}
+	return m
+}

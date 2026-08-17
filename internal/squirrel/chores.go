@@ -196,3 +196,32 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 	}
 	return texts, rows.Err()
 }
+
+// CompletedToday names the chores completed since `since`, in the order they
+// were done. Retracted events are excluded: a retraction means it did not
+// happen, and reporting it back would contradict every other surface.
+func (s *Store) CompletedToday(ctx context.Context, personID int64, since time.Time) ([]string, error) {
+	const q = `
+		select c.name from events e
+		  join chores c on c.id = e.chore_id
+		 where e.person_id = $1
+		   and e.retracted_at is null
+		   and e.occurred_at >= $2
+		 order by e.occurred_at`
+
+	rows, err := s.pool.Query(ctx, q, personID, since)
+	if err != nil {
+		return nil, fmt.Errorf("querying completions: %w", err)
+	}
+	defer rows.Close()
+
+	names := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("scanning completion: %w", err)
+		}
+		names = append(names, name)
+	}
+	return names, rows.Err()
+}
