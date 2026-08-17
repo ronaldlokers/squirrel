@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -170,6 +171,34 @@ func (a *Applier) tick(ctx context.Context, item Item) {
 	}
 	if err := a.chat.Boost(ctx, *item.ConversationID, *item.ExternalID, "✅"); err != nil {
 		a.onError(fmt.Errorf("ticking %s: %w", *item.ExternalID, err))
+	}
+}
+
+// Reactions are what a completion earns. Small, immediate, non-cumulative and
+// unpredictable — intermittent reinforcement is the strongest schedule there
+// is, and it is the same mechanism that defeats habituation, so one change
+// serves both.
+//
+// What makes a streak punish is not the reward but the counter that resets:
+// loss aversion makes losing hurt about twice as much as the equivalent gain
+// pleases. Nothing here accrues, so there is nothing to lose.
+//
+// These are NOT the 👀/✅ receipt, which reports whether the thought is on disk
+// and whether it reached Postgres. That pair is information and must never
+// vary — randomising it would turn the one honest signal about durability into
+// decoration.
+var Reactions = []string{"🎉", "✨", "🙌", "💫", "🌟"}
+
+// react acknowledges a completion on the message that asked for it. Fail-open:
+// a reaction that cannot be sent is cosmetic, and must never turn a recorded
+// completion into an error.
+func (a *Applier) react(ctx context.Context, prompt Prompt) {
+	if a.chat.Boost == nil || prompt.ExternalMessageID == "" {
+		return
+	}
+	pick := Reactions[rand.Intn(len(Reactions))]
+	if err := a.chat.Boost(ctx, prompt.ConversationID, prompt.ExternalMessageID, pick); err != nil {
+		a.onError(fmt.Errorf("reacting to a completion: %w", err))
 	}
 }
 
@@ -365,7 +394,11 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		if err != nil || done {
 			return err
 		}
-		return a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now())
+		if err := a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now()); err != nil {
+			return err
+		}
+		a.react(ctx, prompt)
+		return nil
 	}
 	return nil
 }
