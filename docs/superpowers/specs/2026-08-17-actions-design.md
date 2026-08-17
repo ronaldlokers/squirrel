@@ -28,8 +28,8 @@ In:
 - Squirrel understands `type: "action"` webhooks.
 - Prompts carry buttons; the newest prompt is the only live one.
 - Tapping completes a chore; tapping again retracts it.
-- The definition confirmation gains correction buttons.
-- The receipt becomes two-stage: 👀 stored, ✅ handled.
+- The definition confirmation gains a correction button.
+- The receipt becomes two-stage: 👀 stored, then ✅ handled alongside it.
 - The forked Campfire built, published and deployed.
 
 Out, deliberately:
@@ -52,8 +52,10 @@ digest. Phase 3 depends on `feat/bot-message-actions` in
 |---|---|
 | Interactive actions on bot messages | Every button in this document |
 | `PATCH` a bot's own message | Disabling the previous prompt's buttons |
-| Bots deleting their own boosts | Replacing 👀 with ✅ |
-| Boosts scoped to the current message | Correctness of the above |
+
+The branch also lets bots delete their own boosts. This design does not use it —
+see *The receipt, in two stages* — but it is why the branch can shrink later
+without breaking anything here.
 
 **The standing cost is rebasing.** Upstream ships security fixes — there are
 four `security/*` branches in the remote today — and every one now lands through
@@ -267,20 +269,31 @@ drain reached Postgres and the applier ran — the chore exists, the completion
 landed, the note is queryable. The gap between them is exactly the window phase 1
 was built around, and until now nothing in the room could see it.
 
-On handling, the 👀 boost is deleted and ✅ added. Deletion needs the boost id
-from the create response, so `items` gains `receipt_boost_id text`.
+**Both stay.** The ✅ is added; the 👀 is not removed. An earlier draft deleted
+it, which needed the boost id from the create response and therefore somewhere
+to persist it — and the boost is fired from the transport, which never touches
+Postgres, after the capture has already been spooled and fsynced. There is no
+honest place for that id short of the transport holding state in memory and
+stranding it on restart.
+
+Keeping both is also the better artefact: 👀✅ is a visible trail of two stages
+that genuinely happened, rather than a single state that overwrites its own
+history. It costs nothing and removes a migration, a fork dependency and a
+failure mode.
+
+Stage two is fired by the applier, which already runs after the drain and
+already knows whether handling succeeded. It boosts the message named by the
+item's external id, using the configured base URL and bot key — not `room.path`,
+which the applier does not have.
 
 Everything here is fail-open, unchanged from phase 1: a boost that cannot be
-created, deleted or replaced never affects whether the capture was stored, and
-never changes the HTTP response. A missing receipt is cosmetic; a missing
-capture is the failure the system exists to prevent.
-
-On an upstream Campfire, deletion returns 404 and ✅ is added alongside 👀. Noisy,
-correct, and the degradation is deliberate.
+created never affects whether the capture was stored, and never changes the HTTP
+response. A missing receipt is cosmetic; a missing capture is the failure the
+system exists to prevent.
 
 ## Schema
 
-Three migrations, additive:
+Two migrations, additive:
 
 ```sql
 -- 0005
@@ -288,9 +301,6 @@ alter table events add column retracted_at timestamptz;
 
 -- 0006
 alter table prompts add column external_message_id text;
-
--- 0007
-alter table items add column receipt_boost_id text;
 ```
 
 The baseline subquery in `chores.go` gains `and e.retracted_at is null`.
