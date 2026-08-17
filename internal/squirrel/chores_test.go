@@ -149,3 +149,46 @@ func TestCapturesSinceExcludesTaps(t *testing.T) {
 	require.Equal(t, []string{"buy milk"}, texts,
 		"a tap must never be echoed into the digest's capture list")
 }
+
+// ParseAction matches on text alone, so a person who types
+// "!action 451 done:1 true" produces text byte-identical to a genuine tap.
+// apply's applyAction only ever treats that as a tap when isActionPayload
+// also agrees, from the payload the transport actually sent — apply.go's own
+// isActionPayload doc comment says so. CapturesSince filtering on ParseAction
+// alone gives the digest a second, looser definition of "tap": a typed
+// lookalike would be stored and treated as a capture everywhere else, then
+// silently vanish from the one surface whose whole job is proving captures
+// are not disappearing into a hole.
+func TestCapturesSinceMatchesApplysDefinitionOfATap(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	since := time.Now().Add(-time.Hour)
+
+	_, err := store.InsertItem(ctx, squirrel.Item{
+		Transport:      "campfire",
+		ExternalID:     squirrel.Ptr("1"),
+		ConversationID: squirrel.Ptr("9"),
+		PersonID:       squirrel.Ptr(p),
+		RawText:        "!action 451 done:1 true",
+		Payload:        []byte(`{"type":"message"}`),
+		ReceivedAt:     time.Now(),
+	})
+	require.NoError(t, err)
+
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport:      "campfire",
+		ExternalID:     squirrel.Ptr("2"),
+		ConversationID: squirrel.Ptr("9"),
+		PersonID:       squirrel.Ptr(p),
+		RawText:        "!action 451 done:2 true",
+		Payload:        []byte(`{"type":"action"}`),
+		ReceivedAt:     time.Now(),
+	})
+	require.NoError(t, err)
+
+	texts, err := store.CapturesSince(ctx, p, since)
+	require.NoError(t, err)
+	require.Equal(t, []string{"!action 451 done:1 true"}, texts,
+		"a typed tap-lookalike belongs in the digest; only a genuine action payload is a tap")
+}
