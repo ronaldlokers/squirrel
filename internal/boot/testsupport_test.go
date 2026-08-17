@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -18,6 +19,10 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/boot"
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+// testPresenceSecret is the token every test that wants the arrival route
+// mounted configures PRESENCE_SECRET as, and sends back as X-Squirrel-Token.
+const testPresenceSecret = "presence-test-secret"
 
 // testDatabaseURL fails rather than skips, so an unset variable in CI is a
 // failure and not a green run over nothing.
@@ -67,13 +72,53 @@ func campfireStub(t *testing.T) (baseURL string, requests func() []campfireReque
 	}))
 	t.Cleanup(srv.Close)
 
-	return srv.URL, func() []campfireRequest {
+	requests = func() []campfireRequest {
 		mu.Lock()
 		defer mu.Unlock()
 		out := make([]campfireRequest, len(got))
 		copy(out, got)
 		return out
 	}
+
+	// Tracked so campfireStubSawText can reach a stub's traffic even for a
+	// test (bootWithStore's callers, mainly) that never sees this func
+	// itself — envFor stands the stub up internally and only ever hands its
+	// URL down into the environment. Tests in this package never run in
+	// parallel (make test-integration passes -p 1 deliberately, see the
+	// Makefile), so the single most-recently-created stub is unambiguous for
+	// whichever test is currently running.
+	lastCampfireStubMu.Lock()
+	lastCampfireStubRequests = requests
+	lastCampfireStubMu.Unlock()
+
+	return srv.URL, requests
+}
+
+var (
+	lastCampfireStubMu       sync.Mutex
+	lastCampfireStubRequests func() []campfireRequest
+)
+
+// campfireStubSawText reports whether any request the most recently created
+// campfire stub received so far carries text somewhere in its body — JSON or
+// plain text, matching however sendMessage happened to have serialized it.
+// It exists because tests built on bootWithStore never see the stub's
+// requests func directly: envFor stands the stub up itself and only threads
+// its URL through CAMPFIRE_BASE_URL.
+func campfireStubSawText(t *testing.T, text string) bool {
+	t.Helper()
+	lastCampfireStubMu.Lock()
+	requests := lastCampfireStubRequests
+	lastCampfireStubMu.Unlock()
+	if requests == nil {
+		return false
+	}
+	for _, r := range requests() {
+		if strings.Contains(string(r.body), text) {
+			return true
+		}
+	}
+	return false
 }
 
 func withStore(t *testing.T) *squirrel.Store {
@@ -107,11 +152,51 @@ func truncateAll(t *testing.T, store *squirrel.Store) {
 // its prompt against, following internal/squirrel's own apply_action_test.go
 // convention — so a tap arriving from that room is not silently dropped by
 // the sink's Allow check before it ever reaches the applier.
+//
+// PRESENCE_SECRET is set here too, so every test built on this helper gets a
+// live arrival route at presenceURL(s) without asking for it — a nudge test
+// is the only reason bootWithStore needed this, but every existing caller
+// (boot_actions_test.go and friends) still boots exactly the same server it
+// did before this task, just with one extra mounted route it never touches.
+//
+// DIGEST_AT is pinned to 23:59 for the same reason: Scheduler.Run calls
+// Once synchronously before its first tick, and Once makes its own "last
+// attempt at today's nudge" whenever the wall clock is already past
+// DIGEST_AT's default of 08:00 — which it is for any test run during the
+// day. Left at the default, that startup Once frequently wins the race
+// against seedOverdueChore and claims the day's nudge slot for the same
+// chore a nudge test seeds, sending it independently of whatever the
+// arrival webhook does. Confirmed by trial: with the presence route wired
+// to a no-op OnArrive, TestBootNudgesOnArrival still passed 1 run in 5 —
+// campfireStubSawText found "vacuum" from that startup send, not from the
+// arrival. Pinning DIGEST_AT past any wall-clock time a test could run at
+// keeps Once's own local.Before(threshold) guard skipping it for the whole
+// test, so a nudge landing in the stub can only be the one the test itself
+// triggered.
 func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 	t.Helper()
 	store := withStore(t)
-	s := boots(t, envFor(t, map[string]string{"CAMPFIRE_CONVERSATION_ID": "9"}))
+	s := boots(t, envFor(t, map[string]string{
+		"CAMPFIRE_CONVERSATION_ID": "9",
+		"PRESENCE_SECRET":          testPresenceSecret,
+		"DIGEST_AT":                "23:59",
+	}))
 	return s, store
+}
+
+// bootWithoutPresence boots exactly like bootWithStore, minus PRESENCE_SECRET
+// — so MountPresence's own refusal to mount with an empty secret leaves
+// presenceURL(s) unrouted, a plain 404 like any other path nothing answers.
+func bootWithoutPresence(t *testing.T) *boot.Squirrel {
+	t.Helper()
+	withStore(t)
+	return boots(t, envFor(t, map[string]string{"CAMPFIRE_CONVERSATION_ID": "9"}))
+}
+
+// presenceURL is where the arrival webhook is mounted — config.go's
+// PresencePath default, which boot.go never overrides.
+func presenceURL(s *boot.Squirrel) string {
+	return fmt.Sprintf("http://127.0.0.1:%d/hooks/home", s.Port())
 }
 
 // ownerOf seeds (or reconciles) the same "ronald" person boot.Boot's own

@@ -41,6 +41,13 @@ type Config struct {
 	Campfire       *CampfireConfig
 	DigestAt       time.Duration
 	DigestLocation *time.Location
+	// PresenceSecret authenticates the arrival webhook. Empty means the route
+	// is not mounted at all — the same way an absent bot key leaves Send nil
+	// rather than half-working, MountPresence itself refuses to mount with an
+	// empty secret rather than serve an effectively open endpoint.
+	PresenceSecret string
+	// PresencePath is where the arrival webhook is mounted.
+	PresencePath string
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -191,6 +198,8 @@ func LoadConfig(env map[string]string) (Config, error) {
 		},
 		DigestAt:       digestAt,
 		DigestLocation: location,
+		PresenceSecret: env["PRESENCE_SECRET"],
+		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
 	}
 
 	if slicesContains(transports, "campfire") {
