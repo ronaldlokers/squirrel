@@ -68,6 +68,13 @@ func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
 // recent completion event, or the chore's creation if it has never been
 // completed. Deriving it rather than storing it is what makes a sensor-written
 // event reset the clock with no extra code.
+//
+// last_shown is filtered to p.kind = 'digest'. `?` (IntentQuery in apply.go)
+// records a prompt_line for every active chore too, due or not, so without
+// this filter asking "?" marked every chore as shown and the tolerance gate
+// below hid all of them until their tolerance window passed again — up to a
+// week of silence for one keystroke. Only an actual morning nudge may reset
+// how recently a chore was shown.
 const baselineCTE = `
 	with baseline as (
 	  select c.id,
@@ -75,7 +82,7 @@ const baselineCTE = `
 	                  c.created_at) as since,
 	         (select max(p.sent_at)
 	            from prompt_lines l join prompts p on p.id = l.prompt_id
-	           where l.chore_id = c.id) as last_shown
+	           where l.chore_id = c.id and p.kind = 'digest') as last_shown
 	    from chores c
 	   where c.person_id = $1 and c.active
 	)`

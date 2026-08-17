@@ -65,6 +65,32 @@ func TestNewChoreIsNotDueImmediately(t *testing.T) {
 	require.Equal(t, 14, due[0].EveryDays)
 }
 
+// A `?` records a prompt_line for every active chore, due or not — that is
+// what lets a bare number reply resolve later. Before the fix, baselineCTE's
+// last_shown had no filter on prompts.kind, so that query prompt counted as a
+// nudge and the tolerance gate hid an already-due chore until its tolerance
+// window passed again. A "?" must never be able to suppress a real digest.
+func TestQueryDoesNotSuppressTheNextDigest(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	vac, err := store.UpsertChore(ctx, p, "vacuum", oneWeek, oneDay)
+	require.NoError(t, err)
+	backdateChore(t, store, vac.ID, oneWeek+24*time.Hour)
+
+	due, err := store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1, "backdated past its interval, it is due before the query")
+
+	send, _ := recorder()
+	require.NoError(t, squirrel.NewApplier(store, send, nil).Apply(ctx, itemOf("?"), &p))
+
+	due, err = store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1, "a query must not mark the chore as shown for the tolerance gate")
+}
+
 func TestDeactivateChoreHidesIt(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
