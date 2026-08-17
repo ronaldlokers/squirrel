@@ -36,6 +36,13 @@ func TestBootNudgesOnArrival(t *testing.T) {
 // A presence ping is not a thought. It must leave no items row — phase 3 spent
 // a fix removing button taps from the capture list and this would be the same
 // mistake wearing a different hat.
+//
+// Checking the count once, immediately after the 204, proves nothing: the
+// drain is async (bootWithStore's DRAIN_INTERVAL_MS is 10ms — see envFor), so
+// a genuine capture counted the same way also reads before=0 after=0, since
+// its row has not landed yet. require.Never polls for about a second instead,
+// which is long enough for several drain ticks to have run if an arrival were
+// ever mistakenly spooled.
 func TestAnArrivalIsNotACapture(t *testing.T) {
 	s, store := bootWithStore(t)
 	p := ownerOf(t, store)
@@ -51,10 +58,14 @@ func TestAnArrivalIsNotACapture(t *testing.T) {
 	require.NoError(t, err)
 	res.Body.Close()
 
-	var after int
-	require.NoError(t, store.Pool().QueryRow(context.Background(),
-		`select count(*) from items where person_id = $1`, p).Scan(&after))
-	require.Equal(t, before, after, "an arrival is not a capture")
+	require.Never(t, func() bool {
+		var after int
+		if err := store.Pool().QueryRow(context.Background(),
+			`select count(*) from items where person_id = $1`, p).Scan(&after); err != nil {
+			return false
+		}
+		return after != before
+	}, time.Second, 20*time.Millisecond, "an arrival must never produce an items row")
 }
 
 // The route is not mounted without a secret, the same way Send is nil without
