@@ -4,6 +4,7 @@ package boot_test
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -77,4 +78,24 @@ func TestBootWithoutAPresenceSecretHasNoRoute(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 	require.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+// MountPresence's own "refusing to mount" log only runs when it is actually
+// called — skipping the call entirely, as boot.go does when PRESENCE_SECRET
+// is empty, left that log line silent. A mis-wired secretKeyRef then produced
+// a bot with no arrival trigger, no log anywhere saying so, and behaviour
+// that looks entirely normal, since the evening message still runs on
+// schedule. boot.go:259's "no sender configured; ..." warning is the existing
+// precedent for saying this out loud.
+func TestBootWarnsWhenNoPresenceSecretIsConfigured(t *testing.T) {
+	withStore(t)
+
+	var logs safeLog
+	prevLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(prevLogger) })
+
+	boots(t, envFor(t, map[string]string{"CAMPFIRE_CONVERSATION_ID": "9"}))
+
+	require.Contains(t, logs.String(), "no presence secret configured")
 }

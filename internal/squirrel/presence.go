@@ -1,6 +1,7 @@
 package squirrel
 
 import (
+	"context"
 	"crypto/subtle"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,16 @@ type PresenceOptions struct {
 	// supplies one that registers with its own WaitGroup instead, so it can
 	// join an in-flight arrival before closing anything out from under it.
 	Go func(fn func())
+	// Ctx bounds Delay: cancelling it wakes an arrival still asleep inside
+	// Delay immediately, rather than making a caller who joins the Go
+	// goroutine (see Go's own doc comment) wait out the full Delay before it
+	// can shut down. Without this, Delay is a plain time.Sleep selecting on
+	// nothing, and a caller whose shutdown budget is shorter than Delay —
+	// production's is, by design; "you have a coat on" wants minutes, not
+	// seconds — gets SIGKILLed instead of stopping cleanly. Defaults to
+	// context.Background() (never cancels) when nil, so a caller that does
+	// not care about shutdown timing does not have to supply one.
+	Ctx context.Context
 }
 
 // MountPresence adds the arrival route.
@@ -50,6 +61,9 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 	}
 	if o.Go == nil {
 		o.Go = func(fn func()) { go fn() }
+	}
+	if o.Ctx == nil {
+		o.Ctx = context.Background()
 	}
 	var (
 		mu   sync.Mutex
@@ -94,7 +108,18 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 				}
 			}()
 			if o.Delay > 0 {
-				time.Sleep(o.Delay)
+				timer := time.NewTimer(o.Delay)
+				defer timer.Stop()
+				select {
+				case <-timer.C:
+				case <-o.Ctx.Done():
+					// Shutting down. An arrival still asleep here is not
+					// worth blocking Stop over — losing it costs a nudge,
+					// and the evening message catches the same day, the
+					// same tradeoff this file's own top comment already
+					// accepts for a presence ping in general.
+					return
+				}
 			}
 			o.OnArrive()
 		})

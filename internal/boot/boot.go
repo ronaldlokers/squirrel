@@ -153,7 +153,25 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 					fn()
 				}()
 			},
+			// Ctx is loopCtx, the same context Stop cancels (via s.cancel,
+			// see below) before it joins s.wg. Without this, an arrival
+			// caught mid-Delay only ever wakes on its own timer — up to
+			// PresenceDelay, a couple of minutes in production — so a
+			// rollout in that window blocks Stop past main's 15s shutdown
+			// budget and the default 30s grace period, and the pod is
+			// SIGKILLed rather than stopped cleanly. Threading loopCtx here
+			// lets cancellation wake it immediately instead.
+			Ctx: loopCtx,
 		})
+	} else {
+		// MountPresence's own "refusing to mount" log only fires when it is
+		// actually called — a mis-wired secretKeyRef that leaves
+		// PRESENCE_SECRET empty otherwise produces no log line at all, and a
+		// bot with no arrival trigger looks exactly like one working
+		// normally, since the evening message still runs on schedule. Same
+		// precedent as the "no sender configured" warning below for a
+		// missing bot key.
+		slog.Warn("no presence secret configured; the arrival trigger is inactive")
 	}
 
 	port, err := server.Listen(fmt.Sprintf(":%d", config.Port))

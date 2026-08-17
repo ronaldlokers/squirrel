@@ -115,42 +115,29 @@ func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 	}
 }
 
-// TestBootJoinsAnInFlightArrivalBeforeClosingTheStore proves Stop blocks on
-// an arrival's delayed nudge rather than outliving it — the guarantee
-// boot.go's Go hook on PresenceOptions exists to give, the same one wg
-// already gives the digest scheduler (TestBootJoinsTheSchedulerBeforeClosingTheStore
-// above).
+// TestStopDoesNotBlockForThePresenceDelay guards the opposite failure from
+// what this test used to assert. Before presence.go threaded a context
+// through PresenceOptions (see presence.go's own Ctx doc comment and
+// TestPresenceDelayWakesOnContextCancellation in the squirrel package), the
+// spawned goroutine only ever woke on its own `time.Sleep(o.Delay)`, which
+// selected on nothing — so Stop, which does join that goroutine via wg (the
+// guarantee this test used to prove and still relies on), had no way to make
+// it return early. A rollout landing within PRESENCE_DELAY of an arrival
+// blocked Stop for up to two minutes in production, well past main's 15s
+// shutdown budget and a default 30s grace period, so the pod was SIGKILLed
+// rather than stopped cleanly.
 //
-// This does not chase the scheduler test's "closed pool" signature, and that
-// omission is deliberate, not an oversight: that race depends on a query's
-// Acquire call landing while Close is actually flipping the pool's closed
-// flag, and Stop cancels ctx well before it ever reaches Close (see Stop's
-// own doc comment) — puddle's Acquire checks ctx.Done() before it ever checks
-// the closed flag (jackc/puddle/v2's Pool.Acquire), so any query that starts
-// after cancellation, however briefly after, fails with "context canceled"
-// every time regardless of whether the goroutine that issued it was ever
-// joined. A deliberate PRESENCE_DELAY sleep — the only tool available here to
-// make the race land on demand rather than trusting scheduler-timing luck —
-// guarantees the query starts well after that cancellation, which makes
-// "closed pool" structurally unreachable through this path. Confirmed by
-// trial: with the Go hook reverted to a bare `go fn()`, twenty iterations of
-// the "closed pool" version of this test never produced that string once —
-// not a demonstration the bug is safe, just a demonstration that string is
-// the wrong signal for this particular timing shape.
-//
-// What the bug actually produces instead is Stop returning fast: an
-// unsupervised goroutine is invisible to wg, so wg.Wait() has nothing to wait
-// for and store.Close() runs on schedule regardless of whether the arrival's
-// sleep has elapsed. That is directly measurable — Stop, called immediately
-// after the arrival is acknowledged and well before PRESENCE_DELAY has had a
-// chance to elapse on its own, must take at least roughly that long to
-// return once the arrival is properly joined. Confirmed the other direction
-// too: with the bare `go fn()` above, this assertion fails (Stop returns in
-// well under the delay) every run.
-func TestBootJoinsAnInFlightArrivalBeforeClosingTheStore(t *testing.T) {
+// The fix is Stop's own s.cancel() reaching the same loopCtx boot.go now
+// threads into PresenceOptions.Ctx, waking the goroutine immediately instead
+// of making it sleep out the delay. This is directly measurable the same way
+// the old version of this test measured the opposite: PRESENCE_DELAY is set
+// well above any plausible Stop overhead, and Stop, called immediately after
+// the arrival is acknowledged, must return in well under that delay rather
+// than anywhere near it.
+func TestStopDoesNotBlockForThePresenceDelay(t *testing.T) {
 	withStore(t)
 
-	const delay = 300 * time.Millisecond
+	const delay = 2 * time.Second
 	s := boots(t, envFor(t, map[string]string{
 		"PRESENCE_SECRET": testPresenceSecret,
 		"PRESENCE_DELAY":  delay.String(),
@@ -165,8 +152,7 @@ func TestBootJoinsAnInFlightArrivalBeforeClosingTheStore(t *testing.T) {
 	res.Body.Close()
 
 	// Immediately, not after any wait: the whole point is that Stop itself
-	// — not the test — is what has to wait out the arrival still asleep
-	// inside MountPresence's spawned goroutine.
+	// must not be the thing waiting out the arrival's delay.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	start := time.Now()
 	stopErr := s.Stop(ctx)
@@ -174,7 +160,6 @@ func TestBootJoinsAnInFlightArrivalBeforeClosingTheStore(t *testing.T) {
 	cancel()
 
 	require.NoError(t, stopErr)
-	require.GreaterOrEqual(t, elapsed, delay-50*time.Millisecond,
-		"Stop returned before the arrival's delay could have elapsed — "+
-			"it outlived Stop instead of being joined by it")
+	require.Less(t, elapsed, delay/2,
+		"Stop waited out the arrival's full delay instead of waking it via context cancellation")
 }

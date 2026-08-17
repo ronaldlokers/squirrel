@@ -1,6 +1,7 @@
 package squirrel_test
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -136,4 +137,53 @@ func TestPresenceDebouncesRepeatArrivals(t *testing.T) {
 	res := postPresence(t, base, "shh")
 	res.Body.Close()
 	waitForArrival(t, arrived)
+}
+
+// TestPresenceDelayWakesOnContextCancellation proves the fix for the shutdown
+// hang: before Ctx existed, the goroutine's `time.Sleep(o.Delay)` selected on
+// nothing, so a caller joining it (boot.go's wg, via the Go hook) had to wait
+// out the full Delay — up to two minutes in production, since PRESENCE_DELAY
+// wants "you have a coat on" to mean minutes — well past main's 15s shutdown
+// budget and a default 30s grace period, so the pod would be SIGKILLed
+// instead of stopping cleanly. Cancelling Ctx must wake an in-flight Delay
+// immediately, and must skip OnArrive entirely rather than running it against
+// a context a caller is already tearing things down for.
+func TestPresenceDelayWakesOnContextCancellation(t *testing.T) {
+	arrived := make(chan struct{}, 1)
+	done := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+
+	base := presenceServer(t, squirrel.PresenceOptions{
+		Secret: "shh",
+		Delay:  2 * time.Second,
+		OnArrive: func() {
+			arrived <- struct{}{}
+		},
+		Ctx: ctx,
+		// A custom Go hook so the test can observe the goroutine actually
+		// finishing, the same purpose boot.go's wg serves in production —
+		// without this there is no way to distinguish "woke up promptly" from
+		// "the default bare `go fn()` happens to still be running".
+		Go: func(fn func()) {
+			go func() {
+				fn()
+				close(done)
+			}()
+		},
+	})
+
+	res := postPresence(t, base, "shh")
+	res.Body.Close()
+
+	start := time.Now()
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("the presence goroutine did not wake on context cancellation")
+	}
+	require.Less(t, time.Since(start), time.Second,
+		"cancelling Ctx must wake an in-flight Delay rather than waiting it out")
+	requireNoArrival(t, arrived)
 }
