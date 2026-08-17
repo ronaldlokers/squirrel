@@ -140,6 +140,42 @@ func TestFailedNudgeSendDoesNotSpendTheDay(t *testing.T) {
 		"the second trigger must attempt a real send, not be refused by the failed attempt's stale claim")
 }
 
+// The same defect as TestFailedNudgeSendDoesNotSpendTheDay, entered through
+// once() rather than Nudge() directly: nudgeFor is tried first inside once()
+// too, so a chore that rides along on a failed evening send commits the same
+// claimed-but-undelivered nudge row. Without the matching cleanup on that
+// path, the row survives and every later trigger the same day — including a
+// direct Nudge() — is refused by a message the room never received.
+func TestFailedOnceSendDoesNotSpendTheDaysNudge(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 20*24*time.Hour)
+
+	var calls int
+	chat := squirrel.Chat{
+		Send: func(context.Context, string, squirrel.Message) (string, error) {
+			calls++
+			if calls == 1 {
+				return "", errors.New("campfire unreachable")
+			}
+			return "m-2", nil
+		},
+	}
+	s := schedulerWithChat(t, store, p, chat)
+
+	evening := today(t, 19, 0, 1)
+	require.Error(t, s.Once(ctx, evening), "the transport failure must surface")
+
+	require.NoError(t, s.Nudge(ctx, evening.Add(time.Hour), squirrel.NudgeFromArrival),
+		"a later trigger the same day must still be able to claim the slot the failed once() send never delivered")
+	require.Equal(t, 2, calls,
+		"the second trigger must attempt a real send, not be refused by the failed once()'s stale claim")
+}
+
 // Nudge is the only place that ever opens a numbered surface without once()
 // right behind it — once() skips closePrevious on a day it claims nothing
 // new (see its own comment) — so if Nudge did not close the previous surface

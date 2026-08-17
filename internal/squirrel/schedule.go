@@ -183,6 +183,22 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		// LastDigestSentAt will skip straight past this row rather than
 		// anchoring the next dated message's capture window to a message
 		// that never arrived.
+		//
+		// When a nudge rode along, nudgeFor already committed its own row,
+		// claiming today's nudge slot in the unique index before it was known
+		// whether this send would even succeed — the same shape as Nudge()'s
+		// own cleanup below, and for the same reason: left in place, that
+		// claim survives the failure and every later trigger today —
+		// including a second 19:00 attempt — is refused by a message the
+		// room never received. Deleting it here gives the next trigger a
+		// real chance instead. Best-effort: if the delete itself fails, the
+		// row is reported rather than retried, same as every other failure
+		// on this path.
+		if nudge != nil {
+			if delErr := s.opts.Store.DeletePrompt(ctx, nudgePromptID); delErr != nil {
+				s.opts.OnError(fmt.Errorf("deleting undelivered nudge prompt %d: %w", nudgePromptID, delErr))
+			}
+		}
 		return fmt.Errorf("sending evening message: %w", err)
 	}
 
