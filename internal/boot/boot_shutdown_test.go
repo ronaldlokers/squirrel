@@ -50,12 +50,24 @@ func (l *safeLog) String() string {
 //
 // This is a genuine goroutine-scheduling race, not something a single
 // Boot/Stop pair reproduces on demand, so this boots, captures, and stops
-// several times over. Confirmed against a deliberately un-joined boot.go:
-// without the join this reliably logs an "ERROR digest" line (e.g. "querying
-// chores: context canceled", "inserting prompt: context canceled", or
-// "sending digest: ...context canceled") within a handful of iterations, or
-// trips -race; with the join, both are clean every time, because Stop cannot
-// reach store.Close until the scheduler goroutine has actually returned.
+// several times over. An "ERROR digest ...context canceled" line is expected
+// noise on some iterations either way: Stop cancels the context before it
+// joins anything (see Stop's own doc comment), so a scheduler tick caught
+// mid-flight at that moment fails with a context-cancellation-flavoured
+// error — "reading chores: context canceled", "committing prompt: context
+// canceled", and so on — whether or not the join below it is actually
+// there. A bare require.NotContains(logs, "digest") could not tell that
+// expected noise apart from the bug it exists to catch, and failed on it
+// roughly a quarter of the time.
+//
+// What an unjoined Stop can produce that a correctly-joined one cannot is a
+// query that is still actually running against a pool Close has already torn
+// down, rather than one that merely observed its context being cancelled —
+// the pgx/puddle error text for that specific case is "closed pool", so that
+// is what is checked for instead. It is a narrow window even in the buggy
+// case (puddle's own Close blocks until resources already checked out are
+// returned, so most of the exposure is on the acquire side), which is
+// exactly why this loops rather than trusting one iteration either way.
 func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 	store := withStore(t)
 
@@ -96,8 +108,9 @@ func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 		stopErr := s.Stop(ctx)
 		cancel()
 
-		require.NotContains(t, logs.String(), "digest",
-			"iteration %d: the scheduler logged during shutdown — Stop raced it instead of joining it before closing the store", i)
+		require.NotContains(t, logs.String(), "closed pool",
+			"iteration %d: the scheduler used the store after Stop closed it — "+
+				"Stop raced it instead of joining it before closing the store", i)
 		require.NoError(t, stopErr, "iteration %d", i)
 	}
 }
