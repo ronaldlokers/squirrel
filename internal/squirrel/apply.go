@@ -31,6 +31,17 @@ type Applier struct {
 	// reason, so the id has to survive the few lines between the two. Reset
 	// to zero at the top of every apply().
 	pending int64
+	// nudger optionally attaches a nudge to a capture — set after
+	// construction via SetNudger, since the Applier and the Scheduler each
+	// need the other and boot builds them in that order.
+	nudger func(ctx context.Context, now time.Time, why NudgeReason) error
+}
+
+// SetNudger supplies the callback that may attach a nudge to a capture. It is
+// set after construction because the Applier and the Scheduler each need the
+// other, and boot builds them in that order.
+func (a *Applier) SetNudger(n func(context.Context, time.Time, NudgeReason) error) {
+	a.nudger = n
 }
 
 // NewApplier's send parameter is a vestige of phase 2, kept only so callers
@@ -122,6 +133,7 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	}
 
 	a.tick(ctx, item)
+	a.nudgeBack(ctx, item)
 	return nil
 }
 
@@ -158,6 +170,24 @@ func (a *Applier) tick(ctx context.Context, item Item) {
 	}
 	if err := a.chat.Boost(ctx, *item.ConversationID, *item.ExternalID, "✅"); err != nil {
 		a.onError(fmt.Errorf("ticking %s: %w", *item.ExternalID, err))
+	}
+}
+
+// nudgeBack rides a nudge home on a message the person sent. Fail-open, like
+// every other outbound: a nudge that cannot be sent must never turn a stored
+// capture into an error, and the budget means a missed one is simply not
+// replaced today.
+func (a *Applier) nudgeBack(ctx context.Context, item Item) {
+	if a.nudger == nil {
+		return
+	}
+	if _, isTap := ParseAction(item.RawText); isTap && isActionPayload(item.Payload) {
+		// A tap is not you opening the conversation, and nudging at one would
+		// turn a single completion into a chain.
+		return
+	}
+	if err := a.nudger(ctx, time.Now(), NudgeFromMessage); err != nil {
+		a.onError(fmt.Errorf("nudging after a capture: %w", err))
 	}
 }
 
