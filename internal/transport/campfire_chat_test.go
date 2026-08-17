@@ -110,8 +110,10 @@ func TestSendDowngradesToPlainTextWhenJSONIsRejected(t *testing.T) {
 	require.True(t, strings.HasPrefix(mu[0].body["contentType"].(string), "application/json"))
 	require.True(t, strings.HasPrefix(mu[1].body["contentType"].(string), "text/plain"),
 		"the retry must fall back to plain text, not JSON again")
-	require.Equal(t, "Due\n 1. bin day — 8 days, usually 7", mu[1].body["raw"],
-		"the plain-text retry carries the message's own Text")
+	require.Equal(t, "Due<br> 1. bin day — 8 days, usually 7", mu[1].body["raw"],
+		"the retry carries the message's own Text, rich-text encoded like every "+
+			"other body — Campfire's body is HTML on this path too, so the "+
+			"downgrade must not also lose the line breaks")
 }
 
 // closePrevious calls Update with Text deliberately empty, so the JSON PATCH
@@ -219,4 +221,46 @@ func TestChatIsAbsentWithoutABotKey(t *testing.T) {
 	cfg := config()
 	cfg.BaseURL, cfg.BotKey = "http://example.invalid", ""
 	require.Nil(t, transport.NewCampfire(cfg).Chat.Send)
+}
+
+// Campfire's Message declares `has_rich_text :body`, so a body is HTML and a
+// newline collapses like any other whitespace. A three-line digest arrived in
+// the room as one run-on sentence before this.
+func TestNewlinesSurviveAsBreaks(t *testing.T) {
+	base, got := chatStub(t, "")
+
+	cfg := config()
+	cfg.BaseURL, cfg.BotKey = base, "3-abc"
+	chat := transport.NewCampfire(cfg).Chat
+
+	_, err := chat.Send(context.Background(), "9", squirrel.Message{
+		Text:          "Due\n 1. bin day\n 2. water plants",
+		SelectionMode: "multiple",
+		Actions:       []squirrel.Action{{Label: "bin day", Value: "done:1", Emoji: "✅"}},
+	})
+	require.NoError(t, err)
+
+	require.Len(t, *got, 1)
+	require.Equal(t, "Due<br> 1. bin day<br> 2. water plants", (*got)[0].body["body"])
+}
+
+// The digest quotes captured text back verbatim — anything ever typed at the
+// bot — so a note that happens to contain markup must arrive as the words that
+// were written, not as markup.
+func TestCapturedTextIsNeverMarkup(t *testing.T) {
+	base, got := chatStub(t, "")
+
+	cfg := config()
+	cfg.BaseURL, cfg.BotKey = base, "3-abc"
+	chat := transport.NewCampfire(cfg).Chat
+
+	_, err := chat.Send(context.Background(), "9", squirrel.Message{
+		Text:    "Since yesterday\n · <b>buy milk</b> & bread",
+		Actions: []squirrel.Action{{Label: "x", Value: "done:1"}},
+	})
+	require.NoError(t, err)
+
+	body := (*got)[0].body["body"].(string)
+	require.Equal(t, "Since yesterday<br> · &lt;b&gt;buy milk&lt;/b&gt; &amp; bread", body)
+	require.NotContains(t, body, "<b>")
 }
