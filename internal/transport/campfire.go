@@ -448,7 +448,12 @@ func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, ca
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := boost(ctx, client, dest, "🐿️"); err != nil {
+		// 👀 means the spool write and its fsync completed — the thought
+		// survives a crash. The ✅ that follows it comes from the applier, once
+		// the drain has reached Postgres. The gap between the two is the window
+		// this whole architecture is built around, and until now nothing in the
+		// room could see it.
+		if err := boost(ctx, client, dest, "👀"); err != nil {
 			// dest carries the bot key, so it never goes into a log field —
 			// err is already stripped of it by stripURL inside boost.
 			slog.Error("campfire: boost failed", "error", err)

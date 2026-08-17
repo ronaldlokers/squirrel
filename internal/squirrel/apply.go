@@ -66,19 +66,50 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	// matches on text alone, so it cannot by itself tell a genuine tap from
 	// someone typing the same shape into the room — isActionPayload is what
 	// makes that distinction, from the payload the transport actually sent.
+	//
+	// Both branches below funnel into the same tail: tick runs once handling
+	// has succeeded, whether that handling was a tap resolved against a
+	// prompt or a plain capture that reached Postgres. tick itself is the one
+	// that knows a tap earns no ✅ — this join point does not need to.
 	if in, ok := ParseAction(item.RawText); ok && isActionPayload(item.Payload) {
-		return a.applyAction(ctx, in, *personID)
+		if err := a.applyAction(ctx, in, *personID); err != nil {
+			return err
+		}
+	} else {
+		intent := matchFn(item.RawText)
+		reply, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
+		if err != nil {
+			return err
+		}
+		if reply != "" {
+			if err := a.send(ctx, *item.ConversationID, reply); err != nil {
+				return err
+			}
+		}
 	}
 
-	intent := matchFn(item.RawText)
-	reply, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
-	if err != nil {
-		return err
+	a.tick(ctx, item)
+	return nil
+}
+
+// tick is the second half of the receipt. 👀 said the thought was on disk; ✅
+// says it has been handled — the drain reached Postgres and this ran. Both
+// stay: the pair is a visible trail of two stages that genuinely happened,
+// rather than one state overwriting its own history.
+//
+// Fail-open, like every part of the receipt. A boost that cannot be created
+// never changes whether the capture was stored.
+func (a *Applier) tick(ctx context.Context, item Item) {
+	if a.chat.Boost == nil || item.ExternalID == nil || item.ConversationID == nil {
+		return
 	}
-	if reply == "" {
-		return nil
+	if _, isTap := ParseAction(item.RawText); isTap {
+		// A tap is not a message in the room; there is nothing to react to.
+		return
 	}
-	return a.send(ctx, *item.ConversationID, reply)
+	if err := a.chat.Boost(ctx, *item.ConversationID, *item.ExternalID, "✅"); err != nil {
+		a.onError(fmt.Errorf("ticking %s: %w", *item.ExternalID, err))
+	}
 }
 
 func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conversationID string) (string, error) {
