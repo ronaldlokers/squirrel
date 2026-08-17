@@ -4,6 +4,7 @@ package squirrel_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -49,6 +50,79 @@ func TestSecondNudgeInADaySendsNothing(t *testing.T) {
 	require.NoError(t, s.Nudge(ctx, now.Add(time.Hour), squirrel.NudgeFromArrival),
 		"a refused second nudge is the budget working, not a failure")
 	require.Len(t, *sent, 1)
+}
+
+// TestSecondNudgeInADaySendsNothing above proves nothing about the budget
+// itself: with a single chore, DueChores' own per-chore tolerance gate
+// already suppresses the second Nudge call — a nulled sent_for_date in
+// nudgeFor (which would let the unique index refuse nothing at all) leaves
+// that test just as green. A second due chore is what actually exercises the
+// index: DueChores still returns it as an option for the second trigger,
+// so only the once-a-day claim itself can be what refuses it. The clock is
+// pinned to two fixed instants an hour apart, both mid-morning, rather than
+// time.Now() and time.Now().Add(time.Hour) — the latter straddles local
+// midnight into two different calendar dates whenever the suite happens to
+// run after 23:00, which would make the second Nudge a legitimately new day
+// rather than a refused second one.
+func TestSecondNudgeInADayIsRefusedEvenWithASecondChoreStillDue(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	vacuum, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, vacuum.ID, 20*24*time.Hour)
+
+	mop, err := store.UpsertChore(ctx, p, "mop", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, mop.ID, 20*24*time.Hour)
+
+	chat, sent := chatRecorder("1", "2")
+	s := schedulerWithChat(t, store, p, chat)
+
+	day := time.Date(2026, 8, 17, 9, 0, 0, 0, amsterdam(t))
+	require.NoError(t, s.Nudge(ctx, day, squirrel.NudgeFromMessage))
+	require.NoError(t, s.Nudge(ctx, day.Add(time.Hour), squirrel.NudgeFromArrival),
+		"a refused second nudge is the budget working, not a failure")
+	require.Len(t, *sent, 1,
+		"two chores still due must not defeat the once-a-day budget")
+}
+
+// A transient Campfire error at the moment of a nudge must not spend the
+// day's slot: nudgeFor commits the dated row before the send is even
+// attempted, so without cleanup the claim survives a failure the room never
+// actually saw, and every later trigger — including the 19:00 fallback the
+// spec relies on to catch exactly this — is refused by a message that was
+// never delivered.
+func TestFailedNudgeSendDoesNotSpendTheDay(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 20*24*time.Hour)
+
+	var calls int
+	chat := squirrel.Chat{
+		Send: func(context.Context, string, squirrel.Message) (string, error) {
+			calls++
+			if calls == 1 {
+				return "", errors.New("campfire unreachable")
+			}
+			return "m-2", nil
+		},
+	}
+	s := schedulerWithChat(t, store, p, chat)
+
+	day := time.Date(2026, 8, 17, 9, 0, 0, 0, amsterdam(t))
+	require.Error(t, s.Nudge(ctx, day, squirrel.NudgeFromMessage),
+		"the transport failure must surface")
+
+	require.NoError(t, s.Nudge(ctx, day.Add(time.Hour), squirrel.NudgeFromArrival),
+		"a later trigger the same day must still be able to claim the slot the failed send never delivered")
+	require.Equal(t, 2, calls,
+		"the second trigger must attempt a real send, not be refused by the failed attempt's stale claim")
 }
 
 // Nudge is the only place that ever opens a numbered surface without once()

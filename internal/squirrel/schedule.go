@@ -336,6 +336,22 @@ func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) e
 	// rather than something patched inline here.
 	messageID, err := s.sendMessage(ctx, NudgeMessage(*c, why))
 	if err != nil {
+		// nudgeFor already committed promptID, claiming today's nudge slot
+		// in the unique index — before it was known whether the send would
+		// even succeed. Left in place, that claim survives the failure: it
+		// is undelivered, so nothing depends on it, but the index cannot
+		// tell "undelivered" from "already sent" and every later trigger
+		// today — including the 19:00 fallback the spec relies on to catch
+		// exactly this — is refused by a message the room never received. A
+		// transient Campfire error would silently spend the whole day's
+		// nudge. Deleting it here gives the next trigger a real chance
+		// instead. Best-effort: if the delete itself fails, the row is
+		// reported rather than retried, same as every other failure on this
+		// path, and the pre-existing crash-window gap above already accepts
+		// worse.
+		if delErr := s.opts.Store.DeletePrompt(ctx, promptID); delErr != nil {
+			s.opts.OnError(fmt.Errorf("deleting undelivered nudge prompt %d: %w", promptID, delErr))
+		}
 		return fmt.Errorf("sending nudge: %w", err)
 	}
 	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {

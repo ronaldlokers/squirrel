@@ -79,6 +79,24 @@ func (s *Store) RecordPrompt(ctx context.Context, personID int64, conversationID
 	return promptID, nil
 }
 
+// DeletePrompt removes a prompt row (and, via the cascading foreign key on
+// prompt_lines, its lines) that was claimed by RecordPrompt but never
+// delivered. Nudge uses it when Chat.Send fails: RecordPrompt commits the
+// dated row before the send is attempted, the same ordering the evening
+// message uses and for the same reason, so a transport error leaves a row
+// that claims the day's nudge slot in the unique index on
+// (person_id, kind, sent_for_date) without ever having reached the room.
+// Nothing depends on an undelivered row — the message never went out — so
+// deleting it gives a later trigger the same day, including the 19:00
+// fallback, a real chance to claim the slot instead of being refused by a
+// send that never happened.
+func (s *Store) DeletePrompt(ctx context.Context, promptID int64) error {
+	if _, err := s.pool.Exec(ctx, `delete from prompts where id = $1`, promptID); err != nil {
+		return fmt.Errorf("deleting prompt: %w", err)
+	}
+	return nil
+}
+
 // MarkPromptSent records that the send succeeded, and what Campfire called the
 // message. Both facts arrive together and neither is useful without the other:
 // delivered_at is how LastDigestSentAt tells a real digest from a row whose
