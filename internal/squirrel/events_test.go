@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 func TestCompletionResetsTheClock(t *testing.T) {
@@ -82,12 +84,15 @@ func TestRetractionRestoresTheClock(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, due, 1, "overdue before the completion")
 
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
 	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack", time.Now()))
 	due, err = store.DueChores(ctx, p, time.Now())
 	require.NoError(t, err)
 	require.Empty(t, due, "the completion reset the clock")
 
-	found, err := store.RetractCompletion(ctx, c.ID, p, time.Now())
+	found, err := store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
 	require.NoError(t, err)
 	require.True(t, found)
 
@@ -103,8 +108,12 @@ func TestRetractionLeavesTheEventInTheLog(t *testing.T) {
 
 	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
+
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
 	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack", time.Now()))
-	_, err = store.RetractCompletion(ctx, c.ID, p, time.Now())
+	_, err = store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
 	require.NoError(t, err)
 
 	var total, live int
@@ -123,9 +132,48 @@ func TestRetractingNothingIsNotAnError(t *testing.T) {
 	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
 
-	found, err := store.RetractCompletion(ctx, c.ID, p, time.Now())
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
+	found, err := store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
 	require.NoError(t, err, "an un-tap with nothing to undo is a no-op, not a failure")
 	require.False(t, found)
+}
+
+// The finding this round of review caught: retraction must be a state
+// assertion, not a counter. Campfire's webhook delivery carries no event id
+// and can retry a tap, so a second RetractCompletion call against the same
+// prompt has to land in the same place as the first — nothing live since
+// that prompt — rather than walking back to an earlier completion the user
+// never touched.
+func TestSecondRetractionDoesNotReachAnEarlierCompletion(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack", time.Now().Add(-time.Hour)))
+
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack", time.Now()))
+
+	found, err := store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
+	require.NoError(t, err)
+	require.True(t, found, "the completion after the prompt was live")
+
+	found, err = store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
+	require.NoError(t, err)
+	require.False(t, found, "a retried un-tap must not reach back to the earlier completion")
+
+	var live int
+	require.NoError(t, store.Pool().QueryRow(ctx,
+		`select count(*) from events where chore_id = $1 and retracted_at is null`,
+		c.ID).Scan(&live))
+	require.Equal(t, 1, live, "the completion from before the prompt is still live")
 }
 
 // A tap carries a position, and the position resolves through a person-scoped

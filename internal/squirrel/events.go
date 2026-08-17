@@ -29,23 +29,39 @@ func (s *Store) RecordCompletion(ctx context.Context, choreID, personID int64, s
 	return nil
 }
 
-// RetractCompletion undoes the chore's most recent live completion. The row
-// stays; retracted_at is what the baseline query filters on, so the clock moves
-// back without the log losing anything.
+// RetractCompletion undoes whatever completion happened since a given prompt.
+// The row stays; retracted_at is what the baseline query filters on, so the
+// clock moves back without the log losing anything.
 //
-// Returns false when there was nothing live to retract. That is a no-op rather
-// than an error: an un-tap with nothing behind it is a user changing their mind
-// twice, not a failure.
-func (s *Store) RetractCompletion(ctx context.Context, choreID, personID int64, at time.Time) (bool, error) {
+// Scoping to promptID rather than to "the most recent live completion" is what
+// makes the operation a state assertion instead of a counter. Campfire's
+// webhook delivery carries no event id and can retry, so a second call with
+// the same promptID must be indistinguishable in effect from the first: once
+// nothing has been completed since that prompt, a retried un-tap finds
+// nothing live at or after p.sent_at and no-ops, rather than walking back to
+// an earlier completion the user never asked to touch.
+//
+// Returns false when there was nothing live to retract. That is a no-op
+// rather than an error — either genuinely nothing was ever completed since
+// this prompt, or a previous call already retracted it.
+//
+// The outer update repeats "retracted_at is null" even though the subquery
+// already filters on it: the subquery's row is chosen before the update
+// acquires its lock, so without the outer predicate too, a second call
+// racing the first could still match the same now-retracted row and
+// re-stamp it with a later timestamp, reporting success for nothing.
+func (s *Store) RetractCompletion(ctx context.Context, choreID, personID, promptID int64, at time.Time) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `
-		update events set retracted_at = $3
-		 where id = (
+		update events set retracted_at = $4
+		 where retracted_at is null
+		   and id = (
 		   select e.id from events e
 		     join chores c on c.id = e.chore_id
 		    where e.chore_id = $1 and c.person_id = $2 and e.retracted_at is null
+		      and e.occurred_at >= (select sent_at from prompts where id = $3)
 		    order by e.occurred_at desc, e.id desc
 		    limit 1)`,
-		choreID, personID, at)
+		choreID, personID, promptID, at)
 	if err != nil {
 		return false, fmt.Errorf("retracting completion: %w", err)
 	}
