@@ -70,27 +70,39 @@ func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
 // completed. Deriving it rather than storing it is what makes a sensor-written
 // event reset the clock with no extra code.
 //
-// last_shown is filtered to p.kind = 'digest'. `?` (IntentQuery in apply.go)
-// records a prompt_line for every active chore too, due or not, so without
-// this filter asking "?" marked every chore as shown and the tolerance gate
-// below hid all of them until their tolerance window passed again — up to a
-// week of silence for one keystroke. Only an actual morning nudge may reset
-// how recently a chore was shown.
+// last_shown is filtered to p.kind in ('digest', 'nudge'). `?` (IntentQuery
+// in apply.go) records a prompt_line for every active chore too, due or not,
+// so without this filter asking "?" marked every chore as shown and the
+// tolerance gate below hid all of them until their tolerance window passed
+// again — up to a week of silence for one keystroke. Only an actual nudge
+// (or, before the rename, a digest) may reset how recently a chore was
+// shown.
+//
+// 'nudge' is the kind that actually names a chore now — 'digest' stays for
+// rows that predate the split. 'evening' is deliberately excluded: on a
+// nudge day the evening message shows nothing new about the nudged chore
+// (nudgeFor already recorded it), and on a quiet day the evening message
+// carries no chore lines at all. Without 'nudge' here, last_shown was
+// permanently null once nothing wrote 'digest' any more, and the tolerance
+// gate below — "last_shown is null or ..." — always took its null branch:
+// PickChore's overdue weighting exists specifically to stop the same most-
+// overdue chore from being nudged every single day, and a dead gate let it
+// happen anyway.
 const baselineCTE = `
 	with baseline as (
 	  select c.id,
 	         coalesce((select max(e.occurred_at) from events e
 	                    where e.chore_id = c.id and e.retracted_at is null),
 	                  c.created_at) as since,
-	         -- Only a digest that actually reached the room counts as having
-	         -- shown a chore. The row is committed before the send, so a
+	         -- Only a digest or nudge that actually reached the room counts as
+	         -- having shown a chore. The row is committed before the send, so a
 	         -- failed send would otherwise start the tolerance clock on a
 	         -- message nobody ever saw, hiding an overdue chore for its whole
 	         -- tolerance window — the same silence a query used to cause.
 	         (select max(p.sent_at)
 	            from prompt_lines l join prompts p on p.id = l.prompt_id
 	           where l.chore_id = c.id
-	             and p.kind = 'digest'
+	             and p.kind in ('digest', 'nudge')
 	             and p.delivered_at is not null) as last_shown
 	    from chores c
 	   where c.person_id = $1 and c.active
@@ -195,4 +207,33 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 		}
 	}
 	return texts, rows.Err()
+}
+
+// CompletedToday names the chores completed since `since`, in the order they
+// were done. Retracted events are excluded: a retraction means it did not
+// happen, and reporting it back would contradict every other surface.
+func (s *Store) CompletedToday(ctx context.Context, personID int64, since time.Time) ([]string, error) {
+	const q = `
+		select c.name from events e
+		  join chores c on c.id = e.chore_id
+		 where e.person_id = $1
+		   and e.retracted_at is null
+		   and e.occurred_at >= $2
+		 order by e.occurred_at`
+
+	rows, err := s.pool.Query(ctx, q, personID, since)
+	if err != nil {
+		return nil, fmt.Errorf("querying completions: %w", err)
+	}
+	defer rows.Close()
+
+	names := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("scanning completion: %w", err)
+		}
+		names = append(names, name)
+	}
+	return names, rows.Err()
 }

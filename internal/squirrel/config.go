@@ -32,15 +32,37 @@ type CampfireConfig struct {
 }
 
 type Config struct {
-	Port           int
-	Transports     []string
-	OwnerHandle    string
-	SpoolDir       string
-	DrainInterval  time.Duration
-	Postgres       PostgresConfig
-	Campfire       *CampfireConfig
-	DigestAt       time.Duration
+	Port          int
+	Transports    []string
+	OwnerHandle   string
+	SpoolDir      string
+	DrainInterval time.Duration
+	Postgres      PostgresConfig
+	Campfire      *CampfireConfig
+	// EveningAt is the time since local midnight the evening message and its
+	// once-a-day nudge fallback fire at — see schedule.go's once(). Named for
+	// what it now is: EVENING_AT is load-bearing twice, as both the clock
+	// trigger and the evening capture slot, and the quiet-day merge in once()
+	// exists because they are the same instant. It used to default to 08:00
+	// under the name DIGEST_AT, left over from the phase 2/3 morning digest
+	// this phase replaced with an evening message — deployed under that
+	// default, the evening message fired at breakfast.
+	EveningAt      time.Duration
 	DigestLocation *time.Location
+	// PresenceSecret authenticates the arrival webhook. Empty means the route
+	// is not mounted at all — the same way an absent bot key leaves Send nil
+	// rather than half-working, MountPresence itself refuses to mount with an
+	// empty secret rather than serve an effectively open endpoint.
+	PresenceSecret string
+	// PresencePath is where the arrival webhook is mounted.
+	PresencePath string
+	// PresenceDelay is how long an arrival waits before nudging — "you have
+	// a coat on" — see PresenceOptions' own doc comment. Configurable rather
+	// than a boot.go constant because production and the integration suite
+	// genuinely want different values here: a couple of minutes is the
+	// point for a real arrival, but that would blow any test budget built to
+	// wait one out over a real socket.
+	PresenceDelay time.Duration
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -82,6 +104,19 @@ func clockTime(env map[string]string, name string, fallback time.Duration) (time
 		return 0, fmt.Errorf("%w: %s must be HH:MM, got %q", ErrConfig, name, v)
 	}
 	return time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute, nil
+}
+
+// duration parses a Go duration string like "2m" or "500ms".
+func duration(env map[string]string, name string, fallback time.Duration) (time.Duration, error) {
+	v := env[name]
+	if v == "" {
+		return fallback, nil
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %s must be a duration like \"2m\", got %q", ErrConfig, name, v)
+	}
+	return d, nil
 }
 
 func transportsFrom(env map[string]string) ([]string, error) {
@@ -170,13 +205,20 @@ func LoadConfig(env map[string]string) (Config, error) {
 		return Config{}, err
 	}
 
-	digestAt, err := clockTime(env, "DIGEST_AT", 8*time.Hour)
+	// 19:00, not 08:00: EVENING_AT is both the clock trigger and the evening
+	// capture slot (see the Config.EveningAt doc comment), and the two must
+	// agree for the quiet-day merge in schedule.go's once() to mean anything.
+	eveningAt, err := clockTime(env, "EVENING_AT", 19*time.Hour)
 	if err != nil {
 		return Config{}, err
 	}
 	location, err := time.LoadLocation(optional(env, "DIGEST_TZ", "Europe/Amsterdam"))
 	if err != nil {
 		return Config{}, fmt.Errorf("%w: DIGEST_TZ: %v", ErrConfig, err)
+	}
+	presenceDelay, err := duration(env, "PRESENCE_DELAY", 2*time.Minute)
+	if err != nil {
+		return Config{}, err
 	}
 
 	config := Config{
@@ -189,8 +231,11 @@ func LoadConfig(env map[string]string) (Config, error) {
 			Host: pgHost, Port: pgPort, Database: pgDatabase,
 			User: pgUser, Password: pgPassword,
 		},
-		DigestAt:       digestAt,
+		EveningAt:      eveningAt,
 		DigestLocation: location,
+		PresenceSecret: env["PRESENCE_SECRET"],
+		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
+		PresenceDelay:  presenceDelay,
 	}
 
 	if slicesContains(transports, "campfire") {

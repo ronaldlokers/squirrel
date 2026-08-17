@@ -18,7 +18,23 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // numberedKinds are the prompt kinds whose lines are numbered — the ones where
 // a position means something. A definition confirmation carries a button but is
 // a standalone surface: it names one chore and is never counted against.
-const numberedKinds = `('digest', 'query')`
+//
+// 'nudge' belongs here, not 'evening'. A nudge always carries its chosen
+// chore as its own line 1 and, when it is delivered standalone or claimed
+// fresh inside an evening send, the real message id too — see schedule.go's
+// once() and nudgeFor. 'evening' was added here briefly in an earlier round
+// and then taken back out: on a nudge day the evening row is stamped with
+// the same sent_at as the nudge row it rode in on, and ties break on id,
+// which the evening row always wins since it is recorded second. With
+// 'evening' numbered, that made the evening row — which carries no lines of
+// its own — win latestPrompt on the very day a nudge just opened a live
+// button, so a typed "done 1" or a bare "done" found nothing to resolve
+// against while the button on the very same message worked fine. Leaving
+// 'evening' out means the typed path always resolves through the nudge row,
+// which is the one that actually owns both the line and, when it has one,
+// the id — agreeing with the tapped path in every case rather than only
+// some.
+const numberedKinds = `('digest', 'query', 'nudge')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
 type Prompt struct {
@@ -61,6 +77,24 @@ func (s *Store) RecordPrompt(ctx context.Context, personID int64, conversationID
 		return 0, fmt.Errorf("committing prompt: %w", err)
 	}
 	return promptID, nil
+}
+
+// DeletePrompt removes a prompt row (and, via the cascading foreign key on
+// prompt_lines, its lines) that was claimed by RecordPrompt but never
+// delivered. Nudge uses it when Chat.Send fails: RecordPrompt commits the
+// dated row before the send is attempted, the same ordering the evening
+// message uses and for the same reason, so a transport error leaves a row
+// that claims the day's nudge slot in the unique index on
+// (person_id, kind, sent_for_date) without ever having reached the room.
+// Nothing depends on an undelivered row — the message never went out — so
+// deleting it gives a later trigger the same day, including the 19:00
+// fallback, a real chance to claim the slot instead of being refused by a
+// send that never happened.
+func (s *Store) DeletePrompt(ctx context.Context, promptID int64) error {
+	if _, err := s.pool.Exec(ctx, `delete from prompts where id = $1`, promptID); err != nil {
+		return fmt.Errorf("deleting prompt: %w", err)
+	}
+	return nil
 }
 
 // MarkPromptSent records that the send succeeded, and what Campfire called the
@@ -193,25 +227,34 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 	return s.scanChores(ctx, q, personID)
 }
 
-// LastDigestSentAt is the sent_at of the person's most recent digest — a
-// prompt with a non-null sent_for_date, which is exactly what distinguishes a
-// digest from a query prompt issued on demand. The scheduler anchors its
-// capture window to this instant rather than to a fixed "yesterday midnight"
-// offset, so a prompt with a null date (a query, not a digest) must never be
-// picked here: anchoring to one would shrink the window to however many
-// minutes ago the last "?" was sent and hide everything captured before it.
+// LastDigestSentAt is the sent_at of the person's most recent evening
+// message — a digest, in the old naming this method keeps. The scheduler
+// anchors its capture window to this instant rather than to a fixed
+// "yesterday midnight" offset.
 //
-// delivered_at is not null is required too. RecordPrompt commits a digest's
-// row before Send is attempted, so a row can exist for a date whose message
-// never reached Campfire. Anchoring to that row anyway would skip the
-// capture window right past every capture made on the day the send failed —
-// gone from every digest forever, since the next successful digest's window
-// starts from the (wrongly early) failed row's sent_at, not from the last
-// time a message actually arrived.
+// kind is filtered to ('digest', 'evening') rather than just "sent_for_date
+// is not null", because a nudge carries a date too — it has to, to get its
+// own slot in the per-day index — and a nudge is the newest dated prompt on
+// most days while showing no captures at all. Anchoring to it instead of the
+// last real evening message would skip the capture window forward past
+// everything captured between the two, silently and permanently: gone from
+// every future evening message, since each one's window starts from the
+// last one's sent_at. 'digest' stays in the list so the first evening
+// message after this kind was renamed still anchors off the last digest
+// that actually sent, rather than jumping backwards over however many days
+// of captures came before the rename.
+//
+// delivered_at is not null is required too. RecordPrompt commits a dated
+// prompt's row before Send is attempted, so a row can exist for a date whose
+// message never reached Campfire. Anchoring to that row anyway would skip
+// the capture window right past every capture made on the day the send
+// failed — gone from every evening message forever, since the next
+// successful one's window starts from the (wrongly early) failed row's
+// sent_at, not from the last time a message actually arrived.
 func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time, bool, error) {
 	const q = `
 		select sent_at from prompts
-		 where person_id = $1 and sent_for_date is not null and delivered_at is not null
+		 where person_id = $1 and kind in ('digest', 'evening') and delivered_at is not null
 		 order by sent_at desc, id desc limit 1`
 
 	var sentAt time.Time
@@ -223,6 +266,34 @@ func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time
 		return time.Time{}, false, fmt.Errorf("reading last digest: %w", err)
 	}
 	return sentAt, true, nil
+}
+
+// EveningDeliveredFor reports whether a delivered evening message already
+// exists for the given date. once() checks this before nudgeFor claims a
+// nudge slot: without it, a process that delivered today's evening message
+// and then restarted — losing its in-memory sentDate guard in the process —
+// would still let nudgeFor claim and commit a nudge row on its way to a
+// doomed RecordPrompt("evening", ...) collision, spending today's nudge slot
+// on a chore that is never shown for it.
+//
+// This is a plain read, not a lock: a genuinely concurrent second process can
+// still race between this check and the writes that follow it in once(), and
+// when it does, RecordPrompt's unique index is what actually decides,
+// same as always — this closes the deterministic restart case, not the rare
+// concurrent one.
+func (s *Store) EveningDeliveredFor(ctx context.Context, personID int64, forDate time.Time) (bool, error) {
+	const q = `
+		select exists (
+		  select 1 from prompts
+		   where person_id = $1 and kind = 'evening' and sent_for_date = $2
+		     and delivered_at is not null
+		)`
+
+	var exists bool
+	if err := s.pool.QueryRow(ctx, q, personID, forDate).Scan(&exists); err != nil {
+		return false, fmt.Errorf("checking evening delivery: %w", err)
+	}
+	return exists, nil
 }
 
 // ChoreOnPrompt resolves a position against one specific prompt, rather than

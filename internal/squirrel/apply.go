@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -31,6 +32,17 @@ type Applier struct {
 	// reason, so the id has to survive the few lines between the two. Reset
 	// to zero at the top of every apply().
 	pending int64
+	// nudger optionally attaches a nudge to a capture — set after
+	// construction via SetNudger, since the Applier and the Scheduler each
+	// need the other and boot builds them in that order.
+	nudger func(ctx context.Context, now time.Time, why NudgeReason) error
+}
+
+// SetNudger supplies the callback that may attach a nudge to a capture. It is
+// set after construction because the Applier and the Scheduler each need the
+// other, and boot builds them in that order.
+func (a *Applier) SetNudger(n func(context.Context, time.Time, NudgeReason) error) {
+	a.nudger = n
 }
 
 // NewApplier's send parameter is a vestige of phase 2, kept only so callers
@@ -73,6 +85,12 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 		return nil
 	}
 
+	// kind gates nudgeBack below: only a genuine capture ever carries a nudge
+	// back (see nudgeBack's own comment). A tap never sets it — see the
+	// action branch — so it stays its zero value, which is never
+	// IntentCapture.
+	var kind IntentKind
+
 	// An action is not a thought and never reaches the matcher. It is checked
 	// first so that a tap can never be reinterpreted as text. ParseAction
 	// matches on text alone, so it cannot by itself tell a genuine tap from
@@ -89,6 +107,7 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 		}
 	} else {
 		intent := matchFn(item.RawText)
+		kind = intent.Kind
 		m, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
 		if err != nil {
 			return err
@@ -122,6 +141,7 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	}
 
 	a.tick(ctx, item)
+	a.nudgeBack(ctx, kind)
 	return nil
 }
 
@@ -152,12 +172,65 @@ func (a *Applier) tick(ctx context.Context, item Item) {
 	if a.chat.Boost == nil || item.ExternalID == nil || item.ConversationID == nil {
 		return
 	}
-	if _, isTap := ParseAction(item.RawText); isTap {
+	if isTap(item) {
 		// A tap is not a message in the room; there is nothing to react to.
 		return
 	}
 	if err := a.chat.Boost(ctx, *item.ConversationID, *item.ExternalID, "✅"); err != nil {
 		a.onError(fmt.Errorf("ticking %s: %w", *item.ExternalID, err))
+	}
+}
+
+// Reactions are what a completion earns. Small, immediate, non-cumulative and
+// unpredictable — intermittent reinforcement is the strongest schedule there
+// is, and it is the same mechanism that defeats habituation, so one change
+// serves both.
+//
+// What makes a streak punish is not the reward but the counter that resets:
+// loss aversion makes losing hurt about twice as much as the equivalent gain
+// pleases. Nothing here accrues, so there is nothing to lose.
+//
+// These are NOT the 👀/✅ receipt, which reports whether the thought is on disk
+// and whether it reached Postgres. That pair is information and must never
+// vary — randomising it would turn the one honest signal about durability into
+// decoration.
+var Reactions = []string{"🎉", "✨", "🙌", "💫", "🌟"}
+
+// react acknowledges a completion on the message that asked for it. Fail-open:
+// a reaction that cannot be sent is cosmetic, and must never turn a recorded
+// completion into an error.
+func (a *Applier) react(ctx context.Context, prompt Prompt) {
+	if a.chat.Boost == nil || prompt.ExternalMessageID == "" {
+		return
+	}
+	pick := Reactions[rand.Intn(len(Reactions))]
+	if err := a.chat.Boost(ctx, prompt.ConversationID, prompt.ExternalMessageID, pick); err != nil {
+		a.onError(fmt.Errorf("reacting to a completion: %w", err))
+	}
+}
+
+// nudgeBack rides a nudge home on a message the person sent. Fail-open, like
+// every other outbound: a nudge that cannot be sent must never turn a stored
+// capture into an error, and the budget means a missed one is simply not
+// replaced today.
+//
+// Gated to a plain capture — kind == IntentCapture — not merely "not a tap".
+// apply() already excludes IntentDefine from closePrevious for the same
+// reason, and the spec's own trigger table says "any inbound capture", not
+// "any inbound message". A command reply (?, done, stop 1, ...) opens its own
+// numbered surface — a list, a confirmation — and nudgeBack riding in right
+// behind it would open a second one a beat later, disabling the buttons the
+// reply itself just printed: typing `?` would list three chores and then,
+// via Nudge's own closePrevious, immediately un-list them, so `done 3`
+// answers "I don't have a line 3" until the next `?` spends the day's budget
+// and it happens not to recur. A tap never reaches here as a capture either —
+// see apply()'s action branch, which leaves kind at its zero value.
+func (a *Applier) nudgeBack(ctx context.Context, kind IntentKind) {
+	if a.nudger == nil || kind != IntentCapture {
+		return
+	}
+	if err := a.nudger(ctx, time.Now(), NudgeFromMessage); err != nil {
+		a.onError(fmt.Errorf("nudging after a capture: %w", err))
 	}
 }
 
@@ -222,7 +295,7 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays)}, nil
+		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
 	}
 
 	outstanding, err := a.store.OutstandingLines(ctx, personID)
@@ -237,7 +310,7 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays)}, nil
+		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
 	default:
 		// Never guess. Re-number and ask, so the reply can be a bare digit —
 		// the same shape as IntentQuery, down to recording its own prompt.
@@ -290,6 +363,16 @@ func isActionPayload(payload json.RawMessage) bool {
 	return p.Type == "action"
 }
 
+// isTap reports whether item is a genuine tap rather than a lookalike
+// message — see isActionPayload. Text alone (ParseAction) is never enough on
+// its own: someone can type "!action 5 done:1 true" into the room and
+// produce text byte-identical to a real tap, so every caller that needs to
+// tell the two apart must check both.
+func isTap(item Item) bool {
+	_, ok := ParseAction(item.RawText)
+	return ok && isActionPayload(item.Payload)
+}
+
 // applyAction resolves a tap and applies it as a state assertion rather than a
 // delta: "selected" means the completion should exist, "not selected" means it
 // should not. Applying either twice lands in the same place, which is what
@@ -335,7 +418,11 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		if err != nil || done {
 			return err
 		}
-		return a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now())
+		if err := a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now()); err != nil {
+			return err
+		}
+		a.react(ctx, prompt)
+		return nil
 	}
 	return nil
 }

@@ -101,6 +101,31 @@ func TestApplyCompletesByPosition(t *testing.T) {
 	require.Contains(t, strings.ToLower((*got)[len(*got)-1].text), "vacuum")
 }
 
+// A chore with a single-day interval must read "next in 1 day" in the
+// completion reply, not "next in 1 days" — the plural helper is what this
+// numbered-position completion routes through.
+func TestApplyCompletesByPositionUsesSingularDayForADailyChore(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+	applier := squirrel.NewApplier(store, send, squirrel.Chat{}, nil)
+
+	c, err := store.UpsertChore(ctx, p, "meds", oneDay, oneDay)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, oneDay+time.Hour)
+
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
+
+	require.NoError(t, applier.Apply(ctx, itemOf("done 1"), &p))
+
+	reply := (*got)[len(*got)-1].text
+	require.Contains(t, reply, "next in 1 day.")
+	require.NotContains(t, reply, "1 days")
+}
+
 // A bare `done` with exactly one line outstanding needs no number.
 func TestApplyBareDoneWithOneOutstanding(t *testing.T) {
 	store := withStore(t)
@@ -128,6 +153,31 @@ func TestApplyBareDoneWithOneOutstanding(t *testing.T) {
 	due, err = store.DueChores(ctx, p, time.Now().Add(oneWeek+time.Hour))
 	require.NoError(t, err)
 	require.Empty(t, due, "completing it resets the clock")
+}
+
+// The bare-done, single-outstanding completion reply routes through the same
+// plural helper as the numbered-position one, and needs its own singular
+// coverage: a chore with a single-day interval must read "next in 1 day",
+// not "next in 1 days".
+func TestApplyBareDoneUsesSingularDayForADailyChore(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "meds", oneDay, oneDay)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, oneDay+time.Hour)
+
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
+
+	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("done"), &p))
+
+	reply := (*got)[len(*got)-1].text
+	require.Contains(t, reply, "next in 1 day.")
+	require.NotContains(t, reply, "1 days")
 }
 
 // With several outstanding it lists rather than guessing.

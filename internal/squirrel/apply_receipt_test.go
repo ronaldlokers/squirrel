@@ -73,6 +73,39 @@ func TestATapIsNotBoosted(t *testing.T) {
 	require.Empty(t, *boosts)
 }
 
+// tick must use the same two-part tap test apply() and nudgeBack use
+// (ParseAction and isActionPayload together), not ParseAction alone: tick
+// runs on every item, not only the gated branch behind apply()'s own check,
+// so a person typing "!action 5 done:1 true" as an ordinary message — text
+// byte-identical to a real tap, but carrying an ordinary message payload —
+// must still fall through to the matcher (already covered by
+// TestTapShapedTextWithoutActionPayloadDoesNotComplete) and still earn its
+// ✅. Before the fix, ParseAction alone matched the text, tick mistook it for
+// a tap, and the receipt was silently dropped.
+func TestTapShapedTextWithoutActionPayloadGetsATick(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, _ := recorder()
+	chat, boosts := boostRecorder()
+
+	item := squirrel.Item{
+		Transport:      "campfire",
+		ExternalID:     squirrel.Ptr("77"),
+		ConversationID: squirrel.Ptr("9"),
+		PersonID:       squirrel.Ptr(p),
+		RawText:        "!action 1 done:1 true",
+		Payload:        []byte(`{"type":"message"}`),
+		ReceivedAt:     time.Now(),
+	}
+
+	a := squirrel.NewApplier(store, send, chat, nil)
+	require.NoError(t, a.Apply(ctx, item, squirrel.Ptr(p)))
+
+	require.Len(t, *boosts, 1, "a lookalike message is still a message, and still earns its ✅")
+	require.Equal(t, "77", (*boosts)[0].messageID)
+}
+
 // Fail-open, unchanged from phase 1: the receipt is cosmetic and the capture is
 // already durable.
 func TestAFailedTickIsNotAnError(t *testing.T) {

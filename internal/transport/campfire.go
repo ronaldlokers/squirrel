@@ -301,7 +301,7 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 	}
 
 	// do is the phase 3 -> phase 2 degrade, made true by construction rather
-	// than by prose: DefinedMessage always carries a button and DigestMessage
+	// than by prose: DefinedMessage always carries a button and ListMessage
 	// carries one whenever anything is due, so those messages are always sent
 	// as JSON — but an upstream, unforked Campfire takes the raw request body
 	// as the message text and would post the JSON envelope itself into the

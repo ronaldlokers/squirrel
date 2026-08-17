@@ -69,7 +69,7 @@ func TestSendPostsActionsAsJSON(t *testing.T) {
 	require.Equal(t, "✅", first["emoji"])
 }
 
-// DefinedMessage and a due DigestMessage always carry a button, which means
+// DefinedMessage and a due ListMessage always carry a button, which means
 // they are always sent as JSON — but the spec requires phase 3 to degrade to
 // phase 2 behaviour against an unforked Campfire, whose bot endpoint treats
 // the raw request body as the message text. Without a fallback, the room

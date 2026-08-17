@@ -192,3 +192,41 @@ func TestCapturesSinceMatchesApplysDefinitionOfATap(t *testing.T) {
 	require.Equal(t, []string{"!action 451 done:1 true"}, texts,
 		"a typed tap-lookalike belongs in the digest; only a genuine action payload is a tap")
 }
+
+func TestCompletedTodayNamesWhatWasDone(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	bins, err := store.UpsertChore(ctx, p, "bin day", oneWeek, oneDay)
+	require.NoError(t, err)
+	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+
+	midnight := time.Now().Add(-8 * time.Hour)
+	require.NoError(t, store.RecordCompletion(ctx, bins.ID, p, "tap", time.Now()))
+	require.NoError(t, store.RecordCompletion(ctx, vac.ID, p, "ack", midnight.Add(-2*time.Hour)))
+
+	got, err := store.CompletedToday(ctx, p, midnight)
+	require.NoError(t, err)
+	require.Equal(t, []string{"bin day"}, got, "yesterday's completion is not today's")
+}
+
+// A retracted completion did not happen, and must not be reported as if it did.
+func TestCompletedTodayIgnoresRetractions(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	id, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now().Add(-time.Hour), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "tap", time.Now()))
+	_, err = store.RetractCompletion(ctx, c.ID, p, id, time.Now())
+	require.NoError(t, err)
+
+	got, err := store.CompletedToday(ctx, p, time.Now().Add(-8*time.Hour))
+	require.NoError(t, err)
+	require.Empty(t, got)
+}

@@ -42,7 +42,7 @@ func (l *safeLog) String() string {
 // Scheduler.Run calls Once synchronously the instant its goroutine starts, so
 // a Stop that does not join that goroutine can close the pool out from under
 // an in-flight query — the same failure mode Stop's own doc comment says the
-// drain join exists to prevent, just for the scheduler instead. DIGEST_AT is
+// drain join exists to prevent, just for the scheduler instead. EVENING_AT is
 // set to a time already past today, so Once's time-of-day guard never
 // short-circuits before the store is touched, and each iteration posts a
 // real capture so the digest has something to query and send rather than
@@ -76,7 +76,7 @@ func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 	t.Cleanup(func() { slog.SetDefault(prevLogger) })
 
-	env := envFor(t, map[string]string{"DIGEST_AT": "00:00"})
+	env := envFor(t, map[string]string{"EVENING_AT": "00:00"})
 
 	// Checked after every iteration rather than once at the end: without the
 	// join, one raced iteration tends to leave that iteration's store in a bad
@@ -113,4 +113,53 @@ func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 				"Stop raced it instead of joining it before closing the store", i)
 		require.NoError(t, stopErr, "iteration %d", i)
 	}
+}
+
+// TestStopDoesNotBlockForThePresenceDelay guards the opposite failure from
+// what this test used to assert. Before presence.go threaded a context
+// through PresenceOptions (see presence.go's own Ctx doc comment and
+// TestPresenceDelayWakesOnContextCancellation in the squirrel package), the
+// spawned goroutine only ever woke on its own `time.Sleep(o.Delay)`, which
+// selected on nothing — so Stop, which does join that goroutine via wg (the
+// guarantee this test used to prove and still relies on), had no way to make
+// it return early. A rollout landing within PRESENCE_DELAY of an arrival
+// blocked Stop for up to two minutes in production, well past main's 15s
+// shutdown budget and a default 30s grace period, so the pod was SIGKILLed
+// rather than stopped cleanly.
+//
+// The fix is Stop's own s.cancel() reaching the same loopCtx boot.go now
+// threads into PresenceOptions.Ctx, waking the goroutine immediately instead
+// of making it sleep out the delay. This is directly measurable the same way
+// the old version of this test measured the opposite: PRESENCE_DELAY is set
+// well above any plausible Stop overhead, and Stop, called immediately after
+// the arrival is acknowledged, must return in well under that delay rather
+// than anywhere near it.
+func TestStopDoesNotBlockForThePresenceDelay(t *testing.T) {
+	withStore(t)
+
+	const delay = 2 * time.Second
+	s := boots(t, envFor(t, map[string]string{
+		"PRESENCE_SECRET": testPresenceSecret,
+		"PRESENCE_DELAY":  delay.String(),
+	}))
+
+	req, err := http.NewRequest(http.MethodPost, presenceURL(s), strings.NewReader(""))
+	require.NoError(t, err)
+	req.Header.Set("X-Squirrel-Token", testPresenceSecret)
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, res.StatusCode)
+	res.Body.Close()
+
+	// Immediately, not after any wait: the whole point is that Stop itself
+	// must not be the thing waiting out the arrival's delay.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	start := time.Now()
+	stopErr := s.Stop(ctx)
+	elapsed := time.Since(start)
+	cancel()
+
+	require.NoError(t, stopErr)
+	require.Less(t, elapsed, delay/2,
+		"Stop waited out the arrival's full delay instead of waking it via context cancellation")
 }

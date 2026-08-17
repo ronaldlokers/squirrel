@@ -5,35 +5,6 @@ import (
 	"strings"
 )
 
-// RenderDigest is the daily message. Facts only: "19 days, usually 14" is the
-// entire editorial position, and it does not change as the number grows. No
-// streaks, no counts of times missed, no escalation. Shame is not a feature.
-//
-// Returns "" when there is nothing to say, because a daily "nothing to report"
-// is how you teach someone to skip the message.
-func RenderDigest(due []Chore, captures []string) string {
-	var b strings.Builder
-
-	if len(due) > 0 {
-		b.WriteString("Due\n")
-		for i, c := range due {
-			fmt.Fprintf(&b, " %d. %s\n", i+1, choreLine(c))
-		}
-	}
-
-	if len(captures) > 0 {
-		if b.Len() > 0 {
-			b.WriteString("\n")
-		}
-		b.WriteString("Since yesterday\n")
-		for _, c := range captures {
-			fmt.Fprintf(&b, " · %s\n", c)
-		}
-	}
-
-	return strings.TrimRight(b.String(), "\n")
-}
-
 func choreLine(c Chore) string {
 	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
 }
@@ -43,6 +14,12 @@ func plural(n int, unit string) string {
 		return fmt.Sprintf("%d %s", n, unit)
 	}
 	return fmt.Sprintf("%d %ss", n, unit)
+}
+
+// choreSentence is choreLine without the list numbering, for when a chore is
+// named on its own rather than as item N of a list.
+func choreSentence(c Chore) string {
+	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
 }
 
 func RenderList(chores []Chore) string {
@@ -61,8 +38,8 @@ func RenderList(chores []Chore) string {
 // because the matcher will sometimes turn a note into a chore and the
 // correction has to cost one word.
 func RenderDefined(c Chore) string {
-	return fmt.Sprintf("%s, every %d days. First nudge in %d days.\nnvm if you meant that as a note.",
-		c.Name, c.EveryDays, c.EveryDays)
+	return fmt.Sprintf("%s, every %s. First nudge in %s.\nnvm if you meant that as a note.",
+		c.Name, plural(c.EveryDays, "day"), plural(c.EveryDays, "day"))
 }
 
 // The rendered text is unchanged from phase 2 — buttons are a second path to
@@ -79,15 +56,6 @@ func actionsForChores(chores []Chore, kind, emoji string) []Action {
 		})
 	}
 	return out
-}
-
-func DigestMessage(due []Chore, captures []string) Message {
-	m := Message{Text: RenderDigest(due, captures)}
-	if len(due) > 0 {
-		m.SelectionMode = "multiple"
-		m.Actions = actionsForChores(due, "done", "✅")
-	}
-	return m.Capped()
 }
 
 func ListMessage(chores []Chore) Message {
@@ -112,4 +80,44 @@ func DefinedMessage(c Chore) Message {
 			Emoji: "📝",
 		}},
 	}
+}
+
+// EveningMessage is the once-a-day message that always runs: what you did,
+// what you captured, and — only when no nudge fired earlier — the chore that
+// would otherwise have arrived as a second notification a second apart.
+//
+// When nothing was completed the section is absent rather than empty. An empty
+// list is a scoreboard reading nil; an absent section says nothing about you.
+func EveningMessage(completed []string, captures []string, nudge *Chore) Message {
+	var b strings.Builder
+
+	if nudge != nil {
+		b.WriteString(choreSentence(*nudge))
+		b.WriteString("\n")
+	}
+	if len(completed) > 0 {
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString("Today\n")
+		for _, name := range completed {
+			fmt.Fprintf(&b, " · %s\n", name)
+		}
+	}
+	if len(captures) > 0 {
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString("Since yesterday\n")
+		for _, text := range captures {
+			fmt.Fprintf(&b, " · %s\n", text)
+		}
+	}
+
+	m := Message{Text: strings.TrimRight(b.String(), "\n")}
+	if nudge != nil {
+		m.SelectionMode = "single"
+		m.Actions = []Action{{Label: nudge.Name, Value: "done:1", Emoji: "✅"}}
+	}
+	return m
 }

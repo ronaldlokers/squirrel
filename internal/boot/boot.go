@@ -8,11 +8,48 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 	"github.com/ronaldlokers/squirrel/internal/transport"
 )
+
+// presenceDebounce is not configuration — see PresenceOptions' own doc
+// comment for what it does. It absorbs the rapid re-arrivals a flapping
+// wifi/cellular handoff produces (Home Assistant fires on every one), and
+// matches the value presence_test.go itself exercises. Unlike Delay, its
+// value does not need to differ between production and the integration
+// suite, so it stays a constant rather than joining config.PresenceDelay.
+const presenceDebounce = 10 * time.Minute
+
+// nudgeFunc matches Scheduler.Nudge's signature exactly, which is also what
+// Applier.SetNudger expects.
+type nudgeFunc = func(context.Context, time.Time, squirrel.NudgeReason) error
+
+// nudgeRelay lets the presence route be mounted synchronously in Boot, on the
+// same Server the Campfire webhook uses, before the scheduler that actually
+// performs a nudge exists. The route has to be registered before Listen the
+// same way every transport's route is; the scheduler can only be built once
+// connectAndDrain reaches a live Postgres and learns the owner's person id,
+// which may not have happened yet — or, with the database down, may not
+// happen for a while. An arrival in that window is absorbed rather than
+// queued, the same tradeoff MountPresence's own doc comment describes: a
+// presence ping is not a thought, and losing one costs a nudge that the
+// evening message still catches.
+type nudgeRelay struct {
+	fn atomic.Pointer[nudgeFunc]
+}
+
+func (r *nudgeRelay) set(f nudgeFunc) { r.fn.Store(&f) }
+
+func (r *nudgeRelay) Nudge(ctx context.Context, now time.Time, why squirrel.NudgeReason) error {
+	f := r.fn.Load()
+	if f == nil {
+		return nil
+	}
+	return (*f)(ctx, now, why)
+}
 
 type Squirrel struct {
 	port    int
@@ -21,11 +58,12 @@ type Squirrel struct {
 	stops   []func(context.Context) error
 	cancel  context.CancelFunc
 	drained chan struct{}
-	// wg tracks background goroutines started after the store opens — today
-	// just the digest scheduler — so Stop can join them before closing the
-	// store. drained alone is not enough: it only covers connectAndDrain's own
-	// goroutine, and the scheduler runs concurrently with the drain loop on a
-	// shared ctx, not nested inside it.
+	// wg tracks background goroutines that touch the store outside the
+	// drain's own goroutine — the digest scheduler, and each presence
+	// arrival's delayed nudge — so Stop can join all of them before closing
+	// the store. drained alone is not enough: it only covers connectAndDrain's
+	// own goroutine, and both of these run concurrently with the drain loop
+	// on a shared ctx, not nested inside it.
 	wg sync.WaitGroup
 }
 
@@ -81,6 +119,61 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		slog.Info("transport started", "transport", t.Name, "sends", t.Send != nil)
 	}
 
+	// The relay is captured by OnArrive below and handed to connectAndDrain,
+	// which fills it in once the scheduler exists. Mounting must happen here,
+	// before Listen, the same as every transport's own route — not deferred
+	// into connectAndDrain — so the route is live by the time Boot returns,
+	// matching how the Campfire webhook is already live by then.
+	nudge := &nudgeRelay{}
+	if config.PresenceSecret != "" {
+		squirrel.MountPresence(server, config.PresencePath, squirrel.PresenceOptions{
+			Secret:   config.PresenceSecret,
+			Debounce: presenceDebounce,
+			Delay:    config.PresenceDelay,
+			OnArrive: func() {
+				if err := nudge.Nudge(loopCtx, time.Now(), squirrel.NudgeFromArrival); err != nil {
+					slog.Error("nudge", "error", err)
+				}
+			},
+			// Registers the delayed OnArrive call with s.wg instead of
+			// leaving it a bare goroutine, the same guarantee wg already
+			// gives the digest scheduler: Stop joins it before closing the
+			// store, so an arrival caught mid-Delay or mid-Nudge at
+			// shutdown finishes against a live pool rather than one Close
+			// has already torn down. Add runs synchronously inside the HTTP
+			// handler, before it returns — see presence.go's own comment on
+			// Go — so it is guaranteed to have registered before
+			// Shutdown's wait for in-flight handlers to return can be
+			// satisfied, closing the same window a plain `go fn()` leaves
+			// open between an arrival landing and Stop being called.
+			Go: func(fn func()) {
+				s.wg.Add(1)
+				go func() {
+					defer s.wg.Done()
+					fn()
+				}()
+			},
+			// Ctx is loopCtx, the same context Stop cancels (via s.cancel,
+			// see below) before it joins s.wg. Without this, an arrival
+			// caught mid-Delay only ever wakes on its own timer — up to
+			// PresenceDelay, a couple of minutes in production — so a
+			// rollout in that window blocks Stop past main's 15s shutdown
+			// budget and the default 30s grace period, and the pod is
+			// SIGKILLed rather than stopped cleanly. Threading loopCtx here
+			// lets cancellation wake it immediately instead.
+			Ctx: loopCtx,
+		})
+	} else {
+		// MountPresence's own "refusing to mount" log only fires when it is
+		// actually called — a mis-wired secretKeyRef that leaves
+		// PRESENCE_SECRET empty otherwise produces no log line at all, and a
+		// bot with no arrival trigger looks exactly like one working
+		// normally, since the evening message still runs on schedule. Same
+		// precedent as the "no sender configured" warning below for a
+		// missing bot key.
+		slog.Warn("no presence secret configured; the arrival trigger is inactive")
+	}
+
 	port, err := server.Listen(fmt.Sprintf(":%d", config.Port))
 	if err != nil {
 		cancel()
@@ -98,7 +191,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 	go func() {
 		defer close(s.drained)
-		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg)
+		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge)
 	}()
 
 	return s, nil
@@ -106,7 +199,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup) {
+func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay) {
 	var personID int64
 	for {
 		var err error
@@ -154,6 +247,22 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		})
 
 		if config.Campfire != nil {
+			scheduler := squirrel.NewScheduler(squirrel.SchedulerOptions{
+				Store: store, Send: send, Chat: chat, PersonID: personID,
+				ConversationID: config.Campfire.ConversationID,
+				At:             config.EveningAt,
+				Location:       config.DigestLocation,
+				OnError:        func(err error) { slog.Error("digest", "error", err) },
+			})
+
+			// A capture can carry a nudge back on the same message, and an
+			// arrival can trigger one through the presence route mounted
+			// back in Boot — both go through this one Scheduler so the
+			// once-a-day budget its unique index enforces is shared rather
+			// than split across two independent claimants.
+			applier.SetNudger(scheduler.Nudge)
+			nudge.set(scheduler.Nudge)
+
 			// Joined by Stop before the store closes: the scheduler runs on
 			// the same ctx as the drain but is not nested inside it, so
 			// draining alone does not wait for an in-flight digest send to
@@ -161,13 +270,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				squirrel.NewScheduler(squirrel.SchedulerOptions{
-					Store: store, Send: send, Chat: chat, PersonID: personID,
-					ConversationID: config.Campfire.ConversationID,
-					At:             config.DigestAt,
-					Location:       config.DigestLocation,
-					OnError:        func(err error) { slog.Error("digest", "error", err) },
-				}).Run(ctx)
+				scheduler.Run(ctx)
 			}()
 		}
 	} else {
