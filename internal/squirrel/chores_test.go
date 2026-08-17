@@ -108,3 +108,44 @@ func TestDeactivateChoreHidesIt(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, due)
 }
+
+// A tap is stored as an item whose raw_text is "!action <id> done:<n> <bool>"
+// — the same items table a genuine capture lands in. Before the fix,
+// CapturesSince had no case for that shape in matchFn, so it classified as
+// IntentCapture and was echoed into the next digest's "Since yesterday" list,
+// accumulating a line for every tap ever made. ParseAction is what the tap
+// pipeline itself uses to recognise the shape, so filtering on it here is the
+// one definition of what a tap looks like rather than a second one.
+func TestCapturesSinceExcludesTaps(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	since := time.Now().Add(-time.Hour)
+
+	_, err := store.InsertItem(ctx, squirrel.Item{
+		Transport:      "campfire",
+		ExternalID:     squirrel.Ptr("1"),
+		ConversationID: squirrel.Ptr("9"),
+		PersonID:       squirrel.Ptr(p),
+		RawText:        "buy milk",
+		Payload:        []byte(`{}`),
+		ReceivedAt:     time.Now(),
+	})
+	require.NoError(t, err)
+
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport:      "campfire",
+		ExternalID:     squirrel.Ptr("2"),
+		ConversationID: squirrel.Ptr("9"),
+		PersonID:       squirrel.Ptr(p),
+		RawText:        "!action 451 done:1 true",
+		Payload:        []byte(`{"type":"action"}`),
+		ReceivedAt:     time.Now(),
+	})
+	require.NoError(t, err)
+
+	texts, err := store.CapturesSince(ctx, p, since)
+	require.NoError(t, err)
+	require.Equal(t, []string{"buy milk"}, texts,
+		"a tap must never be echoed into the digest's capture list")
+}

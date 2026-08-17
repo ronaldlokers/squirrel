@@ -106,8 +106,9 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 
 	// An action is input like anything else: spooled, acknowledged, applied
 	// after the drain. Its text is a stable encoding rather than the raw JSON so
-	// that the matcher has one thing to recognise and the digest's capture list
-	// can filter it out by prefix.
+	// that the matcher has one thing to recognise and CapturesSince can filter
+	// it out of the digest via ParseAction, the same function that recognises
+	// it everywhere else.
 	//
 	// The external id carries the receive instant because the payload has no
 	// event id and no timestamp of its own: without it, tapping a button off and

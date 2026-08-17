@@ -177,6 +177,14 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 		if err := rows.Scan(&text); err != nil {
 			return nil, fmt.Errorf("scanning capture: %w", err)
 		}
+		// A tap is stored in items just like a genuine capture, encoded as
+		// "!action <id> done:<n> <bool>". ParseAction is the one definition of
+		// that shape — the same function the tap pipeline itself uses to
+		// recognise it — so a tap is excluded here rather than reinventing the
+		// check as a second, possibly-diverging prefix test.
+		if _, isTap := ParseAction(text); isTap {
+			continue
+		}
 		if matchFn(text).Kind == IntentCapture {
 			texts = append(texts, text)
 		}
