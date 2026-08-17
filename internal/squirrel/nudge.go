@@ -51,27 +51,27 @@ func PickChore(due []Chore, draw float64) (Chore, bool) {
 // NudgeReason is which trigger produced this nudge. It changes only the
 // framing — varied phrasing is the same anti-habituation mechanism as varied
 // timing, and it costs nothing.
+//
+// Two values, not three: a nudge only ever reaches a real send by riding back
+// on a message (NudgeFromMessage) or off the presence webhook
+// (NudgeFromArrival). The quiet-day fallback is EveningMessage, which builds
+// its own line from choreSentence and never calls NudgeMessage — so there is
+// no third trigger here to give words to.
 type NudgeReason string
 
 const (
 	NudgeFromMessage NudgeReason = "message"
 	NudgeFromArrival NudgeReason = "arrival"
-	NudgeFromEvening NudgeReason = "evening"
 )
 
 // NudgeMessage is one chore and one button. Never a list: self-regulation
 // draws on a depletable pool and every decision spends it, so six due chores
 // is six decisions charged to the resource that is already short.
 func NudgeMessage(c Chore, why NudgeReason) Message {
-	var text string
-	switch why {
-	case NudgeFromMessage:
+	text := choreSentence(c)
+	if why == NudgeFromMessage {
 		text = fmt.Sprintf("While you're here — %s, %d days, usually %d.",
 			c.Name, c.SinceDays, c.EveryDays)
-	case NudgeFromEvening:
-		text = fmt.Sprintf("This evening — %s", choreSentence(c))
-	default: // NudgeFromArrival
-		text = choreSentence(c)
 	}
 
 	return Message{

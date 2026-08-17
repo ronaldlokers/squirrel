@@ -92,8 +92,8 @@ func TestNudgeMessageCarriesOneButton(t *testing.T) {
 }
 
 // Riding back on a message the person sent, it acknowledges the piggyback.
-// Varied phrasing is the same anti-habituation mechanism as varied timing.
-func TestNudgeFramingVariesByReason(t *testing.T) {
+// Arrival — the presence webhook — gets no such framing.
+func TestNudgeFramingAcknowledgesThePiggyback(t *testing.T) {
 	c := overdue(1, "bin day", 19, 14)
 
 	piggyback := squirrel.NudgeMessage(c, squirrel.NudgeFromMessage)
@@ -101,16 +101,13 @@ func TestNudgeFramingVariesByReason(t *testing.T) {
 
 	arrival := squirrel.NudgeMessage(c, squirrel.NudgeFromArrival)
 	require.NotContains(t, arrival.Text, "While you're here")
-
-	evening := squirrel.NudgeMessage(c, squirrel.NudgeFromEvening)
-	require.NotEqual(t, arrival.Text, evening.Text, "each trigger reads differently")
 }
 
 // Facts only. The words that would make this a nag are the ones under test.
 func TestNudgeNeverScolds(t *testing.T) {
 	c := overdue(1, "vacuum", 200, 14)
 	for _, why := range []squirrel.NudgeReason{
-		squirrel.NudgeFromMessage, squirrel.NudgeFromArrival, squirrel.NudgeFromEvening,
+		squirrel.NudgeFromMessage, squirrel.NudgeFromArrival,
 	} {
 		text := squirrel.NudgeMessage(c, why).Text
 		for _, forbidden := range []string{
