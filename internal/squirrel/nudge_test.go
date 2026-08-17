@@ -91,6 +91,21 @@ func TestNudgeMessageCarriesOneButton(t *testing.T) {
 	require.Equal(t, "single", m.SelectionMode)
 }
 
+// A chore overdue by exactly one day reads "1 day", not "1 days" — the
+// plural helper both NudgeMessage branches (piggyback and arrival) route
+// through via choreSentence/plural.
+func TestNudgeMessageUsesSingularDayForOneDayOverdue(t *testing.T) {
+	c := overdue(1, "bin day", 1, 14)
+
+	arrival := squirrel.NudgeMessage(c, squirrel.NudgeFromArrival).Text
+	require.Contains(t, arrival, "1 day,")
+	require.NotContains(t, arrival, "1 days")
+
+	piggyback := squirrel.NudgeMessage(c, squirrel.NudgeFromMessage).Text
+	require.Contains(t, piggyback, "1 day,")
+	require.NotContains(t, piggyback, "1 days")
+}
+
 // Riding back on a message the person sent, it acknowledges the piggyback.
 // Arrival — the presence webhook — gets no such framing.
 func TestNudgeFramingAcknowledgesThePiggyback(t *testing.T) {
