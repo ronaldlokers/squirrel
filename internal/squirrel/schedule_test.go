@@ -374,6 +374,63 @@ func TestSchedulerRecoversCapturesAfterAFailedSend(t *testing.T) {
 	require.Contains(t, (*got)[0].text, "after the outage")
 }
 
+// The tolerance gate compares absolute instants, and DefaultTolerance floors
+// at 24h, so a daily chore's tolerance is also exactly 24h. Two ticks 900ms
+// and 400ms into their respective seconds — nothing more exotic than
+// ordinary scheduler jitter — land half a second under 24 hours apart in
+// absolute time, and an untouched 24h tolerance used to make that enough to
+// skip the second morning's nudge entirely.
+func TestSchedulerToleratesTickJitterOnADailyChore(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "meds", oneDay, oneDay)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 8, 15, 8, 0, 0, 0, amsterdam(t))))
+
+	s := scheduler(t, store, p, send)
+
+	day1 := time.Date(2026, 8, 17, 8, 0, 0, 900_000_000, amsterdam(t))
+	require.NoError(t, s.Once(ctx, day1))
+	require.Len(t, *got, 1, "meds is already overdue by day 1")
+
+	day2 := time.Date(2026, 8, 18, 8, 0, 0, 400_000_000, amsterdam(t))
+	require.NoError(t, s.Once(ctx, day2))
+	require.Len(t, *got, 2, "half a second of jitter must not skip a daily chore's nudge")
+	require.Contains(t, (*got)[1].text, "meds")
+}
+
+// In Europe/Amsterdam, 08:00 on 2026-03-28 to 08:00 on 2026-03-29 is only 23
+// hours: clocks spring forward during that night. A daily chore's tolerance
+// is exactly 24h (DefaultTolerance floors there too), so without slack the
+// digest on the 29th falls short of its own chore's tolerance by an hour and
+// the chore is skipped that one morning every year, in every timezone that
+// observes DST.
+func TestSchedulerDailyChoreSurvivesSpringForward(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "meds", oneDay, oneDay)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 3, 25, 8, 0, 0, 0, amsterdam(t))))
+
+	s := scheduler(t, store, p, send)
+
+	for i, day := range []int{26, 27, 28, 29} {
+		at := time.Date(2026, 3, day, 8, 0, 1, 0, amsterdam(t))
+		require.NoError(t, s.Once(ctx, at))
+		require.Len(t, *got, i+1, "2026-03-%d morning's nudge", day)
+	}
+	require.Contains(t, (*got)[3].text, "meds",
+		"the spring-forward morning must still get its nudge")
+}
+
 func TestSchedulerRunStopsWithTheContext(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)

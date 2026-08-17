@@ -88,6 +88,16 @@ const baselineCTE = `
 	)`
 
 func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([]Chore, error) {
+	// The tolerance gate compares absolute instants, but the event it is
+	// timed against — the daily digest — fires on a wall clock once a day,
+	// not every 24 hours on the dot: ordinary scheduler tick jitter, and
+	// twice a year the DST shift, both make consecutive mornings' sends land
+	// anywhere from a little under to a little over 24 hours apart. Compared
+	// against an untouched tolerance, a short morning silently pushes a chore
+	// whose tolerance is a day or less out of the window it should have been
+	// in, and it is quietly skipped that day. Slack subtracted here absorbs
+	// both without risk of a second nudge the same day, because the digest
+	// only ever fires once daily regardless.
 	const q = baselineCTE + `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
 		       extract(epoch from ($2::timestamptz - b.since))::bigint
@@ -95,7 +105,8 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		 where c.person_id = $1 and c.active
 		   and $2::timestamptz >= b.since + make_interval(secs => c.interval_seconds)
 		   and (b.last_shown is null
-		        or $2::timestamptz >= b.last_shown + make_interval(secs => c.tolerance_seconds))
+		        or $2::timestamptz >= b.last_shown
+		               + make_interval(secs => c.tolerance_seconds) - interval '2 hours')
 		 order by extract(epoch from ($2::timestamptz - b.since)) / c.interval_seconds desc, c.name`
 
 	return s.scanChores(ctx, q, personID, now)
