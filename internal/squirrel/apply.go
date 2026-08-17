@@ -316,6 +316,14 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 
 	switch in.Kind {
 	case "undefine":
+		// DefinedMessage uses selection_mode "single", so deselecting the
+		// button — or Campfire clearing the retained selection — delivers
+		// "selected: false" for this same value. Only a selected tap is the
+		// correction being asked for; anything else must be a no-op, the same
+		// as an unselected "done" is for a completion.
+		if !in.Selected {
+			return nil
+		}
 		return a.store.DeactivateChore(ctx, c.ID)
 
 	case "done":

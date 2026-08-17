@@ -156,6 +156,33 @@ func TestUndefineTapDeactivatesTheChore(t *testing.T) {
 	require.Empty(t, active)
 }
 
+// DefinedMessage uses selection_mode "single", so deselecting the correction
+// button delivers "selected: false" — not a second tap on a different
+// button. Before the fix, applyAction's "undefine" case deactivated the
+// chore regardless of in.Selected, so an un-select (which Campfire can and
+// does send, e.g. when the retained selection is cleared) silently dropped a
+// chore nobody asked to drop. "selected: true" is the only undefine tap that
+// should act; anything else is a no-op, same as an unselected "done".
+func TestUndefineTapRequiresSelectedTrue(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, _ := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "i have a headache", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	id, err := store.RecordPrompt(ctx, p, "9", "define", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, id, "9", time.Now()))
+
+	a := squirrel.NewApplier(store, send, squirrel.Chat{}, nil)
+	require.NoError(t, a.Apply(ctx, tapItem(p, "9", "undefine:1", false), squirrel.Ptr(p)))
+
+	active, err := store.ActiveChores(ctx, p)
+	require.NoError(t, err)
+	require.Len(t, active, 1, "an unselected undefine tap must not deactivate the chore")
+}
+
 // A person can type text that is byte-identical to what the transport writes
 // for a real tap — ParseAction cannot tell them apart on text alone. This is
 // what item.Payload's "type" field is for: an ordinary message's payload
