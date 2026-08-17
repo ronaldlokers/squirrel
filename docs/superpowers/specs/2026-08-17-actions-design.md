@@ -210,14 +210,33 @@ the action as a state assertion**:
 
 - `selected: true` — ensure a live completion exists for this chore from this
   prompt. If one already does, do nothing.
-- `selected: false` — retract this chore's most recent live completion. If there
-  is none, do nothing.
+- `selected: false` — retract **every** live completion for this chore at or
+  after this prompt's `sent_at`. If there are none, do nothing.
 
-Applying either twice reaches the same state as applying it once, so a retried
-delivery is harmless and a lost one is recoverable by tapping again. The spool
-entry still gets a unique external id (the derived key plus the receive
-timestamp) so that two genuine taps are not collapsed into one by
-`InsertItem`'s conflict clause.
+The plural matters and the first draft of this document got it wrong. Retracting
+only the most recent live completion is not a state assertion: with two live
+completions inside the window, a second delivery peels off the next one and
+reports success, so applying it twice lands somewhere applying it once does not.
+Clearing the whole window is what makes the second delivery affect no rows.
+
+Applying either twice therefore reaches the same state as applying it once, and a
+lost delivery is recoverable by tapping again. The spool entry still gets a
+unique external id (the derived key plus the receive timestamp) so that two
+genuine taps are not collapsed into one by `InsertItem`'s conflict clause.
+
+**A retry is harmless only when it arrives in order, and this is the one place
+that is not guaranteed.** The assertions are idempotent but not commutative, and
+the payload carries nothing to order deliveries by. Tap, un-tap, tap again, and
+then have the un-tap's delivery retry and land last: the chore ends up
+incomplete while its button renders selected, and taps are deliberately not
+boosted, so nothing in the room shows the divergence.
+
+This is accepted rather than fixed. Ordering it needs either a new column
+recording what has already been applied, or refusing a delivery that looks late —
+both larger than a risk that requires a delivery failure *and* a retry landing
+after a subsequent genuine tap. It is written down here because a design note
+that claims a guarantee it does not have is worse than one that names its own
+edge.
 
 ## Retraction
 
@@ -226,12 +245,26 @@ Completion is an event, and undo must not delete it. The chore clock is
 destroy the record — and "completion is just an event" is precisely what lets a
 sensor reset a chore with no new code.
 
-`events` gains `retracted_at timestamptz`. The baseline subquery ignores
-retracted rows. A retraction is then a thing that visibly happened rather than
-an absence, and the sensor seam is untouched.
+`events` gains `retracted_at timestamptz`. **Every** query that derives a chore's
+state ignores retracted rows — the baseline subquery, the "has this been
+completed since the prompt" check, and the outstanding-lines list a bare `done`
+resolves against. There are three readers of `events` and the first draft of this
+work updated two of them, which left the digest and the typed `done` path
+disagreeing about whether a chore was done. A retraction is then a thing that
+visibly happened rather than an absence, and the sensor seam is untouched.
 
-Retract the chore's most recent live completion for that person. That is
-unambiguous because only the newest prompt has live buttons.
+Retract every live completion for that person's chore at or after the prompt's
+`sent_at`, in one statement — see *Idempotency* above for why the plural is what
+makes it a state assertion.
+
+**The blast radius is the whole window, and the bound on it is fail-open.** Only
+the newest numbered prompt has live buttons, so in normal operation that window
+is one digest wide. But disabling the previous prompt is deliberately allowed to
+fail — silence is worse than a stale button — so a close that fails leaves an
+older surface live, and an un-tap there retracts completions the user never
+associated with any button, including ones typed by hand. That is the price of
+never letting the past block the present, and it is worth knowing before someone
+widens the failure modes of the close.
 
 ## Resolving a tap to a chore
 
