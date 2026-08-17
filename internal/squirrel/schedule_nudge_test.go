@@ -51,6 +51,43 @@ func TestSecondNudgeInADaySendsNothing(t *testing.T) {
 	require.Len(t, *sent, 1)
 }
 
+// Nudge is the only place that ever opens a numbered surface without once()
+// right behind it — once() skips closePrevious on a day it claims nothing
+// new (see its own comment) — so if Nudge did not close the previous surface
+// itself, nothing would: a day-1 button would still be live on day 10,
+// growing by one every day a nudge fires. That is not just a stray button:
+// RetractCompletion is bounded only below, by e.occurred_at >= p.sent_at, so
+// a button left live that long would retract every completion of that chore
+// since day 1, not only the one it was originally sent for.
+func TestSecondDaysNudgeClosesTheFirsts(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	// Tolerance is oneDay, not oneWeek: DueChores gates reappearance on
+	// last_shown + tolerance, and day 1's nudge is the chore's last_shown. A
+	// longer tolerance would suppress it from day 2's nudge regardless of how
+	// overdue it still is, and the test would never reach the code under
+	// test.
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneDay)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 20*24*time.Hour)
+
+	chat, sent := chatRecorder("1", "2")
+	s := schedulerWithChat(t, store, p, chat)
+
+	day1 := time.Date(2026, 8, 17, 10, 0, 0, 0, amsterdam(t))
+	require.NoError(t, s.Nudge(ctx, day1, squirrel.NudgeFromArrival))
+	require.Len(t, *sent, 1)
+	require.Empty(t, (*sent)[0].updates, "nothing to close on the first nudge")
+
+	day2 := day1.Add(24 * time.Hour)
+	require.NoError(t, s.Nudge(ctx, day2, squirrel.NudgeFromArrival))
+	require.Len(t, *sent, 2)
+	require.Equal(t, []string{"1"}, (*sent)[1].updates,
+		"the second day's nudge must close the first day's still-live button")
+}
+
 func TestNudgeWithNothingDueSendsNothing(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

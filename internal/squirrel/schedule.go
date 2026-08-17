@@ -310,6 +310,18 @@ func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64,
 // ErrDigestAlreadySent from the claim below is not surfaced as an error: a
 // refused nudge means today's slot is already spoken for, which is the budget
 // working exactly as designed, not a failure to report or retry.
+//
+// Nudge is the only place that ever opens a new numbered surface without
+// once() right behind it: once() skips closePrevious on a day it claims
+// nothing new (see its comment), so if Nudge did not close the previous
+// surface itself, nothing would — the button before this one would stay live
+// forever, growing by one every day a nudge fires. That is not just a stray
+// button: RetractCompletion is bounded only below, by
+// e.occurred_at >= p.sent_at, so a day-1 button still live on day 10 would
+// retract every completion of that chore since day 1, not only the one it
+// was originally sent for. Closing it here is what keeps "exactly one live
+// numbered surface" true, the same bound once()'s own comment on the crash
+// window above invokes.
 func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) error {
 	c, promptID, err := s.nudgeFor(ctx, now)
 	if err != nil || c == nil {
@@ -326,7 +338,12 @@ func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) e
 	if err != nil {
 		return fmt.Errorf("sending nudge: %w", err)
 	}
-	return s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now)
+	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
+		return err
+	}
+
+	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, promptID)
+	return nil
 }
 
 // sendMessage sends any Message through Chat when the transport supports it,
