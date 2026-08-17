@@ -94,6 +94,19 @@ func TestSendFailureDoesNotLeakTheBotKey(t *testing.T) {
 	require.NotContains(t, err.Error(), "3-test")
 }
 
+// The request never reaches the wire here: a key with a stray control
+// character — what you get from a secret read without trimming — fails inside
+// url.Parse, and that error carries the URL too. Two call sites build a
+// request; both have to strip.
+func TestBuildFailureDoesNotLeakTheBotKey(t *testing.T) {
+	cfg := config()
+	cfg.BaseURL, cfg.BotKey = "http://127.0.0.1:1", "3-test\n"
+
+	err := transport.NewCampfire(cfg).Send(context.Background(), "7", "hello")
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "3-test")
+}
+
 func TestSendHonoursContextCancellation(t *testing.T) {
 	base, _ := stubCampfire(t, http.StatusCreated)
 

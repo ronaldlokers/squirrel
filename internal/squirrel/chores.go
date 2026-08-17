@@ -80,9 +80,16 @@ const baselineCTE = `
 	  select c.id,
 	         coalesce((select max(e.occurred_at) from events e where e.chore_id = c.id),
 	                  c.created_at) as since,
+	         -- Only a digest that actually reached the room counts as having
+	         -- shown a chore. The row is committed before the send, so a
+	         -- failed send would otherwise start the tolerance clock on a
+	         -- message nobody ever saw, hiding an overdue chore for its whole
+	         -- tolerance window — the same silence a query used to cause.
 	         (select max(p.sent_at)
 	            from prompt_lines l join prompts p on p.id = l.prompt_id
-	           where l.chore_id = c.id and p.kind = 'digest') as last_shown
+	           where l.chore_id = c.id
+	             and p.kind = 'digest'
+	             and p.delivered_at is not null) as last_shown
 	    from chores c
 	   where c.person_id = $1 and c.active
 	)`

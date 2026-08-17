@@ -142,7 +142,7 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 		url := fmt.Sprintf("%s/rooms/%s/%s/messages", base, conversationID, botKey)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(text))
 		if err != nil {
-			return fmt.Errorf("campfire: building send request: %w", err)
+			return fmt.Errorf("campfire: building send request: %w", stripURL(err))
 		}
 		req.Header.Set("Content-Type", "text/plain; charset=utf-8")
 

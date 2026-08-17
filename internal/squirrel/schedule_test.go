@@ -374,6 +374,36 @@ func TestSchedulerRecoversCapturesAfterAFailedSend(t *testing.T) {
 	require.Contains(t, (*got)[0].text, "after the outage")
 }
 
+// The captures half of a failed digest was covered above; this is the chores
+// half. The prompt row and its lines commit before the send, so a chore listed
+// in a digest that never arrived would otherwise have its tolerance clock
+// started by a message nobody saw — and a chore with a 3.5-day tolerance would
+// sit silent for three and a half days on account of one Campfire blip.
+func TestSchedulerKeepsAChoreDueAfterAFailedSend(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+
+	failingSend := func(context.Context, string, string) error {
+		return errors.New("campfire unreachable")
+	}
+	monday := time.Date(2026, 8, 17, 8, 0, 1, 0, amsterdam(t))
+	require.Error(t, scheduler(t, store, p, failingSend).Once(ctx, monday))
+
+	send, got := recorder()
+	tuesday := time.Date(2026, 8, 18, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, scheduler(t, store, p, send).Once(ctx, tuesday))
+
+	require.Len(t, *got, 1, "Tuesday must still have something to say")
+	require.Contains(t, (*got)[0].text, "vacuum",
+		"an overdue chore whose only digest failed to send is still overdue")
+}
+
 // The tolerance gate compares absolute instants, and DefaultTolerance floors
 // at 24h, so a daily chore's tolerance is also exactly 24h. Two ticks 900ms
 // and 400ms into their respective seconds — nothing more exotic than
