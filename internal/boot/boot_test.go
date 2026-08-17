@@ -34,6 +34,11 @@ func envFor(t *testing.T, overrides map[string]string) map[string]string {
 	require.NoError(t, err)
 	password, _ := parsed.User.Password()
 
+	// campfireStub also hands back a requests func. Nothing here needs it —
+	// a test that must inspect what was actually posted builds its own stub
+	// via campfireStub(t) and overrides CAMPFIRE_BASE_URL with its URL.
+	stubURL, _ := campfireStub(t)
+
 	env := map[string]string{
 		"PORT":                     "0",
 		"SPOOL_DIR":                t.TempDir(),
@@ -41,7 +46,7 @@ func envFor(t *testing.T, overrides map[string]string) map[string]string {
 		"OWNER_HANDLE":             "ronald",
 		"CAMPFIRE_CONVERSATION_ID": "7",
 		"CAMPFIRE_SENDER_ID":       "1",
-		"CAMPFIRE_BASE_URL":        campfireStub(t),
+		"CAMPFIRE_BASE_URL":        stubURL,
 		"CAMPFIRE_BOT_KEY":         "3-test",
 		"POSTGRES_SERVER":          parsed.Hostname(),
 		"POSTGRES_PORT":            parsed.Port(),

@@ -5,9 +5,11 @@ package boot_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,16 +28,52 @@ func testDatabaseURL(t *testing.T) string {
 	return url
 }
 
+// campfireRequest is one HTTP call the stub received, kept for assertions
+// about what the transport actually sent rather than just that it sent
+// something. Content-Type is what tells apart a Chat.Send (JSON, carrying
+// whatever buttons the message had) from a boost or a phase-2 plain-text
+// Sender call (text/plain).
+type campfireRequest struct {
+	method      string
+	path        string
+	contentType string
+	body        []byte
+}
+
 // campfireStub is somewhere harmless for the applier and scheduler to post:
 // it accepts anything and answers 201, same as a real Campfire boost/message
-// endpoint would on success.
-func campfireStub(t *testing.T) string {
+// endpoint would on success. The returned requests func hands back everything
+// received so far, so a test can inspect the shape of an outbound body —
+// whether the confirmation went out through Chat as JSON carrying an actions
+// array, or fell back to the plain-text Sender — rather than only knowing a
+// request arrived.
+func campfireStub(t *testing.T) (baseURL string, requests func() []campfireRequest) {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+
+	var mu sync.Mutex
+	var got []campfireRequest
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		got = append(got, campfireRequest{
+			method:      r.Method,
+			path:        r.URL.Path,
+			contentType: r.Header.Get("Content-Type"),
+			body:        body,
+		})
+		mu.Unlock()
 		w.WriteHeader(http.StatusCreated)
 	}))
 	t.Cleanup(srv.Close)
-	return srv.URL
+
+	return srv.URL, func() []campfireRequest {
+		mu.Lock()
+		defer mu.Unlock()
+		out := make([]campfireRequest, len(got))
+		copy(out, got)
+		return out
+	}
 }
 
 func withStore(t *testing.T) *squirrel.Store {
