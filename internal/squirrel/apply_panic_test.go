@@ -24,7 +24,7 @@ func TestApplierApplyRecoversFromAPanicInMatch(t *testing.T) {
 	matchFn = func(string) Intent { panic("boom") }
 	t.Cleanup(func() { matchFn = prev })
 
-	a := NewApplier(nil, nil, nil)
+	a := NewApplier(nil, nil, Chat{}, nil)
 	personID := int64(1)
 	convo := "7"
 

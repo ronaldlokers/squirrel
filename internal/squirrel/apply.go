@@ -2,6 +2,7 @@ package squirrel
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -18,14 +19,18 @@ const undoWindow = 10 * time.Minute
 type Applier struct {
 	store   *Store
 	send    Sender
+	chat    Chat
 	onError func(error)
 }
 
-func NewApplier(store *Store, send Sender, onError func(error)) *Applier {
+// NewApplier's chat parameter is unused until a later task adds tick — it is
+// added here, once, so every caller from this task onward passes the same
+// shape rather than the signature changing twice.
+func NewApplier(store *Store, send Sender, chat Chat, onError func(error)) *Applier {
 	if onError == nil {
 		onError = func(error) {}
 	}
-	return &Applier{store: store, send: send, onError: onError}
+	return &Applier{store: store, send: send, chat: chat, onError: onError}
 }
 
 // Apply runs after a capture has landed in Postgres. The raw text is already
@@ -54,6 +59,15 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	// whose they would be, so nothing is applied — the capture is already safe.
 	if personID == nil || item.ConversationID == nil {
 		return nil
+	}
+
+	// An action is not a thought and never reaches the matcher. It is checked
+	// first so that a tap can never be reinterpreted as text. ParseAction
+	// matches on text alone, so it cannot by itself tell a genuine tap from
+	// someone typing the same shape into the room — isActionPayload is what
+	// makes that distinction, from the payload the transport actually sent.
+	if in, ok := ParseAction(item.RawText); ok && isActionPayload(item.Payload) {
+		return a.applyAction(ctx, in, *personID)
 	}
 
 	intent := matchFn(item.RawText)
@@ -163,4 +177,63 @@ func (a *Applier) undo(ctx context.Context, personID int64) (string, error) {
 		return "", err
 	}
 	return "Dropped " + name + ". It's still in your captures.", nil
+}
+
+// isActionPayload reports whether the payload the transport stored alongside
+// this text really came from an action webhook. ParseAction matches on text
+// alone, and a person typing "!action 451 done:2 true" into the room produces
+// text byte-identical to a genuine tap — the payload's "type" field is the
+// only thing that tells them apart. Anything that fails to unmarshal or
+// carries a different type is treated as not an action, which sends the
+// message down the normal matcher: a thought is never rejected.
+func isActionPayload(payload json.RawMessage) bool {
+	var p struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return false
+	}
+	return p.Type == "action"
+}
+
+// applyAction resolves a tap and applies it as a state assertion rather than a
+// delta: "selected" means the completion should exist, "not selected" means it
+// should not. Applying either twice lands in the same place, which is what
+// makes a retried delivery harmless — the payload carries no event id, so a
+// retry and a genuine second tap are indistinguishable.
+//
+// Every path here is silent. The boost is the receipt; a reply per tap would
+// make the room unreadable.
+func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int64) error {
+	prompt, ok, err := a.store.PromptByMessageID(ctx, personID, in.MessageID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		// Someone else's prompt, or one we have no record of. Nothing to do,
+		// and nothing to say: the capture is stored either way.
+		return nil
+	}
+
+	c, ok, err := a.store.ChoreOnPrompt(ctx, prompt.ID, in.Position)
+	if err != nil || !ok {
+		return err
+	}
+
+	switch in.Kind {
+	case "undefine":
+		return a.store.DeactivateChore(ctx, c.ID)
+
+	case "done":
+		if !in.Selected {
+			_, err := a.store.RetractCompletion(ctx, c.ID, personID, prompt.ID, time.Now())
+			return err
+		}
+		done, err := a.store.CompletedSince(ctx, c.ID, prompt.ID)
+		if err != nil || done {
+			return err
+		}
+		return a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now())
+	}
+	return nil
 }

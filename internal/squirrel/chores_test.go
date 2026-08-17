@@ -84,7 +84,7 @@ func TestQueryDoesNotSuppressTheNextDigest(t *testing.T) {
 	require.Len(t, due, 1, "backdated past its interval, it is due before the query")
 
 	send, _ := recorder()
-	require.NoError(t, squirrel.NewApplier(store, send, nil).Apply(ctx, itemOf("?"), &p))
+	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("?"), &p))
 
 	due, err = store.DueChores(ctx, p, time.Now())
 	require.NoError(t, err)

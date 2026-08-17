@@ -213,3 +213,47 @@ func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time
 	}
 	return sentAt, true, nil
 }
+
+// ChoreOnPrompt resolves a position against one specific prompt, rather than
+// against whichever prompt is currently newest. A tap names the message it came
+// from, so it must resolve against that message even if a newer prompt has
+// since been sent.
+func (s *Store) ChoreOnPrompt(ctx context.Context, promptID int64, position int) (Chore, bool, error) {
+	const q = `
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds
+		  from prompt_lines l join chores c on c.id = l.chore_id
+		 where l.prompt_id = $1 and l.position = $2`
+
+	var c Chore
+	var everySec, tolSec int64
+	err := s.pool.QueryRow(ctx, q, promptID, position).
+		Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Chore{}, false, nil
+	}
+	if err != nil {
+		return Chore{}, false, fmt.Errorf("reading prompt line: %w", err)
+	}
+	c.Active = true
+	c.Every = time.Duration(everySec) * time.Second
+	c.Tolerance = time.Duration(tolSec) * time.Second
+	c.EveryDays = int(c.Every.Hours() / 24)
+	return c, true, nil
+}
+
+// CompletedSince reports whether the chore already has a live completion from
+// after this prompt was sent. It is what makes a repeated "selected" tap a
+// no-op instead of a second event.
+func (s *Store) CompletedSince(ctx context.Context, choreID, promptID int64) (bool, error) {
+	const q = `
+		select exists (
+		  select 1 from events e
+		    join prompts p on p.id = $2
+		   where e.chore_id = $1 and e.retracted_at is null and e.occurred_at >= p.sent_at)`
+
+	var done bool
+	if err := s.pool.QueryRow(ctx, q, choreID, promptID).Scan(&done); err != nil {
+		return false, fmt.Errorf("checking completion: %w", err)
+	}
+	return done, nil
+}

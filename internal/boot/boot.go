@@ -141,7 +141,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 
 	var applier *squirrel.Applier
 	if send != nil {
-		applier = squirrel.NewApplier(store, send, func(err error) {
+		applier = squirrel.NewApplier(store, send, squirrel.Chat{}, func(err error) {
 			slog.Error("applying intent", "error", err)
 		})
 
