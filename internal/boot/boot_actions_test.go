@@ -27,6 +27,14 @@ func TestBootAppliesATap(t *testing.T) {
 	promptID := seedSentPrompt(t, store, p, "digest", "1", c)
 	_ = promptID
 
+	// Asserted before the tap, the same way TestTapCompletesTheChore does in
+	// internal/squirrel: without this, a seed that stopped producing a due
+	// chore would make the "len(due) == 0" poll below pass on its very first
+	// attempt, for a reason that has nothing to do with the tap.
+	due, err := store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1, "seeded overdue, it is due before the tap")
+
 	res, err := http.Post(webhookURL(s), "application/json", strings.NewReader(`{
 		"type": "action",
 		"room": { "id": 9 },

@@ -50,6 +50,14 @@ func TestHandledCaptureGetsATick(t *testing.T) {
 }
 
 // A tap is not a message in the room, so there is nothing to boost.
+//
+// The message id must be numeric ("1", not "m-1") — ParseAction's pattern
+// only matches \d+, so a non-numeric id fails to parse as a tap and
+// tick's own isTap check is never exercised. ExternalID must also be set:
+// tick returns before even reaching the isTap check when it is nil, which
+// tapItem itself leaves unset. Without both, tick's boost guard is never
+// reached at all, and deleting the isTap check entirely would leave this
+// test green for the wrong reason.
 func TestATapIsNotBoosted(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -57,8 +65,11 @@ func TestATapIsNotBoosted(t *testing.T) {
 	send, _ := recorder()
 	chat, boosts := boostRecorder()
 
+	item := tapItem(p, "1", "done:1", true)
+	item.ExternalID = squirrel.Ptr("77")
+
 	a := squirrel.NewApplier(store, send, chat, nil)
-	require.NoError(t, a.Apply(ctx, tapItem(p, "m-1", "done:1", true), squirrel.Ptr(p)))
+	require.NoError(t, a.Apply(ctx, item, squirrel.Ptr(p)))
 	require.Empty(t, *boosts)
 }
 
