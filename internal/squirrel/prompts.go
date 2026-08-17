@@ -130,6 +130,7 @@ func (s *Store) PreviousNumberedPrompt(ctx context.Context, personID int64, befo
 const latestPrompt = `
 	select id, sent_at from prompts
 	 where person_id = $1 and kind in ` + numberedKinds + `
+	   and delivered_at is not null
 	 order by sent_at desc, id desc limit 1`
 
 // ChoreAtPosition resolves a numbered line — "done 2" — back to the chore it
@@ -137,6 +138,14 @@ const latestPrompt = `
 // another person's chore, and pinned to that one person's single most recent
 // prompt so the number is only ever read against the list that printed it,
 // never against some other prompt that happens to share a position.
+//
+// delivered_at is not null, matching latestPrompt: replyFor commits a query
+// prompt before the message carrying its buttons is sent, so a failed send
+// leaves a numbered row with no message ever in the room. Without this
+// predicate that phantom row would become "current" for a typed position
+// even though the room's actual buttons still point at the last prompt that
+// really went out — a typed "done 1" and a tap on button 1 resolving to two
+// different chores.
 func (s *Store) ChoreAtPosition(ctx context.Context, personID int64, position int) (Chore, bool, error) {
 	const q = `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds
@@ -144,6 +153,7 @@ func (s *Store) ChoreAtPosition(ctx context.Context, personID int64, position in
 		  join chores c on c.id = l.chore_id
 		 where l.prompt_id = (select id from prompts
 		                       where person_id = $1 and kind in ` + numberedKinds + `
+		                         and delivered_at is not null
 		                       order by sent_at desc, id desc limit 1)
 		   and l.position = $2`
 
@@ -176,7 +186,8 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 		  join chores c on c.id = l.chore_id
 		 where not exists (
 		         select 1 from events e
-		          where e.chore_id = c.id and e.occurred_at >= p.sent_at)
+		          where e.chore_id = c.id and e.occurred_at >= p.sent_at
+		            and e.retracted_at is null)
 		 order by l.position`
 
 	return s.scanChores(ctx, q, personID)

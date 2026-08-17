@@ -84,8 +84,9 @@ func TestApplyCompletesByPosition(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, due, 1, "backdated past its interval, it is due before completion")
 
-	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
 
 	require.NoError(t, applier.Apply(ctx, itemOf("done 1"), &p))
 
@@ -115,8 +116,9 @@ func TestApplyBareDoneWithOneOutstanding(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, due, 1, "backdated past its interval, it is due before completion")
 
-	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
 
 	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("done"), &p))
 
@@ -139,8 +141,9 @@ func TestApplyBareDoneWithSeveralOutstandingLists(t *testing.T) {
 	require.NoError(t, err)
 	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
-	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{bins, vac})
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{bins, vac})
 	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
 
 	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("done"), &p))
 
@@ -157,8 +160,9 @@ func TestApplyStopDeactivates(t *testing.T) {
 
 	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
-	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
 
 	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("stop 1"), &p))
 
