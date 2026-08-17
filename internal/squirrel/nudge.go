@@ -70,8 +70,8 @@ const (
 func NudgeMessage(c Chore, why NudgeReason) Message {
 	text := choreSentence(c)
 	if why == NudgeFromMessage {
-		text = fmt.Sprintf("While you're here — %s, %d days, usually %d.",
-			c.Name, c.SinceDays, c.EveryDays)
+		text = fmt.Sprintf("While you're here — %s, %s, usually %d.",
+			c.Name, plural(c.SinceDays, "day"), c.EveryDays)
 	}
 
 	return Message{

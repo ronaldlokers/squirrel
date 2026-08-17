@@ -67,8 +67,8 @@ func RenderList(chores []Chore) string {
 // because the matcher will sometimes turn a note into a chore and the
 // correction has to cost one word.
 func RenderDefined(c Chore) string {
-	return fmt.Sprintf("%s, every %d days. First nudge in %d days.\nnvm if you meant that as a note.",
-		c.Name, c.EveryDays, c.EveryDays)
+	return fmt.Sprintf("%s, every %s. First nudge in %s.\nnvm if you meant that as a note.",
+		c.Name, plural(c.EveryDays, "day"), plural(c.EveryDays, "day"))
 }
 
 // The rendered text is unchanged from phase 2 — buttons are a second path to

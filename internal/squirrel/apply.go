@@ -295,7 +295,7 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays)}, nil
+		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
 	}
 
 	outstanding, err := a.store.OutstandingLines(ctx, personID)
@@ -310,7 +310,7 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays)}, nil
+		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
 	default:
 		// Never guess. Re-number and ask, so the reply can be a bare digit —
 		// the same shape as IntentQuery, down to recording its own prompt.
