@@ -8,8 +8,12 @@ import (
 )
 
 type SchedulerOptions struct {
-	Store          *Store
+	Store *Store
+	// Send is the phase 2 plain-text surface. Once() no longer calls it — the
+	// digest is a Message now, sent through Chat — but the field stays so
+	// boot.go (rewired in a later task) and phase 2 callers still compile.
 	Send           Sender
+	Chat           Chat
 	PersonID       int64
 	ConversationID string
 	// At is the time since local midnight, so 08:00 is 8h.
@@ -108,8 +112,8 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	text := RenderDigest(due, captures)
-	if text == "" {
+	m := DigestMessage(due, captures)
+	if m.Text == "" {
 		return nil
 	}
 
@@ -127,7 +131,8 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	if err := s.opts.Send(ctx, s.opts.ConversationID, text); err != nil {
+	messageID, err := s.opts.Chat.Send(ctx, s.opts.ConversationID, m)
+	if err != nil {
 		// The prompt row is already committed, so the numbering stands and the
 		// digest will not be retried today. Reported rather than retried:
 		// re-sending risks two messages, and the next day's is minutes away in
@@ -136,17 +141,28 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		// digest's capture window to a message that never arrived.
 		return fmt.Errorf("sending digest: %w", err)
 	}
-	s.sentDate = dateKey
 
-	if err := s.opts.Store.MarkPromptSent(ctx, promptID, "", now); err != nil {
-		// The message is already out and the guard above is already armed, so
-		// this is reported rather than retried too. Worst case the row is
-		// never marked delivered and LastDigestSentAt anchors to whichever
-		// earlier digest it last saw as delivered instead — a capture window
-		// that overlaps and re-lists something already seen, never one that
-		// drops something unseen.
-		return fmt.Errorf("marking digest delivered: %w", err)
+	if messageID == "" {
+		// The transport reported success but returned no id to hang the
+		// buttons off — see chatVia's messageIDFrom. The digest still went
+		// out, so it is still marked delivered below; it just can never have
+		// its buttons disabled and no tap can ever resolve back to it. That is
+		// worth a log line, not a lie stored as if it were addressable.
+		s.opts.OnError(fmt.Errorf("digest prompt %d delivered with no addressable message id", promptID))
 	}
+
+	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
+		// The message is already out and the guard above is armed by the
+		// assignment below regardless, so this is reported rather than
+		// retried too. Worst case the row is never marked delivered and
+		// LastDigestSentAt anchors to whichever earlier digest it last saw as
+		// delivered instead — a capture window that overlaps and re-lists
+		// something already seen, never one that drops something unseen.
+		return err
+	}
+
+	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, promptID)
+	s.sentDate = dateKey
 	return nil
 }
 
@@ -159,6 +175,33 @@ func clockParts(d time.Duration) (hour, min, sec int) {
 	min = (total % 3600) / 60
 	sec = total % 60
 	return
+}
+
+// closePrevious disables the buttons on the numbered prompt before current, so
+// there is exactly one live surface. That bound is what makes undo safe
+// without any date arithmetic — there is nothing old left to un-tap.
+//
+// Shared by the scheduler and the applier, the only two places that ever open
+// a new numbered surface. A failure here is reported and swallowed: the old
+// buttons staying live is a degraded surface, but failing to speak in the
+// present because closing the past went wrong is silence, and silence is the
+// failure this whole phase exists to remove.
+func closePrevious(ctx context.Context, store *Store, chat Chat, onError func(error), personID, current int64) {
+	if chat.Update == nil {
+		return
+	}
+	prev, ok, err := store.PreviousNumberedPrompt(ctx, personID, current)
+	if err != nil || !ok {
+		if err != nil {
+			onError(fmt.Errorf("finding the previous prompt: %w", err))
+		}
+		return
+	}
+	if err := chat.Update(ctx, prev.ConversationID, prev.ExternalMessageID, Message{
+		Actions: []Action{{Label: "closed", Value: "closed:0"}},
+	}); err != nil {
+		onError(fmt.Errorf("closing prompt %d: %w", prev.ID, err))
+	}
 }
 
 // Run ticks once a minute until the context is cancelled. A minute is fine

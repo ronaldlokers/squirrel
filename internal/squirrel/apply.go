@@ -17,15 +17,25 @@ type Sender func(ctx context.Context, conversationID, text string) error
 const undoWindow = 10 * time.Minute
 
 type Applier struct {
-	store   *Store
+	store *Store
+	// send is the phase 2 plain-text surface. apply() no longer calls it —
+	// every reply is a Message now, sent through chat — but the field and
+	// NewApplier's parameter stay so boot.go (rewired in a later task) and
+	// phase 2 callers still compile.
 	send    Sender
 	chat    Chat
 	onError func(error)
+	// pending is the id of the prompt recorded earlier in this same apply()
+	// call, if any — RecordPrompt commits before the message carrying its
+	// buttons is sent, the same ordering the scheduler uses and for the same
+	// reason, so the id has to survive the few lines between the two. Reset
+	// to zero at the top of every apply().
+	pending int64
 }
 
-// NewApplier's chat parameter is unused until a later task adds tick — it is
-// added here, once, so every caller from this task onward passes the same
-// shape rather than the signature changing twice.
+// NewApplier's send parameter is a vestige of phase 2, kept only so callers
+// built before Chat existed still compile — see the comment on Applier.send.
+// chat is what every reply and receipt actually goes through now.
 func NewApplier(store *Store, send Sender, chat Chat, onError func(error)) *Applier {
 	if onError == nil {
 		onError = func(error) {}
@@ -55,6 +65,8 @@ func (a *Applier) Apply(ctx context.Context, item Item, personID *int64) (err er
 }
 
 func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
+	a.pending = 0
+
 	// Chores belong to a person. An unresolved identity means we do not know
 	// whose they would be, so nothing is applied — the capture is already safe.
 	if personID == nil || item.ConversationID == nil {
@@ -77,13 +89,34 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 		}
 	} else {
 		intent := matchFn(item.RawText)
-		reply, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
+		m, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
 		if err != nil {
 			return err
 		}
-		if reply != "" {
-			if err := a.send(ctx, *item.ConversationID, reply); err != nil {
+		if m.Text != "" {
+			messageID, err := a.chat.Send(ctx, *item.ConversationID, m)
+			if err != nil {
 				return err
+			}
+			if a.pending != 0 {
+				if messageID == "" {
+					// The transport reported success but returned no id to
+					// hang the buttons off — see chatVia's messageIDFrom.
+					// Still mark the prompt delivered below; just say, once,
+					// that it can never be disabled and no tap can resolve
+					// back to it, rather than storing a lie.
+					a.onError(fmt.Errorf("prompt %d delivered with no addressable message id", a.pending))
+				}
+				if err := a.store.MarkPromptSent(ctx, a.pending, messageID, time.Now()); err != nil {
+					return err
+				}
+				// Only a numbered surface closes the one before it. A define
+				// names one chore and takes no position, so closing the
+				// digest on its account would retire buttons the morning's
+				// list still owns.
+				if intent.Kind != IntentDefine {
+					closePrevious(ctx, a.store, a.chat, a.onError, *personID, a.pending)
+				}
 			}
 		}
 	}
@@ -112,14 +145,21 @@ func (a *Applier) tick(ctx context.Context, item Item) {
 	}
 }
 
-func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conversationID string) (string, error) {
+func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	switch in.Kind {
 	case IntentDefine:
 		c, err := a.store.UpsertChore(ctx, personID, in.Name, in.Every, DefaultTolerance(in.Every))
 		if err != nil {
-			return "", err
+			return Message{}, err
 		}
-		return RenderDefined(c), nil
+		// A define is a standalone surface: it names one chore, it is never
+		// numbered, and it does not close the digest's buttons.
+		id, err := a.store.RecordPrompt(ctx, personID, conversationID, "define", time.Now(), nil, []Chore{c})
+		if err != nil {
+			return Message{}, err
+		}
+		a.pending = id
+		return DefinedMessage(c), nil
 
 	case IntentComplete:
 		return a.complete(ctx, in, personID, conversationID)
@@ -127,72 +167,79 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 	case IntentStop:
 		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
 		if err != nil || !ok {
-			return "I don't have a line " + fmt.Sprint(in.Position) + ".", err
+			return Message{Text: "I don't have a line " + fmt.Sprint(in.Position) + "."}, err
 		}
 		if err := a.store.DeactivateChore(ctx, c.ID); err != nil {
-			return "", err
+			return Message{}, err
 		}
-		return "Stopped " + c.Name + ".", nil
+		return Message{Text: "Stopped " + c.Name + "."}, nil
 
 	case IntentQuery:
 		chores, err := a.store.ActiveChores(ctx, personID)
 		if err != nil {
-			return "", err
+			return Message{}, err
 		}
-		if _, err := a.store.RecordPrompt(ctx, personID, conversationID, "query", time.Now(), nil, chores); err != nil {
-			return "", err
+		id, err := a.store.RecordPrompt(ctx, personID, conversationID, "query", time.Now(), nil, chores)
+		if err != nil {
+			return Message{}, err
 		}
-		return RenderList(chores), nil
+		a.pending = id
+		return ListMessage(chores), nil
 
 	case IntentDrop:
 		return a.undo(ctx, personID)
 	}
 
 	// IntentCapture: the squirrel already went out in the HTTP response.
-	return "", nil
+	return Message{}, nil
 }
 
-func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conversationID string) (string, error) {
+func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	if in.Position > 0 {
 		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
 		if err != nil {
-			return "", err
+			return Message{}, err
 		}
 		if !ok {
-			return fmt.Sprintf("I don't have a line %d.", in.Position), nil
+			return Message{Text: fmt.Sprintf("I don't have a line %d.", in.Position)}, nil
 		}
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
-			return "", err
+			return Message{}, err
 		}
-		return fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays), nil
+		return Message{Text: fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays)}, nil
 	}
 
 	outstanding, err := a.store.OutstandingLines(ctx, personID)
 	if err != nil {
-		return "", err
+		return Message{}, err
 	}
 	switch len(outstanding) {
 	case 0:
-		return "Nothing outstanding.", nil
+		return Message{Text: "Nothing outstanding."}, nil
 	case 1:
 		c := outstanding[0]
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
-			return "", err
+			return Message{}, err
 		}
-		return fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays), nil
+		return Message{Text: fmt.Sprintf("%s — next in %d days.", c.Name, c.EveryDays)}, nil
 	default:
-		// Never guess. Re-number and ask, so the reply can be a bare digit.
-		if _, err := a.store.RecordPrompt(ctx, personID, conversationID, "query", time.Now(), nil, outstanding); err != nil {
-			return "", err
+		// Never guess. Re-number and ask, so the reply can be a bare digit —
+		// the same shape as IntentQuery, down to recording its own prompt.
+		id, err := a.store.RecordPrompt(ctx, personID, conversationID, "query", time.Now(), nil, outstanding)
+		if err != nil {
+			return Message{}, err
 		}
-		return "Which one?\n" + RenderList(outstanding), nil
+		a.pending = id
+		m := ListMessage(outstanding)
+		m.Text = "Which one?\n" + m.Text
+		return m, nil
 	}
 }
 
 // undo removes a chore the matcher created from what was meant as a note. It
 // only reaches back undoWindow, so `nvm` long after the fact is not a
 // destructive surprise.
-func (a *Applier) undo(ctx context.Context, personID int64) (string, error) {
+func (a *Applier) undo(ctx context.Context, personID int64) (Message, error) {
 	const q = `
 		select id, name from chores
 		 where person_id = $1 and active and created_at >= $2
@@ -202,12 +249,12 @@ func (a *Applier) undo(ctx context.Context, personID int64) (string, error) {
 	var name string
 	err := a.store.pool.QueryRow(ctx, q, personID, time.Now().Add(-undoWindow)).Scan(&id, &name)
 	if err != nil {
-		return "Nothing to undo.", nil
+		return Message{Text: "Nothing to undo."}, nil
 	}
 	if err := a.store.DeactivateChore(ctx, id); err != nil {
-		return "", err
+		return Message{}, err
 	}
-	return "Dropped " + name + ". It's still in your captures.", nil
+	return Message{Text: "Dropped " + name + ". It's still in your captures."}, nil
 }
 
 // isActionPayload reports whether the payload the transport stored alongside

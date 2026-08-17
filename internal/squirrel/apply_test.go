@@ -42,7 +42,7 @@ func TestApplyDefinesAChore(t *testing.T) {
 	p := owner(t, store)
 	send, got := recorder()
 
-	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).
+	require.NoError(t, squirrel.NewApplier(store, send, chatFor(send), nil).
 		Apply(ctx, itemOf("every 2 weeks: vacuum"), &p))
 
 	chores, err := store.ActiveChores(ctx, p)
@@ -74,7 +74,7 @@ func TestApplyCompletesByPosition(t *testing.T) {
 	ctx := context.Background()
 	p := owner(t, store)
 	send, got := recorder()
-	applier := squirrel.NewApplier(store, send, squirrel.Chat{}, nil)
+	applier := squirrel.NewApplier(store, send, chatFor(send), nil)
 
 	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestApplyBareDoneWithOneOutstanding(t *testing.T) {
 	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
 
-	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("done"), &p))
+	require.NoError(t, squirrel.NewApplier(store, send, chatFor(send), nil).Apply(ctx, itemOf("done"), &p))
 
 	// See the comment in TestApplyCompletesByPosition: past the tolerance
 	// gate the RecordPrompt call above set, still short of a full interval
@@ -142,7 +142,7 @@ func TestApplyBareDoneWithSeveralOutstandingLists(t *testing.T) {
 	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{bins, vac})
 	require.NoError(t, err)
 
-	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("done"), &p))
+	require.NoError(t, squirrel.NewApplier(store, send, chatFor(send), nil).Apply(ctx, itemOf("done"), &p))
 
 	require.Len(t, *got, 1)
 	require.Contains(t, (*got)[0].text, "bin day")
@@ -160,7 +160,7 @@ func TestApplyStopDeactivates(t *testing.T) {
 	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
 
-	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("stop 1"), &p))
+	require.NoError(t, squirrel.NewApplier(store, send, chatFor(send), nil).Apply(ctx, itemOf("stop 1"), &p))
 
 	chores, err := store.ActiveChores(ctx, p)
 	require.NoError(t, err)
@@ -172,7 +172,7 @@ func TestApplyNvmRemovesTheChoreJustDefined(t *testing.T) {
 	ctx := context.Background()
 	p := owner(t, store)
 	send, _ := recorder()
-	applier := squirrel.NewApplier(store, send, squirrel.Chat{}, nil)
+	applier := squirrel.NewApplier(store, send, chatFor(send), nil)
 
 	require.NoError(t, applier.Apply(ctx, itemOf("every 2 weeks I forget to call my mother"), &p))
 	require.NoError(t, applier.Apply(ctx, itemOf("nvm"), &p))
@@ -196,7 +196,7 @@ func TestApplyNvmDoesNotReachPastTheWindow(t *testing.T) {
 		`update chores set created_at = now() - interval '30 minutes' where id = $1`, c.ID)
 	require.NoError(t, err)
 
-	require.NoError(t, squirrel.NewApplier(store, send, squirrel.Chat{}, nil).Apply(ctx, itemOf("nvm"), &p))
+	require.NoError(t, squirrel.NewApplier(store, send, chatFor(send), nil).Apply(ctx, itemOf("nvm"), &p))
 
 	chores, err := store.ActiveChores(ctx, p)
 	require.NoError(t, err)
