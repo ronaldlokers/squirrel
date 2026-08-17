@@ -13,6 +13,21 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
+// today anchors a test's clock to today's real calendar date in Amsterdam, at
+// a fixed wall-clock time, rather than to some fixed 2026 date. backdateChore
+// pushes a chore's created_at relative to the database's real now(), so a
+// Go-level "now" pinned to a fixed calendar date drifts further from that
+// real now with every day the suite runs after it was written — far enough,
+// eventually, to change whether a chore backdated by a fixed duration reads
+// as due at that pinned instant. Anchoring to the real calendar date keeps
+// the two in step indefinitely.
+func today(t *testing.T, hour, min, sec int) time.Time {
+	t.Helper()
+	loc := amsterdam(t)
+	now := time.Now().In(loc)
+	return time.Date(now.Year(), now.Month(), now.Day(), hour, min, sec, 0, loc)
+}
+
 func TestNudgeSendsOneChore(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -80,7 +95,7 @@ func TestSecondNudgeInADayIsRefusedEvenWithASecondChoreStillDue(t *testing.T) {
 	chat, sent := chatRecorder("1", "2")
 	s := schedulerWithChat(t, store, p, chat)
 
-	day := time.Date(2026, 8, 17, 9, 0, 0, 0, amsterdam(t))
+	day := today(t, 9, 0, 0)
 	require.NoError(t, s.Nudge(ctx, day, squirrel.NudgeFromMessage))
 	require.NoError(t, s.Nudge(ctx, day.Add(time.Hour), squirrel.NudgeFromArrival),
 		"a refused second nudge is the budget working, not a failure")
@@ -115,7 +130,7 @@ func TestFailedNudgeSendDoesNotSpendTheDay(t *testing.T) {
 	}
 	s := schedulerWithChat(t, store, p, chat)
 
-	day := time.Date(2026, 8, 17, 9, 0, 0, 0, amsterdam(t))
+	day := today(t, 9, 0, 0)
 	require.Error(t, s.Nudge(ctx, day, squirrel.NudgeFromMessage),
 		"the transport failure must surface")
 
@@ -150,7 +165,7 @@ func TestSecondDaysNudgeClosesTheFirsts(t *testing.T) {
 	chat, sent := chatRecorder("1", "2")
 	s := schedulerWithChat(t, store, p, chat)
 
-	day1 := time.Date(2026, 8, 17, 10, 0, 0, 0, amsterdam(t))
+	day1 := today(t, 10, 0, 0)
 	require.NoError(t, s.Nudge(ctx, day1, squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 1)
 	require.Empty(t, (*sent)[0].updates, "nothing to close on the first nudge")
@@ -195,7 +210,7 @@ func TestEveningRunsAfterANudge(t *testing.T) {
 
 	chat, sent := chatRecorder("1", "2")
 	s := schedulerWithChat(t, store, p, chat)
-	now := time.Date(2026, 8, 17, 19, 0, 1, 0, amsterdam(t))
+	now := today(t, 19, 0, 1)
 
 	require.NoError(t, s.Nudge(ctx, now, squirrel.NudgeFromMessage))
 	require.NoError(t, s.Once(ctx, now))
@@ -231,7 +246,7 @@ func TestNudgeStaysResolvableAfterTheEveningMessage(t *testing.T) {
 
 	chat, sent := chatRecorder("1", "2")
 	s := schedulerWithChat(t, store, p, chat)
-	now := time.Date(2026, 8, 17, 19, 0, 1, 0, amsterdam(t))
+	now := today(t, 19, 0, 1)
 
 	require.NoError(t, s.Nudge(ctx, now, squirrel.NudgeFromMessage))
 	require.NoError(t, s.Once(ctx, now))
@@ -256,7 +271,7 @@ func TestEveningCaptureWindowSurvivesAnInterveningNudge(t *testing.T) {
 	ctx := context.Background()
 	p := owner(t, store)
 
-	day1Evening := time.Date(2026, 8, 17, 19, 0, 1, 0, amsterdam(t))
+	day1Evening := today(t, 19, 0, 1)
 	_, err := store.InsertItem(ctx, squirrel.Item{
 		Transport: "campfire", PersonID: squirrel.Ptr(p),
 		RawText: "before the first evening message", Payload: []byte(`{}`),
@@ -285,11 +300,17 @@ func TestEveningCaptureWindowSurvivesAnInterveningNudge(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	day2Morning := time.Date(2026, 8, 18, 10, 0, 0, 0, amsterdam(t))
+	// Derived from day1Evening, one calendar day later, rather than a second
+	// independent call to today(): that guarantees day2Morning and
+	// day2Evening land on the day right after day1Evening's regardless of
+	// when each line happens to run, the same way TestSecondDaysNudgeClosesTheFirsts
+	// derives day2 from day1 by adding a day rather than pinning it separately.
+	day2 := day1Evening.AddDate(0, 0, 1)
+	day2Morning := time.Date(day2.Year(), day2.Month(), day2.Day(), 10, 0, 0, 0, amsterdam(t))
 	require.NoError(t, s.Nudge(ctx, day2Morning, squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 2, "the intervening nudge sends its own message")
 
-	day2Evening := time.Date(2026, 8, 18, 19, 0, 1, 0, amsterdam(t))
+	day2Evening := time.Date(day2.Year(), day2.Month(), day2.Day(), 19, 0, 1, 0, amsterdam(t))
 	require.NoError(t, s.Once(ctx, day2Evening))
 	require.Len(t, *sent, 3)
 	require.Contains(t, (*sent)[2].message.Text, "after the first evening, before the nudge",
@@ -312,7 +333,7 @@ func TestEveningCarriesTheNudgeOnAQuietDay(t *testing.T) {
 	chat, sent := chatRecorder("1")
 	s := schedulerWithChat(t, store, p, chat)
 
-	require.NoError(t, s.Once(ctx, time.Date(2026, 8, 17, 19, 0, 1, 0, amsterdam(t))))
+	require.NoError(t, s.Once(ctx, today(t, 19, 0, 1)))
 	require.Len(t, *sent, 1, "one message, not two")
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
 	require.Len(t, (*sent)[0].message.Actions, 1)
