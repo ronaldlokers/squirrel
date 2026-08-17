@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -20,6 +21,12 @@ type Squirrel struct {
 	stops   []func(context.Context) error
 	cancel  context.CancelFunc
 	drained chan struct{}
+	// wg tracks background goroutines started after the store opens — today
+	// just the digest scheduler — so Stop can join them before closing the
+	// store. drained alone is not enough: it only covers connectAndDrain's own
+	// goroutine, and the scheduler runs concurrently with the drain loop on a
+	// shared ctx, not nested inside it.
+	wg sync.WaitGroup
 }
 
 func (s *Squirrel) Port() int { return s.port }
@@ -91,7 +98,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 	go func() {
 		defer close(s.drained)
-		connectAndDrain(loopCtx, config, store, spool, transports)
+		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg)
 	}()
 
 	return s, nil
@@ -99,7 +106,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport) {
+func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup) {
 	var personID int64
 	for {
 		var err error
@@ -139,13 +146,21 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		})
 
 		if config.Campfire != nil {
-			go squirrel.NewScheduler(squirrel.SchedulerOptions{
-				Store: store, Send: send, PersonID: personID,
-				ConversationID: config.Campfire.ConversationID,
-				At:             config.DigestAt,
-				Location:       config.DigestLocation,
-				OnError:        func(err error) { slog.Error("digest", "error", err) },
-			}).Run(ctx)
+			// Joined by Stop before the store closes: the scheduler runs on
+			// the same ctx as the drain but is not nested inside it, so
+			// draining alone does not wait for an in-flight digest send to
+			// finish before the store is torn down.
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				squirrel.NewScheduler(squirrel.SchedulerOptions{
+					Store: store, Send: send, PersonID: personID,
+					ConversationID: config.Campfire.ConversationID,
+					At:             config.DigestAt,
+					Location:       config.DigestLocation,
+					OnError:        func(err error) { slog.Error("digest", "error", err) },
+				}).Run(ctx)
+			}()
 		}
 	} else {
 		slog.Warn("no sender configured; chores and the daily digest are inactive")
@@ -174,6 +189,7 @@ func (s *Squirrel) Stop(ctx context.Context) error {
 	}
 	s.cancel()
 	<-s.drained
+	s.wg.Wait()
 	if s.store != nil {
 		s.store.Close()
 	}
