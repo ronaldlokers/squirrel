@@ -78,7 +78,8 @@ func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
 const baselineCTE = `
 	with baseline as (
 	  select c.id,
-	         coalesce((select max(e.occurred_at) from events e where e.chore_id = c.id),
+	         coalesce((select max(e.occurred_at) from events e
+	                    where e.chore_id = c.id and e.retracted_at is null),
 	                  c.created_at) as since,
 	         -- Only a digest that actually reached the room counts as having
 	         -- shown a chore. The row is committed before the send, so a
