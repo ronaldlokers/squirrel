@@ -124,3 +124,93 @@ func TestPositionsDoNotCrossPersons(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, aChore.ID, got.ID)
 }
+
+// A definition confirmation carries a button, so it is a prompt — but it is not
+// a numbered surface, and `done 1` must keep meaning the morning digest's first
+// line rather than the chore that was just defined.
+func TestDefineDoesNotStealTheNumbering(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	bins, err := store.UpsertChore(ctx, p, "bin day", oneWeek, oneDay)
+	require.NoError(t, err)
+	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+
+	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now().Add(-time.Hour), nil, []squirrel.Chore{bins})
+	require.NoError(t, err)
+	_, err = store.RecordPrompt(ctx, p, "9", "define", time.Now(), nil, []squirrel.Chore{vac})
+	require.NoError(t, err)
+
+	got, ok, err := store.ChoreAtPosition(ctx, p, 1)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, bins.ID, got.ID, "the digest still owns position 1")
+}
+
+func TestPromptByMessageIDIsScopedByPerson(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	a := owner(t, store)
+	b, err := store.SeedOwner(ctx, "someone-else", nil)
+	require.NoError(t, err)
+
+	c, err := store.UpsertChore(ctx, b, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	id, err := store.RecordPrompt(ctx, b, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, id, "m-77", time.Now()))
+
+	_, ok, err := store.PromptByMessageID(ctx, a, "m-77")
+	require.NoError(t, err)
+	require.False(t, ok, "one person's tap must not reach another's prompt")
+
+	_, ok, err = store.PromptByMessageID(ctx, b, "m-77")
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+func TestPreviousNumberedPromptSkipsDefines(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+
+	digest, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now().Add(-2*time.Hour), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, digest, "m-1", time.Now()))
+
+	define, err := store.RecordPrompt(ctx, p, "9", "define", time.Now().Add(-time.Hour), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, define, "m-2", time.Now()))
+
+	current, err := store.RecordPrompt(ctx, p, "9", "query", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
+	prev, ok, err := store.PreviousNumberedPrompt(ctx, p, current)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "m-1", prev.ExternalMessageID, "the define is not a numbered surface")
+}
+
+// A prompt whose send failed has no message id, so there is nothing to disable
+// and nothing to resolve a tap against.
+func TestPreviousNumberedPromptIgnoresUnsentOnes(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now().Add(-time.Hour), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+	current, err := store.RecordPrompt(ctx, p, "9", "query", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
+	_, ok, err := store.PreviousNumberedPrompt(ctx, p, current)
+	require.NoError(t, err)
+	require.False(t, ok)
+}

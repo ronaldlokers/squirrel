@@ -138,7 +138,7 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	}
 	s.sentDate = dateKey
 
-	if err := s.opts.Store.MarkPromptDelivered(ctx, promptID, now); err != nil {
+	if err := s.opts.Store.MarkPromptSent(ctx, promptID, "", now); err != nil {
 		// The message is already out and the guard above is already armed, so
 		// this is reported rather than retried too. Worst case the row is
 		// never marked delivered and LastDigestSentAt anchors to whichever
