@@ -49,7 +49,21 @@ func NewScheduler(o SchedulerOptions) *Scheduler {
 // A day slept through is skipped rather than sent late: a message about
 // yesterday's chores at three in the morning is noise, and the same chores
 // reappear in a few hours anyway.
-func (s *Scheduler) Once(ctx context.Context, now time.Time) error {
+//
+// A panic anywhere below is recovered and reported as an error rather than
+// left to propagate: CapturesSince runs Match, in Go, over every stored row
+// on every attempt, so a single row that panics Match must not be able to
+// fatally crash the scheduler on every tick from then on.
+func (s *Scheduler) Once(ctx context.Context, now time.Time) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("scheduler panicked: %v", r)
+		}
+	}()
+	return s.once(ctx, now)
+}
+
+func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	local := now.In(s.opts.Location)
 	dateKey := local.Format("2006-01-02")
 	if dateKey == s.sentDate {

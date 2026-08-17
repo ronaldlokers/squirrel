@@ -19,20 +19,25 @@ var unitDurations = map[string]time.Duration{
 
 // Anchored at the start: "i vacuum every 2 weeks" is a note, not a definition.
 // The colon is optional because requiring punctuation would be a command
-// language to memorise, which the principles forbid.
-var everyPattern = regexp.MustCompile(`^every\s+(?:(\d+)\s+)?([a-z]+)\s*:?\s+(.+)$`)
+// language to memorise, which the principles forbid. Case-insensitive (the
+// (?i) flag) so it runs directly against the original string rather than a
+// lowercased copy: strings.ToLower is not byte-length-preserving (it grows
+// some runes and shrinks others), so a length measured on a lowercased copy
+// and then used to index the original string can go out of range or land
+// mid-rune.
+var everyPattern = regexp.MustCompile(`(?i)^every\s+(?:(\d+)\s+)?([a-z]+)\s*:?\s+(.+)$`)
 
 // ParseEvery recognises a chore definition. ok is false for anything not
 // confidently one — the caller then treats the message as a capture, which is
 // the only safe direction to be wrong in.
 func ParseEvery(s string) (string, time.Duration, bool) {
 	trimmed := strings.TrimSpace(s)
-	m := everyPattern.FindStringSubmatch(strings.ToLower(trimmed))
+	m := everyPattern.FindStringSubmatch(trimmed)
 	if m == nil {
 		return "", 0, false
 	}
 
-	unit, ok := unitDurations[m[2]]
+	unit, ok := unitDurations[strings.ToLower(m[2])]
 	if !ok {
 		return "", 0, false
 	}
@@ -51,9 +56,10 @@ func ParseEvery(s string) (string, time.Duration, bool) {
 		count = parsed
 	}
 
-	// Take the name from the original string rather than the lowercased copy,
-	// so it is stored as first written.
-	name := strings.TrimSpace(trimmed[len(trimmed)-len(m[3]):])
+	// m[3] is captured straight from trimmed (the pattern is matched
+	// case-insensitively against it directly, never against a lowercased
+	// copy), so it is already the name as first written, byte-for-byte.
+	name := strings.TrimSpace(m[3])
 	if name == "" {
 		return "", 0, false
 	}
@@ -144,3 +150,10 @@ func atoi(s string) int {
 	n, _ := strconv.Atoi(s)
 	return n
 }
+
+// matchFn indirects every call Applier.Apply and CapturesSince make to Match,
+// so a test can substitute a stand-in that panics — otherwise there is no way
+// to exercise the recover added around Applier.Apply and Scheduler.Once,
+// since Match itself has no reachable panic once the byte-length bug above is
+// fixed. Production code never reassigns it.
+var matchFn = Match

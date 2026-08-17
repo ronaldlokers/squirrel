@@ -31,14 +31,32 @@ func NewApplier(store *Store, send Sender, onError func(error)) *Applier {
 // Apply runs after a capture has landed in Postgres. The raw text is already
 // stored verbatim, so everything here is a derived view over it and nothing
 // here can lose a thought.
-func (a *Applier) Apply(ctx context.Context, item Item, personID *int64) error {
+//
+// A panic anywhere below is recovered and reported as an error rather than
+// left to propagate. It escaped once already — a byte-length bug in Match's
+// chore-name parsing — and rode out through Drain.one and Drain.Run to exit
+// the whole process. By then the spool file was already gone and the row
+// already committed, so there was nothing left to retry, and every later
+// digest attempt re-ran Match over that same row via CapturesSince and
+// panicked the scheduler too, forever. A derived view failing must never be
+// able to take capture down with it again.
+func (a *Applier) Apply(ctx context.Context, item Item, personID *int64) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("applier panicked: %v", r)
+		}
+	}()
+	return a.apply(ctx, item, personID)
+}
+
+func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	// Chores belong to a person. An unresolved identity means we do not know
 	// whose they would be, so nothing is applied — the capture is already safe.
 	if personID == nil || item.ConversationID == nil {
 		return nil
 	}
 
-	intent := Match(item.RawText)
+	intent := matchFn(item.RawText)
 	reply, err := a.replyFor(ctx, intent, *personID, *item.ConversationID)
 	if err != nil {
 		return err
