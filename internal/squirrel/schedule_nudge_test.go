@@ -165,3 +165,28 @@ func TestEveningCarriesTheNudgeOnAQuietDay(t *testing.T) {
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
 	require.Len(t, (*sent)[0].message.Actions, 1)
 }
+
+// PickChore's overdue weighting exists to stop the same most-overdue chore
+// from being nudged every single day — but that only holds if a chore that
+// was just nudged stops counting as due until its tolerance passes.
+// DueChores' last_shown must recognise a nudge, not just a digest, as having
+// shown a chore.
+func TestNudgedChoreIsNotOfferedAgainWithinItsTolerance(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 20*24*time.Hour)
+
+	chat, sent := chatRecorder("1", "2")
+	s := schedulerWithChat(t, store, p, chat)
+	now := time.Now()
+
+	require.NoError(t, s.Nudge(ctx, now, squirrel.NudgeFromArrival))
+	require.Len(t, *sent, 1)
+
+	require.NoError(t, s.Nudge(ctx, now.Add(24*time.Hour), squirrel.NudgeFromArrival))
+	require.Len(t, *sent, 1, "still inside the week tolerance since yesterday's nudge")
+}
