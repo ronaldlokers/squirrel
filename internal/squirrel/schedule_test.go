@@ -306,13 +306,17 @@ func TestSchedulerGuardArmsOnErrDigestAlreadySent(t *testing.T) {
 	at := time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))
 	midnight := time.Date(2026, 8, 15, 0, 0, 0, 0, amsterdam(t))
 
-	// Simulate another process having already recorded today's digest.
-	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), &midnight, nil)
+	// Simulate another process having already recorded today's evening
+	// message. once() still claims a nudge for the chore above before it
+	// gets here — nudgeFor's own RecordPrompt is a different kind and so
+	// does not collide — but the evening RecordPrompt right after it does,
+	// before sendMessage is ever reached.
+	_, err = store.RecordPrompt(ctx, p, "9", "evening", time.Now(), &midnight, nil)
 	require.NoError(t, err)
 
 	s := scheduler(t, store, p, send)
 	require.NoError(t, s.Once(ctx, at), "ErrDigestAlreadySent must be treated as success")
-	require.Empty(t, *got, "no send when the digest was already recorded by someone else")
+	require.Empty(t, *got, "no send when the evening message was already recorded by someone else")
 
 	store.Pool().Close()
 

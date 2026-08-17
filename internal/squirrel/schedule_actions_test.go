@@ -72,6 +72,11 @@ func schedulerWithChat(t *testing.T, store *squirrel.Store, p int64, chat squirr
 	})
 }
 
+// A quiet-day evening message is one Campfire send, but two prompt rows: the
+// button belongs to the nudge it carries, so it is the nudge row's
+// external_message_id that must record what Campfire called the message —
+// that is what a later tap resolves through, via PromptByMessageID. The
+// evening row that printed it carries no message id of its own.
 func TestDigestRecordsItsMessageID(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -87,15 +92,25 @@ func TestDigestRecordsItsMessageID(t *testing.T) {
 	require.NoError(t, s.Once(ctx, time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))))
 
 	require.Len(t, *sent, 1)
-	require.NotEmpty(t, (*sent)[0].message.Actions, "the digest carries buttons")
+	require.NotEmpty(t, (*sent)[0].message.Actions, "the fallback nudge carries a button")
 
-	var id string
+	var nudgeID string
 	require.NoError(t, store.Pool().QueryRow(ctx,
-		`select external_message_id from prompts where person_id = $1 and kind = 'digest'`,
-		p).Scan(&id))
-	require.Equal(t, "m-1", id)
+		`select external_message_id from prompts where person_id = $1 and kind = 'nudge'`,
+		p).Scan(&nudgeID))
+	require.Equal(t, "m-1", nudgeID)
+
+	var eveningID *string
+	require.NoError(t, store.Pool().QueryRow(ctx,
+		`select external_message_id from prompts where person_id = $1 and kind = 'evening'`,
+		p).Scan(&eveningID))
+	require.Nil(t, eveningID, "the evening row carries no button of its own on a quiet day")
 }
 
+// Each day's Once() call claims a fresh nudge (the chore is still due the
+// next morning, per the short tolerance below) and that nudge's row is the
+// one carrying a real message id — see TestDigestRecordsItsMessageID. The
+// second day's nudge must still disable the first day's.
 func TestANewDigestDisablesTheOneBefore(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -104,9 +119,10 @@ func TestANewDigestDisablesTheOneBefore(t *testing.T) {
 	// Tolerance is oneDay rather than the oneWeek phase 2 tests elsewhere use:
 	// DueChores gates a chore's reappearance on last_shown + tolerance, and the
 	// first Once() call below is the chore's last_shown. A oneWeek tolerance
-	// would suppress it from the very next morning's digest regardless of how
+	// would suppress it from the very next morning's nudge regardless of how
 	// overdue it still is, which would make the second Once() call send an
-	// empty digest for the wrong reason and never reach the code under test.
+	// empty evening message for the wrong reason and never reach the code
+	// under test.
 	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneDay)
 	require.NoError(t, err)
 	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
@@ -120,7 +136,7 @@ func TestANewDigestDisablesTheOneBefore(t *testing.T) {
 	require.Len(t, *sent, 2)
 	require.Len(t, (*sent)[0].updates, 0)
 	require.Equal(t, []string{"m-1"}, (*sent)[1].updates,
-		"the second digest closes the first one's buttons")
+		"the second day's nudge closes the first day's buttons")
 }
 
 // The update must carry the previous prompt's own action values — not a
@@ -145,38 +161,52 @@ func TestClosePreviousRebuildsItsOwnActions(t *testing.T) {
 
 	require.Len(t, (*sent)[1].updateMessages, 1)
 	closed := (*sent)[1].updateMessages[0]
-	require.Empty(t, closed.Text, "no body override — whatever text the first digest had stays untouched")
+	require.Empty(t, closed.Text, "no body override — whatever text the first day's nudge had stays untouched")
 	require.Equal(t, []squirrel.Action{{Label: "vacuum", Value: "done:1", Emoji: "✅"}}, closed.Actions,
-		"the same action values the first digest was actually sent with, not a synthetic button")
+		"the same action values the first day's nudge was actually sent with, not a synthetic button")
 }
 
-// RecordPrompt stores a prompt_line for every due chore regardless of the
-// button cap the original send applied, so closePrevious rebuilding actions
-// straight from prompt_lines can carry more than Campfire's limit of twelve.
-// Before the fix, closePrevious skipped Message.Capped(), so an update
-// closing a digest with more than twelve due chores would be rejected
+// RecordPrompt stores a prompt_line for every chore it is handed regardless
+// of the button cap the original send applied, so closePrevious rebuilding
+// actions straight from prompt_lines can carry more than Campfire's limit of
+// twelve. Before the fix, closePrevious skipped Message.Capped(), so an
+// update closing a prompt with more than twelve lines would be rejected
 // outright — silently, since a failed close is reported and swallowed — and
 // the old buttons would stay live indefinitely.
+//
+// A nudge only ever names one chore, so nothing the scheduler sends on its
+// own can reconstruct a >12-line prompt to close any more — that scenario
+// belonged to the old full-due-list digest, which this task retires. A
+// query prompt still records one line per active chore regardless of count
+// (see IntentQuery in apply.go), so it is simulated directly here: it is the
+// shape closePrevious must still survive.
 func TestClosePreviousCapsRebuiltActions(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
 
+	chores := make([]squirrel.Chore, 0, 13)
 	for i := range 13 {
-		c, err := store.UpsertChore(ctx, p, fmt.Sprintf("chore %02d", i), twoWeeks, oneDay)
+		c, err := store.UpsertChore(ctx, p, fmt.Sprintf("chore %02d", i), twoWeeks, oneWeek)
 		require.NoError(t, err)
-		require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
-			time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+		backdateChore(t, store, c.ID, 20*24*time.Hour)
+		chores = append(chores, c)
 	}
 
-	chat, sent := chatRecorder("m-1", "m-2")
+	// A query prompt from earlier that morning, carrying all 13 lines — the
+	// "previous numbered surface" closePrevious will find and rebuild.
+	queryAt := time.Date(2026, 8, 15, 7, 0, 0, 0, amsterdam(t))
+	queryPromptID, err := store.RecordPrompt(ctx, p, "9", "query", queryAt, nil, chores)
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, queryPromptID, "m-0", queryAt))
+
+	chat, sent := chatRecorder("m-1")
 	s := schedulerWithChat(t, store, p, chat)
 	require.NoError(t, s.Once(ctx, time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))))
-	require.NoError(t, s.Once(ctx, time.Date(2026, 8, 16, 8, 0, 1, 0, amsterdam(t))))
 
-	require.Len(t, *sent, 2)
-	require.Len(t, (*sent)[1].updateMessages, 1)
-	require.LessOrEqual(t, len((*sent)[1].updateMessages[0].Actions), squirrel.MaxActions,
+	require.Len(t, *sent, 1)
+	require.Len(t, (*sent)[0].updateMessages, 1)
+	require.LessOrEqual(t, len((*sent)[0].updateMessages[0].Actions), squirrel.MaxActions,
 		"closePrevious must never send more actions than Campfire accepts")
 }
 
