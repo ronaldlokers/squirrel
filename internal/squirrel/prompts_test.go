@@ -292,6 +292,38 @@ func TestChoreAtPositionIgnoresAnUndeliveredQuery(t *testing.T) {
 	require.Equal(t, vac.ID, got.ID, "typed done 1 must still resolve against the last delivered prompt")
 }
 
+// OutstandingLines resolves a bare "done" through latestPrompt, the same
+// undelivered-prompt hazard TestChoreAtPositionIgnoresAnUndeliveredQuery
+// covers for a typed position — but latestPrompt is a separate query
+// constant from ChoreAtPosition's own inline one, and a delivered_at
+// predicate added to one does not add it to the other. This exercises
+// latestPrompt specifically: a digest with one chore is delivered, then a
+// "?" that names both active chores fails to send. If latestPrompt ever
+// treats that failed query as current, OutstandingLines resolves against
+// its two lines instead of the digest's one.
+func TestOutstandingLinesIgnoresAnUndeliveredQuery(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	_, err := store.UpsertChore(ctx, p, "apple errand", oneWeek, oneDay)
+	require.NoError(t, err)
+	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+
+	digest, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now().Add(-time.Hour), nil, []squirrel.Chore{vac})
+	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, digest, "m-1", time.Now()))
+
+	failingSend := func(context.Context, string, string) error { return errors.New("send failed") }
+	require.Error(t, squirrel.NewApplier(store, failingSend, squirrel.Chat{}, nil).Apply(ctx, itemOf("?"), &p))
+
+	outstanding, err := store.OutstandingLines(ctx, p)
+	require.NoError(t, err)
+	require.Len(t, outstanding, 1, "a bare done must resolve against the last delivered prompt, not a failed query")
+	require.Equal(t, vac.ID, outstanding[0].ID)
+}
+
 // A prompt whose send failed has no message id, so there is nothing to disable
 // and nothing to resolve a tap against.
 func TestPreviousNumberedPromptIgnoresUnsentOnes(t *testing.T) {
