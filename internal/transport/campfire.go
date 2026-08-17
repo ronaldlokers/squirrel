@@ -289,13 +289,24 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 	// looks like from here, so it is retried exactly once as the plain text
 	// phase 2 always sent. A non-4xx failure (5xx, a network error) is not
 	// retried: that is Campfire being unavailable, not a shape it refused.
+	//
+	// The retry is gated to POST only. Update's caller, closePrevious, sends
+	// Text deliberately empty so the PATCH omits "body" and the room's
+	// existing text survives — that omission is itself a fix. Retrying a
+	// rejected PATCH as plain text would carry an explicit empty body, which
+	// wipes the previous digest's text on any endpoint that accepts a
+	// plain-text PATCH: exactly the bug the empty-body omission exists to
+	// prevent, and one a 2xx result from the retry would hide completely,
+	// since Update's caller reports failure only on a non-2xx response. Phase
+	// 2 also never had an Update to fall back to, so there is no phase 2
+	// behaviour here to degrade to in the first place.
 	do := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (*http.Response, error) {
 		res, isJSON, err := roundTrip(ctx, method, dest, m, disabled)
 		if err != nil {
 			return nil, err
 		}
 
-		if isJSON && res.StatusCode >= 400 && res.StatusCode < 500 {
+		if method == http.MethodPost && isJSON && res.StatusCode >= 400 && res.StatusCode < 500 {
 			io.Copy(io.Discard, res.Body)
 			res.Body.Close()
 			slog.Warn("campfire: message with actions was rejected, retrying as plain text",

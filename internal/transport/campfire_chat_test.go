@@ -114,6 +114,38 @@ func TestSendDowngradesToPlainTextWhenJSONIsRejected(t *testing.T) {
 		"the plain-text retry carries the message's own Text")
 }
 
+// closePrevious calls Update with Text deliberately empty, so the JSON PATCH
+// omits "body" and the room's existing text survives the update — that
+// omission is itself a fix. Retrying a rejected PATCH as plain text would
+// send an explicit empty body instead, which — on any endpoint that accepts
+// a plain-text PATCH — blanks the previous digest's text while still
+// returning 2xx, so the caller sees success and nothing anywhere notices.
+// Phase 2 never had an Update to degrade to either. The retry must never
+// fire for anything but a POST.
+func TestUpdateDoesNotRetryOnRejection(t *testing.T) {
+	var got []sentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		got = append(got, sentRequest{
+			method: r.Method,
+			path:   r.URL.Path,
+			body:   map[string]any{"raw": string(raw), "contentType": r.Header.Get("Content-Type")},
+		})
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+
+	cfg := config()
+	cfg.BaseURL, cfg.BotKey = srv.URL, "3-abc"
+	chat := transport.NewCampfire(cfg).Chat
+
+	err := chat.Update(context.Background(), "9", "m-1", squirrel.Message{
+		Actions: []squirrel.Action{{Label: "bin day", Value: "done:1", Emoji: "✅"}},
+	})
+	require.Error(t, err, "a rejected update must surface as a failure, never a silently blanked success")
+	require.Len(t, got, 1, "no plain-text retry for anything but a POST")
+}
+
 // A message with no actions stays a plain text post, exactly as phase 2 sent
 // it. Sending JSON for everything would change the shape of every existing
 // reply for no gain.
