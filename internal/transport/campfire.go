@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -157,6 +158,119 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 			return fmt.Errorf("campfire: send failed with %d", res.StatusCode)
 		}
 		return nil
+	}
+}
+
+type campfireAction struct {
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	Emoji    string `json:"emoji,omitempty"`
+	Disabled bool   `json:"disabled,omitempty"`
+}
+
+type campfireMessage struct {
+	Body          string           `json:"body"`
+	SelectionMode string           `json:"selection_mode,omitempty"`
+	Actions       []campfireAction `json:"actions,omitempty"`
+}
+
+func actionsFor(m squirrel.Message, disabled bool) []campfireAction {
+	out := make([]campfireAction, 0, len(m.Actions))
+	for _, a := range m.Actions {
+		out = append(out, campfireAction{
+			Label: a.Label, Value: a.Value, Emoji: a.Emoji, Disabled: disabled,
+		})
+	}
+	return out
+}
+
+// messageIDFrom pulls the id out of the Location header of a create response.
+// Campfire returns the message's own URL there; nothing else in the response
+// names it.
+func messageIDFrom(res *http.Response) string {
+	loc := res.Header.Get("Location")
+	if loc == "" {
+		return ""
+	}
+	trimmed := strings.TrimRight(loc, "/")
+	if i := strings.LastIndex(trimmed, "/"); i >= 0 {
+		return trimmed[i+1:]
+	}
+	return ""
+}
+
+// chatVia builds the outbound surface. A message with no actions is posted as
+// plain text, byte for byte what phase 2 sent — only a message that needs
+// buttons becomes JSON.
+func chatVia(baseURL, botKey string) squirrel.Chat {
+	base := strings.TrimRight(baseURL, "/")
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	do := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (*http.Response, error) {
+		var (
+			body        io.Reader
+			contentType = "text/plain; charset=utf-8"
+		)
+		if len(m.Actions) > 0 {
+			encoded, err := json.Marshal(campfireMessage{
+				Body:          m.Text,
+				SelectionMode: m.SelectionMode,
+				Actions:       actionsFor(m, disabled),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("campfire: encoding message: %w", err)
+			}
+			body, contentType = bytes.NewReader(encoded), "application/json"
+		} else {
+			body = strings.NewReader(m.Text)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, dest, body)
+		if err != nil {
+			return nil, fmt.Errorf("campfire: building request: %w", stripURL(err))
+		}
+		req.Header.Set("Content-Type", contentType)
+
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("campfire: request failed: %w", stripURL(err))
+		}
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			io.Copy(io.Discard, res.Body)
+			res.Body.Close()
+			return nil, fmt.Errorf("campfire: request failed with %d", res.StatusCode)
+		}
+		return res, nil
+	}
+
+	return squirrel.Chat{
+		Send: func(ctx context.Context, conversationID string, m squirrel.Message) (string, error) {
+			dest := fmt.Sprintf("%s/rooms/%s/%s/messages", base, conversationID, botKey)
+			res, err := do(ctx, http.MethodPost, dest, m, false)
+			if err != nil {
+				return "", err
+			}
+			defer res.Body.Close()
+			io.Copy(io.Discard, res.Body)
+			return messageIDFrom(res), nil
+		},
+
+		// Update is only ever used to close a surface, so it always disables.
+		// A general-purpose edit would need a reason to exist first.
+		Update: func(ctx context.Context, conversationID, messageID string, m squirrel.Message) error {
+			dest := fmt.Sprintf("%s/rooms/%s/%s/messages/%s", base, conversationID, botKey, messageID)
+			res, err := do(ctx, http.MethodPatch, dest, m, true)
+			if err != nil {
+				return err
+			}
+			io.Copy(io.Discard, res.Body)
+			return res.Body.Close()
+		},
+
+		Boost: func(ctx context.Context, conversationID, messageID, content string) error {
+			dest := fmt.Sprintf("%s/rooms/%s/%s/messages/%s/boosts", base, conversationID, botKey, messageID)
+			return boost(ctx, client, dest, content)
+		},
 	}
 }
 
@@ -339,6 +453,7 @@ func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 	// exactly the moment it is needed; absent outbound is at least honest.
 	if cfg.BaseURL != "" && cfg.BotKey != "" {
 		t.Send = sendVia(cfg.BaseURL, cfg.BotKey)
+		t.Chat = chatVia(cfg.BaseURL, cfg.BotKey)
 	}
 
 	return t
