@@ -1,8 +1,10 @@
 package transport_test
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +17,25 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 	"github.com/ronaldlokers/squirrel/internal/transport"
 )
+
+// safeLog is a concurrency-safe io.Writer: boost fires in a background
+// goroutine, so the logger and the test's own assertions can both reach it.
+type safeLog struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (l *safeLog) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.Write(p)
+}
+
+func (l *safeLog) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.String()
+}
 
 func TestBoostURL(t *testing.T) {
 	got, ok := transport.BoostURL("http://campfire", "/rooms/7/3-abc/messages", "42")
@@ -169,6 +190,40 @@ func TestBoostFailureDoesNotAffectTheResponse(t *testing.T) {
 	require.Equal(t, http.StatusOK, rw.Code)
 	require.Empty(t, rw.Header().Get("Content-Type"))
 	require.Len(t, sink.seen, 1, "the capture still happened")
+}
+
+// A failing boost must never leak the bot key either — and this path is
+// worse than a failing send: room.path (which embeds the key) used to be
+// logged outright as a field on the "unsafe room path" warning, and the
+// underlying *url.Error from a failed request used to be logged as the
+// "url" field on "campfire: boost failed", both bypassing whatever
+// sanitising the error string itself got. "3-abc" (from the payload
+// fixture) stands in for a real bot key.
+func TestBoostFailureDoesNotLeakTheBotKeyInTheLogs(t *testing.T) {
+	var logs safeLog
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	mount := &oneMount{}
+	sink := &recordingSink{outcome: squirrel.Stored}
+	cfg := config()
+	// Unreachable, but a well-formed URL the same scheme and host as itself,
+	// so BoostURL's composed-URL check passes and the request is actually
+	// attempted and actually fails.
+	cfg.BaseURL = "http://127.0.0.1:1"
+
+	_, err := transport.NewCampfire(cfg).Start(context.Background(), sink, mount)
+	require.NoError(t, err)
+
+	rw := httptest.NewRecorder()
+	mount.h(rw, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(payload)))
+
+	require.Eventually(t, func() bool {
+		return strings.Contains(logs.String(), "campfire: boost failed")
+	}, 2*time.Second, 20*time.Millisecond)
+
+	require.NotContains(t, logs.String(), "3-abc")
 }
 
 // Fail-open reaches the boost too: an envelope we could not read has no path

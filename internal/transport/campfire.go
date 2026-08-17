@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -147,7 +148,7 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 
 		res, err := client.Do(req)
 		if err != nil {
-			return fmt.Errorf("campfire: send failed: %w", err)
+			return fmt.Errorf("campfire: send failed: %w", stripURL(err))
 		}
 		defer res.Body.Close()
 		io.Copy(io.Discard, res.Body)
@@ -157,6 +158,23 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 		}
 		return nil
 	}
+}
+
+// stripURL removes the request URL from a *url.Error before it is logged or
+// otherwise surfaced. client.Do wraps a transport failure in a *url.Error
+// whose Error() method embeds the full request URL, and every outbound
+// Campfire URL — send and boost alike — carries the bot key as a path
+// segment: "Post \"http://.../rooms/7/<bot-key>/messages\": dial tcp ...".
+// The key is the most sensitive thing in this whole namespace, and this path
+// is exercised precisely during an outage, exactly when logs get shipped and
+// read. Only the operation and the underlying error survive; anything that
+// is not a *url.Error passes through unchanged.
+func stripURL(err error) error {
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return fmt.Errorf("%s: %w", urlErr.Op, urlErr.Err)
+	}
+	return err
 }
 
 // safeRoomPath and safeMessageID bound what a boost URL is built from. Both
@@ -240,13 +258,13 @@ func boost(ctx context.Context, client *http.Client, dest, content string) error
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, dest, strings.NewReader(content))
 		if err != nil {
-			return err
+			return stripURL(err)
 		}
 		req.Header.Set("Content-Type", "text/plain; charset=utf-8")
 
 		res, err := client.Do(req)
 		if err != nil {
-			lastErr = err
+			lastErr = stripURL(err)
 			continue
 		}
 		io.Copy(io.Discard, res.Body)
@@ -278,14 +296,17 @@ func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, ca
 
 	dest, ok := BoostURL(cfg.BaseURL, p.Room.Path, *capture.ExternalID)
 	if !ok {
-		slog.Warn("campfire: rejecting boost with an unsafe room path", "room_path", p.Room.Path)
+		// room.path embeds the bot key, so it never goes into a log field.
+		slog.Warn("campfire: rejecting boost with an unsafe room path")
 		return
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := boost(ctx, client, dest, "🐿️"); err != nil {
-			slog.Error("campfire: boost failed", "error", err, "url", dest)
+			// dest carries the bot key, so it never goes into a log field —
+			// err is already stripped of it by stripURL inside boost.
+			slog.Error("campfire: boost failed", "error", err)
 		}
 	}()
 }
