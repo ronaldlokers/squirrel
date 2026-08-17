@@ -18,7 +18,20 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // numberedKinds are the prompt kinds whose lines are numbered — the ones where
 // a position means something. A definition confirmation carries a button but is
 // a standalone surface: it names one chore and is never counted against.
-const numberedKinds = `('digest', 'query')`
+//
+// 'nudge' and 'evening' both belong here. A nudge always carries its chosen
+// chore as its own line 1, whether it is delivered standalone or rides along
+// inside an evening message — see schedule.go's once(): the evening prompt
+// duplicates that same line onto its own row too, so whichever of the two
+// prompts a lookup lands on resolves to the same chore. Leaving either kind
+// out would let a typed "done 1" resolve against some older digest or query
+// while the button on the very same message resolves through
+// PromptByMessageID to the prompt that actually owns it — the typed path and
+// the button path disagreeing, which phase 3 ruled must never happen. It
+// would also leave closePrevious unable to find and disable a nudge's or an
+// evening's live button at all, breaking the "only the newest numbered
+// surface is live" bound that makes un-tapping safe.
+const numberedKinds = `('digest', 'query', 'nudge', 'evening')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
 type Prompt struct {
@@ -193,25 +206,34 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 	return s.scanChores(ctx, q, personID)
 }
 
-// LastDigestSentAt is the sent_at of the person's most recent digest — a
-// prompt with a non-null sent_for_date, which is exactly what distinguishes a
-// digest from a query prompt issued on demand. The scheduler anchors its
-// capture window to this instant rather than to a fixed "yesterday midnight"
-// offset, so a prompt with a null date (a query, not a digest) must never be
-// picked here: anchoring to one would shrink the window to however many
-// minutes ago the last "?" was sent and hide everything captured before it.
+// LastDigestSentAt is the sent_at of the person's most recent evening
+// message — a digest, in the old naming this method keeps. The scheduler
+// anchors its capture window to this instant rather than to a fixed
+// "yesterday midnight" offset.
 //
-// delivered_at is not null is required too. RecordPrompt commits a digest's
-// row before Send is attempted, so a row can exist for a date whose message
-// never reached Campfire. Anchoring to that row anyway would skip the
-// capture window right past every capture made on the day the send failed —
-// gone from every digest forever, since the next successful digest's window
-// starts from the (wrongly early) failed row's sent_at, not from the last
-// time a message actually arrived.
+// kind is filtered to ('digest', 'evening') rather than just "sent_for_date
+// is not null", because a nudge carries a date too — it has to, to get its
+// own slot in the per-day index — and a nudge is the newest dated prompt on
+// most days while showing no captures at all. Anchoring to it instead of the
+// last real evening message would skip the capture window forward past
+// everything captured between the two, silently and permanently: gone from
+// every future evening message, since each one's window starts from the
+// last one's sent_at. 'digest' stays in the list so the first evening
+// message after this kind was renamed still anchors off the last digest
+// that actually sent, rather than jumping backwards over however many days
+// of captures came before the rename.
+//
+// delivered_at is not null is required too. RecordPrompt commits a dated
+// prompt's row before Send is attempted, so a row can exist for a date whose
+// message never reached Campfire. Anchoring to that row anyway would skip
+// the capture window right past every capture made on the day the send
+// failed — gone from every evening message forever, since the next
+// successful one's window starts from the (wrongly early) failed row's
+// sent_at, not from the last time a message actually arrived.
 func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time, bool, error) {
 	const q = `
 		select sent_at from prompts
-		 where person_id = $1 and sent_for_date is not null and delivered_at is not null
+		 where person_id = $1 and kind in ('digest', 'evening') and delivered_at is not null
 		 order by sent_at desc, id desc limit 1`
 
 	var sentAt time.Time

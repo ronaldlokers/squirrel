@@ -136,11 +136,16 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return nil
 	}
 
-	// The evening prompt carries its own line for the nudged chore, when
-	// there is one — the same chore nudgeFor already recorded a line for
-	// under its own prompt. Duplicating it here means the evening message's
-	// own button resolves against the evening prompt's own row regardless of
-	// which of the two rows a later tap's message id happens to match.
+	// The evening prompt carries its own line for the nudged chore too, when
+	// there is one — duplicating the same line nudgeFor already recorded
+	// under the nudge prompt. A tap resolves through the message id, which
+	// belongs solely to the nudge row (see below), but a typed "done 1"
+	// resolves through whichever of the two same-moment rows sorts latest —
+	// ties on sent_at break on id, and the evening row's id is always the
+	// higher one, since it is recorded second. Without its own copy of the
+	// line, that typed path would find an empty row while the button sitting
+	// on the very same message resolves correctly — the two paths
+	// disagreeing, which must never happen.
 	var chores []Chore
 	if nudge != nil {
 		chores = []Chore{*nudge}
@@ -181,7 +186,29 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		s.opts.OnError(fmt.Errorf("evening prompt %d delivered with no addressable message id", promptID))
 	}
 
-	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
+	// The message id belongs on whichever row owns the button: a tap
+	// resolves through PromptByMessageID, so external_message_id must point
+	// at the prompt whose prompt_lines the tap should land on. When a nudge
+	// rode along, that is the nudge row — the button is its button, named
+	// after its chore — not the evening row it happens to be printed inside.
+	// external_message_id is also unique per prompt
+	// (prompts_external_message_id_key), so only one of the two rows can
+	// hold it regardless.
+	//
+	// The evening row still gets delivered_at, with no message id of its
+	// own: on a quiet day it carries no button of its own, and delivered_at
+	// alone is what LastDigestSentAt needs to anchor the next capture
+	// window.
+	if nudge != nil {
+		if err := s.opts.Store.MarkPromptSent(ctx, nudgePromptID, messageID, now); err != nil {
+			// The message is already out, so this is reported rather than
+			// retried — same reasoning as the evening branch below.
+			return err
+		}
+		if err := s.opts.Store.MarkPromptSent(ctx, promptID, "", now); err != nil {
+			return err
+		}
+	} else if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
 		// The message is already out, so this is reported rather than
 		// retried. s.sentDate is not set on this path — the return below
 		// skips the assignment further down — but the in-memory guard is
@@ -195,20 +222,17 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
+	// current is whichever row actually owns this send's message id, so
+	// PreviousNumberedPrompt's exclusion lands on it rather than on the
+	// evening row when the two are the same moment: with the evening row
+	// excluded instead, the nudge row just created — same sent_at, same real
+	// external_message_id — would itself qualify as "previous" and
+	// closePrevious would disable the button it just sent.
+	current := promptID
 	if nudge != nil {
-		// The nudge row rode along in this same message rather than getting
-		// one of its own, so it is marked delivered with no message id of its
-		// own — external_message_id is unique per prompt (prompts_external_
-		// message_id_key), and the evening row above already claimed this
-		// message's id. The evening row's own prompt_lines carries the same
-		// chore, so a later tap still resolves against it; this row is only
-		// left marking that the nudge slot was spent and when.
-		if err := s.opts.Store.MarkPromptSent(ctx, nudgePromptID, "", now); err != nil {
-			return err
-		}
+		current = nudgePromptID
 	}
-
-	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, promptID)
+	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, current)
 	s.sentDate = dateKey
 	return nil
 }
