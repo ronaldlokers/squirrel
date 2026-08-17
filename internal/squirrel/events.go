@@ -29,38 +29,43 @@ func (s *Store) RecordCompletion(ctx context.Context, choreID, personID int64, s
 	return nil
 }
 
-// RetractCompletion undoes whatever completion happened since a given prompt.
-// The row stays; retracted_at is what the baseline query filters on, so the
-// clock moves back without the log losing anything.
+// RetractCompletion undoes every live completion since a given prompt. Rows
+// stay; retracted_at is what the baseline query filters on, so the clock
+// moves back without the log losing anything.
 //
-// Scoping to promptID rather than to "the most recent live completion" is what
-// makes the operation a state assertion instead of a counter. Campfire's
-// webhook delivery carries no event id and can retry, so a second call with
-// the same promptID must be indistinguishable in effect from the first: once
-// nothing has been completed since that prompt, a retried un-tap finds
-// nothing live at or after p.sent_at and no-ops, rather than walking back to
-// an earlier completion the user never asked to touch.
+// It retracts all matching rows in one statement, not just the most recent
+// one. That is what makes it a state assertion rather than an increment:
+// "selected: false" means "there is no live completion from this prompt",
+// and the only way to make that idempotent is to describe the end state
+// directly. RecordCompletion is not itself idempotent, so a retried "done"
+// delivery can leave two live completions in one window — retracting only
+// the newest of those would undo the older one on a second call, landing in
+// a different place than the first call did. Retracting the whole window
+// every time means a second call finds nothing left live in it, affects
+// zero rows, and returns false: the same place as staying put.
+//
+// The prompt lookup is joined to person_id, not just id, so a prompt
+// belonging to someone else cannot widen the window on the caller's own
+// chore. Ownership of the chore is already enforced by the join to chores,
+// so this is defence in depth today — but promptID will soon come from a
+// client-supplied message id, and "unreachable" should not depend on
+// remembering that the other predicate covers it.
 //
 // Returns false when there was nothing live to retract. That is a no-op
-// rather than an error — either genuinely nothing was ever completed since
-// this prompt, or a previous call already retracted it.
-//
-// The outer update repeats "retracted_at is null" even though the subquery
-// already filters on it: the subquery's row is chosen before the update
-// acquires its lock, so without the outer predicate too, a second call
-// racing the first could still match the same now-retracted row and
-// re-stamp it with a later timestamp, reporting success for nothing.
+// rather than an error — either nothing was ever completed since this
+// prompt, or a previous call already retracted the whole window.
 func (s *Store) RetractCompletion(ctx context.Context, choreID, personID, promptID int64, at time.Time) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `
-		update events set retracted_at = $4
-		 where retracted_at is null
-		   and id = (
-		   select e.id from events e
-		     join chores c on c.id = e.chore_id
-		    where e.chore_id = $1 and c.person_id = $2 and e.retracted_at is null
-		      and e.occurred_at >= (select sent_at from prompts where id = $3)
-		    order by e.occurred_at desc, e.id desc
-		    limit 1)`,
+		update events e
+		   set retracted_at = $4
+		  from chores c, prompts p
+		 where c.id = e.chore_id
+		   and e.chore_id = $1
+		   and c.person_id = $2
+		   and p.id = $3
+		   and p.person_id = $2
+		   and e.retracted_at is null
+		   and e.occurred_at >= p.sent_at`,
 		choreID, personID, promptID, at)
 	if err != nil {
 		return false, fmt.Errorf("retracting completion: %w", err)

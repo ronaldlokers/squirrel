@@ -176,6 +176,61 @@ func TestSecondRetractionDoesNotReachAnEarlierCompletion(t *testing.T) {
 	require.Equal(t, 1, live, "the completion from before the prompt is still live")
 }
 
+// The finding from the second round of review: RecordCompletion is not
+// itself idempotent, so a retried "done" delivery can leave two live
+// completions both at or after the same prompt's sent_at. Retracting only
+// the most recent of those is still not a state assertion — a second call
+// would find the older one still live and retract it too, landing in
+// {both retracted} after two calls instead of {both retracted} after one.
+// The whole window has to clear in a single statement so a second call
+// finds nothing left to retract.
+func TestRetractionClearsEveryCompletionInTheWindow(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 15*24*time.Hour)
+
+	promptID, err := store.RecordPrompt(ctx, p, "9", "digest", time.Now(), nil, []squirrel.Chore{c})
+	require.NoError(t, err)
+
+	// Two live completions in the same window, as a retried "done" delivery
+	// would leave behind.
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack", time.Now()))
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack", time.Now()))
+
+	due, err := store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Empty(t, due, "either completion reset the clock")
+
+	found, err := store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
+	require.NoError(t, err)
+	require.True(t, found)
+
+	var live int
+	require.NoError(t, store.Pool().QueryRow(ctx,
+		`select count(*) from events where chore_id = $1 and retracted_at is null`,
+		c.ID).Scan(&live))
+	require.Zero(t, live, "both completions in the window are retracted, not just the newest")
+
+	due, err = store.DueChores(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1, "nothing live since the prompt, so the clock falls back to creation")
+
+	// A second call — the retry — must be a true no-op: nothing left live in
+	// the window, so it changes nothing and reports nothing found.
+	found, err = store.RetractCompletion(ctx, c.ID, p, promptID, time.Now())
+	require.NoError(t, err)
+	require.False(t, found, "a second call finds nothing left live in the window")
+
+	require.NoError(t, store.Pool().QueryRow(ctx,
+		`select count(*) from events where chore_id = $1 and retracted_at is null`,
+		c.ID).Scan(&live))
+	require.Zero(t, live, "still nothing live — the retry changed nothing")
+}
+
 // A tap carries a position, and the position resolves through a person-scoped
 // prompt — so this is defence in depth rather than the only guard. It goes in
 // because "unreachable" now depends on a decision rather than on structure.
