@@ -1,5 +1,7 @@
 package squirrel
 
+import "fmt"
+
 // PickChore chooses the one chore a nudge will name.
 //
 // Weighted random, not simply the most overdue, for two reasons. The most
@@ -44,4 +46,41 @@ func PickChore(due []Chore, draw float64) (Chore, bool) {
 	}
 	// Only reachable on a draw of exactly 1.0 or floating-point drift.
 	return due[len(due)-1], true
+}
+
+// NudgeReason is which trigger produced this nudge. It changes only the
+// framing — varied phrasing is the same anti-habituation mechanism as varied
+// timing, and it costs nothing.
+type NudgeReason string
+
+const (
+	NudgeFromMessage NudgeReason = "message"
+	NudgeFromArrival NudgeReason = "arrival"
+	NudgeFromEvening NudgeReason = "evening"
+)
+
+// NudgeMessage is one chore and one button. Never a list: self-regulation
+// draws on a depletable pool and every decision spends it, so six due chores
+// is six decisions charged to the resource that is already short.
+func NudgeMessage(c Chore, why NudgeReason) Message {
+	var text string
+	switch why {
+	case NudgeFromMessage:
+		text = fmt.Sprintf("While you're here — %s, %d days, usually %d.",
+			c.Name, c.SinceDays, c.EveryDays)
+	case NudgeFromEvening:
+		text = fmt.Sprintf("This evening — %s", choreSentence(c))
+	default: // NudgeFromArrival
+		text = choreSentence(c)
+	}
+
+	return Message{
+		Text:          text,
+		SelectionMode: "single",
+		Actions: []Action{{
+			Label: c.Name,
+			Value: "done:1",
+			Emoji: "✅",
+		}},
+	}
 }

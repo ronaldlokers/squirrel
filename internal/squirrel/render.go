@@ -45,6 +45,12 @@ func plural(n int, unit string) string {
 	return fmt.Sprintf("%d %ss", n, unit)
 }
 
+// choreSentence is choreLine without the list numbering, for when a chore is
+// named on its own rather than as item N of a list.
+func choreSentence(c Chore) string {
+	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
+}
+
 func RenderList(chores []Chore) string {
 	if len(chores) == 0 {
 		return "No chores yet. Say something like: every 2 weeks vacuum"

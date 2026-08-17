@@ -78,3 +78,45 @@ func TestPickChoreGivesEveryDueChoreSomeChance(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, int64(1), got.ID, "a zero-days-overdue chore is still reachable")
 }
+
+func TestNudgeMessageCarriesOneButton(t *testing.T) {
+	m := squirrel.NudgeMessage(overdue(1, "bin day", 19, 14), squirrel.NudgeFromArrival)
+
+	require.Contains(t, m.Text, "bin day")
+	require.Contains(t, m.Text, "19 days")
+	require.Contains(t, m.Text, "usually 14")
+	require.Len(t, m.Actions, 1, "one chore, one button — never a list")
+	require.Equal(t, "done:1", m.Actions[0].Value)
+	require.Equal(t, "✅", m.Actions[0].Emoji)
+	require.Equal(t, "single", m.SelectionMode)
+}
+
+// Riding back on a message the person sent, it acknowledges the piggyback.
+// Varied phrasing is the same anti-habituation mechanism as varied timing.
+func TestNudgeFramingVariesByReason(t *testing.T) {
+	c := overdue(1, "bin day", 19, 14)
+
+	piggyback := squirrel.NudgeMessage(c, squirrel.NudgeFromMessage)
+	require.Contains(t, piggyback.Text, "While you're here")
+
+	arrival := squirrel.NudgeMessage(c, squirrel.NudgeFromArrival)
+	require.NotContains(t, arrival.Text, "While you're here")
+
+	evening := squirrel.NudgeMessage(c, squirrel.NudgeFromEvening)
+	require.NotEqual(t, arrival.Text, evening.Text, "each trigger reads differently")
+}
+
+// Facts only. The words that would make this a nag are the ones under test.
+func TestNudgeNeverScolds(t *testing.T) {
+	c := overdue(1, "vacuum", 200, 14)
+	for _, why := range []squirrel.NudgeReason{
+		squirrel.NudgeFromMessage, squirrel.NudgeFromArrival, squirrel.NudgeFromEvening,
+	} {
+		text := squirrel.NudgeMessage(c, why).Text
+		for _, forbidden := range []string{
+			"still", "again", "overdue", "finally", "haven't", "!", "should",
+		} {
+			require.NotContains(t, text, forbidden, "%s / %q", why, forbidden)
+		}
+	}
+}
