@@ -8,8 +8,12 @@ import (
 )
 
 type SchedulerOptions struct {
-	Store          *Store
+	Store *Store
+	// Send is the phase 2 plain-text surface. Once() no longer calls it — the
+	// digest is a Message now, sent through Chat — but the field stays so
+	// boot.go (rewired in a later task) and phase 2 callers still compile.
 	Send           Sender
+	Chat           Chat
 	PersonID       int64
 	ConversationID string
 	// At is the time since local midnight, so 08:00 is 8h.
@@ -108,8 +112,8 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	text := RenderDigest(due, captures)
-	if text == "" {
+	m := DigestMessage(due, captures)
+	if m.Text == "" {
 		return nil
 	}
 
@@ -127,7 +131,8 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	if err := s.opts.Send(ctx, s.opts.ConversationID, text); err != nil {
+	messageID, err := s.sendDigest(ctx, m)
+	if err != nil {
 		// The prompt row is already committed, so the numbering stands and the
 		// digest will not be retried today. Reported rather than retried:
 		// re-sending risks two messages, and the next day's is minutes away in
@@ -136,18 +141,46 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		// digest's capture window to a message that never arrived.
 		return fmt.Errorf("sending digest: %w", err)
 	}
-	s.sentDate = dateKey
 
-	if err := s.opts.Store.MarkPromptDelivered(ctx, promptID, now); err != nil {
-		// The message is already out and the guard above is already armed, so
-		// this is reported rather than retried too. Worst case the row is
-		// never marked delivered and LastDigestSentAt anchors to whichever
-		// earlier digest it last saw as delivered instead — a capture window
-		// that overlaps and re-lists something already seen, never one that
-		// drops something unseen.
-		return fmt.Errorf("marking digest delivered: %w", err)
+	if messageID == "" {
+		// The transport reported success but returned no id to hang the
+		// buttons off — see chatVia's messageIDFrom. The digest still went
+		// out, so it is still marked delivered below; it just can never have
+		// its buttons disabled and no tap can ever resolve back to it. That is
+		// worth a log line, not a lie stored as if it were addressable.
+		s.opts.OnError(fmt.Errorf("digest prompt %d delivered with no addressable message id", promptID))
 	}
+
+	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
+		// The message is already out, so this is reported rather than
+		// retried. s.sentDate is not set on this path — the return below
+		// skips the assignment further down — but the in-memory guard is
+		// only ever an optimisation: the next tick retries once(), finds
+		// RecordPrompt already satisfied by today's row and fails it with
+		// ErrDigestAlreadySent, which is what actually arms sentDate. Worst
+		// case the row is never marked delivered and LastDigestSentAt anchors
+		// to whichever earlier digest it last saw as delivered instead — a
+		// capture window that overlaps and re-lists something already seen,
+		// never one that drops something unseen.
+		return err
+	}
+
+	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, promptID)
+	s.sentDate = dateKey
 	return nil
+}
+
+// sendDigest sends through Chat when the transport supports it, and falls
+// back to the phase 2 plain-text Send otherwise — Boost and Update are
+// already guarded the same way, and Send was the one field this package
+// still called unconditionally. That makes "degrade to phase 2 behaviour
+// against a transport with no Chat" true by construction rather than by
+// deployment discipline, and gives the Send field a reason to still exist.
+func (s *Scheduler) sendDigest(ctx context.Context, m Message) (string, error) {
+	if s.opts.Chat.Send == nil {
+		return "", s.opts.Send(ctx, s.opts.ConversationID, m.Text)
+	}
+	return s.opts.Chat.Send(ctx, s.opts.ConversationID, m)
 }
 
 // clockParts decomposes a Duration since midnight into hour, minute and
@@ -159,6 +192,65 @@ func clockParts(d time.Duration) (hour, min, sec int) {
 	min = (total % 3600) / 60
 	sec = total % 60
 	return
+}
+
+// closePrevious disables the buttons on the numbered prompt before current, so
+// there is exactly one live surface. That bound is what makes undo safe
+// without any date arithmetic — there is nothing old left to un-tap.
+//
+// The update rebuilds the exact action values the previous prompt was
+// originally sent with — done:1, done:2, … with the same chore names and
+// emoji — rather than sending a synthetic replacement. Two reasons: the
+// transport forces disabled on every action regardless of what the values
+// say, so reusing the real values is free; and because the values match,
+// Campfire's per-user retained selection on the old message survives the
+// update instead of being wiped by a button it does not recognise. Text is
+// left empty, which chatVia's omitempty then leaves off the request
+// entirely — the fork's controller only touches keys actually present, so an
+// update carrying no body leaves the room's existing text alone.
+//
+// Shared by the scheduler and the applier, the only two places that ever open
+// a new numbered surface. A failure here is reported and swallowed: the old
+// buttons staying live is a degraded surface, but failing to speak in the
+// present because closing the past went wrong is silence, and silence is the
+// failure this whole phase exists to remove.
+func closePrevious(ctx context.Context, store *Store, chat Chat, onError func(error), personID, current int64) {
+	if chat.Update == nil {
+		return
+	}
+	prev, ok, err := store.PreviousNumberedPrompt(ctx, personID, current)
+	if err != nil || !ok {
+		if err != nil {
+			onError(fmt.Errorf("finding the previous prompt: %w", err))
+		}
+		return
+	}
+
+	chores, err := store.ChoresOnPrompt(ctx, prev.ID)
+	if err != nil {
+		onError(fmt.Errorf("loading prompt %d's chores: %w", prev.ID, err))
+		return
+	}
+	// Capped: RecordPrompt stores a prompt_line for every due chore regardless
+	// of the button cap the original send applied, so rebuilding straight from
+	// prompt_lines can carry more than Campfire's limit of twelve. Above that,
+	// Campfire rejects the update outright — and since a failed close is
+	// reported and swallowed rather than retried, the old surface would then
+	// stay live indefinitely.
+	msg := Message{Actions: actionsForChores(chores, "done", "✅")}.Capped()
+	if len(msg.Actions) == 0 {
+		// The prompt never carried a button to begin with — a query prompt
+		// that offered nothing, say. There is nothing to disable, and sending
+		// an update with zero actions would fall back to a plain-text body
+		// (chatVia only encodes JSON when there is at least one action),
+		// which would overwrite the old message with an empty string: the
+		// exact bug this rebuild exists to fix, for a different reason.
+		return
+	}
+
+	if err := chat.Update(ctx, prev.ConversationID, prev.ExternalMessageID, msg); err != nil {
+		onError(fmt.Errorf("closing prompt %d: %w", prev.ID, err))
+	}
 }
 
 // Run ticks once a minute until the context is cancelled. A minute is fine

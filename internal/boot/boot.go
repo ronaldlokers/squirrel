@@ -132,16 +132,24 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 	// The transport's Send, or nil when no bot key is configured. A nil sender
 	// means the applier stays quiet rather than crashing: phase 1's property
 	// that this pod holds no Campfire credential is still a supported state.
+	// chat is the richer surface alongside it — buttons on a message, and the
+	// update that closes them — zero-valued the same way when it is absent.
+	// Both the applier and the scheduler fall back to the plain-text sender
+	// whenever chat.Send is nil, so wiring an empty Chat here is always safe.
 	var send squirrel.Sender
+	var chat squirrel.Chat
 	for _, t := range transports {
 		if t.Name == transport.CampfireName && t.Send != nil {
 			send = squirrel.Sender(t.Send)
+		}
+		if t.Name == transport.CampfireName && t.Chat.Send != nil {
+			chat = t.Chat
 		}
 	}
 
 	var applier *squirrel.Applier
 	if send != nil {
-		applier = squirrel.NewApplier(store, send, func(err error) {
+		applier = squirrel.NewApplier(store, send, chat, func(err error) {
 			slog.Error("applying intent", "error", err)
 		})
 
@@ -154,7 +162,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 			go func() {
 				defer wg.Done()
 				squirrel.NewScheduler(squirrel.SchedulerOptions{
-					Store: store, Send: send, PersonID: personID,
+					Store: store, Send: send, Chat: chat, PersonID: personID,
 					ConversationID: config.Campfire.ConversationID,
 					At:             config.DigestAt,
 					Location:       config.DigestLocation,

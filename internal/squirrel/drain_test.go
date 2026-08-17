@@ -123,13 +123,14 @@ func TestDrainAppliesARedeliveredMessageOnlyOnce(t *testing.T) {
 
 	vac, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
 	require.NoError(t, err)
-	_, err = store.RecordPrompt(ctx, p, "7", "digest", time.Now(), nil, []squirrel.Chore{vac})
+	promptID, err := store.RecordPrompt(ctx, p, "7", "digest", time.Now(), nil, []squirrel.Chore{vac})
 	require.NoError(t, err)
+	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-1", time.Now()))
 
 	send, got := recorder()
 	drain := squirrel.NewDrain(squirrel.DrainOptions{
 		Spool: sp, Store: store, Interval: time.Second,
-		Applier: squirrel.NewApplier(store, send, nil),
+		Applier: squirrel.NewApplier(store, send, squirrel.Chat{}, nil),
 	})
 
 	done := capture(func(c *squirrel.Capture) { c.Text = "done 1" })

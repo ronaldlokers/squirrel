@@ -130,7 +130,7 @@ func TestStoredBoostsInsteadOfReplying(t *testing.T) {
 	require.Eventually(t, func() bool { return len(rec.paths()) == 1 },
 		2*time.Second, 20*time.Millisecond)
 	require.Equal(t, "/rooms/7/3-abc/messages/42/boosts", rec.paths()[0])
-	require.Equal(t, "🐿️", rec.body[0])
+	require.Equal(t, "👀", rec.body[0])
 }
 
 // Failure is the one case that must not be a quiet reaction.

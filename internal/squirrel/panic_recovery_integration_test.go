@@ -70,7 +70,7 @@ func TestDrainSurvivesAPanicInMatch(t *testing.T) {
 	require.NoError(t, err)
 
 	send := func(context.Context, string, string) error { return nil }
-	applier := NewApplier(store, send, nil)
+	applier := NewApplier(store, send, Chat{}, nil)
 
 	_, err = sp.Write(Capture{
 		Transport:      "campfire",

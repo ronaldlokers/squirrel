@@ -2,6 +2,7 @@ package squirrel
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -78,7 +79,8 @@ func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
 const baselineCTE = `
 	with baseline as (
 	  select c.id,
-	         coalesce((select max(e.occurred_at) from events e where e.chore_id = c.id),
+	         coalesce((select max(e.occurred_at) from events e
+	                    where e.chore_id = c.id and e.retracted_at is null),
 	                  c.created_at) as since,
 	         -- Only a digest that actually reached the room counts as having
 	         -- shown a chore. The row is committed before the send, so a
@@ -162,7 +164,7 @@ func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore,
 // than bookkeeping.
 func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Time) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `
-		select raw_text from items
+		select raw_text, payload from items
 		 where person_id = $1 and received_at >= $2 and raw_text <> ''
 		 order by received_at`, personID, since)
 	if err != nil {
@@ -173,8 +175,20 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 	texts := []string{}
 	for rows.Next() {
 		var text string
-		if err := rows.Scan(&text); err != nil {
+		var payload json.RawMessage
+		if err := rows.Scan(&text, &payload); err != nil {
 			return nil, fmt.Errorf("scanning capture: %w", err)
+		}
+		// A tap is stored in items just like a genuine capture, encoded as
+		// "!action <id> done:<n> <bool>". ParseAction matches on text alone,
+		// so a person who types that same shape produces byte-identical text —
+		// isActionPayload is the only thing that tells them apart, from the
+		// payload the transport actually sent. apply's applyAction requires
+		// both before treating something as a tap; requiring only ParseAction
+		// here would give the digest a second, looser definition of "tap" and
+		// silently drop a typed message that merely looked like one.
+		if _, isTap := ParseAction(text); isTap && isActionPayload(payload) {
+			continue
 		}
 		if matchFn(text).Kind == IntentCapture {
 			texts = append(texts, text)

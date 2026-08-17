@@ -33,4 +33,8 @@ type Transport struct {
 	Start func(ctx context.Context, sink Sink, mount Mount) (func(context.Context) error, error)
 	// Send is nil when this transport cannot initiate.
 	Send func(ctx context.Context, conversationID, text string) error
+	// Chat is the richer outbound surface: messages that carry buttons, and
+	// updates that close them. Zero-valued unless the transport can both reach
+	// the service and authenticate to it.
+	Chat squirrel.Chat
 }

@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,6 +30,7 @@ const CampfireName = "campfire"
 // There is also no signature, no shared secret and no timestamp. The caller's
 // identity is the callback URL, guarded by NetworkPolicy; the clock is ours.
 type campfirePayload struct {
+	Type string `json:"type"`
 	User *struct {
 		ID *json.Number `json:"id"`
 	} `json:"user"`
@@ -41,6 +43,17 @@ type campfirePayload struct {
 			Plain string `json:"plain"`
 		} `json:"body"`
 	} `json:"message"`
+	Action *struct {
+		Value    string `json:"value"`
+		Selected bool   `json:"selected"`
+	} `json:"action"`
+}
+
+func derefOr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func identifier(n *json.Number) *string {
@@ -89,6 +102,26 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 	}
 	if p.User != nil {
 		c.SenderID = identifier(p.User.ID)
+	}
+
+	// An action is input like anything else: spooled, acknowledged, applied
+	// after the drain. Its text is a stable encoding rather than the raw JSON so
+	// that the matcher has one thing to recognise and CapturesSince can filter
+	// it out of the digest via ParseAction, the same function that recognises
+	// it everywhere else.
+	//
+	// The external id carries the receive instant because the payload has no
+	// event id and no timestamp of its own: without it, tapping a button off and
+	// then on again would collide with the first tap and be silently dropped by
+	// InsertItem's conflict clause. A background-job retry inside the same
+	// nanosecond still collapses, which is the behaviour we want.
+	if p.Type == "action" && p.Message != nil && p.Action != nil {
+		id := fmt.Sprintf("action:%s:%s:%s:%t:%d",
+			derefOr(identifier(p.Message.ID)), derefOr(c.SenderID),
+			p.Action.Value, p.Action.Selected, receivedAt.UnixNano())
+		c.ExternalID = squirrel.Ptr(id)
+		c.Text = fmt.Sprintf("!action %s %s %t",
+			derefOr(identifier(p.Message.ID)), p.Action.Value, p.Action.Selected)
 	}
 	return c
 }
@@ -157,6 +190,170 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 			return fmt.Errorf("campfire: send failed with %d", res.StatusCode)
 		}
 		return nil
+	}
+}
+
+type campfireAction struct {
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	Emoji    string `json:"emoji,omitempty"`
+	Disabled bool   `json:"disabled,omitempty"`
+}
+
+type campfireMessage struct {
+	// omitempty: the fork's controller only touches the keys actually present
+	// in the request (ActionController::Parameters#permit), so a PATCH that
+	// omits "body" leaves the room's existing text alone rather than
+	// overwriting it with an empty string. That is what lets closePrevious
+	// send an update carrying only Actions.
+	Body          string           `json:"body,omitempty"`
+	SelectionMode string           `json:"selection_mode,omitempty"`
+	Actions       []campfireAction `json:"actions,omitempty"`
+}
+
+func actionsFor(m squirrel.Message, disabled bool) []campfireAction {
+	out := make([]campfireAction, 0, len(m.Actions))
+	for _, a := range m.Actions {
+		out = append(out, campfireAction{
+			Label: a.Label, Value: a.Value, Emoji: a.Emoji, Disabled: disabled,
+		})
+	}
+	return out
+}
+
+// messageIDFrom pulls the id out of the Location header of a create response.
+// Campfire returns the message's own URL there; nothing else in the response
+// names it.
+func messageIDFrom(res *http.Response) string {
+	loc := res.Header.Get("Location")
+	if loc == "" {
+		return ""
+	}
+	trimmed := strings.TrimRight(loc, "/")
+	if i := strings.LastIndex(trimmed, "/"); i >= 0 {
+		return trimmed[i+1:]
+	}
+	return ""
+}
+
+// chatVia builds the outbound surface. A message with no actions is posted as
+// plain text, byte for byte what phase 2 sent — only a message that needs
+// buttons becomes JSON.
+func chatVia(baseURL, botKey string) squirrel.Chat {
+	base := strings.TrimRight(baseURL, "/")
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	// roundTrip builds one request for m — JSON when it carries actions, plain
+	// text otherwise — sends it, and hands back the response with its status
+	// unexamined. do is what turns that into a result; keeping the status
+	// check out of here is what lets do retry a rejected JSON attempt without
+	// roundTrip knowing anything about retries.
+	roundTrip := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (res *http.Response, isJSON bool, err error) {
+		var (
+			body        io.Reader
+			contentType = "text/plain; charset=utf-8"
+		)
+		if len(m.Actions) > 0 {
+			encoded, err := json.Marshal(campfireMessage{
+				Body:          m.Text,
+				SelectionMode: m.SelectionMode,
+				Actions:       actionsFor(m, disabled),
+			})
+			if err != nil {
+				return nil, false, fmt.Errorf("campfire: encoding message: %w", err)
+			}
+			body, contentType, isJSON = bytes.NewReader(encoded), "application/json", true
+		} else {
+			body = strings.NewReader(m.Text)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, dest, body)
+		if err != nil {
+			return nil, isJSON, fmt.Errorf("campfire: building request: %w", stripURL(err))
+		}
+		req.Header.Set("Content-Type", contentType)
+
+		res, err = client.Do(req)
+		if err != nil {
+			return nil, isJSON, fmt.Errorf("campfire: request failed: %w", stripURL(err))
+		}
+		return res, isJSON, nil
+	}
+
+	// do is the phase 3 -> phase 2 degrade, made true by construction rather
+	// than by prose: DefinedMessage always carries a button and DigestMessage
+	// carries one whenever anything is due, so those messages are always sent
+	// as JSON — but an upstream, unforked Campfire takes the raw request body
+	// as the message text and would post the JSON envelope itself into the
+	// room. A 4xx response to a JSON attempt is what an unforked instance
+	// looks like from here, so it is retried exactly once as the plain text
+	// phase 2 always sent. A non-4xx failure (5xx, a network error) is not
+	// retried: that is Campfire being unavailable, not a shape it refused.
+	//
+	// The retry is gated to POST only. Update's caller, closePrevious, sends
+	// Text deliberately empty so the PATCH omits "body" and the room's
+	// existing text survives — that omission is itself a fix. Retrying a
+	// rejected PATCH as plain text would carry an explicit empty body, which
+	// wipes the previous digest's text on any endpoint that accepts a
+	// plain-text PATCH: exactly the bug the empty-body omission exists to
+	// prevent, and one a 2xx result from the retry would hide completely,
+	// since Update's caller reports failure only on a non-2xx response. Phase
+	// 2 also never had an Update to fall back to, so there is no phase 2
+	// behaviour here to degrade to in the first place.
+	do := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (*http.Response, error) {
+		res, isJSON, err := roundTrip(ctx, method, dest, m, disabled)
+		if err != nil {
+			return nil, err
+		}
+
+		if method == http.MethodPost && isJSON && res.StatusCode >= 400 && res.StatusCode < 500 {
+			io.Copy(io.Discard, res.Body)
+			res.Body.Close()
+			slog.Warn("campfire: message with actions was rejected, retrying as plain text",
+				"status", res.StatusCode)
+
+			res, _, err = roundTrip(ctx, method, dest, squirrel.Message{Text: m.Text}, disabled)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			io.Copy(io.Discard, res.Body)
+			res.Body.Close()
+			return nil, fmt.Errorf("campfire: request failed with %d", res.StatusCode)
+		}
+		return res, nil
+	}
+
+	return squirrel.Chat{
+		Send: func(ctx context.Context, conversationID string, m squirrel.Message) (string, error) {
+			dest := fmt.Sprintf("%s/rooms/%s/%s/messages", base, conversationID, botKey)
+			res, err := do(ctx, http.MethodPost, dest, m, false)
+			if err != nil {
+				return "", err
+			}
+			defer res.Body.Close()
+			io.Copy(io.Discard, res.Body)
+			return messageIDFrom(res), nil
+		},
+
+		// Update is only ever used to close a surface, so it always disables.
+		// A general-purpose edit would need a reason to exist first.
+		Update: func(ctx context.Context, conversationID, messageID string, m squirrel.Message) error {
+			dest := fmt.Sprintf("%s/rooms/%s/%s/messages/%s", base, conversationID, botKey, messageID)
+			res, err := do(ctx, http.MethodPatch, dest, m, true)
+			if err != nil {
+				return err
+			}
+			io.Copy(io.Discard, res.Body)
+			return res.Body.Close()
+		},
+
+		Boost: func(ctx context.Context, conversationID, messageID, content string) error {
+			dest := fmt.Sprintf("%s/rooms/%s/%s/messages/%s/boosts", base, conversationID, botKey, messageID)
+			return boost(ctx, client, dest, content)
+		},
 	}
 }
 
@@ -303,7 +500,12 @@ func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, ca
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := boost(ctx, client, dest, "🐿️"); err != nil {
+		// 👀 means the spool write and its fsync completed — the thought
+		// survives a crash. The ✅ that follows it comes from the applier, once
+		// the drain has reached Postgres. The gap between the two is the window
+		// this whole architecture is built around, and until now nothing in the
+		// room could see it.
+		if err := boost(ctx, client, dest, "👀"); err != nil {
 			// dest carries the bot key, so it never goes into a log field —
 			// err is already stripped of it by stripURL inside boost.
 			slog.Error("campfire: boost failed", "error", err)
@@ -339,6 +541,7 @@ func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 	// exactly the moment it is needed; absent outbound is at least honest.
 	if cfg.BaseURL != "" && cfg.BotKey != "" {
 		t.Send = sendVia(cfg.BaseURL, cfg.BotKey)
+		t.Chat = chatVia(cfg.BaseURL, cfg.BotKey)
 	}
 
 	return t
