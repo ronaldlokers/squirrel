@@ -191,6 +191,134 @@ func TestSchedulerCarriesCapturesAcrossAMissedDay(t *testing.T) {
 	require.Contains(t, (*got)[1].text, "leaky tap")
 }
 
+// The in-memory guard is invisible from Sender output alone — a guarded and
+// an unguarded Once both return nil on a repeat call, since the unique index
+// absorbs the duplicate either way. Closing the pool after the first send
+// makes the difference observable: a guarded Once short-circuits before
+// touching the store and returns nil; an unguarded one reaches the first
+// query and gets a closed-pool error.
+func TestSchedulerGuardShortCircuitsAfterASend(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+
+	s := scheduler(t, store, p, send)
+
+	at := time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, s.Once(ctx, at))
+	require.Len(t, *got, 1)
+
+	store.Pool().Close()
+
+	require.NoError(t, s.Once(ctx, at.Add(time.Minute)),
+		"a guard that had armed would return nil without ever reaching the closed pool")
+}
+
+// A guard armed unconditionally would silently suppress every future tick
+// after any single failure — the bot going quiet is exactly the failure this
+// phase exists to prevent. A failed tick must not arm it: the next tick, on
+// the same local date, must still try.
+func TestSchedulerGuardDoesNotArmOnAFailedTick(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+
+	s := scheduler(t, store, p, send)
+	at := time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))
+
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	require.Error(t, s.Once(cancelled, at), "a cancelled context must surface as an error from the first query")
+	require.Empty(t, *got)
+
+	require.NoError(t, s.Once(ctx, at.Add(time.Minute)),
+		"the failed tick must not have armed the guard")
+	require.Len(t, *got, 1)
+}
+
+// The guard is keyed on the local calendar date, not "has a digest ever been
+// sent" — it must not carry over once the date rolls to the next one.
+func TestSchedulerGuardDoesNotSurviveDateRollover(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	_, err := store.InsertItem(ctx, squirrel.Item{
+		Transport:  "campfire",
+		PersonID:   squirrel.Ptr(p),
+		RawText:    "day one thought",
+		Payload:    []byte(`{}`),
+		ReceivedAt: time.Date(2026, 8, 15, 7, 0, 0, 0, amsterdam(t)),
+	})
+	require.NoError(t, err)
+
+	s := scheduler(t, store, p, send)
+
+	dayOne := time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, s.Once(ctx, dayOne))
+	require.Len(t, *got, 1)
+
+	// Captured after day one's digest sent, so it falls inside day two's
+	// anchored window.
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport:  "campfire",
+		PersonID:   squirrel.Ptr(p),
+		RawText:    "day two thought",
+		Payload:    []byte(`{}`),
+		ReceivedAt: time.Date(2026, 8, 15, 20, 0, 0, 0, amsterdam(t)),
+	})
+	require.NoError(t, err)
+
+	dayTwo := time.Date(2026, 8, 16, 8, 0, 1, 0, amsterdam(t))
+	require.NoError(t, s.Once(ctx, dayTwo))
+	require.Len(t, *got, 2, "a new local date must not be suppressed by yesterday's guard")
+	require.Contains(t, (*got)[1].text, "day two thought")
+}
+
+// ErrDigestAlreadySent means a row is genuinely committed for the day —
+// by this process on an earlier tick, or by another one entirely — so it
+// must still count as success, and must still arm the guard.
+func TestSchedulerGuardArmsOnErrDigestAlreadySent(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	send, got := recorder()
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+		time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+
+	at := time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))
+	midnight := time.Date(2026, 8, 15, 0, 0, 0, 0, amsterdam(t))
+
+	// Simulate another process having already recorded today's digest.
+	_, err = store.RecordPrompt(ctx, p, "9", "digest", time.Now(), &midnight, nil)
+	require.NoError(t, err)
+
+	s := scheduler(t, store, p, send)
+	require.NoError(t, s.Once(ctx, at), "ErrDigestAlreadySent must be treated as success")
+	require.Empty(t, *got, "no send when the digest was already recorded by someone else")
+
+	store.Pool().Close()
+
+	require.NoError(t, s.Once(ctx, at.Add(time.Minute)),
+		"the guard must have armed on the ErrDigestAlreadySent path too")
+}
+
 func TestSchedulerRunStopsWithTheContext(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
