@@ -4,6 +4,8 @@ package boot_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -19,6 +21,18 @@ func testDatabaseURL(t *testing.T) string {
 	url := os.Getenv("TEST_DATABASE_URL")
 	require.NotEmpty(t, url, "TEST_DATABASE_URL is required — see docs/testing.md")
 	return url
+}
+
+// campfireStub is somewhere harmless for the applier and scheduler to post:
+// it accepts anything and answers 201, same as a real Campfire boost/message
+// endpoint would on success.
+func campfireStub(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL
 }
 
 func withStore(t *testing.T) *squirrel.Store {

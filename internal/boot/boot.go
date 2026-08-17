@@ -62,7 +62,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	loopCtx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 
-	for _, t := range transportsFrom(config) {
+	transports := transportsFrom(config)
+
+	for _, t := range transports {
 		stop, err := t.Start(loopCtx, sink, server)
 		if err != nil {
 			cancel()
@@ -89,7 +91,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 	go func() {
 		defer close(s.drained)
-		connectAndDrain(loopCtx, config, store, spool)
+		connectAndDrain(loopCtx, config, store, spool, transports)
 	}()
 
 	return s, nil
@@ -97,11 +99,13 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool) {
+func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport) {
+	var personID int64
 	for {
-		if err := store.Migrate(ctx); err != nil {
+		var err error
+		if err = store.Migrate(ctx); err != nil {
 			slog.Warn("database unavailable", "error", err, "retry_in", config.DrainInterval)
-		} else if _, err := store.SeedOwner(ctx, config.OwnerHandle, seedsFrom(config)); err != nil {
+		} else if personID, err = store.SeedOwner(ctx, config.OwnerHandle, seedsFrom(config)); err != nil {
 			slog.Warn("seeding owner failed", "error", err, "retry_in", config.DrainInterval)
 		} else {
 			break
@@ -117,6 +121,36 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 	}
 
 	slog.Info("database ready")
+
+	// The transport's Send, or nil when no bot key is configured. A nil sender
+	// means the applier stays quiet rather than crashing: phase 1's property
+	// that this pod holds no Campfire credential is still a supported state.
+	var send squirrel.Sender
+	for _, t := range transports {
+		if t.Name == transport.CampfireName && t.Send != nil {
+			send = squirrel.Sender(t.Send)
+		}
+	}
+
+	var applier *squirrel.Applier
+	if send != nil {
+		applier = squirrel.NewApplier(store, send, func(err error) {
+			slog.Error("applying intent", "error", err)
+		})
+
+		if config.Campfire != nil {
+			go squirrel.NewScheduler(squirrel.SchedulerOptions{
+				Store: store, Send: send, PersonID: personID,
+				ConversationID: config.Campfire.ConversationID,
+				At:             config.DigestAt,
+				Location:       config.DigestLocation,
+				OnError:        func(err error) { slog.Error("digest", "error", err) },
+			}).Run(ctx)
+		}
+	} else {
+		slog.Warn("no sender configured; chores and the daily digest are inactive")
+	}
+
 	squirrel.NewDrain(squirrel.DrainOptions{
 		Spool:    spool,
 		Store:    store,
@@ -125,6 +159,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		OnUnknownIdentity: func(transport, senderID string) {
 			slog.Warn("unknown identity", "transport", transport, "sender_id", senderID)
 		},
+		Applier: applier,
 	}).Run(ctx)
 }
 

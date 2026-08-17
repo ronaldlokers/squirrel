@@ -41,6 +41,8 @@ func envFor(t *testing.T, overrides map[string]string) map[string]string {
 		"OWNER_HANDLE":             "ronald",
 		"CAMPFIRE_CONVERSATION_ID": "7",
 		"CAMPFIRE_SENDER_ID":       "1",
+		"CAMPFIRE_BASE_URL":        campfireStub(t),
+		"CAMPFIRE_BOT_KEY":         "3-test",
 		"POSTGRES_SERVER":          parsed.Hostname(),
 		"POSTGRES_PORT":            parsed.Port(),
 		"POSTGRES_DB":              strings.TrimPrefix(parsed.Path, "/"),
