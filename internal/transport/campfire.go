@@ -30,6 +30,7 @@ const CampfireName = "campfire"
 // There is also no signature, no shared secret and no timestamp. The caller's
 // identity is the callback URL, guarded by NetworkPolicy; the clock is ours.
 type campfirePayload struct {
+	Type string `json:"type"`
 	User *struct {
 		ID *json.Number `json:"id"`
 	} `json:"user"`
@@ -42,6 +43,17 @@ type campfirePayload struct {
 			Plain string `json:"plain"`
 		} `json:"body"`
 	} `json:"message"`
+	Action *struct {
+		Value    string `json:"value"`
+		Selected bool   `json:"selected"`
+	} `json:"action"`
+}
+
+func derefOr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func identifier(n *json.Number) *string {
@@ -90,6 +102,25 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 	}
 	if p.User != nil {
 		c.SenderID = identifier(p.User.ID)
+	}
+
+	// An action is input like anything else: spooled, acknowledged, applied
+	// after the drain. Its text is a stable encoding rather than the raw JSON so
+	// that the matcher has one thing to recognise and the digest's capture list
+	// can filter it out by prefix.
+	//
+	// The external id carries the receive instant because the payload has no
+	// event id and no timestamp of its own: without it, tapping a button off and
+	// then on again would collide with the first tap and be silently dropped by
+	// InsertItem's conflict clause. A background-job retry inside the same
+	// nanosecond still collapses, which is the behaviour we want.
+	if p.Type == "action" && p.Message != nil && p.Action != nil {
+		id := fmt.Sprintf("action:%s:%s:%s:%t:%d",
+			derefOr(identifier(p.Message.ID)), derefOr(c.SenderID),
+			p.Action.Value, p.Action.Selected, receivedAt.UnixNano())
+		c.ExternalID = squirrel.Ptr(id)
+		c.Text = fmt.Sprintf("!action %s %s %t",
+			derefOr(identifier(p.Message.ID)), p.Action.Value, p.Action.Selected)
 	}
 	return c
 }
