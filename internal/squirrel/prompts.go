@@ -19,19 +19,22 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // a position means something. A definition confirmation carries a button but is
 // a standalone surface: it names one chore and is never counted against.
 //
-// 'nudge' and 'evening' both belong here. A nudge always carries its chosen
-// chore as its own line 1, whether it is delivered standalone or rides along
-// inside an evening message — see schedule.go's once(): the evening prompt
-// duplicates that same line onto its own row too, so whichever of the two
-// prompts a lookup lands on resolves to the same chore. Leaving either kind
-// out would let a typed "done 1" resolve against some older digest or query
-// while the button on the very same message resolves through
-// PromptByMessageID to the prompt that actually owns it — the typed path and
-// the button path disagreeing, which phase 3 ruled must never happen. It
-// would also leave closePrevious unable to find and disable a nudge's or an
-// evening's live button at all, breaking the "only the newest numbered
-// surface is live" bound that makes un-tapping safe.
-const numberedKinds = `('digest', 'query', 'nudge', 'evening')`
+// 'nudge' belongs here, not 'evening'. A nudge always carries its chosen
+// chore as its own line 1 and, when it is delivered standalone or claimed
+// fresh inside an evening send, the real message id too — see schedule.go's
+// once() and nudgeFor. 'evening' was added here briefly in an earlier round
+// and then taken back out: on a nudge day the evening row is stamped with
+// the same sent_at as the nudge row it rode in on, and ties break on id,
+// which the evening row always wins since it is recorded second. With
+// 'evening' numbered, that made the evening row — which carries no lines of
+// its own — win latestPrompt on the very day a nudge just opened a live
+// button, so a typed "done 1" or a bare "done" found nothing to resolve
+// against while the button on the very same message worked fine. Leaving
+// 'evening' out means the typed path always resolves through the nudge row,
+// which is the one that actually owns both the line and, when it has one,
+// the id — agreeing with the tapped path in every case rather than only
+// some.
+const numberedKinds = `('digest', 'query', 'nudge')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
 type Prompt struct {
@@ -245,6 +248,34 @@ func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time
 		return time.Time{}, false, fmt.Errorf("reading last digest: %w", err)
 	}
 	return sentAt, true, nil
+}
+
+// EveningDeliveredFor reports whether a delivered evening message already
+// exists for the given date. once() checks this before nudgeFor claims a
+// nudge slot: without it, a process that delivered today's evening message
+// and then restarted — losing its in-memory sentDate guard in the process —
+// would still let nudgeFor claim and commit a nudge row on its way to a
+// doomed RecordPrompt("evening", ...) collision, spending today's nudge slot
+// on a chore that is never shown for it.
+//
+// This is a plain read, not a lock: a genuinely concurrent second process can
+// still race between this check and the writes that follow it in once(), and
+// when it does, RecordPrompt's unique index is what actually decides,
+// same as always — this closes the deterministic restart case, not the rare
+// concurrent one.
+func (s *Store) EveningDeliveredFor(ctx context.Context, personID int64, forDate time.Time) (bool, error) {
+	const q = `
+		select exists (
+		  select 1 from prompts
+		   where person_id = $1 and kind = 'evening' and sent_for_date = $2
+		     and delivered_at is not null
+		)`
+
+	var exists bool
+	if err := s.pool.QueryRow(ctx, q, personID, forDate).Scan(&exists); err != nil {
+		return false, fmt.Errorf("checking evening delivery: %w", err)
+	}
+	return exists, nil
 }
 
 // ChoreOnPrompt resolves a position against one specific prompt, rather than

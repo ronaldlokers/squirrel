@@ -93,6 +93,47 @@ func TestEveningRunsAfterANudge(t *testing.T) {
 	require.Empty(t, (*sent)[1].message.Actions, "the nudge already went; no second button")
 }
 
+// The evening message carries no button of its own once a nudge has already
+// claimed the day, so it must not disable the nudge's still-live one — and
+// the chore that nudge named must still resolve, both by tap (through the
+// nudge row's own external_message_id) and by the typed/bare "done" paths
+// (through OutstandingLines, which only ever looks at numberedKinds). Before
+// this was fixed, 'evening' being numbered with zero lines of its own made
+// it win latestPrompt on exactly this day, so OutstandingLines found nothing
+// even though the chore was genuinely still due and its button still live.
+func TestNudgeStaysResolvableAfterTheEveningMessage(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 20*24*time.Hour)
+	// A capture is what gives the evening message something to say — the
+	// chore itself is no longer due by 19:00, since the nudge above already
+	// shown it moments earlier is well inside its week-long tolerance.
+	_, err = store.InsertItem(ctx, squirrel.Item{
+		Transport: "campfire", PersonID: squirrel.Ptr(p),
+		RawText: "buy milk", Payload: []byte(`{}`), ReceivedAt: time.Now(),
+	})
+	require.NoError(t, err)
+
+	chat, sent := chatRecorder("1", "2")
+	s := schedulerWithChat(t, store, p, chat)
+	now := time.Date(2026, 8, 17, 19, 0, 1, 0, amsterdam(t))
+
+	require.NoError(t, s.Nudge(ctx, now, squirrel.NudgeFromMessage))
+	require.NoError(t, s.Once(ctx, now))
+	require.Len(t, *sent, 2)
+	require.Empty(t, (*sent)[1].updates,
+		"a message with no button of its own must not close the nudge's still-live one")
+
+	outstanding, err := store.OutstandingLines(ctx, p)
+	require.NoError(t, err)
+	require.Len(t, outstanding, 1, "the nudged chore must still resolve for a bare done")
+	require.Equal(t, "vacuum", outstanding[0].Name)
+}
+
 // A nudge carries a date too — it has to, to get its own slot in the per-day
 // index — and it is usually the more recent dated prompt on any day one
 // fires. LastDigestSentAt must still anchor the next evening message's

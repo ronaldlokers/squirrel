@@ -10,9 +10,10 @@ import (
 
 type SchedulerOptions struct {
 	Store *Store
-	// Send is the phase 2 plain-text surface. Once() no longer calls it — the
-	// digest is a Message now, sent through Chat — but the field stays so
-	// boot.go (rewired in a later task) and phase 2 callers still compile.
+	// Send is the phase 2 plain-text surface. sendMessage falls back to it
+	// only when Chat.Send is nil; Once() and Nudge() otherwise send a Message
+	// through Chat directly. The field stays so boot.go (rewired in a later
+	// task) and phase 2 callers still compile.
 	Send           Sender
 	Chat           Chat
 	PersonID       int64
@@ -96,6 +97,23 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 
 	midnight := s.localMidnight(now)
 
+	// A pre-flight read, before nudgeFor gets anywhere near claiming a nudge
+	// slot: if today's evening message is already delivered — most likely
+	// this same process, on an earlier run, before a restart cleared
+	// sentDate — the RecordPrompt("evening", ...) below is doomed to collide
+	// regardless of what nudgeFor does first. Without this check, nudgeFor
+	// would still commit a nudge row on the way to that doomed collision,
+	// spending today's nudge slot on a chore nobody is ever shown. See
+	// EveningDeliveredFor for why this is a plain read rather than a lock.
+	alreadySent, err := s.opts.Store.EveningDeliveredFor(ctx, s.opts.PersonID, midnight)
+	if err != nil {
+		return err
+	}
+	if alreadySent {
+		s.sentDate = dateKey
+		return nil
+	}
+
 	// nudgeFor is tried first. A non-nil chore means nothing has claimed
 	// today's nudge slot yet, so it joins this message instead of the evening
 	// message arriving as a second notification a second apart from an
@@ -136,24 +154,15 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return nil
 	}
 
-	// The evening prompt carries its own line for the nudged chore too, when
-	// there is one — duplicating the same line nudgeFor already recorded
-	// under the nudge prompt. A tap resolves through the message id, which
-	// belongs solely to the nudge row (see below), but a typed "done 1"
-	// resolves through whichever of the two same-moment rows sorts latest —
-	// ties on sent_at break on id, and the evening row's id is always the
-	// higher one, since it is recorded second. Without its own copy of the
-	// line, that typed path would find an empty row while the button sitting
-	// on the very same message resolves correctly — the two paths
-	// disagreeing, which must never happen.
-	var chores []Chore
-	if nudge != nil {
-		chores = []Chore{*nudge}
-	}
-
+	// The evening prompt never carries its own lines. Its kind is
+	// deliberately not in numberedKinds (see prompts.go), so anything that
+	// would read prompt_lines off it — a typed position, closePrevious — never
+	// looks: the nudge row is the sole owner of the chosen chore's line,
+	// whether it was delivered standalone earlier or is riding along in this
+	// same message.
 	forDate := midnight
 	promptID, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
-		"evening", now, &forDate, chores)
+		"evening", now, &forDate, nil)
 	if err != nil {
 		if errors.Is(err, ErrDigestAlreadySent) {
 			// Some other process already recorded today's evening message —
@@ -186,6 +195,20 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		s.opts.OnError(fmt.Errorf("evening prompt %d delivered with no addressable message id", promptID))
 	}
 
+	// A crash between here and either MarkPromptSent call below is a known,
+	// unfixed gap: the message has already reached the room with a real
+	// button on it, but no row in the database yet carries its
+	// external_message_id. PreviousNumberedPrompt requires that column to be
+	// non-null, so that button can never be found and disabled by any future
+	// closePrevious call — it stays live indefinitely, and whatever opens
+	// tomorrow becomes a second live surface alongside it, which is exactly
+	// the "exactly one live numbered surface" bound this whole mechanism
+	// exists to hold. The window is small and pre-existing — phase 2 and 3's
+	// digest had the identical shape — and closing it needs a reconciliation
+	// sweep (find delivered-looking sends with no recorded id and either
+	// confirm or retract them against Campfire) that is its own piece of
+	// work, not a fix that belongs inlined here.
+	//
 	// The message id belongs on whichever row owns the button: a tap
 	// resolves through PromptByMessageID, so external_message_id must point
 	// at the prompt whose prompt_lines the tap should land on. When a nudge
@@ -222,17 +245,26 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	// current is whichever row actually owns this send's message id, so
-	// PreviousNumberedPrompt's exclusion lands on it rather than on the
-	// evening row when the two are the same moment: with the evening row
-	// excluded instead, the nudge row just created — same sent_at, same real
-	// external_message_id — would itself qualify as "previous" and
+	// closePrevious only runs when this send actually opened a button —
+	// closing the past is only justified by opening a present. On a quiet
+	// evening with nothing new claimed (nudge is nil: nothing is due, or a
+	// nudge already went out earlier today), the evening message carries no
+	// button of its own, so there is nothing here to justify disabling
+	// whatever numbered surface is still live — most likely today's own
+	// earlier nudge, mid-way through being actionable. Calling closePrevious
+	// anyway would disable that live button while opening no replacement:
+	// zero live surfaces from 19:00 until whatever opens tomorrow, for a
+	// chore that is still genuinely due.
+	//
+	// When nudge is non-nil, current is the nudge row specifically, not the
+	// evening row: PreviousNumberedPrompt's exclusion must land on whichever
+	// row actually owns this send's real external_message_id. Excluding the
+	// evening row instead would leave the nudge row just created — same
+	// sent_at, same real id — eligible to be found as its own "previous" and
 	// closePrevious would disable the button it just sent.
-	current := promptID
 	if nudge != nil {
-		current = nudgePromptID
+		closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, nudgePromptID)
 	}
-	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, current)
 	s.sentDate = dateKey
 	return nil
 }
@@ -284,6 +316,12 @@ func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) e
 		return err
 	}
 
+	// Same crash window as once() has below its own sendMessage call: a
+	// process that dies between the line above returning and MarkPromptSent
+	// committing below leaves a live button in the room that no
+	// external_message_id ever gets recorded for, and so nothing can ever
+	// close. See once()'s comment for why this is a known, unfixed gap
+	// rather than something patched inline here.
 	messageID, err := s.sendMessage(ctx, NudgeMessage(*c, why))
 	if err != nil {
 		return fmt.Errorf("sending nudge: %w", err)
