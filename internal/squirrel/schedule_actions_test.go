@@ -5,6 +5,7 @@ package squirrel_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -147,6 +148,36 @@ func TestClosePreviousRebuildsItsOwnActions(t *testing.T) {
 	require.Empty(t, closed.Text, "no body override — whatever text the first digest had stays untouched")
 	require.Equal(t, []squirrel.Action{{Label: "vacuum", Value: "done:1", Emoji: "✅"}}, closed.Actions,
 		"the same action values the first digest was actually sent with, not a synthetic button")
+}
+
+// RecordPrompt stores a prompt_line for every due chore regardless of the
+// button cap the original send applied, so closePrevious rebuilding actions
+// straight from prompt_lines can carry more than Campfire's limit of twelve.
+// Before the fix, closePrevious skipped Message.Capped(), so an update
+// closing a digest with more than twelve due chores would be rejected
+// outright — silently, since a failed close is reported and swallowed — and
+// the old buttons would stay live indefinitely.
+func TestClosePreviousCapsRebuiltActions(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	for i := range 13 {
+		c, err := store.UpsertChore(ctx, p, fmt.Sprintf("chore %02d", i), twoWeeks, oneDay)
+		require.NoError(t, err)
+		require.NoError(t, store.RecordCompletion(ctx, c.ID, p, "ack",
+			time.Date(2026, 7, 1, 9, 0, 0, 0, amsterdam(t))))
+	}
+
+	chat, sent := chatRecorder("m-1", "m-2")
+	s := schedulerWithChat(t, store, p, chat)
+	require.NoError(t, s.Once(ctx, time.Date(2026, 8, 15, 8, 0, 1, 0, amsterdam(t))))
+	require.NoError(t, s.Once(ctx, time.Date(2026, 8, 16, 8, 0, 1, 0, amsterdam(t))))
+
+	require.Len(t, *sent, 2)
+	require.Len(t, (*sent)[1].updateMessages, 1)
+	require.LessOrEqual(t, len((*sent)[1].updateMessages[0].Actions), squirrel.MaxActions,
+		"closePrevious must never send more actions than Campfire accepts")
 }
 
 // Never let closing the past block speaking in the present.

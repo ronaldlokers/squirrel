@@ -152,12 +152,16 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	}
 
 	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
-		// The message is already out and the guard above is armed by the
-		// assignment below regardless, so this is reported rather than
-		// retried too. Worst case the row is never marked delivered and
-		// LastDigestSentAt anchors to whichever earlier digest it last saw as
-		// delivered instead — a capture window that overlaps and re-lists
-		// something already seen, never one that drops something unseen.
+		// The message is already out, so this is reported rather than
+		// retried. s.sentDate is not set on this path — the return below
+		// skips the assignment further down — but the in-memory guard is
+		// only ever an optimisation: the next tick retries once(), finds
+		// RecordPrompt already satisfied by today's row and fails it with
+		// ErrDigestAlreadySent, which is what actually arms sentDate. Worst
+		// case the row is never marked delivered and LastDigestSentAt anchors
+		// to whichever earlier digest it last saw as delivered instead — a
+		// capture window that overlaps and re-lists something already seen,
+		// never one that drops something unseen.
 		return err
 	}
 
@@ -227,8 +231,14 @@ func closePrevious(ctx context.Context, store *Store, chat Chat, onError func(er
 		onError(fmt.Errorf("loading prompt %d's chores: %w", prev.ID, err))
 		return
 	}
-	actions := actionsForChores(chores, "done", "✅")
-	if len(actions) == 0 {
+	// Capped: RecordPrompt stores a prompt_line for every due chore regardless
+	// of the button cap the original send applied, so rebuilding straight from
+	// prompt_lines can carry more than Campfire's limit of twelve. Above that,
+	// Campfire rejects the update outright — and since a failed close is
+	// reported and swallowed rather than retried, the old surface would then
+	// stay live indefinitely.
+	msg := Message{Actions: actionsForChores(chores, "done", "✅")}.Capped()
+	if len(msg.Actions) == 0 {
 		// The prompt never carried a button to begin with — a query prompt
 		// that offered nothing, say. There is nothing to disable, and sending
 		// an update with zero actions would fall back to a plain-text body
@@ -238,9 +248,7 @@ func closePrevious(ctx context.Context, store *Store, chat Chat, onError func(er
 		return
 	}
 
-	if err := chat.Update(ctx, prev.ConversationID, prev.ExternalMessageID, Message{
-		Actions: actions,
-	}); err != nil {
+	if err := chat.Update(ctx, prev.ConversationID, prev.ExternalMessageID, msg); err != nil {
 		onError(fmt.Errorf("closing prompt %d: %w", prev.ID, err))
 	}
 }
