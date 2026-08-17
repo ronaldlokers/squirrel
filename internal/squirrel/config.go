@@ -32,13 +32,15 @@ type CampfireConfig struct {
 }
 
 type Config struct {
-	Port          int
-	Transports    []string
-	OwnerHandle   string
-	SpoolDir      string
-	DrainInterval time.Duration
-	Postgres      PostgresConfig
-	Campfire      *CampfireConfig
+	Port           int
+	Transports     []string
+	OwnerHandle    string
+	SpoolDir       string
+	DrainInterval  time.Duration
+	Postgres       PostgresConfig
+	Campfire       *CampfireConfig
+	DigestAt       time.Duration
+	DigestLocation *time.Location
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -67,6 +69,19 @@ func number(env map[string]string, name string, fallback int) (int, error) {
 		return 0, fmt.Errorf("%w: %s must be a non-negative integer, got %q", ErrConfig, name, v)
 	}
 	return n, nil
+}
+
+// clockTime parses "08:00" into a duration since local midnight.
+func clockTime(env map[string]string, name string, fallback time.Duration) (time.Duration, error) {
+	v := env[name]
+	if v == "" {
+		return fallback, nil
+	}
+	t, err := time.Parse("15:04", v)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %s must be HH:MM, got %q", ErrConfig, name, v)
+	}
+	return time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute, nil
 }
 
 func transportsFrom(env map[string]string) ([]string, error) {
@@ -102,9 +117,6 @@ func campfireFrom(env map[string]string) (*CampfireConfig, error) {
 	baseURL, botKey := env["CAMPFIRE_BASE_URL"], env["CAMPFIRE_BOT_KEY"]
 	if botKey != "" && baseURL == "" {
 		return nil, fmt.Errorf("%w: CAMPFIRE_BOT_KEY requires CAMPFIRE_BASE_URL", ErrConfig)
-	}
-	if botKey == "" {
-		baseURL = ""
 	}
 
 	return &CampfireConfig{
@@ -158,6 +170,15 @@ func LoadConfig(env map[string]string) (Config, error) {
 		return Config{}, err
 	}
 
+	digestAt, err := clockTime(env, "DIGEST_AT", 8*time.Hour)
+	if err != nil {
+		return Config{}, err
+	}
+	location, err := time.LoadLocation(optional(env, "DIGEST_TZ", "Europe/Amsterdam"))
+	if err != nil {
+		return Config{}, fmt.Errorf("%w: DIGEST_TZ: %v", ErrConfig, err)
+	}
+
 	config := Config{
 		Port:          port,
 		Transports:    transports,
@@ -168,6 +189,8 @@ func LoadConfig(env map[string]string) (Config, error) {
 			Host: pgHost, Port: pgPort, Database: pgDatabase,
 			User: pgUser, Password: pgPassword,
 		},
+		DigestAt:       digestAt,
+		DigestLocation: location,
 	}
 
 	if slicesContains(transports, "campfire") {

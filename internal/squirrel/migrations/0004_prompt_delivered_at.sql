@@ -1,0 +1,15 @@
+-- RecordPrompt commits a digest's row before Send is even attempted, which is
+-- what makes the unique index on (person_id, sent_for_date) the idempotency
+-- guarantee: a crash between send and commit could otherwise send the digest
+-- twice. But that means a row can exist for a date whose message never
+-- reached Campfire — the send failed, or the process died first. Without a
+-- "was actually delivered" predicate, LastDigestSentAt anchored the next
+-- digest's capture window to that phantom row's sent_at anyway, and every
+-- capture made on the day the send failed was skipped over for good: it fell
+-- before the (wrongly early) anchor of the next digest that actually sent.
+--
+-- delivered_at is set only once Send returns without error. Null means
+-- "recorded but not delivered" — a failed or never-attempted send — so
+-- LastDigestSentAt can tell the difference and skip straight past it to the
+-- last digest that actually reached the room.
+alter table prompts add column delivered_at timestamptz;

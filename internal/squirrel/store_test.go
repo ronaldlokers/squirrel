@@ -49,15 +49,21 @@ func TestMigrateIsIdempotent(t *testing.T) {
 
 func TestInsertItemStoresNullsInEveryFailOpenColumn(t *testing.T) {
 	store := withStore(t)
-	require.NoError(t, store.InsertItem(context.Background(), item()))
+	inserted, err := store.InsertItem(context.Background(), item())
+	require.NoError(t, err)
+	require.True(t, inserted)
 	require.Equal(t, 1, countItems(t, store))
 }
 
 // The unique index is partial, so several null-external-id rows coexist.
 func TestInsertItemAllowsManyNullExternalIDs(t *testing.T) {
 	store := withStore(t)
-	require.NoError(t, store.InsertItem(context.Background(), item()))
-	require.NoError(t, store.InsertItem(context.Background(), item()))
+	first, err := store.InsertItem(context.Background(), item())
+	require.NoError(t, err)
+	require.True(t, first)
+	second, err := store.InsertItem(context.Background(), item())
+	require.NoError(t, err)
+	require.True(t, second)
 	require.Equal(t, 2, countItems(t, store))
 }
 
@@ -69,8 +75,14 @@ func TestInsertItemDedupesARealExternalID(t *testing.T) {
 	withID := item()
 	withID.ExternalID = squirrel.Ptr("42")
 
-	require.NoError(t, store.InsertItem(context.Background(), withID))
-	require.NoError(t, store.InsertItem(context.Background(), withID))
+	first, err := store.InsertItem(context.Background(), withID)
+	require.NoError(t, err)
+	require.True(t, first, "the first delivery inserts a row")
+
+	second, err := store.InsertItem(context.Background(), withID)
+	require.NoError(t, err)
+	require.False(t, second, "the redelivery is absorbed by ON CONFLICT, not inserted")
+
 	require.Equal(t, 1, countItems(t, store))
 }
 
@@ -82,7 +94,11 @@ func TestInsertItemKeepsTransportsApart(t *testing.T) {
 	matrix := campfire
 	matrix.Transport = "matrix"
 
-	require.NoError(t, store.InsertItem(context.Background(), campfire))
-	require.NoError(t, store.InsertItem(context.Background(), matrix))
+	first, err := store.InsertItem(context.Background(), campfire)
+	require.NoError(t, err)
+	require.True(t, first)
+	second, err := store.InsertItem(context.Background(), matrix)
+	require.NoError(t, err)
+	require.True(t, second)
 	require.Equal(t, 2, countItems(t, store))
 }

@@ -9,6 +9,11 @@ import (
 	"syscall"
 	"time"
 
+	// distroless/static carries no tzdata, and LoadLocation would silently fall
+	// back to UTC — shifting the digest by an hour or two depending on the
+	// season, which nobody would notice for months.
+	_ "time/tzdata"
+
 	"github.com/ronaldlokers/squirrel/internal/boot"
 )
 

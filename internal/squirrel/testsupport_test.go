@@ -37,6 +37,7 @@ func withStore(t *testing.T) *squirrel.Store {
 func truncateAll(t *testing.T, store *squirrel.Store) {
 	t.Helper()
 	_, err := store.Pool().Exec(context.Background(),
-		`truncate table items, identities, people restart identity cascade`)
+		`truncate table prompt_lines, prompts, events, items, chores, identities, people
+		 restart identity cascade`)
 	require.NoError(t, err)
 }

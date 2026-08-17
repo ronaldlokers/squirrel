@@ -3,10 +3,13 @@ package transport
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -110,8 +113,9 @@ func accept(ctx context.Context, sink Sink, c squirrel.Capture) (o squirrel.Outc
 func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	switch o {
 	case squirrel.Stored:
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprint(w, "🐿️")
+		// The receipt is a boost on the message itself, fired separately. A 200
+		// with no Content-Type is Campfire's "post nothing", same as Ignored.
+		w.WriteHeader(http.StatusOK)
 	case squirrel.Ignored:
 		// No body and no Content-Type: the one path that says nothing at all.
 		// Never call Write here — Go sniffs a type when there are bytes.
@@ -138,13 +142,13 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 		url := fmt.Sprintf("%s/rooms/%s/%s/messages", base, conversationID, botKey)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(text))
 		if err != nil {
-			return fmt.Errorf("campfire: building send request: %w", err)
+			return fmt.Errorf("campfire: building send request: %w", stripURL(err))
 		}
 		req.Header.Set("Content-Type", "text/plain; charset=utf-8")
 
 		res, err := client.Do(req)
 		if err != nil {
-			return fmt.Errorf("campfire: send failed: %w", err)
+			return fmt.Errorf("campfire: send failed: %w", stripURL(err))
 		}
 		defer res.Body.Close()
 		io.Copy(io.Discard, res.Body)
@@ -156,8 +160,160 @@ func sendVia(baseURL, botKey string) func(context.Context, string, string) error
 	}
 }
 
+// stripURL removes the request URL from a *url.Error before it is logged or
+// otherwise surfaced. client.Do wraps a transport failure in a *url.Error
+// whose Error() method embeds the full request URL, and every outbound
+// Campfire URL — send and boost alike — carries the bot key as a path
+// segment: "Post \"http://.../rooms/7/<bot-key>/messages\": dial tcp ...".
+// The key is the most sensitive thing in this whole namespace, and this path
+// is exercised precisely during an outage, exactly when logs get shipped and
+// read. Only the operation and the underlying error survive; anything that
+// is not a *url.Error passes through unchanged.
+func stripURL(err error) error {
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return fmt.Errorf("%s: %w", urlErr.Op, urlErr.Err)
+	}
+	return err
+}
+
+// safeRoomPath and safeMessageID bound what a boost URL is built from. Both
+// values ride in on the webhook payload, not from configuration, so they are
+// attacker-controlled input rather than a trusted constant — even though in
+// practice room.path comes from Campfire's own Rails route helper.
+var (
+	safeRoomPath  = regexp.MustCompile(`^/[A-Za-z0-9._~/-]+$`)
+	safeMessageID = regexp.MustCompile(`^[A-Za-z0-9._~-]+$`)
+)
+
+// BoostURL builds the reaction endpoint from what the payload already carries.
+// room.path is "/rooms/:id/:bot_key/messages", so the bot key needs no
+// configuration — it arrives with every message. Phase 1 rejected reusing
+// room.path for *initiating* a conversation, because outbound would then only
+// reach rooms we had recently heard from. Reacting to the message that just
+// arrived is the opposite case: the payload is the context.
+//
+// room.path is untrusted, so it is validated in two layers rather than
+// trusted and interpolated. First, the shape: the allowed character class
+// excludes "@" (and every other URL-special character) outright, so no
+// whitespace, no "//" (which would parse as a scheme-relative host), no ".."
+// segment (traversal), and the path must start with "/". Second — because a
+// regex is easy to loosen later without noticing what it re-admits — the
+// composed URL is re-parsed with a real URL parser and checked to still
+// address the configured scheme and host with no userinfo. That second check
+// is the one that would catch the classic bare "@" SSRF even if the character
+// class above stopped excluding it: a roomPath of "@evil.com/rooms" against
+// baseURL "http://campfire.internal" composes to
+// "http://campfire.internal@evil.com/rooms/42/boosts", which parses with host
+// evil.com and userinfo campfire.internal — a different destination entirely.
+//
+// A rejected input returns ok == false. That must mean no boost, silently —
+// exactly like a missing room.path already does — never a dropped capture
+// and never a request sent somewhere else.
+func BoostURL(baseURL, roomPath, messageID string) (built string, ok bool) {
+	if !safeRoomPath.MatchString(roomPath) || strings.Contains(roomPath, "//") {
+		return "", false
+	}
+	for _, segment := range strings.Split(roomPath, "/") {
+		if segment == ".." {
+			return "", false
+		}
+	}
+	if !safeMessageID.MatchString(messageID) {
+		return "", false
+	}
+
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return "", false
+	}
+
+	built = fmt.Sprintf("%s%s/%s/boosts", strings.TrimRight(baseURL, "/"), roomPath, messageID)
+	composed, err := url.Parse(built)
+	if err != nil {
+		return "", false
+	}
+	if composed.Scheme != base.Scheme || composed.Host != base.Host || composed.User != nil {
+		return "", false
+	}
+	return built, true
+}
+
+// boost reacts to a message. It is fired after the capture is durable and never
+// blocks the response: Campfire is waiting on us with a seven-second deadline,
+// and making it wait on a second call to Campfire is a shape to avoid.
+//
+// Two retries, then give up. A missing receipt is cosmetic — the capture is on
+// disk either way, and the daily digest lists it regardless.
+func boost(ctx context.Context, client *http.Client, dest, content string) error {
+	var lastErr error
+	for attempt := range 3 {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Duration(attempt) * 200 * time.Millisecond):
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, dest, strings.NewReader(content))
+		if err != nil {
+			return stripURL(err)
+		}
+		req.Header.Set("Content-Type", "text/plain; charset=utf-8")
+
+		res, err := client.Do(req)
+		if err != nil {
+			lastErr = stripURL(err)
+			continue
+		}
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+
+		if res.StatusCode >= 200 && res.StatusCode <= 299 {
+			return nil
+		}
+		lastErr = fmt.Errorf("boost failed with %d", res.StatusCode)
+	}
+	return lastErr
+}
+
+// fireBoost reacts in the background. Everything it needs is in the payload, so
+// a missing room path or message id simply means no receipt — never a dropped
+// capture.
+func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, capture squirrel.Capture) {
+	if cfg.BaseURL == "" || capture.ExternalID == nil {
+		return
+	}
+	var p struct {
+		Room *struct {
+			Path string `json:"path"`
+		} `json:"room"`
+	}
+	if err := json.Unmarshal(body, &p); err != nil || p.Room == nil || p.Room.Path == "" {
+		return
+	}
+
+	dest, ok := BoostURL(cfg.BaseURL, p.Room.Path, *capture.ExternalID)
+	if !ok {
+		// room.path embeds the bot key, so it never goes into a log field.
+		slog.Warn("campfire: rejecting boost with an unsafe room path")
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := boost(ctx, client, dest, "🐿️"); err != nil {
+			// dest carries the bot key, so it never goes into a log field —
+			// err is already stripped of it by stripURL inside boost.
+			slog.Error("campfire: boost failed", "error", err)
+		}
+	}()
+}
+
 func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 	t := Transport{Name: CampfireName}
+	boostClient := &http.Client{Timeout: 5 * time.Second}
 
 	t.Start = func(_ context.Context, sink Sink, mount Mount) (func(context.Context) error, error) {
 		mount.Post(cfg.Path, func(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +323,14 @@ func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 				Respond(w, squirrel.Failed)
 				return
 			}
-			Respond(w, accept(r.Context(), sink, CaptureFrom(body, time.Now().UTC())))
+
+			capture := CaptureFrom(body, time.Now().UTC())
+			outcome := accept(r.Context(), sink, capture)
+			Respond(w, outcome)
+
+			if outcome == squirrel.Stored {
+				fireBoost(cfg, boostClient, body, capture)
+			}
 		})
 		return func(context.Context) error { return nil }, nil
 	}

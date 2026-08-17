@@ -39,7 +39,6 @@ func TestLoadConfigLeavesSendUnconfigured(t *testing.T) {
 	got, err := squirrel.LoadConfig(minimalEnv(nil))
 	require.NoError(t, err)
 	require.Empty(t, got.Campfire.BotKey)
-	require.Empty(t, got.Campfire.BaseURL)
 }
 
 func TestLoadConfigCarriesBotKeyWithBaseURL(t *testing.T) {
@@ -110,4 +109,16 @@ func TestLoadConfigRejectsZeroInterval(t *testing.T) {
 	_, err := squirrel.LoadConfig(minimalEnv(map[string]string{"DRAIN_INTERVAL_MS": "0"}))
 	require.ErrorIs(t, err, squirrel.ErrConfig)
 	require.ErrorContains(t, err, "DRAIN_INTERVAL_MS")
+}
+
+func TestLoadConfigDigestDefaults(t *testing.T) {
+	got, err := squirrel.LoadConfig(minimalEnv(nil))
+	require.NoError(t, err)
+	require.Equal(t, 8*time.Hour, got.DigestAt)
+	require.Equal(t, "Europe/Amsterdam", got.DigestLocation.String())
+}
+
+func TestLoadConfigRejectsABadDigestTime(t *testing.T) {
+	_, err := squirrel.LoadConfig(minimalEnv(map[string]string{"DIGEST_AT": "8am"}))
+	require.ErrorContains(t, err, "DIGEST_AT")
 }
