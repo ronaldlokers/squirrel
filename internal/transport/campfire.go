@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log/slog"
 	"net/http"
@@ -167,13 +168,32 @@ func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 // outbound would then only reach rooms Squirrel had recently heard from, and a
 // morning nudge would depend on the capture history. That works in testing and
 // fails on a quiet Monday.
+// asRichText prepares a message body for Campfire, whose Message declares
+// `has_rich_text :body` — so whatever arrives is treated as HTML rather than as
+// text. A newline collapses the way any whitespace does inside an HTML block,
+// which is how a three-line digest arrived in the room as one run-on sentence.
+// It applies to a plain-text post exactly as much as to a JSON one: the
+// rich-text field decides, not the content type.
+//
+// Escaping happens first and is not optional. The digest carries captured text
+// back verbatim — anything ever typed at the bot — so a note containing "<b>"
+// or "&" would otherwise turn ordinary words into markup, in a system whose
+// first rule is that a capture is kept as it was written.
+//
+// This lives in the transport because Campfire's body being rich text is
+// Campfire's quirk. render.go stays plain text: that is what every test asserts
+// against, and what a transport with no HTML would want.
+func asRichText(text string) string {
+	return strings.ReplaceAll(html.EscapeString(text), "\n", "<br>")
+}
+
 func sendVia(baseURL, botKey string) func(context.Context, string, string) error {
 	base := strings.TrimRight(baseURL, "/")
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	return func(ctx context.Context, conversationID, text string) error {
 		url := fmt.Sprintf("%s/rooms/%s/%s/messages", base, conversationID, botKey)
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(text))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(asRichText(text)))
 		if err != nil {
 			return fmt.Errorf("campfire: building send request: %w", stripURL(err))
 		}
@@ -255,7 +275,7 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 		)
 		if len(m.Actions) > 0 {
 			encoded, err := json.Marshal(campfireMessage{
-				Body:          m.Text,
+				Body:          asRichText(m.Text),
 				SelectionMode: m.SelectionMode,
 				Actions:       actionsFor(m, disabled),
 			})
@@ -264,7 +284,7 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 			}
 			body, contentType, isJSON = bytes.NewReader(encoded), "application/json", true
 		} else {
-			body = strings.NewReader(m.Text)
+			body = strings.NewReader(asRichText(m.Text))
 		}
 
 		req, err := http.NewRequestWithContext(ctx, method, dest, body)
