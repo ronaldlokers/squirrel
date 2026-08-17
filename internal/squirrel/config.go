@@ -32,14 +32,22 @@ type CampfireConfig struct {
 }
 
 type Config struct {
-	Port           int
-	Transports     []string
-	OwnerHandle    string
-	SpoolDir       string
-	DrainInterval  time.Duration
-	Postgres       PostgresConfig
-	Campfire       *CampfireConfig
-	DigestAt       time.Duration
+	Port          int
+	Transports    []string
+	OwnerHandle   string
+	SpoolDir      string
+	DrainInterval time.Duration
+	Postgres      PostgresConfig
+	Campfire      *CampfireConfig
+	// EveningAt is the time since local midnight the evening message and its
+	// once-a-day nudge fallback fire at — see schedule.go's once(). Named for
+	// what it now is: EVENING_AT is load-bearing twice, as both the clock
+	// trigger and the evening capture slot, and the quiet-day merge in once()
+	// exists because they are the same instant. It used to default to 08:00
+	// under the name DIGEST_AT, left over from the phase 2/3 morning digest
+	// this phase replaced with an evening message — deployed under that
+	// default, the evening message fired at breakfast.
+	EveningAt      time.Duration
 	DigestLocation *time.Location
 	// PresenceSecret authenticates the arrival webhook. Empty means the route
 	// is not mounted at all — the same way an absent bot key leaves Send nil
@@ -197,7 +205,10 @@ func LoadConfig(env map[string]string) (Config, error) {
 		return Config{}, err
 	}
 
-	digestAt, err := clockTime(env, "DIGEST_AT", 8*time.Hour)
+	// 19:00, not 08:00: EVENING_AT is both the clock trigger and the evening
+	// capture slot (see the Config.EveningAt doc comment), and the two must
+	// agree for the quiet-day merge in schedule.go's once() to mean anything.
+	eveningAt, err := clockTime(env, "EVENING_AT", 19*time.Hour)
 	if err != nil {
 		return Config{}, err
 	}
@@ -220,7 +231,7 @@ func LoadConfig(env map[string]string) (Config, error) {
 			Host: pgHost, Port: pgPort, Database: pgDatabase,
 			User: pgUser, Password: pgPassword,
 		},
-		DigestAt:       digestAt,
+		EveningAt:      eveningAt,
 		DigestLocation: location,
 		PresenceSecret: env["PRESENCE_SECRET"],
 		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),

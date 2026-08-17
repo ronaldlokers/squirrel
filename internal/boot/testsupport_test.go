@@ -159,20 +159,20 @@ func truncateAll(t *testing.T, store *squirrel.Store) {
 // TestBootAppliesATap, still boots exactly the same server it did before
 // this task, just with one extra mounted route it never touches.
 //
-// DIGEST_AT is pinned to 23:59 for the same reason: Scheduler.Run calls
+// EVENING_AT is pinned to 23:59 for the same reason: Scheduler.Run calls
 // Once synchronously before its first tick, and Once makes its own "last
 // attempt at today's nudge" whenever the wall clock is already past
-// DIGEST_AT's default of 08:00 — which it is for any test run during the
-// day. Left at the default, that startup Once frequently wins the race
-// against seedOverdueChore and claims the day's nudge slot for the same
-// chore a nudge test seeds, sending it independently of whatever the
-// arrival webhook does. Confirmed by trial: with the presence route wired
-// to a no-op OnArrive, TestBootNudgesOnArrival still passed 1 run in 5 —
-// campfireStubSawText found "vacuum" from that startup send, not from the
-// arrival. Pinning DIGEST_AT past any wall-clock time a test could run at
-// keeps Once's own local.Before(threshold) guard skipping it for the whole
-// test, so a nudge landing in the stub can only be the one the test itself
-// triggered.
+// EVENING_AT — true for any test run late enough in the day, and always true
+// once EVENING_AT is pinned earlier than that for some other reason. Left
+// unpinned, that startup Once can win the race against seedOverdueChore and
+// claim the day's nudge slot for the same chore a nudge test seeds, sending
+// it independently of whatever the arrival webhook does. Confirmed by trial:
+// with the presence route wired to a no-op OnArrive, TestBootNudgesOnArrival
+// still passed 1 run in 5 — campfireStubSawText found "vacuum" from that
+// startup send, not from the arrival. Pinning EVENING_AT past any wall-clock
+// time a test could run at keeps Once's own local.Before(threshold) guard
+// skipping it for the whole test, so a nudge landing in the stub can only be
+// the one the test itself triggered.
 //
 // PRESENCE_DELAY is pinned short: config.PresenceDelay now defaults to two
 // minutes in production (the "you have a coat on" delay PresenceOptions'
@@ -185,7 +185,7 @@ func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 	s := boots(t, envFor(t, map[string]string{
 		"CAMPFIRE_CONVERSATION_ID": "9",
 		"PRESENCE_SECRET":          testPresenceSecret,
-		"DIGEST_AT":                "23:59",
+		"EVENING_AT":               "23:59",
 		"PRESENCE_DELAY":           "1s",
 	}))
 	return s, store

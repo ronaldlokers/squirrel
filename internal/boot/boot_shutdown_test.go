@@ -42,7 +42,7 @@ func (l *safeLog) String() string {
 // Scheduler.Run calls Once synchronously the instant its goroutine starts, so
 // a Stop that does not join that goroutine can close the pool out from under
 // an in-flight query — the same failure mode Stop's own doc comment says the
-// drain join exists to prevent, just for the scheduler instead. DIGEST_AT is
+// drain join exists to prevent, just for the scheduler instead. EVENING_AT is
 // set to a time already past today, so Once's time-of-day guard never
 // short-circuits before the store is touched, and each iteration posts a
 // real capture so the digest has something to query and send rather than
@@ -76,7 +76,7 @@ func TestBootJoinsTheSchedulerBeforeClosingTheStore(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 	t.Cleanup(func() { slog.SetDefault(prevLogger) })
 
-	env := envFor(t, map[string]string{"DIGEST_AT": "00:00"})
+	env := envFor(t, map[string]string{"EVENING_AT": "00:00"})
 
 	// Checked after every iteration rather than once at the end: without the
 	// join, one raced iteration tends to leave that iteration's store in a bad

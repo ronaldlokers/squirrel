@@ -111,14 +111,15 @@ func TestLoadConfigRejectsZeroInterval(t *testing.T) {
 	require.ErrorContains(t, err, "DRAIN_INTERVAL_MS")
 }
 
-func TestLoadConfigDigestDefaults(t *testing.T) {
+func TestLoadConfigEveningDefaults(t *testing.T) {
 	got, err := squirrel.LoadConfig(minimalEnv(nil))
 	require.NoError(t, err)
-	require.Equal(t, 8*time.Hour, got.DigestAt)
+	require.Equal(t, 19*time.Hour, got.EveningAt,
+		"19:00 is load-bearing twice — the clock trigger and the evening capture slot")
 	require.Equal(t, "Europe/Amsterdam", got.DigestLocation.String())
 }
 
-func TestLoadConfigRejectsABadDigestTime(t *testing.T) {
-	_, err := squirrel.LoadConfig(minimalEnv(map[string]string{"DIGEST_AT": "8am"}))
-	require.ErrorContains(t, err, "DIGEST_AT")
+func TestLoadConfigRejectsABadEveningTime(t *testing.T) {
+	_, err := squirrel.LoadConfig(minimalEnv(map[string]string{"EVENING_AT": "8am"}))
+	require.ErrorContains(t, err, "EVENING_AT")
 }

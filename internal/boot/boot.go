@@ -232,7 +232,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 			scheduler := squirrel.NewScheduler(squirrel.SchedulerOptions{
 				Store: store, Send: send, Chat: chat, PersonID: personID,
 				ConversationID: config.Campfire.ConversationID,
-				At:             config.DigestAt,
+				At:             config.EveningAt,
 				Location:       config.DigestLocation,
 				OnError:        func(err error) { slog.Error("digest", "error", err) },
 			})
