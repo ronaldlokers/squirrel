@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -25,13 +26,16 @@ type SchedulerOptions struct {
 type Scheduler struct {
 	opts SchedulerOptions
 
-	// sentDate is the local calendar date (YYYY-MM-DD) a digest has already
-	// gone out for, in this process's lifetime. It is purely an optimisation —
-	// the unique index on (person_id, sent_for_date) is what actually
-	// guarantees at most one digest a day, and stays authoritative across a
-	// restart that clears this field. Once set it lets a stray tick between
-	// the send and midnight skip the database entirely instead of running
-	// DueChores, CapturesSince and a doomed insert every minute.
+	// sentDate is the local calendar date (YYYY-MM-DD) the evening message has
+	// already gone out for, in this process's lifetime. It is purely an
+	// optimisation — the unique index on (person_id, kind, sent_for_date) is
+	// what actually guarantees at most one evening message a day, and stays
+	// authoritative across a restart that clears this field. Once set it lets
+	// a stray tick between the send and midnight skip the database entirely
+	// instead of running DueChores, CapturesSince and a doomed insert every
+	// minute. It says nothing about whether a nudge has gone out — that budget
+	// is enforced by the same index, keyed on a different kind, and is never
+	// held in memory at all.
 	sentDate string
 }
 
@@ -45,10 +49,14 @@ func NewScheduler(o SchedulerOptions) *Scheduler {
 	return &Scheduler{opts: o}
 }
 
-// Once sends today's digest if it is past the hour and today's has not been
-// sent. Idempotency comes from the unique index on (person_id, sent_for_date),
-// not from anything held in memory — a restart inside the window cannot produce
-// a second message.
+// Once sends today's evening message if it is past the hour and today's has
+// not been sent. Idempotency comes from the unique index on
+// (person_id, kind, sent_for_date), not from anything held in memory — a
+// restart inside the window cannot produce a second message.
+//
+// It also makes the last attempt at today's nudge, via nudgeFor: if nothing
+// has claimed the nudge slot yet, the chosen chore rides along in this same
+// message rather than arriving as a second notification a second apart.
 //
 // A day slept through is skipped rather than sent late: a message about
 // yesterday's chores at three in the morning is noise, and the same chores
@@ -74,8 +82,6 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return nil
 	}
 
-	midnight := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, s.opts.Location)
-
 	// The threshold is built as a wall-clock time in the target location, not
 	// by adding a Duration to the instant "midnight". Add moves an absolute
 	// instant, so across a DST transition midnight+8h lands an hour off
@@ -88,19 +94,32 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return nil
 	}
 
-	due, err := s.opts.Store.DueChores(ctx, s.opts.PersonID, now)
+	midnight := s.localMidnight(now)
+
+	// nudgeFor is tried first. A non-nil chore means nothing has claimed
+	// today's nudge slot yet, so it joins this message instead of the evening
+	// message arriving as a second notification a second apart from an
+	// earlier nudge. A nil chore means either nothing is due, or a nudge
+	// already went out today — either way the evening message carries
+	// captures alone.
+	nudge, nudgePromptID, err := s.nudgeFor(ctx, now)
 	if err != nil {
 		return err
 	}
 
-	// The capture window is anchored to the last digest that actually sent,
-	// not to a fixed "yesterday midnight" offset: a fixed offset either
+	completed, err := s.opts.Store.CompletedToday(ctx, s.opts.PersonID, midnight)
+	if err != nil {
+		return err
+	}
+
+	// The capture window is anchored to the last dated message that actually
+	// sent, not to a fixed "yesterday midnight" offset: a fixed offset either
 	// double-counts (every normal day's window overlaps the previous day's
 	// between local midnight and the send) or drops captures entirely (a
 	// missed day leaves a gap between where the last window ended and the
 	// next one begins). Anchoring to the real last send closes both gaps.
-	// Before any digest has ever gone out there is nothing to anchor to, so
-	// the window falls back to the last 24 hours.
+	// Before any dated message has ever gone out there is nothing to anchor
+	// to, so the window falls back to the last 24 hours.
 	since := midnight.AddDate(0, 0, -1)
 	if lastDigest, ok, err := s.opts.Store.LastDigestSentAt(ctx, s.opts.PersonID); err != nil {
 		return err
@@ -112,43 +131,54 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	m := DigestMessage(due, captures)
+	m := EveningMessage(completed, captures, nudge)
 	if m.Text == "" {
 		return nil
 	}
 
+	// The evening prompt carries its own line for the nudged chore, when
+	// there is one — the same chore nudgeFor already recorded a line for
+	// under its own prompt. Duplicating it here means the evening message's
+	// own button resolves against the evening prompt's own row regardless of
+	// which of the two rows a later tap's message id happens to match.
+	var chores []Chore
+	if nudge != nil {
+		chores = []Chore{*nudge}
+	}
+
 	forDate := midnight
 	promptID, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
-		"digest", now, &forDate, due)
+		"evening", now, &forDate, chores)
 	if err != nil {
 		if errors.Is(err, ErrDigestAlreadySent) {
-			// Some other process already recorded today's digest — most
-			// likely this same one, on an earlier tick. Either way, today is
-			// spoken for, so remember it and stop asking.
+			// Some other process already recorded today's evening message —
+			// most likely this same one, on an earlier tick. Either way,
+			// today is spoken for, so remember it and stop asking.
 			s.sentDate = dateKey
 			return nil
 		}
 		return err
 	}
 
-	messageID, err := s.sendDigest(ctx, m)
+	messageID, err := s.sendMessage(ctx, m)
 	if err != nil {
-		// The prompt row is already committed, so the numbering stands and the
-		// digest will not be retried today. Reported rather than retried:
-		// re-sending risks two messages, and the next day's is minutes away in
-		// the scheme of things. delivered_at stays null, so LastDigestSentAt
-		// will skip straight past this row rather than anchoring the next
-		// digest's capture window to a message that never arrived.
-		return fmt.Errorf("sending digest: %w", err)
+		// The prompt row is already committed, so the numbering stands and
+		// the evening message will not be retried today. Reported rather
+		// than retried: re-sending risks two messages, and tomorrow's is
+		// hours away in the scheme of things. delivered_at stays null, so
+		// LastDigestSentAt will skip straight past this row rather than
+		// anchoring the next dated message's capture window to a message
+		// that never arrived.
+		return fmt.Errorf("sending evening message: %w", err)
 	}
 
 	if messageID == "" {
 		// The transport reported success but returned no id to hang the
-		// buttons off — see chatVia's messageIDFrom. The digest still went
+		// button off — see chatVia's messageIDFrom. The message still went
 		// out, so it is still marked delivered below; it just can never have
-		// its buttons disabled and no tap can ever resolve back to it. That is
+		// its button disabled and no tap can ever resolve back to it. That is
 		// worth a log line, not a lie stored as if it were addressable.
-		s.opts.OnError(fmt.Errorf("digest prompt %d delivered with no addressable message id", promptID))
+		s.opts.OnError(fmt.Errorf("evening prompt %d delivered with no addressable message id", promptID))
 	}
 
 	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
@@ -159,10 +189,23 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		// RecordPrompt already satisfied by today's row and fails it with
 		// ErrDigestAlreadySent, which is what actually arms sentDate. Worst
 		// case the row is never marked delivered and LastDigestSentAt anchors
-		// to whichever earlier digest it last saw as delivered instead — a
-		// capture window that overlaps and re-lists something already seen,
-		// never one that drops something unseen.
+		// to whichever earlier dated message it last saw as delivered
+		// instead — a capture window that overlaps and re-lists something
+		// already seen, never one that drops something unseen.
 		return err
+	}
+
+	if nudge != nil {
+		// The nudge row rode along in this same message rather than getting
+		// one of its own, so it is marked delivered with no message id of its
+		// own — external_message_id is unique per prompt (prompts_external_
+		// message_id_key), and the evening row above already claimed this
+		// message's id. The evening row's own prompt_lines carries the same
+		// chore, so a later tap still resolves against it; this row is only
+		// left marking that the nudge slot was spent and when.
+		if err := s.opts.Store.MarkPromptSent(ctx, nudgePromptID, "", now); err != nil {
+			return err
+		}
 	}
 
 	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, promptID)
@@ -170,13 +213,68 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	return nil
 }
 
-// sendDigest sends through Chat when the transport supports it, and falls
-// back to the phase 2 plain-text Send otherwise — Boost and Update are
-// already guarded the same way, and Send was the one field this package
+// localMidnight is the start of now's day in the scheduler's location. It is
+// the date a dated prompt is recorded against, and the boundary CompletedToday
+// counts from.
+func (s *Scheduler) localMidnight(now time.Time) time.Time {
+	l := now.In(s.opts.Location)
+	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, s.opts.Location)
+}
+
+// nudgeFor picks a chore and claims today's nudge slot for it. It returns nil
+// when there is nothing due, or when a nudge has already gone out today — a
+// refusal from the unique index is the budget working, not a failure.
+//
+// The prompt is recorded before the message is sent, the same ordering the
+// evening message uses and for the same reason: the row is what makes the
+// index the guarantee.
+func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64, error) {
+	due, err := s.opts.Store.DueChores(ctx, s.opts.PersonID, now)
+	if err != nil {
+		return nil, 0, err
+	}
+	c, ok := PickChore(due, rand.Float64())
+	if !ok {
+		return nil, 0, nil
+	}
+
+	forDate := s.localMidnight(now)
+	id, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
+		"nudge", now, &forDate, []Chore{c})
+	if errors.Is(err, ErrDigestAlreadySent) {
+		return nil, 0, nil
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	return &c, id, nil
+}
+
+// Nudge names one chore, at whichever moment reached you first today.
+// ErrDigestAlreadySent from the claim below is not surfaced as an error: a
+// refused nudge means today's slot is already spoken for, which is the budget
+// working exactly as designed, not a failure to report or retry.
+func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) error {
+	c, promptID, err := s.nudgeFor(ctx, now)
+	if err != nil || c == nil {
+		return err
+	}
+
+	messageID, err := s.sendMessage(ctx, NudgeMessage(*c, why))
+	if err != nil {
+		return fmt.Errorf("sending nudge: %w", err)
+	}
+	return s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now)
+}
+
+// sendMessage sends any Message through Chat when the transport supports it,
+// and falls back to the phase 2 plain-text Send otherwise — Boost and Update
+// are already guarded the same way, and Send was the one field this package
 // still called unconditionally. That makes "degrade to phase 2 behaviour
 // against a transport with no Chat" true by construction rather than by
 // deployment discipline, and gives the Send field a reason to still exist.
-func (s *Scheduler) sendDigest(ctx context.Context, m Message) (string, error) {
+// Shared by the nudge and evening paths — neither is digest-specific.
+func (s *Scheduler) sendMessage(ctx context.Context, m Message) (string, error) {
 	if s.opts.Chat.Send == nil {
 		return "", s.opts.Send(ctx, s.opts.ConversationID, m.Text)
 	}
