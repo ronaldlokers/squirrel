@@ -176,6 +176,50 @@ func TestFailedOnceSendDoesNotSpendTheDaysNudge(t *testing.T) {
 		"the second trigger must attempt a real send, not be refused by the failed once()'s stale claim")
 }
 
+// A cancelled context must not defeat the same cleanup: a rollout tearing
+// down the scheduler loop mid-send cancels the context the send is running
+// on, so the send fails with context.Canceled — and if the cleanup delete
+// reused that same context, it would fail for the identical reason, leaving
+// the claimed row in place and the day spent. Observed in production as
+// "deleting undelivered nudge prompt 1: deleting prompt: context canceled".
+// The cleanup must run on a context detached from that cancellation.
+func TestNudgeCleanupSurvivesTheSendsCancelledContext(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	c, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+	backdateChore(t, store, c.ID, 20*24*time.Hour)
+
+	sendCtx, cancel := context.WithCancel(context.Background())
+	var calls int
+	chat := squirrel.Chat{
+		Send: func(sc context.Context, _ string, _ squirrel.Message) (string, error) {
+			calls++
+			if calls == 1 {
+				// The send fails because its own context was just cancelled —
+				// not a plain transport error.
+				cancel()
+				return "", sc.Err()
+			}
+			return "m-2", nil
+		},
+	}
+	s := schedulerWithChat(t, store, p, chat)
+
+	day := today(t, 9, 0, 0)
+	require.Error(t, s.Nudge(sendCtx, day, squirrel.NudgeFromMessage),
+		"the cancellation must surface as the send's failure")
+
+	require.NoError(t, s.Nudge(ctx, day.Add(time.Hour), squirrel.NudgeFromArrival),
+		"a later trigger on a fresh context must still be able to claim the slot — "+
+			"the cleanup must not itself be defeated by the send's now-cancelled context")
+	require.Equal(t, 2, calls,
+		"the second trigger must attempt a real send, not be refused by a claim "+
+			"the cancelled-context cleanup failed to release")
+}
+
 // Nudge is the only place that ever opens a numbered surface without once()
 // right behind it — once() skips closePrevious on a day it claims nothing
 // new (see its own comment) — so if Nudge did not close the previous surface

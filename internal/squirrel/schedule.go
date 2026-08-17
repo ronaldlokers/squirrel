@@ -191,13 +191,9 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		// claim survives the failure and every later trigger today —
 		// including a second 19:00 attempt — is refused by a message the
 		// room never received. Deleting it here gives the next trigger a
-		// real chance instead. Best-effort: if the delete itself fails, the
-		// row is reported rather than retried, same as every other failure
-		// on this path.
+		// real chance instead.
 		if nudge != nil {
-			if delErr := s.opts.Store.DeletePrompt(ctx, nudgePromptID); delErr != nil {
-				s.opts.OnError(fmt.Errorf("deleting undelivered nudge prompt %d: %w", nudgePromptID, delErr))
-			}
+			deleteUndeliveredNudge(ctx, s.opts.Store, s.opts.OnError, nudgePromptID)
 		}
 		return fmt.Errorf("sending evening message: %w", err)
 	}
@@ -361,13 +357,9 @@ func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) e
 		// exactly this — is refused by a message the room never received. A
 		// transient Campfire error would silently spend the whole day's
 		// nudge. Deleting it here gives the next trigger a real chance
-		// instead. Best-effort: if the delete itself fails, the row is
-		// reported rather than retried, same as every other failure on this
-		// path, and the pre-existing crash-window gap above already accepts
+		// instead. The pre-existing crash-window gap above already accepts
 		// worse.
-		if delErr := s.opts.Store.DeletePrompt(ctx, promptID); delErr != nil {
-			s.opts.OnError(fmt.Errorf("deleting undelivered nudge prompt %d: %w", promptID, delErr))
-		}
+		deleteUndeliveredNudge(ctx, s.opts.Store, s.opts.OnError, promptID)
 		return fmt.Errorf("sending nudge: %w", err)
 	}
 	if err := s.opts.Store.MarkPromptSent(ctx, promptID, messageID, now); err != nil {
@@ -376,6 +368,30 @@ func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) e
 
 	closePrevious(ctx, s.opts.Store, s.opts.Chat, s.opts.OnError, s.opts.PersonID, promptID)
 	return nil
+}
+
+// deleteUndeliveredNudge is the best-effort cleanup shared by once() and
+// Nudge() for a nudge row that claimed today's slot but whose send failed —
+// see the comments at both call sites for why the row must not survive the
+// failure. If the delete itself fails, the row is reported rather than
+// retried, same as every other failure on either path.
+//
+// The delete runs on a context derived from ctx with WithoutCancel, not ctx
+// itself, and under its own short timeout. A slow send that fails because the
+// caller's context was cancelled — a rollout tearing down the scheduler loop
+// mid-send, say — would otherwise hand the cleanup an already-cancelled
+// context: DeletePrompt would fail for the same reason the send just did,
+// and the claimed row would survive anyway, spending the day exactly as if
+// this cleanup did not exist. WithoutCancel detaches from that cancellation
+// while keeping any values ctx carries (deadlines are dropped too, which is
+// why an explicit timeout is added back here); the timeout then bounds how
+// long a genuinely stuck delete can block the caller.
+func deleteUndeliveredNudge(ctx context.Context, store *Store, onError func(error), promptID int64) {
+	delCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := store.DeletePrompt(delCtx, promptID); err != nil {
+		onError(fmt.Errorf("deleting undelivered nudge prompt %d: %w", promptID, err))
+	}
 }
 
 // sendMessage sends any Message through Chat when the transport supports it,
