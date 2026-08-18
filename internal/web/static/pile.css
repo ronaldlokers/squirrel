@@ -1,0 +1,531 @@
+  @font-face {
+    font-family: "Recursive";
+    src: url("recursive.woff2") format("woff2");
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Inter";
+    src: url("inter-900.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    /* Straight off the mark. */
+    --purple: #6c4da9;
+    --purple-deep: #58388a;
+    --purple-dark: #3b2560;
+    --violet: #5e23b1;   --violet-ink: #56209f;
+    --orange: #e66d0d;
+    --orange-lit: #ff8a2b;
+    --outline: #1c110b;
+    --cream: #fed6a7;          /* the tail */
+    --card: #fdecd4;           /* card stock: the tail's cream, lightened */
+    --card-deep: #f6d5ab;      /* the cards underneath it */
+    --paper: #fffbf3;          /* the raised things sat on the stock */
+    --paper-deep: #f7e9d4;     /* those things, pressed */
+    --brown: #58413d;          /* the headphones */
+    --white: #fefefe;
+
+    /* The notebook's page tabs, one per state. Each has a fill for the tab and
+       a darker sibling for type, because the tab colours are chosen to be seen
+       at a glance and type has to be read. */
+    --done: #529414;      --done-ink: #3c6d0e;
+    --kept: #ffb300;      --kept-ink: #8a5c00;
+    --dropped: #8a6a55;   --dropped-ink: #6a4f3e;
+    --chore: var(--orange); --chore-ink: #b0530a;
+
+    --o: 8px;                  /* stack offset */
+    --line: 3px;               /* the outline weight of the mark */
+    --r: 14px;
+
+    /* His words in the casual axis, the machinery in the linear one. MONO is
+       pinned off on both: this is a warm tool, not a terminal. */
+    --casual: "MONO" 0, "CASL" 1;
+    --precise: "MONO" 0, "CASL" 0;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  /* The brim reaches past both edges of the lid on purpose; nothing about it
+     should be scrollable. */
+  html, body { overflow-x: clip; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--paper);
+    font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--purple-deep);
+    background-image:
+      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .5) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  /* The browser's own surfaces belong to the design too. */
+  ::selection { background: var(--orange); color: var(--white); }
+  ::-webkit-scrollbar { width: 14px; }
+  ::-webkit-scrollbar-track { background: var(--purple-dark); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 8px;
+  }
+  * { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
+  :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+  .card :focus-visible, .rcard :focus-visible { outline-color: var(--violet); }
+
+  /* ---------- the lid: the mascot's cap ---------- */
+
+  .lid {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 22px 13px;
+    background: var(--purple-dark);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand img {
+    width: 84px; height: 63px; display: block;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .3));
+  }
+  .wordmark {
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 900;
+    font-variation-settings: normal;
+    font-size: 26px;
+    letter-spacing: -.028em;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline);
+    paint-order: stroke fill;
+  }
+  .lid .spacer { flex: 1; }
+
+  /* The mascot's cap has a brim, so the lid of the box has one too: the whole
+     header edge sags into it, and the outline is the mark's own weight. */
+  /* Stretched to the full width rather than curved by a radius, so the outline
+     never rises back into the lid and leaves the screen edges bare. The stroke
+     stays 3px at any width. */
+  .brim {
+    /* An svg is a replaced element: left/right will not stretch it, so the
+       width has to be stated. */
+    position: absolute; left: 0; top: 100%;
+    width: 100%; height: 30px; display: block; pointer-events: none;
+    /* No cast shadow. It pooled under the deepest part of the curve and read as
+       a stain in the middle of the header; the 3px outline is what separates
+       this world's shapes, and the mark itself has no gradients. */
+  }
+
+  .find {
+    flex: 0 1 280px; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline);
+    border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .find:focus-within { box-shadow: 0 3px 0 0 var(--outline), 0 0 0 3px var(--orange-lit); }
+  .find svg { flex: none; }
+  .find input {
+    flex: 1; min-width: 4ch; border: 0; background: transparent;
+    font: 500 14.5px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--outline); caret-color: var(--orange); padding: 0;
+  }
+  .find input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .find input:focus { outline: none; }
+
+  /* ---------- the field ---------- */
+
+  main {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    padding: 58px 22px 48px;
+  }
+  main.scrolling { align-items: flex-start; padding-top: 62px; }
+
+  .shoebox { width: min(720px, 100%); }
+  .deck { position: relative; }
+
+  /* The cards underneath: the only thing that says there is more, never how
+     much more. Handled, so they do not sit square. */
+  .behind {
+    position: absolute; inset: 0;
+    background: var(--card-deep);
+    border: var(--line) solid var(--outline);
+    border-radius: var(--r);
+  }
+  .behind:nth-of-type(1) { transform: translate(var(--o), var(--o)) rotate(1.1deg); }
+  .behind:nth-of-type(2) { transform: translate(calc(var(--o) * 1.6), calc(var(--o) * 2.2)) rotate(-1.4deg); }
+  .behind:nth-of-type(3) { transform: translate(calc(var(--o) * 2.1), calc(var(--o) * 3.2)) rotate(1.8deg); }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: var(--line) solid var(--outline);
+    border-radius: var(--r);
+    display: flex; flex-direction: column;
+    min-height: 296px;
+    color: var(--outline);
+    transform-origin: 50% 8%;
+    /* The sticker's own depth: a solid offset in the outline colour, which is
+       what this world does, plus a real cast shadow underneath it. */
+    box-shadow: 0 6px 0 0 var(--outline), 0 26px 40px -18px rgba(0, 0, 0, .75);
+  }
+  .card.leaving { animation: leave 470ms cubic-bezier(.16, .86, .26, 1) forwards; }
+  @keyframes leave {
+    0%   { transform: perspective(1400px) rotateX(0) translate3d(0, 0, 0) rotate(0); opacity: 1; }
+    30%  { transform: perspective(1400px) rotateX(-6deg) translate3d(0, -26px, 60px) rotate(-1deg); opacity: 1; }
+    100% { transform: perspective(1400px) rotateX(-70deg) translate3d(0, -118px, 10px) rotate(-3deg); opacity: 0; }
+  }
+
+  .titlebar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+    background: var(--purple);
+    color: var(--paper);
+    border-bottom: var(--line) solid var(--outline);
+    border-radius: 11px 11px 0 0;
+    font-size: 12.5px;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .09em;
+  }
+  .titlebar .spacer { flex: 1; }
+  .acorn { flex: none; }
+
+  .note {
+    padding: 30px 32px 12px; flex: 1; position: relative;
+    display: flex; align-items: center;
+  }
+  .note p {
+    margin: 0;
+    font-size: clamp(21px, 2.2vw, 27px);
+    line-height: 1.4; max-width: 34ch; letter-spacing: -.008em;
+    font-variation-settings: var(--casual), "wght" 520;
+    text-wrap: pretty;
+  }
+
+  /* The stamp: slapped on, in the state's own colour, in the sticker language. */
+  .stamp {
+    position: absolute; right: 26px; bottom: -4px;
+    display: none; align-items: center; gap: 9px;
+    padding: 9px 17px;
+    background: var(--paper);
+    color: var(--sct, var(--outline));
+    border: var(--line) solid var(--sc, var(--outline));
+    border-radius: 10px;
+    font-size: 15px;
+    font-variation-settings: var(--precise), "wght" 850;
+    letter-spacing: .1em;
+    box-shadow: 0 4px 0 0 var(--sc, var(--outline));
+    transform: rotate(-7deg);
+  }
+  /* A stamp slams and stops. The weight is in the scale, not in a rebound. */
+  .card.stamped .stamp { display: inline-flex; animation: slap 240ms cubic-bezier(.16, .84, .28, 1) both; }
+  @keyframes slap {
+    0%   { transform: rotate(-22deg) scale(1.7); opacity: 0; }
+    100% { transform: rotate(-7deg) scale(1); opacity: 1; }
+  }
+  .stamp .dot { width: 11px; height: 11px; border-radius: 3px; background: var(--sc); border: 2px solid var(--outline); }
+
+  /* ---------- the foot of the card ---------- */
+
+  .tray { padding: 22px 32px 26px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row[hidden] { display: none; }
+
+  .btn {
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 12px 18px; cursor: pointer; min-height: 44px;
+    display: flex; align-items: center; gap: 9px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .btn:hover { background: var(--paper-deep); }
+  .btn:active, .btn.hit {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--outline);
+    background: var(--bc, var(--orange)); color: var(--paper);
+  }
+  .btn .key {
+    font-size: 11px;
+    font-variation-settings: var(--precise), "wght" 800;
+    border: 2px solid currentColor; border-radius: 5px;
+    padding: 2px 6px 1px; opacity: .72;
+  }
+  .btn[data-act="done"] { --bc: var(--done); }
+  .btn[data-act="keep"] { --bc: var(--kept); }
+  .btn[data-act="drop"] { --bc: var(--dropped); }
+
+  /* The one action that makes something instead of disposing of it. */
+  .btn.make {
+    margin-left: auto; --bc: var(--purple);
+    background: var(--orange); color: var(--paper);
+    padding: 12px 20px;
+  }
+  .btn.make:hover { background: var(--orange-lit); }
+
+  /* Choosing an interval happens on the card, in the footprint the actions
+     just left. A modal would take the note off the screen to ask about it. */
+  .intervals { gap: 9px; }
+  .intervals .lead {
+    font-size: 13px; letter-spacing: .08em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown); width: 100%;
+  }
+  .chip {
+    font: 700 13.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .03em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 11px 15px; cursor: pointer; min-height: 44px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .chip:hover { background: var(--paper-deep); }
+  .chip:active, .chip.hit {
+    transform: translateY(4px); box-shadow: none;
+    background: var(--orange); color: var(--paper);
+  }
+  /* Same keycap as the action buttons. It drifted to 10.5px/.7 for no reason
+     and a key is a key wherever it appears. */
+  .chip .key {
+    font-size: 11px;
+    font-variation-settings: var(--precise), "wght" 800;
+    border: 2px solid currentColor; border-radius: 5px;
+    padding: 2px 5px 1px; opacity: .72;
+  }
+  .chip.back { box-shadow: none; border-style: dashed; }
+
+  /* The actioned card holds still for a moment so the undo has somewhere to
+     be — on the card it undoes, not in a corner of the screen. */
+  .undoRow { gap: 14px; }
+  .undo {
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 800;
+    letter-spacing: .07em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 12px 18px; cursor: pointer; min-height: 44px;
+    box-shadow: 0 4px 0 0 var(--outline);
+  }
+  .undo:active { transform: translateY(4px); box-shadow: none; }
+  .undoRow .said {
+    font-size: 13.5px;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--brown);
+  }
+
+  .hint {
+    margin: 34px 0 0;
+    text-align: center;
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 550;
+    color: rgba(254, 214, 167, .85);
+  }
+  .hint kbd {
+    font: inherit;
+    font-variation-settings: var(--precise), "wght" 800;
+    color: var(--cream);
+    border: 2px solid rgba(254, 214, 167, .45);
+    border-radius: 5px; padding: 1px 5px;
+  }
+
+  /* ---------- search results ---------- */
+
+  .results { width: min(720px, 100%); }
+  .resultsHead {
+    margin: 0 0 20px;
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    font-size: 13px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: rgba(254, 214, 167, .85);
+  }
+  .resultsHead b {
+    color: var(--paper);
+    font-variation-settings: var(--casual), "wght" 800;
+    letter-spacing: 0; font-size: 17px;
+  }
+
+  .rcard {
+    position: relative;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    padding: 15px 20px 16px;
+    margin: 0 0 15px;
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+  /* The page tab of the mascot's own notebook, one colour per state. */
+  .rcard .tab {
+    position: absolute; right: -13px; top: 20px;
+    width: 26px; height: 34px;
+    background: var(--sc); border: var(--line) solid var(--outline);
+    border-radius: 0 8px 8px 0;
+  }
+  .rcard .meta {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+    margin-bottom: 7px;
+  }
+  .rcard .meta .state { color: var(--sct, var(--brown)); }
+  .rcard .meta .sep { opacity: .45; }
+  .rcard p {
+    margin: 0; padding-right: 22px;
+    font-size: 18px; line-height: 1.4; max-width: 46ch;
+    font-variation-settings: var(--casual), "wght" 480;
+    text-wrap: pretty;
+  }
+  /* The tail's cream, deliberately not one of the four state colours - a
+     match is not a state. */
+  /* Why this result matched. Not a fill: a filled chip on cream reads as a
+     control, and every fill colour in this world already means a state. */
+  .rcard mark {
+    background: none; color: var(--outline);
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 3px;
+    text-decoration-skip-ink: none;
+  }
+
+  /* Two views, one pile: a result is actionable where it sits. Notes still in
+     the pile get the full four; a note that already left gets the one action
+     that matters, which is coming back. */
+  .rcard .racts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+  .rbtn {
+    font: 700 12.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .05em;
+    color: var(--outline); background: var(--paper);
+    border: 2px solid var(--outline); border-radius: 999px;
+    padding: 9px 13px; cursor: pointer; min-height: 38px;
+    box-shadow: 0 3px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .rbtn:hover { background: var(--paper-deep); }
+  .rbtn:active { transform: translateY(3px); box-shadow: none; background: var(--sc); color: var(--paper); }
+  .rbtn.back { background: var(--paper); }
+  .rbtn.make { background: var(--orange); color: var(--paper); }
+  .rbtn.make:hover { background: var(--orange-lit); }
+
+  /* Says that there is more. Never how much more. */
+  .more {
+    margin: 26px 0 0; text-align: center;
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: rgba(254, 214, 167, .8);
+  }
+
+  /* The product speaking, so it takes the Voice role rather than a size of
+     its own. */
+  .noHits {
+    margin: 0; padding: 30px 4px;
+    font-size: 17px;
+    font-variation-settings: var(--casual), "wght" 500;
+    color: var(--cream);
+  }
+
+  /* ---------- the empty pile ---------- */
+
+  .empty { width: min(560px, 100%); text-align: center; }
+  .empty img {
+    width: 186px; height: 140px; display: block; margin: 0 auto 22px;
+    filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .3));
+  }
+  .empty h1 {
+    margin: 0 0 10px;
+    font-size: clamp(27px, 3.4vw, 36px); line-height: 1.15;
+    font-variation-settings: var(--casual), "wght" 800;
+    letter-spacing: -.01em;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline);
+    paint-order: stroke fill;
+  }
+  .empty p {
+    margin: 0 auto; max-width: 34ch;
+    font-size: 17px;
+    font-variation-settings: var(--casual), "wght" 450;
+    color: var(--cream);
+  }
+
+  /* No keyboard, no keycaps. The hint keeps its last clause, because
+     'stop whenever you like' is the product's line, not the keyboard's. */
+  @media (pointer: coarse) {
+    .btn .key, .chip .key { display: none; }
+    .hint .keysonly { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card.leaving { animation-duration: 1ms; }
+    .card.stamped .stamp { animation: none; }
+    * { transition-duration: 1ms !important; }
+  }
+
+  @media (max-width: 620px) {
+    :root { --o: 5px; }
+    .lid { padding: 10px 14px 12px; gap: 10px; }
+    .brand { gap: 8px; }
+    .brand img { width: 72px; height: 54px; }
+    .wordmark { font-size: 23px; -webkit-text-stroke-width: 1.8px; }
+    .brim { height: 22px; }
+    .find { flex: 1 1 auto; padding: 9px 12px; }
+    /* 16px so focusing the field does not make iOS zoom the page. */
+    .find input { font-size: 16px; }
+
+    main { padding: 36px 13px 32px; }
+    main.scrolling { padding-top: 38px; }
+    .note { padding: 26px 22px 10px; }
+    .note p { font-size: 23px; }
+    .card { min-height: 284px; }
+    .titlebar { padding: 12px 16px; font-size: 13px; }
+    .tray { padding: 18px 22px 22px; }
+    .row { gap: 8px; }
+
+    /* The three ways out, side by side and the same size, then the one that
+       makes something across the full width beneath them. */
+    .actions {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .btn { padding: 14px 8px; min-height: 48px; justify-content: center; gap: 6px; font-size: 13.5px; }
+    .btn.make { grid-column: 1 / -1; margin-left: 0; width: 100%; }
+
+    .results { padding-right: 14px; }
+    .rcard { padding: 16px 20px 17px; }
+    .rcard .tab { right: -12px; }
+    .rcard .meta { font-size: 12px; }
+    .rcard p { font-size: 18.5px; }
+    .rbtn { padding: 10px 12px; min-height: 42px; letter-spacing: .03em; }
+    .intervals { display: grid; grid-template-columns: 1fr 1fr; }
+    .intervals .lead, .chip.back { grid-column: 1 / -1; }
+    .chip { justify-content: center; }
+    .empty h1 { font-size: 31px; }
+    .empty p { font-size: 18px; }
+    .stamp { right: 18px; font-size: 13.5px; padding: 8px 14px; }
+    .behind:nth-of-type(3) { display: none; }
+    .behind:nth-of-type(1) { transform: translate(var(--o), var(--o)) rotate(.7deg); }
+    .behind:nth-of-type(2) { transform: translate(calc(var(--o) * 1.6), calc(var(--o) * 2.2)) rotate(-.9deg); }
+    .hint { margin-top: 26px; font-size: 12px; }
+    .empty img { width: 150px; height: 113px; }
+  }
+
+  /* A server-rendered result carries its state as a class; the comp set these
+     two custom properties from JavaScript, and a page that works without
+     JavaScript has nobody to do that. */
+  .rcard.state-open    { --sc: var(--violet);  --sct: var(--violet-ink); }
+  .rcard.state-done    { --sc: var(--done);    --sct: var(--done-ink); }
+  .rcard.state-kept    { --sc: var(--kept);    --sct: var(--kept-ink); }
+  .rcard.state-dropped { --sc: var(--dropped); --sct: var(--dropped-ink); }
