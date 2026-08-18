@@ -59,6 +59,34 @@ func (s *Store) OpenItems(ctx context.Context, personID int64, limit int) ([]Ite
 	return s.itemsWhere(ctx, `person_id = $1 and state = 'open'`, limit, personID)
 }
 
+// OpenItemsAfter is the pile from a point: untriaged notes older than the one
+// the caller has already looked at.
+//
+// This is skipping, and skipping is deliberately not a state. A skipped note is
+// untouched — still open, still first the next time the pile is opened from the
+// top — because "not now" is not something a note becomes. The position lives
+// in the caller's address bar and nowhere else, which is also why it survives
+// nothing: reload and you are back at the newest.
+//
+// The comparison is on (received_at, id) rather than id alone, because that is
+// the pair the ordering uses. Ids come from an insert sequence and receipt
+// times come from the transport, and the spool means the two can disagree —
+// comparing on id alone would skip past a note that sorts later.
+//
+// A cursor naming a row that does not exist is treated as no cursor. It arrives
+// through a URL, so it can be stale or invented, and the alternative is a pile
+// that reports itself empty while holding everything.
+func (s *Store) OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]Item, bool, error) {
+	if afterID == 0 {
+		return s.OpenItems(ctx, personID, limit)
+	}
+	return s.itemsWhere(ctx, `person_id = $1 and state = 'open'
+		 and (
+		   not exists (select 1 from items where id = $2)
+		   or (received_at, id) < (select received_at, id from items where id = $2)
+		 )`, limit, personID, afterID)
+}
+
 // SearchItems matches raw text across every state, newest first.
 //
 // Every state, deliberately: `kept` exists so a reference note can leave triage

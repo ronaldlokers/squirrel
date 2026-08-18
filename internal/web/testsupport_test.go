@@ -40,6 +40,39 @@ func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel
 	return out, more, nil
 }
 
+// OpenItemsAfter is the pile from a cursor. The fake keeps the store's rule
+// that a cursor naming nothing is no cursor at all.
+func (f *fakeStore) OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]squirrel.Item, bool, error) {
+	all, _, err := f.OpenItems(ctx, personID, len(f.items)+1)
+	if err != nil || afterID == 0 {
+		return f.OpenItems(ctx, personID, limit)
+	}
+	seen := false
+	for _, it := range f.items {
+		if it.ID == afterID {
+			seen = true
+		}
+	}
+	if !seen {
+		return f.OpenItems(ctx, personID, limit)
+	}
+	out := []squirrel.Item{}
+	past := false
+	for _, it := range all {
+		if past {
+			out = append(out, it)
+		}
+		if it.ID == afterID {
+			past = true
+		}
+	}
+	more := len(out) > limit
+	if more {
+		out = out[:limit]
+	}
+	return out, more, nil
+}
+
 func (f *fakeStore) SearchItems(_ context.Context, _ int64, q string, limit int) ([]squirrel.Item, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err

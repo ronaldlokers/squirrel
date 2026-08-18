@@ -38,6 +38,11 @@ func back(w http.ResponseWriter, r *http.Request, opts Options, undo url.Values)
 	if q := strings.TrimSpace(r.FormValue("q")); q != "" {
 		undo.Set("q", q)
 	}
+	// Where you were, if you had skipped. Without this, acting on the third
+	// note down quietly returns you to the first.
+	if after := strings.TrimSpace(r.FormValue("after")); after != "" {
+		undo.Set("after", after)
+	}
 	if len(undo) > 0 {
 		target += "?" + undo.Encode()
 	}

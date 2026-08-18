@@ -48,13 +48,24 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			searchInto(w, r, s, opts, personID, q, undo)
 			return
 		}
-		items, more, err := s.OpenItems(r.Context(), personID, pileLimit)
+		// The cursor is skipping, and it lives here rather than in the store's
+		// idea of the pile: a note skipped past is untouched, and reloading
+		// without the parameter is how you get back to the top.
+		after := cursorFrom(r.URL.Query())
+		items, more, err := s.OpenItemsAfter(r.Context(), personID, after, pileLimit)
 		if err != nil {
 			fail(w, err)
 			return
 		}
-		v := view{Path: opts.Path, More: more, Undo: undo}
+		v := view{Path: opts.Path, More: more, Undo: undo, After: after}
 		if len(items) == 0 {
+			// Nothing older is not an empty pile. Everything skipped past is
+			// still open, and a page that said "nothing in the pile" here
+			// would be describing the cursor rather than the pile.
+			if after != 0 {
+				render(w, "bottom", v)
+				return
+			}
 			render(w, "empty", v)
 			return
 		}
