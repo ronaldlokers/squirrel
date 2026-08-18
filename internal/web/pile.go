@@ -24,7 +24,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.Identity == "" {
 		return fmt.Errorf("refusing to mount the pile: WEB_IDENTITY is empty")
 	}
-	if opts.PersonID == 0 {
+	if opts.Owner == nil {
 		return fmt.Errorf("refusing to mount the pile: no owner")
 	}
 	m.Get(opts.Path, guard(opts, pileHandler(s, opts)))
@@ -36,11 +36,16 @@ func Mount(m Mux, s Store, opts Options) error {
 
 func pileHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
-			searchInto(w, r, s, opts, q)
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
 			return
 		}
-		items, more, err := s.OpenItems(r.Context(), opts.PersonID, pileLimit)
+		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
+			searchInto(w, r, s, opts, personID, q)
+			return
+		}
+		items, more, err := s.OpenItems(r.Context(), personID, pileLimit)
 		if err != nil {
 			fail(w, err)
 			return
@@ -61,8 +66,8 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 // false claim in the one place the counting rule is most likely to leak.
 const searchLimit = 6
 
-func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, q string) {
-	items, more, err := s.SearchItems(r.Context(), opts.PersonID, q, searchLimit)
+func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string) {
+	items, more, err := s.SearchItems(r.Context(), personID, q, searchLimit)
 	if err != nil {
 		fail(w, err)
 		return

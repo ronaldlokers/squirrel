@@ -2,6 +2,7 @@ package web
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -78,6 +79,12 @@ func render(w http.ResponseWriter, name string, v view) {
 		slog.Error("rendering the pile", "page", name, "error", err)
 	}
 }
+
+// errNoOwner is the screen before the database has ever answered: the routes
+// are live because they were registered before Listen, but nobody knows whose
+// pile this is yet. It reads as an unreachable database because that is what
+// it is.
+var errNoOwner = errors.New("the owner is not known yet")
 
 // fail is what "the screen fails visibly and nothing is lost" looks like. The
 // note is already durable; this is the exit, not the entrance.

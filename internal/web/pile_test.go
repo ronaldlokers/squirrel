@@ -114,3 +114,24 @@ func TestSearchEscapesTheQuery(t *testing.T) {
 	require.NotContains(t, body, "<script>alert(1)</script>")
 	require.Contains(t, body, "&lt;script&gt;")
 }
+
+// The routes are registered before the server listens, so they can be reached
+// before Postgres has ever answered and before anyone knows whose pile this
+// is. That is the database being unreachable, and the screen says so.
+func TestPileWaitsVisiblyForItsOwner(t *testing.T) {
+	m := newTestMux()
+	require.NoError(t, Mount(m, &fakeStore{}, Options{
+		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 0 },
+	}))
+
+	w := m.call(t, "GET", "/pile", nil)
+	require.Equal(t, 503, w.Code)
+	require.Contains(t, w.Body.String(), "cannot reach")
+}
+
+func TestMountRefusesWithoutAnOwner(t *testing.T) {
+	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
+		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+	}))
+}

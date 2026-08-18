@@ -262,3 +262,9 @@ func seedSentPrompt(t *testing.T, store *squirrel.Store, personID int64, kind, m
 func webhookURL(s *boot.Squirrel) string {
 	return fmt.Sprintf("http://127.0.0.1:%d/transports/campfire", s.Port())
 }
+
+// pileURL is where the screen is mounted — config.go's WebPath default, which
+// boot.go never overrides.
+func pileURL(s *boot.Squirrel) string {
+	return fmt.Sprintf("http://127.0.0.1:%d/pile", s.Port())
+}

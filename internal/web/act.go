@@ -50,6 +50,11 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		personID, known := opts.person()
+		if !known {
+			fail(w, errNoOwner)
+			return
+		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -61,7 +66,7 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		it, found, err := s.ItemByID(r.Context(), opts.PersonID, id)
+		it, found, err := s.ItemByID(r.Context(), personID, id)
 		if err != nil {
 			fail(w, err)
 			return
@@ -91,6 +96,11 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		personID, known := opts.person()
+		if !known {
+			fail(w, errNoOwner)
+			return
+		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -107,7 +117,7 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		_, found, err := s.PromoteItem(r.Context(), opts.PersonID, id, every)
+		_, found, err := s.PromoteItem(r.Context(), personID, id, every)
 		if err != nil {
 			fail(w, err)
 			return

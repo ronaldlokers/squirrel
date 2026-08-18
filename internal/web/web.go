@@ -23,10 +23,24 @@ type Options struct {
 	// Identity is the one value that may read this pile. Mount refuses to
 	// register a single route when it is empty.
 	Identity string
-	// PersonID is the owner. There is one person, resolved once at boot,
-	// because SeedOwner already reconciles that identity every boot and a
-	// second lookup per request would be a second source of truth.
-	PersonID int64
+	// Owner answers whose pile this is. There is one person and SeedOwner
+	// reconciles them once, so this is not a per-request lookup — it is a
+	// function only because of when it can be answered. Routes must be
+	// registered before the server listens, and the owner's id is only known
+	// once Postgres has answered, which may be a while after boot or never;
+	// internal/boot's nudgeRelay exists for exactly that window. A zero id
+	// means "not yet", and the screen says the same thing it says for any
+	// other unreachable database.
+	Owner func() int64
+}
+
+// person answers who the pile belongs to, and whether that is known yet.
+func (o Options) person() (int64, bool) {
+	if o.Owner == nil {
+		return 0, false
+	}
+	id := o.Owner()
+	return id, id != 0
 }
 
 // Store is the narrow surface the screen consumes. Declared here rather than

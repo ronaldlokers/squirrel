@@ -140,7 +140,8 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 	t.Helper()
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald", PersonID: 1,
+		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 },
 	}))
 	return m
 }

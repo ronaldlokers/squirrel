@@ -13,6 +13,7 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 	"github.com/ronaldlokers/squirrel/internal/transport"
+	"github.com/ronaldlokers/squirrel/internal/web"
 )
 
 // presenceDebounce is not configuration — see PresenceOptions' own doc
@@ -174,6 +175,43 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		slog.Warn("no presence secret configured; the arrival trigger is inactive")
 	}
 
+	// Opened before Listen rather than after it, because the screen's routes
+	// need the store to be mounted with and every route has to be registered
+	// before the server accepts its first request. OpenStore does not connect
+	// — pgxpool dials lazily — so this still does not put Postgres in front of
+	// a capture being accepted.
+	store, err := squirrel.OpenStore(loopCtx, squirrel.URLFor(config.Postgres))
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	s.store = store
+
+	// The owner is filled in by connectAndDrain once Postgres answers, which
+	// may be a while after boot or never. Same shape and same reason as
+	// nudgeRelay above: the route is registered here, before Listen, and the
+	// thing it needs arrives later. Until it does, the screen answers 503 —
+	// the pile is unreadable because its memory is unreachable, which is what
+	// that status already means on this screen.
+	var webOwner atomic.Int64
+	if config.WebIdentity != "" {
+		if err := web.Mount(server, store, web.Options{
+			Path:           config.WebPath,
+			IdentityHeader: config.WebIdentityHeader,
+			Identity:       config.WebIdentity,
+			Owner:          webOwner.Load,
+		}); err != nil {
+			cancel()
+			return nil, fmt.Errorf("mounting the pile: %w", err)
+		}
+		slog.Info("the pile is mounted", "path", config.WebPath)
+	} else {
+		// Same precedent as the presence warning above: a mis-wired
+		// WEB_IDENTITY otherwise produces no log line at all, and a bot with
+		// no screen looks exactly like one working normally.
+		slog.Warn("no web identity configured; the pile screen is not mounted")
+	}
+
 	port, err := server.Listen(fmt.Sprintf(":%d", config.Port))
 	if err != nil {
 		cancel()
@@ -182,16 +220,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	s.port = port
 	slog.Info("listening", "port", port)
 
-	store, err := squirrel.OpenStore(loopCtx, squirrel.URLFor(config.Postgres))
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-	s.store = store
-
 	go func() {
 		defer close(s.drained)
-		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge)
+		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner)
 	}()
 
 	return s, nil
@@ -199,7 +230,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay) {
+func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64) {
 	var personID int64
 	for {
 		var err error
@@ -221,6 +252,10 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 	}
 
 	slog.Info("database ready")
+
+	// The screen's routes have been live since Listen; this is the moment they
+	// have something to read.
+	webOwner.Store(personID)
 
 	// The transport's Send, or nil when no bot key is configured. A nil sender
 	// means the applier stays quiet rather than crashing: phase 1's property

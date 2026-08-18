@@ -13,7 +13,7 @@ func testOptions() Options {
 		Path:           "/pile",
 		IdentityHeader: "X-Authentik-Username",
 		Identity:       "ronald",
-		PersonID:       1,
+		Owner:          func() int64 { return 1 },
 	}
 }
 
