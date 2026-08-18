@@ -126,6 +126,9 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	r.Header.Set("X-Authentik-Username", "ronald")
 	if method == "POST" {
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		// What a browser sends when this screen's own form is submitted.
+		// csrf_test.go covers what it sends when someone else's is.
+		r.Header.Set("Origin", "http://"+r.Host)
 	}
 	w := httptest.NewRecorder()
 	m.routes[best](w, r)

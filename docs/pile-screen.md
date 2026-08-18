@@ -75,6 +75,20 @@ Because the identity arrives in a plain header, the only thing keeping it
 truthful is that nothing but Traefik can reach the pod. That is the ipAllowList's
 job, and it is why the two middlewares are a chain rather than a choice.
 
+## Cross-site writes
+
+Header-based auth means a form on someone else's site posting to `/pile/act`
+would travel with the Authentik session cookie like any other request. The two
+write routes therefore check `Origin` (falling back to `Referer`) against the
+request's own `Host`, and refuse anything that does not match or that says
+nothing at all. No token, no cookie, no secret — a browser will not let a page
+lie about its own origin.
+
+This requires the proxy to pass the original `Host` through. Traefik does by
+default; if a middleware is ever added that rewrites it, every write on this
+screen turns into a 403 and the log line is
+`refused a cross-site write`.
+
 ## What the screen will not do
 
 - **It will not create an item.** There is no capture box and no route that

@@ -28,8 +28,10 @@ func Mount(m Mux, s Store, opts Options) error {
 		return fmt.Errorf("refusing to mount the pile: no owner")
 	}
 	m.Get(opts.Path, guard(opts, pileHandler(s, opts)))
-	m.Post(opts.Path+"/act", guard(opts, actHandler(s, opts)))
-	m.Post(opts.Path+"/chore", guard(opts, choreHandler(s, opts)))
+	// Both writes carry the origin check as well as the identity one: the
+	// identity says who is asking, sameOrigin says which page asked.
+	m.Post(opts.Path+"/act", guard(opts, sameOrigin(actHandler(s, opts))))
+	m.Post(opts.Path+"/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Get(opts.Path+"/static/", staticHandler(opts))
 	return nil
 }
