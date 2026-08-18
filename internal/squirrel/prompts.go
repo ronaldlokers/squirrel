@@ -34,7 +34,16 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // which is the one that actually owns both the line and, when it has one,
 // the id — agreeing with the tapped path in every case rather than only
 // some.
-const numberedKinds = `('digest', 'query', 'nudge')`
+//
+// 'notes' and 'find' are numbered for the same reason 'query' is: they print a
+// list and the reply to a list is a number. They are safe to add here for a
+// different reason than they look, and the difference matters. They carry no
+// sent_for_date, so they cannot collide in the once-a-day unique index the way
+// 'evening' collided above — there is no tie for them to win. And they are
+// *meant* to shadow an older numbered surface: after `!notes`, a bare `done 1`
+// should mean line 1 of the pile, not line 1 of this morning's nudge. Newest
+// numbering wins, exactly as it already does for 'query'.
+const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
 type Prompt struct {
@@ -44,7 +53,37 @@ type Prompt struct {
 	ExternalMessageID string
 }
 
+// LineRef is what a numbered line points at. Exactly one field is set, and the
+// database enforces that rather than trusting every caller to remember.
+type LineRef struct {
+	ChoreID *int64
+	ItemID  *int64
+}
+
+// Line is a resolved numbered line. Exactly one of Chore and Item is non-nil,
+// which is why callers switch on nil rather than on a kind string: the compiler
+// can check the first and cannot check the second.
+type Line struct {
+	Position int
+	Chore    *Chore
+	Item     *Item
+}
+
+// RecordPrompt records a prompt whose lines are all chores. It is the older,
+// narrower shape of RecordPromptLines, kept because roughly twenty call sites
+// across three phases pass []Chore — rewriting them all would spread the risk
+// of this change over every one of them for no gain.
 func (s *Store) RecordPrompt(ctx context.Context, personID int64, conversationID, kind string, sentAt time.Time, forDate *time.Time, chores []Chore) (int64, error) {
+	lines := make([]LineRef, 0, len(chores))
+	for _, c := range chores {
+		lines = append(lines, LineRef{ChoreID: &c.ID})
+	}
+	return s.RecordPromptLines(ctx, personID, conversationID, kind, sentAt, forDate, lines)
+}
+
+// RecordPromptLines records a prompt whose numbered lines may be chores, notes,
+// or both. See RecordPrompt for the chore-only shape.
+func (s *Store) RecordPromptLines(ctx context.Context, personID int64, conversationID, kind string, sentAt time.Time, forDate *time.Time, lines []LineRef) (int64, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("recording prompt: %w", err)
@@ -65,10 +104,10 @@ func (s *Store) RecordPrompt(ctx context.Context, personID int64, conversationID
 		return 0, fmt.Errorf("inserting prompt: %w", err)
 	}
 
-	for i, c := range chores {
+	for i, l := range lines {
 		if _, err := tx.Exec(ctx, `
-			insert into prompt_lines (prompt_id, position, chore_id)
-			values ($1, $2, $3)`, promptID, i+1, c.ID); err != nil {
+			insert into prompt_lines (prompt_id, position, chore_id, item_id)
+			values ($1, $2, $3, $4)`, promptID, i+1, l.ChoreID, l.ItemID); err != nil {
 			return 0, fmt.Errorf("inserting prompt line %d: %w", i+1, err)
 		}
 	}
@@ -206,6 +245,75 @@ func (s *Store) ChoreAtPosition(ctx context.Context, personID int64, position in
 	c.Tolerance = time.Duration(tolSec) * time.Second
 	c.EveryDays = int(c.Every.Hours() / 24)
 	return c, true, nil
+}
+
+// LineAtPosition resolves a numbered line to whatever it named — a chore or a
+// note. It is ChoreAtPosition generalised, and carries every one of that
+// method's predicates for the same reasons: scoped by personID so one person's
+// number cannot resolve to another's row, pinned to that person's single most
+// recent numbered prompt so a number is only read against the list that printed
+// it, and requiring delivered_at so a prompt whose send failed can never become
+// "current" for a typed position while the room's real buttons still point at
+// the last list that actually went out.
+//
+// Exactly one of Line.Chore and Line.Item is non-nil. The check constraint on
+// prompt_lines is what makes that true; the left joins here are what make it
+// observable.
+func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int) (Line, bool, error) {
+	const q = `
+		select l.position,
+		       c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
+		       i.id, i.raw_text, i.received_at
+		  from prompt_lines l
+		  left join chores c on c.id = l.chore_id
+		  left join items  i on i.id = l.item_id
+		 where l.prompt_id = (select id from prompts
+		                       where person_id = $1 and kind in ` + numberedKinds + `
+		                         and delivered_at is not null
+		                       order by sent_at desc, id desc limit 1)
+		   and l.position = $2`
+
+	var (
+		line                 Line
+		choreID, chorePerson *int64
+		choreName            *string
+		everySec, tolSec     *int64
+		itemID               *int64
+		itemText             *string
+		itemAt               *time.Time
+	)
+	err := s.pool.QueryRow(ctx, q, personID, position).Scan(
+		&line.Position,
+		&choreID, &chorePerson, &choreName, &everySec, &tolSec,
+		&itemID, &itemText, &itemAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Line{}, false, nil
+	}
+	if err != nil {
+		return Line{}, false, fmt.Errorf("reading prompt line: %w", err)
+	}
+
+	switch {
+	case choreID != nil:
+		c := Chore{
+			ID:        *choreID,
+			PersonID:  *chorePerson,
+			Name:      *choreName,
+			Active:    true,
+			Every:     time.Duration(*everySec) * time.Second,
+			Tolerance: time.Duration(*tolSec) * time.Second,
+		}
+		c.EveryDays = int(c.Every.Hours() / 24)
+		line.Chore = &c
+	case itemID != nil:
+		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt}
+	default:
+		// Unreachable while prompt_lines_one_target holds. Reported rather
+		// than returned as a zero Line, because a silent empty line would read
+		// to the caller as "no such position" and send the wrong reply.
+		return Line{}, false, fmt.Errorf("prompt line %d names neither a chore nor a note", position)
+	}
+	return line, true, nil
 }
 
 // OutstandingLines is the lines of the most recent prompt whose chore has had
