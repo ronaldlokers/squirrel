@@ -335,13 +335,6 @@
     font-variation-settings: var(--precise), "wght" 550;
     color: rgba(254, 214, 167, .85);
   }
-  .hint kbd {
-    font: inherit;
-    font-variation-settings: var(--precise), "wght" 800;
-    color: var(--cream);
-    border: 2px solid rgba(254, 214, 167, .45);
-    border-radius: 5px; padding: 1px 5px;
-  }
 
   /* ---------- search results ---------- */
 
@@ -529,3 +522,39 @@
   .rcard.state-done    { --sc: var(--done);    --sct: var(--done-ink); }
   .rcard.state-kept    { --sc: var(--kept);    --sct: var(--kept-ink); }
   .rcard.state-dropped { --sc: var(--dropped); --sct: var(--dropped-ink); }
+
+  /* ---------- the scriptless additions ---------- */
+
+  /* The comp asked "how often?" in a row JavaScript revealed. A page that
+     works without JavaScript asks it with a disclosure, so the summary wears
+     the button it stands in for and the chips keep the row they had.
+     
+     The disclosure now stands where MAKE A CHORE used to, so it takes that
+     button's place in the line — and in the mobile grid — while the summary
+     inside it fills whatever it is given. */
+  .everyFallback > summary { list-style: none; margin: 0; width: 100%; }
+  .everyFallback > summary::-webkit-details-marker { display: none; }
+  .actions > .everyFallback { margin-left: auto; }
+  .everyFallback[open] { width: 100%; margin-left: 0; }
+  .everyFallback[open] > summary { margin-bottom: 12px; }
+
+  @media (max-width: 560px) {
+    .actions > .everyFallback { grid-column: 1 / -1; margin-left: 0; }
+  }
+
+  /* main centres a single child, so an undo above the deck turns the field
+     into a column — two of them side by side is not what either one is. */
+  main.withUndo { flex-direction: column; align-items: center; }
+  main.scrolling.withUndo { justify-content: flex-start; }
+
+  .landed {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 14px;
+    width: min(720px, 100%);
+    margin: 0 0 24px;
+  }
+  .landed .said {
+    font-size: 13.5px;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--cream);
+  }
