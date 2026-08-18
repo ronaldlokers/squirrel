@@ -20,4 +20,9 @@
   <button class="chip" name="every" value="every week" data-act="chore" formaction="{{.Path}}/chore">every week <span class="key">2</span></button>
   <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="{{.Path}}/chore">every 2 weeks <span class="key">3</span></button>
   <button class="chip" name="every" value="every month" data-act="chore" formaction="{{.Path}}/chore">every month <span class="key">4</span></button>
+  {{/* The way back out, and the one control here that is not a submit: a
+       half-made chore must not be postable. It is rendered hidden because
+       without pile.js there is nothing for it to close — the disclosure's own
+       summary does that job — and a dead button is worse than no button. */}}
+  <button class="chip back" type="button" data-close="chore" hidden>never mind <span class="key">ESC</span></button>
 </div>{{end}}

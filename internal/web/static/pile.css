@@ -542,6 +542,13 @@
     .actions > .everyFallback { grid-column: 1 / -1; margin-left: 0; }
   }
 
+  /* While an interval is being chosen, the three ways out step aside — the
+     comp replaces the row rather than growing a second one below it. CSS
+     cannot select a previous sibling, so pile.js puts the class on the form;
+     without that file the disclosure simply opens underneath, which is the
+     scriptless page and is fine. */
+  .actions.choosing > .btn:not(.make) { display: none; }
+
   /* main centres a single child, so an undo above the deck turns the field
      into a column — two of them side by side is not what either one is. */
   main.withUndo { flex-direction: column; align-items: center; }
