@@ -137,6 +137,30 @@ JavaScript off the identical page arrives by pressing Enter. The address bar
 tracks the query with `replaceState`, so leaving a search goes back where you
 came from rather than through every letter you typed.
 
+## Installing it
+
+The screen is a web manifest and a service worker away from being a thing on
+the home screen, so it is one. `Add to Home Screen` on a phone gives it its own
+icon and no browser chrome; nothing else about it changes.
+
+**The worker caches assets and never the pile.** A cached pile would show notes
+that have already been triaged — the two views disagreeing with each other, in
+the one place you could not tell. So the stylesheet, the script, the fonts and
+the mark come from the cache, and everything else goes to the network. With no
+network it answers with a page that says so and points out that nothing has
+been lost, since capture was never the screen's job.
+
+**The worker is served from `{WEB_PATH}/sw.js`, not from `/static/`.** A
+worker's scope is the directory it came from, and it needs to answer for the
+screen itself. That also needs the `Service-Worker-Allowed` header the handler
+sets: without it the worker installs, reports a healthy-looking scope of
+`{WEB_PATH}/`, and never controls `{WEB_PATH}` — the one URL you actually open.
+
+**It is not behind the identity guard.** A browser fetches the worker without
+the cookies that carry the identity, and a worker that redirects to a login page
+never installs. It contains no notes: only which files to keep and what to say
+when the network is gone.
+
 ## Reading it without seeing it
 
 The screen is keyboard-first, and the parts that change without a navigation
