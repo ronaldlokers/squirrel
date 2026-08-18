@@ -1,0 +1,17 @@
+{
+  "approved": true,
+  "approvedAt": "2026-08-18",
+  "approvedBy": "ronald",
+  "approvalNote": "Approved in session as 'yes this looks good to start with', after four iteration rounds against the redrawn mark. Two fixes landed after approval that did not change the design: the keycap was unified at 11px across buttons and chips, and the empty-search line was aligned to the Voice role at 17px.",
+  "tool": "hand-authored",
+  "kind": "html-comp",
+  "surface": "the pile",
+  "viewports": [
+    { "tag": "desktop", "width": 1440, "height": 900 },
+    { "tag": "mobile", "width": 390, "height": 844 }
+  ],
+  "states": ["pile", "chore", "stamped", "search", "empty"],
+  "shots": ".impeccable/comps/shots/{desktop,mobile}-{pile,chore,stamped,search,empty}.png",
+  "supersedes": "The first pass, a hairline one-bit rendition made before assets/logo.png was found.",
+  "notes": "Sample note content is authored, not the owner's real notes. Never substitute real captures into this file."
+}
