@@ -39,14 +39,14 @@ type cdp struct {
 // dialCDP opens the page target's websocket. The browser is told which port to
 // listen on, so this is a plain HTTP request to it and an upgrade of the
 // answer's URL.
-func dialCDP(t *testing.T, port int) *cdp {
+func dialCDP(t *testing.T, port int, said fmt.Stringer) *cdp {
 	t.Helper()
 
 	var targets []struct {
 		Type string `json:"type"`
 		WS   string `json:"webSocketDebuggerUrl"`
 	}
-	deadline := time.Now().Add(15 * time.Second)
+	deadline := time.Now().Add(30 * time.Second)
 	for {
 		res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/json", port))
 		if err == nil {
@@ -57,7 +57,7 @@ func dialCDP(t *testing.T, port int) *cdp {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("no devtools target after 15s: %v", err)
+			t.Fatalf("no devtools target after 30s: %v\nthe browser said:\n%s", err, said)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

@@ -11,6 +11,7 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"net/http"
@@ -97,10 +98,22 @@ func open(t *testing.T, f *fakeStore) (*cdp, *httptest.Server) {
 
 	cmd := exec.Command(browserBinary(t),
 		"--headless", "--disable-gpu", "--no-sandbox",
-		"--no-first-run", "--disable-features=Translate",
+		"--no-first-run", "--no-default-browser-check",
+		"--disable-features=Translate",
+		// A CI container's /dev/shm is 64MB and Chrome will die on it rather
+		// than say so. Everything else here is a background service that has
+		// nowhere to phone home to on a runner.
+		"--disable-dev-shm-usage", "--disable-extensions",
+		"--disable-background-networking", "--disable-sync",
 		"--user-data-dir="+profile,
 		fmt.Sprintf("--remote-debugging-port=%d", port),
 		"about:blank")
+
+	// Kept so that a browser which dies on startup can say why. Without this
+	// the only symptom is a port that never opens, which is the least
+	// informative failure a test can have.
+	var said bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &said, &said
 	require.NoError(t, cmd.Start())
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()
@@ -108,7 +121,7 @@ func open(t *testing.T, f *fakeStore) (*cdp, *httptest.Server) {
 		_ = os.RemoveAll(profile)
 	})
 
-	c := dialCDP(t, port)
+	c := dialCDP(t, port, &said)
 	c.send(t, "Page.enable", nil)
 	c.send(t, "Runtime.enable", nil)
 	c.navigate(t, srv.URL+"/pile")
