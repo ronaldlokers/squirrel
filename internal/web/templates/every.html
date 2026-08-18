@@ -3,7 +3,7 @@
      search result — so the difference lives in the class here rather than in a
      field on the view. */}}
 {{define "everyCard"}}<details class="everyFallback">
-  <summary class="btn make">MAKE A CHORE <span class="key">C</span></summary>
+  <summary class="btn make">MAKE A CHORE <span class="key" aria-hidden="true">C</span></summary>
   {{template "everyChips" .}}
 </details>{{end}}
 
@@ -16,13 +16,13 @@
      leaves the same thing on the card that the comp drew. */}}
 {{define "everyChips"}}<div class="row intervals">
   <span class="lead">HOW OFTEN?</span>
-  <button class="chip" name="every" value="every day" data-act="chore" formaction="{{.Path}}/chore">every day <span class="key">1</span></button>
-  <button class="chip" name="every" value="every week" data-act="chore" formaction="{{.Path}}/chore">every week <span class="key">2</span></button>
-  <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="{{.Path}}/chore">every 2 weeks <span class="key">3</span></button>
-  <button class="chip" name="every" value="every month" data-act="chore" formaction="{{.Path}}/chore">every month <span class="key">4</span></button>
+  <button class="chip" name="every" value="every day" data-act="chore" formaction="{{.Path}}/chore">every day <span class="key" aria-hidden="true">1</span></button>
+  <button class="chip" name="every" value="every week" data-act="chore" formaction="{{.Path}}/chore">every week <span class="key" aria-hidden="true">2</span></button>
+  <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="{{.Path}}/chore">every 2 weeks <span class="key" aria-hidden="true">3</span></button>
+  <button class="chip" name="every" value="every month" data-act="chore" formaction="{{.Path}}/chore">every month <span class="key" aria-hidden="true">4</span></button>
   {{/* The way back out, and the one control here that is not a submit: a
        half-made chore must not be postable. It is rendered hidden because
        without pile.js there is nothing for it to close — the disclosure's own
        summary does that job — and a dead button is worse than no button. */}}
-  <button class="chip back" type="button" data-close="chore" hidden>never mind <span class="key">ESC</span></button>
+  <button class="chip back" type="button" data-close="chore" hidden>never mind <span class="key" aria-hidden="true">ESC</span></button>
 </div>{{end}}

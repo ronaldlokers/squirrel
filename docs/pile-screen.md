@@ -137,6 +137,23 @@ JavaScript off the identical page arrives by pressing Enter. The address bar
 tracks the query with `replaceState`, so leaving a search goes back where you
 came from rather than through every letter you typed.
 
+## Reading it without seeing it
+
+The screen is keyboard-first, and the parts that change without a navigation
+say so out loud: a live region outside the stage announces a search result set,
+an action taken, the interval question being asked or withdrawn, and a skip. It
+lives outside the stage because live search replaces everything inside it, and
+a region that is itself replaced announces nothing.
+
+The key badges (`D`, `K`, `X`) are `aria-hidden` — a poster on the wall, not
+part of a button's name — and so is the stack of cards behind the top one,
+which already says "there is more underneath" in words on the deck.
+
+`prefers-reduced-motion` is honoured in both places it lives: the stylesheet
+shortens the animations, and the script shortens the pause before a card
+leaves. Someone who asked for less motion should not have to sit through a card
+sliding away before the write happens.
+
 ## What the screen will not do
 
 - **It will not create an item.** There is no capture box and no route that

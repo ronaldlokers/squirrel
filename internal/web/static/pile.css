@@ -351,6 +351,14 @@
     color: rgba(254, 214, 167, .85);
   }
 
+  /* Present for anything that reads the page aloud, absent for anything that
+     draws it. Not display:none, which would take it out of both. */
+  .offscreen {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+  }
+
   /* The way across to the chores, and back. Quiet on purpose: it is a place
      to go, not a thing to do. */
   .lidlink {
