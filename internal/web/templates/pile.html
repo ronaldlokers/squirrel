@@ -5,7 +5,7 @@
        words for anyone who cannot see it — still no count, because there is
        none to give. */}}
   <div class="deck"{{if .More}} aria-label="there is more underneath"{{end}}>
-    {{if .More}}<div class="behind"></div><div class="behind"></div><div class="behind"></div>{{end}}
+    {{if .More}}<div class="behind" aria-hidden="true"></div><div class="behind" aria-hidden="true"></div><div class="behind" aria-hidden="true"></div>{{end}}
     {{template "card" .}}
   </div>
   {{/* The comp advertises <kbd>space</kbd> as skip. The screen has no cursor

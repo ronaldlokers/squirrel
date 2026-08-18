@@ -5,6 +5,23 @@
 (() => {
   const find = document.querySelector(".find input");
   const stage = document.getElementById("stage");
+  const say = document.getElementById("say");
+
+  // Anything this file changes without a navigation has to be said out loud
+  // too, or the screen is silent for exactly the person who cannot see it
+  // change. The region lives outside the stage so a search swap cannot take it
+  // away mid-announcement.
+  function announce(what) {
+    if (say) say.textContent = what;
+  }
+
+  // Honoured here as well as in the stylesheet: the CSS can shorten an
+  // animation, but the pause that lets the undo be read is this file's, and
+  // someone who has asked for less motion should not be made to sit through
+  // a card sliding away before the write happens.
+  const calm = matchMedia("(prefers-reduced-motion: reduce)");
+  const hold = () => (calm.matches ? 400 : 1150);
+  const leave = () => (calm.matches ? 0 : 440);
 
   const STATES = {
     done:  { word: "DONE",    said: "marked done" },
@@ -64,6 +81,7 @@
       form.hidden = true;
       undoRow.hidden = false;
       undo.focus({ preventScroll: true });
+      announce(s.said + ". Put it back is focused.");
 
       setTimeout(() => {
         card.classList.add("leaving");
@@ -71,14 +89,15 @@
           // Hand the real submission back to the browser. The server does the
           // write and answers 303, so a reload never repeats it.
           button.form.requestSubmit(button);
-        }, 440);
-      }, 1150);
+        }, leave());
+      }, hold());
     }
 
     // Choosing an interval takes the place of the actions rather than sitting
     // under them, the way the comp draws it. The disclosure already does the
     // showing; the class does the hiding, and neither exists without this file.
     function choosing(open) {
+      if (open !== every.open) announce(open ? "how often should it come back?" : "never mind");
       every.open = open;
       form.classList.toggle("choosing", open);
       neverMind.hidden = !open;
@@ -169,6 +188,10 @@
     // letter you typed.
     history.replaceState(null, "", url);
     wire();
+    // What changed, in words, since nothing navigated and the eye has the
+    // whole page to notice it with. Never how many — the rule holds here as
+    // everywhere.
+    announce(query ? `showing everything that says ${query}` : "the pile");
   }
 
   if (find) {
@@ -198,6 +221,7 @@
   // to go: one answer to "what does skipping mean", and it is the one a phone
   // and a scriptless page already use.
   function skip() {
+    announce("skipped");
     const later = deck?.card.querySelector("a.later");
     if (!later) return;
     const url = new URL(later.href);

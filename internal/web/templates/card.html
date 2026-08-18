@@ -1,5 +1,5 @@
 {{define "card"}}
-<article class="card" id="card" data-id="{{.Note.ID}}">
+<article class="card" id="card" data-id="{{.Note.ID}}" aria-label="a note from {{.Note.When}}">
   <div class="titlebar">
     <svg class="acorn" width="16" height="19" viewBox="0 0 15 18" aria-hidden="true">
       <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.7" stroke-linejoin="round"/>
@@ -24,9 +24,9 @@
       {{/* Where you were. A transition made three notes down comes back to
            the same place rather than to the top of the pile. */}}
       <input type="hidden" name="after" value="{{.After}}">
-      <button class="btn" name="act" value="done" data-act="done">DONE <span class="key">D</span></button>
-      <button class="btn" name="act" value="keep" data-act="keep">KEEP <span class="key">K</span></button>
-      <button class="btn" name="act" value="drop" data-act="drop">DROP <span class="key">X</span></button>
+      <button class="btn" name="act" value="done" data-act="done">DONE <span class="key" aria-hidden="true">D</span></button>
+      <button class="btn" name="act" value="keep" data-act="keep">KEEP <span class="key" aria-hidden="true">K</span></button>
+      <button class="btn" name="act" value="drop" data-act="drop">DROP <span class="key" aria-hidden="true">X</span></button>
       {{/* A chore needs an interval, and a single button could not carry one.
            The disclosure is the scriptless way to ask; pile.js opens it on C
            and gives the chips keys 1-4. */}}
