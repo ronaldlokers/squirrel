@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-08-18T14:33:48.037Z",
+        "reason": "User explicitly requested Inter Black for the Squirrel wordmark"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          ".impeccable/comps/pile-first-viewport.html"
+        ],
+        "createdAt": "2026-08-18T15:50:51.363Z",
+        "reason": "Mobile step-up sizes; documented as The Step-Up Rule in DESIGN.md Layout, which the detector cannot read"
+      }
+    ]
+  }
+}
