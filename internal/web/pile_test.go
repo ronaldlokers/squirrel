@@ -1,7 +1,6 @@
 package web
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 	"testing"
@@ -61,7 +60,7 @@ func TestPileHasNoCaptureBox(t *testing.T) {
 }
 
 func TestPileFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
-	f := &fakeStore{err: errors.New("connection refused")}
+	f := &fakeStore{err: errTest}
 	w := mounted(t, f).call(t, "GET", "/pile", nil)
 
 	require.Equal(t, 503, w.Code)

@@ -32,6 +32,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post(opts.Path+"/act", guard(opts, sameOrigin(actHandler(s, opts))))
 	m.Post(opts.Path+"/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
+	m.Get(opts.Path+"/chores", guard(opts, choresHandler(s, opts)))
+	m.Post(opts.Path+"/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
 	m.Get(opts.Path+"/static/", staticHandler(opts))
 	return nil
 }

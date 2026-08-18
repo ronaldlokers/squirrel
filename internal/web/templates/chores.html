@@ -1,0 +1,35 @@
+{{define "content"}}
+<section class="results chores">
+  {{if .Chores}}
+  <p class="resultsHead">WHAT COMES BACK</p>
+  {{range .Chores}}
+  <article class="rcard state-chore">
+    <span class="tab"></span>
+    <div class="meta"><span>{{.Every}}</span><span class="sep">&middot;</span><span class="state">LAST DONE {{.Last}}</span></div>
+    <p>{{.Name}}</p>
+    <form class="racts" method="post" action="{{$.Path}}/chores/act">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <button class="rbtn" name="act" value="done">DID IT</button>
+      {{/* Changing how often is not a transition — the chore is the same chore
+           afterwards — so the chips post the interval directly rather than
+           going through an action word. */}}
+      <details class="everyFallback">
+        <summary class="rbtn">HOW OFTEN</summary>
+        <div class="row intervals">
+          <span class="lead">COMES BACK</span>
+          <button class="chip" name="every" value="every day">every day</button>
+          <button class="chip" name="every" value="every week">every week</button>
+          <button class="chip" name="every" value="every 2 weeks">every 2 weeks</button>
+          <button class="chip" name="every" value="every month">every month</button>
+        </div>
+      </details>
+      <button class="rbtn back" name="act" value="retire">STOP ASKING</button>
+    </form>
+  </article>
+  {{end}}
+  {{else}}
+  <p class="noHits">nothing comes back on its own yet.</p>
+  {{end}}
+  <p class="hint"><a href="{{.Path}}">the pile</a></p>
+</section>
+{{end}}

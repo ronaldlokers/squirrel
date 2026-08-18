@@ -20,6 +20,7 @@ var templateFS embed.FS
 // templates are a flat namespace, so two files both defining "content" cannot
 // live in one set — the set is the page.
 var pages = map[string]*template.Template{
+	"chores":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/chores.html")),
 	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
@@ -46,7 +47,17 @@ type view struct {
 	Note    *noteView
 	More    bool
 	Results []noteView
+	Chores  []choreView
 	Undo    *undoView
+}
+
+// choreView is a chore as the screen says it: what it is, how often it comes
+// back, and when it was last done. No "due", no "late", no position in a queue.
+type choreView struct {
+	ID    int64
+	Name  string
+	Every string
+	Last  string
 }
 
 type undoView struct {

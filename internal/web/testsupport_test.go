@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,8 +20,51 @@ import (
 // count, none of which is a database question. The store's own behaviour is
 // covered by the integration tests in internal/squirrel.
 type fakeStore struct {
-	items []squirrel.Item
-	err   error
+	items  []squirrel.Item
+	chores []squirrel.Chore
+	err    error
+
+	// What the chore handlers did, so a test can assert on the write rather
+	// than on a rendering of it.
+	completed  []int64
+	retired    []int64
+	reinterval struct {
+		name  string
+		every time.Duration
+	}
+}
+
+var errTest = errors.New("connection refused")
+
+func (f *fakeStore) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.chores, nil
+}
+
+func (f *fakeStore) DeactivateChore(_ context.Context, choreID int64) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.retired = append(f.retired, choreID)
+	return nil
+}
+
+func (f *fakeStore) RecordCompletion(_ context.Context, choreID, _ int64, _ string, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.completed = append(f.completed, choreID)
+	return nil
+}
+
+func (f *fakeStore) UpsertChore(_ context.Context, _ int64, name string, every, _ time.Duration) (squirrel.Chore, error) {
+	if f.err != nil {
+		return squirrel.Chore{}, f.err
+	}
+	f.reinterval.name, f.reinterval.every = name, every
+	return squirrel.Chore{Name: name, Every: every}, nil
 }
 
 func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
