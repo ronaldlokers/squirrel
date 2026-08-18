@@ -46,9 +46,25 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://squirrel:squirrel@127.0.0.1:5432/squirrel_test
 
+  # pile.js is the one part of this product Go cannot see, and two of the three
+  # defects the screen has shipped were in it. This job drives the real script
+  # in the browser the runner already has, against the real handlers and a fake
+  # store — no database, no dependency, about three seconds.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - run: make test-browser
+
   image:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, browser]
     permissions:
       contents: read
       packages: write
