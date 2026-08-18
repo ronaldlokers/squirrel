@@ -1,0 +1,23 @@
+{{/* Two wrappers, one set of chips. The summary has to wear the button it
+     stands in for, and that button is styled differently on the card than in a
+     search result — so the difference lives in the class here rather than in a
+     field on the view. */}}
+{{define "everyCard"}}<details class="everyFallback">
+  <summary class="btn make">MAKE A CHORE <span class="key">C</span></summary>
+  {{template "everyChips" .}}
+</details>{{end}}
+
+{{define "everyResult"}}<details class="everyFallback">
+  <summary class="rbtn make">MAKE A CHORE</summary>
+  {{template "everyChips" .}}
+</details>{{end}}
+
+{{/* The chips keep the comp's own interval row, so opening the disclosure
+     leaves the same thing on the card that the comp drew. */}}
+{{define "everyChips"}}<div class="row intervals">
+  <span class="lead">HOW OFTEN?</span>
+  <button class="chip" name="every" value="every day" data-act="chore" formaction="{{.Path}}/chore">every day <span class="key">1</span></button>
+  <button class="chip" name="every" value="every week" data-act="chore" formaction="{{.Path}}/chore">every week <span class="key">2</span></button>
+  <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="{{.Path}}/chore">every 2 weeks <span class="key">3</span></button>
+  <button class="chip" name="every" value="every month" data-act="chore" formaction="{{.Path}}/chore">every month <span class="key">4</span></button>
+</div>{{end}}

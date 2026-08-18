@@ -168,9 +168,21 @@ keep · make it a chore**. The chore action takes an interval.
 **Undo lives on the screen**, not on a history page. A row stays in place for a
 moment after it is actioned so the undo has somewhere to be.
 
-**Keyboard-first**: `j`/`k` to move, one key per action. Forty notes with a
-trackpad is forty aimed clicks, and the whole point is to make clearing cheap
-enough to actually happen.
+**Keyboard-first**: one key per action. Forty notes with a trackpad is forty
+aimed clicks, and the whole point is to make clearing cheap enough to actually
+happen.
+
+**Letters are actions; movement never takes a letter.** An earlier draft of this
+spec said `j`/`k` to move, which collides with `k` for keep — the two rules in
+one sentence contradict each other, and the collision was found while designing
+the screen rather than while writing this. It is resolved in favour of the
+actions: `d` done, `k` keep, `x` drop, `c` make a chore, `u` undo, `/` search.
+Movement is `space` and the arrow keys.
+
+The collision is not really a key-binding problem. The screen shows one note at
+a time, so there is nothing to move *between* — moving is skipping, and skipping
+is not the same act as triaging. Rebinding keep to free up `k` would have kept
+a navigation model the surface does not have.
 
 **Search is on the same screen**, across every state, because "what did I say
 about the boiler" is usually about a note you already filed.

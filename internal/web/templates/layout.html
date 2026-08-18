@@ -1,0 +1,47 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel</title>
+<link rel="stylesheet" href="{{.Path}}/static/pile.css">
+</head>
+<body>
+<div class="lid">
+  <span class="brand">
+    <img alt="" src="{{.Path}}/static/logo.png" width="84" height="63">
+    <span class="wordmark">Squirrel</span>
+  </span>
+  <span class="spacer"></span>
+  <form class="find" method="get" action="{{.Path}}" role="search">
+    <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+      <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+      <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+    <input type="search" name="q" value="{{.Query}}" placeholder="every note, any state" aria-label="Search every note">
+  </form>
+  <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+    <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+  </svg>
+</div>
+<main id="stage" class="{{if .Query}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
+{{/* The undo lives here rather than on the card, because by the time this
+     page is drawn the card it undoes has gone. pile.js shows the card's own
+     row during the hold; this is the same offer once the write has landed,
+     and it is what the scriptless path has instead. */}}
+{{with .Undo}}
+<div class="landed" role="status">
+  <span class="said">{{.Said}}</span>
+  <form method="post" action="{{$.Path}}/act">
+    <input type="hidden" name="id" value="{{.ID}}">
+    <input type="hidden" name="q" value="{{$.Query}}">
+    <button class="undo" name="act" value="{{.State}}">PUT IT BACK</button>
+  </form>
+</div>
+{{end}}
+{{template "content" .}}
+</main>
+<script src="{{.Path}}/static/pile.js" defer></script>
+</body>
+</html>{{end}}

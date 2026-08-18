@@ -293,3 +293,98 @@ func TestOpenItemsCapCountsNotesNotRows(t *testing.T) {
 		require.Contains(t, it.RawText, "thought")
 	}
 }
+
+// A search result has to say what a note became, or the screen cannot colour
+// it. The capture path still knows nothing about state: the column default
+// fills a fresh row.
+func TestSearchItemsCarriesState(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	open := insertItem(t, store, p, "the boiler makes a noise")
+	done := insertItem(t, store, p, "boiler service is booked")
+	require.NoError(t, store.SetItemState(ctx, done, squirrel.ItemDone, time.Now()))
+
+	items, more, err := store.SearchItems(ctx, p, "boiler", 10)
+	require.NoError(t, err)
+	require.False(t, more)
+	require.Len(t, items, 2)
+
+	states := map[int64]squirrel.ItemState{}
+	for _, it := range items {
+		states[it.ID] = it.State
+	}
+	require.Equal(t, squirrel.ItemOpen, states[open])
+	require.Equal(t, squirrel.ItemDone, states[done])
+}
+
+// One promotion path, called by the chat command and by the screen. The chore
+// carries the note's own text and the note becomes done — there is no chore
+// state.
+func TestPromoteItemCreatesChoreAndClosesNote(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	itemID := insertItem(t, store, p, "bins out")
+
+	chore, ok, err := store.PromoteItem(ctx, p, itemID, 14*24*time.Hour)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "bins out", chore.Name)
+
+	items, _, err := store.OpenItems(ctx, p, 10)
+	require.NoError(t, err)
+	require.Empty(t, items, "a promoted note leaves the pile")
+
+	found, _, err := store.SearchItems(ctx, p, "bins", 10)
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	require.Equal(t, squirrel.ItemDone, found[0].State,
+		"a promoted note is recorded as done; there is no chore state")
+}
+
+// The person is part of the lookup rather than checked afterwards: a handler
+// is handed an id by whoever is on the other end.
+func TestPromoteItemRefusesAnotherPersonsNote(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	itemID := insertItem(t, store, p, "bins out")
+
+	_, ok, err := store.PromoteItem(ctx, p+1, itemID, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
+// The two read paths have to agree about what a note is. itemsWhere filters
+// the pile through isNote so that "!notes" and "done 2" never appear in it; a
+// lookup by id that skipped the same test would let the other view act on a
+// row the pile itself refuses to show.
+func TestItemByIDUsesThePilesDefinitionOfANote(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	thought := insertItem(t, store, p, "buy milk")
+	command := insertItem(t, store, p, "!notes")
+
+	_, ok, err := store.ItemByID(ctx, p, thought)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	_, ok, err = store.ItemByID(ctx, p, command)
+	require.NoError(t, err)
+	require.False(t, ok, "a command is not a note on either read path")
+}
+
+func TestPromoteItemRefusesACommand(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	command := insertItem(t, store, p, "!notes")
+
+	_, ok, err := store.PromoteItem(ctx, p, command, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, ok, "there is no chore called !notes")
+}
