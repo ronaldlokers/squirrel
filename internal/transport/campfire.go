@@ -98,6 +98,13 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 			c.Text = p.Message.Body.Plain
 		}
 	}
+	// A photo or a voice memo arrives with an empty body, and an empty body is
+	// invisible everywhere: the pile, the evening list and search all filter
+	// those rows out. The thought is in the database and nowhere a person can
+	// look. Capture is sacred, so something stands in for it.
+	if strings.TrimSpace(c.Text) == "" {
+		c.Text = attachmentNote(body)
+	}
 	if p.Room != nil {
 		c.ConversationID = identifier(p.Room.ID)
 	}
@@ -168,6 +175,80 @@ func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 // outbound would then only reach rooms Squirrel had recently heard from, and a
 // morning nudge would depend on the capture history. That works in testing and
 // fails on a quiet Monday.
+// attachmentNote is what a message with no words says instead of nothing.
+//
+// It reads the payload as a tree rather than against a struct, deliberately.
+// The webhook's attachment shape is not documented anywhere this project can
+// point at, and a struct that guessed it wrong would fail silently in exactly
+// the way this function exists to prevent — so it looks for evidence in
+// whatever shape it arrives, and settles for a generic placeholder when it
+// finds an attachment it cannot name.
+//
+// It returns "" when there is no evidence at all. Campfire sends bodiless
+// events for its own reasons, and turning each of those into a note would fill
+// the pile with things nobody sent.
+func attachmentNote(body []byte) string {
+	var tree any
+	if err := json.Unmarshal(body, &tree); err != nil {
+		return ""
+	}
+	name, found := findAttachment(tree)
+	switch {
+	case !found:
+		return ""
+	case name == "":
+		return "📎 an attachment"
+	default:
+		return "📎 " + name
+	}
+}
+
+// findAttachment walks for a key that names an attachment and reports whether
+// one was there and what it is called. The key has to be the attachment — a
+// room called "attachments" is not one.
+func findAttachment(node any) (string, bool) {
+	switch value := node.(type) {
+	case map[string]any:
+		for key, child := range value {
+			if key == "attachment" || key == "attachments" {
+				return attachmentName(child), true
+			}
+		}
+		for _, child := range value {
+			if name, found := findAttachment(child); found {
+				return name, true
+			}
+		}
+	case []any:
+		for _, child := range value {
+			if name, found := findAttachment(child); found {
+				return name, true
+			}
+		}
+	}
+	return "", false
+}
+
+// attachmentName prefers what a person would recognise. A filename says what
+// the thing is; a URL says only that there was one.
+func attachmentName(node any) string {
+	switch value := node.(type) {
+	case []any:
+		for _, child := range value {
+			if name := attachmentName(child); name != "" {
+				return name
+			}
+		}
+	case map[string]any:
+		for _, key := range []string{"filename", "name", "title"} {
+			if named, ok := value[key].(string); ok && strings.TrimSpace(named) != "" {
+				return strings.TrimSpace(named)
+			}
+		}
+	}
+	return ""
+}
+
 // asRichText prepares a message body for Campfire, whose Message declares
 // `has_rich_text :body` — so whatever arrives is treated as HTML rather than as
 // text. A newline collapses the way any whitespace does inside an HTML block,
