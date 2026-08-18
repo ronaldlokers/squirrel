@@ -351,6 +351,19 @@
     color: rgba(254, 214, 167, .85);
   }
 
+  /* The way across to the chores, and back. Quiet on purpose: it is a place
+     to go, not a thing to do. */
+  .lidlink {
+    color: var(--paper); text-decoration: none;
+    font-size: 13px; letter-spacing: .04em;
+    font-variation-settings: var(--precise), "wght" 650;
+    opacity: .8; padding: 10px 6px; min-height: 44px;
+    display: inline-flex; align-items: center;
+  }
+  .lidlink:hover, .lidlink:focus-visible { opacity: 1; text-decoration: underline; }
+  .chores .hint a { color: rgba(254, 214, 167, .95); }
+  .rcard.state-chore { --sc: var(--chore); --sct: var(--chore-ink); }
+
   /* ---------- search results ---------- */
 
   .results { width: min(720px, 100%); }

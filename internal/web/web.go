@@ -54,4 +54,12 @@ type Store interface {
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)
+
+	// The chores half. A chore is not a note and shares none of the note
+	// functions, but it is the other thing this pile holds and the screen was
+	// the only surface that could not see it.
+	ActiveChores(ctx context.Context, personID int64) ([]squirrel.Chore, error)
+	UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (squirrel.Chore, error)
+	DeactivateChore(ctx context.Context, choreID int64) error
+	RecordCompletion(ctx context.Context, choreID, personID int64, source string, at time.Time) error
 }

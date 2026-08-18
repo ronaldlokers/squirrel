@@ -13,6 +13,10 @@
     <span class="wordmark">Squirrel</span>
   </span>
   <span class="spacer"></span>
+  {{/* The other half of the pile. A chore was invisible until it nudged you,
+       which is the one moment you are least able to decide you never want it
+       again. */}}
+  <a class="lidlink" href="{{.Path}}/chores">chores</a>
   <form class="find" method="get" action="{{.Path}}" role="search">
     <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
       <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
@@ -25,7 +29,7 @@
     <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
   </svg>
 </div>
-<main id="stage" class="{{if .Query}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
+<main id="stage" class="{{if or .Query .Chores}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
 {{/* The undo lives here rather than on the card, because by the time this
      page is drawn the card it undoes has gone. pile.js shows the card's own
      row during the hold; this is the same offer once the write has landed,

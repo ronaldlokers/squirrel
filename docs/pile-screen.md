@@ -89,6 +89,22 @@ default; if a middleware is ever added that rewrites it, every write on this
 screen turns into a 403 and the log line is
 `refused a cross-site write`.
 
+## Chores
+
+`/pile/chores` is the other half of what Squirrel holds. A chore used to be
+invisible: it appeared only when it nudged you, which is the one moment you are
+least able to decide you never want it again.
+
+Each one says what it is, how often it comes back, and when it was last done —
+`DID IT`, `HOW OFTEN` and `STOP ASKING`. It never says how many there are, how
+many are due, or how late anything is. "3 days ago" is a fact about a chore;
+"2 days overdue" would be a fact about you.
+
+`STOP ASKING` is the screen's half of `!retire`: `active` goes false, the
+history stays, and defining the chore again brings the same row back. Changing
+how often is an upsert by name, the same write the chat command makes, so the
+two surfaces cannot drift into meaning different things by "every 2 weeks".
+
 ## The keyboard
 
 Everything below is progressive enhancement — every one of these has a control
