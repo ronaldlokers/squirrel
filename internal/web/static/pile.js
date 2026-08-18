@@ -261,4 +261,20 @@
   });
 
   wire();
+
+  // The worker is what makes this installable and what answers when the
+  // network is gone. Registered from here rather than inline in the page so
+  // there is one script to read, and resolved relative to this file so it does
+  // not need to be told where the screen is mounted.
+  if ("serviceWorker" in navigator && document.currentScript) {
+    const sw = new URL("../sw.js", document.currentScript.src);
+    // The screen is {path}, not {path}/ — a scope with the trailing slash
+    // controls everything under the screen except the screen.
+    const scope = sw.pathname.replace(/\/sw\.js$/, "");
+    navigator.serviceWorker.register(sw, { scope })
+      .catch(() => {
+        // An install that fails costs the offline page and nothing else. The
+        // screen is a network thing; this was always the extra.
+      });
+  }
 })();

@@ -34,6 +34,12 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post(opts.Path+"/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Get(opts.Path+"/chores", guard(opts, choresHandler(s, opts)))
 	m.Post(opts.Path+"/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	m.Get(opts.Path+"/manifest.webmanifest", guard(opts, manifestHandler(opts)))
+	// Not behind the guard: a browser fetches the worker without the cookies
+	// that carry the identity, and a worker that 302s to a login page is a
+	// worker that never installs. It contains no notes — only which files to
+	// keep and what to say when the network is gone.
+	m.Get(opts.Path+"/sw.js", swHandler(opts))
 	m.Get(opts.Path+"/static/", staticHandler(opts))
 	return nil
 }
