@@ -67,3 +67,50 @@ func TestPileFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
 	require.Equal(t, 503, w.Code)
 	require.Contains(t, w.Body.String(), "cannot reach")
 }
+
+func TestSearchCrossesEveryState(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(1, "the boiler makes a noise", squirrel.ItemOpen),
+		note(2, "boiler service is booked", squirrel.ItemDone),
+		note(3, "boiler insurance thing", squirrel.ItemDropped),
+		note(4, "boiler meter reading 48213", squirrel.ItemKept),
+	}}
+	body := mounted(t, f).call(t, "GET", "/pile?q=boiler", nil).Body.String()
+
+	require.Contains(t, body, "IN THE PILE")
+	require.Contains(t, body, "DONE")
+	require.Contains(t, body, "DROPPED")
+	require.Contains(t, body, "KEPT")
+}
+
+func TestSearchSaysThereIsMoreWithoutSayingHowMuch(t *testing.T) {
+	items := []squirrel.Item{}
+	for i := int64(1); i <= 9; i++ {
+		items = append(items, note(i, "boiler "+strconv.FormatInt(i, 10), squirrel.ItemOpen))
+	}
+	body := mounted(t, &fakeStore{items: items}).call(t, "GET", "/pile?q=boiler", nil).Body.String()
+
+	require.Contains(t, strings.ToLower(body), "more")
+	// The list is capped, and the page says so in words. A bare digit test
+	// would match the geometry in the lid's own SVG, so what is pinned here is
+	// every shape a total could take in prose.
+	for _, total := range []string{"9 results", "9 notes", "9 more", "of 9", "(9)"} {
+		require.NotContains(t, strings.ToLower(body), total)
+	}
+	require.NotContains(t, body, "boiler 7", "the cap is what makes \"there is more\" true")
+}
+
+func TestSearchWithNoHitsSaysSo(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile?q=boiler", nil).Body.String()
+
+	require.Contains(t, body, "nothing says")
+}
+
+func TestSearchEscapesTheQuery(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{}}
+	body := mounted(t, f).call(t, "GET", "/pile?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E", nil).Body.String()
+
+	require.NotContains(t, body, "<script>alert(1)</script>")
+	require.Contains(t, body, "&lt;script&gt;")
+}

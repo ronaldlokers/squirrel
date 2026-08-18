@@ -1,1 +1,29 @@
-{{define "content"}}{{end}}
+{{define "content"}}
+<section class="results">
+  {{if .Results}}
+  <p class="resultsHead" aria-live="polite">EVERYTHING THAT SAYS <b>{{.Query}}</b></p>
+  {{range .Results}}
+  <article class="rcard state-{{.State}}">
+    <span class="tab"></span>
+    <div class="meta"><span>{{.When}}</span><span class="sep">&middot;</span><span class="state">{{.StateWord}}</span></div>
+    <p>{{.Text}}</p>
+    <form class="racts" method="post" action="{{$.Path}}/act">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <input type="hidden" name="q" value="{{$.Query}}">
+      {{if eq .State "open"}}
+      <button class="rbtn" name="act" value="done">DONE</button>
+      <button class="rbtn" name="act" value="keep">KEEP</button>
+      <button class="rbtn" name="act" value="drop">DROP</button>
+      {{template "everyFallback" $}}
+      {{else}}
+      <button class="rbtn back" name="act" value="open">BACK IN THE PILE</button>
+      {{end}}
+    </form>
+  </article>
+  {{end}}
+  {{if .More}}<p class="more">there is more further back &mdash; keep typing to narrow it</p>{{end}}
+  {{else}}
+  <p class="noHits">nothing says &ldquo;{{.Query}}&rdquo;.</p>
+  {{end}}
+</section>
+{{end}}

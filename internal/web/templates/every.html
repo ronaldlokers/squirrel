@@ -1,0 +1,8 @@
+{{define "everyFallback"}}<details class="everyFallback">
+  <summary class="rbtn make" data-open="chore">MAKE A CHORE <span class="key">C</span></summary>
+  <span class="lead">HOW OFTEN?</span>
+  <button class="chip" name="every" value="every day" data-act="chore" formaction="{{.Path}}/chore">every day</button>
+  <button class="chip" name="every" value="every week" data-act="chore" formaction="{{.Path}}/chore">every week</button>
+  <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="{{.Path}}/chore">every 2 weeks</button>
+  <button class="chip" name="every" value="every month" data-act="chore" formaction="{{.Path}}/chore">every month</button>
+</details>{{end}}

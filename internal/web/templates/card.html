@@ -17,7 +17,10 @@
       <button class="btn" name="act" value="done" data-act="done">DONE <span class="key">D</span></button>
       <button class="btn" name="act" value="keep" data-act="keep">KEEP <span class="key">K</span></button>
       <button class="btn" name="act" value="drop" data-act="drop">DROP <span class="key">X</span></button>
-      <button class="btn make" name="act" value="chore" data-act="chore" formaction="{{.Path}}/chore">MAKE A CHORE <span class="key">C</span></button>
+      {{/* A chore needs an interval, and a single button could not carry one.
+           The disclosure is the scriptless way to ask; pile.js opens it on C
+           and gives the chips keys 1-4. */}}
+      {{template "everyFallback" .}}
     </form>
     <div class="row undoRow" id="undoRow" role="status" hidden>
       <button class="undo" id="undo" type="button">PUT IT BACK</button>

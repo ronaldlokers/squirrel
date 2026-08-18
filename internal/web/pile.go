@@ -56,5 +56,20 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// searchInto is filled in by Task 8; the deck above must render without it.
-func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, q string) {}
+// searchLimit caps the result list. The cap is what makes "there is more"
+// truthful; without it the line would appear over a complete list, which is a
+// false claim in the one place the counting rule is most likely to leak.
+const searchLimit = 6
+
+func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, q string) {
+	items, more, err := s.SearchItems(r.Context(), opts.PersonID, q, searchLimit)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	v := view{Path: opts.Path, Query: q, More: more}
+	for _, it := range items {
+		v.Results = append(v.Results, toView(it))
+	}
+	render(w, "results", v)
+}

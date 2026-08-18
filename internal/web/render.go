@@ -17,9 +17,9 @@ var templateFS embed.FS
 // templates are a flat namespace, so two files both defining "content" cannot
 // live in one set — the set is the page.
 var pages = map[string]*template.Template{
-	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/card.html", "templates/pile.html")),
+	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
-	"results": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/results.html")),
+	"results": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/results.html")),
 }
 
 type noteView struct {
