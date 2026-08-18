@@ -63,6 +63,18 @@ type Config struct {
 	// point for a real arrival, but that would blow any test budget built to
 	// wait one out over a real socket.
 	PresenceDelay time.Duration
+	// WebIdentity is the value Authentik puts in WebIdentityHeader for the one
+	// person who may read this. Empty means the screen is not mounted at all —
+	// the same refusal PresenceSecret makes, and for a stronger reason: the
+	// pile is every thought you have ever had at this bot, and a screen that
+	// mounted without knowing who is allowed to read it would be open.
+	WebIdentity string
+	// WebIdentityHeader is the header Traefik's forward-auth middleware fills
+	// from the Authentik outpost. Squirrel writes no authentication code and
+	// holds no session; it compares one header to one configured value.
+	WebIdentityHeader string
+	// WebPath is where the screen is mounted.
+	WebPath string
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -236,6 +248,10 @@ func LoadConfig(env map[string]string) (Config, error) {
 		PresenceSecret: env["PRESENCE_SECRET"],
 		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
 		PresenceDelay:  presenceDelay,
+
+		WebIdentity:       env["WEB_IDENTITY"],
+		WebIdentityHeader: optional(env, "WEB_IDENTITY_HEADER", "X-Authentik-Username"),
+		WebPath:           optional(env, "WEB_PATH", "/pile"),
 	}
 
 	if slicesContains(transports, "campfire") {
