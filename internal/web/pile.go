@@ -43,8 +43,9 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
+		undo := undoFrom(r.URL.Query())
 		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
-			searchInto(w, r, s, opts, personID, q)
+			searchInto(w, r, s, opts, personID, q, undo)
 			return
 		}
 		items, more, err := s.OpenItems(r.Context(), personID, pileLimit)
@@ -52,7 +53,7 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		v := view{Path: opts.Path, More: more}
+		v := view{Path: opts.Path, More: more, Undo: undo}
 		if len(items) == 0 {
 			render(w, "empty", v)
 			return
@@ -68,13 +69,13 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 // false claim in the one place the counting rule is most likely to leak.
 const searchLimit = 6
 
-func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string) {
+func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string, undo *undoView) {
 	items, more, err := s.SearchItems(r.Context(), personID, q, searchLimit)
 	if err != nil {
 		fail(w, err)
 		return
 	}
-	v := view{Path: opts.Path, Query: q, More: more}
+	v := view{Path: opts.Path, Query: q, More: more, Undo: undo}
 	for _, it := range items {
 		v.Results = append(v.Results, toView(it))
 	}

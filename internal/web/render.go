@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -41,9 +43,54 @@ type view struct {
 }
 
 type undoView struct {
+	// ID is the note to move, and State is where to move it back to. The pair
+	// is a plain transition — undo is not a special case, it is `act=open` on
+	// a note that just left.
 	ID    int64
-	Said  string
 	State string
+	// Said is what happened, in the same words the card's own stamp uses.
+	Said string
+}
+
+// saidWords is the other half of pile.js's STATES table: what the screen says
+// a transition did, once it has been done. The two have to match, because with
+// JavaScript the phrase appears on the card and without it the phrase appears
+// on the next page, for the same action.
+var saidWords = map[string]string{
+	"done":    "marked done",
+	"kept":    "kept as reference",
+	"dropped": "dropped",
+	"chore":   "now a chore",
+	"open":    "back in the pile",
+}
+
+// backTo turns the state a note was in into the action word that returns it
+// there. The form's vocabulary and the store's are deliberately not the same
+// list — `keep` is what you do to a note, `kept` is what the note then is — so
+// the round trip needs one place that knows both.
+var backTo = map[squirrel.ItemState]string{
+	squirrel.ItemOpen:    "open",
+	squirrel.ItemDone:    "done",
+	squirrel.ItemKept:    "keep",
+	squirrel.ItemDropped: "drop",
+}
+
+// undoFrom reads the way back out of the query string, or answers nil.
+//
+// The parameters arrive from a redirect this package wrote, but they arrive
+// through the address bar, so they are read as though a stranger typed them:
+// an id that is not a number, or a state that is not one of the four, is no
+// undo rather than a bad one.
+func undoFrom(q url.Values) *undoView {
+	id, err := strconv.ParseInt(q.Get("undo"), 10, 64)
+	if err != nil || id == 0 {
+		return nil
+	}
+	act, ok := backTo[squirrel.ItemState(q.Get("was"))]
+	if !ok {
+		return nil
+	}
+	return &undoView{ID: id, State: act, Said: saidWords[q.Get("state")]}
 }
 
 // stateWords is the screen's half of the shared vocabulary. `open` is
