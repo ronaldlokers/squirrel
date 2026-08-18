@@ -132,10 +132,20 @@ came from rather than through every letter you typed.
 ## Assets after a change
 
 `internal/web/static/` is embedded in the binary and served with
-`Cache-Control: public, max-age=31536000` and no fingerprint in the filename.
-A rebuilt image therefore does not repaint a browser that already has the old
-stylesheet.
+`Cache-Control: public, max-age=31536000`. That is safe because every asset URL
+a template writes carries `?v=<stamp>`, where the stamp is a hash of the
+embedded files themselves — change a file and the URL changes with it, so a
+browser fetches the new one without being asked to.
 
-One hard reload fixes it: **Ctrl-Shift-R** (Cmd-Shift-R on macOS), or open
-DevTools and use *Empty cache and hard reload*. Fingerprinting the filenames
-would mean a build step, and this binary has none.
+Nothing to do after a change, and no build step: the stamp is computed from the
+bytes at startup.
+
+It is worth knowing why this exists. v0.7.0 shipped without it and arrived
+broken: HTML is served `no-store`, so browsers rendered the new markup against
+the stylesheet and script they already had — a link with no styling and a
+button whose handler did not exist yet. The failure is silent and looks like a
+bug in the feature rather than in its delivery.
+
+The fonts are the one gap: they are named from inside `pile.css` rather than
+from a template, so their URLs carry no stamp. Replacing a font means renaming
+the file, which is why the stamp hashes names as well as contents.

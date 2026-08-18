@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squirrel</title>
-<link rel="stylesheet" href="{{.Path}}/static/pile.css">
+<link rel="stylesheet" href="{{.Path}}/static/pile.css?v={{.V}}">
 </head>
 <body>
 <div class="lid">
   <span class="brand">
-    <img alt="" src="{{.Path}}/static/logo.png" width="84" height="63">
+    <img alt="" src="{{.Path}}/static/logo.png?v={{.V}}" width="84" height="63">
     <span class="wordmark">Squirrel</span>
   </span>
   <span class="spacer"></span>
@@ -42,6 +42,6 @@
 {{end}}
 {{template "content" .}}
 </main>
-<script src="{{.Path}}/static/pile.js" defer></script>
+<script src="{{.Path}}/static/pile.js?v={{.V}}" defer></script>
 </body>
 </html>{{end}}
