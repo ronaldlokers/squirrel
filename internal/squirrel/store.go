@@ -42,6 +42,12 @@ func (s *Store) Pool() *pgxpool.Pool { return s.pool }
 // PersonID on purpose: PersonID is an interpretation and can be absent or
 // wrong, SenderID is what the transport actually said.
 type Item struct {
+	// ID is filled on the read path only. InsertItem answers "was this a fresh
+	// row", which is the question the drain asks; nothing needed an item's id
+	// until something wanted to point at one — a numbered line, or a state
+	// change. Filling it at capture time would put a returning clause on the
+	// path that exists to be as short as it can be.
+	ID             int64
 	Transport      string
 	ExternalID     *string
 	ConversationID *string

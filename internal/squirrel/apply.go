@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -129,11 +131,19 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 				if err := a.store.MarkPromptSent(ctx, a.pending, messageID, time.Now()); err != nil {
 					return err
 				}
-				// Only a numbered surface closes the one before it. A define
-				// names one chore and takes no position, so closing the
-				// digest on its account would retire buttons the morning's
-				// list still owns.
-				if intent.Kind != IntentDefine {
+				// Only a surface that carries buttons closes the one before
+				// it, and only a numbered one at that. A define names one
+				// chore and takes no position, so closing the digest on its
+				// account would retire buttons the morning's list still owns.
+				//
+				// The len(m.Actions) test is why `!notes` no longer kills the
+				// day's nudge. closePrevious exists to keep exactly one live
+				// *button* surface; a pile listing deliberately carries none
+				// (see NotesMessage), and a tap resolves through its own
+				// message id, so leaving the nudge live creates no ambiguity.
+				// Closing it bought nothing and cost the day's chore: the ✅
+				// went grey the moment you looked at your own notes.
+				if intent.Kind != IntentDefine && len(m.Actions) > 0 {
 					closePrevious(ctx, a.store, a.chat, a.onError, *personID, a.pending)
 				}
 			}
@@ -254,10 +264,25 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		return a.complete(ctx, in, personID, conversationID)
 
 	case IntentStop:
-		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
-		if err != nil || !ok {
-			return Message{Text: "I don't have a line " + fmt.Sprint(in.Position) + "."}, err
+		// Resolved through LineAtPosition rather than ChoreAtPosition so a
+		// note line gets the true answer. ChoreAtPosition simply fails to
+		// join one, which made `stop 1` on the pile say "I don't have a line
+		// 1" about a line printed a second earlier — and noSuchLine's whole
+		// job is to mean "that surface is gone".
+		line, ok, err := a.store.LineAtPosition(ctx, personID, in.Position)
+		if err != nil {
+			return Message{}, err
 		}
+		if !ok {
+			return noSuchLine(in.Position), nil
+		}
+		if line.Item == nil && line.Chore == nil {
+			return noSuchLine(in.Position), nil
+		}
+		if line.Chore == nil {
+			return Message{Text: fmt.Sprintf("Line %d is a note, not a chore. Try drop %d.", in.Position, in.Position)}, nil
+		}
+		c := *line.Chore
 		if err := a.store.DeactivateChore(ctx, c.ID); err != nil {
 			return Message{}, err
 		}
@@ -275,23 +300,235 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		a.pending = id
 		return ListMessage(chores), nil
 
+	case IntentKeep:
+		return a.triage(ctx, in.Position, personID, ItemKept, "Kept —")
+
 	case IntentDrop:
+		// A bare `nvm` undoes a chore the matcher just made from a note, which
+		// is what phase 2 built and what it still means. `drop 2` is the
+		// numbered form and drops that note. They share a Kind and are told
+		// apart by Position, which is safe because none of the bare forms —
+		// "nvm", "forget it", "never mind" — carries a number.
+		if in.Position > 0 {
+			return a.triage(ctx, in.Position, personID, ItemDropped, "Dropped —")
+		}
 		return a.undo(ctx, personID)
+
+	case IntentCommand:
+		return a.command(ctx, in, personID, conversationID)
 	}
 
 	// IntentCapture: the squirrel already went out in the HTTP response.
 	return Message{}, nil
 }
 
+// listCap is how many lines a `!notes` or `!find` reply prints.
+//
+// Ten, not twelve: MaxActions is twelve because that is the fork's limit on
+// buttons, and these lists carry none. Ten is a screenful on a phone, which is
+// the constraint that actually applies here.
+const listCap = 10
+
+// intervalSentinel stands in for a chore name while an interval is parsed on
+// its own. Any word that is not a unit works; this one says why it is there if
+// it ever surfaces in an error.
+const intervalSentinel = "chore-name-placeholder"
+
+// command answers a ! command.
+//
+// Every branch that prints a numbered list records a prompt and sets pending,
+// which is what makes `done 2` resolve against it: apply() marks the prompt
+// delivered once the send succeeds and closes the previous numbered surface.
+// Getting that for free is the reason these lists are prompts at all.
+func (a *Applier) command(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
+	switch in.Command {
+	case "notes":
+		if in.Arg != "" {
+			// "!notes to self: the boiler man comes tuesday" is the one
+			// command shape that reads like a sentence — the spec names
+			// "notes to self" as its motivating example for why commands need
+			// a prefix at all. Printing the pile and dropping the sentence is
+			// the worst of both. Falling through to the unknown-command reply
+			// at least says something happened.
+			break
+		}
+		items, more, err := a.store.OpenItems(ctx, personID, listCap)
+		if err != nil {
+			return Message{}, err
+		}
+		return a.numbered(ctx, "notes", items, more, personID, conversationID)
+
+	case "find":
+		if in.Arg == "" {
+			// An empty search reads as a mistake, not as a request for all of
+			// it — and answering it with the whole pile would be the counting
+			// behaviour by another route.
+			return Message{Text: "What should I look for? Try !find boiler."}, nil
+		}
+		items, more, err := a.store.SearchItems(ctx, personID, in.Arg, listCap)
+		if err != nil {
+			return Message{}, err
+		}
+		if len(items) == 0 {
+			return Message{Text: fmt.Sprintf("Nothing matching %q.", in.Arg)}, nil
+		}
+		return a.numbered(ctx, "find", items, more, personID, conversationID)
+
+	case "chores":
+		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
+
+	case "chore":
+		return a.promote(ctx, in.Arg, personID)
+
+	case "help":
+		return HelpMessage(), nil
+	}
+
+	// An unknown command is a typo, and a typo answered with 👀 would be filed
+	// as a note along with the correction. Say what exists instead.
+	m := HelpMessage()
+	m.Text = fmt.Sprintf("I don't know !%s.\n\n%s", in.Command, m.Text)
+	return m, nil
+}
+
+// promote turns note n into a recurring chore: `!chore 1 every 2 weeks`.
+//
+// The note's own text becomes the chore's name, and the note becomes `done` —
+// it did its job by turning into something that comes back on its own.
+//
+// No column links the two. There is exactly one question that would read it
+// ("where did this chore come from") and no second, and the rule here is two
+// concrete cases before an interface. If a reason appears, it is a migration.
+func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Message, error) {
+	position, rest, _ := strings.Cut(arg, " ")
+	n, err := strconv.Atoi(position)
+	if err != nil || n < 1 {
+		return Message{Text: "Which line? Try !chore 1 every 2 weeks."}, nil
+	}
+
+	line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(n), nil
+	}
+	if line.Item == nil {
+		return Message{Text: fmt.Sprintf("Line %d is already a chore.", n)}, nil
+	}
+
+	// ParseEvery wants "every <interval> <name>" and returns the name out of
+	// the same string, because on its usual path the name is what follows the
+	// interval. Here the name is the note, so a sentinel is appended and only
+	// the duration is kept. Reusing ParseEvery rather than reaching into its
+	// regex keeps one definition of what an interval means.
+	//
+	// The sentinel is a fixed word, NOT the note's own text, and that is a
+	// fix rather than a detail. Appending the note let it supply the missing
+	// unit: `!chore 1 every` against a note reading "week groceries" parsed as
+	// "every week groceries" and silently created a weekly chore nobody asked
+	// for. A word that is not a unit makes an incomplete interval fail, which
+	// is what the reply below is for.
+	_, every, ok := ParseEvery(strings.TrimSpace(rest) + " " + intervalSentinel)
+	if !ok {
+		return Message{Text: "How often? Try !chore " + position + " every 2 weeks."}, nil
+	}
+
+	c, err := a.store.UpsertChore(ctx, personID, line.Item.RawText, every, DefaultTolerance(every))
+	if err != nil {
+		return Message{}, err
+	}
+	// Chore first, then the note. A failure between them leaves the chore
+	// created and the note still in the pile, so a second attempt upserts the
+	// same chore by name and finishes the job. The other order would leave a
+	// note marked done with no chore to show for it, which is the one of the
+	// two that loses something.
+	if err := a.store.SetItemState(ctx, line.Item.ID, ItemDone, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: RenderDefined(c)}, nil
+}
+
+// numbered records a prompt whose lines are notes, so a typed position
+// resolves back to the right one, and returns the message that prints them.
+func (a *Applier) numbered(ctx context.Context, kind string, items []Item, more bool, personID int64, conversationID string) (Message, error) {
+	if len(items) == 0 {
+		// No prompt for an empty list: an empty numbered surface would still
+		// become the newest one and would shadow a live nudge's numbering,
+		// which is the shape phase 4 spent a round removing.
+		return NotesMessage(items, more), nil
+	}
+
+	lines := make([]LineRef, 0, len(items))
+	for i := range items {
+		lines = append(lines, LineRef{ItemID: &items[i].ID})
+	}
+	id, err := a.store.RecordPromptLines(ctx, personID, conversationID, kind, time.Now(), nil, lines)
+	if err != nil {
+		return Message{}, err
+	}
+	a.pending = id
+	return NotesMessage(items, more), nil
+}
+
+// noSuchLine is the one reply for a position nothing answers to. Shared so the
+// three triage verbs and the chore path cannot drift into saying it differently
+// — the wording is how you tell "I misread the number" from "that surface is
+// gone", and two spellings would make that unreadable.
+func noSuchLine(position int) Message {
+	return Message{Text: fmt.Sprintf("I don't have a line %d.", position)}
+}
+
+// triage moves a note that a numbered line named. `done`, `keep` and `drop`
+// differ only in the state they assert and what they say back.
+//
+// A position that turns out to name a chore is answered rather than silently
+// ignored: `keep 2` on a chore is a real mistake, and a bot that does nothing
+// looks broken in exactly the way that makes you stop trusting it.
+func (a *Applier) triage(ctx context.Context, position int, personID int64, state ItemState, said string) (Message, error) {
+	line, ok, err := a.store.LineAtPosition(ctx, personID, position)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(position), nil
+	}
+	if line.Item == nil {
+		return Message{Text: fmt.Sprintf("Line %d is a chore, not a note.", position)}, nil
+	}
+	if err := a.store.SetItemState(ctx, line.Item.ID, state, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: said + " " + shorten(line.Item.RawText)}, nil
+}
+
+// shorten trims a note to something that fits in a one-line acknowledgement.
+// Quoting a whole paragraph back would bury the confirmation in the thing being
+// confirmed.
+func shorten(text string) string {
+	const max = 60
+	runes := []rune(text)
+	if len(runes) <= max {
+		return text
+	}
+	// Sliced by rune, not by byte: phase 2 crash-looped the pod on a name
+	// containing Ⱥ because a byte slice cut a rune in half.
+	return string(runes[:max]) + "…"
+}
+
 func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	if in.Position > 0 {
-		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
+		line, ok, err := a.store.LineAtPosition(ctx, personID, in.Position)
 		if err != nil {
 			return Message{}, err
 		}
 		if !ok {
-			return Message{Text: fmt.Sprintf("I don't have a line %d.", in.Position)}, nil
+			return noSuchLine(in.Position), nil
 		}
+		if line.Item != nil {
+			return a.triage(ctx, in.Position, personID, ItemDone, "Done —")
+		}
+		c := *line.Chore
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
