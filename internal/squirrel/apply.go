@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -338,6 +340,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "chores":
 		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
 
+	case "chore":
+		return a.promote(ctx, in.Arg, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -347,6 +352,57 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	m := HelpMessage()
 	m.Text = fmt.Sprintf("I don't know !%s.\n\n%s", in.Command, m.Text)
 	return m, nil
+}
+
+// promote turns note n into a recurring chore: `!chore 1 every 2 weeks`.
+//
+// The note's own text becomes the chore's name, and the note becomes `done` —
+// it did its job by turning into something that comes back on its own.
+//
+// No column links the two. There is exactly one question that would read it
+// ("where did this chore come from") and no second, and the rule here is two
+// concrete cases before an interface. If a reason appears, it is a migration.
+func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Message, error) {
+	position, rest, _ := strings.Cut(arg, " ")
+	n, err := strconv.Atoi(position)
+	if err != nil || n < 1 {
+		return Message{Text: "Which line? Try !chore 1 every 2 weeks."}, nil
+	}
+
+	line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(n), nil
+	}
+	if line.Item == nil {
+		return Message{Text: fmt.Sprintf("Line %d is already a chore.", n)}, nil
+	}
+
+	// ParseEvery wants "every <interval> <name>" and returns the name out of
+	// the same string, because on its usual path the name is what follows the
+	// interval. Here the name is the note, so the note's text is appended and
+	// only the duration is kept. Doing it this way rather than reaching into
+	// the regex keeps one parser for what an interval means.
+	_, every, ok := ParseEvery(strings.TrimSpace(rest) + " " + line.Item.RawText)
+	if !ok {
+		return Message{Text: "How often? Try !chore " + position + " every 2 weeks."}, nil
+	}
+
+	c, err := a.store.UpsertChore(ctx, personID, line.Item.RawText, every, DefaultTolerance(every))
+	if err != nil {
+		return Message{}, err
+	}
+	// Chore first, then the note. A failure between them leaves the chore
+	// created and the note still in the pile, so a second attempt upserts the
+	// same chore by name and finishes the job. The other order would leave a
+	// note marked done with no chore to show for it, which is the one of the
+	// two that loses something.
+	if err := a.store.SetItemState(ctx, line.Item.ID, ItemDone, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: RenderDefined(c)}, nil
 }
 
 // numbered records a prompt whose lines are notes, so a typed position
