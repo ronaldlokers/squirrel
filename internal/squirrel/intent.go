@@ -75,6 +75,7 @@ const (
 	IntentQuery    IntentKind = "query"
 	IntentDrop     IntentKind = "drop"
 	IntentDefine   IntentKind = "define"
+	IntentCommand  IntentKind = "command"
 )
 
 type Intent struct {
@@ -85,12 +86,24 @@ type Intent struct {
 	Position int
 	Name     string
 	Every    time.Duration
+	// Command is the word after "!", lowercased — commands are typed, and a
+	// capitalised "!Find" is the same request as "!find".
+	Command string
+	// Arg is everything after the command word, trimmed but otherwise
+	// verbatim. Its case is the user's: it is matched against text they wrote,
+	// and it becomes a chore's name on the promotion path.
+	Arg string
 }
 
 var (
 	bareNumber = regexp.MustCompile(`^(\d{1,3})$`)
 	doneNumber = regexp.MustCompile(`^done\s+(\d{1,3})$`)
 	stopNumber = regexp.MustCompile(`^stop\s+(\d{1,3})$`)
+
+	// A command name is a word. Without this, "!!!" is a command called "!!"
+	// and "!?" is one called "?" — punctuation someone typed, answered with a
+	// help message instead of being remembered.
+	commandName = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
 
 	// ParseEvery answers "does this have the shape"; Match decides policy, and
 	// Match is its only caller. ParseEvery deliberately makes both the count and
@@ -115,6 +128,39 @@ func Match(raw string) Intent {
 	// The escape hatch, and it wins over everything.
 	if after, found := strings.CutPrefix(trimmed, "."); found {
 		return Intent{Kind: IntentCapture, Text: strings.TrimSpace(after)}
+	}
+
+	// `!` is a prefix rather than a keyword, and that is load-bearing. Every
+	// bare word is a capture by design, so a keyword-triggered command would
+	// eat "find my keys" and "notes to self about the boiler" — both thoughts,
+	// and losing a thought is the failure this system exists to prevent. Phase
+	// 2 met the same trap with `every day i think about leaving` and answered
+	// it the same way: make the deliberate form unambiguous rather than guess
+	// at intent.
+	//
+	// ".!find boiler" is still literal text, which is how a thought shaped like
+	// a command gets captured. Note that this does not depend on the order of
+	// the two checks: ".!find" does not start with "!", so only one prefix can
+	// ever match. Moving this block above the escape hatch would change
+	// nothing, which is worth saying because the placement looks load-bearing
+	// and is not.
+	//
+	// An unknown command stays IntentCommand rather than falling through to
+	// capture. A typo answered with 👀 would be filed as a note, silently, and
+	// the correction with it.
+	if after, found := strings.CutPrefix(trimmed, "!"); found {
+		name, arg, _ := strings.Cut(strings.TrimSpace(after), " ")
+		// The name has to look like a word, or "!!!" parses as a command
+		// called "!!" and "!" as one called "". Those are punctuation someone
+		// typed, and the rule when in doubt is capture.
+		if !commandName.MatchString(name) {
+			return Intent{Kind: IntentCapture, Text: raw}
+		}
+		return Intent{
+			Kind:    IntentCommand,
+			Command: strings.ToLower(name),
+			Arg:     strings.TrimSpace(arg),
+		}
 	}
 
 	lower := strings.ToLower(trimmed)
