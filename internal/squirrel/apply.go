@@ -434,17 +434,14 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 		return Message{Text: "How often? Try !chore " + position + " every 2 weeks."}, nil
 	}
 
-	c, err := a.store.UpsertChore(ctx, personID, line.Item.RawText, every, DefaultTolerance(every))
+	// The ordering argument that used to live here moved to PromoteItem, which
+	// the screen calls too. One path, so the two views cannot disagree.
+	c, ok, err := a.store.PromoteItem(ctx, personID, line.Item.ID, every)
 	if err != nil {
 		return Message{}, err
 	}
-	// Chore first, then the note. A failure between them leaves the chore
-	// created and the note still in the pile, so a second attempt upserts the
-	// same chore by name and finishes the job. The other order would leave a
-	// note marked done with no chore to show for it, which is the one of the
-	// two that loses something.
-	if err := a.store.SetItemState(ctx, line.Item.ID, ItemDone, time.Now()); err != nil {
-		return Message{}, err
+	if !ok {
+		return noSuchLine(n), nil
 	}
 	return Message{Text: RenderDefined(c)}, nil
 }

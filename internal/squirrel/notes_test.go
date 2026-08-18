@@ -318,3 +318,41 @@ func TestSearchItemsCarriesState(t *testing.T) {
 	require.Equal(t, squirrel.ItemOpen, states[open])
 	require.Equal(t, squirrel.ItemDone, states[done])
 }
+
+// One promotion path, called by the chat command and by the screen. The chore
+// carries the note's own text and the note becomes done — there is no chore
+// state.
+func TestPromoteItemCreatesChoreAndClosesNote(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	itemID := insertItem(t, store, p, "bins out")
+
+	chore, ok, err := store.PromoteItem(ctx, p, itemID, 14*24*time.Hour)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "bins out", chore.Name)
+
+	items, _, err := store.OpenItems(ctx, p, 10)
+	require.NoError(t, err)
+	require.Empty(t, items, "a promoted note leaves the pile")
+
+	found, _, err := store.SearchItems(ctx, p, "bins", 10)
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	require.Equal(t, squirrel.ItemDone, found[0].State,
+		"a promoted note is recorded as done; there is no chore state")
+}
+
+// The person is part of the lookup rather than checked afterwards: a handler
+// is handed an id by whoever is on the other end.
+func TestPromoteItemRefusesAnotherPersonsNote(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	itemID := insertItem(t, store, p, "bins out")
+
+	_, ok, err := store.PromoteItem(ctx, p+1, itemID, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, ok)
+}

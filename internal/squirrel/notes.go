@@ -3,8 +3,11 @@ package squirrel
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // ItemState is what a note has become.
@@ -127,6 +130,56 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 		items = items[:limit]
 	}
 	return items, more, nil
+}
+
+// ItemByID reads one note, scoped to its owner.
+//
+// The person is part of the lookup rather than checked afterwards. A handler
+// that receives an id from a form has been handed a number by whoever is on
+// the other end, and the only safe shape is a query that cannot return someone
+// else's row in the first place.
+func (s *Store) ItemByID(ctx context.Context, personID, itemID int64) (Item, bool, error) {
+	var it Item
+	var payload json.RawMessage
+	err := s.pool.QueryRow(ctx, `
+		select id, raw_text, received_at, payload, state from items
+		 where id = $1 and person_id = $2`, itemID, personID).
+		Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Item{}, false, nil
+	}
+	if err != nil {
+		return Item{}, false, fmt.Errorf("reading item: %w", err)
+	}
+	return it, true, nil
+}
+
+// PromoteItem turns a note into a chore: the note's own text becomes the
+// chore's name, and the note becomes `done` — it did its job by turning into
+// something that comes back on its own.
+//
+// Chore first, then the note. A failure between them leaves the chore created
+// and the note still in the pile, so a second attempt upserts the same chore by
+// name and finishes the job. The other order would leave a note marked done
+// with no chore to show for it, which is the one of the two that loses
+// something.
+//
+// Both the chat command and the screen call this. Two implementations of "a
+// note becomes a chore" is the disagreement Principle 4 forbids, and the chat
+// path already paid for the ordering above.
+func (s *Store) PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (Chore, bool, error) {
+	it, ok, err := s.ItemByID(ctx, personID, itemID)
+	if err != nil || !ok {
+		return Chore{}, false, err
+	}
+	c, err := s.UpsertChore(ctx, personID, it.RawText, every, DefaultTolerance(every))
+	if err != nil {
+		return Chore{}, false, err
+	}
+	if err := s.SetItemState(ctx, it.ID, ItemDone, time.Now()); err != nil {
+		return Chore{}, false, err
+	}
+	return c, true, nil
 }
 
 // isNote is the pile's definition of a note, and it is deliberately the same
