@@ -36,6 +36,9 @@ type noteView struct {
 
 type view struct {
 	Path string
+	// V stamps every asset URL on the page. render fills it, so no handler can
+	// forget it and no template has to know where it comes from.
+	V string
 	// After is the note space moved past, carried so that a transition made
 	// while skipped comes back to the same place rather than to the top.
 	After   int64
@@ -133,6 +136,7 @@ func render(w http.ResponseWriter, name string, v view) {
 	if !ok {
 		panic("no such page: " + name)
 	}
+	v.V = assetVersion
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Never cached. The pile is state, and a back button that showed a note you
 	// already triaged would be the two views disagreeing with themselves.

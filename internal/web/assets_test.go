@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 func TestStaticServesTheStylesheetWithALongCache(t *testing.T) {
@@ -48,4 +50,37 @@ func TestAMissingAssetIsNotCachedForAYear(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 	require.Empty(t, w.Header().Get("Cache-Control"))
+}
+
+// The year-long cache is only safe if the URL changes when the file does.
+// Without this, a release ships new markup against a stylesheet and a script
+// the browser already has, and the screen is quietly broken until someone
+// thinks to hard-reload — which is exactly what happened to v0.7.0.
+func TestAssetURLsCarryAVersion(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+
+	require.Contains(t, body, "pile.css?v="+assetVersion)
+	require.Contains(t, body, "pile.js?v="+assetVersion)
+	require.Contains(t, body, "logo.png?v="+assetVersion)
+	require.NotEmpty(t, assetVersion)
+}
+
+// The stamp is a property of the bytes, not of the clock or the build: two
+// identical binaries must agree, or a rollout would refetch everything for
+// nothing.
+func TestTheVersionIsTheContent(t *testing.T) {
+	require.Equal(t, assetVersion, stampOf(staticFS))
+}
+
+// A stamped URL still has to serve the file, and it must not be a 404 because
+// of a query string the file server never asked about.
+func TestAStampedAssetStillServes(t *testing.T) {
+	h := staticHandler(Options{Path: "/pile"})
+	r := httptest.NewRequest("GET", "/pile/static/pile.css?v="+assetVersion, nil)
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Contains(t, w.Body.String(), "--card: #fdecd4")
 }
