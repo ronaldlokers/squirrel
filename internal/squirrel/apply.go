@@ -380,6 +380,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "chore":
 		return a.promote(ctx, in.Arg, personID)
 
+	case "retire":
+		return a.retire(ctx, in.Arg, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -444,6 +447,73 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 		return noSuchLine(n), nil
 	}
 	return Message{Text: RenderDefined(c)}, nil
+}
+
+// retire stops a chore coming back: `!retire bins out`, or `!retire 1` against
+// whatever line 1 currently is.
+//
+// Two ways in, deliberately. A number is only reachable while a numbered
+// surface is on screen, and the chore most worth retiring is the one that has
+// been quietly nagging for weeks — which may not be on any list you can see. A
+// name always works, and it is matched the way the unique index matches it, so
+// the case you typed is not what decides.
+//
+// Retiring is not deleting. `active` goes false, the chore's history stays, and
+// saying it again brings the same row back — which is what makes this safe to
+// do on a whim, and why the reply says so.
+func (a *Applier) retire(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+
+	active, err := a.store.ActiveChores(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if len(active) == 0 {
+		return Message{Text: "You have no chores, so there is nothing to retire."}, nil
+	}
+	if arg == "" {
+		return Message{Text: "Which one? Try !retire " + active[0].Name + "."}, nil
+	}
+
+	if n, err := strconv.Atoi(arg); err == nil {
+		return a.retireLine(ctx, n, personID)
+	}
+
+	for _, c := range active {
+		if strings.EqualFold(c.Name, arg) {
+			return a.retireChore(ctx, c)
+		}
+	}
+
+	// Saying what there is, rather than only what there is not: a name that
+	// missed by a word is the common case, and the answer to it is the list.
+	names := make([]string, 0, len(active))
+	for _, c := range active {
+		names = append(names, c.Name)
+	}
+	return Message{Text: fmt.Sprintf("I don't have a chore called %q. You have: %s.",
+		arg, strings.Join(names, ", "))}, nil
+}
+
+func (a *Applier) retireLine(ctx context.Context, position int, personID int64) (Message, error) {
+	line, ok, err := a.store.LineAtPosition(ctx, personID, position)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(position), nil
+	}
+	if line.Chore == nil {
+		return Message{Text: fmt.Sprintf("Line %d is a note, not a chore.", position)}, nil
+	}
+	return a.retireChore(ctx, *line.Chore)
+}
+
+func (a *Applier) retireChore(ctx context.Context, c Chore) (Message, error) {
+	if err := a.store.DeactivateChore(ctx, c.ID); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: fmt.Sprintf("%s — I will stop asking. Say it again to bring it back.", c.Name)}, nil
 }
 
 // numbered records a prompt whose lines are notes, so a typed position
