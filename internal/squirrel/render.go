@@ -49,6 +49,7 @@ func HelpMessage() Message {
 		"",
 		"done <n> · keep <n> · drop <n> — clear line n",
 		"done — the one thing outstanding",
+		"!undo — put the last note I cleared back in the pile",
 		"nvm — undo a chore I just made from a note",
 		"",
 		"Start with a dot to store something I would otherwise read as a command.",
