@@ -272,6 +272,29 @@ func TestNudgeWithNothingDueSendsNothing(t *testing.T) {
 	require.Empty(t, *sent)
 }
 
+// This is the case that motivated the whole change: today, an arrival that
+// legitimately produces no message is indistinguishable in the logs from an
+// arrival that never happened at all. "presence: ping accepted" only
+// promises a nudge attempt follows, not that it finds anything — this is
+// what closes that gap.
+func TestNudgeWithNothingDueLogsIt(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	_, err := store.UpsertChore(ctx, p, "vacuum", twoWeeks, oneWeek)
+	require.NoError(t, err)
+
+	chat, sent := chatRecorder("1")
+	s := schedulerWithChat(t, store, p, chat)
+
+	logs := captureLogs(t)
+	require.NoError(t, s.Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+	require.Empty(t, *sent)
+
+	require.Contains(t, logs.String(), "nudge: nothing due")
+}
+
 // The evening message runs whether or not a nudge already fired — it is the
 // floor for captures, not an alternative to them.
 func TestEveningRunsAfterANudge(t *testing.T) {

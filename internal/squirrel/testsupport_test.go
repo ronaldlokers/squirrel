@@ -12,6 +12,11 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
+// safeLog and captureLogs live in presence_test.go, not here: that file
+// carries no build tag, so it compiles into both the plain and the
+// integration build — a second copy here would collide with it under
+// -tags=integration, since this file's own tag does not exclude presence_test.go.
+
 // testDatabaseURL fails rather than skips, so an unset variable in CI is a
 // failure and not a green run over nothing.
 func testDatabaseURL(t *testing.T) string {
