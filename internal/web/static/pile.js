@@ -194,14 +194,14 @@
 
   const KEYS = { d: "done", k: "keep", x: "drop" };
 
+  // The key presses the card's own LATER link rather than working out where
+  // to go: one answer to "what does skipping mean", and it is the one a phone
+  // and a scriptless page already use.
   function skip() {
-    const card = deck?.card;
-    if (!card?.dataset.skip) return;
-    const url = new URL(location.href);
-    url.searchParams.set("after", card.dataset.skip);
-    url.searchParams.delete("undo");
-    url.searchParams.delete("was");
-    url.searchParams.delete("state");
+    const later = deck?.card.querySelector("a.later");
+    if (!later) return;
+    const url = new URL(later.href);
+    for (const stale of ["undo", "was", "state"]) url.searchParams.delete(stale);
     location.assign(url);
   }
 

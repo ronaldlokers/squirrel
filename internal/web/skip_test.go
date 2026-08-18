@@ -2,7 +2,6 @@ package web
 
 import (
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -72,8 +71,11 @@ func TestTheCardCarriesTheCursor(t *testing.T) {
 	body := mounted(t, f).call(t, "GET", "/pile?after=2", nil).Body.String()
 
 	require.Contains(t, body, `name="after" value="2"`)
-	require.Equal(t, 1, strings.Count(body, `data-skip="1"`),
-		"the deck says which note space moves past")
+	// The way past this note is a link, so it works on a screen with no keys
+	// and with no JavaScript at all. The key presses it rather than
+	// duplicating where it points.
+	require.Contains(t, body, `href="/pile?after=1"`)
+	require.Contains(t, body, "LATER")
 }
 
 // A cursor is a number from an address bar. Nonsense in it is no cursor, not an

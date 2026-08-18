@@ -103,6 +103,12 @@ or a URL that works without it.
 | `/` | the search field |
 | `ESC` in search | clear it |
 
+**Skipping has a control, not just a key.** `LATER →` sits in the card's
+titlebar and is a plain link, so it works on a phone, which has no space bar,
+and with scripting off, which has no key handler. The key presses that link
+rather than knowing where it points, so there is one answer to where skipping
+goes.
+
 **Skipping does nothing to a note.** It puts `?after=<id>` in the address bar
 and the deck reads from there, so a skipped note is untouched — still open,
 still first the next time the pile is opened from the top. Reloading `/pile`
