@@ -5,6 +5,55 @@ import (
 	"strings"
 )
 
+// NotesMessage renders a numbered list of notes — the pile, or the results of
+// a search.
+//
+// `more` is a bool rather than a count, and that is the no-counting rule
+// expressed in the signature: this function could not render a total if a later
+// author wanted one, because the number never reaches it. A count of untriaged
+// notes beside an implied target of zero is the accumulating mechanism this
+// project bans.
+//
+// No buttons. The pile is answered by typing a number — `done 2`, `keep 2`,
+// `drop 2` — and a twenty-line list cannot carry a button per line anyway;
+// phase 3 capped actions at twelve for exactly that reason.
+func NotesMessage(items []Item, more bool) Message {
+	if len(items) == 0 {
+		return Message{Text: "Nothing in the pile."}
+	}
+
+	var b strings.Builder
+	for i, it := range items {
+		fmt.Fprintf(&b, " %d. %s\n", i+1, it.RawText)
+	}
+	if more {
+		b.WriteString("…and more.")
+	}
+	return Message{Text: strings.TrimRight(b.String(), "\n")}
+}
+
+// HelpMessage is the vocabulary. Until now it existed nowhere, so the only way
+// to learn what Squirrel understood was to have written it.
+//
+// The capture rule comes first because it is the one that matters: if you
+// remember nothing else, typing a thought stores the thought.
+func HelpMessage() Message {
+	return Message{Text: strings.Join([]string{
+		"Anything you type is a note. That is the default and it always wins.",
+		"",
+		"!notes — the pile, newest first",
+		"!find <text> — search everything you have told me",
+		"!chores — what is due (same as ?)",
+		"!chore <n> every <interval> — turn note n into a chore",
+		"",
+		"done <n> · keep <n> · drop <n> — clear line n",
+		"done — the one thing outstanding",
+		"nvm — undo a chore I just made from a note",
+		"",
+		"Start with a dot to store something I would otherwise read as a command.",
+	}, "\n")}
+}
+
 func choreLine(c Chore) string {
 	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
 }

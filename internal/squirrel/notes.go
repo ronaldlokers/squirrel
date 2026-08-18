@@ -2,8 +2,8 @@ package squirrel
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -71,24 +71,43 @@ func (s *Store) SearchItems(ctx context.Context, personID int64, query string, l
 		limit, personID, query)
 }
 
-// itemsWhere asks for one row more than the caller wanted, so "is there more"
-// costs no second query and never needs a count(*) — which is also the only
-// reason no code path anywhere has a total to leak.
+// itemsWhere reads newest-first and stops as soon as it has one row more than
+// the caller wanted — that extra row is how "is there more" is answered without
+// a count(*), which is also why no code path anywhere has a total to leak.
+//
+// The rows are filtered in Go rather than in SQL because what makes a row a
+// note is `Match`, and Match is prose rules and regexes that SQL cannot
+// express. The drain stores *every* inbound message as an item: `!notes`, `?`,
+// `done 2` and a tap's own "!action …" text all land in this table. Without
+// this filter the pile would fill with the things you typed to look at the
+// pile, and searching for "done" would return your own commands.
+//
+// CapturesSince applies exactly this test for the evening message, and the two
+// have to agree — a note the evening list shows and the pile hides, or the
+// reverse, is the kind of disagreement phase 3 spent a fix round on.
+//
+// The cost is that a long run of commands is scanned before enough notes are
+// found. Bounded by how many commands were typed consecutively, which is small,
+// and there is no SQL limit to make it wrong when it is not.
 func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ...any) ([]Item, bool, error) {
-	q := `select id, raw_text, received_at from items where ` + where +
-		` order by received_at desc, id desc limit $` + strconv.Itoa(len(args)+1)
+	q := `select id, raw_text, received_at, payload from items where ` + where +
+		` order by received_at desc, id desc`
 
-	rows, err := s.pool.Query(ctx, q, append(args, limit+1)...)
+	rows, err := s.pool.Query(ctx, q, args...)
 	if err != nil {
 		return nil, false, fmt.Errorf("listing items: %w", err)
 	}
 	defer rows.Close()
 
-	var items []Item
-	for rows.Next() {
+	items := []Item{}
+	for rows.Next() && len(items) <= limit {
 		var it Item
-		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt); err != nil {
+		var payload json.RawMessage
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload); err != nil {
 			return nil, false, fmt.Errorf("scanning item: %w", err)
+		}
+		if !isNote(it.RawText, payload) {
+			continue
 		}
 		items = append(items, it)
 	}
@@ -101,4 +120,15 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 		items = items[:limit]
 	}
 	return items, more, nil
+}
+
+// isNote is the pile's definition of a note, and it is deliberately the same
+// one CapturesSince uses: a genuine tap is not a thought, and neither is a
+// command. ParseAction matches on text alone, so isActionPayload is what tells
+// a real tap from someone typing the same shape — which stays a thought.
+func isNote(text string, payload json.RawMessage) bool {
+	if _, isTap := ParseAction(text); isTap && isActionPayload(payload) {
+		return false
+	}
+	return matchFn(text).Kind == IntentCapture
 }

@@ -277,10 +277,87 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 
 	case IntentDrop:
 		return a.undo(ctx, personID)
+
+	case IntentCommand:
+		return a.command(ctx, in, personID, conversationID)
 	}
 
 	// IntentCapture: the squirrel already went out in the HTTP response.
 	return Message{}, nil
+}
+
+// listCap is how many lines a `!notes` or `!find` reply prints.
+//
+// Ten, not twelve: MaxActions is twelve because that is the fork's limit on
+// buttons, and these lists carry none. Ten is a screenful on a phone, which is
+// the constraint that actually applies here.
+const listCap = 10
+
+// command answers a ! command.
+//
+// Every branch that prints a numbered list records a prompt and sets pending,
+// which is what makes `done 2` resolve against it: apply() marks the prompt
+// delivered once the send succeeds and closes the previous numbered surface.
+// Getting that for free is the reason these lists are prompts at all.
+func (a *Applier) command(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
+	switch in.Command {
+	case "notes":
+		items, more, err := a.store.OpenItems(ctx, personID, listCap)
+		if err != nil {
+			return Message{}, err
+		}
+		return a.numbered(ctx, "notes", items, more, personID, conversationID)
+
+	case "find":
+		if in.Arg == "" {
+			// An empty search reads as a mistake, not as a request for all of
+			// it — and answering it with the whole pile would be the counting
+			// behaviour by another route.
+			return Message{Text: "What should I look for? Try !find boiler."}, nil
+		}
+		items, more, err := a.store.SearchItems(ctx, personID, in.Arg, listCap)
+		if err != nil {
+			return Message{}, err
+		}
+		if len(items) == 0 {
+			return Message{Text: fmt.Sprintf("Nothing matching %q.", in.Arg)}, nil
+		}
+		return a.numbered(ctx, "find", items, more, personID, conversationID)
+
+	case "chores":
+		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
+
+	case "help":
+		return HelpMessage(), nil
+	}
+
+	// An unknown command is a typo, and a typo answered with 👀 would be filed
+	// as a note along with the correction. Say what exists instead.
+	m := HelpMessage()
+	m.Text = fmt.Sprintf("I don't know !%s.\n\n%s", in.Command, m.Text)
+	return m, nil
+}
+
+// numbered records a prompt whose lines are notes, so a typed position
+// resolves back to the right one, and returns the message that prints them.
+func (a *Applier) numbered(ctx context.Context, kind string, items []Item, more bool, personID int64, conversationID string) (Message, error) {
+	if len(items) == 0 {
+		// No prompt for an empty list: an empty numbered surface would still
+		// become the newest one and would shadow a live nudge's numbering,
+		// which is the shape phase 4 spent a round removing.
+		return NotesMessage(items, more), nil
+	}
+
+	lines := make([]LineRef, 0, len(items))
+	for i := range items {
+		lines = append(lines, LineRef{ItemID: &items[i].ID})
+	}
+	id, err := a.store.RecordPromptLines(ctx, personID, conversationID, kind, time.Now(), nil, lines)
+	if err != nil {
+		return Message{}, err
+	}
+	a.pending = id
+	return NotesMessage(items, more), nil
 }
 
 func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {

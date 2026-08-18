@@ -220,3 +220,76 @@ func TestSearchItemsIsScopedToThePerson(t *testing.T) {
 	require.Len(t, items, 1)
 	require.Equal(t, "my boiler note", items[0].RawText)
 }
+
+// The drain stores every inbound message as an item — commands included. The
+// pile is notes, so the things you typed to look at the pile must not be in it.
+//
+// This is the same test CapturesSince applies for the evening message, and the
+// two have to agree: a row one shows and the other hides is a disagreement
+// about what a thought is.
+func TestOpenItemsExcludesCommands(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	for _, raw := range []string{"!notes", "!find boiler", "?", "done 2", "done", "nvm", "every 2 weeks: vacuum"} {
+		insertItem(t, store, p, raw)
+	}
+	insertItem(t, store, p, "an actual thought")
+
+	items, _, err := store.OpenItems(ctx, p, 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, "an actual thought", items[0].RawText)
+}
+
+func TestSearchItemsExcludesCommands(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	insertItem(t, store, p, "!find boiler")
+	insertItem(t, store, p, "the boiler thing")
+
+	items, _, err := store.SearchItems(ctx, p, "boiler", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "searching must not return your own searches")
+	require.Equal(t, "the boiler thing", items[0].RawText)
+}
+
+// Text that merely looks like a tap, typed by a person, is a thought — the
+// payload is the only thing that tells them apart. Phase 3 settled this and
+// the pile has to settle it the same way.
+func TestOpenItemsKeepsTypedActionText(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	insertItem(t, store, p, "!action 451 done:1 true")
+
+	items, _, err := store.OpenItems(ctx, p, 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "no action payload means a person typed it, and that is a thought")
+}
+
+// The cap counts notes, not rows. A run of commands between notes must not eat
+// into the ten lines the pile is allowed to print.
+func TestOpenItemsCapCountsNotesNotRows(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	for i := range 4 {
+		insertItem(t, store, p, fmt.Sprintf("thought %d", i))
+		insertItem(t, store, p, "!notes")
+		insertItem(t, store, p, "?")
+	}
+
+	items, more, err := store.OpenItems(ctx, p, 3)
+	require.NoError(t, err)
+	require.Len(t, items, 3)
+	require.True(t, more)
+	for _, it := range items {
+		require.Contains(t, it.RawText, "thought")
+	}
+}
