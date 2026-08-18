@@ -256,7 +256,7 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 	case IntentStop:
 		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
 		if err != nil || !ok {
-			return Message{Text: "I don't have a line " + fmt.Sprint(in.Position) + "."}, err
+			return noSuchLine(in.Position), err
 		}
 		if err := a.store.DeactivateChore(ctx, c.ID); err != nil {
 			return Message{}, err
@@ -275,7 +275,18 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		a.pending = id
 		return ListMessage(chores), nil
 
+	case IntentKeep:
+		return a.triage(ctx, in.Position, personID, ItemKept, "Kept —")
+
 	case IntentDrop:
+		// A bare `nvm` undoes a chore the matcher just made from a note, which
+		// is what phase 2 built and what it still means. `drop 2` is the
+		// numbered form and drops that note. They share a Kind and are told
+		// apart by Position, which is safe because none of the bare forms —
+		// "nvm", "forget it", "never mind" — carries a number.
+		if in.Position > 0 {
+			return a.triage(ctx, in.Position, personID, ItemDropped, "Dropped —")
+		}
 		return a.undo(ctx, personID)
 
 	case IntentCommand:
@@ -360,15 +371,64 @@ func (a *Applier) numbered(ctx context.Context, kind string, items []Item, more 
 	return NotesMessage(items, more), nil
 }
 
+// noSuchLine is the one reply for a position nothing answers to. Shared so the
+// three triage verbs and the chore path cannot drift into saying it differently
+// — the wording is how you tell "I misread the number" from "that surface is
+// gone", and two spellings would make that unreadable.
+func noSuchLine(position int) Message {
+	return Message{Text: fmt.Sprintf("I don't have a line %d.", position)}
+}
+
+// triage moves a note that a numbered line named. `done`, `keep` and `drop`
+// differ only in the state they assert and what they say back.
+//
+// A position that turns out to name a chore is answered rather than silently
+// ignored: `keep 2` on a chore is a real mistake, and a bot that does nothing
+// looks broken in exactly the way that makes you stop trusting it.
+func (a *Applier) triage(ctx context.Context, position int, personID int64, state ItemState, said string) (Message, error) {
+	line, ok, err := a.store.LineAtPosition(ctx, personID, position)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(position), nil
+	}
+	if line.Item == nil {
+		return Message{Text: fmt.Sprintf("Line %d is a chore, not a note.", position)}, nil
+	}
+	if err := a.store.SetItemState(ctx, line.Item.ID, state, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: said + " " + shorten(line.Item.RawText)}, nil
+}
+
+// shorten trims a note to something that fits in a one-line acknowledgement.
+// Quoting a whole paragraph back would bury the confirmation in the thing being
+// confirmed.
+func shorten(text string) string {
+	const max = 60
+	runes := []rune(text)
+	if len(runes) <= max {
+		return text
+	}
+	// Sliced by rune, not by byte: phase 2 crash-looped the pod on a name
+	// containing Ⱥ because a byte slice cut a rune in half.
+	return string(runes[:max]) + "…"
+}
+
 func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	if in.Position > 0 {
-		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
+		line, ok, err := a.store.LineAtPosition(ctx, personID, in.Position)
 		if err != nil {
 			return Message{}, err
 		}
 		if !ok {
-			return Message{Text: fmt.Sprintf("I don't have a line %d.", in.Position)}, nil
+			return noSuchLine(in.Position), nil
 		}
+		if line.Item != nil {
+			return a.triage(ctx, in.Position, personID, ItemDone, "Done —")
+		}
+		c := *line.Chore
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}

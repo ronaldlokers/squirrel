@@ -201,3 +201,16 @@ func TestLineAtPositionBeyondTheLastLine(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, ok)
 }
+
+// lineItemID is the item id a numbered line names. Tests use it to assert on
+// the row a command actually moved, rather than on whichever row they happened
+// to insert — those are the same thing only when the numbering is right, which
+// is the thing under test.
+func lineItemID(t *testing.T, store *squirrel.Store, personID int64, position int) int64 {
+	t.Helper()
+	line, ok, err := store.LineAtPosition(context.Background(), personID, position)
+	require.NoError(t, err)
+	require.True(t, ok, "expected a line at position %d", position)
+	require.NotNil(t, line.Item, "line %d is a chore, not a note", position)
+	return line.Item.ID
+}

@@ -76,6 +76,7 @@ const (
 	IntentDrop     IntentKind = "drop"
 	IntentDefine   IntentKind = "define"
 	IntentCommand  IntentKind = "command"
+	IntentKeep     IntentKind = "keep"
 )
 
 type Intent struct {
@@ -99,6 +100,8 @@ var (
 	bareNumber = regexp.MustCompile(`^(\d{1,3})$`)
 	doneNumber = regexp.MustCompile(`^done\s+(\d{1,3})$`)
 	stopNumber = regexp.MustCompile(`^stop\s+(\d{1,3})$`)
+	keepNumber = regexp.MustCompile(`^keep\s+(\d{1,3})$`)
+	dropNumber = regexp.MustCompile(`^drop\s+(\d{1,3})$`)
 
 	// A command name is a word. Without this, "!!!" is a command called "!!"
 	// and "!?" is one called "?" — punctuation someone typed, answered with a
@@ -130,6 +133,21 @@ func Match(raw string) Intent {
 		return Intent{Kind: IntentCapture, Text: strings.TrimSpace(after)}
 	}
 
+	// A tap's own text begins with "!" as well: phase 3 encodes one as
+	// "!action <message id> <value> <selected>". Text of that shape reaches
+	// Match only when the payload proved it was NOT a genuine tap — someone
+	// typed it by hand — and phase 3 settled that such text is a thought.
+	// Without this it becomes an unknown command and is answered with a help
+	// message instead of being remembered, which is losing a thought: the one
+	// failure this system exists to prevent.
+	//
+	// CapturesSince runs Match over stored rows for exactly this reason, so the
+	// two paths have to agree here or a typed tap vanishes from the evening
+	// list as well.
+	if _, isAction := ParseAction(trimmed); isAction {
+		return Intent{Kind: IntentCapture, Text: raw}
+	}
+
 	// `!` is a prefix rather than a keyword, and that is load-bearing. Every
 	// bare word is a capture by design, so a keyword-triggered command would
 	// eat "find my keys" and "notes to self about the boiler" — both thoughts,
@@ -139,30 +157,14 @@ func Match(raw string) Intent {
 	// at intent.
 	//
 	// ".!find boiler" is still literal text, which is how a thought shaped like
-	// a command gets captured. Note that this does not depend on the order of
-	// the two checks: ".!find" does not start with "!", so only one prefix can
-	// ever match. Moving this block above the escape hatch would change
-	// nothing, which is worth saying because the placement looks load-bearing
-	// and is not.
+	// a command gets captured. That does not depend on the order of the two
+	// checks: ".!find" does not start with "!", so only one prefix can ever
+	// match. Moving this block above the escape hatch would change nothing,
+	// which is worth saying because the placement looks load-bearing and is not.
 	//
 	// An unknown command stays IntentCommand rather than falling through to
 	// capture. A typo answered with 👀 would be filed as a note, silently, and
 	// the correction with it.
-	// A tap's own text begins with "!" as well: phase 3 encodes one as
-	// "!action <message id> <value> <selected>". Text of that shape only ever
-	// reaches Match when the payload proved it was NOT a genuine tap — someone
-	// typed it by hand — and phase 3 settled that such text is a thought.
-	// Without this it becomes an unknown command and gets answered with a help
-	// message instead of being remembered, which is losing a thought: the one
-	// failure this system exists to prevent.
-	//
-	// CapturesSince runs Match over stored rows for exactly this reason, so
-	// the two paths have to agree here or a typed tap vanishes from the
-	// evening list as well.
-	if _, isAction := ParseAction(trimmed); isAction {
-		return Intent{Kind: IntentCapture, Text: raw}
-	}
-
 	if after, found := strings.CutPrefix(trimmed, "!"); found {
 		name, arg, _ := strings.Cut(strings.TrimSpace(after), " ")
 		// The name has to look like a word, or "!!!" parses as a command
@@ -197,6 +199,15 @@ func Match(raw string) Intent {
 	}
 	if m := stopNumber.FindStringSubmatch(lower); m != nil {
 		return Intent{Kind: IntentStop, Position: atoi(m[1])}
+	}
+	if m := keepNumber.FindStringSubmatch(lower); m != nil {
+		return Intent{Kind: IntentKeep, Position: atoi(m[1])}
+	}
+	// `drop 2` and a bare `nvm` are both IntentDrop, told apart by Position.
+	// No collision: the bare forms are exactly "nvm", "forget it" and "never
+	// mind", none of which carries a number, and "drop" is not among them.
+	if m := dropNumber.FindStringSubmatch(lower); m != nil {
+		return Intent{Kind: IntentDrop, Position: atoi(m[1])}
 	}
 
 	if name, every, ok := ParseEvery(trimmed); ok && deliberateDefine.MatchString(lower) {
