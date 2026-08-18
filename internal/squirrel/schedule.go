@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"time"
 )
@@ -303,6 +304,14 @@ func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64,
 	}
 	c, ok := PickChore(due, rand.Float64())
 	if !ok {
+		// The case that motivated this whole line: a presence ping that
+		// legitimately produces no message is otherwise indistinguishable
+		// from a ping that never arrived at all — event 1's "ping accepted"
+		// only says a nudge attempt follows, not that it found anything.
+		// This fires from both callers of nudgeFor — once()'s evening pass
+		// and Nudge()'s presence-triggered one — because the decision being
+		// logged ("nothing was due") is the same regardless of who asked.
+		slog.Info("nudge: nothing due", "person_id", s.opts.PersonID)
 		return nil, 0, nil
 	}
 

@@ -73,19 +73,42 @@ func MountPresence(s *Server, path string, o PresenceOptions) {
 	s.Post(path, func(w http.ResponseWriter, r *http.Request) {
 		got := r.Header.Get("X-Squirrel-Token")
 		if subtle.ConstantTimeCompare([]byte(got), []byte(o.Secret)) != 1 {
+			// The token itself never goes into a log field — got or o.Secret,
+			// in whole or in part, not even a length. This is the only
+			// authentication this route has, so a rejection is worth a WARN,
+			// but echoing the attempt back would put a near-miss credential
+			// into the log store, the same failure mode stripURL exists to
+			// close for the bot key (see campfire.go).
+			slog.Warn("presence: rejected ping with an invalid token")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 
 		now := o.Now()
 		mu.Lock()
-		within := !last.IsZero() && now.Sub(last) < o.Debounce
+		sinceLast := now.Sub(last)
+		within := !last.IsZero() && sinceLast < o.Debounce
 		if !within {
 			last = now
 		}
 		mu.Unlock()
 
 		w.WriteHeader(http.StatusNoContent)
+
+		// Logged after the response is written, not before: the handler
+		// still answers 204 immediately, and this is an in-memory write to
+		// the configured slog handler, not a store call or anything else on
+		// the request path. Accepted and debounced are logged as distinct
+		// events — not as one line with a boolean field — so a flapping
+		// phone bouncing between wifi and cellular reads unambiguously as
+		// "debounced" in kubectl logs, rather than as a lost or absent
+		// request.
+		if within {
+			slog.Info("presence: ping debounced", "since_last", sinceLast)
+		} else {
+			slog.Info("presence: ping accepted")
+		}
+
 		if within || o.OnArrive == nil {
 			return
 		}

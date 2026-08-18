@@ -1,8 +1,11 @@
 package squirrel_test
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,6 +13,38 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+// safeLog is a concurrency-safe io.Writer: OnArrive's callback and the
+// handler itself can both log concurrently with the test reading the buffer
+// back out (see waitForArrival — the callback runs off a goroutine).
+type safeLog struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (l *safeLog) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.Write(p)
+}
+
+func (l *safeLog) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.String()
+}
+
+// captureLogs redirects slog's default handler to a safeLog for the
+// duration of one test, restoring the previous default on cleanup — the
+// same pattern boot_nudge_test.go uses for asserting on log output.
+func captureLogs(t *testing.T) *safeLog {
+	t.Helper()
+	var logs safeLog
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	return &logs
+}
 
 // presenceServer mounts the arrival route on a live listener and returns its
 // base URL. `writable` and `listen` are the package's existing test helpers
@@ -186,4 +221,76 @@ func TestPresenceDelayWakesOnContextCancellation(t *testing.T) {
 	require.Less(t, time.Since(start), time.Second,
 		"cancelling Ctx must wake an in-flight Delay rather than waiting it out")
 	requireNoArrival(t, arrived)
+}
+
+// The owner's only evidence that a ping ever arrived was three SQL queries
+// against production Postgres — kubectl logs showed nothing at all, on
+// accept or on reject. This is the accepted half of the fix.
+func TestPresenceLogsAcceptedPing(t *testing.T) {
+	logs := captureLogs(t)
+	arrived := make(chan struct{}, 1)
+	base := presenceServer(t, squirrel.PresenceOptions{
+		Secret: "shh", OnArrive: func() { arrived <- struct{}{} },
+	})
+
+	res := postPresence(t, base, "shh")
+	defer res.Body.Close()
+	require.Equal(t, http.StatusNoContent, res.StatusCode)
+	waitForArrival(t, arrived)
+
+	require.Contains(t, logs.String(), "presence: ping accepted")
+	require.NotContains(t, logs.String(), "debounced",
+		"an accepted ping must not read as a debounced one")
+}
+
+// A phone flapping between wifi and cellular produces several pings inside
+// the debounce window. The owner needs to see that this is what happened —
+// several accepted-looking requests that were actually one — not conclude
+// the later ones were lost. Accepted and debounced must show up as two
+// different lines, not the same line with a flag buried in it.
+func TestPresenceLogsDebouncedPing(t *testing.T) {
+	logs := captureLogs(t)
+	arrived := make(chan struct{}, 2)
+	now := time.Date(2026, 8, 17, 18, 0, 0, 0, time.UTC)
+	base := presenceServer(t, squirrel.PresenceOptions{
+		Secret: "shh", Debounce: 10 * time.Minute,
+		OnArrive: func() { arrived <- struct{}{} },
+		Now:      func() time.Time { return now },
+	})
+
+	first := postPresence(t, base, "shh")
+	first.Body.Close()
+	waitForArrival(t, arrived)
+
+	second := postPresence(t, base, "shh")
+	second.Body.Close()
+	requireNoArrival(t, arrived)
+
+	out := logs.String()
+	require.Contains(t, out, "presence: ping accepted")
+	require.Contains(t, out, "presence: ping debounced")
+}
+
+// The token check is the only authentication this route has, so a rejection
+// is worth a WARN — but the value that failed the check must never reach the
+// log store. Echoing a near-miss credential back into logs is the same
+// mistake v0.2.0 made leaking the bot key through a *url.Error (see
+// campfire.go's stripURL and campfire_send_test.go's
+// TestSendFailureDoesNotLeakTheBotKey); this is that precedent applied here.
+func TestPresenceRejectedTokenLogsWarnWithoutTheToken(t *testing.T) {
+	logs := captureLogs(t)
+	arrived := make(chan struct{}, 1)
+	base := presenceServer(t, squirrel.PresenceOptions{
+		Secret: "shh", OnArrive: func() { arrived <- struct{}{} },
+	})
+
+	const attemptedToken = "wrong-token-must-never-reach-the-log-store"
+	res := postPresence(t, base, attemptedToken)
+	defer res.Body.Close()
+	require.Equal(t, http.StatusForbidden, res.StatusCode)
+	requireNoArrival(t, arrived)
+
+	out := logs.String()
+	require.Contains(t, out, "presence: rejected")
+	require.NotContains(t, out, attemptedToken)
 }
