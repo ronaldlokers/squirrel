@@ -49,6 +49,14 @@ func (s *Server) Post(pattern string, h http.HandlerFunc) {
 	s.mux.HandleFunc("POST "+pattern, h)
 }
 
+// Get registers a read route. Separate from Post rather than a method-agnostic
+// Handle: the method belongs in the pattern so that an unrouted method falls to
+// the same no-body 404 as an unrouted path, and so no route can accidentally
+// accept a write it never meant to.
+func (s *Server) Get(pattern string, h http.HandlerFunc) {
+	s.mux.HandleFunc("GET "+pattern, h)
+}
+
 // handler wraps the mux so that an unmatched route answers with no body and no
 // Content-Type. http.NotFound would set one, and Campfire uploads any non-200
 // carrying a Content-Type into the room as a file attachment — the same defect

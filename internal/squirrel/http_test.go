@@ -191,3 +191,27 @@ func TestServerRejectsAnOccupiedPort(t *testing.T) {
 }
 
 func stringReader(s string) io.Reader { return strings.NewReader(s) }
+
+// The method belongs in the pattern: a GET-only route must not quietly accept
+// a write, and an unrouted method falls to the same no-body 404 as an unrouted
+// path.
+func TestGetRoutesAndPostToTheSamePathDoesNot(t *testing.T) {
+	s := squirrel.NewServer(writable(true))
+	s.Get("/pile", func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, "the pile")
+	})
+	base := listen(t, s)
+
+	res, err := http.Get(base + "/pile")
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, res.StatusCode)
+	require.Equal(t, "the pile", string(body))
+
+	post, err := http.Post(base+"/pile", "text/plain", strings.NewReader(""))
+	require.NoError(t, err)
+	defer post.Body.Close()
+	require.Equal(t, http.StatusNotFound, post.StatusCode)
+}
