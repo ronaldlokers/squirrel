@@ -316,12 +316,34 @@ func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int
 	return line, true, nil
 }
 
-// OutstandingLines is the lines of the most recent prompt whose chore has had
-// no completion since that prompt was sent. A bare `done` resolves against
-// exactly one of these.
+// latestChorePrompt is the most recent delivered numbered prompt that actually
+// named a chore.
+//
+// Not latestPrompt, and the difference is the whole of a real bug. Since phase
+// 5a a numbered prompt can be a list of notes carrying no chore at all, and
+// with latestPrompt a `!notes` between the nudge and the answer made
+// OutstandingLines return nothing — so a bare `done` replied "Nothing
+// outstanding." while the morning's chore sat unmet. Squirrel asserting that
+// nothing is outstanding when something is is worse than any dead button:
+// every other surface depends on believing what it says.
+//
+// Positions still resolve against latestPrompt — a typed number must mean the
+// list that printed it. Only "the one thing outstanding" reaches back past a
+// buttonless list, because that question was never about the newest message.
+const latestChorePrompt = `
+	select p.id, p.sent_at from prompts p
+	 where p.person_id = $1 and p.kind in ` + numberedKinds + `
+	   and p.delivered_at is not null
+	   and exists (select 1 from prompt_lines l
+	                where l.prompt_id = p.id and l.chore_id is not null)
+	 order by p.sent_at desc, p.id desc limit 1`
+
+// OutstandingLines is the lines of the most recent chore-bearing prompt whose
+// chore has had no completion since that prompt was sent. A bare `done`
+// resolves against exactly one of these.
 func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, error) {
 	const q = `
-		with latest as (` + latestPrompt + `)
+		with latest as (` + latestChorePrompt + `)
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds, 0::bigint
 		  from prompt_lines l
 		  join latest p on p.id = l.prompt_id

@@ -90,7 +90,14 @@ func (s *Store) SearchItems(ctx context.Context, personID int64, query string, l
 // found. Bounded by how many commands were typed consecutively, which is small,
 // and there is no SQL limit to make it wrong when it is not.
 func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ...any) ([]Item, bool, error) {
-	q := `select id, raw_text, received_at, payload from items where ` + where +
+	// raw_text <> '' matches CapturesSince exactly. An attachment-only message
+	// lands as an empty row — campfire.go takes the body's plain text with no
+	// guard — and without this the pile prints a blank numbered line while the
+	// evening list, which has always filtered them, does not. The two surfaces
+	// disagreeing about what a note is is the thing this function's comment
+	// warns about.
+	q := `select id, raw_text, received_at, payload from items
+	       where raw_text <> '' and ` + where +
 		` order by received_at desc, id desc`
 
 	rows, err := s.pool.Query(ctx, q, args...)

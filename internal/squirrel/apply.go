@@ -131,11 +131,19 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 				if err := a.store.MarkPromptSent(ctx, a.pending, messageID, time.Now()); err != nil {
 					return err
 				}
-				// Only a numbered surface closes the one before it. A define
-				// names one chore and takes no position, so closing the
-				// digest on its account would retire buttons the morning's
-				// list still owns.
-				if intent.Kind != IntentDefine {
+				// Only a surface that carries buttons closes the one before
+				// it, and only a numbered one at that. A define names one
+				// chore and takes no position, so closing the digest on its
+				// account would retire buttons the morning's list still owns.
+				//
+				// The len(m.Actions) test is why `!notes` no longer kills the
+				// day's nudge. closePrevious exists to keep exactly one live
+				// *button* surface; a pile listing deliberately carries none
+				// (see NotesMessage), and a tap resolves through its own
+				// message id, so leaving the nudge live creates no ambiguity.
+				// Closing it bought nothing and cost the day's chore: the ✅
+				// went grey the moment you looked at your own notes.
+				if intent.Kind != IntentDefine && len(m.Actions) > 0 {
 					closePrevious(ctx, a.store, a.chat, a.onError, *personID, a.pending)
 				}
 			}
@@ -256,10 +264,25 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		return a.complete(ctx, in, personID, conversationID)
 
 	case IntentStop:
-		c, ok, err := a.store.ChoreAtPosition(ctx, personID, in.Position)
-		if err != nil || !ok {
-			return noSuchLine(in.Position), err
+		// Resolved through LineAtPosition rather than ChoreAtPosition so a
+		// note line gets the true answer. ChoreAtPosition simply fails to
+		// join one, which made `stop 1` on the pile say "I don't have a line
+		// 1" about a line printed a second earlier — and noSuchLine's whole
+		// job is to mean "that surface is gone".
+		line, ok, err := a.store.LineAtPosition(ctx, personID, in.Position)
+		if err != nil {
+			return Message{}, err
 		}
+		if !ok {
+			return noSuchLine(in.Position), nil
+		}
+		if line.Item == nil && line.Chore == nil {
+			return noSuchLine(in.Position), nil
+		}
+		if line.Chore == nil {
+			return Message{Text: fmt.Sprintf("Line %d is a note, not a chore. Try drop %d.", in.Position, in.Position)}, nil
+		}
+		c := *line.Chore
 		if err := a.store.DeactivateChore(ctx, c.ID); err != nil {
 			return Message{}, err
 		}
@@ -306,6 +329,11 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 // the constraint that actually applies here.
 const listCap = 10
 
+// intervalSentinel stands in for a chore name while an interval is parsed on
+// its own. Any word that is not a unit works; this one says why it is there if
+// it ever surfaces in an error.
+const intervalSentinel = "chore-name-placeholder"
+
 // command answers a ! command.
 //
 // Every branch that prints a numbered list records a prompt and sets pending,
@@ -315,6 +343,15 @@ const listCap = 10
 func (a *Applier) command(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	switch in.Command {
 	case "notes":
+		if in.Arg != "" {
+			// "!notes to self: the boiler man comes tuesday" is the one
+			// command shape that reads like a sentence — the spec names
+			// "notes to self" as its motivating example for why commands need
+			// a prefix at all. Printing the pile and dropping the sentence is
+			// the worst of both. Falling through to the unknown-command reply
+			// at least says something happened.
+			break
+		}
 		items, more, err := a.store.OpenItems(ctx, personID, listCap)
 		if err != nil {
 			return Message{}, err
@@ -382,10 +419,17 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 
 	// ParseEvery wants "every <interval> <name>" and returns the name out of
 	// the same string, because on its usual path the name is what follows the
-	// interval. Here the name is the note, so the note's text is appended and
-	// only the duration is kept. Doing it this way rather than reaching into
-	// the regex keeps one parser for what an interval means.
-	_, every, ok := ParseEvery(strings.TrimSpace(rest) + " " + line.Item.RawText)
+	// interval. Here the name is the note, so a sentinel is appended and only
+	// the duration is kept. Reusing ParseEvery rather than reaching into its
+	// regex keeps one definition of what an interval means.
+	//
+	// The sentinel is a fixed word, NOT the note's own text, and that is a
+	// fix rather than a detail. Appending the note let it supply the missing
+	// unit: `!chore 1 every` against a note reading "week groceries" parsed as
+	// "every week groceries" and silently created a weekly chore nobody asked
+	// for. A word that is not a unit makes an incomplete interval fail, which
+	// is what the reply below is for.
+	_, every, ok := ParseEvery(strings.TrimSpace(rest) + " " + intervalSentinel)
 	if !ok {
 		return Message{Text: "How often? Try !chore " + position + " every 2 weeks."}, nil
 	}
