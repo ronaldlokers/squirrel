@@ -8,6 +8,8 @@
     {{if .More}}<div class="behind"></div><div class="behind"></div><div class="behind"></div>{{end}}
     {{template "card" .}}
   </div>
-  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts &middot; </span>stop whenever you like</p>
+  {{/* The comp advertises <kbd>space</kbd> as skip. The screen has no cursor
+       to move, so the key is unbound and the hint does not promise it. */}}
+  <p class="hint"><span class="keysonly">one key acts &middot; </span>stop whenever you like</p>
 </section>
 {{end}}
