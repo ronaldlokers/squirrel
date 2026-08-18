@@ -23,6 +23,9 @@ cannot verify it.
 
 Tests: see [`docs/testing.md`](docs/testing.md).
 
+The screen for reading and triaging the pile, and the forward-auth it sits
+behind: see [`docs/pile-screen.md`](docs/pile-screen.md).
+
 ## History
 
 Phase 1 was first implemented in TypeScript and merged in #1. That version is
