@@ -356,3 +356,35 @@ func TestPromoteItemRefusesAnotherPersonsNote(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, ok)
 }
+
+// The two read paths have to agree about what a note is. itemsWhere filters
+// the pile through isNote so that "!notes" and "done 2" never appear in it; a
+// lookup by id that skipped the same test would let the other view act on a
+// row the pile itself refuses to show.
+func TestItemByIDUsesThePilesDefinitionOfANote(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	thought := insertItem(t, store, p, "buy milk")
+	command := insertItem(t, store, p, "!notes")
+
+	_, ok, err := store.ItemByID(ctx, p, thought)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	_, ok, err = store.ItemByID(ctx, p, command)
+	require.NoError(t, err)
+	require.False(t, ok, "a command is not a note on either read path")
+}
+
+func TestPromoteItemRefusesACommand(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	command := insertItem(t, store, p, "!notes")
+
+	_, ok, err := store.PromoteItem(ctx, p, command, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, ok, "there is no chore called !notes")
+}

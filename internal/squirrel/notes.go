@@ -151,6 +151,14 @@ func (s *Store) ItemByID(ctx context.Context, personID, itemID int64) (Item, boo
 	if err != nil {
 		return Item{}, false, fmt.Errorf("reading item: %w", err)
 	}
+	// The same test itemsWhere applies, for the same reason: the drain stores
+	// every inbound message as a row, so an id can point at "!notes" as easily
+	// as at a thought. A lookup that answered for one would let a caller act on
+	// a row the pile itself refuses to show, and the two read paths disagreeing
+	// about what a note is is the drift this file's other comments warn about.
+	if !isNote(it.RawText, payload) {
+		return Item{}, false, nil
+	}
 	return it, true, nil
 }
 

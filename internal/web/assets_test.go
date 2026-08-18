@@ -36,3 +36,16 @@ func TestFontsAreEmbedded(t *testing.T) {
 		require.NotEmpty(t, b, name)
 	}
 }
+
+// A year is the right cache for a file that exists. A miss is not a file, and
+// caching one would keep a typo in a template pointing at nothing long after
+// the asset it names has shipped.
+func TestAMissingAssetIsNotCachedForAYear(t *testing.T) {
+	h := staticHandler(Options{Path: "/pile"})
+	r := httptest.NewRequest("GET", "/pile/static/nope.css", nil)
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Empty(t, w.Header().Get("Cache-Control"))
+}
