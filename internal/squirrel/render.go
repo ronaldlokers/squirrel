@@ -45,6 +45,7 @@ func HelpMessage() Message {
 		"!find <text> — search everything you have told me",
 		"!chores — what is due (same as ?)",
 		"!chore <n> every <interval> — turn note n into a chore",
+		"!retire <chore> — stop a chore coming back",
 		"",
 		"done <n> · keep <n> · drop <n> — clear line n",
 		"done — the one thing outstanding",
