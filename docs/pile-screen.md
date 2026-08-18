@@ -156,10 +156,15 @@ screen itself. That also needs the `Service-Worker-Allowed` header the handler
 sets: without it the worker installs, reports a healthy-looking scope of
 `{WEB_PATH}/`, and never controls `{WEB_PATH}` — the one URL you actually open.
 
-**It is not behind the identity guard.** A browser fetches the worker without
-the cookies that carry the identity, and a worker that redirects to a login page
-never installs. It contains no notes: only which files to keep and what to say
+**It is not behind squirrel's own identity check**, though Traefik's
+forward-auth still stands in front of it like everything else under
+`{WEB_PATH}`. The distinction matters when it fails: a browser registering a
+worker sends the session cookie, so an authenticated visit fetches it normally,
+but the file itself contains no notes — only which files to keep and what to say
 when the network is gone.
+
+If a session has expired, registration gets the login redirect rather than a
+worker, and the page carries on working exactly as it did before there was one.
 
 ## Reading it without seeing it
 
