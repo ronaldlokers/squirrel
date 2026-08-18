@@ -121,8 +121,18 @@ leaned on it as the on-demand escape from the one-a-day nudge budget.
 **Results are numbered and reuse the phase 3 prompt machinery.** A numbered
 result is a prompt of a new kind, so `done 2` resolves against it exactly as it
 resolves against a nudge — the "numbered prompt owns the numbered surface" rule
-already exists and already has the bugs beaten out of it. This is wiring, not
-new logic.
+already exists and already has the bugs beaten out of it.
+
+**But that machinery is chore-shaped and has to be generalised first.**
+`prompt_lines.chore_id` is `not null references chores (id)`, `RecordPrompt`
+takes `chores []Chore`, and every resolver returns a `Chore`. A line becomes
+"either a chore or an item": `chore_id` and `item_id` both nullable, with a
+check constraint that exactly one is set. This is the largest single piece of
+work in 5a and it is not optional — without it there is no way to say `done 2`
+against a search result, and therefore no way to clear the pile from chat or to
+promote a note to a chore by position.
+
+An earlier draft of this spec called that wiring. It is not.
 
 **An unknown `!command` is not a capture.** It is a mistyped command, and
 answering it with 👀 would silently swallow the correction. It gets a reply
