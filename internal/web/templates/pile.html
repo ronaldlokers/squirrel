@@ -10,6 +10,9 @@
   </div>
   {{/* The comp advertises <kbd>space</kbd> as skip. The screen has no cursor
        to move, so the key is unbound and the hint does not promise it. */}}
-  <p class="hint"><span class="keysonly">one key acts &middot; </span>stop whenever you like</p>
+  {{/* space is back, and it is keyboard-only on purpose: skipping is the one
+       thing here that does nothing to a note, the comp draws no control for
+       it, and .keysonly is already hidden where there are no keys. */}}
+  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts &middot; </span>stop whenever you like</p>
 </section>
 {{end}}

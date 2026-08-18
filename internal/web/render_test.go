@@ -40,3 +40,16 @@ func TestTheChoreDisclosureSubmitsWithoutScript(t *testing.T) {
 	require.Equal(t, 4, strings.Count(body, `name="every"`))
 	require.Equal(t, 4, strings.Count(body, `formaction="/pile/chore"`))
 }
+
+// The comp replaces the actions row with the interval row while you choose.
+// The scriptless page cannot hide anything, so the way back out is rendered
+// hidden and only exists once pile.js is there to work it.
+func TestTheNeverMindChipIsAnEnhancement(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "bins out", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+
+	require.Contains(t, body, `class="chip back"`)
+	require.Contains(t, body, `data-close="chore"`)
+	require.Contains(t, body, `type="button"`,
+		"a button that is not a submit cannot post a half-made chore")
+}

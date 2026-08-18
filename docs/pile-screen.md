@@ -89,6 +89,38 @@ default; if a middleware is ever added that rewrites it, every write on this
 screen turns into a 403 and the log line is
 `refused a cross-site write`.
 
+## The keyboard
+
+Everything below is progressive enhancement — every one of these has a control
+or a URL that works without it.
+
+| Key | What it does |
+| --- | --- |
+| `d` `k` `x` | done, keep, drop |
+| `c` then `1`-`4` | make a chore, then how often; `ESC` withdraws the question |
+| `space`, `→`, `↓` | skip: move past this note to the next-oldest one |
+| `←`, `↑` | back, which is the browser's own history |
+| `/` | the search field |
+| `ESC` in search | clear it |
+
+**Skipping has a control, not just a key.** `LATER →` sits in the card's
+titlebar and is a plain link, so it works on a phone, which has no space bar,
+and with scripting off, which has no key handler. The key presses that link
+rather than knowing where it points, so there is one answer to where skipping
+goes.
+
+**Skipping does nothing to a note.** It puts `?after=<id>` in the address bar
+and the deck reads from there, so a skipped note is untouched — still open,
+still first the next time the pile is opened from the top. Reloading `/pile`
+is how you get back to the top, and running out of notes below the cursor is
+its own page rather than an empty pile: what you skipped is still there.
+
+**Search answers as you type**, by fetching the same URL the form submits to
+and swapping in what comes back. It is one renderer and one code path, so with
+JavaScript off the identical page arrives by pressing Enter. The address bar
+tracks the query with `replaceState`, so leaving a search goes back where you
+came from rather than through every letter you typed.
+
 ## What the screen will not do
 
 - **It will not create an item.** There is no capture box and no route that

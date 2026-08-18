@@ -20,6 +20,7 @@ var templateFS embed.FS
 // templates are a flat namespace, so two files both defining "content" cannot
 // live in one set — the set is the page.
 var pages = map[string]*template.Template{
+	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
 	"results": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/results.html")),
@@ -34,7 +35,10 @@ type noteView struct {
 }
 
 type view struct {
-	Path    string
+	Path string
+	// After is the note space moved past, carried so that a transition made
+	// while skipped comes back to the same place rather than to the top.
+	After   int64
 	Query   string
 	Note    *noteView
 	More    bool
@@ -91,6 +95,17 @@ func undoFrom(q url.Values) *undoView {
 		return nil
 	}
 	return &undoView{ID: id, State: act, Said: saidWords[q.Get("state")]}
+}
+
+// cursorFrom reads the skip position out of the query string. Nonsense is no
+// cursor: this arrives from an address bar, and the pile is the right answer to
+// a question that does not parse.
+func cursorFrom(q url.Values) int64 {
+	id, err := strconv.ParseInt(q.Get("after"), 10, 64)
+	if err != nil || id < 1 {
+		return 0
+	}
+	return id
 }
 
 // stateWords is the screen's half of the shared vocabulary. `open` is

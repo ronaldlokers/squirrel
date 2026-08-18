@@ -49,6 +49,7 @@ func (o Options) person() (int64, bool) {
 // transport.Sink does.
 type Store interface {
 	OpenItems(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
+	OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]squirrel.Item, bool, error)
 	SearchItems(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Item, bool, error)
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error

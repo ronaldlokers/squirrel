@@ -197,6 +197,21 @@
     letter-spacing: .09em;
   }
   .titlebar .spacer { flex: 1; }
+  /* The way past a note, for the screens that have no keyboard. It sits in the
+     titlebar rather than the tray because it is not one of the ways out — the
+     tray is for what a note becomes, and this is for deciding nothing. */
+  .later {
+    flex: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: -11px -16px -11px 0; padding: 11px 16px;
+    min-height: 44px;
+    color: var(--paper); text-decoration: none;
+    font-size: 12.5px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 750;
+    opacity: .82;
+    border-radius: 0 11px 0 0;
+  }
+  .later:hover, .later:focus-visible { opacity: 1; background: rgba(0, 0, 0, .16); }
   .acorn { flex: none; }
 
   .note {
@@ -541,6 +556,13 @@
   @media (max-width: 560px) {
     .actions > .everyFallback { grid-column: 1 / -1; margin-left: 0; }
   }
+
+  /* While an interval is being chosen, the three ways out step aside — the
+     comp replaces the row rather than growing a second one below it. CSS
+     cannot select a previous sibling, so pile.js puts the class on the form;
+     without that file the disclosure simply opens underneath, which is the
+     scriptless page and is fine. */
+  .actions.choosing > .btn:not(.make) { display: none; }
 
   /* main centres a single child, so an undo above the deck turns the field
      into a column — two of them side by side is not what either one is. */

@@ -388,3 +388,63 @@ func TestPromoteItemRefusesACommand(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, ok, "there is no chore called !notes")
 }
+
+// Skipping moves past a note without doing anything to it: the deck shows the
+// next-oldest untriaged note, and the one skipped is untouched and still open.
+func TestOpenItemsAfterWalksBackwards(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	oldest := insertItem(t, store, p, "the first thought")
+	middle := insertItem(t, store, p, "the second thought")
+	newest := insertItem(t, store, p, "the third thought")
+
+	items, _, err := store.OpenItemsAfter(ctx, p, newest, 1)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, middle, items[0].ID)
+
+	items, _, err = store.OpenItemsAfter(ctx, p, middle, 1)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, oldest, items[0].ID)
+
+	// Past the last one there is nothing older, and that is not the same as an
+	// empty pile — every note skipped past is still open.
+	items, _, err = store.OpenItemsAfter(ctx, p, oldest, 1)
+	require.NoError(t, err)
+	require.Empty(t, items)
+
+	still, _, err := store.OpenItems(ctx, p, 10)
+	require.NoError(t, err)
+	require.Len(t, still, 3, "skipping does nothing to a note")
+}
+
+// A cursor is a number in an address bar, so it can be stale or invented. An
+// id nothing answers to means no cursor rather than an empty pile.
+func TestOpenItemsAfterIgnoresACursorThatIsNotThere(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	id := insertItem(t, store, p, "buy milk")
+
+	items, _, err := store.OpenItemsAfter(ctx, p, id+9999, 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, id, items[0].ID)
+}
+
+// Zero is how a caller says "no cursor at all", which is the plain pile.
+func TestOpenItemsAfterZeroIsTheTopOfThePile(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	insertItem(t, store, p, "buy milk")
+	newest := insertItem(t, store, p, "the boiler")
+
+	items, _, err := store.OpenItemsAfter(ctx, p, 0, 1)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, newest, items[0].ID)
+}
