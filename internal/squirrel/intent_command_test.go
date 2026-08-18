@@ -84,6 +84,22 @@ func TestABareBangCapturesVerbatim(t *testing.T) {
 	require.Equal(t, "!!!", squirrel.Match("!!!").Text)
 }
 
+// Phase 3 encodes a tap as "!action <message id> <value> <selected>", which
+// begins with the same "!" the commands do. Text of that shape only reaches
+// Match when the payload proved it was not a genuine tap — someone typed it —
+// and phase 3 settled that it is a thought.
+//
+// This is not hypothetical: adding the prefix broke it, and the test that
+// caught it was TestCapturesSinceMatchesApplysDefinitionOfATap, which asserts
+// the stored-row path and the live path agree. A typed tap answered with a
+// help message is a lost thought.
+func TestTypedActionTextIsStillACapture(t *testing.T) {
+	in := squirrel.Match("!action 451 done:1 true")
+	require.Equal(t, squirrel.IntentCapture, in.Kind)
+	require.Equal(t, "!action 451 done:1 true", in.Text,
+		"the raw text is the record, prefix and all")
+}
+
 func TestCommandExtraSpacingIsTolerated(t *testing.T) {
 	in := squirrel.Match("!find    boiler serial")
 	require.Equal(t, "find", in.Command)

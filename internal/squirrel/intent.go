@@ -148,6 +148,21 @@ func Match(raw string) Intent {
 	// An unknown command stays IntentCommand rather than falling through to
 	// capture. A typo answered with 👀 would be filed as a note, silently, and
 	// the correction with it.
+	// A tap's own text begins with "!" as well: phase 3 encodes one as
+	// "!action <message id> <value> <selected>". Text of that shape only ever
+	// reaches Match when the payload proved it was NOT a genuine tap — someone
+	// typed it by hand — and phase 3 settled that such text is a thought.
+	// Without this it becomes an unknown command and gets answered with a help
+	// message instead of being remembered, which is losing a thought: the one
+	// failure this system exists to prevent.
+	//
+	// CapturesSince runs Match over stored rows for exactly this reason, so
+	// the two paths have to agree here or a typed tap vanishes from the
+	// evening list as well.
+	if _, isAction := ParseAction(trimmed); isAction {
+		return Intent{Kind: IntentCapture, Text: raw}
+	}
+
 	if after, found := strings.CutPrefix(trimmed, "!"); found {
 		name, arg, _ := strings.Cut(strings.TrimSpace(after), " ")
 		// The name has to look like a word, or "!!!" parses as a command
