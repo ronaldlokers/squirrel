@@ -56,6 +56,11 @@ type Item struct {
 	RawText        string
 	Payload        json.RawMessage
 	ReceivedAt     time.Time
+	// State is filled on the read path only, by itemsWhere. The capture path
+	// does not set it: a fresh row takes the column default, which is `open`,
+	// and a capture that had to know about triage would be a capture that can
+	// fail for a triage reason.
+	State ItemState
 }
 
 // InsertItem is idempotent for a real external id. Redelivery is harmless to

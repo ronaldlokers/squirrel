@@ -293,3 +293,28 @@ func TestOpenItemsCapCountsNotesNotRows(t *testing.T) {
 		require.Contains(t, it.RawText, "thought")
 	}
 }
+
+// A search result has to say what a note became, or the screen cannot colour
+// it. The capture path still knows nothing about state: the column default
+// fills a fresh row.
+func TestSearchItemsCarriesState(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	open := insertItem(t, store, p, "the boiler makes a noise")
+	done := insertItem(t, store, p, "boiler service is booked")
+	require.NoError(t, store.SetItemState(ctx, done, squirrel.ItemDone, time.Now()))
+
+	items, more, err := store.SearchItems(ctx, p, "boiler", 10)
+	require.NoError(t, err)
+	require.False(t, more)
+	require.Len(t, items, 2)
+
+	states := map[int64]squirrel.ItemState{}
+	for _, it := range items {
+		states[it.ID] = it.State
+	}
+	require.Equal(t, squirrel.ItemOpen, states[open])
+	require.Equal(t, squirrel.ItemDone, states[done])
+}

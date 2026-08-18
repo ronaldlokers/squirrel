@@ -96,7 +96,7 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 	// evening list, which has always filtered them, does not. The two surfaces
 	// disagreeing about what a note is is the thing this function's comment
 	// warns about.
-	q := `select id, raw_text, received_at, payload from items
+	q := `select id, raw_text, received_at, payload, state from items
 	       where raw_text <> '' and ` + where +
 		` order by received_at desc, id desc`
 
@@ -110,7 +110,7 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 	for rows.Next() && len(items) <= limit {
 		var it Item
 		var payload json.RawMessage
-		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload); err != nil {
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State); err != nil {
 			return nil, false, fmt.Errorf("scanning item: %w", err)
 		}
 		if !isNote(it.RawText, payload) {
