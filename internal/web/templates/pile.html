@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="shoebox" id="deckView">
+  {{/* The stack behind the card is how this screen says "there is more"
+       without a number. It is a picture, so the deck carries the same fact in
+       words for anyone who cannot see it — still no count, because there is
+       none to give. */}}
+  <div class="deck"{{if .More}} aria-label="there is more underneath"{{end}}>
+    {{if .More}}<div class="behind"></div><div class="behind"></div><div class="behind"></div>{{end}}
+    {{template "card" .}}
+  </div>
+  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts &middot; </span>stop whenever you like</p>
+</section>
+{{end}}
