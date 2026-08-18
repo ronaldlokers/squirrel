@@ -218,6 +218,49 @@ func (s *Store) PromoteItem(ctx context.Context, personID, itemID int64, every t
 	return c, true, nil
 }
 
+// LastTriaged is the most recent note to have left the pile, whichever surface
+// moved it.
+//
+// It is ordered by state_at rather than by anything the caller remembers,
+// because the two views share one pile: a note triaged on the screen is what
+// chat undoes, and the reverse. Anything else would be each surface keeping its
+// own idea of "last", which is the disagreement Principle 4 forbids.
+//
+// There is no history table to walk. A note that left the pile went to done,
+// dropped or kept, and putting it back means open — which is also the only
+// destination that makes sense for an undo, since the states are exits and open
+// is the pile.
+func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, error) {
+	rows, err := s.pool.Query(ctx, `
+		select id, raw_text, received_at, payload, state from items
+		 where person_id = $1 and raw_text <> ''
+		   and state <> 'open' and state_at is not null
+		 order by state_at desc, id desc
+		 limit 20`, personID)
+	if err != nil {
+		return Item{}, false, fmt.Errorf("reading the last triaged note: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var it Item
+		var payload json.RawMessage
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State); err != nil {
+			return Item{}, false, fmt.Errorf("scanning item: %w", err)
+		}
+		// The same test the pile applies. A typed command is stored like
+		// anything else and can be triaged by a redelivery or a stray tap, and
+		// undo must not answer with one.
+		if isNote(it.RawText, payload) {
+			return it, true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return Item{}, false, fmt.Errorf("reading the last triaged note: %w", err)
+	}
+	return Item{}, false, nil
+}
+
 // isNote is the pile's definition of a note, and it is deliberately the same
 // one CapturesSince uses: a genuine tap is not a thought, and neither is a
 // command. ParseAction matches on text alone, so isActionPayload is what tells

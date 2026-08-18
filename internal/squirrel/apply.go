@@ -383,6 +383,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "retire":
 		return a.retire(ctx, in.Arg, personID)
 
+	case "undo":
+		return a.undoLast(ctx, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -447,6 +450,32 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 		return noSuchLine(n), nil
 	}
 	return Message{Text: RenderDefined(c)}, nil
+}
+
+// undoLast puts the most recently triaged note back in the pile.
+//
+// Which note that is comes from the store rather than from anything this
+// applier remembers, so an undo typed in chat reverses a tap made on the
+// screen: two views, one pile. Said twice it walks back another step, and
+// nothing special happens on the second — an undo is a transition like any
+// other, and so is undoing it.
+//
+// A promotion is the one case worth knowing about: undoing it returns the note
+// and leaves the chore, because the chore is a separate thing that now exists.
+// !retire is how that goes away, and saying so here is cheaper than guessing
+// which chore a note became.
+func (a *Applier) undoLast(ctx context.Context, personID int64) (Message, error) {
+	it, ok, err := a.store.LastTriaged(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return Message{Text: "There is nothing to undo — nothing has left the pile."}, nil
+	}
+	if err := a.store.SetItemState(ctx, it.ID, ItemOpen, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: "Back in the pile — " + shorten(it.RawText)}, nil
 }
 
 // retire stops a chore coming back: `!retire bins out`, or `!retire 1` against
