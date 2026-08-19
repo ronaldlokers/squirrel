@@ -15,6 +15,8 @@
       {{/* What has not happened is not reported: a chore nobody has ever done
            shows its rhythm and stops there. */}}
       {{if .Last}}<span class="sep">&middot;</span><span>LAST DONE {{.Last}}</span>{{end}}
+      {{/* When it is worth raising — which never changes when it is due. */}}
+      {{if .When}}<span class="sep">&middot;</span><span>{{.When}}</span>{{end}}
     </p>
     <form class="acts" method="post" action="/chores/act">
       <input type="hidden" name="id" value="{{.ID}}">

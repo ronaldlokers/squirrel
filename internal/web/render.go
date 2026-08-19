@@ -81,10 +81,12 @@ type choreView struct {
 	Name string
 	// Every is the rhythm as a person says it; Chip is which of the four
 	// offered intervals that corresponds to, if any. Last is empty for a chore
-	// that has never been done.
+	// that has never been done, and When for one with no preference about
+	// being raised.
 	Every string
 	Chip  string
 	Last  string
+	When  string
 }
 
 // faceView is one of the five drawn answers. It carries no number and no

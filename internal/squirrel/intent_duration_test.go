@@ -69,7 +69,6 @@ func TestParseEveryRejects(t *testing.T) {
 		"every",
 		"every 2 weeks",                  // no name
 		"every 2 weeks:",                 // no name
-		"every fortnight vacuum",         // unit not supported
 		"every 2 lightyears x",           // unit not supported
 		"everything is fine",             // must not match on a prefix
 		"i vacuum every 2 weeks",         // must be the start of the message

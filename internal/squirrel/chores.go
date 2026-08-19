@@ -27,6 +27,9 @@ type Chore struct {
 	// "last done 3 weeks ago" about a chore nobody has ever done is a
 	// sentence about the person, not about the chore.
 	EverDone bool
+	// Ask is when raising it is worth doing. It never changes when the chore
+	// is due — see asking.go for why those are deliberately two questions.
+	Ask Asking
 }
 
 // DefaultTolerance is used when a definition does not carry one: a quarter of
@@ -41,20 +44,44 @@ func DefaultTolerance(every time.Duration) time.Duration {
 }
 
 func (s *Store) UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (Chore, error) {
+	return s.UpsertChoreAsking(ctx, personID, name, every, tolerance, Asking{})
+}
+
+// UpsertChoreAsking is UpsertChore plus when the chore is worth raising.
+//
+// A preference given is a preference kept: saying "every 2 weeks bins out"
+// after "every other tuesday bins out" is a change of rhythm, and it would be
+// a surprise for that to silently forget the tuesday. So an empty Asking
+// leaves what is already there, and clearing one is done by saying a different
+// one — the same shape as every other change here.
+func (s *Store) UpsertChoreAsking(ctx context.Context, personID int64, name string, every, tolerance time.Duration, ask Asking) (Chore, error) {
 	const q = `
-		insert into chores (person_id, name, interval_seconds, tolerance_seconds)
-		values ($1, $2, $3, $4)
+		insert into chores (person_id, name, interval_seconds, tolerance_seconds, ask_days, ask_part)
+		values ($1, $2, $3, $4, $5, $6)
 		on conflict (person_id, lower(name)) do update
 		  set interval_seconds = excluded.interval_seconds,
 		      tolerance_seconds = excluded.tolerance_seconds,
+		      ask_days = coalesce(excluded.ask_days, chores.ask_days),
+		      ask_part = coalesce(excluded.ask_part, chores.ask_part),
 		      active = true,
 		      updated_at = now()
 		returning id, person_id, name, interval_seconds, tolerance_seconds, active`
 
+	var days *int16
+	if ask.Days != AnyDay {
+		d := int16(ask.Days)
+		days = &d
+	}
+	var part *string
+	if ask.Part != AnyPart {
+		p := string(ask.Part)
+		part = &p
+	}
+
 	var c Chore
 	var everySec, tolSec int64
 	err := s.pool.QueryRow(ctx, q, personID, name,
-		int64(every.Seconds()), int64(tolerance.Seconds()),
+		int64(every.Seconds()), int64(tolerance.Seconds()), days, part,
 	).Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &c.Active)
 	if err != nil {
 		return Chore{}, fmt.Errorf("upserting chore %q: %w", name, err)
@@ -62,6 +89,7 @@ func (s *Store) UpsertChore(ctx context.Context, personID int64, name string, ev
 	c.Every = time.Duration(everySec) * time.Second
 	c.Tolerance = time.Duration(tolSec) * time.Second
 	c.EveryDays = int(c.Every.Hours() / 24)
+	c.Ask = ask
 	return c, nil
 }
 
@@ -145,7 +173,8 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
 		       extract(epoch from ($2::timestamptz - b.since))::bigint,
 		       exists (select 1 from events e
-		                where e.chore_id = c.id and e.retracted_at is null)
+		                where e.chore_id = c.id and e.retracted_at is null),
+		       c.ask_days, c.ask_part
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		   -- Snoozed is not done: the baseline above is untouched, so the chore
@@ -178,7 +207,8 @@ func (s *Store) SearchChores(ctx context.Context, personID int64, query string, 
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
 		       extract(epoch from (now() - b.since))::bigint,
 		       exists (select 1 from events e
-		                where e.chore_id = c.id and e.retracted_at is null)
+		                where e.chore_id = c.id and e.retracted_at is null),
+		       c.ask_days, c.ask_part
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		   and lower(c.name) like $2 escape '\'
@@ -194,7 +224,8 @@ func (s *Store) ActiveChores(ctx context.Context, personID int64) ([]Chore, erro
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
 		       extract(epoch from (now() - b.since))::bigint,
 		       exists (select 1 from events e
-		                where e.chore_id = c.id and e.retracted_at is null)
+		                where e.chore_id = c.id and e.retracted_at is null),
+		       c.ask_days, c.ask_part
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		 order by c.name`
@@ -213,8 +244,19 @@ func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore,
 	for rows.Next() {
 		var c Chore
 		var everySec, tolSec, sinceSec int64
-		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &sinceSec, &c.EverDone); err != nil {
+		// Both nullable, and null means no preference rather than a preference
+		// for nothing.
+		var askDays *int16
+		var askPart *string
+		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &sinceSec,
+			&c.EverDone, &askDays, &askPart); err != nil {
 			return nil, fmt.Errorf("scanning chore: %w", err)
+		}
+		if askDays != nil {
+			c.Ask.Days = Days(*askDays)
+		}
+		if askPart != nil {
+			c.Ask.Part = DayPart(*askPart)
 		}
 		c.Active = true
 		c.Every = time.Duration(everySec) * time.Second

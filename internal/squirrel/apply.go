@@ -247,7 +247,7 @@ func (a *Applier) nudgeBack(ctx context.Context, kind IntentKind) {
 func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	switch in.Kind {
 	case IntentDefine:
-		c, err := a.store.UpsertChore(ctx, personID, in.Name, in.Every, DefaultTolerance(in.Every))
+		c, err := a.store.UpsertChoreAsking(ctx, personID, in.Name, in.Every, DefaultTolerance(in.Every), in.Ask)
 		if err != nil {
 			return Message{}, err
 		}

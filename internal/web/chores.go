@@ -138,6 +138,12 @@ func toChoreView(c squirrel.Chore) choreView {
 	if c.EverDone {
 		v.Last = lastDone(c.SinceDays)
 	}
+	// Only when there is one to say. A chore with no preference says nothing
+	// rather than "any time", which would be a fact about the absence of a
+	// setting rather than about the chore.
+	if w := c.Ask.Words(); w != "" {
+		v.When = strings.ToUpper(w)
+	}
 	return v
 }
 

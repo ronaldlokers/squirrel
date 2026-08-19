@@ -346,8 +346,11 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 		with latest as (` + latestChorePrompt + `)
 		-- 0 and false: this query answers "what is still outstanding on the
 		-- last numbered surface", where neither the elapsed time nor whether
-		-- the chore was ever done is read by anyone.
-		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds, 0::bigint, false
+		-- the chore was ever done is read by anyone. The asking window is read
+		-- for the same reason the others are not: nothing here raises a chore,
+		-- it only names ones already raised.
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds, 0::bigint, false,
+		       c.ask_days, c.ask_part
 		  from prompt_lines l
 		  join latest p on p.id = l.prompt_id
 		  join chores c on c.id = l.chore_id

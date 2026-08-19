@@ -1,6 +1,6 @@
 package squirrel
 
-import "fmt"
+import "strings"
 
 // How a chore is spoken about, in one place, because there are two views of it
 // and they must agree.
@@ -69,8 +69,14 @@ func Cadence(days int) string {
 // birthday, and reporting that as "last done" would be a sentence about the
 // person rather than about the chore.
 func ChoreWords(c Chore) string {
-	if !c.EverDone {
-		return fmt.Sprintf("%s — %s", c.Name, Cadence(c.EveryDays))
+	parts := []string{Cadence(c.EveryDays)}
+	if c.EverDone {
+		parts = []string{SinceWords(c.SinceDays), Cadence(c.EveryDays)}
 	}
-	return fmt.Sprintf("%s — %s, %s", c.Name, SinceWords(c.SinceDays), Cadence(c.EveryDays))
+	// Only when there is one. "Any time, any day" is noise on a chore with no
+	// preference, which is most of them.
+	if w := c.Ask.Words(); w != "" {
+		parts = append(parts, w)
+	}
+	return c.Name + " — " + strings.Join(parts, ", ")
 }
