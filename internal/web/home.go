@@ -14,6 +14,15 @@ import "net/http"
 // it to fail.
 func homeHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, "home", view{Home: true})
+		q := r.URL.Query()
+		render(w, "home", view{
+			Home: true,
+			// All three arrive from the address bar, so they are read the way
+			// a stranger's typing is read: a present flag, and words that are
+			// escaped on the way out like any other text on this screen.
+			Kept:   q.Get("kept") != "",
+			NoKeep: q.Get("nokeep") != "",
+			Said:   q.Get("said"),
+		})
 	}
 }

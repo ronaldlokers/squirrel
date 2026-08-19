@@ -81,7 +81,18 @@ category sells the counter as the feature.
 - **Never a count.** No badge, no total, no "N to review", no page count. A
   capped list may say *that* there is more, never *how much* more. This is the
   single rule most likely to be broken by accident.
-- **Never a capture box.**
+- ~~**Never a capture box.**~~ **Overruled by the owner on 20 August 2026.**
+  The screen now captures, and it writes straight to the pile rather than
+  relaying through Campfire. The rule existed because two capture surfaces
+  means two places to look for a thought; what makes this survivable is that
+  the two surfaces write to the same table and the same list reads it back, so
+  there is still one pile. What it costs, precisely, and it is not nothing:
+  the Campfire room stops being the complete record of everything you told
+  Squirrel, and a note captured on the screen has no spool behind it, so an
+  unreachable database is a note that was never taken. The screen therefore
+  fails loudly and keeps the words on the page rather than clearing the field.
+  The alternative — posting into the room and letting the webhook bring it
+  back — was offered and declined.
 - Every state transition is reversible, and repeating one is a no-op rather than
   an error.
 - Postgres is on this screen's request path and that is correct — the spool
@@ -95,6 +106,11 @@ rejected: "inbox", which imports inbox-zero and its counter. The owner chose
 **Four states:** `open` (the pile), `done`, `dropped`, `kept`. `kept` is
 load-bearing — a serial number or a link is not a task and will never be done, so
 without it every reference note sits in triage forever.
+
+**Feature parity is a standing rule.** Anything you can do in chat you can do
+on the screen, and the reverse. It is Principle 4 generalised: two views of one
+pile that can do different things are two views that will eventually disagree
+about what the pile is.
 
 **Explicitly undecided:** tags, folders and projects; full-text ranking;
 editing a note's text; resurfacing old notes unprompted (rejected, not deferred —

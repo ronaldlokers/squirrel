@@ -230,6 +230,33 @@
   }
 
 
+  // ---- the slot -----------------------------------------------------------
+  //
+  // The field grows with what is in it. Without this a thought longer than one
+  // line is typed into a one-line box, and — worse — words handed back after a
+  // failed write arrive clipped, which reads as "some of it is gone" at exactly
+  // the moment the page is promising the opposite.
+  //
+  // Enhancement only: with this file absent the textarea scrolls, which is
+  // ugly and loses nothing.
+  const slot = document.querySelector(".slot textarea");
+  if (slot) {
+    const grow = () => {
+      slot.style.height = "auto";
+      slot.style.height = slot.scrollHeight + "px";
+    };
+    slot.addEventListener("input", grow);
+    grow();
+
+    // Enter keeps it, the way Enter sends a message in the room this product
+    // lives in. Shift+Enter is the newline, for a thought with two parts.
+    slot.addEventListener("keydown", e => {
+      if (e.key !== "Enter" || e.shiftKey) return;
+      e.preventDefault();
+      if (slot.value.trim()) slot.form.requestSubmit();
+    });
+  }
+
   // ---- the chores screen -------------------------------------------------
   //
   // The deck has one card, so a key there needs no idea of which thing it

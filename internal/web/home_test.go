@@ -41,7 +41,6 @@ func TestHomeHasTwoDoorsAndNothingElseToPress(t *testing.T) {
 	require.Equal(t, 1, strings.Count(body, `href="/chores"`), "one door to the chores")
 	// The lid's cross-link would be a third copy of a door.
 	require.NotContains(t, body, `class="lidlink"`)
-	require.Contains(t, body, "thoughts go in through the chat")
 }
 
 // Everywhere else the mark is the way back. Home is where it points, so on home
@@ -54,8 +53,11 @@ func TestTheMarkGoesHomeFromTheOtherScreens(t *testing.T) {
 	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `<a class="brand"`)
 }
 
-// The screen-wide rules do not stop at the deck.
-func TestHomeNeverEmitsACountOrACaptureBox(t *testing.T) {
+// The count rule does not stop at the deck. The capture rule did stop, on
+// purpose: the owner overruled it on 20 August 2026 and the slot is the
+// result, so what is pinned here is that there is exactly one of them and it
+// is the slot.
+func TestHomeNeverEmitsACount(t *testing.T) {
 	m := mounted(t, &fakeStore{items: []squirrel.Item{
 		note(1, "one", squirrel.ItemOpen),
 		note(2, "two", squirrel.ItemOpen),
@@ -67,11 +69,12 @@ func TestHomeNeverEmitsACountOrACaptureBox(t *testing.T) {
 	for _, total := range []string{"3 notes", "3 more", "(3)", "1 of ", "waiting"} {
 		require.NotContains(t, lower, total)
 	}
-	require.NotContains(t, body, "<textarea")
-	require.NotContains(t, body, `name="text"`)
-	// One field you can type into on this screen, and it is the search field.
+	// One slot, and one search field. Two places to type, and neither is a
+	// second pile.
+	require.Equal(t, 1, strings.Count(body, "<textarea"))
+	require.Equal(t, 1, strings.Count(body, `action="/capture"`))
 	typeable := strings.Count(body, "<input") - strings.Count(body, `<input type="hidden"`)
-	require.Equal(t, 1, typeable)
+	require.Equal(t, 1, typeable, "the search field")
 }
 
 // / is the home screen and nothing else. A bare "/" pattern would be Go's

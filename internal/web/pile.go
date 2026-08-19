@@ -32,6 +32,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// would arrive looking like a working page.
 	m.Get("/{$}", guard(opts, homeHandler()))
 	m.Get("/pile", guard(opts, pileHandler(s, opts)))
+	// The slot. Behind the origin check like every other write here: the
+	// identity says who is asking, sameOrigin says which page asked.
+	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))

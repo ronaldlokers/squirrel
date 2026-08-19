@@ -298,5 +298,29 @@ func isNote(text string, payload json.RawMessage) bool {
 	if _, isTap := ParseAction(text); isTap && isActionPayload(payload) {
 		return false
 	}
+	// A note captured on the screen is a note whatever it says.
+	//
+	// The matcher below reads text, and it has to: in a chat room the only
+	// thing distinguishing "done 2" the command from "done 2" the thought is
+	// the words. The slot has no such ambiguity — it is a capture surface and
+	// nothing else, with no commands to be confused with — so a thought that
+	// happens to read like one is still a thought. Without this, typing
+	// "every day vacuum" into the slot would store a row the pile then refuses
+	// to show: a thought lost silently, which is the failure this product
+	// exists to prevent. Chat has the leading dot for the same problem; the
+	// screen needs no escape hatch because it never interprets.
+	if isScreenCapture(payload) {
+		return true
+	}
 	return matchFn(text).Kind == IntentCapture
+}
+
+// ScreenCapture is the payload the screen writes, and the marker isNote reads.
+const ScreenCapture = `{"type":"screen"}`
+
+func isScreenCapture(payload json.RawMessage) bool {
+	var p struct {
+		Type string `json:"type"`
+	}
+	return json.Unmarshal(payload, &p) == nil && p.Type == "screen"
 }
