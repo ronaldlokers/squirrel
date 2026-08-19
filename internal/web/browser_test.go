@@ -270,3 +270,49 @@ func TestBrowserTheChorePickerReplacesTheRow(t *testing.T) {
 			return bg === "rgb(230, 109, 13)" || bg === "rgb(255, 138, 43)";
 		});`))
 }
+
+// The chores screen is a list, so a key needs to know which chore it means.
+// Rather than invent a selection model it uses the platform's own — the chore
+// you are focused in — and DESIGN.md's rule decides the rest: letters are
+// actions, movement is the arrow keys.
+func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, PersonID: 1, Name: "bins out", Active: true, EverDone: true,
+			Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
+		{ID: 2, PersonID: 1, Name: "water the ferns", Active: true,
+			Every: 7 * 24 * time.Hour, EveryDays: 7},
+	}}
+	c, srv := open(t, f)
+	c.navigate(t, srv.URL+"/chores")
+
+	// Nothing focused: the first key press says where you are rather than
+	// acting on something you did not choose.
+	c.key(t, "d")
+	c.until(t, "the first chore to take focus",
+		`document.activeElement.closest("article.chore")?.querySelector(".name").textContent === "bins out"`)
+
+	c.key(t, "ArrowDown")
+	c.until(t, "the second chore to take focus",
+		`document.activeElement.closest("article.chore")?.querySelector(".name").textContent === "water the ferns"`)
+
+	// O opens that chore's own question, not the first one's.
+	c.key(t, "o")
+	c.until(t, "the interval question to open",
+		`document.querySelectorAll("details.often[open]").length === 1 &&
+		 document.querySelector("details.often[open]").closest("article.chore")
+		   .querySelector(".name").textContent === "water the ferns"`)
+
+	c.key(t, "Escape")
+	c.until(t, "the question to close", `!document.querySelector("details.often[open]")`)
+
+	// The caps show on the chore you are in, and only there.
+	require.Equal(t, float64(3), c.eval(t, `
+		const card = document.activeElement.closest("article.chore");
+		return [...card.querySelectorAll(".key")]
+			.filter(k => getComputedStyle(k).display !== "none").length;`))
+	require.Equal(t, float64(0), c.eval(t, `
+		const other = [...document.querySelectorAll("article.chore")]
+			.find(a => a !== document.activeElement.closest("article.chore"));
+		return [...other.querySelectorAll(".key")]
+			.filter(k => getComputedStyle(k).display !== "none").length;`))
+}

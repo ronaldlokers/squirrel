@@ -57,8 +57,10 @@ func HelpMessage() Message {
 	}, "\n")}
 }
 
+// choreLine is a chore as a line of a list. The words are ChoreWords', because
+// the screen says the same thing about the same chore.
 func choreLine(c Chore) string {
-	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
+	return ChoreWords(c)
 }
 
 func plural(n int, unit string) string {
@@ -71,7 +73,7 @@ func plural(n int, unit string) string {
 // choreSentence is choreLine without the list numbering, for when a chore is
 // named on its own rather than as item N of a list.
 func choreSentence(c Chore) string {
-	return fmt.Sprintf("%s — %s, usually %d", c.Name, plural(c.SinceDays, "day"), c.EveryDays)
+	return ChoreWords(c)
 }
 
 func RenderList(chores []Chore) string {

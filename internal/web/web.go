@@ -54,6 +54,7 @@ type Store interface {
 	OpenItems(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
 	OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]squirrel.Item, bool, error)
 	SearchItems(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Item, bool, error)
+	KeptItems(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)
@@ -62,6 +63,7 @@ type Store interface {
 	// functions, but it is the other thing this pile holds and the screen was
 	// the only surface that could not see it.
 	ActiveChores(ctx context.Context, personID int64) ([]squirrel.Chore, error)
+	SearchChores(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Chore, error)
 	UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (squirrel.Chore, error)
 	DeactivateChore(ctx context.Context, choreID int64) error
 	RecordCompletion(ctx context.Context, choreID, personID int64, source string, at time.Time) error

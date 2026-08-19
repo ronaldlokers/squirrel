@@ -22,6 +22,7 @@ var templateFS embed.FS
 var pages = map[string]*template.Template{
 	"home":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/home.html")),
 	"chores":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/chores.html")),
+	"kept":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/kept.html")),
 	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),

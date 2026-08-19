@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -158,6 +159,34 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		 order by extract(epoch from ($2::timestamptz - b.since)) / c.interval_seconds desc, c.name`
 
 	return s.scanChores(ctx, q, personID, now)
+}
+
+// SearchChores finds an active chore by name.
+//
+// It exists because searching is one thing rather than two. The lid carries one
+// field on every screen, and typing "bins" into it while looking at the chores
+// used to answer with notes about bins and no chore — the field was honest
+// about searching notes, and the surprise was real anyway, because a person
+// searching for a word does not first classify what kind of thing they are
+// looking for.
+//
+// So the same query answers with both, and neither surface has to grow its own
+// search. Escaped like SearchItems, and for the same reason: a typed % is a
+// character.
+func (s *Store) SearchChores(ctx context.Context, personID int64, query string, limit int) ([]Chore, error) {
+	const q = baselineCTE + `
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
+		       extract(epoch from (now() - b.since))::bigint,
+		       exists (select 1 from events e
+		                where e.chore_id = c.id and e.retracted_at is null)
+		  from chores c join baseline b on b.id = c.id
+		 where c.person_id = $1 and c.active
+		   and lower(c.name) like $2 escape '\'
+		 order by c.name
+		 limit $3`
+
+	pattern := "%" + likeEscape(strings.ToLower(query)) + "%"
+	return s.scanChores(ctx, q, personID, pattern, limit)
 }
 
 func (s *Store) ActiveChores(ctx context.Context, personID int64) ([]Chore, error) {

@@ -43,6 +43,22 @@ func (f *fakeStore) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, 
 	return f.chores, nil
 }
 
+func (f *fakeStore) SearchChores(_ context.Context, _ int64, q string, limit int) ([]squirrel.Chore, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	out := []squirrel.Chore{}
+	for _, c := range f.chores {
+		if c.Active && strings.Contains(strings.ToLower(c.Name), strings.ToLower(q)) {
+			out = append(out, c)
+		}
+	}
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
 func (f *fakeStore) DeactivateChore(_ context.Context, choreID int64) error {
 	if f.err != nil {
 		return f.err
@@ -124,6 +140,23 @@ func (f *fakeStore) SearchItems(_ context.Context, _ int64, q string, limit int)
 	out := []squirrel.Item{}
 	for _, it := range f.items {
 		if strings.Contains(strings.ToLower(it.RawText), strings.ToLower(q)) {
+			out = append(out, it)
+		}
+	}
+	more := len(out) > limit
+	if more {
+		out = out[:limit]
+	}
+	return out, more, nil
+}
+
+func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	out := []squirrel.Item{}
+	for _, it := range f.items {
+		if it.State == squirrel.ItemKept {
 			out = append(out, it)
 		}
 	}
