@@ -232,7 +232,7 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner:          func() int64 { return 1 },
+		Owner: func() int64 { return 1 },
 	}))
 	return m
 }

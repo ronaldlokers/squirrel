@@ -13,9 +13,9 @@ func manifestHandler() http.HandlerFunc {
 	// Built rather than embedded, because the icon URLs carry the asset stamp
 	// and a static file would have to guess it.
 	body, err := json.MarshalIndent(map[string]any{
-		"name":             "Squirrel",
-		"short_name":       "Squirrel",
-		"description":      "The pile: read, search and triage what you told Squirrel.",
+		"name":        "Squirrel",
+		"short_name":  "Squirrel",
+		"description": "The pile: read, search and triage what you told Squirrel.",
 		// The installed app opens at home, and its scope is the whole screen.
 		"start_url":        "/",
 		"scope":            "/",

@@ -59,7 +59,7 @@ func screen(t *testing.T, f *fakeStore) *httptest.Server {
 	m := &serveMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner:          func() int64 { return 1 },
+		Owner: func() int64 { return 1 },
 	}))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

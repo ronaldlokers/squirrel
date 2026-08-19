@@ -159,7 +159,7 @@ func TestPileWaitsVisiblyForItsOwner(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, &fakeStore{}, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner:          func() int64 { return 0 },
+		Owner: func() int64 { return 0 },
 	}))
 
 	w := m.call(t, "GET", "/pile", nil)
