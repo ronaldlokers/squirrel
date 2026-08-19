@@ -47,6 +47,6 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
-		render(w, "home", v)
+		renderWith(w, r, s, opts, "home", v)
 	}
 }

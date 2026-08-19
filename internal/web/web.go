@@ -63,6 +63,12 @@ type Store interface {
 	// deliberately no way to ask this store for a series.
 	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
+
+	// The body double. One per person, replaced each time, and nothing kept
+	// once it is over.
+	StartTimer(ctx context.Context, personID int64, label string, d time.Duration, now time.Time) (squirrel.Timer, error)
+	CurrentTimer(ctx context.Context, personID int64) (squirrel.Timer, bool, error)
+	StopTimer(ctx context.Context, personID int64) error
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	Reword(ctx context.Context, personID, itemID int64, text string) (bool, error)

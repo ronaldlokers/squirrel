@@ -39,6 +39,17 @@
       </details>
       <button class="abtn stop" name="act" value="retire">STOP ASKING <span class="key" aria-hidden="true">S</span></button>
     </form>
+    {{/* A body double, on the thing you are about to do. It says go and then
+         says nothing until the end — nothing is kept about it, and stopping
+         halfway is a normal ending. */}}
+    <form class="timerRow" method="post" action="/timer">
+      <input type="hidden" name="label" value="{{.Name}}">
+      <input type="hidden" name="from" value="chores">
+      <span class="lead">GO FOR</span>
+      <button class="tbtn" name="minutes" value="5">5 min</button>
+      <button class="tbtn" name="minutes" value="10">10 min</button>
+      <button class="tbtn" name="minutes" value="20">20 min</button>
+    </form>
   </article>
   {{end}}
 

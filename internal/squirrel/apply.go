@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -398,6 +399,15 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "fix":
 		return a.fix(ctx, in.Arg, personID)
 
+	case "timer", "start":
+		return a.timer(ctx, in.Arg, personID)
+
+	case "stop":
+		if err := a.store.StopTimer(ctx, personID); err != nil {
+			return Message{}, err
+		}
+		return Message{Text: "Stopped."}, nil
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -700,6 +710,50 @@ func (a *Applier) fix(ctx context.Context, arg string, personID int64) (Message,
 		return noSuchLine(n), nil
 	}
 	return Message{Text: "Fixed — " + text}, nil
+}
+
+// timerMinutes reads "10", "10m", "10 minutes" — the ways a person writes a
+// number of minutes when they are not thinking about formats.
+var timerMinutes = regexp.MustCompile(`^(\d{1,3})\s*(?:m|min|mins|minute|minutes)?$`)
+
+// timer starts a body double: `!timer 10 the kitchen`.
+//
+// It says go and then says nothing until the end. Nothing is kept about it
+// afterwards, and starting a second one replaces the first rather than
+// complaining — the answer to "actually, twenty minutes" is to say twenty
+// minutes.
+func (a *Applier) timer(ctx context.Context, arg string, personID int64) (Message, error) {
+	number, label, _ := strings.Cut(strings.TrimSpace(arg), " ")
+	label = strings.TrimSpace(label)
+
+	m := timerMinutes.FindStringSubmatch(strings.ToLower(number))
+	if m == nil {
+		return Message{Text: "How long, and on what? Try !timer 10 the kitchen."}, nil
+	}
+	mins, err := strconv.Atoi(m[1])
+	if err != nil || mins < 1 || mins > 180 {
+		// Three hours is not a body double, it is an afternoon. Past that the
+		// thing being asked for is a chore.
+		return Message{Text: "Somewhere between a minute and three hours. Try !timer 10 the kitchen."}, nil
+	}
+	if label == "" {
+		label = "it"
+	}
+
+	t, err := a.store.StartTimer(ctx, personID, label, time.Duration(mins)*time.Minute, time.Now())
+	if err != nil {
+		return Message{}, err
+	}
+	return Message{Text: fmt.Sprintf("%d minutes on %s. Go — I'll say when.", mins, t.Label)}, nil
+}
+
+// TimerUpMessage is the one thing a timer says, at the end.
+//
+// It asks nothing and reports nothing. Whether the thing got done is not the
+// timer's business, and "did you finish?" would turn a body double into a
+// supervisor.
+func TimerUpMessage(t Timer) Message {
+	return Message{Text: fmt.Sprintf("That's %s. Stop wherever you are.", t.Label)}
 }
 
 // undoLast puts the most recently triaged note back in the pile.

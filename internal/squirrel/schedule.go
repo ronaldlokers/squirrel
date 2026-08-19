@@ -513,10 +513,35 @@ func (s *Scheduler) Run(ctx context.Context) {
 		if err := s.Once(ctx, time.Now()); err != nil {
 			s.opts.OnError(err)
 		}
+		// Separate from Once on purpose. Once returns early for the rest of
+		// the day as soon as the evening message has gone, and a timer started
+		// at eight in the evening has to be answered anyway.
+		if err := s.TimerTick(ctx, time.Now()); err != nil {
+			s.opts.OnError(err)
+		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 		}
 	}
+}
+
+// TimerTick says "time" when a timer's time is up, once.
+//
+// A minute's granularity, which is the tick's own, and that is fine precision
+// for a body double: the point was the going, and a message that arrives
+// within a minute of the end says the same thing as one that arrives on the
+// second.
+//
+// The claim deletes the row as it reads it, so two overlapping ticks cannot
+// both announce the same timer — and nothing is left behind afterwards,
+// because a finished timer is not a thing this product keeps.
+func (s *Scheduler) TimerTick(ctx context.Context, now time.Time) error {
+	t, found, err := s.opts.Store.ClaimFinishedTimer(ctx, s.opts.PersonID, now)
+	if err != nil || !found {
+		return err
+	}
+	_, err = s.sendMessage(ctx, TimerUpMessage(t))
+	return err
 }

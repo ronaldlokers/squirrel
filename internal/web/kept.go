@@ -28,6 +28,6 @@ func keptHandler(s Store, opts Options) http.HandlerFunc {
 		for _, it := range items {
 			v.Results = append(v.Results, toView(it))
 		}
-		render(w, "kept", v)
+		renderWith(w, r, s, opts, "kept", v)
 	}
 }

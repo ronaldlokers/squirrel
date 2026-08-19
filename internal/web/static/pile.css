@@ -791,6 +791,60 @@
 
 
 
+
+  /* ---------- the body double ---------- */
+
+  /* On the chore, because you time the thing you are looking at. Quiet: the
+     card's three answers are what it is for, and this is an offer beneath
+     them. */
+  .timerRow {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 2px dashed rgba(28, 17, 11, .18);
+  }
+  .timerRow .lead {
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  .tbtn {
+    padding: 9px 13px; min-height: 44px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 700;
+    cursor: pointer;
+  }
+  .tbtn:hover { background: var(--paper-deep); }
+  .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); color: var(--paper); }
+
+  /* Running, in the lid, on every screen. */
+  .running {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 14px;
+    background: var(--violet); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 700;
+  }
+  .running .what { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Tabular figures so the seconds do not shuffle the label sideways as they
+     count down. */
+  .running .left {
+    font-variant-numeric: tabular-nums; letter-spacing: .02em;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  .stopTimer {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--cream); text-decoration: underline; text-underline-offset: 3px;
+    font: 600 12px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 650;
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .stopTimer:hover { color: var(--paper); }
+
   /* ---------- making one from nothing ---------- */
 
   /* The interval question's own mechanism, asked three times: a disclosure
@@ -1066,6 +1120,8 @@
        Sized by height they wrapped four-and-one, which reads as one of them
        being a different kind of answer. */
     .reword textarea { font-size: 18.5px; }
+    /* Its own row on a phone, where the lid is already two rows deep. */
+    .running { order: 6; flex: 1 1 100%; justify-content: center; }
     .checkin { margin-top: 20px; }
     .faces { gap: 0; flex-wrap: nowrap; }
     .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 12px; letter-spacing: .08em; }

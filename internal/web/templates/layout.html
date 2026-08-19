@@ -32,6 +32,19 @@
   </a>
   {{end}}
   <span class="spacer"></span>
+  {{/* Running, and on every screen: you started it in order to go and do
+       something, and wandering to the pile should not lose it. The remaining
+       time is the one number here that counts down — a fact about a thing you
+       chose to start, not a total of what you have not done. */}}
+  {{with .Timer}}
+  <form class="running" method="post" action="/timer">
+    <input type="hidden" name="stop" value="1">
+    <input type="hidden" name="from" value="{{$.Here}}">
+    <span class="what">{{.Label}}</span>
+    <span class="left">{{.Left}}</span>
+    <button class="stopTimer" type="submit">stop</button>
+  </form>
+  {{end}}
   {{/* The other half of the pile, and the way back from it. A chore was
        invisible until it nudged you, which is the one moment you are least
        able to decide you never want it again.

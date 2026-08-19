@@ -33,7 +33,7 @@ func choresHandler(s Store, opts Options) http.HandlerFunc {
 		for _, c := range chores {
 			v.Chores = append(v.Chores, toChoreView(c))
 		}
-		render(w, "chores", v)
+		renderWith(w, r, s, opts, "chores", v)
 	}
 }
 
