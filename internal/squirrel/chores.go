@@ -64,6 +64,22 @@ func (s *Store) UpsertChore(ctx context.Context, personID int64, name string, ev
 	return c, nil
 }
 
+// SnoozeChore silences a chore until a moment, without pretending it was done.
+//
+// The baseline it is measured against is untouched, so nothing about when it is
+// next due changes — it is the asking that stops. Saying it again with a
+// different date moves it; passing a time in the past clears it, which is what
+// makes "actually, ask me now" the same operation rather than a special one.
+func (s *Store) SnoozeChore(ctx context.Context, choreID, personID int64, until time.Time) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		update chores set snoozed_until = $3, updated_at = now()
+		 where id = $1 and person_id = $2 and active`, choreID, personID, until)
+	if err != nil {
+		return false, fmt.Errorf("snoozing chore: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
 func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
 	_, err := s.pool.Exec(ctx,
 		`update chores set active = false, updated_at = now() where id = $1`, choreID)
@@ -131,6 +147,10 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		                where e.chore_id = c.id and e.retracted_at is null)
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
+		   -- Snoozed is not done: the baseline above is untouched, so the chore
+		   -- is exactly as due as it was when the clock comes back round. This
+		   -- only stops the asking.
+		   and (c.snoozed_until is null or $2::timestamptz >= c.snoozed_until)
 		   and $2::timestamptz >= b.since + make_interval(secs => c.interval_seconds)
 		   and (b.last_shown is null
 		        or $2::timestamptz >= b.last_shown

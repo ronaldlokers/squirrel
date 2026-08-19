@@ -386,6 +386,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "undo":
 		return a.undoLast(ctx, personID)
 
+	case "snooze":
+		return a.snooze(ctx, in.Arg, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -450,6 +453,102 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 		return noSuchLine(n), nil
 	}
 	return Message{Text: RenderDefined(c)}, nil
+}
+
+// snooze stops a chore asking for a while, without pretending it was done:
+// `!snooze bins out`, `!snooze 1`, `!snooze bins out for 3 days`.
+//
+// The chore's clock keeps running while it is quiet, so when the time is up it
+// is exactly as due as it was. That is the difference between this and `done`,
+// and it is the whole reason this exists rather than people typing `done` at
+// chores they have not done.
+func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+
+	// "for 3 days" is peeled off the end so the rest can be a name with spaces
+	// in it, which is what a chore name usually is.
+	var how time.Duration
+	said := ""
+
+	// "now" is how the quiet ends early. It is the same write with a time in
+	// the past rather than a second command, because a snooze that could not be
+	// taken back would be a small permanent decision — and this product does
+	// not have those.
+	if subject, found := strings.CutSuffix(arg, " now"); found {
+		arg, how, said = strings.TrimSpace(subject), 0, "asking again"
+	} else if subject, rest, found := strings.Cut(arg, " for "); found {
+		// "for a week" is what a person types; ParseEvery wants a number or
+		// nothing where the article is. Dropping it here rather than widening
+		// the pattern keeps one definition of what an interval looks like.
+		rest = strings.TrimSpace(rest)
+		for _, article := range []string{"a ", "an "} {
+			rest = strings.TrimPrefix(rest, article)
+		}
+		_, parsed, ok := ParseEvery("every " + rest + " " + intervalSentinel)
+		if !ok {
+			return Message{Text: "How long? Try !snooze " + subject + " for 3 days."}, nil
+		}
+		arg, how = strings.TrimSpace(subject), parsed
+		said = "for " + rest
+	}
+
+	active, err := a.store.ActiveChores(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if len(active) == 0 {
+		return Message{Text: "You have no chores, so there is nothing to put off."}, nil
+	}
+	if arg == "" {
+		return Message{Text: "Which one, and for how long? Try !snooze " + active[0].Name + " for 3 days."}, nil
+	}
+	// No default, deliberately. A default is a decision made in advance for a
+	// moment nobody can see, and the two obvious ones are both wrong somewhere:
+	// a day is nothing for a fortnightly chore, and an interval is retiring by
+	// another name. Asking costs one line and puts the decision where the
+	// information is.
+	if how == 0 && said == "" {
+		return Message{Text: fmt.Sprintf("For how long? Try !snooze %s for 3 days, or a week, or a month.", arg)}, nil
+	}
+
+	var target *Chore
+	if n, err := strconv.Atoi(arg); err == nil {
+		line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+		if err != nil {
+			return Message{}, err
+		}
+		if !ok {
+			return noSuchLine(n), nil
+		}
+		if line.Chore == nil {
+			return Message{Text: fmt.Sprintf("Line %d is a note, not a chore.", n)}, nil
+		}
+		target = line.Chore
+	} else {
+		for i, c := range active {
+			if strings.EqualFold(c.Name, arg) {
+				target = &active[i]
+				break
+			}
+		}
+	}
+	if target == nil {
+		names := make([]string, 0, len(active))
+		for _, c := range active {
+			names = append(names, c.Name)
+		}
+		return Message{Text: fmt.Sprintf("I don't have a chore called %q. You have: %s.",
+			arg, strings.Join(names, ", "))}, nil
+	}
+
+	if _, err := a.store.SnoozeChore(ctx, target.ID, personID, time.Now().Add(how)); err != nil {
+		return Message{}, err
+	}
+	if how == 0 {
+		return Message{Text: fmt.Sprintf("%s — %s.", target.Name, said)}, nil
+	}
+	return Message{Text: fmt.Sprintf("%s — quiet %s. It is no less done than it was.",
+		target.Name, said)}, nil
 }
 
 // undoLast puts the most recently triaged note back in the pile.
