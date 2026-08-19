@@ -99,3 +99,24 @@ func TestTheWorkerIsNotBehindTheYearLongCache(t *testing.T) {
 	require.NotContains(t, w.Header().Get("Cache-Control"), "31536000",
 		"a worker nobody can replace is a worker you live with forever")
 }
+
+// A browser asks for /favicon.ico at the site root, which this screen does not
+// own — it lives under a path. The links are how it is told where to look, and
+// without them a tab shows the browser's blank page glyph.
+func TestThePageNamesItsFavicon(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+
+	for _, size := range []string{"16x16", "32x32", "48x48"} {
+		require.Contains(t, body, `sizes="`+size+`"`)
+	}
+	require.Contains(t, body, "/static/favicon-32.png?v="+assetVersion)
+}
+
+func TestTheFaviconsAreEmbedded(t *testing.T) {
+	for _, name := range []string{"favicon-16.png", "favicon-32.png", "favicon-48.png"} {
+		b, err := staticFS.ReadFile("static/" + name)
+		require.NoError(t, err, name)
+		require.NotEmpty(t, b, name)
+	}
+}
