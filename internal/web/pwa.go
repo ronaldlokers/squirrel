@@ -19,11 +19,18 @@ func manifestHandler(opts Options) http.HandlerFunc {
 		"start_url":        opts.Path,
 		"scope":            opts.Path,
 		"display":          "standalone",
-		"background_color": "#58388a",
+		"background_color": "#673ab9",
 		"theme_color":      "#3b2560",
 		"icons": []map[string]string{
-			{"src": opts.Path + "/static/icon-192.png?v=" + assetVersion, "sizes": "192x192", "type": "image/png"},
+			{"src": opts.Path + "/static/icon-192.png?v=" + assetVersion, "sizes": "192x192", "type": "image/png", "purpose": "any"},
 			{"src": opts.Path + "/static/icon-512.png?v=" + assetVersion, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+			// A maskable icon is cropped to whatever shape the launcher likes —
+			// a circle on most Android homescreens — and only the middle 80% is
+			// guaranteed to survive it. The mark reaches nearly the full width
+			// of the square it was drawn in, so its tail would be shaved off.
+			// This one sits the same art inside its own safe zone, on the same
+			// purple, so the padding is invisible.
+			{"src": opts.Path + "/static/icon-maskable-512.png?v=" + assetVersion, "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
 		},
 	}, "", "  ")
 	if err != nil {

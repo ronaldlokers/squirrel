@@ -19,11 +19,14 @@ func TestTheManifestKnowsWhereTheScreenIs(t *testing.T) {
 	require.Contains(t, w.Header().Get("Content-Type"), "manifest+json")
 
 	var m struct {
-		Name     string                 `json:"name"`
-		StartURL string                 `json:"start_url"`
-		Scope    string                 `json:"scope"`
-		Display  string                 `json:"display"`
-		Icons    []struct{ Src string } `json:"icons"`
+		Name     string `json:"name"`
+		StartURL string `json:"start_url"`
+		Scope    string `json:"scope"`
+		Display  string `json:"display"`
+		Icons    []struct {
+			Src     string `json:"src"`
+			Purpose string `json:"purpose"`
+		} `json:"icons"`
 	}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &m))
 	require.Equal(t, "Squirrel", m.Name)
@@ -34,6 +37,16 @@ func TestTheManifestKnowsWhereTheScreenIs(t *testing.T) {
 	for _, icon := range m.Icons {
 		require.True(t, strings.HasPrefix(icon.Src, "/pile/static/"), icon.Src)
 	}
+
+	// A launcher that crops to a circle takes the maskable one and leaves the
+	// mark whole; without it, Android shaves the tail off the square.
+	var maskable bool
+	for _, icon := range m.Icons {
+		if icon.Purpose == "maskable" {
+			maskable = true
+		}
+	}
+	require.True(t, maskable, "there is an icon drawn for a launcher that crops")
 }
 
 // A worker served from /pile/static/ would only ever control /pile/static/.
@@ -70,7 +83,7 @@ func TestThePageOffersItselfForInstalling(t *testing.T) {
 }
 
 func TestTheIconsAreEmbedded(t *testing.T) {
-	for _, name := range []string{"icon-192.png", "icon-512.png", "apple-touch-icon.png"} {
+	for _, name := range []string{"icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"} {
 		b, err := staticFS.ReadFile("static/" + name)
 		require.NoError(t, err, name)
 		require.NotEmpty(t, b, name)
