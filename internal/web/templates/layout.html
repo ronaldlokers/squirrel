@@ -18,10 +18,14 @@
     <span class="wordmark">Squirrel</span>
   </span>
   <span class="spacer"></span>
-  {{/* The other half of the pile. A chore was invisible until it nudged you,
-       which is the one moment you are least able to decide you never want it
-       again. */}}
+  {{/* The other half of the pile, and the way back from it. A chore was
+       invisible until it nudged you, which is the one moment you are least
+       able to decide you never want it again. */}}
+  {{if eq .Here "chores"}}
+  <a class="lidlink" href="{{.Path}}">the pile</a>
+  {{else}}
   <a class="lidlink" href="{{.Path}}/chores">chores</a>
+  {{end}}
   <form class="find" method="get" action="{{.Path}}" role="search">
     <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
       <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>

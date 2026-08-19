@@ -37,6 +37,9 @@ type noteView struct {
 
 type view struct {
 	Path string
+	// Here is which of the two screens this is, so the lid can offer the other
+	// one. A link that points at the page you are on is furniture.
+	Here string
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -54,9 +57,13 @@ type view struct {
 // choreView is a chore as the screen says it: what it is, how often it comes
 // back, and when it was last done. No "due", no "late", no position in a queue.
 type choreView struct {
-	ID    int64
-	Name  string
+	ID   int64
+	Name string
+	// Every is the rhythm as a person says it; Chip is which of the four
+	// offered intervals that corresponds to, if any. Last is empty for a chore
+	// that has never been done.
 	Every string
+	Chip  string
 	Last  string
 }
 

@@ -29,7 +29,7 @@ func choresHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		v := view{Path: opts.Path}
+		v := view{Path: opts.Path, Here: "chores"}
 		for _, c := range chores {
 			v.Chores = append(v.Chores, toChoreView(c))
 		}
@@ -126,11 +126,54 @@ func backToChores(w http.ResponseWriter, r *http.Request, opts Options) {
 }
 
 func toChoreView(c squirrel.Chore) choreView {
-	return choreView{
+	v := choreView{
 		ID:    c.ID,
 		Name:  c.Name,
-		Every: "every " + plural(c.EveryDays, "day"),
-		Last:  lastDone(c.SinceDays),
+		Every: cadence(c.EveryDays),
+		Chip:  chipFor(c.EveryDays),
+	}
+	// What has not happened is not reported. A chore nobody has ever done has
+	// a baseline anyway — its own birthday — and printing that as "last done"
+	// would be a sentence about the person rather than about the chore.
+	if c.EverDone {
+		v.Last = lastDone(c.SinceDays)
+	}
+	return v
+}
+
+// cadence says the rhythm the way a person would. "every 14 days" is arithmetic
+// the reader has to do; "every 2 weeks" is the thing they set.
+func cadence(days int) string {
+	switch days {
+	case 1:
+		return "EVERY DAY"
+	case 7:
+		return "EVERY WEEK"
+	case 14:
+		return "EVERY 2 WEEKS"
+	case 30:
+		return "EVERY MONTH"
+	default:
+		return "EVERY " + strings.ToUpper(plural(days, "DAY"))
+	}
+}
+
+// chipFor is which of the four offered intervals this chore is currently set
+// to, or nothing when it was defined from chat with an interval the picker
+// does not offer — in which case no chip is marked and pressing one is a
+// change like any other, rather than a lie about where things stand.
+func chipFor(days int) string {
+	switch days {
+	case 1:
+		return "every day"
+	case 7:
+		return "every week"
+	case 14:
+		return "every 2 weeks"
+	case 30:
+		return "every month"
+	default:
+		return ""
 	}
 }
 

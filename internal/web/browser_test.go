@@ -218,11 +218,51 @@ func TestBrowserSkipIsALinkTheKeyPresses(t *testing.T) {
 }
 
 func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
-	c, _ := open(t, aPile())
+	c, srv := open(t, aPile())
 
 	require.Equal(t, "/pile", c.eval(t, `
 		const reg = await navigator.serviceWorker.ready;
 		return new URL(reg.scope).pathname;`),
 		"a scope with the trailing slash would control everything except the screen")
-	require.Equal(t, true, c.eval(t, `return (await caches.keys()).length > 0`))
+
+	// The second visit is the one that matters. On the first, the page's assets
+	// are already on their way before the worker takes control, so nothing goes
+	// through it and its cache is legitimately empty — asserting on that load
+	// was testing how quickly a worker installs rather than what it does.
+	c.navigate(t, srv.URL+"/pile")
+	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
+	c.until(t, "an asset to be cached", `(await caches.keys()).length > 0`)
+
+	require.Equal(t, true, c.eval(t, `
+		const cache = await caches.open((await caches.keys())[0]);
+		const held = await cache.keys();
+		return held.some(r => r.url.includes("/static/"));`),
+		"what it keeps is assets")
+}
+
+// The chore picker replaces the action row with no script at all — it is a
+// disclosure and a :has() rule. Go can see the markup but not the cascade, and
+// the cascade is the whole mechanism.
+func TestBrowserTheChorePickerReplacesTheRow(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, PersonID: 1, Name: "bins out", Active: true, EverDone: true,
+			Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
+	}}
+	c, srv := open(t, f)
+	c.navigate(t, srv.URL+"/pile/chores")
+
+	require.Equal(t, "flex", c.eval(t, `return getComputedStyle(document.querySelector(".abtn.did")).display`))
+	require.Equal(t, "every 2 weeks", c.eval(t, `return document.querySelector(".chip.current").textContent`),
+		"the picker says where the interval sits now")
+
+	c.eval(t, `document.querySelector("details.often").open = true; return true`)
+	c.until(t, "the other actions to step aside",
+		`getComputedStyle(document.querySelector(".abtn.did")).display === "none"`)
+
+	// A chore at rest is not a creation, so nothing on it is orange.
+	require.Equal(t, false, c.eval(t, `
+		return [...document.querySelectorAll(".chore *")].some(el => {
+			const bg = getComputedStyle(el).backgroundColor;
+			return bg === "rgb(230, 109, 13)" || bg === "rgb(255, 138, 43)";
+		});`))
 }

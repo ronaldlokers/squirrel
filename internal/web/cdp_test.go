@@ -284,7 +284,7 @@ func (c *cdp) until(t *testing.T, what, expression string) {
 	t.Helper()
 	deadline := time.Now().Add(10 * time.Second)
 	for {
-		if c.eval(t, "return "+expression) == true {
+		if c.eval(t, "return await ("+expression+")") == true {
 			return
 		}
 		if time.Now().After(deadline) {

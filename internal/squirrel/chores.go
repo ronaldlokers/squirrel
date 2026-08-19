@@ -21,6 +21,11 @@ type Chore struct {
 	// renderer prints and neither is stored.
 	SinceDays int
 	EveryDays int
+	// EverDone says whether the baseline is a completion or merely the
+	// chore's own birthday, which the screen needs in order to keep quiet:
+	// "last done 3 weeks ago" about a chore nobody has ever done is a
+	// sentence about the person, not about the chore.
+	EverDone bool
 }
 
 // DefaultTolerance is used when a definition does not carry one: a quarter of
@@ -121,7 +126,9 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 	// only ever fires once daily regardless.
 	const q = baselineCTE + `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
-		       extract(epoch from ($2::timestamptz - b.since))::bigint
+		       extract(epoch from ($2::timestamptz - b.since))::bigint,
+		       exists (select 1 from events e
+		                where e.chore_id = c.id and e.retracted_at is null)
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		   and $2::timestamptz >= b.since + make_interval(secs => c.interval_seconds)
@@ -136,7 +143,9 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 func (s *Store) ActiveChores(ctx context.Context, personID int64) ([]Chore, error) {
 	const q = baselineCTE + `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
-		       extract(epoch from (now() - b.since))::bigint
+		       extract(epoch from (now() - b.since))::bigint,
+		       exists (select 1 from events e
+		                where e.chore_id = c.id and e.retracted_at is null)
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		 order by c.name`
@@ -155,7 +164,7 @@ func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore,
 	for rows.Next() {
 		var c Chore
 		var everySec, tolSec, sinceSec int64
-		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &sinceSec); err != nil {
+		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &sinceSec, &c.EverDone); err != nil {
 			return nil, fmt.Errorf("scanning chore: %w", err)
 		}
 		c.Active = true

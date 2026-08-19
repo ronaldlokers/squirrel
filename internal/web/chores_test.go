@@ -13,7 +13,7 @@ import (
 
 func chore(id int64, name string, everyDays, sinceDays int) squirrel.Chore {
 	return squirrel.Chore{
-		ID: id, PersonID: 1, Name: name, Active: true,
+		ID: id, PersonID: 1, Name: name, Active: true, EverDone: true,
 		Every:     time.Duration(everyDays) * 24 * time.Hour,
 		EveryDays: everyDays,
 		SinceDays: sinceDays,
@@ -29,7 +29,7 @@ func TestChoresListsWhatComesBack(t *testing.T) {
 
 	require.Contains(t, body, "bins out")
 	require.Contains(t, body, "water the plants")
-	require.Contains(t, body, "every 14 days")
+	require.Contains(t, body, "EVERY 2 WEEKS", "the rhythm as a person says it, not arithmetic")
 }
 
 // The rule that governs the pile governs this too: a chore may say when it was
@@ -110,6 +110,30 @@ func TestThePileAndTheChoresLinkToEachOther(t *testing.T) {
 
 	require.Contains(t, m.call(t, "GET", "/pile", nil).Body.String(), `href="/pile/chores"`)
 	require.Contains(t, m.call(t, "GET", "/pile/chores", nil).Body.String(), `href="/pile"`)
+}
+
+// A chore nobody has ever done has a baseline anyway — its own birthday — and
+// reporting that as "last done" would be a sentence about the person.
+func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
+	never := chore(1, "descale the shower head", 30, 400)
+	never.EverDone = false
+	body := mounted(t, &fakeStore{chores: []squirrel.Chore{never}}).
+		call(t, "GET", "/pile/chores", nil).Body.String()
+
+	require.Contains(t, body, "EVERY MONTH")
+	require.NotContains(t, body, "LAST DONE")
+	require.NotContains(t, body, "a while back")
+}
+
+// The chore is at rest here, so it does not wear the colour of something being
+// made, nor the page tab that says what a note ended up as.
+func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
+	body := mounted(t, &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}).
+		call(t, "GET", "/pile/chores", nil).Body.String()
+
+	require.NotContains(t, body, "state-chore")
+	require.NotContains(t, body, `class="rcard`)
+	require.NotContains(t, body, `class="tab"`)
 }
 
 func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
