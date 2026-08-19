@@ -790,6 +790,135 @@
 
 
 
+
+
+  /* ---------- the body double ---------- */
+
+  /* On the chore, because you time the thing you are looking at. Quiet: the
+     card's three answers are what it is for, and this is an offer beneath
+     them. */
+  .timerRow {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 2px dashed rgba(28, 17, 11, .18);
+  }
+  .timerRow .lead {
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  .tbtn {
+    padding: 9px 13px; min-height: 44px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 700;
+    cursor: pointer;
+  }
+  .tbtn:hover { background: var(--paper-deep); }
+  .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); color: var(--paper); }
+
+  /* Running, in the lid, on every screen. */
+  .running {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 14px;
+    background: var(--violet); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 700;
+  }
+  .running .what { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Tabular figures so the seconds do not shuffle the label sideways as they
+     count down. */
+  .running .left {
+    font-variant-numeric: tabular-nums; letter-spacing: .02em;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  .stopTimer {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--cream); text-decoration: underline; text-underline-offset: 3px;
+    font: 600 12px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 650;
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .stopTimer:hover { color: var(--paper); }
+
+  /* ---------- making one from nothing ---------- */
+
+  /* The interval question's own mechanism, asked three times: a disclosure
+     that opens in place, so nothing is a modal and nothing is a second page.
+     Dashed and quiet when shut, because most visits are not about adding. */
+  .newchore {
+    margin-top: 18px;
+    border: var(--line) dashed rgba(254, 214, 167, .55);
+    border-radius: var(--r);
+    padding: 0 18px;
+  }
+  .newchore[open] { background: rgba(59, 37, 96, .45); padding-bottom: 20px; }
+  .newchore > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; min-height: 52px;
+    color: var(--cream);
+    font-size: 14.5px;
+    font-variation-settings: var(--precise), "wght" 700;
+  }
+  .newchore > summary::-webkit-details-marker { display: none; }
+  .newchore .plus {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; flex: none;
+    border: var(--line) solid var(--cream); border-radius: 999px;
+    font-size: 17px; line-height: 1;
+  }
+  .newchore .lead {
+    margin: 14px 0 9px;
+    font-size: 12px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 720;
+    color: rgba(254, 214, 167, .85);
+  }
+  .newchore .namefield {
+    display: flex; align-items: center;
+    padding: 10px 16px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .newchore .namefield input {
+    flex: 1; min-width: 0; border: 0; background: transparent; padding: 0;
+    font: 400 17px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    color: var(--outline); caret-color: var(--orange);
+  }
+  .newchore .namefield input:focus { outline: none; }
+  .newchore .namefield input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .newchore .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* A chip is a label wrapping its radio, so the whole chip is the target and
+     the choice survives with no script at all. The radio itself is not drawn:
+     the press that stayed down is what says which one is chosen, the same
+     gesture as every other press here. */
+  .newchore .chip { position: relative; cursor: pointer; }
+  .newchore .chip input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0;
+  }
+  .newchore .chip:has(input:checked) {
+    background: var(--violet); color: var(--paper);
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+  }
+  .newchore .chip:has(input:focus-visible) { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+  .newchore .make {
+    margin-top: 18px;
+    padding: 12px 20px; min-height: 46px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+  .newchore .make:hover { background: var(--orange-lit); }
+  .newchore .make:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); }
+
   /* ---------- fixing the words ---------- */
 
   /* A correction happens where the note is, not on a page of its own — the
@@ -991,6 +1120,8 @@
        Sized by height they wrapped four-and-one, which reads as one of them
        being a different kind of answer. */
     .reword textarea { font-size: 18.5px; }
+    /* Its own row on a phone, where the lid is already two rows deep. */
+    .running { order: 6; flex: 1 1 100%; justify-content: center; }
     .checkin { margin-top: 20px; }
     .faces { gap: 0; flex-wrap: nowrap; }
     .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 12px; letter-spacing: .08em; }

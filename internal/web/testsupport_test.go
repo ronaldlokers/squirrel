@@ -23,6 +23,7 @@ type fakeStore struct {
 	items   []squirrel.Item
 	chores  []squirrel.Chore
 	checkin *squirrel.Checkin
+	timer   *squirrel.Timer
 	err     error
 
 	// What the chore handlers did, so a test can assert on the write rather
@@ -82,6 +83,44 @@ func (f *fakeStore) UpsertChore(_ context.Context, _ int64, name string, every, 
 	}
 	f.reinterval.name, f.reinterval.every = name, every
 	return squirrel.Chore{Name: name, Every: every}, nil
+}
+
+func (f *fakeStore) UpsertChoreAsking(_ context.Context, _ int64, name string, every, _ time.Duration, ask squirrel.Asking) (squirrel.Chore, error) {
+	if f.err != nil {
+		return squirrel.Chore{}, f.err
+	}
+	c := squirrel.Chore{
+		ID: int64(len(f.chores) + 1), Name: name, Active: true,
+		Every: every, EveryDays: int(every.Hours() / 24), Ask: ask,
+	}
+	f.chores = append(f.chores, c)
+	return c, nil
+}
+
+// The timer. One per person, replaced each time — the fake keeps exactly what
+// the store keeps, which is the current one and nothing else.
+func (f *fakeStore) StartTimer(_ context.Context, _ int64, label string, d time.Duration, at time.Time) (squirrel.Timer, error) {
+	if f.err != nil {
+		return squirrel.Timer{}, f.err
+	}
+	t := squirrel.Timer{Label: label, Started: at, Ends: at.Add(d)}
+	f.timer = &t
+	return t, nil
+}
+
+func (f *fakeStore) CurrentTimer(_ context.Context, _ int64) (squirrel.Timer, bool, error) {
+	if f.err != nil || f.timer == nil {
+		return squirrel.Timer{}, false, f.err
+	}
+	return *f.timer, true, nil
+}
+
+func (f *fakeStore) StopTimer(_ context.Context, _ int64) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.timer = nil
+	return nil
 }
 
 func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {

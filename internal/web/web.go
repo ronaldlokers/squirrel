@@ -63,6 +63,12 @@ type Store interface {
 	// deliberately no way to ask this store for a series.
 	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
+
+	// The body double. One per person, replaced each time, and nothing kept
+	// once it is over.
+	StartTimer(ctx context.Context, personID int64, label string, d time.Duration, now time.Time) (squirrel.Timer, error)
+	CurrentTimer(ctx context.Context, personID int64) (squirrel.Timer, bool, error)
+	StopTimer(ctx context.Context, personID int64) error
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	Reword(ctx context.Context, personID, itemID int64, text string) (bool, error)
@@ -74,6 +80,7 @@ type Store interface {
 	ActiveChores(ctx context.Context, personID int64) ([]squirrel.Chore, error)
 	SearchChores(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Chore, error)
 	UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (squirrel.Chore, error)
+	UpsertChoreAsking(ctx context.Context, personID int64, name string, every, tolerance time.Duration, ask squirrel.Asking) (squirrel.Chore, error)
 	DeactivateChore(ctx context.Context, choreID int64) error
 	RecordCompletion(ctx context.Context, choreID, personID int64, source string, at time.Time) error
 }

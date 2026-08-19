@@ -44,6 +44,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	m.Post("/chores/new", guard(opts, sameOrigin(newChoreHandler(s, opts))))
+	m.Post("/timer", guard(opts, sameOrigin(timerHandler(s, opts))))
 	// The chores screen lived here for its whole life. A bookmark that dies
 	// quietly is worse than a redirect nobody notices.
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
@@ -91,15 +93,15 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			// still open, and a page that said "nothing in the pile" here
 			// would be describing the cursor rather than the pile.
 			if after != 0 {
-				render(w, "bottom", v)
+				renderWith(w, r, s, opts, "bottom", v)
 				return
 			}
-			render(w, "empty", v)
+			renderWith(w, r, s, opts, "empty", v)
 			return
 		}
 		n := toView(items[0])
 		v.Note = &n
-		render(w, "pile", v)
+		renderWith(w, r, s, opts, "pile", v)
 	}
 }
 
@@ -134,5 +136,5 @@ func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, p
 	for _, it := range items {
 		v.Results = append(v.Results, toView(it))
 	}
-	render(w, "results", v)
+	renderWith(w, r, s, opts, "results", v)
 }

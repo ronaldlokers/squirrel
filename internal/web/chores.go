@@ -33,7 +33,7 @@ func choresHandler(s Store, opts Options) http.HandlerFunc {
 		for _, c := range chores {
 			v.Chores = append(v.Chores, toChoreView(c))
 		}
-		render(w, "chores", v)
+		renderWith(w, r, s, opts, "chores", v)
 	}
 }
 
@@ -83,7 +83,8 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 		}
 
 		if every := strings.TrimSpace(r.FormValue("every")); every != "" {
-			_, d, ok := squirrel.ParseEvery(every + " " + intervalSentinel)
+			// The four this screen offers, like everywhere else it asks.
+			d, ok := offered(every)
 			if !ok {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -178,4 +179,83 @@ func chipFor(days int) string {
 // there is no number here.
 func lastDone(sinceDays int) string {
 	return squirrel.SinceWords(sinceDays)
+}
+
+// newChoreHandler makes a chore from nothing.
+//
+// Until now a chore could only be made from a note, and the reasoning was
+// sound: a chore usually starts life as a thought you had, and making one
+// from a note keeps the two connected. What it could not do is the case where
+// you already know — you are standing in the kitchen having just descaled the
+// kettle, and the thing you want is for that to come back, not a note about
+// wanting it to.
+//
+// The interval and the day-part are chosen from the chips that already exist,
+// so nothing new was invented and nothing has to be typed in a format.
+func newChoreHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			return
+		}
+		name := strings.TrimSpace(r.FormValue("name"))
+		if name == "" {
+			// Nothing to make. Silence rather than a scolding: an empty form
+			// submitted by accident is not a mistake worth a sentence.
+			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			return
+		}
+		if len(name) > choreNameLimit {
+			name = name[:choreNameLimit]
+		}
+
+		every, ok := offered(r.FormValue("every"))
+		if !ok {
+			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			return
+		}
+		part, ok := squirrel.ParseDayPart(r.FormValue("part"))
+		if !ok {
+			part = squirrel.AnyPart
+		}
+
+		if _, err := s.UpsertChoreAsking(r.Context(), personID, name, every,
+			squirrel.DefaultTolerance(every), squirrel.Asking{Part: part}); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/chores", http.StatusSeeOther)
+	}
+}
+
+// choreNameLimit is a guard rather than a rule about how much you may say. A
+// chore's name is read in a nudge, and a nudge is one line.
+const choreNameLimit = 200
+
+// offered turns one of the four chips into an interval, and refuses anything
+// else.
+//
+// Parsing the value instead would be looser than it looks: ParseEvery is
+// deliberately generous about what follows the unit, because in a chat room
+// what follows is the chore's name. Fed a form value it makes "every fortnight
+// or so" into a fortnight with "or so" as leftovers — which is a reasonable
+// reading of a sentence and a wrong reading of a button that was never
+// offered. The screen offers four things; these are the four.
+func offered(every string) (time.Duration, bool) {
+	switch strings.TrimSpace(every) {
+	case "every day":
+		return 24 * time.Hour, true
+	case "every week":
+		return 7 * 24 * time.Hour, true
+	case "every 2 weeks":
+		return 14 * 24 * time.Hour, true
+	case "every month":
+		return 30 * 24 * time.Hour, true
+	}
+	return 0, false
 }

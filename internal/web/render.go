@@ -60,6 +60,8 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
+	// Timer is what is running, on every screen, or nil.
+	Timer *timerView
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -176,6 +178,14 @@ func toView(it squirrel.Item) noteView {
 		State:     string(it.State),
 		StateWord: stateWords[it.State],
 	}
+}
+
+// renderWith is render plus the one thing every screen shows regardless of
+// what it is about: the timer, if one is running. Threading it through each
+// handler would mean five places to forget it.
+func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
+	v.Timer = runningTimer(s, opts, r)
+	render(w, name, v)
 }
 
 func render(w http.ResponseWriter, name string, v view) {
