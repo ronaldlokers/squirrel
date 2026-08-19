@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
@@ -53,6 +54,12 @@ type view struct {
 	// with different words, and only one of them keeps the words.
 	Kept   bool
 	NoKeep bool
+	// Mood is the latest reading when it still describes now, and empty
+	// otherwise. Never more than one, and never a date beside it.
+	Mood     string
+	MoodWord string
+	// Faces are the five, in the one order both surfaces use.
+	Faces []faceView
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -78,6 +85,13 @@ type choreView struct {
 	Every string
 	Chip  string
 	Last  string
+}
+
+// faceView is one of the five drawn answers. It carries no number and no
+// position, because they are not a scale.
+type faceView struct {
+	Mood string
+	Word string
 }
 
 type undoView struct {
@@ -194,3 +208,8 @@ func fail(w http.ResponseWriter, err error) {
 		`<p>Squirrel cannot reach its memory right now. Nothing has been lost — everything you said is still there.</p>` +
 		`</body></html>`))
 }
+
+// now is the clock, replaceable in a test that has to say what "right now"
+// means. Nothing else in this package needs one, which is why it is here
+// rather than threaded through Options.
+var now = time.Now

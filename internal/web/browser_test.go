@@ -316,3 +316,42 @@ func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
 		return [...other.querySelectorAll(".key")]
 			.filter(k => getComputedStyle(k).display !== "none").length;`))
 }
+
+// Five answers, five equal drawings. They were cut from one sheet at one
+// scale, and each carries a different amount of decoration outside its tile —
+// sparks, leaves, a scribble, a zzz — so sizing them by width would make the
+// busiest one the smallest. Sized by height, they read as five answers rather
+// than as one louder than the others.
+func TestBrowserTheFacesAreAllOneSize(t *testing.T) {
+	c, srv := open(t, aPile())
+	c.navigate(t, srv.URL+"/")
+
+	heights := c.eval(t, `return [...document.querySelectorAll(".face img")]
+		.map(i => Math.round(i.getBoundingClientRect().height))`)
+	require.Len(t, heights, 5)
+	for _, h := range heights.([]any) {
+		require.Equal(t, heights.([]any)[0], h, "every face the same height")
+	}
+}
+
+// The five labels have to fit their cells on a phone without pushing the page
+// sideways. This is here because the first version bought the fit with a 10px
+// type step that is not on the ramp — and the documented Meta size turned out
+// to fit anyway, with a third of the cell to spare.
+func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
+	c, srv := open(t, aPile())
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return document.documentElement.scrollWidth - document.documentElement.clientWidth`),
+		"nothing may push the page sideways")
+	require.Equal(t, true, c.eval(t, `
+		return [...document.querySelectorAll(".face")].every(f => {
+			const span = f.querySelector("span");
+			const r = document.createRange(); r.selectNodeContents(span);
+			return r.getBoundingClientRect().width <= f.getBoundingClientRect().width;
+		})`), "every label fits its own cell")
+}

@@ -58,6 +58,11 @@ type Store interface {
 	// The screen captures as of v0.12.0. See captureHandler for what that
 	// overruled and what it cost.
 	InsertItem(ctx context.Context, i squirrel.Item) (bool, error)
+
+	// How you are right now. One reading in, one reading out — there is
+	// deliberately no way to ask this store for a series.
+	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
+	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)

@@ -182,3 +182,38 @@ func EveningMessage(completed []string, captures []string, nudge *Chore) Message
 	}
 	return m
 }
+
+// CheckinQuestion is the five faces as words, since chat has no pictures.
+//
+// "How do you feel?" — asked, and answered, about now. The reading goes stale
+// after a few hours for that reason: a day is a thing you can have had a bad
+// one of, and the useful answer is about the minute you are in.
+//
+// The five are not a scale and are never numbered. Low and frazzled are
+// different states wanting different answers, which is exactly what a
+// one-to-five row cannot say and the reason this is worth asking at all.
+func CheckinQuestion() Message {
+	actions := make([]Action, 0, len(Moods))
+	for _, m := range Moods {
+		actions = append(actions, Action{
+			Label: Words[m],
+			Value: "mood:" + string(m),
+			Emoji: MoodEmoji[m],
+		})
+	}
+	return Message{
+		Text:          "How do you feel?",
+		SelectionMode: "single",
+		Actions:       actions,
+	}
+}
+
+// MoodEmoji is the chat's version of the drawn faces. The drawings are the
+// screen's; these are as close as a room of text gets.
+var MoodEmoji = map[Mood]string{
+	MoodGood:     "😄",
+	MoodCalm:     "🙂",
+	MoodLow:      "😔",
+	MoodFrazzled: "😵",
+	MoodWiped:    "😴",
+}

@@ -392,6 +392,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "did":
 		return a.did(ctx, in.Arg, personID)
 
+	case "mood", "feel":
+		return a.checkin(ctx, in.Arg, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -625,6 +628,31 @@ func (a *Applier) did(ctx context.Context, arg string, personID int64) (Message,
 	// The same varied reaction a tap earns, and varied for the same reason:
 	// the same word every time stops being read inside a week.
 	return Message{Text: fmt.Sprintf("%s %s.", Reactions[rand.Intn(len(Reactions))], target.Name)}, nil
+}
+
+// checkin asks how you are, or records the answer.
+//
+// `!mood` asks; `!mood low` answers in one go. Both, because the moment you
+// know is not always the moment you were asked.
+//
+// It says nothing back about the person. "Noted" and the word you chose, and
+// that is the whole reply — no "sorry to hear that", which is a stranger's
+// sympathy from a program, and nothing at all about yesterday, which is the
+// series this feature is forbidden from drawing.
+func (a *Applier) checkin(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return CheckinQuestion(), nil
+	}
+
+	m, ok := ParseMood(arg)
+	if !ok {
+		return CheckinQuestion(), nil
+	}
+	if err := a.store.RecordCheckin(ctx, personID, m, "chat", time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: "Noted — " + Words[m] + "."}, nil
 }
 
 // undoLast puts the most recently triaged note back in the pile.
@@ -890,6 +918,21 @@ func isTap(item Item) bool {
 // Every path here is silent. The boost is the receipt; a reply per tap would
 // make the room unreadable.
 func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int64) error {
+	// A mood is answered before anything is looked up: it is not about a chore,
+	// so there is no prompt line to resolve and no position to mean anything.
+	if in.Kind == "mood" {
+		if !in.Selected {
+			// Deselecting is not a mood. Nothing to record and nothing to
+			// undo — the reading simply stands until the next one.
+			return nil
+		}
+		m, ok := ParseMood(in.Mood)
+		if !ok {
+			return nil
+		}
+		return a.store.RecordCheckin(ctx, personID, m, "chat", time.Now())
+	}
+
 	prompt, ok, err := a.store.PromptByMessageID(ctx, personID, in.MessageID)
 	if err != nil {
 		return err
