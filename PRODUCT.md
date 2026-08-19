@@ -112,8 +112,15 @@ on the screen, and the reverse. It is Principle 4 generalised: two views of one
 pile that can do different things are two views that will eventually disagree
 about what the pile is.
 
+**Decided on 20 August 2026:** a note's text can be corrected — `!fix <n>` in
+chat, "fix the words" on the card. Only the words change; the arrival time, the
+state and the place in the pile stay, because those are facts about the note
+and only the sentence was wrong. Not versioned: keeping the old text would make
+a note a document with a history to read, which is a second place a thought can
+hide, and the thing being corrected is usually a typo.
+
 **Explicitly undecided:** tags, folders and projects; full-text ranking;
-editing a note's text; resurfacing old notes unprompted (rejected, not deferred —
+resurfacing old notes unprompted (rejected, not deferred —
 it would become a second stream competing with the nudge for the same attention).
 
 ## Brand Commitments

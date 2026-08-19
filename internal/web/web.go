@@ -65,6 +65,7 @@ type Store interface {
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
+	Reword(ctx context.Context, personID, itemID int64, text string) (bool, error)
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)
 
 	// The chores half. A chore is not a note and shares none of the note

@@ -23,6 +23,7 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /mood",
 		"POST /pile/act",
 		"POST /pile/chore",
+		"POST /pile/fix",
 		"GET /chores",
 		"GET /kept",
 		"POST /chores/act",
@@ -33,7 +34,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 13, "a route was added without being pinned here")
+	require.Len(t, m.routes, 14, "a route was added without being pinned here")
 }
 
 // The chores screen lived at /pile/chores for its whole life, and a bookmark
@@ -86,21 +87,24 @@ func TestEmptyPileDoesNotCelebrate(t *testing.T) {
 }
 
 // The slot lives on home and nowhere else. A capture box above the deck is the
-// inbox shape this product refuses: what you are adding, directly over what you
-// have not dealt with.
+// inbox shape this product refuses: what you are adding, directly over what
+// you have not dealt with.
+//
+// The deck does have a field now, and the distinction is exact rather than
+// cosmetic — it corrects a note that already exists, so it is bound to that
+// note's id and it can never bring a new one into being. What is banned here
+// is a way to create, not a way to type.
 func TestPileHasNoCaptureBox(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "kaas", squirrel.ItemOpen)}}
 	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
 
-	require.NotContains(t, body, `name="text"`)
-	require.NotContains(t, body, "<textarea")
-	// Exactly one field you can type into, and it is the search field. The
-	// hidden fields are excluded because they carry which note a form is
-	// about; a note's id is not a place a thought can be entered, which is what
-	// this rule is protecting.
-	typeable := strings.Count(body, "<input") - strings.Count(body, `<input type="hidden"`)
-	require.Equal(t, 1, typeable,
-		"exactly one field you can type into, and it is the search field")
+	require.NotContains(t, body, `action="/capture"`, "capture belongs to home")
+	// Every field you can type a sentence into on this screen names the note
+	// it is correcting.
+	require.Equal(t, strings.Count(body, "<textarea"),
+		strings.Count(body, `action="/pile/fix"`),
+		"a field on the deck edits one note, and says which")
+	require.Contains(t, body, `<input type="hidden" name="id" value="1">`)
 }
 
 func TestPileFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {

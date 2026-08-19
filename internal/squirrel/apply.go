@@ -395,6 +395,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "mood", "feel":
 		return a.checkin(ctx, in.Arg, personID)
 
+	case "fix":
+		return a.fix(ctx, in.Arg, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -653,6 +656,50 @@ func (a *Applier) checkin(ctx context.Context, arg string, personID int64) (Mess
 		return Message{}, err
 	}
 	return Message{Text: "Noted — " + Words[m] + "."}, nil
+}
+
+// fix changes what a note says: `!fix 2 the boiler makes a noise on tuesdays`.
+//
+// This was listed as explicitly undecided for a long time, and the hesitation
+// was worth having — a note is a record of what you said, and a record that
+// can be rewritten is a record you cannot lean on. What settles it is the
+// failure it fixes: a thought typed one-handed arrives half-written or
+// autocorrected into something else, and until now the only remedy was to drop
+// it and say it again, which costs the arrival time and the place in the pile.
+//
+// Only the words change. The arrival time, the state and the position stay,
+// because those are the facts about the note and only the words were wrong.
+func (a *Applier) fix(ctx context.Context, arg string, personID int64) (Message, error) {
+	number, text, _ := strings.Cut(strings.TrimSpace(arg), " ")
+	text = strings.TrimSpace(text)
+
+	n, err := strconv.Atoi(number)
+	if err != nil || n < 1 {
+		return Message{Text: "Which line? Try !fix 2 the boiler makes a noise."}, nil
+	}
+	if text == "" {
+		return Message{Text: fmt.Sprintf("What should line %d say? Try !fix %d the boiler makes a noise.", n, n)}, nil
+	}
+
+	line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(n), nil
+	}
+	if line.Item == nil {
+		return Message{Text: fmt.Sprintf("Line %d is a chore, not a note. Say it again with a new interval to change it.", n)}, nil
+	}
+
+	changed, err := a.store.Reword(ctx, personID, line.Item.ID, text)
+	if err != nil {
+		return Message{}, err
+	}
+	if !changed {
+		return noSuchLine(n), nil
+	}
+	return Message{Text: "Fixed — " + text}, nil
 }
 
 // undoLast puts the most recently triaged note back in the pile.

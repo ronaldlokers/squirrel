@@ -45,6 +45,33 @@ func (s *Store) SetItemState(ctx context.Context, itemID int64, state ItemState,
 	return nil
 }
 
+// Reword changes what a note says, keeping everything else about it.
+//
+// PRODUCT.md listed this as explicitly undecided for a long time, and the
+// hesitation was worth having: a note is a record of what you said, and a
+// system that lets the record be rewritten is a system whose record cannot be
+// trusted. What settles it is the failure it fixes — a thought typed on a
+// phone, one-handed, arrives half-written or autocorrected into something
+// else, and the only way to fix it was to drop it and say it again, which
+// costs the arrival time and the place in the pile.
+//
+// So: the text changes, and nothing else does. The id, the arrival time, the
+// state and the position in the pile all stay, because those are the facts
+// about the note and only the words were wrong.
+//
+// Deliberately not versioned. Keeping the old text would make this a document
+// with a history to read, which is a second thing to look at and a second
+// place a thought can hide — and the thing being corrected is usually a typo.
+func (s *Store) Reword(ctx context.Context, personID, itemID int64, text string) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		update items set raw_text = $3
+		 where id = $1 and person_id = $2`, itemID, personID, text)
+	if err != nil {
+		return false, fmt.Errorf("rewording note: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
 // OpenItems is the pile: untriaged notes, newest first.
 //
 // Newest first, not oldest: oldest-first is a backlog you are behind on, and
