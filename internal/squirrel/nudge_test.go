@@ -9,6 +9,14 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
+// done is a chore that has been done at least once, which is what makes it
+// able to say when.
+func done(id int64, name string, sinceDays, everyDays int) squirrel.Chore {
+	c := overdue(id, name, sinceDays, everyDays)
+	c.EverDone = true
+	return c
+}
+
 func overdue(id int64, name string, sinceDays, everyDays int) squirrel.Chore {
 	return squirrel.Chore{
 		ID: id, Name: name, SinceDays: sinceDays, EveryDays: everyDays,
@@ -80,30 +88,45 @@ func TestPickChoreGivesEveryDueChoreSomeChance(t *testing.T) {
 }
 
 func TestNudgeMessageCarriesOneButton(t *testing.T) {
-	m := squirrel.NudgeMessage(overdue(1, "bin day", 19, 14), squirrel.NudgeFromArrival)
+	m := squirrel.NudgeMessage(done(1, "bin day", 19, 14), squirrel.NudgeFromArrival)
 
 	require.Contains(t, m.Text, "bin day")
-	require.Contains(t, m.Text, "19 days")
-	require.Contains(t, m.Text, "usually 14")
+	require.Contains(t, m.Text, "this month", "roughly when, in the screen's own words")
+	require.Contains(t, m.Text, "every 2 weeks", "the rhythm as it was set")
 	require.Len(t, m.Actions, 1, "one chore, one button — never a list")
 	require.Equal(t, "done:1", m.Actions[0].Value)
 	require.Equal(t, "✅", m.Actions[0].Emoji)
 	require.Equal(t, "single", m.SelectionMode)
 }
 
-// A chore overdue by exactly one day reads "1 day", not "1 days" — the
-// plural helper both NudgeMessage branches (piggyback and arrival) route
-// through via choreSentence/plural.
-func TestNudgeMessageUsesSingularDayForOneDayOverdue(t *testing.T) {
-	c := overdue(1, "bin day", 1, 14)
+// The nudge is the harshest surface there is — it arrives unasked, at the
+// moment you are least able to decide anything — and it used to carry "19
+// days, usually 14": a number attached to something undone, next to the number
+// it has exceeded. The screen stopped saying that; this is the same rule on
+// the surface that needed it more.
+func TestNudgeNeverSaysHowLongItHasBeen(t *testing.T) {
+	c := done(1, "bin day", 19, 14)
 
-	arrival := squirrel.NudgeMessage(c, squirrel.NudgeFromArrival).Text
-	require.Contains(t, arrival, "1 day,")
-	require.NotContains(t, arrival, "1 days")
+	for _, text := range []string{
+		squirrel.NudgeMessage(c, squirrel.NudgeFromArrival).Text,
+		squirrel.NudgeMessage(c, squirrel.NudgeFromMessage).Text,
+	} {
+		require.NotContains(t, text, "19")
+		require.NotContains(t, text, "usually")
+		require.NotContains(t, text, "days")
+		require.NotContains(t, text, "late")
+		require.NotContains(t, text, "overdue")
+	}
+}
 
-	piggyback := squirrel.NudgeMessage(c, squirrel.NudgeFromMessage).Text
-	require.Contains(t, piggyback, "1 day,")
-	require.NotContains(t, piggyback, "1 days")
+// A chore nobody has ever done says only its rhythm. Its baseline is its own
+// birthday, and calling that "last done" would be a sentence about the person.
+func TestNudgeSaysOnlyTheRhythmForAChoreNeverDone(t *testing.T) {
+	text := squirrel.NudgeMessage(overdue(1, "bin day", 19, 14), squirrel.NudgeFromArrival).Text
+
+	require.Contains(t, text, "bin day")
+	require.Contains(t, text, "every 2 weeks")
+	require.NotContains(t, text, "this month")
 }
 
 // Riding back on a message the person sent, it acknowledges the piggyback.
