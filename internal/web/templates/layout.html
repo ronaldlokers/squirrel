@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squirrel</title>
 <link rel="stylesheet" href="{{.Path}}/static/pile.css?v={{.V}}">
-<link rel="manifest" href="{{.Path}}/manifest.webmanifest?v={{.V}}">
+{{/* crossorigin="use-credentials" is load-bearing and looks like noise.
+     A browser fetches a manifest with credentials *omitted* by default — even
+     same-origin — so behind forward-auth it gets Authentik's redirect and a
+     page of HTML instead of JSON. It cannot parse that, so it silently falls
+     back to a letter tile: the installed app shows an "S". Nothing logs, and
+     the icons are never even requested. */}}
+<link rel="manifest" href="{{.Path}}/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="{{.Path}}/static/apple-touch-icon.png?v={{.V}}">
 <meta name="theme-color" content="#3b2560">
 <meta name="apple-mobile-web-app-capable" content="yes">
