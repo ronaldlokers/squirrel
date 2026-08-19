@@ -44,6 +44,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	m.Post("/chores/new", guard(opts, sameOrigin(newChoreHandler(s, opts))))
 	// The chores screen lived here for its whole life. A bookmark that dies
 	// quietly is worse than a redirect nobody notices.
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {

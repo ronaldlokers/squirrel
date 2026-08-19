@@ -84,6 +84,18 @@ func (f *fakeStore) UpsertChore(_ context.Context, _ int64, name string, every, 
 	return squirrel.Chore{Name: name, Every: every}, nil
 }
 
+func (f *fakeStore) UpsertChoreAsking(_ context.Context, _ int64, name string, every, _ time.Duration, ask squirrel.Asking) (squirrel.Chore, error) {
+	if f.err != nil {
+		return squirrel.Chore{}, f.err
+	}
+	c := squirrel.Chore{
+		ID: int64(len(f.chores) + 1), Name: name, Active: true,
+		Every: every, EveryDays: int(every.Hours() / 24), Ask: ask,
+	}
+	f.chores = append(f.chores, c)
+	return c, nil
+}
+
 func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err

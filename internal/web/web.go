@@ -74,6 +74,7 @@ type Store interface {
 	ActiveChores(ctx context.Context, personID int64) ([]squirrel.Chore, error)
 	SearchChores(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Chore, error)
 	UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (squirrel.Chore, error)
+	UpsertChoreAsking(ctx context.Context, personID int64, name string, every, tolerance time.Duration, ask squirrel.Asking) (squirrel.Chore, error)
 	DeactivateChore(ctx context.Context, choreID int64) error
 	RecordCompletion(ctx context.Context, choreID, personID int64, source string, at time.Time) error
 }

@@ -790,6 +790,81 @@
 
 
 
+
+  /* ---------- making one from nothing ---------- */
+
+  /* The interval question's own mechanism, asked three times: a disclosure
+     that opens in place, so nothing is a modal and nothing is a second page.
+     Dashed and quiet when shut, because most visits are not about adding. */
+  .newchore {
+    margin-top: 18px;
+    border: var(--line) dashed rgba(254, 214, 167, .55);
+    border-radius: var(--r);
+    padding: 0 18px;
+  }
+  .newchore[open] { background: rgba(59, 37, 96, .45); padding-bottom: 20px; }
+  .newchore > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; min-height: 52px;
+    color: var(--cream);
+    font-size: 14.5px;
+    font-variation-settings: var(--precise), "wght" 700;
+  }
+  .newchore > summary::-webkit-details-marker { display: none; }
+  .newchore .plus {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; flex: none;
+    border: var(--line) solid var(--cream); border-radius: 999px;
+    font-size: 17px; line-height: 1;
+  }
+  .newchore .lead {
+    margin: 14px 0 9px;
+    font-size: 12px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 720;
+    color: rgba(254, 214, 167, .85);
+  }
+  .newchore .namefield {
+    display: flex; align-items: center;
+    padding: 10px 16px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .newchore .namefield input {
+    flex: 1; min-width: 0; border: 0; background: transparent; padding: 0;
+    font: 400 17px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    color: var(--outline); caret-color: var(--orange);
+  }
+  .newchore .namefield input:focus { outline: none; }
+  .newchore .namefield input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .newchore .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* A chip is a label wrapping its radio, so the whole chip is the target and
+     the choice survives with no script at all. The radio itself is not drawn:
+     the press that stayed down is what says which one is chosen, the same
+     gesture as every other press here. */
+  .newchore .chip { position: relative; cursor: pointer; }
+  .newchore .chip input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0;
+  }
+  .newchore .chip:has(input:checked) {
+    background: var(--violet); color: var(--paper);
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+  }
+  .newchore .chip:has(input:focus-visible) { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+  .newchore .make {
+    margin-top: 18px;
+    padding: 12px 20px; min-height: 46px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+  .newchore .make:hover { background: var(--orange-lit); }
+  .newchore .make:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); }
+
   /* ---------- fixing the words ---------- */
 
   /* A correction happens where the note is, not on a page of its own — the

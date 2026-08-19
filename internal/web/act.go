@@ -117,7 +117,9 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 		// trick apply.go documents, and for the same reason: without it,
 		// "every" alone borrows the next word as its unit and silently creates
 		// a chore nobody asked for.
-		_, every, ok := squirrel.ParseEvery(strings.TrimSpace(r.FormValue("every")) + " " + intervalSentinel)
+		// The four the deck offers, and only those — see offered() for why
+		// parsing a button's value is looser than it looks.
+		every, ok := offered(r.FormValue("every"))
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			return

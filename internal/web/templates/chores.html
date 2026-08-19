@@ -41,15 +41,86 @@
     </form>
   </article>
   {{end}}
+
+  {{/* Making one from nothing. Last on the screen rather than first: what you
+       already have comes before what you might add, which is the opposite of
+       an app that opens on an empty form. */}}
+  <details class="newchore">
+    <summary><span class="plus" aria-hidden="true">+</span> a new chore</summary>
+    <form method="post" action="/chores/new">
+      <p class="lead">WHAT IS IT</p>
+      <div class="namefield">
+        <input type="text" name="name" placeholder="descale the kettle"
+          aria-label="What the chore is called" maxlength="200" required>
+      </div>
+
+      <p class="lead">HOW OFTEN</p>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="every" value="every day">every day</label>
+        <label class="chip"><input type="radio" name="every" value="every week">every week</label>
+        <label class="chip"><input type="radio" name="every" value="every 2 weeks" checked>every 2 weeks</label>
+        <label class="chip"><input type="radio" name="every" value="every month">every month</label>
+      </div>
+
+      {{/* Day-parts rather than a clock: a chore that wants the evening does
+           not want 17:00, and minutes are a precision tax charged every time
+           you make one. */}}
+      <p class="lead">WHEN IS IT WORTH ASKING</p>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="part" value="" checked>any time</label>
+        <label class="chip"><input type="radio" name="part" value="morning">mornings</label>
+        <label class="chip"><input type="radio" name="part" value="afternoon">afternoons</label>
+        <label class="chip"><input type="radio" name="part" value="evening">evenings</label>
+      </div>
+
+      <button class="make" type="submit">Make it a chore</button>
+    </form>
+  </details>
   <p class="hint">squirrel asks when it&rsquo;s time</p>
   {{else}}
-  {{/* A fact, not a nudge. Nothing here suggests making one: chores are made
-       from notes, in the pile, when a note turns out to be one. */}}
+  {{/* A fact, not a nudge. It says where chores come from and offers the
+       other way of making one — a chore usually starts as a note, but not
+       always: sometimes you already know. */}}
   <section class="empty">
     <img alt="" src="/static/logo.png?v={{.V}}" width="186" height="140">
     <h1>nothing comes back on its own</h1>
     <p>when a note becomes a chore, this is where it lives.</p>
   </section>
+  {{/* Making one from nothing. Last on the screen rather than first: what you
+       already have comes before what you might add, which is the opposite of
+       an app that opens on an empty form. */}}
+  <details class="newchore">
+    <summary><span class="plus" aria-hidden="true">+</span> a new chore</summary>
+    <form method="post" action="/chores/new">
+      <p class="lead">WHAT IS IT</p>
+      <div class="namefield">
+        <input type="text" name="name" placeholder="descale the kettle"
+          aria-label="What the chore is called" maxlength="200" required>
+      </div>
+
+      <p class="lead">HOW OFTEN</p>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="every" value="every day">every day</label>
+        <label class="chip"><input type="radio" name="every" value="every week">every week</label>
+        <label class="chip"><input type="radio" name="every" value="every 2 weeks" checked>every 2 weeks</label>
+        <label class="chip"><input type="radio" name="every" value="every month">every month</label>
+      </div>
+
+      {{/* Day-parts rather than a clock: a chore that wants the evening does
+           not want 17:00, and minutes are a precision tax charged every time
+           you make one. */}}
+      <p class="lead">WHEN IS IT WORTH ASKING</p>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="part" value="" checked>any time</label>
+        <label class="chip"><input type="radio" name="part" value="morning">mornings</label>
+        <label class="chip"><input type="radio" name="part" value="afternoon">afternoons</label>
+        <label class="chip"><input type="radio" name="part" value="evening">evenings</label>
+      </div>
+
+      <button class="make" type="submit">Make it a chore</button>
+    </form>
+  </details>
+
   {{end}}
 </section>
 {{end}}
