@@ -134,16 +134,31 @@ func toChoreView(c squirrel.Chore) choreView {
 	}
 }
 
-// lastDone says when, never how late. "3 days ago" is a fact about a chore;
-// "2 days overdue" is a fact about you, and this product does not make those.
+// lastDone says roughly when, never how long.
+//
+// It used to print the exact number of days, which is a fact about the chore
+// rather than about you and felt defensible on that ground. It is still one
+// short step from "3 days late": a number attached to something undone, going
+// up while you are not looking, is the accumulating shape this product exists
+// without — and precision buys nothing here. Nobody waters a plant differently
+// for knowing it was nine days rather than eight.
+//
+// The buckets are deliberately coarse and stop at "a while back". There is no
+// bucket for a long time, because that sentence is about the person.
 func lastDone(sinceDays int) string {
 	switch {
 	case sinceDays <= 0:
 		return "today"
 	case sinceDays == 1:
 		return "yesterday"
+	case sinceDays < 7:
+		return "this week"
+	case sinceDays < 14:
+		return "last week"
+	case sinceDays < 31:
+		return "this month"
 	default:
-		return plural(sinceDays, "day") + " ago"
+		return "a while back"
 	}
 }
 

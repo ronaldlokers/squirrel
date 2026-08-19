@@ -95,10 +95,18 @@ screen turns into a 403 and the log line is
 invisible: it appeared only when it nudged you, which is the one moment you are
 least able to decide you never want it again.
 
-Each one says what it is, how often it comes back, and when it was last done —
-`DID IT`, `HOW OFTEN` and `STOP ASKING`. It never says how many there are, how
-many are due, or how late anything is. "3 days ago" is a fact about a chore;
-"2 days overdue" would be a fact about you.
+Each one says what it is, how often it comes back, and *roughly* when it was
+last done — `today`, `this week`, `a while back` — with `DID IT`, `HOW OFTEN`
+and `STOP ASKING`.
+
+Roughly, and never a day count. An exact number attached to something undone
+goes up while you are not looking, which is the accumulating shape this product
+exists without, and it is one short step from "3 days late". The buckets stop at
+"a while back": there is no bucket for a long time, because that sentence is
+about the person rather than the chore.
+
+It never says how many chores there are, how many are due, or how late anything
+is.
 
 `STOP ASKING` is the screen's half of `!retire`: `active` goes false, the
 history stays, and defining the chore again brings the same row back. Changing

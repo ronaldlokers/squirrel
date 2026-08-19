@@ -119,3 +119,38 @@ func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
 	require.Equal(t, 503, w.Code)
 	require.Contains(t, w.Body.String(), "cannot reach")
 }
+
+// Roughly when, never how long. An exact day count on a chore you have not
+// done is a number that grows while you are not looking, which is the thing
+// this product does not do — and "3 days" is one small step from "3 days
+// late".
+func TestAChoreSaysRoughlyWhenNotHowLong(t *testing.T) {
+	for _, tc := range []struct {
+		since int
+		want  string
+	}{
+		{0, "today"},
+		{1, "yesterday"},
+		{3, "this week"},
+		{6, "this week"},
+		{9, "last week"},
+		{13, "last week"},
+		{20, "this month"},
+		{45, "a while back"},
+		{400, "a while back"},
+	} {
+		require.Equal(t, tc.want, lastDone(tc.since), "%d days", tc.since)
+	}
+}
+
+func TestTheChoresScreenNeverPrintsADayCount(t *testing.T) {
+	body := mounted(t, &fakeStore{chores: []squirrel.Chore{
+		chore(1, "bins out", 14, 3),
+		chore(2, "water the plants", 7, 45),
+	}}).call(t, "GET", "/pile/chores", nil).Body.String()
+
+	require.Contains(t, body, "this week")
+	require.Contains(t, body, "a while back")
+	require.NotContains(t, body, "3 days ago")
+	require.NotContains(t, body, "45 days")
+}
