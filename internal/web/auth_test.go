@@ -10,7 +10,6 @@ import (
 
 func testOptions() Options {
 	return Options{
-		Path:           "/pile",
 		IdentityHeader: "X-Authentik-Username",
 		Identity:       "ronald",
 		Owner:          func() int64 { return 1 },

@@ -263,8 +263,8 @@ func webhookURL(s *boot.Squirrel) string {
 	return fmt.Sprintf("http://127.0.0.1:%d/transports/campfire", s.Port())
 }
 
-// pileURL is where the screen is mounted — config.go's WebPath default, which
-// boot.go never overrides.
+// pileURL is the deck. The screen itself is at the root; the deck kept its own
+// URL so that an installed app's start_url survived the move.
 func pileURL(s *boot.Squirrel) string {
 	return fmt.Sprintf("http://127.0.0.1:%d/pile", s.Port())
 }

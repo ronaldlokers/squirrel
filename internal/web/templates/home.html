@@ -1,0 +1,28 @@
+{{define "content"}}
+<div class="homebox">
+  {{/* The two halves of what the box holds, and they are equals: one grid, two
+       identical cells, the same stock, the same depth, side by side at every
+       width. A stacked pair would read as first and second. */}}
+  <nav class="doors" aria-label="The two halves of the box">
+    <a class="door" href="/pile">
+      {{/* Decorative — the door's name is directly beneath it. */}}
+      <span class="art"><img alt="" src="/static/door-pile.png?v={{.V}}" width="342" height="256"></span>
+      <span class="label">
+        <span class="name">the pile</span>
+        <span class="what">what you said</span>
+      </span>
+    </a>
+    <a class="door" href="/chores">
+      <span class="art"><img alt="" src="/static/door-chores.png?v={{.V}}" width="326" height="256"></span>
+      <span class="label">
+        <span class="name">the chores</span>
+        <span class="what">what comes back</span>
+      </span>
+    </a>
+  </nav>
+
+  {{/* The first screen of an installed app is where a capture box would try to
+       grow. This says where capture lives instead, and asks for nothing. */}}
+  <p class="hint">thoughts go in through the chat</p>
+</div>
+{{end}}

@@ -16,7 +16,7 @@
            shows its rhythm and stops there. */}}
       {{if .Last}}<span class="sep">&middot;</span><span>LAST DONE {{.Last}}</span>{{end}}
     </p>
-    <form class="acts" method="post" action="{{$.Path}}/chores/act">
+    <form class="acts" method="post" action="/pile/chores/act">
       <input type="hidden" name="id" value="{{.ID}}">
       <button class="abtn did" name="act" value="done">DID IT</button>
       {{/* The picker replaces the row in place rather than opening a modal.
@@ -44,7 +44,7 @@
   {{/* A fact, not a nudge. Nothing here suggests making one: chores are made
        from notes, in the pile, when a note turns out to be one. */}}
   <section class="empty">
-    <img alt="" src="{{.Path}}/static/logo.png?v={{.V}}" width="186" height="140">
+    <img alt="" src="/static/logo.png?v={{.V}}" width="186" height="140">
     <h1>nothing comes back on its own</h1>
     <p>when a note becomes a chore, this is where it lives.</p>
   </section>

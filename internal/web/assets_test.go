@@ -11,8 +11,8 @@ import (
 )
 
 func TestStaticServesTheStylesheetWithALongCache(t *testing.T) {
-	h := staticHandler(Options{Path: "/pile"})
-	r := httptest.NewRequest("GET", "/pile/static/pile.css", nil)
+	h := staticHandler()
+	r := httptest.NewRequest("GET", "/static/pile.css", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 
@@ -23,12 +23,24 @@ func TestStaticServesTheStylesheetWithALongCache(t *testing.T) {
 }
 
 func TestStaticDoesNotEscapeItsDirectory(t *testing.T) {
-	h := staticHandler(Options{Path: "/pile"})
-	r := httptest.NewRequest("GET", "/pile/static/../../etc/passwd", nil)
+	h := staticHandler()
+	r := httptest.NewRequest("GET", "/static/../../etc/passwd", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 
 	require.NotEqual(t, http.StatusOK, w.Code)
+}
+
+// The door art is part of the screen, not part of the comp: a home page whose
+// illustrations 404 is a home page with two empty slots.
+func TestTheDoorArtIsServed(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+
+	for _, name := range []string{"door-pile.png", "door-chores.png"} {
+		w := m.call(t, "GET", "/static/"+name, nil)
+		require.Equal(t, http.StatusOK, w.Code, name)
+		require.NotEmpty(t, w.Body.Bytes(), name)
+	}
 }
 
 func TestFontsAreEmbedded(t *testing.T) {
@@ -43,8 +55,8 @@ func TestFontsAreEmbedded(t *testing.T) {
 // caching one would keep a typo in a template pointing at nothing long after
 // the asset it names has shipped.
 func TestAMissingAssetIsNotCachedForAYear(t *testing.T) {
-	h := staticHandler(Options{Path: "/pile"})
-	r := httptest.NewRequest("GET", "/pile/static/nope.css", nil)
+	h := staticHandler()
+	r := httptest.NewRequest("GET", "/static/nope.css", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 
@@ -76,8 +88,8 @@ func TestTheVersionIsTheContent(t *testing.T) {
 // A stamped URL still has to serve the file, and it must not be a 404 because
 // of a query string the file server never asked about.
 func TestAStampedAssetStillServes(t *testing.T) {
-	h := staticHandler(Options{Path: "/pile"})
-	r := httptest.NewRequest("GET", "/pile/static/pile.css?v="+assetVersion, nil)
+	h := staticHandler()
+	r := httptest.NewRequest("GET", "/static/pile.css?v="+assetVersion, nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 

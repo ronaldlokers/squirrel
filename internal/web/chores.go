@@ -29,7 +29,7 @@ func choresHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		v := view{Path: opts.Path, Here: "chores"}
+		v := view{Here: "chores"}
 		for _, c := range chores {
 			v.Chores = append(v.Chores, toChoreView(c))
 		}
@@ -122,7 +122,7 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 }
 
 func backToChores(w http.ResponseWriter, r *http.Request, opts Options) {
-	http.Redirect(w, r, opts.Path+"/chores", http.StatusSeeOther)
+	http.Redirect(w, r, "/chores", http.StatusSeeOther)
 }
 
 func toChoreView(c squirrel.Chore) choreView {

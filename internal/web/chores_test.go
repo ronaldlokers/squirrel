@@ -25,7 +25,7 @@ func TestChoresListsWhatComesBack(t *testing.T) {
 		chore(1, "bins out", 14, 3),
 		chore(2, "water the plants", 7, 1),
 	}}
-	body := mounted(t, f).call(t, "GET", "/pile/chores", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/chores", nil).Body.String()
 
 	require.Contains(t, body, "bins out")
 	require.Contains(t, body, "water the plants")
@@ -39,7 +39,7 @@ func TestChoresNeverCounts(t *testing.T) {
 	for i := int64(1); i <= 7; i++ {
 		chores = append(chores, chore(i, "chore "+string(rune('a'+i)), 7, 30))
 	}
-	body := mounted(t, &fakeStore{chores: chores}).call(t, "GET", "/pile/chores", nil).Body.String()
+	body := mounted(t, &fakeStore{chores: chores}).call(t, "GET", "/chores", nil).Body.String()
 
 	lower := strings.ToLower(body)
 	for _, forbidden := range []string{"7 chores", "overdue", "behind", "streak", "% ", "of 7"} {
@@ -48,7 +48,7 @@ func TestChoresNeverCounts(t *testing.T) {
 }
 
 func TestTheEmptyChoreListDoesNotNag(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/pile/chores", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/chores", nil).Body.String()
 
 	require.Contains(t, body, "nothing comes back")
 	for _, forbidden := range []string{"should", "why not", "add one"} {
@@ -58,7 +58,7 @@ func TestTheEmptyChoreListDoesNotNag(t *testing.T) {
 
 func TestMarkingAChoreDoneRecordsIt(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 20)}}
-	w := post(t, mounted(t, f), "/pile/chores/act", url.Values{"id": {"1"}, "act": {"done"}})
+	w := post(t, mounted(t, f), "/chores/act", url.Values{"id": {"1"}, "act": {"done"}})
 
 	require.Equal(t, 303, w.Code)
 	require.Equal(t, []int64{1}, f.completed)
@@ -66,7 +66,7 @@ func TestMarkingAChoreDoneRecordsIt(t *testing.T) {
 
 func TestRetiringAChoreFromTheScreen(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}
-	w := post(t, mounted(t, f), "/pile/chores/act", url.Values{"id": {"1"}, "act": {"retire"}})
+	w := post(t, mounted(t, f), "/chores/act", url.Values{"id": {"1"}, "act": {"retire"}})
 
 	require.Equal(t, 303, w.Code)
 	require.Equal(t, []int64{1}, f.retired)
@@ -76,7 +76,7 @@ func TestRetiringAChoreFromTheScreen(t *testing.T) {
 // into meaning different things by "every 2 weeks".
 func TestChangingHowOftenAChoreComesBack(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}
-	w := post(t, mounted(t, f), "/pile/chores/act",
+	w := post(t, mounted(t, f), "/chores/act",
 		url.Values{"id": {"1"}, "every": {"every week"}})
 
 	require.Equal(t, 303, w.Code)
@@ -88,7 +88,7 @@ func TestChangingHowOftenAChoreComesBack(t *testing.T) {
 // against what this person actually has rather than trusted.
 func TestActingOnAChoreThatIsNotYours(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}
-	w := post(t, mounted(t, f), "/pile/chores/act", url.Values{"id": {"99"}, "act": {"retire"}})
+	w := post(t, mounted(t, f), "/chores/act", url.Values{"id": {"99"}, "act": {"retire"}})
 
 	require.Equal(t, 404, w.Code)
 	require.Empty(t, f.retired)
@@ -96,7 +96,7 @@ func TestActingOnAChoreThatIsNotYours(t *testing.T) {
 
 func TestChoresRefusesAnUnknownAction(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}
-	w := post(t, mounted(t, f), "/pile/chores/act", url.Values{"id": {"1"}, "act": {"delete"}})
+	w := post(t, mounted(t, f), "/chores/act", url.Values{"id": {"1"}, "act": {"delete"}})
 
 	require.Equal(t, 400, w.Code)
 	require.Empty(t, f.retired)
@@ -108,8 +108,8 @@ func TestThePileAndTheChoresLinkToEachOther(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
-	require.Contains(t, m.call(t, "GET", "/pile", nil).Body.String(), `href="/pile/chores"`)
-	require.Contains(t, m.call(t, "GET", "/pile/chores", nil).Body.String(), `href="/pile"`)
+	require.Contains(t, m.call(t, "GET", "/pile", nil).Body.String(), `href="/chores"`)
+	require.Contains(t, m.call(t, "GET", "/chores", nil).Body.String(), `href="/pile"`)
 }
 
 // A chore nobody has ever done has a baseline anyway — its own birthday — and
@@ -118,7 +118,7 @@ func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 	never := chore(1, "descale the shower head", 30, 400)
 	never.EverDone = false
 	body := mounted(t, &fakeStore{chores: []squirrel.Chore{never}}).
-		call(t, "GET", "/pile/chores", nil).Body.String()
+		call(t, "GET", "/chores", nil).Body.String()
 
 	require.Contains(t, body, "EVERY MONTH")
 	require.NotContains(t, body, "LAST DONE")
@@ -129,7 +129,7 @@ func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 // made, nor the page tab that says what a note ended up as.
 func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
 	body := mounted(t, &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}).
-		call(t, "GET", "/pile/chores", nil).Body.String()
+		call(t, "GET", "/chores", nil).Body.String()
 
 	require.NotContains(t, body, "state-chore")
 	require.NotContains(t, body, `class="rcard`)
@@ -138,7 +138,7 @@ func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
 
 func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
 	f := &fakeStore{err: errTest}
-	w := mounted(t, f).call(t, "GET", "/pile/chores", nil)
+	w := mounted(t, f).call(t, "GET", "/chores", nil)
 
 	require.Equal(t, 503, w.Code)
 	require.Contains(t, w.Body.String(), "cannot reach")
@@ -171,7 +171,7 @@ func TestTheChoresScreenNeverPrintsADayCount(t *testing.T) {
 	body := mounted(t, &fakeStore{chores: []squirrel.Chore{
 		chore(1, "bins out", 14, 3),
 		chore(2, "water the plants", 7, 45),
-	}}).call(t, "GET", "/pile/chores", nil).Body.String()
+	}}).call(t, "GET", "/chores", nil).Body.String()
 
 	require.Contains(t, body, "this week")
 	require.Contains(t, body, "a while back")

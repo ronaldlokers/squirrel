@@ -20,6 +20,7 @@ var templateFS embed.FS
 // templates are a flat namespace, so two files both defining "content" cannot
 // live in one set — the set is the page.
 var pages = map[string]*template.Template{
+	"home":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/home.html")),
 	"chores":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/chores.html")),
 	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
@@ -36,10 +37,13 @@ type noteView struct {
 }
 
 type view struct {
-	Path string
 	// Here is which of the two screens this is, so the lid can offer the other
 	// one. A link that points at the page you are on is furniture.
 	Here string
+	// Home is the front door, where the lid carries no cross-link at all —
+	// both doors are already the body of the page — and where the mark is not
+	// a link, because it is a link to here.
+	Home bool
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string

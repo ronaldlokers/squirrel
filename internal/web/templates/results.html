@@ -7,7 +7,7 @@
     <span class="tab"></span>
     <div class="meta"><span>{{.When}}</span><span class="sep">&middot;</span><span class="state">{{.StateWord}}</span></div>
     <p>{{.Text}}</p>
-    <form class="racts" method="post" action="{{$.Path}}/act">
+    <form class="racts" method="post" action="/pile/act">
       <input type="hidden" name="id" value="{{.ID}}">
       <input type="hidden" name="q" value="{{$.Query}}">
       {{if eq .State "open"}}

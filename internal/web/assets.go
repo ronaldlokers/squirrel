@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"path"
 	"sort"
-	"strings"
 )
 
 //go:embed static
@@ -63,15 +62,14 @@ func stampOf(files embed.FS) string {
 // assetVersion, so a changed file is a changed URL. The stamp is a query
 // string rather than a filename, which keeps the files themselves plain and
 // needs no build step — this binary has none, and it does not want one.
-func staticHandler(opts Options) http.HandlerFunc {
+func staticHandler() http.HandlerFunc {
 	sub, err := fs.Sub(staticFS, "static")
 	if err != nil {
 		panic(err)
 	}
 	files := http.FileServer(http.FS(sub))
-	prefix := strings.TrimSuffix(opts.Path, "/") + "/static/"
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=31536000")
-		http.StripPrefix(prefix, files).ServeHTTP(w, r)
+		http.StripPrefix("/static/", files).ServeHTTP(w, r)
 	}
 }

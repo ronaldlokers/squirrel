@@ -127,7 +127,6 @@ func TestLoadConfigRejectsABadEveningTime(t *testing.T) {
 func TestWebDefaults(t *testing.T) {
 	cfg, err := squirrel.LoadConfig(minimalEnv(nil))
 	require.NoError(t, err)
-	require.Equal(t, "/pile", cfg.WebPath)
 	require.Equal(t, "X-Authentik-Username", cfg.WebIdentityHeader)
 	require.Empty(t, cfg.WebIdentity, "no identity means the screen is not mounted")
 }
@@ -136,10 +135,8 @@ func TestWebIdentityIsTakenFromTheEnvironment(t *testing.T) {
 	cfg, err := squirrel.LoadConfig(minimalEnv(map[string]string{
 		"WEB_IDENTITY":        "ronald",
 		"WEB_IDENTITY_HEADER": "X-Forwarded-User",
-		"WEB_PATH":            "/notes",
 	}))
 	require.NoError(t, err)
 	require.Equal(t, "ronald", cfg.WebIdentity)
 	require.Equal(t, "X-Forwarded-User", cfg.WebIdentityHeader)
-	require.Equal(t, "/notes", cfg.WebPath)
 }

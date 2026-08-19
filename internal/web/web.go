@@ -15,9 +15,12 @@ import (
 )
 
 // Options is everything the screen needs to be mounted.
+//
+// Not where it lives: the screen is at the root, and the route table in Mount
+// is the whole of it. A configurable mount path meant a prefix on every URL in
+// every template, a header to widen the worker's scope by one character, and an
+// ingress that had to agree with all of it — for a setting nothing ever set.
 type Options struct {
-	// Path is where the screen lives. Sub-routes hang off it.
-	Path string
 	// IdentityHeader is filled by Traefik's forward-auth middleware.
 	IdentityHeader string
 	// Identity is the one value that may read this pile. Mount refuses to
