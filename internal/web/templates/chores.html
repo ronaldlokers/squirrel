@@ -16,7 +16,7 @@
            shows its rhythm and stops there. */}}
       {{if .Last}}<span class="sep">&middot;</span><span>LAST DONE {{.Last}}</span>{{end}}
     </p>
-    <form class="acts" method="post" action="/pile/chores/act">
+    <form class="acts" method="post" action="/chores/act">
       <input type="hidden" name="id" value="{{.ID}}">
       <button class="abtn did" name="act" value="done">DID IT</button>
       {{/* The picker replaces the row in place rather than opening a modal.
