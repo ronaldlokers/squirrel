@@ -115,11 +115,16 @@ theirs.
   template.
 - `Service-Worker-Allowed` on the worker: a worker served from `/sw.js`
   already scopes to `/`.
+
+## What the lid does instead
+
 `Here` stays, and gains a second job. The lid's cross-link keeps offering the
 half you are not looking at, so moving between the pile and the chores never
 goes via home; on home itself there is no cross-link, because both doors are on
 the page. The mark and wordmark become a link to `/` on every screen except
 home — the convention every website has, and the cheapest possible way back.
+
+## When the database is down
 
 When the database is unreachable, home fails the way every other screen does:
 503, the page that says Squirrel cannot reach its memory and that nothing has
