@@ -36,8 +36,102 @@ on a network.</p>
 <p style="opacity:.75">Notes are still kept by talking to Squirrel in Campfire.</p>
 </body></html>`;
 
+// Words typed with no network, waiting for one.
+//
+// The screen writes straight to the pile and there is no spool behind that —
+// the chat's 👀 means the words reached disk before anything else could go
+// wrong, and a direct write has no such stage. This is the nearest honest
+// substitute: the worker takes the words, the page says so, and they go in
+// when the network comes back.
+//
+// IndexedDB rather than the cache, because these are not responses. Kept in
+// the order they were said, because that is the only order that means
+// anything, and deleted the moment they land — a queue that keeps what it has
+// already delivered is a second pile.
+const HELD = "squirrel-held";
+
+function heldStore(mode) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(HELD, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("notes", { autoIncrement: true });
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => resolve(open.result.transaction("notes", mode).objectStore("notes"));
+  });
+}
+
+function hold(text) {
+  return heldStore("readwrite").then(store => new Promise((resolve, reject) => {
+    const put = store.add({ text, at: Date.now() });
+    put.onsuccess = () => resolve();
+    put.onerror = () => reject(put.error);
+  }));
+}
+
+// Send what is held, oldest first, and stop at the first failure — the network
+// is either there or it is not, and hammering it with the rest achieves
+// nothing. Each note is deleted only once its own write has landed.
+async function flush() {
+  const store = await heldStore("readwrite");
+  const all = await new Promise((resolve, reject) => {
+    const req = store.openCursor();
+    const out = [];
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return resolve(out);
+      out.push({ key: cursor.key, ...cursor.value });
+      cursor.continue();
+    };
+    req.onerror = () => reject(req.error);
+  });
+
+  for (const note of all) {
+    const body = new URLSearchParams({ text: note.text });
+    let res;
+    try {
+      res = await fetch("/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+        credentials: "same-origin",
+      });
+    } catch {
+      return false;
+    }
+    if (!res.ok && res.status !== 303) return false;
+    const del = await heldStore("readwrite");
+    await new Promise(resolve => {
+      const req = del.delete(note.key);
+      req.onsuccess = req.onerror = () => resolve();
+    });
+  }
+  return true;
+}
+
+self.addEventListener("message", event => {
+  if (event.data === "flush") event.waitUntil(flush());
+});
+
 self.addEventListener("fetch", event => {
   const request = event.request;
+
+  // A capture with no network is held rather than lost. The page is told by
+  // the redirect it gets back, which is the same shape the server's own
+  // answers take — one path through the page's code, whoever answered.
+  if (request.method === "POST" && new URL(request.url).pathname === "/capture") {
+    event.respondWith((async () => {
+      const copy = request.clone();
+      try {
+        return await fetch(request);
+      } catch {
+        const text = (await copy.formData()).get("text");
+        if (!text || !String(text).trim()) return Response.redirect("/", 303);
+        await hold(String(text));
+        return Response.redirect("/?held=1", 303);
+      }
+    })());
+    return;
+  }
+
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);

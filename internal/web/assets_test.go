@@ -96,3 +96,18 @@ func TestAStampedAssetStillServes(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Contains(t, w.Body.String(), "--card: #fdecd4")
 }
+
+// The worker holds a capture when there is no network, and sends it when there
+// is. This is the nearest honest substitute for the spool a direct write does
+// not have.
+func TestTheWorkerHoldsACaptureWithNoNetwork(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+	body := m.call(t, "GET", "/sw.js", nil).Body.String()
+
+	require.Contains(t, body, `pathname === "/capture"`, "it intercepts the capture")
+	require.Contains(t, body, "indexedDB", "and keeps the words somewhere real")
+	require.Contains(t, body, "/?held=1", "and the page is told")
+	// Deleted only once its own write has landed — a queue that keeps what it
+	// has delivered is a second pile.
+	require.Contains(t, body, "del.delete(note.key)")
+}

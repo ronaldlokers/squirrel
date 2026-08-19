@@ -204,6 +204,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			return nil, fmt.Errorf("mounting the pile: %w", err)
 		}
 		slog.Info("the screen is mounted", "at", "/")
+		// Chat can now say where it is. Only when it has been told: a link
+		// built from a guess is a link that 404s.
+		squirrel.SetScreenURL(config.WebURL)
 	} else {
 		// Same precedent as the presence warning above: a mis-wired
 		// WEB_IDENTITY otherwise produces no log line at all, and a bot with

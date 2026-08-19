@@ -355,3 +355,43 @@ func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
 			return r.getBoundingClientRect().width <= f.getBoundingClientRect().width;
 		})`), "every label fits its own cell")
 }
+
+// The screen writes straight to the pile and there is no spool behind that, so
+// a capture typed with no network would simply be lost. The worker holding it
+// is the nearest honest substitute — and this is the test that it actually
+// holds, rather than that the code reads as though it would.
+//
+// The server is closed rather than the network emulated: CDP's offline
+// emulation applies to the page's network stack and not to the worker's own,
+// so the first version of this test passed while the POST reached the server
+// and came back "kept". A closed socket is offline for both.
+func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
+	c, srv := open(t, aPile())
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
+
+	srv.Close()
+
+	require.Equal(t, true, c.eval(t, `
+		const res = await fetch("/capture", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({ text: "ask the garage about the rattle" }),
+		});
+		return new URL(res.url).search.includes("held");`),
+		"the worker answered, and said so")
+
+	// On disk, not merely in a promise somewhere.
+	require.Equal(t, true, c.eval(t, `
+		return await new Promise(resolve => {
+			const open = indexedDB.open("squirrel-held", 1);
+			open.onerror = () => resolve(false);
+			open.onsuccess = () => {
+				const db = open.result;
+				if (!db.objectStoreNames.contains("notes")) return resolve(false);
+				const req = db.transaction("notes").objectStore("notes").getAll();
+				req.onsuccess = () => resolve(req.result.some(n => n.text.includes("the rattle")));
+				req.onerror = () => resolve(false);
+			};
+		});`), "the words are held")
+}

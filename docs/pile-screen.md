@@ -49,6 +49,7 @@ template plus a header to widen the worker's scope by one character.
 | --- | --- | --- |
 | `WEB_IDENTITY` | *(empty)* | The one identity that may read the pile. **Empty leaves the screen unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
 | `WEB_IDENTITY_HEADER` | `X-Authentik-Username` | The header the forward-auth middleware fills. |
+| `WEB_URL` | *(empty)* | Where the screen is reachable from outside, so chat can link to it. **Empty means chat says nothing about the screen** — a link built from a guess is a link that 404s, and a bot that confidently sends you nowhere is worse than one that stays quiet. |
 
 The comparison against `WEB_IDENTITY` is exact — no trimming, no case folding.
 Two identities that differ by a space are two identities.

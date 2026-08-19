@@ -88,3 +88,13 @@ func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 	require.NotContains(t, body, "<script>alert(1)</script>")
 	require.Contains(t, body, "&lt;script&gt;")
 }
+
+// Held is a third state, not a flavour of the other two: the words are safe,
+// which failure is not, and they are not in the pile yet, which kept is.
+func TestTheSlotSaysWhenWordsAreHeld(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/?held=1", nil).Body.String()
+
+	require.Contains(t, body, "No network")
+	require.Contains(t, body, "goes in when you are back")
+	require.NotContains(t, body, "Not kept", "nothing has gone wrong")
+}

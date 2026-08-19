@@ -28,6 +28,7 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 			// escaped on the way out like any other text on this screen.
 			Kept:   q.Get("kept") != "",
 			NoKeep: q.Get("nokeep") != "",
+			Held:   q.Get("held") != "",
 			Said:   q.Get("said"),
 		}
 

@@ -73,6 +73,11 @@ type Config struct {
 	// from the Authentik outpost. Squirrel writes no authentication code and
 	// holds no session; it compares one header to one configured value.
 	WebIdentityHeader string
+	// WebURL is where the screen can be reached from outside, so chat can
+	// point at it. Empty means chat says nothing about the screen, which is
+	// the honest answer when nobody has said where it is — a link built from a
+	// guess is a link that 404s.
+	WebURL string
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -249,6 +254,7 @@ func LoadConfig(env map[string]string) (Config, error) {
 
 		WebIdentity:       env["WEB_IDENTITY"],
 		WebIdentityHeader: optional(env, "WEB_IDENTITY_HEADER", "X-Authentik-Username"),
+		WebURL:            strings.TrimRight(env["WEB_URL"], "/"),
 	}
 
 	if slicesContains(transports, "campfire") {
