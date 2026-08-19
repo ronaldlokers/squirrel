@@ -1,4 +1,4 @@
-# Comp notes: the chores screen (`/pile/chores`)
+# Comp notes: the chores screen (`/chores`)
 
 Comp: `chores-screen.html` (open it from its place in the repo — fonts and the
 mark are linked relatively to `internal/web/static/`). Two screens in one file:
