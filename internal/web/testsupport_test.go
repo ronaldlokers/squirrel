@@ -201,6 +201,19 @@ func (f *fakeStore) LatestCheckin(_ context.Context, _ int64) (squirrel.Checkin,
 	return *f.checkin, true, nil
 }
 
+func (f *fakeStore) Reword(_ context.Context, _ int64, id int64, text string) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	for i := range f.items {
+		if f.items[i].ID == id {
+			f.items[i].RawText = text
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {
 	if f.err != nil {
 		return squirrel.Item{}, false, f.err

@@ -138,3 +138,39 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 		})
 	}
 }
+
+// fixHandler changes what a note says, and nothing else about it.
+//
+// The same write the chat's !fix makes, through the same store call, so the
+// two ways of correcting a thought cannot come to mean different things. It
+// returns to where you were — a correction made three notes down comes back to
+// the same place, like every other transition here.
+func fixHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			back(w, r, opts, url.Values{})
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		text := strings.TrimSpace(r.FormValue("text"))
+		// Empty is not a correction. A note cannot be emptied into nothing —
+		// that is what dropping it is for, and it is reversible.
+		if err != nil || id < 1 || text == "" {
+			back(w, r, opts, url.Values{})
+			return
+		}
+		if len(text) > captureLimit {
+			text = text[:captureLimit]
+		}
+		if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
+			fail(w, err)
+			return
+		}
+		back(w, r, opts, url.Values{})
+	}
+}

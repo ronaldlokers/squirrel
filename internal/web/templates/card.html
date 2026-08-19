@@ -15,7 +15,21 @@
          points. */}}
     <a class="later" id="later" href="/pile?after={{.Note.ID}}">LATER <span aria-hidden="true">&rarr;</span></a>
   </div>
-  <div class="note"><p id="noteText">{{.Note.Text}}</p>
+  <div class="note">
+    {{/* The words, and a way to correct them. A disclosure rather than a
+         second page, the same mechanism the interval question uses: the
+         correction happens where the note is, and closing it changes
+         nothing. */}}
+    <details class="reword">
+      <summary role="button"><span class="ifshut" aria-label="Fix the words">fix the words</span><span class="ifopen">never mind</span></summary>
+      <form method="post" action="/pile/fix">
+        <input type="hidden" name="id" value="{{.Note.ID}}">
+        <input type="hidden" name="after" value="{{.After}}">
+        <textarea name="text" rows="3" aria-label="What the note should say">{{.Note.Text}}</textarea>
+        <button class="rewordSave" type="submit">Say it this way</button>
+      </form>
+    </details>
+    <p id="noteText">{{.Note.Text}}</p>
     <span class="stamp" id="stamp"><span class="dot"></span><span id="stampText"></span></span>
   </div>
   <div class="tray">
