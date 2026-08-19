@@ -182,6 +182,13 @@ components:
     textColor: "{colors.outline}"
     rounded: "{rounded.chip}"
     padding: "9px 14px"
+  door:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.outline}"
+    rounded: "{rounded.card}"
+    padding: "22px 24px"
+  door-hover:
+    backgroundColor: "{colors.paper}"
 ---
 
 # Design System: Squirrel
@@ -383,6 +390,13 @@ monospace axis and this is a warm tool, not a terminal.
 One column, centred, `min(720px, 100%)`. No navigation, no sidebar, no second
 region — the shoebox has one opening.
 
+**The home screen is the one surface with two primary destinations.** They are
+equals: two cells of one grid, the same stock, the same depth, side by side at
+every width, and they must render identically in every state. Nothing on that
+screen depends on what the pile holds, so a full pile and an empty one are the
+same page — which is what *stopping partway is a normal ending* looks like when
+it is structural rather than a reassuring sentence.
+
 The lid is a full-width flex bar: mark and wordmark left, search field right,
 `11px 22px 13px` padding. Below it hangs the brim, a full-width SVG whose
 outline stroke is held at 3px by `vector-effect="non-scaling-stroke"` regardless
@@ -509,6 +523,69 @@ to go rather than a thing to do, so it takes no pill, no outline and no offset;
 it is the one control-shaped thing in the system that is deliberately not a
 button.
 
+On the home screen the lid carries no cross-link: the doors are the body of the
+page, and a third copy of a door is furniture. Everywhere else the mark and
+wordmark are themselves a link back to home — undecorated, because the mark is
+the mark.
+
+### The Door
+
+A card-stock link to one of the box's two halves, and the home screen's entire
+body. Composed only of parts that already exist, but the composition is new:
+
+- **Stock and depth:** card fill, 3px outline, 14px radius, the result card's
+  shadow. It presses flush like everything else you push — `translateY(5px)`
+  against `0 5px 0 0`.
+- **Name:** the lid link's voice at a doorway's size — lowercase, `wght` 800,
+  in the machine's axis, at the Note role's floor (21px, 23px on a phone). The
+  same documented pair the chore name pins; no new step.
+- **Sub-line:** the meta role in headphone brown, saying what the half is —
+  *WHAT YOU SAID*, *WHAT COMES BACK*.
+- **Hover:** brightens to paper. A button hovers by deepening; a card you can
+  walk into wants a "pick it up" affordance instead, and that difference is the
+  point rather than an inconsistency.
+- **Only ever two**, side by side at every width. Their equality is the screen's
+  one statement, and a stacked pair reads as first and second.
+
+### Door Art
+
+One drawing per door, above the name, in a fixed-height slot — 86px, 66px on a
+phone. The fixed slot is the equality mechanism: both drawings render the same
+height whatever their aspect, so neither door leads. Flat fills from the
+documented palette inside the 3px outline (`vector-effect="non-scaling-stroke"`
+when the drawing is SVG). Decorative to assistive tech — the name is directly
+beneath it. No CSS shadow: the art is printed on the door's stock, not stuck to
+it, and its own outline is its depth. A small mirrored tilt, ±1.5°, because
+nothing handled sits square.
+
+Its guard rails, which are a refused drawing written down as rules. Door art may
+never depict a count, a progress state, a tick or a completion; never wears a
+state colour *as a state* (amber as straw is a colour, a green tick is a claim);
+never grey; never orange. Only ever two drawings, because there are only ever
+two doors.
+
+**The exception the chores door carries.** The owner's own chores illustration
+shows grey on a clipboard's clip and two ticked boxes beside one empty — a
+progress reading drawn as a picture, in the `done` green, on the product whose
+hardest rule is never a count in any form. It was refused on those grounds and
+then chosen anyway, by the owner, for his own home screen: it is warm, it reads
+instantly as chores, and it is his product. This is the only surface in the
+system where grey appears and the only place a completion is depicted. It is
+illustration rather than interface — nothing here reports state — and it is
+recorded so nobody re-litigates it or quietly "fixes" it. It is not the
+precedent for a third door.
+
+### The Peek — removed, and why it stays removed
+
+An earlier home screen showed the newest note: readable, not actionable, one
+card, no stack behind it, absent without residue when the pile was empty. It was
+cut on sight. A home screen that shows what is waiting greets you with what is
+waiting, however carefully it is dressed.
+
+If a preview ever returns, the seven prohibitions return with it: no count, no
+stack behind it, no *more*, no action, no state colour, no urgency copy, and no
+residue when the pile is empty.
+
 ### Cards / Containers
 
 - **Corner:** 14px.
@@ -571,6 +648,10 @@ border that a card UI would reach for by default.
   one most likely to be broken by accident.
 - **Don't** use white or grey for any surface or any secondary type. Tint from
   the tail cream on purple, from the headphone brown on cream.
+- **Don't** draw a count either. The rule above does not care whether the total
+  is a numeral: a checklist, a progress bar, a row of ticks and a stack of cards
+  are all counts in a costume. The one drawn exception in the system is recorded
+  under Door Art, and it is an exception rather than a precedent.
 - **Don't** put orange on a disposal action. Orange means something was made.
 - **Don't** dress a chore at rest in orange either, or in the page-tab grammar
   that says what a note ended up as. A chore has a rhythm, not an outcome.
