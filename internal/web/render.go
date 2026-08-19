@@ -22,6 +22,7 @@ var templateFS embed.FS
 var pages = map[string]*template.Template{
 	"home":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/home.html")),
 	"chores":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/chores.html")),
+	"kept":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/kept.html")),
 	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
@@ -44,6 +45,14 @@ type view struct {
 	// both doors are already the body of the page — and where the mark is not
 	// a link, because it is a link to here.
 	Home bool
+	// Said carries words back to the slot when the write failed. A capture box
+	// that clears on failure is a capture box that eats thoughts.
+	Said string
+	// Kept and NoKeep are what the slot says back, and they are deliberately
+	// two booleans rather than one message: the failure is not the success
+	// with different words, and only one of them keeps the words.
+	Kept   bool
+	NoKeep bool
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string

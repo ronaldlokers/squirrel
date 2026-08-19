@@ -229,6 +229,76 @@
     location.assign(url);
   }
 
+
+  // ---- the slot -----------------------------------------------------------
+  //
+  // The field grows with what is in it. Without this a thought longer than one
+  // line is typed into a one-line box, and — worse — words handed back after a
+  // failed write arrive clipped, which reads as "some of it is gone" at exactly
+  // the moment the page is promising the opposite.
+  //
+  // Enhancement only: with this file absent the textarea scrolls, which is
+  // ugly and loses nothing.
+  const slot = document.querySelector(".slot textarea");
+  if (slot) {
+    const grow = () => {
+      slot.style.height = "auto";
+      slot.style.height = slot.scrollHeight + "px";
+    };
+    slot.addEventListener("input", grow);
+    grow();
+
+    // Enter keeps it, the way Enter sends a message in the room this product
+    // lives in. Shift+Enter is the newline, for a thought with two parts.
+    slot.addEventListener("keydown", e => {
+      if (e.key !== "Enter" || e.shiftKey) return;
+      e.preventDefault();
+      if (slot.value.trim()) slot.form.requestSubmit();
+    });
+  }
+
+  // ---- the chores screen -------------------------------------------------
+  //
+  // The deck has one card, so a key there needs no idea of which thing it
+  // means. A list does, and rather than invent a selection model this uses the
+  // platform's own: the chore you are focused in is the chore a letter acts
+  // on. That also keeps DESIGN.md's rule intact — letters are actions, and
+  // movement is the arrow keys — applied to a list rather than to a deck.
+  //
+  // With this file absent every button is still a button and Tab still
+  // reaches it. Nothing below is load-bearing.
+  const chores = [...document.querySelectorAll("article.chore")];
+
+  function focusedChore() {
+    return document.activeElement?.closest?.("article.chore") || null;
+  }
+
+  function moveChore(step) {
+    if (!chores.length) return;
+    const here = focusedChore();
+    const at = here ? chores.indexOf(here) : -1;
+    const next = chores[Math.min(Math.max(at + step, 0), chores.length - 1)];
+    next?.querySelector("button, summary")?.focus();
+  }
+
+  const CHORE_KEYS = { d: ".abtn.did", s: ".abtn.stop", o: "details.often > summary" };
+
+  function choreKey(key) {
+    const card = focusedChore();
+    if (!card) { moveChore(1); return true; }
+    const target = card.querySelector(CHORE_KEYS[key]);
+    if (!target) return false;
+    // Pressing the control rather than submitting behind its back: one answer
+    // to what each key means, and it is whatever the button already did.
+    target.click();
+    // Opening the question hides the two actions beside it, and one of them
+    // was holding the focus — which drops focus to the body and leaves the
+    // next key with no chore to act on. The summary survives the open (it
+    // becomes "never mind"), so it is where focus belongs.
+    if (document.activeElement === document.body) target.focus();
+    return true;
+  }
+
   addEventListener("keydown", e => {
     if (e.target === find) {
       if (e.key === "Escape") { find.value = ""; clearTimeout(timer); swap(""); }
@@ -237,6 +307,33 @@
     if (e.key === "/") { e.preventDefault(); find?.focus(); return; }
     // A focused control owns space and enter; that is the platform's contract.
     if ((e.key === " " || e.key === "Enter") && e.target.closest("button, summary, a")) return;
+
+    // The chores screen. Its own keys, because it is a list and the deck is
+    // not — and its own branch, because there is no card here to act on.
+    if (chores.length) {
+      if (e.key === "ArrowDown") { e.preventDefault(); moveChore(1); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); moveChore(-1); return; }
+      // Withdrawing the interval question is Escape here as it is on the deck.
+      if (e.key === "Escape") {
+        // The focused chore's question, or whichever is open if focus has
+        // wandered off — Escape means "withdraw the question" either way.
+        const open = focusedChore()?.querySelector("details.often[open]")
+          || document.querySelector("details.often[open]");
+        if (open) {
+          e.preventDefault();
+          open.open = false;
+          open.querySelector("summary")?.focus();
+        }
+        return;
+      }
+      const key = e.key.toLowerCase();
+      if (key in CHORE_KEYS) {
+        e.preventDefault();
+        choreKey(key);
+      }
+      return;
+    }
+
     if (!deck || deck.going) return;
 
     // The chore interval is a question, not an action: C asks it, 1-4 answer

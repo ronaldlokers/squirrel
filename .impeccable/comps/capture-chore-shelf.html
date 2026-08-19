@@ -1,0 +1,904 @@
+<!--
+THREE NEW SURFACES, drawn together because they share a question: how does
+this product accept something without becoming the thing it refuses to be?
+
+  1. THE SLOT — capture, on the home screen.
+  2. THE NEW CHORE — a name, a rhythm, and when it is worth asking.
+  3. THE SHELF — the notes you kept, which are reference rather than work.
+
+THESIS FOR THE SLOT: a shoebox has a slot in the lid. You post a thought in
+without opening the box, and the box does not answer back with a total. It is
+deliberately NOT a composer at the top of a list — that shape is an inbox's,
+and it puts what you are adding directly above what you have not dealt with.
+It sits under the two doors, at the foot of the one screen with nothing on it
+that depends on what the pile holds.
+
+WHAT THE SLOT REFUSES:
+  - No count of what went in, ever, and no running list of today's captures.
+  - No "added to 14 notes". No confirmation that names a place you are behind.
+  - It does not clear on failure. Words that were not kept stay on screen and
+    say so — there is no spool behind a direct write, which is the cost the
+    owner accepted, and the honest answer is to hold the words in the field
+    rather than to lose them quietly.
+  - No categories, no due date, no priority. A thought is a thought.
+
+THE HELD STATE is the offline one: the worker takes the words when there is no
+network and posts them when there is. Held notes show their own text, because
+your words are not a count of what is outstanding — but there is never a
+number beside them and never a "3 pending".
+
+THESIS FOR THE NEW CHORE: the interval picker already exists as a disclosure
+that replaces the row it sits in. Making a chore is the same question asked
+twice more — what is it called, and when is it worth asking — so it reuses
+that exact mechanism and those exact chips. The hours are day-parts and not a
+clock: a chore that wants the evening does not want 17:00, and a time picker
+with minutes on it is a small precision tax charged every time.
+
+THESIS FOR THE SHELF: `kept` is load-bearing — a serial number or a link is
+not a task and will never be done. It has never had a surface. It is not a
+third door (there are only ever two) and it is not a folder or a tag; it is
+where the pile ends. You reach it from the bottom of the pile and from the
+empty pile, which are exactly the two moments when there is nothing to triage
+and looking something up is the plausible next thing.
+
+FONTS AND MARK: linked relatively to internal/web/static/ — open this file from
+its place in the repo.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<style>
+  @font-face {
+    font-family: "Recursive";
+    src: url("../../internal/web/static/recursive.woff2") format("woff2");
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: block;
+  }
+
+  :root {
+    --purple: #6c4da9;
+    --purple-deep: #58388a;
+    --purple-dark: #3b2560;
+    --violet: #5e23b1;   --violet-ink: #56209f;
+    --orange: #e66d0d;
+    --orange-lit: #ff8a2b;
+    --outline: #1c110b;
+    --cream: #fed6a7;
+    --card: #fdecd4;
+    --card-deep: #f6d5ab;
+    --paper: #fffbf3;
+    --paper-deep: #f7e9d4;
+    --brown: #58413d;
+    --white: #fefefe;
+
+    --kept: #ffb300;     --kept-ink: #8a5c00;
+    --done: #529414;     --done-ink: #3c6d0e;
+
+    --line: 3px;
+    --r: 14px;
+    --o: 6px;
+
+    --casual: "MONO" 0, "CASL" 1;
+    --precise: "MONO" 0, "CASL" 0;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overflow-x: clip; }
+
+  body {
+    margin: 0;
+    color: var(--paper);
+    font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise);
+    background-color: var(--purple-deep);
+    background-image:
+      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .5) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  ::selection { background: var(--orange); color: var(--white); }
+  :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+
+  .viewport { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ---------- the lid, as built ---------- */
+
+  .lid {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 22px 13px;
+    background: var(--purple-dark);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+  .brand img { width: 84px; height: 63px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+  .wordmark {
+    font-family: "Inter", Helvetica, Arial, sans-serif; font-weight: 900;
+    font-variation-settings: normal; font-size: 26px; letter-spacing: -.028em;
+    color: var(--paper); -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+  }
+  .lid .spacer { flex: 1; }
+  .lidlink {
+    color: var(--cream); opacity: .8; text-decoration: none;
+    font-size: 13px; font-variation-settings: var(--precise), "wght" 650;
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .lidlink:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .brim { position: absolute; left: 0; top: 100%; width: 100%; height: 30px; display: block; pointer-events: none; }
+  .find {
+    flex: 0 1 280px; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: var(--paper); border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .find input {
+    flex: 1; min-width: 4ch; border: 0; background: transparent;
+    font: 500 14.5px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--outline); caret-color: var(--orange); padding: 0;
+  }
+  .find input::placeholder { color: #8a7361; }
+  .find input:focus { outline: none; }
+
+  main {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    padding: 58px 22px 48px;
+  }
+  main.top { align-items: flex-start; padding-top: 62px; }
+  .homebox, .shoebox { width: min(720px, 100%); }
+
+  /* ---------- the doors, as built ---------- */
+
+  .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .door {
+    display: flex; flex-direction: column; justify-content: center; gap: 7px;
+    min-height: 128px; padding: 22px 24px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0,0,0,.7);
+    text-decoration: none;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .door:hover { background: var(--paper); }
+  .door:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline), 0 10px 18px -14px rgba(0,0,0,.6); }
+  .door .art { height: 86px; margin-bottom: 5px; display: flex; align-items: flex-end; justify-content: center; }
+  .door .art img { display: block; height: 100%; width: auto; }
+  .doors .door:first-child .art > * { transform: rotate(-1.6deg); }
+  .doors .door:last-child .art > * { transform: rotate(1.4deg); }
+  .door .label { align-self: center; text-align: left; display: flex; flex-direction: column; gap: 7px; }
+  .door .name { font-size: 21px; line-height: 1.15; letter-spacing: -.01em; font-variation-settings: var(--precise), "wght" 800; }
+  .door .what { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-variation-settings: var(--precise), "wght" 750; color: var(--brown); }
+
+  /* ================= 1. THE SLOT ================= */
+
+  /* A slot in the lid of the box: you post a thought in without opening it.
+     Deliberately not a card — a card is a note, and this is the opening a note
+     goes through. So: paper, the full outline, and an inset shadow rather than
+     a raised one, because everything else in this world sits ON the surface
+     and this one is a way INTO it. It is the only inset object in the system,
+     and that is the point rather than an inconsistency. */
+  .slot {
+    margin-top: 30px;
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 12px 12px 12px 18px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline);
+    border-radius: var(--r);
+    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35);
+    transition: box-shadow 110ms ease-out, background-color 110ms ease-out;
+  }
+  .slot:focus-within {
+    background: var(--white);
+    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35), 0 0 0 3px var(--orange-lit);
+  }
+  /* His words, in his voice — the same CASL 1 the card sets a note in, because
+     it is the same sentence before and after it is kept. */
+  .slot textarea {
+    flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0;
+    font: 400 18px/1.45 "Recursive", sans-serif;
+    font-variation-settings: var(--casual), "wght" 480;
+    color: var(--outline); caret-color: var(--orange);
+    max-height: 8.7em;
+  }
+  .slot textarea:focus { outline: none; }
+  .slot textarea::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+
+  /* The button says what happens, in the product's own word. Not "add", which
+     is a word about a list; not "save", which is a word about a document. */
+  .post {
+    flex: none;
+    padding: 11px 18px; min-height: 44px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .post:hover { background: var(--orange-lit); }
+  .post:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); }
+
+  /* What the slot says back. One line, under it, and it never names a total.
+     "kept" is the whole confirmation: the chat's ✅ in words. */
+  .slotsaid {
+    margin: 9px 2px 0;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: rgba(254, 214, 167, .85);
+  }
+  .slotsaid.bad { color: var(--orange-lit); text-transform: none; letter-spacing: .01em; font-size: 13.5px; }
+
+  /* Held: typed with no network. The worker has the words and will post them.
+     Each one shows its own text — your words are not a report on how much you
+     are behind — and there is no number anywhere near them. */
+  .held { margin: 12px 0 0; display: flex; flex-direction: column; gap: 8px; }
+  .heldnote {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--card-deep); color: var(--outline);
+    border: var(--line) dashed var(--outline); border-radius: 11px;
+    font-size: 15px; font-variation-settings: var(--casual), "wght" 470;
+  }
+  .heldnote .waiting {
+    flex: none; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750; color: var(--brown);
+    margin-left: auto;
+  }
+
+  .hint {
+    margin: 26px 0 0; text-align: center; font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 550; color: rgba(254, 214, 167, .85);
+  }
+
+  /* ================= 2. THE NEW CHORE ================= */
+
+  .head {
+    margin: 0 0 14px; font-size: 13px; letter-spacing: .09em;
+    text-transform: uppercase; font-variation-settings: var(--precise), "wght" 750;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  .chorecard {
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0,0,0,.7);
+    padding: 18px 22px 20px; margin-bottom: 14px;
+  }
+  .chorecard .cname { font-size: 21px; font-variation-settings: var(--precise), "wght" 800; }
+  .chorecard .meta {
+    margin: 5px 0 14px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750; color: var(--brown);
+  }
+  .sep { opacity: .55; }
+  .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .abtn {
+    padding: 11px 16px; min-height: 44px;
+    color: var(--outline); border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 720;
+    letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+  }
+  .abtn.did { background: #71a73e; }
+  .abtn.often { background: var(--kept); }
+  .abtn.stop { background: #9f8574; margin-left: auto; }
+
+  /* The new chore is the interval picker's own mechanism, asked three times:
+     a disclosure that replaces the row it sits in, so nothing is a modal and
+     nothing is a second page. */
+  .newchore {
+    border: var(--line) dashed rgba(254, 214, 167, .55); border-radius: var(--r);
+    padding: 4px 18px 4px;
+  }
+  .newchore[open] { background: rgba(59, 37, 96, .45); padding-bottom: 20px; }
+  .newchore summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; min-height: 52px;
+    color: var(--cream);
+    font-size: 14.5px; font-variation-settings: var(--precise), "wght" 700;
+  }
+  .newchore summary::-webkit-details-marker { display: none; }
+  .newchore summary .plus {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; flex: none;
+    border: var(--line) solid var(--cream); border-radius: 999px;
+    font-size: 17px; line-height: 1;
+  }
+  .ask { margin: 4px 0 0; }
+  .ask .lead {
+    font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 720;
+    color: rgba(254, 214, 167, .85); margin: 14px 0 9px;
+  }
+  .namefield {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .namefield input {
+    flex: 1; min-width: 0; border: 0; background: transparent; padding: 0;
+    font: 400 17px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    color: var(--outline); caret-color: var(--orange);
+  }
+  .namefield input:focus { outline: none; }
+  .namefield input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 11px 13.5px; min-height: 44px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 700; cursor: pointer;
+  }
+  .chip:hover { background: var(--paper-deep); }
+  /* Chosen is a press that stayed down, which is the same gesture as every
+     other press in this world rather than a new "selected" language. */
+  .chip[aria-pressed="true"] {
+    background: var(--violet); color: var(--paper);
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+  }
+  .chip.escape { border-style: dashed; box-shadow: none; background: transparent; color: var(--cream); }
+
+  .make {
+    margin-top: 18px;
+    padding: 12px 20px; min-height: 46px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+  .make:hover { background: var(--orange-lit); }
+
+  /* ================= 3. THE SHELF ================= */
+
+  .rcard {
+    position: relative;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0,0,0,.7);
+    margin-bottom: 14px;
+  }
+  .rtitle {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; background: var(--purple); color: var(--paper);
+    border-bottom: var(--line) solid var(--outline); border-radius: 11px 11px 0 0;
+    font-size: 12.5px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 750;
+  }
+  .rcard p {
+    margin: 0; padding: 18px 22px 20px;
+    font-size: 18px; line-height: 1.4;
+    font-variation-settings: var(--casual), "wght" 480; text-wrap: pretty;
+  }
+  /* The page tab, straight off the notebook the mascot holds. Amber, because
+     everything on this shelf is kept. */
+  .tab {
+    position: absolute; right: -13px; top: 20px;
+    width: 26px; height: 34px;
+    background: var(--kept); border: var(--line) solid var(--outline);
+    border-left: 0; border-radius: 0 8px 8px 0;
+  }
+  .shelfline {
+    margin: 22px 0 0; font-size: 13.5px;
+    font-variation-settings: var(--precise), "wght" 560;
+    color: rgba(254, 214, 167, .85); text-align: center;
+  }
+
+
+  /* ================= 4. THE CHECK-IN ================= */
+
+  /* "How is right now" — right now, and not today. A day is a thing you can
+     have had a bad one of; this asks about the minute you are in, which is the
+     only honest question and the only useful one.
+
+     The faces are chips, so answering is the same press as every other answer
+     in this world. Once you have answered, the row shows what you said and
+     nothing else: no yesterday, no last week, no line going anywhere. The
+     history exists — it is what lets a nudge know to be gentler — but no
+     surface may ever render more than the latest one, because a fortnight of
+     your own bad days on a screen is the counter this product refuses,
+     wearing a face. */
+  .checkin { margin-top: 26px; }
+  .checkin .lead {
+    margin: 0 0 9px; text-align: center;
+    font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 720;
+    color: rgba(254, 214, 167, .85);
+  }
+  .faces { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .face {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 9px 14px; min-height: 44px; min-width: 62px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 10.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 700;
+    letter-spacing: .07em; text-transform: uppercase; cursor: pointer;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .face .glyph { font-size: 21px; line-height: 1; }
+  .face:hover { background: var(--paper-deep); }
+  .face[aria-pressed="true"] {
+    background: var(--violet); color: var(--paper);
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+  }
+  /* Answered: the row collapses to the one you pressed. It says "noted" and
+     stops — never "you have been flat for three days", which is a sentence
+     about the person and the thing this product does not say. */
+  .noted {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: rgba(254, 214, 167, .85);
+  }
+  .noted .glyph { font-size: 20px; }
+  .noted .again {
+    background: none; border: 0; padding: 0 0 0 4px; cursor: pointer;
+    color: var(--cream); opacity: .75; text-decoration: underline; text-underline-offset: 3px;
+    font: 600 12px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 650; text-transform: none; letter-spacing: 0;
+  }
+
+  /* ================= 5. THE TIMER ================= */
+
+  /* A body double, not a stopwatch. You say how long and what on; it says go,
+     then says nothing at all until the end. The point is the going, so the
+     screen must not become something to watch.
+
+     Nothing is kept about it. There is no record of timers started and
+     abandoned — that record is a streak with a different name, and abandoning
+     one halfway is a normal ending here exactly as stopping partway is. */
+  .timer { margin-top: 22px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .timer .mins { min-width: 0; }
+
+  /* Running, it lives in the lid — on every screen, because you started it to
+     go and do something and the screen you wander to should not lose it. The
+     remaining time is a fact about the thing you chose to start, which is the
+     one number in this product that counts DOWN. */
+  .running {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--violet); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+    font-size: 13px; font-variation-settings: var(--precise), "wght" 700;
+  }
+  .running .left {
+    font-variant-numeric: tabular-nums; letter-spacing: .02em;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  .running .stop {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--cream); text-decoration: underline; text-underline-offset: 3px;
+    font: 600 12px/1 "Recursive", sans-serif; font-variation-settings: var(--precise), "wght" 650;
+  }
+
+  @media (max-width: 620px) {
+    .checkin { margin-top: 20px; }
+    .face { min-width: 56px; padding: 8px 11px; }
+    /* The documented 21/23 step-up pair, the same one the door name and the
+       chore name take. The glyph is an icon rather than type, but it sits in a
+       row of words and there is no reason to invent a step for it. */
+    .face .glyph { font-size: 23px; }
+    .running { order: 6; flex: 1 1 100%; justify-content: center; }
+  }
+
+  /* ---------- comp chrome, not product ---------- */
+
+  .compnote {
+    padding: 18px 22px; background: var(--purple-dark);
+    border-top: 2px dashed rgba(254,214,167,.5); border-bottom: 2px dashed rgba(254,214,167,.5);
+    text-align: center; font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 700; color: rgba(254,214,167,.8);
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: 1ms !important; } }
+
+  @media (max-width: 620px) {
+    .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
+    .brand { gap: 7px; }
+    .brand img { width: 56px; height: 42px; }
+    .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
+    .brim { height: 22px; }
+    .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
+    .find input { font-size: 16px; }
+    main { padding: 36px 13px 32px; }
+    main.top { padding-top: 38px; }
+    .doors { gap: 10px; }
+    .door { min-height: 118px; padding: 18px 16px; gap: 6px; }
+    .door .art { height: 66px; margin-bottom: 4px; }
+    .door .name { font-size: 23px; }
+    .door .what { font-size: 12px; letter-spacing: .08em; }
+
+    /* The slot takes its own row on a phone: one thumb, and the words are what
+       matter. 16px on the field or iOS zooms the page on focus. */
+    .slot { flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; margin-top: 24px; }
+    .slot textarea { font-size: 18.5px; padding: 4px 2px; }
+    .post { width: 100%; }
+    .rcard p { font-size: 18.5px; }
+  }
+</style>
+
+<!-- ============ 1. HOME, WITH THE SLOT ============ -->
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main>
+    <div class="homebox">
+      <nav class="doors" aria-label="The two halves of the box">
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-pile.png" alt="" width="342" height="256"></span>
+          <span class="label"><span class="name">the pile</span><span class="what">what you said</span></span>
+        </a>
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-chores.png" alt="" width="326" height="256"></span>
+          <span class="label"><span class="name">the chores</span><span class="what">what comes back</span></span>
+        </a>
+      </nav>
+
+      <!-- The slot in the lid. Under the doors, because it is not what the
+           screen is for — it is what the box is for. -->
+      <form class="slot">
+        <textarea rows="1" placeholder="tell me a thing" aria-label="Tell Squirrel a thing"></textarea>
+        <button class="post" type="submit">Keep it</button>
+      </form>
+      <p class="slotsaid">kept</p>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">THE SAME SLOT, HOLDING WORDS THAT COULD NOT BE SENT</p>
+
+<!-- ============ 1b. THE SLOT, OFFLINE AND FAILED ============ -->
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main>
+    <div class="homebox">
+      <nav class="doors" aria-label="The two halves of the box">
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-pile.png" alt="" width="342" height="256"></span>
+          <span class="label"><span class="name">the pile</span><span class="what">what you said</span></span>
+        </a>
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-chores.png" alt="" width="326" height="256"></span>
+          <span class="label"><span class="name">the chores</span><span class="what">what comes back</span></span>
+        </a>
+      </nav>
+
+      <form class="slot">
+        <textarea rows="1" aria-label="Tell Squirrel a thing">ask the garage about the rattle</textarea>
+        <button class="post" type="submit">Keep it</button>
+      </form>
+      <!-- Not an error dressed as one. It says what is true and what happens
+           next, and the words are still on screen. -->
+      <p class="slotsaid bad">No network. I have it — it goes in when you are back.</p>
+
+      <!-- Held: each one is your own sentence, never a tally of them. -->
+      <div class="held">
+        <div class="heldnote">meter reading 48213 <span class="waiting">holding</span></div>
+        <div class="heldnote">the blue bin goes out thursday <span class="waiting">holding</span></div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">THE CHORES SCREEN, WITH A WAY TO MAKE ONE</p>
+
+<!-- ============ 2. THE NEW CHORE ============ -->
+<section class="viewport">
+  <div class="lid">
+    <a class="brand" href="#">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </a>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the pile</a>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main class="top">
+    <div class="shoebox">
+      <p class="head">what comes back</p>
+
+      <div class="chorecard">
+        <p class="cname">bins out</p>
+        <p class="meta">
+          <span>EVERY 2 WEEKS</span><span class="sep">&middot;</span><span>LAST DONE THIS MONTH</span>
+          <span class="sep">&middot;</span><span>EVENINGS</span>
+        </p>
+        <div class="acts">
+          <button class="abtn did">did it</button>
+          <button class="abtn often">how often</button>
+          <button class="abtn stop">stop asking</button>
+        </div>
+      </div>
+
+      <div class="chorecard">
+        <p class="cname">water the ferns</p>
+        <p class="meta">
+          <span>EVERY WEEK</span><span class="sep">&middot;</span><span>LAST DONE THIS WEEK</span>
+        </p>
+        <div class="acts">
+          <button class="abtn did">did it</button>
+          <button class="abtn often">how often</button>
+          <button class="abtn stop">stop asking</button>
+        </div>
+      </div>
+
+      <!-- Open, so the whole question is visible in the comp. Closed it is one
+           quiet line, and it is the last thing on the screen rather than the
+           first: what you already have comes before what you might add. -->
+      <details class="newchore" open>
+        <summary><span class="plus" aria-hidden="true">+</span> a new chore</summary>
+
+        <div class="ask">
+          <p class="lead">what is it</p>
+          <div class="namefield">
+            <input type="text" placeholder="descale the kettle" aria-label="What is the chore called">
+          </div>
+
+          <p class="lead">how often</p>
+          <div class="chips">
+            <button class="chip" type="button" aria-pressed="false">every day</button>
+            <button class="chip" type="button" aria-pressed="false">every week</button>
+            <button class="chip" type="button" aria-pressed="true">every 2 weeks</button>
+            <button class="chip" type="button" aria-pressed="false">every month</button>
+          </div>
+
+          <!-- Day-parts, not a clock. A chore that wants the evening does not
+               want 17:00, and minutes are a precision tax charged every time
+               you make one. "any time" is the default and says so. -->
+          <p class="lead">when is it worth asking</p>
+          <div class="chips">
+            <button class="chip" type="button" aria-pressed="true">any time</button>
+            <button class="chip" type="button" aria-pressed="false">mornings</button>
+            <button class="chip" type="button" aria-pressed="false">afternoons</button>
+            <button class="chip" type="button" aria-pressed="false">evenings</button>
+          </div>
+
+          <button class="make" type="submit">Make it a chore</button>
+        </div>
+      </details>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">THE SHELF — THE NOTES YOU KEPT</p>
+
+<!-- ============ 3. THE SHELF ============ -->
+<section class="viewport">
+  <div class="lid">
+    <a class="brand" href="#">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </a>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the pile</a>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main class="top">
+    <div class="shoebox">
+      <!-- Named for what these are, not for how many. "Things you kept" is the
+           same shoebox voice as "the top card". -->
+      <p class="head">things you kept</p>
+
+      <article class="rcard">
+        <div class="rtitle"><span>14 AUGUST</span></div>
+        <p>meter reading 48213</p>
+        <span class="tab" aria-hidden="true"></span>
+      </article>
+
+      <article class="rcard">
+        <div class="rtitle"><span>9 AUGUST</span></div>
+        <p>boiler service code is 4471, engineer said keep it somewhere</p>
+        <span class="tab" aria-hidden="true"></span>
+      </article>
+
+      <article class="rcard">
+        <div class="rtitle"><span>2 AUGUST</span></div>
+        <p>the paint in the hall is dulux natural calico</p>
+        <span class="tab" aria-hidden="true"></span>
+      </article>
+
+      <!-- Says that there is more, never how much — the same sentence the
+           capped search already uses. -->
+      <p class="shelfline">there is more on the shelf &mdash; keep scrolling</p>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">THE CHECK-IN &mdash; ASKED, AND ANSWERED</p>
+
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+  <main>
+    <div class="homebox">
+      <nav class="doors" aria-label="The two halves of the box">
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-pile.png" alt="" width="342" height="256"></span>
+          <span class="label"><span class="name">the pile</span><span class="what">what you said</span></span>
+        </a>
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-chores.png" alt="" width="326" height="256"></span>
+          <span class="label"><span class="name">the chores</span><span class="what">what comes back</span></span>
+        </a>
+      </nav>
+      <form class="slot">
+        <textarea rows="1" placeholder="tell me a thing" aria-label="Tell Squirrel a thing"></textarea>
+        <button class="post" type="submit">Keep it</button>
+      </form>
+
+      <!-- Asked. Four faces, no numbers, and no scale printed anywhere near
+           them. The words under each are for anything reading the page aloud
+           as much as for the eye. -->
+      <div class="checkin">
+        <p class="lead">how is right now</p>
+        <div class="faces">
+          <button class="face" type="button" aria-pressed="false"><span class="glyph" aria-hidden="true">&#128516;</span>good</button>
+          <button class="face" type="button" aria-pressed="false"><span class="glyph" aria-hidden="true">&#128578;</span>ok</button>
+          <button class="face" type="button" aria-pressed="false"><span class="glyph" aria-hidden="true">&#128528;</span>flat</button>
+          <button class="face" type="button" aria-pressed="false"><span class="glyph" aria-hidden="true">&#128533;</span>rough</button>
+          <button class="face" type="button" aria-pressed="false"><span class="glyph" aria-hidden="true">&#128555;</span>wiped</button>
+        </div>
+      </div>
+
+      <!-- The timer, unstarted: how long, and what on. -->
+      <div class="timer">
+        <button class="chip" type="button">5 min</button>
+        <button class="chip" type="button">10 min</button>
+        <button class="chip" type="button">20 min</button>
+      </div>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">ANSWERED, AND A TIMER RUNNING &mdash; THE STRIP RIDES THE LID ON EVERY SCREEN</p>
+
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <!-- Running, and on every screen: you started it to go and do a thing, and
+         wandering to the chores should not lose it. -->
+    <span class="running">
+      <span>the kitchen</span>
+      <span class="left">06:12</span>
+      <button class="stop" type="button">stop</button>
+    </span>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+  <main>
+    <div class="homebox">
+      <nav class="doors" aria-label="The two halves of the box">
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-pile.png" alt="" width="342" height="256"></span>
+          <span class="label"><span class="name">the pile</span><span class="what">what you said</span></span>
+        </a>
+        <a class="door" href="#">
+          <span class="art"><img src="assets/door-chores.png" alt="" width="326" height="256"></span>
+          <span class="label"><span class="name">the chores</span><span class="what">what comes back</span></span>
+        </a>
+      </nav>
+      <form class="slot">
+        <textarea rows="1" placeholder="tell me a thing" aria-label="Tell Squirrel a thing"></textarea>
+        <button class="post" type="submit">Keep it</button>
+      </form>
+
+      <!-- Answered. The one you pressed, the word "noted", and a way to say
+           something else. Nothing about yesterday, ever. -->
+      <div class="checkin">
+        <p class="noted">
+          <span class="glyph" aria-hidden="true">&#128528;</span>
+          <span>noted &mdash; flat</span>
+          <button class="again" type="button">say something else</button>
+        </p>
+      </div>
+    </div>
+  </main>
+</section>

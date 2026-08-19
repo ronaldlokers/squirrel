@@ -43,6 +43,22 @@ func (f *fakeStore) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, 
 	return f.chores, nil
 }
 
+func (f *fakeStore) SearchChores(_ context.Context, _ int64, q string, limit int) ([]squirrel.Chore, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	out := []squirrel.Chore{}
+	for _, c := range f.chores {
+		if c.Active && strings.Contains(strings.ToLower(c.Name), strings.ToLower(q)) {
+			out = append(out, c)
+		}
+	}
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
 func (f *fakeStore) DeactivateChore(_ context.Context, choreID int64) error {
 	if f.err != nil {
 		return f.err
@@ -132,6 +148,36 @@ func (f *fakeStore) SearchItems(_ context.Context, _ int64, q string, limit int)
 		out = out[:limit]
 	}
 	return out, more, nil
+}
+
+func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	out := []squirrel.Item{}
+	for _, it := range f.items {
+		if it.State == squirrel.ItemKept {
+			out = append(out, it)
+		}
+	}
+	more := len(out) > limit
+	if more {
+		out = out[:limit]
+	}
+	return out, more, nil
+}
+
+// InsertItem is the slot. The fake keeps the store's own contract: a fresh row
+// answers true, and the payload marks it a note by construction.
+func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	id := int64(len(f.items) + 1)
+	f.items = append([]squirrel.Item{{
+		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt, State: squirrel.ItemOpen,
+	}}, f.items...)
+	return true, nil
 }
 
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {

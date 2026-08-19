@@ -32,11 +32,15 @@ func Mount(m Mux, s Store, opts Options) error {
 	// would arrive looking like a working page.
 	m.Get("/{$}", guard(opts, homeHandler()))
 	m.Get("/pile", guard(opts, pileHandler(s, opts)))
+	// The slot. Behind the origin check like every other write here: the
+	// identity says who is asking, sameOrigin says which page asked.
+	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
 	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
+	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
 	// The chores screen lived here for its whole life. A bookmark that dies
 	// quietly is worse than a redirect nobody notices.
@@ -102,13 +106,29 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 // false claim in the one place the counting rule is most likely to leak.
 const searchLimit = 6
 
+// choreHits caps the chores a search answers with. Short on purpose: a chore
+// list is short, and this is a way to reach one rather than a second list to
+// read.
+const choreHits = 3
+
 func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string, undo *undoView) {
 	items, more, err := s.SearchItems(r.Context(), personID, q, searchLimit)
 	if err != nil {
 		fail(w, err)
 		return
 	}
+	// One search, both kinds of thing. The lid carries one field on every
+	// screen, and a person typing a word has not first decided whether the word
+	// belongs to a note or to a chore.
+	chores, err := s.SearchChores(r.Context(), personID, q, choreHits)
+	if err != nil {
+		fail(w, err)
+		return
+	}
 	v := view{Query: q, More: more, Undo: undo}
+	for _, c := range chores {
+		v.Chores = append(v.Chores, toChoreView(c))
+	}
 	for _, it := range items {
 		v.Results = append(v.Results, toView(it))
 	}

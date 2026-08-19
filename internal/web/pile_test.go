@@ -19,9 +19,11 @@ func TestTheRouteTable(t *testing.T) {
 	for _, route := range []string{
 		"GET /{$}",
 		"GET /pile",
+		"POST /capture",
 		"POST /pile/act",
 		"POST /pile/chore",
 		"GET /chores",
+		"GET /kept",
 		"POST /chores/act",
 		"GET /pile/chores",
 		"GET /manifest.webmanifest",
@@ -30,7 +32,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 10, "a route was added without being pinned here")
+	require.Len(t, m.routes, 12, "a route was added without being pinned here")
 }
 
 // The chores screen lived at /pile/chores for its whole life, and a bookmark
@@ -82,6 +84,9 @@ func TestEmptyPileDoesNotCelebrate(t *testing.T) {
 	}
 }
 
+// The slot lives on home and nowhere else. A capture box above the deck is the
+// inbox shape this product refuses: what you are adding, directly over what you
+// have not dealt with.
 func TestPileHasNoCaptureBox(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "kaas", squirrel.ItemOpen)}}
 	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()

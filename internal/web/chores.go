@@ -141,21 +141,11 @@ func toChoreView(c squirrel.Chore) choreView {
 	return v
 }
 
-// cadence says the rhythm the way a person would. "every 14 days" is arithmetic
-// the reader has to do; "every 2 weeks" is the thing they set.
+// cadence is the core's own words, upper-cased for the meta role. The casing
+// is style; the vocabulary is not this package's to choose, because the chat
+// says the same thing about the same chore and the two must agree.
 func cadence(days int) string {
-	switch days {
-	case 1:
-		return "EVERY DAY"
-	case 7:
-		return "EVERY WEEK"
-	case 14:
-		return "EVERY 2 WEEKS"
-	case 30:
-		return "EVERY MONTH"
-	default:
-		return "EVERY " + strings.ToUpper(plural(days, "DAY"))
-	}
+	return strings.ToUpper(squirrel.Cadence(days))
 }
 
 // chipFor is which of the four offered intervals this chore is currently set
@@ -177,37 +167,9 @@ func chipFor(days int) string {
 	}
 }
 
-// lastDone says roughly when, never how long.
-//
-// It used to print the exact number of days, which is a fact about the chore
-// rather than about you and felt defensible on that ground. It is still one
-// short step from "3 days late": a number attached to something undone, going
-// up while you are not looking, is the accumulating shape this product exists
-// without — and precision buys nothing here. Nobody waters a plant differently
-// for knowing it was nine days rather than eight.
-//
-// The buckets are deliberately coarse and stop at "a while back". There is no
-// bucket for a long time, because that sentence is about the person.
+// lastDone says roughly when, never how long. The buckets live in the core
+// beside the rest of a chore's vocabulary; see squirrel.SinceWords for why
+// there is no number here.
 func lastDone(sinceDays int) string {
-	switch {
-	case sinceDays <= 0:
-		return "today"
-	case sinceDays == 1:
-		return "yesterday"
-	case sinceDays < 7:
-		return "this week"
-	case sinceDays < 14:
-		return "last week"
-	case sinceDays < 31:
-		return "this month"
-	default:
-		return "a while back"
-	}
-}
-
-func plural(n int, unit string) string {
-	if n == 1 {
-		return strconv.Itoa(n) + " " + unit
-	}
-	return strconv.Itoa(n) + " " + unit + "s"
+	return squirrel.SinceWords(sinceDays)
 }
