@@ -41,6 +41,9 @@ func TestEveningMessageCarriesTheFallbackNudge(t *testing.T) {
 
 	require.Contains(t, m.Text, "bin day")
 	require.Contains(t, m.Text, "buy milk")
-	require.Len(t, m.Actions, 1, "the nudge keeps its button")
+	// The same pair the nudge itself carries: a chore raised in two places
+	// that could be answered two different ways is two views disagreeing.
+	require.Len(t, m.Actions, 2, "the nudge keeps its buttons")
 	require.Equal(t, "done:1", m.Actions[0].Value)
+	require.Equal(t, "snooze:1", m.Actions[1].Value)
 }

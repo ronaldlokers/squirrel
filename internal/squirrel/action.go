@@ -10,7 +10,7 @@ import (
 // means a chore.
 type ActionIntent struct {
 	MessageID string
-	// Kind is "done" or "undefine".
+	// Kind is "done", "undefine" or "snooze".
 	Kind     string
 	Position int
 	// Selected is the resulting state Campfire reports, not a delta. false on a
@@ -20,7 +20,7 @@ type ActionIntent struct {
 
 // Anchored at both ends, like every other matcher in this system: a message
 // that merely contains this shape is a thought about it, not a tap.
-var actionPattern = regexp.MustCompile(`^!action (\d+) (done|undefine):(\d{1,3}) (true|false)$`)
+var actionPattern = regexp.MustCompile(`^!action (\d+) (done|undefine|snooze):(\d{1,3}) (true|false)$`)
 
 // ParseAction recognises the encoding CaptureFrom writes for an action webhook.
 // It is deliberately not part of Match: an action is not something a person can

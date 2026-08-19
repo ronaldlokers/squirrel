@@ -43,7 +43,8 @@ func TestNudgeSendsOneChore(t *testing.T) {
 	require.NoError(t, s.Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 1)
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
-	require.Len(t, (*sent)[0].message.Actions, 1)
+	// Done and "not today": one chore, two answers.
+	require.Len(t, (*sent)[0].message.Actions, 2)
 }
 
 // The budget is the design. Two triggers on one day produce one nudge, and the
@@ -439,7 +440,8 @@ func TestEveningCarriesTheNudgeOnAQuietDay(t *testing.T) {
 	require.NoError(t, s.Once(ctx, today(t, 19, 0, 1)))
 	require.Len(t, *sent, 1, "one message, not two")
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
-	require.Len(t, (*sent)[0].message.Actions, 1)
+	// Done and "not today": one chore, two answers.
+	require.Len(t, (*sent)[0].message.Actions, 2)
 }
 
 // PickChore's overdue weighting exists to stop the same most-overdue chore

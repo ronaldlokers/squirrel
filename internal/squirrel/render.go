@@ -45,6 +45,7 @@ func HelpMessage() Message {
 		"!find <text> — search everything you have told me",
 		"!chores — what is due (same as ?)",
 		"!chore <n> every <interval> — turn note n into a chore",
+		"!did <chore> — a chore is done, by name",
 		"!retire <chore> — stop a chore coming back",
 		"!snooze <chore> for <how long> — stop asking for a while",
 		"",
@@ -169,7 +170,13 @@ func EveningMessage(completed []string, captures []string, nudge *Chore) Message
 	m := Message{Text: strings.TrimRight(b.String(), "\n")}
 	if nudge != nil {
 		m.SelectionMode = "single"
-		m.Actions = []Action{{Label: nudge.Name, Value: "done:1", Emoji: "✅"}}
+		// The same pair the nudge carries. The evening message is the other
+		// place a chore is raised, and a chore raised in two places that can
+		// be answered two different ways is two views disagreeing.
+		m.Actions = []Action{
+			{Label: nudge.Name, Value: "done:1", Emoji: "✅"},
+			{Label: "not today", Value: "snooze:1", Emoji: "🌙"},
+		}
 	}
 	return m
 }

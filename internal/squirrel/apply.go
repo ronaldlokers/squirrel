@@ -389,6 +389,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "snooze":
 		return a.snooze(ctx, in.Arg, personID)
 
+	case "did":
+		return a.did(ctx, in.Arg, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -511,34 +514,12 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 		return Message{Text: fmt.Sprintf("For how long? Try !snooze %s for 3 days, or a week, or a month.", arg)}, nil
 	}
 
-	var target *Chore
-	if n, err := strconv.Atoi(arg); err == nil {
-		line, ok, err := a.store.LineAtPosition(ctx, personID, n)
-		if err != nil {
-			return Message{}, err
-		}
-		if !ok {
-			return noSuchLine(n), nil
-		}
-		if line.Chore == nil {
-			return Message{Text: fmt.Sprintf("Line %d is a note, not a chore.", n)}, nil
-		}
-		target = line.Chore
-	} else {
-		for i, c := range active {
-			if strings.EqualFold(c.Name, arg) {
-				target = &active[i]
-				break
-			}
-		}
+	target, instead, err := a.findChore(ctx, arg, personID, active)
+	if err != nil {
+		return Message{}, err
 	}
 	if target == nil {
-		names := make([]string, 0, len(active))
-		for _, c := range active {
-			names = append(names, c.Name)
-		}
-		return Message{Text: fmt.Sprintf("I don't have a chore called %q. You have: %s.",
-			arg, strings.Join(names, ", "))}, nil
+		return instead, nil
 	}
 
 	if _, err := a.store.SnoozeChore(ctx, target.ID, personID, time.Now().Add(how)); err != nil {
@@ -549,6 +530,101 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 	}
 	return Message{Text: fmt.Sprintf("%s — quiet %s. It is no less done than it was.",
 		target.Name, said)}, nil
+}
+
+// findChore turns what a person typed into one chore: a line number from the
+// last listing, or a name.
+//
+// Both, because both are how you already refer to one. A number is what `?`
+// just printed and a name is what you call it when you have not looked — and
+// asking a person to look first, so they can quote a number back, is the tax
+// this product exists to stop charging.
+//
+// When it cannot find one it returns nil and the message to send instead,
+// which always names what you do have: an error that lists the alternatives is
+// a recovery rather than a refusal.
+func (a *Applier) findChore(ctx context.Context, arg string, personID int64, active []Chore) (*Chore, Message, error) {
+	if n, err := strconv.Atoi(arg); err == nil {
+		line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+		if err != nil {
+			return nil, Message{}, err
+		}
+		if !ok {
+			return nil, noSuchLine(n), nil
+		}
+		if line.Chore == nil {
+			return nil, Message{Text: fmt.Sprintf("Line %d is a note, not a chore.", n)}, nil
+		}
+		return line.Chore, Message{}, nil
+	}
+
+	for i, c := range active {
+		if strings.EqualFold(c.Name, arg) {
+			return &active[i], Message{}, nil
+		}
+	}
+	// A single unambiguous partial match counts. "bins" for "bins out" is what
+	// a person types, and refusing it to be strict about a name they chose
+	// themselves is pedantry with a cost.
+	var found *Chore
+	for i, c := range active {
+		if strings.Contains(strings.ToLower(c.Name), strings.ToLower(arg)) {
+			if found != nil {
+				found = nil
+				break
+			}
+			found = &active[i]
+		}
+	}
+	if found != nil {
+		return found, Message{}, nil
+	}
+
+	names := make([]string, 0, len(active))
+	for _, c := range active {
+		names = append(names, c.Name)
+	}
+	return nil, Message{Text: fmt.Sprintf("I don't have a chore called %q. You have: %s.",
+		arg, strings.Join(names, ", "))}, nil
+}
+
+// did records a chore as done by naming it: `did bins out`, `did 2`.
+//
+// It exists because completing a chore from chat took two steps and a number
+// held in your head — ask `?`, read the list, type `done 1`. The listing was
+// load-bearing for the wrong reason: it was where the number came from, not
+// where the decision was made.
+//
+// It records the same completion the tap does, through the same store call, so
+// the two ways of saying it cannot mean different things.
+func (a *Applier) did(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+
+	active, err := a.store.ActiveChores(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if len(active) == 0 {
+		return Message{Text: "You have no chores, so there is nothing to have done."}, nil
+	}
+	if arg == "" {
+		return Message{Text: "Which one? Try !did " + active[0].Name + "."}, nil
+	}
+
+	target, instead, err := a.findChore(ctx, arg, personID, active)
+	if err != nil {
+		return Message{}, err
+	}
+	if target == nil {
+		return instead, nil
+	}
+
+	if err := a.store.RecordCompletion(ctx, target.ID, personID, "chat", time.Now()); err != nil {
+		return Message{}, err
+	}
+	// The same varied reaction a tap earns, and varied for the same reason:
+	// the same word every time stops being read inside a week.
+	return Message{Text: fmt.Sprintf("%s %s.", Reactions[rand.Intn(len(Reactions))], target.Name)}, nil
 }
 
 // undoLast puts the most recently triaged note back in the pile.
@@ -841,6 +917,21 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		}
 		return a.store.DeactivateChore(ctx, c.ID)
 
+	case "snooze":
+		// "Not today", pressed. Tomorrow rather than a duration, because the
+		// label is the duration: a button cannot ask how long, and the honest
+		// answer is the one already written on it.
+		//
+		// Untapping clears it, which is the same shape as an unselected done
+		// retracting a completion — "actually, ask me now" is the same write
+		// with a time in the past rather than a second command.
+		when := tomorrow(time.Now())
+		if !in.Selected {
+			when = time.Now().Add(-time.Minute)
+		}
+		_, err := a.store.SnoozeChore(ctx, c.ID, personID, when)
+		return err
+
 	case "done":
 		if !in.Selected {
 			_, err := a.store.RetractCompletion(ctx, c.ID, personID, prompt.ID, time.Now())
@@ -857,4 +948,12 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		return nil
 	}
 	return nil
+}
+
+// tomorrow is the start of the next day, locally. "Not today" means today's
+// asking stops and tomorrow is a fresh question — not "in 24 hours", which
+// would move the moment it asks a little later every time it was pressed.
+func tomorrow(now time.Time) time.Time {
+	y, m, d := now.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, now.Location()).AddDate(0, 0, 1)
 }
