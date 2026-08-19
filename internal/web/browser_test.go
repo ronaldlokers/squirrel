@@ -333,3 +333,25 @@ func TestBrowserTheFacesAreAllOneSize(t *testing.T) {
 		require.Equal(t, heights.([]any)[0], h, "every face the same height")
 	}
 }
+
+// The five labels have to fit their cells on a phone without pushing the page
+// sideways. This is here because the first version bought the fit with a 10px
+// type step that is not on the ramp — and the documented Meta size turned out
+// to fit anyway, with a third of the cell to spare.
+func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
+	c, srv := open(t, aPile())
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return document.documentElement.scrollWidth - document.documentElement.clientWidth`),
+		"nothing may push the page sideways")
+	require.Equal(t, true, c.eval(t, `
+		return [...document.querySelectorAll(".face")].every(f => {
+			const span = f.querySelector("span");
+			const r = document.createRange(); r.selectNodeContents(span);
+			return r.getBoundingClientRect().width <= f.getBoundingClientRect().width;
+		})`), "every label fits its own cell")
+}

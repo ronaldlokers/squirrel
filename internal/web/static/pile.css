@@ -941,15 +941,12 @@
     .slot textarea { font-size: 18.5px; padding: 6px 0; }
     .post { padding: 11px 14px; letter-spacing: .05em; }
 
-    /* The five stay on one row on a phone: they are a row of answers, and
-       wrapping two onto a second line would make those two look like a
-       different kind of answer. */
     /* The five share the row exactly rather than each taking its own width.
-       Sized by height they wrapped four-and-one on a small screen, which reads
-       as one of them being a different kind of answer. */
+       Sized by height they wrapped four-and-one, which reads as one of them
+       being a different kind of answer. */
     .checkin { margin-top: 20px; }
     .faces { gap: 0; flex-wrap: nowrap; }
-    .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 10px; letter-spacing: .04em; }
+    .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 12px; letter-spacing: .08em; }
     .face img { width: 100%; height: auto; }
 
     .doors { gap: 10px; }
