@@ -27,6 +27,17 @@ colors:
   state-dropped: "#8a6a55"
   state-dropped-ink: "#6a4f3e"
   state-chore-ink: "#b0530a"
+  # Type on the orange selection band, and the only white in the system. The
+  # No Neutral Rule governs surfaces; this is ink, on a surface that is
+  # already orange.
+  selection-ink: "#fefefe"
+  # Lifted fills: a state colour raised toward white until dark ink reads on
+  # it. See The Lifted Fill Rule. Base and hover for each.
+  state-done-lifted: "#71a73e"
+  state-done-lifted-hover: "#89b65f"
+  state-dropped-lifted: "#9f8574"
+  state-dropped-lifted-hover: "#af9a8b"
+  state-kept-lifted-hover: "#ffc12e"
 typography:
   display:
     fontFamily: "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
@@ -82,6 +93,21 @@ typography:
     fontFamily: "Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "14.5px"
     fontVariation: "'MONO' 0, 'CASL' 0, 'wght' 600"
+  # The Step-Up Rule's own sizes, below 620px. The same roles at a second
+  # size, not new roles — written here as well as in prose because a reader
+  # that only sees this ramp otherwise reads the rule as a violation of it.
+  body-phone:
+    fontSize: "23px"
+  headline-phone:
+    fontSize: "31px"
+  voice-phone:
+    fontSize: "18px"
+  result-phone:
+    fontSize: "18.5px"
+  meta-phone:
+    fontSize: "12px"
+  field-phone:
+    fontSize: "16px"
 rounded:
   chip: "999px"
   card: "14px"
@@ -124,6 +150,30 @@ components:
     textColor: "{colors.card}"
     typography: "{typography.title}"
     padding: "11px 16px"
+  button-did:
+    backgroundColor: "{colors.state-done-lifted}"
+    textColor: "{colors.outline}"
+    typography: "{typography.label}"
+    rounded: "{rounded.chip}"
+    padding: "11px 16px"
+  button-did-hover:
+    backgroundColor: "{colors.state-done-lifted-hover}"
+  button-often:
+    backgroundColor: "{colors.state-kept}"
+    textColor: "{colors.outline}"
+    typography: "{typography.label}"
+    rounded: "{rounded.chip}"
+    padding: "11px 16px"
+  button-often-hover:
+    backgroundColor: "{colors.state-kept-lifted-hover}"
+  button-stop:
+    backgroundColor: "{colors.state-dropped-lifted}"
+    textColor: "{colors.outline}"
+    typography: "{typography.label}"
+    rounded: "{rounded.chip}"
+    padding: "11px 16px"
+  button-stop-hover:
+    backgroundColor: "{colors.state-dropped-lifted-hover}"
   input-search:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.outline}"
@@ -226,14 +276,46 @@ once on the card as it leaves. Nothing in a search result may ever wear it.
 *keep* and *drop* are paper; *make a chore* is orange. If a second orange
 element appears on a screen, one of them is wrong.
 
+**A chore at rest is not orange.** The orange belongs to the moment a note
+*becomes* a chore, shown once, on the card where it happened. A chore living
+its life afterwards — on the chores screen, in a list, being adjusted or
+stopped — is cream stock like everything else the owner owns. A column of
+orange tabs would put a dozen creations on one screen and cost the one that
+means something.
+
 **The No Neutral Rule.** No surface in this system is white, grey or
-near-grey. Cards are cream, the field is purple, secondary type on purple is
+near-grey. (`#fefefe` exists for exactly one thing: type inside the orange
+selection band. The rule is about surfaces, and that surface is orange.) Cards are cream, the field is purple, secondary type on purple is
 tinted from the tail cream and secondary type on cream is tinted from the
 headphones. A grey would be the first sign the design has drifted off the mark.
 
 **The Fill-and-Ink Rule.** Every state colour ships as a pair. The fill goes on
 shapes — tabs, dots, pressed buttons. The ink goes on type. Never set type in a
 fill value; three of the four fail contrast at label size.
+
+**The Lifted Fill Rule.** A control that acts on something wears that thing's
+colour at rest, not only under the thumb — but the state fills are chosen to be
+seen on a page edge rather than read through, so the fill is *lifted* toward
+white until the card's own dark ink reads on it. 18% for the resting state, 32%
+for hover, and pressing drops back to the base colour, so the press still reads
+as a change:
+
+| Control | Rest | Hover | Press |
+| --- | --- | --- | --- |
+| *did it* | `#71a73e` | `#89b65f` | `#529414` |
+| *how often* | `#ffb300` | `#ffc12e` | `#8a5c00` |
+| *stop asking* | `#9f8574` | `#af9a8b` | `#8a6a55` |
+
+Type on a lifted fill is always the outline ink, never cream — the lift exists
+precisely so the ink can stay dark, which is the Fill-and-Ink Rule holding
+rather than bending. Measured, not judged: 6.4:1, 11.4:1 and 5.4:1 against
+`#1c110b`. The values arrived after two attempts that passed contrast and made
+the screen *darker* than the cards, which is how you can tell brightness is a
+requirement and not a preference.
+
+Amber here is the *kept* fill doing a second job on a surface that has no note
+states. On a screen that ever shows a note and a chore together, it would be
+saying two things at once, and one of them would have to move.
 
 ## Typography
 
@@ -277,8 +359,18 @@ against the drawn mascot beside it.
 ### Named Rules
 
 **The Two Voices Rule.** `CASL` 1 is his words. `CASL` 0 is the product's.
-Nothing is set in the casual axis unless the owner typed it, and no control is
-ever set in it.
+Nothing is set in the casual axis unless the owner typed it *or the product is
+speaking in full sentences* — the Headline and Voice roles, which are the two
+places Squirrel talks rather than labels. No control is ever set in it: a
+button is machinery, and machinery does not have a voice.
+
+**The Soft Elapsed Rule.** A chore reports when it was last done in words and
+never in numbers: *today*, *yesterday*, *this week*, *last week*, *this month*,
+*a while back*. The buckets stop there — there is no bucket for a long time,
+because that sentence is about the person rather than the chore. A chore that
+has never been done says nothing at all about it; what has not happened is not
+reported. An exact day count is a deadline wearing a different hat, and it
+grows while nobody is looking, which is the shape this product exists without.
 
 **The No Mono Rule.** `MONO` is pinned to 0 on both voices. Recursive ships a
 monospace axis and this is a warm tool, not a terminal.
@@ -384,12 +476,28 @@ search glyph at 2.6px stroke. No icon fonts, no emoji standing in for an icon.
   state colour (`done` green, `keep` amber, `drop` brown, `make` purple).
 - **Focus:** 3px `#ff8a2b` ring at 3px offset on purple; `#5e23b1` on cream.
 
+- **Chore controls** (*did it*, *how often*, *stop asking*): lifted state fills
+  with outline type, 11px/16px padding, 44px minimum height, no keycaps — the
+  chores screen is read on a phone as often as not. *Stop asking* is pushed to
+  the far end with `margin-left: auto` the way *make a chore* is on the deck:
+  the action that ends something is separated from the two that do not. On a
+  phone the two routine controls sit side by side and *stop asking* takes the
+  full width beneath them.
+
 ### Chips
 
 Interval chips in the chore picker share the button shape at 13.5px/11px
 padding. The escape chip (*never mind*) drops its offset and takes a dashed
 border — it is the only dashed object in the system, and it means "this does
 nothing".
+
+### The Lid Link
+
+A quiet cross-link in the lid — *the pile*, *chores* — at 13px, `wght` 650,
+`.8` opacity, underlined on hover or focus, 44px minimum height. It is a place
+to go rather than a thing to do, so it takes no pill, no outline and no offset;
+it is the one control-shaped thing in the system that is deliberately not a
+button.
 
 ### Cards / Containers
 
@@ -434,7 +542,8 @@ border that a card UI would reach for by default.
 - **Do** pair the block offset with a real cast shadow on cards, and match the
   press translation to the offset exactly.
 - **Do** set the owner's captured text in `CASL` 1 and every control in `CASL` 0.
-- **Do** use a state's ink for type and its fill for shapes.
+- **Do** use a state's ink for type and its fill for shapes — and its *lifted*
+  fill when a control wears that state at rest, with the outline ink on top.
 - **Do** say *that* there is more — the stack, a line of copy — and let the
   scroll carry the rest.
 - **Do** theme the browser's own surfaces: selection, caret, scrollbar track and
@@ -451,6 +560,10 @@ border that a card UI would reach for by default.
 - **Don't** use white or grey for any surface or any secondary type. Tint from
   the tail cream on purple, from the headphone brown on cream.
 - **Don't** put orange on a disposal action. Orange means something was made.
+- **Don't** dress a chore at rest in orange either, or in the page-tab grammar
+  that says what a note ended up as. A chore has a rhythm, not an outcome.
+- **Don't** print how long it has been since a chore was done. Say it in words,
+  softly, or say nothing.
 - **Don't** put a gradient on anything that can be pressed.
 - **Don't** open a modal for the chore interval, or for anything else that needs
   neither interruption nor protected focus. The picker replaces the action row

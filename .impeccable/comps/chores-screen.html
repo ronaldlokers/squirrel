@@ -258,16 +258,41 @@ uses a bare GET so a stray click reloads harmlessly.
     box-shadow: 0 4px 0 0 var(--outline);
     transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
   }
-  .abtn:hover { background: var(--paper-deep); }
   .abtn:active {
     transform: translateY(4px);
     box-shadow: 0 0 0 0 var(--outline);
-    background: var(--bc, var(--purple)); color: var(--paper);
   }
-  /* Doing it was a done; stopping is a drop. The press colours already mean
-     exactly that. */
-  .abtn.did  { --bc: var(--done); }
-  .abtn.stop { --bc: var(--dropped); margin-left: auto; }
+
+  /* A button wears the colour of what it does, at rest and not only under the
+     thumb. Doing it is a done; stopping is a drop; how often is a setting, and
+     settings wear the product's violet.
+
+     Every fill is measured against its own type colour rather than judged by
+     eye, and each one is lifted toward white until it is both bright and
+     legible with the dark ink the cards already use: #71a73e is 6.4:1,
+     amber is 11.4:1, #9f8574 is 5.4:1. Two earlier attempts failed this
+     honestly — the ink variants passed contrast and made the screen darker,
+     and the tab variants were still deeper than the card they sit on.
+
+     Pressing sinks to the deeper variant, so the press still reads as a
+     change. No orange anywhere: orange is the moment something is made, and
+     nothing on this screen makes anything.
+
+     Ending a chore is the quietest of the three on purpose — brown carries
+     less than green or violet, and stopping something should not be the
+     brightest thing on the card. */
+  .abtn.did {
+    background: #71a73e; color: var(--outline);
+  }
+  .abtn.did:hover  { background: #89b65f; }
+  .abtn.did:active { background: var(--done); }
+
+  .abtn.stop {
+    background: #9f8574; color: var(--outline);
+    margin-left: auto;
+  }
+  .abtn.stop:hover  { background: #af9a8b; }
+  .abtn.stop:active { background: var(--dropped); color: var(--paper); }
 
   /* ---------- how often: a disclosure, in place, no modal ---------- */
 
@@ -286,10 +311,13 @@ uses a bare GET so a stray click reloads harmlessly.
     user-select: none;
   }
   .often > summary::-webkit-details-marker { display: none; }
-  .often > summary:hover { background: var(--paper-deep); }
+  .often:not([open]) > summary {
+    background: var(--kept); color: var(--outline);
+  }
+  .often:not([open]) > summary:hover { background: #ffc12e; }
   .often:not([open]) > summary:active {
     transform: translateY(4px); box-shadow: none;
-    background: var(--purple); color: var(--paper);
+    background: var(--violet-ink); color: var(--paper);
   }
   .often > summary .ifopen { display: none; }
 
@@ -306,6 +334,7 @@ uses a bare GET so a stray click reloads harmlessly.
      "this does nothing". */
   .often[open] > summary {
     align-self: flex-start;
+    background: var(--paper); color: var(--outline);
     box-shadow: none; border-style: dashed;
     font-size: 13.5px; font-variation-settings: var(--precise), "wght" 750;
     letter-spacing: .03em; text-transform: none;
