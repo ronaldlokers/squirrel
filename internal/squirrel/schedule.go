@@ -302,7 +302,22 @@ func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64,
 	if err != nil {
 		return nil, 0, err
 	}
-	c, ok := PickChore(due, rand.Float64())
+	// Being due and being worth interrupting for are two questions, and this
+	// is where they part company. A chore that says "tuesday evenings" is due
+	// on the Sunday exactly as much as on the Tuesday — it is the asking that
+	// waits, so the chores screen still shows it and nothing here makes it
+	// late.
+	//
+	// Filtered here rather than in the query on purpose: the window is defined
+	// once, in Go, and a second definition in SQL is a second definition to
+	// drift.
+	worth := due[:0:0]
+	for _, c := range due {
+		if c.Ask.Open(now) {
+			worth = append(worth, c)
+		}
+	}
+	c, ok := PickChore(worth, rand.Float64())
 	if !ok {
 		// The case that motivated this whole line: a presence ping that
 		// legitimately produces no message is otherwise indistinguishable
