@@ -34,7 +34,12 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post(opts.Path+"/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Get(opts.Path+"/chores", guard(opts, choresHandler(s, opts)))
 	m.Post(opts.Path+"/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
-	m.Get(opts.Path+"/manifest.webmanifest", guard(opts, manifestHandler(opts)))
+	// Outside the guard, like the worker below and for the same reason: a
+	// browser fetches a manifest without the cookies that carry the identity,
+	// and one that answers 403 leaves an installed app with no icon and no
+	// explanation. It names the app and lists four PNGs — there is nothing in
+	// it to protect.
+	m.Get(opts.Path+"/manifest.webmanifest", manifestHandler(opts))
 	// Not behind the guard: a browser fetches the worker without the cookies
 	// that carry the identity, and a worker that 302s to a login page is a
 	// worker that never installs. It contains no notes — only which files to

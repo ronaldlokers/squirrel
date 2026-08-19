@@ -12,6 +12,19 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
+// The manifest answers without an identity, the way the worker does. Behind the
+// guard it returned 403 to the one fetch that has no cookies to send, which
+// leaves an installed app showing a letter tile and saying nothing about why.
+func TestTheManifestDoesNotNeedAnIdentity(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+	r := httptest.NewRequest("GET", "/pile/manifest.webmanifest", nil)
+	w := httptest.NewRecorder()
+	m.routes["GET /pile/manifest.webmanifest"](w, r)
+
+	require.Equal(t, http.StatusOK, w.Code, "no header, still answered")
+	require.Contains(t, w.Body.String(), "Squirrel")
+}
+
 func TestTheManifestKnowsWhereTheScreenIs(t *testing.T) {
 	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/manifest.webmanifest", nil)
 
