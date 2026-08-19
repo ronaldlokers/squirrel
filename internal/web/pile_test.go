@@ -29,10 +29,16 @@ func TestPileNeverEmitsACount(t *testing.T) {
 	}
 	body := mounted(t, &fakeStore{items: items}).call(t, "GET", "/pile", nil).Body.String()
 
-	require.NotContains(t, body, "41")
-	require.NotContains(t, body, "40")
-	// The rule is about the fact, not the digit: the page may say there is more.
-	require.Contains(t, strings.ToLower(body), "more")
+	// The rule is about the fact, not the digit. A bare digit test reads the
+	// lid's SVG geometry and the asset stamp — a content hash, which is free to
+	// contain "40" and did — so what is pinned here is every shape a total
+	// could take in prose, plus the cap that makes "there is more" true.
+	lower := strings.ToLower(body)
+	for _, total := range []string{"41 notes", "40 notes", "41 more", "of 41", "(41)", "1 of "} {
+		require.NotContains(t, lower, total)
+	}
+	require.NotContains(t, body, "note number 2", "the deck shows one card")
+	require.Contains(t, lower, "more")
 }
 
 func TestEmptyPileDoesNotCelebrate(t *testing.T) {

@@ -331,9 +331,14 @@ GET so a stray submit reloads harmlessly.
 
   @media (max-width: 620px) {
     .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
-    .brand { gap: 8px; }
-    .brand img { width: 72px; height: 54px; }
-    .wordmark { font-size: 23px; -webkit-text-stroke-width: 1.8px; }
+    /* The lid steps DOWN on a phone, against the Step-Up Rule and for the
+       reason that rule gives: roles grow because a phone is read at arm's
+       length, and the lid is not read — it is the thing you look past. At the
+       deck's sizes it took a fifth of a small screen to say a name you already
+       know. */
+    .brand { gap: 7px; }
+    .brand img { width: 56px; height: 42px; }
+    .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
     .brim { height: 22px; }
     /* No cross-link on this lid, so the field can keep the brand's row where
        it fits — and take its own row where it doesn't. */
