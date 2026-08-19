@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -92,14 +93,26 @@ func (s *Store) OpenItemsAfter(ctx context.Context, personID, afterID int64, lim
 // Every state, deliberately: `kept` exists so a reference note can leave triage
 // and still be found later, so filtering by state here would defeat the state.
 //
-// The match is a plain substring test rather than a LIKE pattern. Interpolating
-// the term into `'%' || $2 || '%'` would make a typed `%` a wildcard and return
-// the whole pile, which looks like a working search until you notice every note
-// is in the results.
+// The term is a person's typing, not a pattern: `%` and `_` are characters
+// here, and a search for "80%" finds the note about the tank rather than every
+// note there is. That used to be guaranteed by using strpos instead of LIKE.
+// strpos hides the column from the planner, though, so every search read every
+// message ever received — and the number of those only goes up. The index in
+// migration 0010 answers a LIKE directly, so this is a LIKE now, with the term
+// escaped rather than trusted.
 func (s *Store) SearchItems(ctx context.Context, personID int64, query string, limit int) ([]Item, bool, error) {
+	pattern := "%" + likeEscape(strings.ToLower(query)) + "%"
 	return s.itemsWhere(ctx,
-		`person_id = $1 and strpos(lower(raw_text), lower($2)) > 0`,
-		limit, personID, query)
+		`person_id = $1 and lower(raw_text) like $2 escape '\'`,
+		limit, personID, pattern)
+}
+
+// likeEscape makes a typed string mean itself. The backslash goes first, or it
+// would escape the escapes added after it.
+func likeEscape(term string) string {
+	term = strings.ReplaceAll(term, `\`, `\\`)
+	term = strings.ReplaceAll(term, "%", `\%`)
+	return strings.ReplaceAll(term, "_", `\_`)
 }
 
 // itemsWhere reads newest-first and stops as soon as it has one row more than

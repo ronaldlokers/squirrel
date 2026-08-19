@@ -448,3 +448,80 @@ func TestOpenItemsAfterZeroIsTheTopOfThePile(t *testing.T) {
 	require.Len(t, items, 1)
 	require.Equal(t, newest, items[0].ID)
 }
+
+// The term is a person's typing, not a pattern. A LIKE that did not escape it
+// would make `%` match everything — a search that looks like it works right up
+// until you notice it returned the whole pile.
+func TestSearchTreatsWildcardsAsText(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	insertItem(t, store, p, "buy milk")
+	literal := insertItem(t, store, p, "the tank is at 80% full")
+	insertItem(t, store, p, "the boiler")
+
+	items, _, err := store.SearchItems(ctx, p, "%", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "a typed %% is a character, not a wildcard")
+	require.Equal(t, literal, items[0].ID)
+
+	items, _, err = store.SearchItems(ctx, p, "80%", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+
+	// _ is the other one, and it matches any single character in a LIKE.
+	insertItem(t, store, p, "meter_reading")
+	items, _, err = store.SearchItems(ctx, p, "meter_", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "a typed underscore is a character too")
+}
+
+func TestSearchStillFindsPlainWords(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	insertItem(t, store, p, "the boiler makes a noise")
+	insertItem(t, store, p, "buy milk")
+
+	items, _, err := store.SearchItems(ctx, p, "BOILER", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "case is not what decides")
+}
+
+// The point of migration 0010 is that search can stop reading every message
+// ever received. On a table this small the planner will scan anyway and be
+// right to, so this asks the question the only way that has an answer at test
+// size: with the scan taken away, is the index able to answer at all?
+func TestSearchCanUseTheIndex(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	insertItem(t, store, p, "the boiler makes a noise")
+
+	var installed bool
+	require.NoError(t, store.Pool().QueryRow(ctx,
+		`select exists (select 1 from pg_extension where extname = 'pg_trgm')`).Scan(&installed))
+	if !installed {
+		t.Skip("pg_trgm is not available to this role; search is still a scan")
+	}
+
+	_, err := store.Pool().Exec(ctx, `set enable_seqscan = off`)
+	require.NoError(t, err)
+
+	rows, err := store.Pool().Query(ctx, `
+		explain select id from items
+		 where person_id = $1 and lower(raw_text) like $2 escape '\'`,
+		p, "%boiler%")
+	require.NoError(t, err)
+	defer rows.Close()
+
+	plan := ""
+	for rows.Next() {
+		var line string
+		require.NoError(t, rows.Scan(&line))
+		plan += line + "\n"
+	}
+	require.Contains(t, plan, "items_raw_text_trgm",
+		"the query has to be shaped so the index can answer it")
+}
