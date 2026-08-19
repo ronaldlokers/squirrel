@@ -108,6 +108,9 @@ typography:
     fontSize: "12px"
   field-phone:
     fontSize: "16px"
+  # The one role that steps DOWN on a phone — see The Lid Step-Down Rule.
+  display-phone:
+    fontSize: "20px"
 rounded:
   chip: "999px"
   card: "14px"
@@ -406,6 +409,13 @@ to 18.5px, Meta to 12px, and the search field to 16px — the last of those
 because anything smaller makes iOS zoom the page on focus. These are the same
 roles at a second size, not new roles.
 
+**The Lid Step-Down Rule.** The lid is the one thing that gets *smaller* on a
+phone: the mark to 56×42 and the wordmark to 20px, against the Step-Up Rule
+above and for the reason that rule gives. Roles grow because a phone is read at
+arm's length — and the lid is not read. It is what you look past on the way to
+the card, and the card is what the stepping up was for. At the deck's own sizes
+the lid spent about a fifth of a small screen saying a name you already know.
+
 **Keycaps and key hints do not survive `pointer: coarse`.** A key legend on a
 thumb-only surface spends attention on something the reader cannot press. The
 hint's last clause stays, because *stop whenever you like* is the product's
@@ -546,6 +556,8 @@ border that a card UI would reach for by default.
   fill when a control wears that state at rest, with the outline ink on top.
 - **Do** say *that* there is more — the stack, a line of copy — and let the
   scroll carry the rest.
+- **Do** let the lid shrink on a phone while everything else grows. It is
+  chrome, and the card is what the screen is for.
 - **Do** theme the browser's own surfaces: selection, caret, scrollbar track and
   thumb, focus ring, underline offset.
 - **Do** randomise the stack's rotation on every card change. Habituation is a

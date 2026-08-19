@@ -676,9 +676,14 @@
        keep the first. Wrapping is what makes that happen — without it all
        three fight over one line and the field loses. */
     .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
-    .brand { gap: 8px; }
-    .brand img { width: 72px; height: 54px; }
-    .wordmark { font-size: 23px; -webkit-text-stroke-width: 1.8px; }
+    /* The lid steps DOWN on a phone, against the Step-Up Rule and for the
+       reason that rule gives. Roles grow on a phone because a phone is read at
+       arm's length; the lid is not read — it is the thing you look past on the
+       way to the card. At the deck's sizes it spent a fifth of a small screen
+       saying a name you already know. */
+    .brand { gap: 7px; }
+    .brand img { width: 56px; height: 42px; }
+    .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
     .brim { height: 22px; }
     .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
     /* 16px so focusing the field does not make iOS zoom the page. */
