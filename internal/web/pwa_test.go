@@ -86,3 +86,18 @@ func TestTheWorkerIsNotBehindTheYearLongCache(t *testing.T) {
 	require.NotContains(t, w.Header().Get("Cache-Control"), "31536000",
 		"a worker nobody can replace is a worker you live with forever")
 }
+
+// The attribute that decides whether an installed app has an icon at all.
+//
+// A manifest is fetched with credentials omitted unless this says otherwise —
+// same-origin makes no difference — so behind forward-auth the browser gets a
+// login redirect, fails to parse it, and falls back to a letter tile. It logs
+// nothing and never asks for the icons, which is why the icons looked wrong
+// when the manifest was the thing that never arrived.
+func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+
+	require.Contains(t, body, `rel="manifest"`)
+	require.Regexp(t, `rel="manifest"[^>]*crossorigin="use-credentials"`, body)
+}
