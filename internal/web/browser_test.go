@@ -316,3 +316,20 @@ func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
 		return [...other.querySelectorAll(".key")]
 			.filter(k => getComputedStyle(k).display !== "none").length;`))
 }
+
+// Five answers, five equal drawings. They were cut from one sheet at one
+// scale, and each carries a different amount of decoration outside its tile —
+// sparks, leaves, a scribble, a zzz — so sizing them by width would make the
+// busiest one the smallest. Sized by height, they read as five answers rather
+// than as one louder than the others.
+func TestBrowserTheFacesAreAllOneSize(t *testing.T) {
+	c, srv := open(t, aPile())
+	c.navigate(t, srv.URL+"/")
+
+	heights := c.eval(t, `return [...document.querySelectorAll(".face img")]
+		.map(i => Math.round(i.getBoundingClientRect().height))`)
+	require.Len(t, heights, 5)
+	for _, h := range heights.([]any) {
+		require.Equal(t, heights.([]any)[0], h, "every face the same height")
+	}
+}

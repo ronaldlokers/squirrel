@@ -788,6 +788,66 @@
     max-width: 46ch;
   }
 
+
+  /* ---------- the check-in ---------- */
+
+  /* "How is right now" — right now, and not today. A day is a thing you can
+     have had a bad one of; this asks about the minute you are in, which is the
+     only honest question and the only useful one.
+
+     The five are not a scale and are never numbered: low and frazzled are
+     different states wanting different answers, which a one-to-five row cannot
+     say. Answered, the row collapses to the one you pressed. There is no
+     yesterday here and there never will be. */
+  .checkin { margin-top: 26px; }
+  .checkin .lead {
+    margin: 0 0 10px; text-align: center;
+    font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 720;
+    color: rgba(254, 214, 167, .85);
+  }
+  .faces { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  /* The drawing is the button. No stock behind it and no outline of its own —
+     each face already carries the system's 3px line, and a card under it would
+     be a second border around a thing that has one. */
+  .face {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 8px 8px; min-height: 44px;
+    background: none; border: 0; border-radius: var(--r);
+    color: rgba(254, 214, 167, .85); cursor: pointer;
+    font: 600 10.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 700;
+    letter-spacing: .07em; text-transform: uppercase;
+    transition: transform 90ms ease-out, background-color 90ms ease-out;
+  }
+  /* Sized by height, and every drawing is the same size on the sheet they
+     were cut from — so the five read as five answers rather than as one
+     louder than the others. The widths differ only by what decoration each
+     one carries outside its tile. */
+  .face img { height: 52px; width: auto; display: block; }
+  .face:hover { background: rgba(254, 214, 167, .1); color: var(--paper); }
+  /* Pressed, it goes down like everything else you push here. */
+  .face:active { transform: translateY(3px); }
+
+  /* Answered: the one you pressed, the word, and a way to say something else.
+     Never a sentence about the person. */
+  .noted {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    flex-wrap: wrap; margin: 0;
+    font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: rgba(254, 214, 167, .85);
+  }
+  .noted img { height: 46px; width: auto; display: block; }
+  .noted .again {
+    color: var(--cream); opacity: .8;
+    text-decoration: underline; text-underline-offset: 3px;
+    text-transform: none; letter-spacing: 0;
+    font-size: 12.5px; font-variation-settings: var(--precise), "wght" 620;
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .noted .again:hover { opacity: 1; }
+
   /* Keycaps on the chores screen appear on the chore you are focused in, and
      nowhere else. Three sets of caps on every card is a poster; one set, on
      the thing a key would actually act on, is an answer. */
@@ -880,6 +940,14 @@
     .slot { gap: 8px; padding: 10px 10px 10px 14px; margin-top: 22px; }
     .slot textarea { font-size: 18.5px; padding: 6px 0; }
     .post { padding: 11px 14px; letter-spacing: .05em; }
+
+    /* The five stay on one row on a phone: they are a row of answers, and
+       wrapping two onto a second line would make those two look like a
+       different kind of answer. */
+    .checkin { margin-top: 20px; }
+    .face { padding: 5px 3px 7px; gap: 3px; font-size: 10px; letter-spacing: .05em; }
+    .face img { height: 48px; }
+    .faces { gap: 2px; }
 
     .doors { gap: 10px; }
     .door { min-height: 118px; padding: 18px 16px; gap: 6px; }

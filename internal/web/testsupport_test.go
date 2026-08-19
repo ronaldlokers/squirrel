@@ -20,9 +20,10 @@ import (
 // count, none of which is a database question. The store's own behaviour is
 // covered by the integration tests in internal/squirrel.
 type fakeStore struct {
-	items  []squirrel.Item
-	chores []squirrel.Chore
-	err    error
+	items   []squirrel.Item
+	chores  []squirrel.Chore
+	checkin *squirrel.Checkin
+	err     error
 
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
@@ -178,6 +179,26 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt, State: squirrel.ItemOpen,
 	}}, f.items...)
 	return true, nil
+}
+
+// The check-in. The fake keeps only the latest because that is all the store
+// will ever hand back — a series is not obtainable by construction.
+func (f *fakeStore) RecordCheckin(_ context.Context, _ int64, m squirrel.Mood, _ string, at time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.checkin = &squirrel.Checkin{Mood: m, SaidAt: at}
+	return nil
+}
+
+func (f *fakeStore) LatestCheckin(_ context.Context, _ int64) (squirrel.Checkin, bool, error) {
+	if f.err != nil {
+		return squirrel.Checkin{}, false, f.err
+	}
+	if f.checkin == nil {
+		return squirrel.Checkin{}, false, nil
+	}
+	return *f.checkin, true, nil
 }
 
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {

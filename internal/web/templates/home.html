@@ -33,5 +33,31 @@
   {{/* One word, and never a place you are behind. */}}
   {{if .Kept}}<p class="slotsaid" role="status">kept</p>{{end}}
   {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
+
+  {{/* How is right now — right now, and not today: a day is a thing you can
+       have had a bad one of, and the question is about the minute you are in.
+
+       Answered, it shows the one you pressed and stops. There is no yesterday
+       here and there never will be: a fortnight of your own bad days on a
+       screen is the counter this product refuses, wearing a face. */}}
+  <div class="checkin">
+    {{if .Mood}}
+    <p class="noted" role="status">
+      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="241" height="224">
+      <span>noted &mdash; {{.MoodWord}}</span>
+      <a class="again" href="/?ask=1">say something else</a>
+    </p>
+    {{else}}
+    <p class="lead">how is right now</p>
+    <form class="faces" method="post" action="/mood">
+      {{range .Faces}}
+      <button class="face" name="mood" value="{{.Mood}}">
+        <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="241" height="224">
+        <span>{{.Word}}</span>
+      </button>
+      {{end}}
+    </form>
+    {{end}}
+  </div>
 </div>
 {{end}}
