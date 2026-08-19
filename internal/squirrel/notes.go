@@ -60,6 +60,22 @@ func (s *Store) OpenItems(ctx context.Context, personID int64, limit int) ([]Ite
 	return s.itemsWhere(ctx, `person_id = $1 and state = 'open'`, limit, personID)
 }
 
+// KeptItems is the shelf: the notes that were kept rather than done or
+// dropped.
+//
+// `kept` is the state that exists because a serial number or a link is not a
+// task and will never be done — without it every reference note sits in triage
+// forever. Having made that argument, the product then gave it nowhere to be
+// read back: search could find a kept note if you already knew a word in it,
+// which is exactly the case where you do not.
+//
+// Newest first and capped like every other list here, and it hands back the
+// same bare boolean for the same reason: the caller cannot render a total even
+// if a later author wanted one.
+func (s *Store) KeptItems(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {
+	return s.itemsWhere(ctx, `person_id = $1 and state = 'kept'`, limit, personID)
+}
+
 // OpenItemsAfter is the pile from a point: untriaged notes older than the one
 // the caller has already looked at.
 //

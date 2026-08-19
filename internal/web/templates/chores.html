@@ -18,12 +18,12 @@
     </p>
     <form class="acts" method="post" action="/chores/act">
       <input type="hidden" name="id" value="{{.ID}}">
-      <button class="abtn did" name="act" value="done">DID IT</button>
+      <button class="abtn did" name="act" value="done">DID IT <span class="key" aria-hidden="true">D</span></button>
       {{/* The picker replaces the row in place rather than opening a modal.
            A details disclosure does the revealing with no script at all; the
            stylesheet steps the other two actions aside. */}}
       <details class="often">
-        <summary role="button"><span class="ifshut">HOW OFTEN</span><span class="ifopen">never mind</span></summary>
+        <summary role="button"><span class="ifshut">HOW OFTEN <span class="key" aria-hidden="true">O</span></span><span class="ifopen">never mind</span></summary>
         <div class="chips">
           <span class="lead">COMES BACK</span>
           {{/* Cap purple marks where the interval currently sits. Purple is
@@ -35,7 +35,7 @@
           <button class="chip{{if eq .Chip "every month"}} current{{end}}" name="every" value="every month">every month</button>
         </div>
       </details>
-      <button class="abtn stop" name="act" value="retire">STOP ASKING</button>
+      <button class="abtn stop" name="act" value="retire">STOP ASKING <span class="key" aria-hidden="true">S</span></button>
     </form>
   </article>
   {{end}}
