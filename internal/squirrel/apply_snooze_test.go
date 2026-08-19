@@ -42,7 +42,7 @@ func TestSnoozeStopsTheAsking(t *testing.T) {
 	backdate(t, store, "bins out", 20)
 	require.Equal(t, []string{"bins out"}, dueNames(t, store, p))
 
-	reply := triage(t, store, p, "!snooze bins out")
+	reply := triage(t, store, p, "!snooze bins out for 2 days")
 
 	require.Contains(t, reply, "bins out")
 	require.Empty(t, dueNames(t, store, p), "it stops asking")
@@ -57,7 +57,7 @@ func TestSnoozeDoesNotCountAsDoing(t *testing.T) {
 	choresOf(t, store, p, "bins out")
 	backdate(t, store, "bins out", 20)
 
-	triage(t, store, p, "!snooze bins out")
+	triage(t, store, p, "!snooze bins out for 2 days")
 
 	// Wind the quiet back to the past: the same thing tomorrow does.
 	_, err := store.Pool().Exec(ctx,
@@ -93,7 +93,7 @@ func TestSnoozeByLineNumber(t *testing.T) {
 	backdate(t, store, "bins out", 20)
 	triage(t, store, p, "?")
 
-	triage(t, store, p, "!snooze 1")
+	triage(t, store, p, "!snooze 1 for a week")
 
 	require.Empty(t, dueNames(t, store, p))
 }
@@ -121,9 +121,24 @@ func TestSnoozeSaysWhatItCannotFind(t *testing.T) {
 	p := owner(t, store)
 	choresOf(t, store, p, "bins out")
 
-	reply := triage(t, store, p, "!snooze the boiler")
+	reply := triage(t, store, p, "!snooze the boiler for 3 days")
 
 	require.Contains(t, reply, "bins out", "say what there is")
+}
+
+// No default. A default is a decision made in advance for a moment nobody can
+// see, and both obvious ones are wrong somewhere: a day is nothing for a
+// fortnightly chore, and an interval is retiring by another name.
+func TestSnoozeAsksHowLongRatherThanGuessing(t *testing.T) {
+	store := withStore(t)
+	p := owner(t, store)
+	choresOf(t, store, p, "bins out")
+	backdate(t, store, "bins out", 20)
+
+	reply := triage(t, store, p, "!snooze bins out")
+
+	require.Contains(t, reply, "how long")
+	require.Equal(t, []string{"bins out"}, dueNames(t, store, p), "nothing happened yet")
 }
 
 func TestHelpMentionsSnooze(t *testing.T) {

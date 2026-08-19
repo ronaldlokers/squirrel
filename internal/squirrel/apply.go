@@ -455,14 +455,6 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 	return Message{Text: RenderDefined(c)}, nil
 }
 
-// snoozeDefault is how long "not today" lasts when nobody says.
-//
-// Until tomorrow, not until the chore is next due: the nudge arrives when you
-// cannot deal with it, and what you mean is nearly always "ask me again when I
-// am not holding a coat". A longer default would quietly become the interval,
-// which is what retiring is for.
-const snoozeDefault = 24 * time.Hour
-
 // snooze stops a chore asking for a while, without pretending it was done:
 // `!snooze bins out`, `!snooze 1`, `!snooze bins out for 3 days`.
 //
@@ -475,8 +467,8 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 
 	// "for 3 days" is peeled off the end so the rest can be a name with spaces
 	// in it, which is what a chore name usually is.
-	how := snoozeDefault
-	said := "until tomorrow"
+	var how time.Duration
+	said := ""
 
 	// "now" is how the quiet ends early. It is the same write with a time in
 	// the past rather than a second command, because a snooze that could not be
@@ -485,12 +477,19 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 	if subject, found := strings.CutSuffix(arg, " now"); found {
 		arg, how, said = strings.TrimSpace(subject), 0, "asking again"
 	} else if subject, rest, found := strings.Cut(arg, " for "); found {
-		_, parsed, ok := ParseEvery("every " + strings.TrimSpace(rest) + " " + intervalSentinel)
+		// "for a week" is what a person types; ParseEvery wants a number or
+		// nothing where the article is. Dropping it here rather than widening
+		// the pattern keeps one definition of what an interval looks like.
+		rest = strings.TrimSpace(rest)
+		for _, article := range []string{"a ", "an "} {
+			rest = strings.TrimPrefix(rest, article)
+		}
+		_, parsed, ok := ParseEvery("every " + rest + " " + intervalSentinel)
 		if !ok {
 			return Message{Text: "How long? Try !snooze " + subject + " for 3 days."}, nil
 		}
 		arg, how = strings.TrimSpace(subject), parsed
-		said = "for " + strings.TrimSpace(rest)
+		said = "for " + rest
 	}
 
 	active, err := a.store.ActiveChores(ctx, personID)
@@ -501,7 +500,15 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 		return Message{Text: "You have no chores, so there is nothing to put off."}, nil
 	}
 	if arg == "" {
-		return Message{Text: "Which one? Try !snooze " + active[0].Name + "."}, nil
+		return Message{Text: "Which one, and for how long? Try !snooze " + active[0].Name + " for 3 days."}, nil
+	}
+	// No default, deliberately. A default is a decision made in advance for a
+	// moment nobody can see, and the two obvious ones are both wrong somewhere:
+	// a day is nothing for a fortnightly chore, and an interval is retiring by
+	// another name. Asking costs one line and puts the decision where the
+	// information is.
+	if how == 0 && said == "" {
+		return Message{Text: fmt.Sprintf("For how long? Try !snooze %s for 3 days, or a week, or a month.", arg)}, nil
 	}
 
 	var target *Chore

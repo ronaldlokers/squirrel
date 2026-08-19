@@ -46,7 +46,7 @@ func HelpMessage() Message {
 		"!chores — what is due (same as ?)",
 		"!chore <n> every <interval> — turn note n into a chore",
 		"!retire <chore> — stop a chore coming back",
-		"!snooze <chore> [for 3 days] — not today, ask me later",
+		"!snooze <chore> for <how long> — stop asking for a while",
 		"",
 		"done <n> · keep <n> · drop <n> — clear line n",
 		"done — the one thing outstanding",
