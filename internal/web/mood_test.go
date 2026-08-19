@@ -14,7 +14,7 @@ import (
 func TestHomeAsksHowRightNowIs(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "how is right now")
+	require.Contains(t, body, "how do you feel?")
 	// All five, in the one order both surfaces use.
 	for _, m := range squirrel.Moods {
 		require.Contains(t, body, `value="`+string(m)+`"`, string(m))
@@ -56,7 +56,7 @@ func TestTheCheckinSaysNothingAboutYou(t *testing.T) {
 	}
 }
 
-// Six hours, because the question is "how is right now" and this morning is
+// Six hours, because the question is "how do you feel?" and this morning is
 // not now. A stale reading is not a bad one; it is not an answer to the
 // question being asked.
 func TestAStaleReadingIsAskedAgain(t *testing.T) {
@@ -65,7 +65,7 @@ func TestAStaleReadingIsAskedAgain(t *testing.T) {
 	}}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "how is right now")
+	require.Contains(t, body, "how do you feel?")
 	require.NotContains(t, body, "noted")
 }
 
@@ -75,7 +75,7 @@ func TestSayingSomethingElseAsksAgain(t *testing.T) {
 	m := mounted(t, f)
 
 	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), "noted")
-	require.Contains(t, m.call(t, "GET", "/?ask=1", nil).Body.String(), "how is right now")
+	require.Contains(t, m.call(t, "GET", "/?ask=1", nil).Body.String(), "how do you feel?")
 }
 
 // Not one of the five is no answer rather than a wrong one — this arrives from
@@ -94,6 +94,6 @@ func TestHomeStillStandsWhenTheCheckinCannotBeRead(t *testing.T) {
 	w := mounted(t, &fakeStore{err: errTest}).call(t, "GET", "/", nil)
 
 	require.Equal(t, 200, w.Code)
-	require.Contains(t, w.Body.String(), "how is right now")
+	require.Contains(t, w.Body.String(), "how do you feel?")
 	require.Contains(t, w.Body.String(), "the pile")
 }

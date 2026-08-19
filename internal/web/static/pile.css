@@ -791,9 +791,9 @@
 
   /* ---------- the check-in ---------- */
 
-  /* "How is right now" — right now, and not today. A day is a thing you can
-     have had a bad one of; this asks about the minute you are in, which is the
-     only honest question and the only useful one.
+  /* "How do you feel?" — asked plainly, and about now: the reading goes stale
+     after a few hours because a day is a thing you can have had a bad one of,
+     and the useful answer is about the minute you are in.
 
      The five are not a scale and are never numbered: low and frazzled are
      different states wanting different answers, which a one-to-five row cannot
@@ -824,7 +824,7 @@
      were cut from — so the five read as five answers rather than as one
      louder than the others. The widths differ only by what decoration each
      one carries outside its tile. */
-  .face img { height: 52px; width: auto; display: block; }
+  .face img { height: 58px; width: auto; display: block; }
   .face:hover { background: rgba(254, 214, 167, .1); color: var(--paper); }
   /* Pressed, it goes down like everything else you push here. */
   .face:active { transform: translateY(3px); }
@@ -944,10 +944,13 @@
     /* The five stay on one row on a phone: they are a row of answers, and
        wrapping two onto a second line would make those two look like a
        different kind of answer. */
+    /* The five share the row exactly rather than each taking its own width.
+       Sized by height they wrapped four-and-one on a small screen, which reads
+       as one of them being a different kind of answer. */
     .checkin { margin-top: 20px; }
-    .face { padding: 5px 3px 7px; gap: 3px; font-size: 10px; letter-spacing: .05em; }
-    .face img { height: 48px; }
-    .faces { gap: 2px; }
+    .faces { gap: 0; flex-wrap: nowrap; }
+    .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 10px; letter-spacing: .04em; }
+    .face img { width: 100%; height: auto; }
 
     .doors { gap: 10px; }
     .door { min-height: 118px; padding: 18px 16px; gap: 6px; }

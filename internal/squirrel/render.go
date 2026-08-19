@@ -185,9 +185,9 @@ func EveningMessage(completed []string, captures []string, nudge *Chore) Message
 
 // CheckinQuestion is the five faces as words, since chat has no pictures.
 //
-// "How is right now" and not "how are you today": a day is a thing you can
-// have had a bad one of, and the question is about the minute you are in —
-// which is the only one the answer is useful for.
+// "How do you feel?" — asked, and answered, about now. The reading goes stale
+// after a few hours for that reason: a day is a thing you can have had a bad
+// one of, and the useful answer is about the minute you are in.
 //
 // The five are not a scale and are never numbered. Low and frazzled are
 // different states wanting different answers, which is exactly what a
@@ -202,7 +202,7 @@ func CheckinQuestion() Message {
 		})
 	}
 	return Message{
-		Text:          "How is right now?",
+		Text:          "How do you feel?",
 		SelectionMode: "single",
 		Actions:       actions,
 	}
