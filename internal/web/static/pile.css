@@ -367,10 +367,12 @@
     font-variation-settings: var(--precise), "wght" 650;
     opacity: .8; padding: 10px 6px; min-height: 44px;
     display: inline-flex; align-items: center;
+    /* "the pile" is four characters longer than "chores", which is enough to
+       break it across two lines in a phone's lid and squeeze the field beside
+       it. The link is two words and stays two words. */
+    white-space: nowrap;
   }
   .lidlink:hover, .lidlink:focus-visible { opacity: 1; text-decoration: underline; }
-  .chores .hint a { color: rgba(254, 214, 167, .95); }
-  .rcard.state-chore { --sc: var(--chore); --sct: var(--chore-ink); }
 
   /* ---------- the chores: what comes back ---------- */
 
@@ -670,12 +672,15 @@
 
   @media (max-width: 620px) {
     :root { --o: 5px; }
-    .lid { padding: 10px 14px 12px; gap: 10px; }
+    /* The field takes its own row on a phone; the mark and the crossing link
+       keep the first. Wrapping is what makes that happen — without it all
+       three fight over one line and the field loses. */
+    .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
     .brand { gap: 8px; }
     .brand img { width: 72px; height: 54px; }
     .wordmark { font-size: 23px; -webkit-text-stroke-width: 1.8px; }
     .brim { height: 22px; }
-    .find { flex: 1 1 auto; padding: 9px 12px; }
+    .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
     /* 16px so focusing the field does not make iOS zoom the page. */
     .find input { font-size: 16px; }
 
