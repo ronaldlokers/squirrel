@@ -308,7 +308,14 @@ func TestDrainRunGrowsBackoffOnDeferralAndResetsAfterSuccess(t *testing.T) {
 	require.Greater(t, gap23, gap12*3/2, "backoff should grow between deferred passes")
 	// Reset: the tick right after a clean pass waits only the base interval
 	// again, not the backed-off one it would have used had it kept deferring.
-	require.Less(t, gap34, gap23/2, "backoff should reset after a clean pass")
+	//
+	// Three quarters rather than a half. What is being distinguished is a base
+	// wait from a doubled one — roughly 100ms against 200ms — and a shared CI
+	// runner adds tens of milliseconds of scheduler jitter to whichever it
+	// measures. At half, a 112ms reset failed a 100ms threshold on a machine
+	// that was doing something else; at three quarters, the same measurement
+	// passes and a backoff that had not reset at all still cannot.
+	require.Less(t, gap34, gap23*3/4, "backoff should reset after a clean pass")
 
 	require.Equal(t, 2, countItems(t, store))
 	names, err := sp.List()
