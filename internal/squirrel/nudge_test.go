@@ -93,9 +93,14 @@ func TestNudgeMessageCarriesOneButton(t *testing.T) {
 	require.Contains(t, m.Text, "bin day")
 	require.Contains(t, m.Text, "this month", "roughly when, in the screen's own words")
 	require.Contains(t, m.Text, "every 2 weeks", "the rhythm as it was set")
-	require.Len(t, m.Actions, 1, "one chore, one button — never a list")
+	// One chore, never a list — but two answers, because the nudge arrives at
+	// the moment you are least able to decide and until now the only thing it
+	// could hear was yes.
+	require.Len(t, m.Actions, 2, "one chore, two answers — never a list of chores")
 	require.Equal(t, "done:1", m.Actions[0].Value)
 	require.Equal(t, "✅", m.Actions[0].Emoji)
+	require.Equal(t, "snooze:1", m.Actions[1].Value)
+	require.Equal(t, "not today", m.Actions[1].Label)
 	require.Equal(t, "single", m.SelectionMode)
 }
 

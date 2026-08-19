@@ -64,9 +64,19 @@ const (
 	NudgeFromArrival NudgeReason = "arrival"
 )
 
-// NudgeMessage is one chore and one button. Never a list: self-regulation
+// NudgeMessage is one chore and two buttons. Never a list: self-regulation
 // draws on a depletable pool and every decision spends it, so six due chores
 // is six decisions charged to the resource that is already short.
+//
+// Two buttons and not one, because the nudge arrives at the moment you are
+// least able to decide anything, and until now the only thing it could hear
+// was yes. "Not today" is the answer that was missing — !snooze existed, but
+// it wanted a command typed at exactly the wrong moment. The chore's clock
+// keeps running while it is quiet, so nothing about when it is next due
+// changes; it is only the asking that stops.
+//
+// Tapping it again takes it back, the same way an unselected done retracts a
+// completion. Nothing here is a decision you cannot reverse.
 func NudgeMessage(c Chore, why NudgeReason) Message {
 	text := choreSentence(c)
 	if why == NudgeFromMessage {
@@ -80,6 +90,10 @@ func NudgeMessage(c Chore, why NudgeReason) Message {
 			Label: c.Name,
 			Value: "done:1",
 			Emoji: "✅",
+		}, {
+			Label: "not today",
+			Value: "snooze:1",
+			Emoji: "🌙",
 		}},
 	}
 }
