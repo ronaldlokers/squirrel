@@ -43,7 +43,7 @@
   <div class="checkin">
     {{if .Mood}}
     <p class="noted" role="status">
-      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="201">
+      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">
       <span>noted &mdash; {{.MoodWord}}</span>
       <a class="again" href="/?ask=1">say something else</a>
     </p>
@@ -52,7 +52,7 @@
     <form class="faces" method="post" action="/mood">
       {{range .Faces}}
       <button class="face" name="mood" value="{{.Mood}}">
-        <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="201">
+        <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
         <span>{{.Word}}</span>
       </button>
       {{end}}
