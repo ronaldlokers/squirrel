@@ -1,0 +1,599 @@
+<!--
+THESIS: The other half of what the shoebox holds. A note is a card you take out
+and dispose of; a chore is a card that comes back on its own. So this screen is
+not a deck and not a search result — it is the small set of cards kept flat in
+the bottom of the box, each one readable at a glance, each one adjustable and
+stoppable without ceremony.
+
+WHAT THIS SCREEN REFUSES:
+  - No count of chores, anywhere, in any form.
+  - No urgency. Nothing is overdue, nothing is red, nothing is sorted by how
+    long it has been. The list holds creation order and never re-ranks itself.
+  - No exact elapsed time. "last done this week", "a while ago" — the product
+    reports what happened, softly, and says nothing at all when nothing has
+    happened yet. A day count is a deadline wearing a different hat.
+  - No orange. The Orange Reserve Rule says orange marks the moment something
+    is MADE. Nothing on this screen makes anything — DID IT reports, HOW OFTEN
+    adjusts, STOP ASKING ends. A chore at rest is cream card stock like
+    everything else the owner owns. (The draft template gave every chore an
+    orange page tab; a column of them would put a dozen oranges on one screen
+    and dilute the one that matters.)
+
+WHAT IT KEEPS FROM THE WORLD:
+  - The lid, shared with the deck: mark, wordmark, a quiet link across to the
+    pile, the search field, the brim at 3px whatever the width.
+  - Cream stock, 3px outline, sticker depth (offset + cast shadow), pill
+    controls with the matching 4px press.
+  - Two voices: the chore's name is his words (CASL 1); every date word,
+    cadence and control is the machine's (CASL 0).
+  - The picker replaces the action row in place, on the card — never a modal.
+    Scriptless: a <details> disclosure does the revealing, and
+    `form:has(.often[open])` steps the other two actions aside exactly the way
+    the deck's JavaScript does. Without :has() the actions simply stay put and
+    the chips open beneath them, which is still the working page.
+  - Purple, the product's own colour, marks where the interval is currently
+    set. Purple is not a state and not a reward; it can say "this is how
+    things are" without grading anyone.
+
+STATES BUILT: the list (four authored chores — none of them real captures),
+one card with its interval chips open, and the empty screen, separated below by
+a clearly-labelled comp annotation. The empty screen states a fact and asks for
+nothing.
+
+FONTS AND MARK: linked relatively to the served assets in
+internal/web/static/ rather than inlined, so open this file from its place in
+the repo. The real template posts each form to {{$.Path}}/chores/act; the comp
+uses a bare GET so a stray click reloads harmlessly.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<style>
+  @font-face {
+    font-family: "Recursive";
+    src: url("../../internal/web/static/recursive.woff2") format("woff2");
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: block;
+  }
+
+  :root {
+    /* Straight off the mark. */
+    --purple: #6c4da9;
+    --purple-deep: #58388a;
+    --purple-dark: #3b2560;
+    --violet: #5e23b1;   --violet-ink: #56209f;
+    --orange: #e66d0d;
+    --orange-lit: #ff8a2b;
+    --outline: #1c110b;
+    --cream: #fed6a7;          /* the tail */
+    --card: #fdecd4;           /* card stock: the tail's cream, lightened */
+    --card-deep: #f6d5ab;      /* the cards underneath it */
+    --paper: #fffbf3;          /* the raised things sat on the stock */
+    --paper-deep: #f7e9d4;     /* those things, pressed */
+    --brown: #58413d;          /* the headphones */
+    --white: #fefefe;
+
+    --done: #529414;      --done-ink: #3c6d0e;
+    --kept: #ffb300;      --kept-ink: #8a5c00;
+    --dropped: #8a6a55;   --dropped-ink: #6a4f3e;
+
+    --line: 3px;               /* the outline weight of the mark */
+    --r: 14px;
+
+    --casual: "MONO" 0, "CASL" 1;
+    --precise: "MONO" 0, "CASL" 0;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overflow-x: clip; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--paper);
+    font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise);
+    background-color: var(--purple-deep);
+    background-image:
+      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .5) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  /* The browser's own surfaces belong to the design too. */
+  ::selection { background: var(--orange); color: var(--white); }
+  ::-webkit-scrollbar { width: 14px; }
+  ::-webkit-scrollbar-track { background: var(--purple-dark); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 8px;
+  }
+  * { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
+  :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+  .chore :focus-visible { outline-color: var(--violet); }
+
+  /* Each comp state is its own full screen. */
+  .viewport { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ---------- the lid: shared with the deck ---------- */
+
+  .lid {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 22px 13px;
+    background: var(--purple-dark);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand img {
+    width: 84px; height: 63px; display: block;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .3));
+  }
+  .wordmark {
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 900;
+    font-variation-settings: normal;
+    font-size: 26px;
+    letter-spacing: -.028em;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline);
+    paint-order: stroke fill;
+  }
+  .lid .spacer { flex: 1; }
+
+  /* The way across to the pile. Quiet on purpose: a place to go, not a thing
+     to do. */
+  .lidlink {
+    color: var(--paper); text-decoration: none;
+    font-size: 13px; letter-spacing: .04em;
+    font-variation-settings: var(--precise), "wght" 650;
+    opacity: .8; padding: 10px 6px; min-height: 44px;
+    display: inline-flex; align-items: center; white-space: nowrap;
+  }
+  .lidlink:hover, .lidlink:focus-visible { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+
+  .brim {
+    position: absolute; left: 0; top: 100%;
+    width: 100%; height: 30px; display: block; pointer-events: none;
+  }
+
+  .find {
+    flex: 0 1 280px; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline);
+    border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .find:focus-within { box-shadow: 0 3px 0 0 var(--outline), 0 0 0 3px var(--orange-lit); }
+  .find svg { flex: none; }
+  .find input {
+    flex: 1; min-width: 4ch; border: 0; background: transparent;
+    font: 500 14.5px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--outline); caret-color: var(--orange); padding: 0;
+  }
+  .find input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .find input:focus { outline: none; }
+
+  /* ---------- the field ---------- */
+
+  main {
+    flex: 1; display: flex; justify-content: center; align-items: flex-start;
+    padding: 62px 22px 56px;
+  }
+  main.centred { align-items: center; padding: 58px 22px 48px; }
+
+  .chorebox { width: min(720px, 100%); }
+
+  /* The screen says what these are, once, and never how many. */
+  .chorehead {
+    margin: 0 0 20px;
+    font-size: 13px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  /* ---------- a chore card ---------- */
+
+  /* Kept flat in the bottom of the box: cream stock, sticker depth, but no
+     stack behind it and no title bar — a chore has no date of its own, only a
+     rhythm. */
+  .chore {
+    position: relative;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    padding: 19px 22px 20px;
+    margin: 0 0 16px;
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+
+  /* His words lead. He named the chore, so it is set in his voice, at the
+     note role's floor size — decided on, not merely scanned. */
+  .chore .name {
+    margin: 0;
+    font-size: 21px; line-height: 1.35; max-width: 34ch;
+    letter-spacing: -.008em;
+    font-variation-settings: var(--casual), "wght" 520;
+    text-wrap: pretty;
+  }
+
+  /* The machine's line beneath: the rhythm, and — softly — what happened.
+     All of it in the meta role, all of it headphone brown. Nothing here is a
+     status, so nothing here takes a state colour. When a chore has not been
+     done yet the second clause is simply absent: report what happened, and
+     when nothing happened, say nothing. */
+  .chore .meta {
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    margin-top: 8px;
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  .chore .meta .sep { opacity: .45; }
+
+  /* ---------- the three things you can do to one ---------- */
+
+  .acts {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .abtn {
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 11px 16px; cursor: pointer; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .abtn:hover { background: var(--paper-deep); }
+  .abtn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--outline);
+    background: var(--bc, var(--purple)); color: var(--paper);
+  }
+  /* Doing it was a done; stopping is a drop. The press colours already mean
+     exactly that. */
+  .abtn.did  { --bc: var(--done); }
+  .abtn.stop { --bc: var(--dropped); margin-left: auto; }
+
+  /* ---------- how often: a disclosure, in place, no modal ---------- */
+
+  .often { display: inline-flex; }
+  .often > summary {
+    list-style: none;
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 11px 16px; cursor: pointer; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+    user-select: none;
+  }
+  .often > summary::-webkit-details-marker { display: none; }
+  .often > summary:hover { background: var(--paper-deep); }
+  .often:not([open]) > summary:active {
+    transform: translateY(4px); box-shadow: none;
+    background: var(--purple); color: var(--paper);
+  }
+  .often > summary .ifopen { display: none; }
+
+  /* Open, the picker takes the whole foot of the card and the other two
+     actions step aside — the row is replaced in place, exactly as the deck
+     does it, and CSS alone is the one doing it. Where :has() is missing the
+     actions simply stay and the chips open beneath: still the working page. */
+  .acts:has(.often[open]) > .abtn { display: none; }
+  .often[open] {
+    width: 100%;
+    display: flex; flex-direction: column-reverse; gap: 14px;
+  }
+  /* The summary becomes the way back, and the way back is the system's dashed
+     "this does nothing". */
+  .often[open] > summary {
+    align-self: flex-start;
+    box-shadow: none; border-style: dashed;
+    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .03em; text-transform: none;
+    padding: 11px 15px;
+  }
+  .often[open] > summary .ifshut { display: none; }
+  .often[open] > summary .ifopen { display: inline; }
+
+  .chips { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .chips .lead {
+    width: 100%;
+    font-size: 13px; letter-spacing: .08em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  .chip {
+    font: 700 13.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .03em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 11px 15px; cursor: pointer; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .chip:hover { background: var(--paper-deep); }
+  .chip:active {
+    transform: translateY(4px); box-shadow: none;
+    background: var(--purple); color: var(--paper);
+  }
+  /* Where it is set now. Cap purple: the product's own colour, not a state,
+     not a reward — it reports how things are without grading anyone. Pressing
+     it again is a no-op, like every repeated transition. */
+  .chip.current { background: var(--purple); color: var(--paper); }
+  .chip.current:hover { background: var(--purple); }
+
+  /* The product's one quiet line at the foot. */
+  .hint {
+    margin: 34px 0 0;
+    text-align: center;
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 550;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  /* ---------- nothing comes back ---------- */
+
+  .empty { width: min(560px, 100%); text-align: center; }
+  .empty img {
+    width: 186px; height: 140px; display: block; margin: 0 auto 22px;
+    filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .3));
+  }
+  .empty h1 {
+    margin: 0 0 10px;
+    font-size: clamp(27px, 3.4vw, 36px); line-height: 1.15;
+    font-variation-settings: var(--casual), "wght" 800;
+    letter-spacing: -.01em;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline);
+    paint-order: stroke fill;
+  }
+  .empty p {
+    margin: 0 auto; max-width: 34ch;
+    font-size: 17px;
+    font-variation-settings: var(--casual), "wght" 450;
+    color: var(--cream);
+  }
+
+  /* ---------- comp chrome, not product ---------- */
+
+  .compnote {
+    padding: 18px 22px;
+    background: var(--purple-dark);
+    border-top: 2px dashed rgba(254, 214, 167, .5);
+    border-bottom: 2px dashed rgba(254, 214, 167, .5);
+    text-align: center;
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: rgba(254, 214, 167, .8);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 1ms !important; }
+  }
+
+  /* ---------- the phone, one thumb ---------- */
+
+  @media (max-width: 620px) {
+    .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
+    .brand { gap: 8px; }
+    .brand img { width: 72px; height: 54px; }
+    .wordmark { font-size: 23px; -webkit-text-stroke-width: 1.8px; }
+    .brim { height: 22px; }
+    /* The field takes its own row of the lid; the link keeps the first. */
+    .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
+    /* 16px so focusing the field does not make iOS zoom the page. */
+    .find input { font-size: 16px; }
+
+    main { padding: 40px 13px 36px; }
+    main.centred { padding: 36px 13px 32px; }
+
+    .chore { padding: 17px 18px 18px; }
+    /* The step-up: read at arm's length, in worse light. The name takes the
+       Note role's own mobile size. */
+    .chore .name { font-size: 23px; }
+    .chore .meta { font-size: 12px; }
+
+    /* The two routine actions side by side, then the one that ends the chore
+       across the full width beneath them — the same 2-plus-1 rhythm as the
+       deck's action grid, with the different action on the bottom row. */
+    .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .abtn, .often:not([open]) > summary {
+      padding: 14px 8px; min-height: 48px;
+      font-size: 12.5px; letter-spacing: .05em;
+    }
+    .abtn.stop { margin-left: 0; grid-column: 1 / -1; }
+    .often { display: flex; }
+    .often > summary { width: 100%; }
+    .often[open] { grid-column: 1 / -1; }
+    .often[open] > summary { width: auto; padding: 11px 15px; min-height: 44px; font-size: 13.5px; }
+
+    .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .chips .lead { grid-column: 1 / -1; }
+
+    .empty h1 { font-size: 31px; }
+    .empty p { font-size: 18px; }
+    .empty img { width: 150px; height: 113px; }
+    .hint { margin-top: 26px; font-size: 12px; }
+  }
+</style>
+
+<!-- ======================= the chores, as they are ======================= -->
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the pile</a>
+    <label class="find">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </label>
+
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3"
+            vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main>
+    <section class="chorebox" aria-label="What comes back">
+      <p class="chorehead">WHAT COMES BACK</p>
+
+      <!-- Authored sample chores — not real captures. In the template each
+           form posts to {{$.Path}}/chores/act; here a bare GET reloads the
+           comp harmlessly. -->
+
+      <article class="chore">
+        <p class="name">bins out</p>
+        <p class="meta"><span>EVERY 2 WEEKS</span><span class="sep">&middot;</span><span>LAST DONE THIS WEEK</span></p>
+        <form class="acts" method="get" action="">
+          <input type="hidden" name="id" value="1">
+          <button class="abtn did" name="act" value="done">DID IT</button>
+          <details class="often">
+            <summary role="button"><span class="ifshut">HOW OFTEN</span><span class="ifopen">never mind</span></summary>
+            <div class="chips">
+              <span class="lead">COMES BACK</span>
+              <button class="chip" name="every" value="every day">every day</button>
+              <button class="chip" name="every" value="every week">every week</button>
+              <button class="chip current" name="every" value="every 2 weeks">every 2 weeks</button>
+              <button class="chip" name="every" value="every month">every month</button>
+            </div>
+          </details>
+          <button class="abtn stop" name="act" value="retire">STOP ASKING</button>
+        </form>
+      </article>
+
+      <article class="chore">
+        <p class="name">water the plants</p>
+        <p class="meta"><span>EVERY WEEK</span><span class="sep">&middot;</span><span>LAST DONE TODAY</span></p>
+        <form class="acts" method="get" action="">
+          <input type="hidden" name="id" value="2">
+          <button class="abtn did" name="act" value="done">DID IT</button>
+          <details class="often">
+            <summary role="button"><span class="ifshut">HOW OFTEN</span><span class="ifopen">never mind</span></summary>
+            <div class="chips">
+              <span class="lead">COMES BACK</span>
+              <button class="chip" name="every" value="every day">every day</button>
+              <button class="chip current" name="every" value="every week">every week</button>
+              <button class="chip" name="every" value="every 2 weeks">every 2 weeks</button>
+              <button class="chip" name="every" value="every month">every month</button>
+            </div>
+          </details>
+          <button class="abtn stop" name="act" value="retire">STOP ASKING</button>
+        </form>
+      </article>
+
+      <!-- The picker, open: the other two actions have stepped aside and the
+           row it replaced comes back through "never mind". The purple chip is
+           where the interval currently sits. -->
+      <article class="chore">
+        <p class="name">clean the coffee machine</p>
+        <p class="meta"><span>EVERY MONTH</span><span class="sep">&middot;</span><span>LAST DONE A WHILE AGO</span></p>
+        <form class="acts" method="get" action="">
+          <input type="hidden" name="id" value="3">
+          <button class="abtn did" name="act" value="done">DID IT</button>
+          <details class="often" open>
+            <summary role="button"><span class="ifshut">HOW OFTEN</span><span class="ifopen">never mind</span></summary>
+            <div class="chips">
+              <span class="lead">COMES BACK</span>
+              <button class="chip" name="every" value="every day">every day</button>
+              <button class="chip" name="every" value="every week">every week</button>
+              <button class="chip" name="every" value="every 2 weeks">every 2 weeks</button>
+              <button class="chip current" name="every" value="every month">every month</button>
+            </div>
+          </details>
+          <button class="abtn stop" name="act" value="retire">STOP ASKING</button>
+        </form>
+      </article>
+
+      <!-- Never done yet, so the meta line reports only the rhythm. What has
+           not happened is not reported, and certainly not counted. -->
+      <article class="chore">
+        <p class="name">descale the shower head</p>
+        <p class="meta"><span>EVERY MONTH</span></p>
+        <form class="acts" method="get" action="">
+          <input type="hidden" name="id" value="4">
+          <button class="abtn did" name="act" value="done">DID IT</button>
+          <details class="often">
+            <summary role="button"><span class="ifshut">HOW OFTEN</span><span class="ifopen">never mind</span></summary>
+            <div class="chips">
+              <span class="lead">COMES BACK</span>
+              <button class="chip" name="every" value="every day">every day</button>
+              <button class="chip" name="every" value="every week">every week</button>
+              <button class="chip" name="every" value="every 2 weeks">every 2 weeks</button>
+              <button class="chip current" name="every" value="every month">every month</button>
+            </div>
+          </details>
+          <button class="abtn stop" name="act" value="retire">STOP ASKING</button>
+        </form>
+      </article>
+
+      <p class="hint">squirrel asks when it&rsquo;s time</p>
+    </section>
+  </main>
+</section>
+
+<!-- ======================= comp annotation ======================= -->
+<p class="compnote">COMP ANNOTATION &middot; BELOW: THE SAME SCREEN WITH NOTHING TO SHOW &middot; NOT PRODUCT UI</p>
+
+<!-- ======================= nothing comes back ======================= -->
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the pile</a>
+    <label class="find">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </label>
+
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3"
+            vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main class="centred">
+    <!-- A fact, not a nudge. Nothing here suggests making one; chores are
+         made from notes, in the pile, when a note turns out to be one. -->
+    <section class="empty">
+      <img src="../../internal/web/static/logo.png" alt="">
+      <h1>nothing comes back on its own</h1>
+      <p>when a note becomes a chore, this is where it lives.</p>
+    </section>
+  </main>
+</section>
