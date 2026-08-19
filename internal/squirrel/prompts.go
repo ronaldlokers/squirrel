@@ -344,7 +344,10 @@ const latestChorePrompt = `
 func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, error) {
 	const q = `
 		with latest as (` + latestChorePrompt + `)
-		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds, 0::bigint
+		-- 0 and false: this query answers "what is still outstanding on the
+		-- last numbered surface", where neither the elapsed time nor whether
+		-- the chore was ever done is read by anyone.
+		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds, 0::bigint, false
 		  from prompt_lines l
 		  join latest p on p.id = l.prompt_id
 		  join chores c on c.id = l.chore_id

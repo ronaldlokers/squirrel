@@ -61,7 +61,13 @@ screen empty.
 - **Extension of the press rule:** DID IT presses to done, STOP ASKING to
   dropped — the existing "a button presses to its own state colour".
 
-## Suggested DESIGN.md amendments
+## DESIGN.md amendments — accepted 2026-08-19
+
+All five landed, along with a sixth the recolouring below required: **The
+Lifted Fill Rule**, which is how a control wears the colour of what it does
+without failing contrast. The list is kept as written for the reasoning.
+
+## What was proposed
 
 1. Add a line beside the CHORE-stamp paragraph: **"a chore at rest is not
    orange"** — orange is the moment of promotion only. (This is the rule the

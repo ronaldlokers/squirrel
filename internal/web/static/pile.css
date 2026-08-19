@@ -372,6 +372,170 @@
   .chores .hint a { color: rgba(254, 214, 167, .95); }
   .rcard.state-chore { --sc: var(--chore); --sct: var(--chore-ink); }
 
+  /* ---------- the chores: what comes back ---------- */
+
+  .chorebox { width: min(720px, 100%); }
+
+  /* The screen says what these are, once, and never how many. */
+  .chorehead {
+    margin: 0 0 20px;
+    font-size: 13px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  /* ---------- a chore card ---------- */
+
+  /* Kept flat in the bottom of the box: cream stock, sticker depth, but no
+     stack behind it and no title bar — a chore has no date of its own, only a
+     rhythm. */
+  .chore {
+    position: relative;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    padding: 19px 22px 20px;
+    margin: 0 0 16px;
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+
+  /* His words lead. He named the chore, so it is set in his voice, at the
+     note role's floor size — decided on, not merely scanned. */
+  .chore .name {
+    margin: 0;
+    font-size: 21px; line-height: 1.35; max-width: 34ch;
+    letter-spacing: -.008em;
+    font-variation-settings: var(--casual), "wght" 520;
+    text-wrap: pretty;
+  }
+
+  /* The machine's line beneath: the rhythm, and — softly — what happened.
+     All of it in the meta role, all of it headphone brown. Nothing here is a
+     status, so nothing here takes a state colour. When a chore has not been
+     done yet the second clause is simply absent: report what happened, and
+     when nothing happened, say nothing. */
+  .chore .meta {
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    margin-top: 8px;
+    /* The comp shouts this line in its markup; here the words stay as the
+       vocabulary writes them — "this week", not "THIS WEEK" — and the case is
+       a thing the design does to them, which is also what a screen reader
+       needs. */
+    text-transform: uppercase;
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  .chore .meta .sep { opacity: .45; }
+
+  /* ---------- the three things you can do to one ---------- */
+
+  .acts {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .abtn {
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 11px 16px; cursor: pointer; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .abtn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--outline);
+  }
+
+  /* A button wears the colour of what it does, at rest and not only under the
+     thumb. Doing it is a done; stopping is a drop; how often is a setting, and
+     settings wear the product's violet.
+
+     Every fill is measured against its own type colour rather than judged by
+     eye, and each one is lifted toward white until it is both bright and
+     legible with the dark ink the cards already use: #71a73e is 6.4:1,
+     amber is 11.4:1, #9f8574 is 5.4:1. Two earlier attempts failed this
+     honestly — the ink variants passed contrast and made the screen darker,
+     and the tab variants were still deeper than the card they sit on.
+
+     Pressing sinks to the deeper variant, so the press still reads as a
+     change. No orange anywhere: orange is the moment something is made, and
+     nothing on this screen makes anything.
+
+     Ending a chore is the quietest of the three on purpose — brown carries
+     less than green or violet, and stopping something should not be the
+     brightest thing on the card. */
+  .abtn.did {
+    background: #71a73e; color: var(--outline);
+  }
+  .abtn.did:hover  { background: #89b65f; }
+  .abtn.did:active { background: var(--done); }
+
+  .abtn.stop {
+    background: #9f8574; color: var(--outline);
+    margin-left: auto;
+  }
+  .abtn.stop:hover  { background: #af9a8b; }
+  .abtn.stop:active { background: var(--dropped); color: var(--paper); }
+
+  /* ---------- how often: a disclosure, in place, no modal ---------- */
+
+  .often { display: inline-flex; }
+  .often > summary {
+    list-style: none;
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em;
+    color: var(--outline); background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    padding: 11px 16px; cursor: pointer; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+    user-select: none;
+  }
+  .often > summary::-webkit-details-marker { display: none; }
+  .often:not([open]) > summary {
+    background: var(--kept); color: var(--outline);
+  }
+  .often:not([open]) > summary:hover { background: #ffc12e; }
+  .often:not([open]) > summary:active {
+    transform: translateY(4px); box-shadow: none;
+    background: var(--violet-ink); color: var(--paper);
+  }
+  .often > summary .ifopen { display: none; }
+
+  /* Open, the picker takes the whole foot of the card and the other two
+     actions step aside — the row is replaced in place, exactly as the deck
+     does it, and CSS alone is the one doing it. Where :has() is missing the
+     actions simply stay and the chips open beneath: still the working page. */
+  .acts:has(.often[open]) > .abtn { display: none; }
+  .often[open] {
+    width: 100%;
+    display: flex; flex-direction: column-reverse; gap: 14px;
+  }
+  /* The summary becomes the way back, and the way back is the system's dashed
+     "this does nothing". */
+  .often[open] > summary {
+    align-self: flex-start;
+    background: var(--paper); color: var(--outline);
+    box-shadow: none; border-style: dashed;
+    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .03em; text-transform: none;
+    padding: 11px 15px;
+  }
+  .often[open] > summary .ifshut { display: none; }
+  .often[open] > summary .ifopen { display: inline; }
+
+  /* Where the interval sits now. Cap purple: the product's own colour, not a
+     state and not a reward — it reports how things are without grading anyone.
+     Pressing it again is a no-op, like every repeated transition. */
+  .chip.current { background: var(--purple); color: var(--paper); }
+  .chip.current:hover { background: var(--purple); }
+
   /* ---------- search results ---------- */
 
   .results { width: min(720px, 100%); }
@@ -538,6 +702,20 @@
     .rcard .meta { font-size: 12px; }
     .rcard p { font-size: 18.5px; }
     .rbtn { padding: 10px 12px; min-height: 42px; letter-spacing: .03em; }
+    .chore { padding: 17px 18px 18px; }
+    .chore .name { font-size: 23px; }
+    .chore .meta { font-size: 12px; }
+    .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .abtn, .often:not([open]) > summary {
+      padding: 14px 8px; min-height: 48px;
+      font-size: 12.5px; letter-spacing: .05em;
+    }
+    .abtn.stop { margin-left: 0; grid-column: 1 / -1; }
+    .often { display: flex; }
+    .often > summary { width: 100%; }
+    .often[open] { grid-column: 1 / -1; }
+    .often[open] > summary { width: auto; padding: 11px 15px; min-height: 44px; font-size: 13.5px; }
+
     .intervals { display: grid; grid-template-columns: 1fr 1fr; }
     .intervals .lead, .chip.back { grid-column: 1 / -1; }
     .chip { justify-content: center; }

@@ -1,35 +1,53 @@
 {{define "content"}}
-<section class="results chores">
+<section class="chorebox" aria-label="What comes back">
   {{if .Chores}}
-  <p class="resultsHead">WHAT COMES BACK</p>
+  {{/* Says what these are, once, and never how many. */}}
+  <p class="chorehead">WHAT COMES BACK</p>
   {{range .Chores}}
-  <article class="rcard state-chore">
-    <span class="tab"></span>
-    <div class="meta"><span>{{.Every}}</span><span class="sep">&middot;</span><span class="state">LAST DONE {{.Last}}</span></div>
-    <p>{{.Name}}</p>
-    <form class="racts" method="post" action="{{$.Path}}/chores/act">
+  {{/* A chore is not a search result and does not wear the page tab that says
+       what a note ended up as: it has a rhythm rather than an outcome. Cream
+       stock, no tab, no orange — orange is the moment a note becomes a chore,
+       shown once, on the card where it happened. */}}
+  <article class="chore">
+    <p class="name">{{.Name}}</p>
+    <p class="meta">
+      <span>{{.Every}}</span>
+      {{/* What has not happened is not reported: a chore nobody has ever done
+           shows its rhythm and stops there. */}}
+      {{if .Last}}<span class="sep">&middot;</span><span>LAST DONE {{.Last}}</span>{{end}}
+    </p>
+    <form class="acts" method="post" action="{{$.Path}}/chores/act">
       <input type="hidden" name="id" value="{{.ID}}">
-      <button class="rbtn" name="act" value="done">DID IT</button>
-      {{/* Changing how often is not a transition — the chore is the same chore
-           afterwards — so the chips post the interval directly rather than
-           going through an action word. */}}
-      <details class="everyFallback">
-        <summary class="rbtn">HOW OFTEN</summary>
-        <div class="row intervals">
+      <button class="abtn did" name="act" value="done">DID IT</button>
+      {{/* The picker replaces the row in place rather than opening a modal.
+           A details disclosure does the revealing with no script at all; the
+           stylesheet steps the other two actions aside. */}}
+      <details class="often">
+        <summary role="button"><span class="ifshut">HOW OFTEN</span><span class="ifopen">never mind</span></summary>
+        <div class="chips">
           <span class="lead">COMES BACK</span>
-          <button class="chip" name="every" value="every day">every day</button>
-          <button class="chip" name="every" value="every week">every week</button>
-          <button class="chip" name="every" value="every 2 weeks">every 2 weeks</button>
-          <button class="chip" name="every" value="every month">every month</button>
+          {{/* Cap purple marks where the interval currently sits. Purple is
+               the product's own colour rather than a state or a reward: it can
+               say how things are without grading anyone. */}}
+          <button class="chip{{if eq .Chip "every day"}} current{{end}}" name="every" value="every day">every day</button>
+          <button class="chip{{if eq .Chip "every week"}} current{{end}}" name="every" value="every week">every week</button>
+          <button class="chip{{if eq .Chip "every 2 weeks"}} current{{end}}" name="every" value="every 2 weeks">every 2 weeks</button>
+          <button class="chip{{if eq .Chip "every month"}} current{{end}}" name="every" value="every month">every month</button>
         </div>
       </details>
-      <button class="rbtn back" name="act" value="retire">STOP ASKING</button>
+      <button class="abtn stop" name="act" value="retire">STOP ASKING</button>
     </form>
   </article>
   {{end}}
+  <p class="hint">squirrel asks when it&rsquo;s time</p>
   {{else}}
-  <p class="noHits">nothing comes back on its own yet.</p>
+  {{/* A fact, not a nudge. Nothing here suggests making one: chores are made
+       from notes, in the pile, when a note turns out to be one. */}}
+  <section class="empty">
+    <img alt="" src="{{.Path}}/static/logo.png?v={{.V}}" width="186" height="140">
+    <h1>nothing comes back on its own</h1>
+    <p>when a note becomes a chore, this is where it lives.</p>
+  </section>
   {{end}}
-  <p class="hint"><a href="{{.Path}}">the pile</a></p>
 </section>
 {{end}}
