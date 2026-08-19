@@ -55,6 +55,9 @@ type Store interface {
 	OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]squirrel.Item, bool, error)
 	SearchItems(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Item, bool, error)
 	KeptItems(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
+	// The screen captures as of v0.12.0. See captureHandler for what that
+	// overruled and what it cost.
+	InsertItem(ctx context.Context, i squirrel.Item) (bool, error)
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)

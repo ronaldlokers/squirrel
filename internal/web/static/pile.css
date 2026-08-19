@@ -718,6 +718,76 @@
   }
 
 
+
+  /* ---------- the slot ---------- */
+
+  /* A slot in the lid of the box. Deliberately not a card — a card is a note,
+     and this is the opening a note goes through — so it is the one inset
+     object in the system: everything else sits ON the surface and this is a
+     way INTO it. That is the point rather than an inconsistency. */
+  .slot {
+    margin-top: 30px;
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 12px 12px 12px 18px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline);
+    border-radius: var(--r);
+    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35);
+    transition: box-shadow 110ms ease-out, background-color 110ms ease-out;
+  }
+  .slot:focus-within {
+    background: var(--white);
+    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35), 0 0 0 3px var(--orange-lit);
+  }
+  /* His words, in his voice — the same CASL 1 the card sets a note in, because
+     it is the same sentence before and after it is kept. */
+  .slot textarea {
+    flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0;
+    font: 400 18px/1.45 "Recursive", sans-serif;
+    font-variation-settings: var(--casual), "wght" 480;
+    color: var(--outline); caret-color: var(--orange);
+    /* Grown by pile.js, and bounded here: a very long thought scrolls inside
+       the slot rather than pushing the doors off the screen. */
+    min-height: 1.45em; max-height: 8.7em;
+    field-sizing: content;
+  }
+  .slot textarea:focus { outline: none; }
+  .slot textarea::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+
+  /* Says what happens, in the product's own word. Not "add", which is a word
+     about a list, and not "save", which is a word about a document. */
+  .post {
+    flex: none;
+    padding: 11px 18px; min-height: 44px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .post:hover { background: var(--orange-lit); }
+  .post:active {
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet);
+  }
+
+  /* One line, and it never names a total. "kept" is the whole confirmation:
+     the chat's ✅ in words. */
+  .slotsaid {
+    margin: 9px 2px 0;
+    font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: rgba(254, 214, 167, .85);
+  }
+  /* The failure is not the success in different words. It says what is true,
+     what happens next, and the words are still in the field above it. */
+  .slotsaid.bad {
+    color: var(--orange-lit); text-transform: none; letter-spacing: .01em;
+    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 600;
+    max-width: 46ch;
+  }
+
   /* Keycaps on the chores screen appear on the chore you are focused in, and
      nowhere else. Three sets of caps on every card is a poster; one set, on
      the thing a key would actually act on, is an answer. */
@@ -802,6 +872,15 @@
 
     /* Still two doors side by side: their equality is the screen's one
        statement, and a stacked pair reads as first and second. */
+    /* The row survives the phone. A full-width button here was tried and made
+       the slot the loudest thing on a screen whose one statement is the two
+       doors — and the label is short enough that keeping it inline costs the
+       field almost nothing. 18.5px is the Step-Up pair, and anything under
+       16px makes iOS zoom the page on focus. */
+    .slot { gap: 8px; padding: 10px 10px 10px 14px; margin-top: 22px; }
+    .slot textarea { font-size: 18.5px; padding: 6px 0; }
+    .post { padding: 11px 14px; letter-spacing: .05em; }
+
     .doors { gap: 10px; }
     .door { min-height: 118px; padding: 18px 16px; gap: 6px; }
     /* The art steps down where the doors are ~177px wide; at 66px tall both

@@ -21,8 +21,17 @@
     </a>
   </nav>
 
-  {{/* The first screen of an installed app is where a capture box would try to
-       grow. This says where capture lives instead, and asks for nothing. */}}
-  <p class="hint">thoughts go in through the chat</p>
+  {{/* The slot in the lid of the box: you post a thought in without opening
+       it. Under the doors rather than above them — a composer at the top of a
+       list is an inbox's shape, and it puts what you are adding directly over
+       what you have not dealt with. */}}
+  <form class="slot" method="post" action="/capture">
+    <textarea name="text" rows="1" placeholder="tell me a thing"
+      aria-label="Tell Squirrel a thing">{{.Said}}</textarea>
+    <button class="post" type="submit">Keep it</button>
+  </form>
+  {{/* One word, and never a place you are behind. */}}
+  {{if .Kept}}<p class="slotsaid" role="status">kept</p>{{end}}
+  {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
 </div>
 {{end}}

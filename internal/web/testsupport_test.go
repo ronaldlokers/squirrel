@@ -167,6 +167,19 @@ func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel
 	return out, more, nil
 }
 
+// InsertItem is the slot. The fake keeps the store's own contract: a fresh row
+// answers true, and the payload marks it a note by construction.
+func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	id := int64(len(f.items) + 1)
+	f.items = append([]squirrel.Item{{
+		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt, State: squirrel.ItemOpen,
+	}}, f.items...)
+	return true, nil
+}
+
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {
 	if f.err != nil {
 		return squirrel.Item{}, false, f.err
