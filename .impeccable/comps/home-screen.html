@@ -1,0 +1,418 @@
+<!--
+THESIS: The box, closed, on the shelf. The pile is a deck you go through and
+the chores are the cards that come back; the home screen is the moment before
+either — the shoebox seen from outside, with its two halves named. Two doors,
+equals, and nothing else.
+
+WHAT THIS SCREEN REFUSES:
+  - No count, anywhere, in any form. Not "more below", not a dot, not a badge
+    on a door.
+  - No preview of what is in the pile. An earlier version of this comp put the
+    newest note on the home screen, readable but not actionable, hedged with
+    every guard I could think of: one card, no stack behind it, nothing to
+    press, absent without residue when the pile was empty. The owner looked at
+    it and did not want it, which is the shorter answer to the same question
+    those guards were arguing about — a home screen that shows you what is
+    waiting is a home screen that greets you with what is waiting.
+    If it ever comes back, the guards come back with it, and the moment it
+    needs to summarise, act, or persist when empty, it should be deleted rather
+    than softened.
+  - No urgency, no state, nothing red, nothing that asks.
+  - No capture. The first screen of the installed app could tempt a "quick
+    add"; the foot line states where thoughts go in instead.
+
+WHAT IT KEEPS FROM THE WORLD:
+  - The lid, minus the cross-link: the doors are right there, so the lid
+    carries only mark, wordmark and search. Search posts to the pile, where
+    results already live.
+  - Cream stock, 3px outline, sticker depth, the matching press. The doors
+    press flush like everything else you push in this world.
+  - The owner's own illustration on each door, centred, in a fixed-height slot
+    so neither door reads heavier than the other.
+
+STATE BUILT: the whole screen. There is only one now — with nothing on it that
+depends on what the pile holds, an empty pile and a full one look identical,
+which is what "stopping partway is a normal ending" looks like structurally.
+
+FONTS AND MARK: linked relatively to internal/web/static/ — open this file
+from its place in the repo. Doors are bare links; the search form is a bare
+GET so a stray submit reloads harmlessly.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<style>
+  @font-face {
+    font-family: "Recursive";
+    src: url("../../internal/web/static/recursive.woff2") format("woff2");
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: block;
+  }
+
+  :root {
+    /* Straight off the mark. */
+    --purple: #6c4da9;
+    --purple-deep: #58388a;
+    --purple-dark: #3b2560;
+    --violet: #5e23b1;   --violet-ink: #56209f;
+    --orange: #e66d0d;
+    --orange-lit: #ff8a2b;
+    --outline: #1c110b;
+    --cream: #fed6a7;          /* the tail */
+    --card: #fdecd4;           /* card stock: the tail's cream, lightened */
+    --card-deep: #f6d5ab;      /* the cards underneath it */
+    --paper: #fffbf3;          /* the raised things sat on the stock */
+    --paper-deep: #f7e9d4;     /* those things, pressed */
+    --brown: #58413d;          /* the headphones */
+    --white: #fefefe;
+
+    --line: 3px;               /* the outline weight of the mark */
+    --r: 14px;
+
+    --casual: "MONO" 0, "CASL" 1;
+    --precise: "MONO" 0, "CASL" 0;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overflow-x: clip; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--paper);
+    font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise);
+    background-color: var(--purple-deep);
+    background-image:
+      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .5) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  /* The browser's own surfaces belong to the design too. */
+  ::selection { background: var(--orange); color: var(--white); }
+  ::-webkit-scrollbar { width: 14px; }
+  ::-webkit-scrollbar-track { background: var(--purple-dark); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 8px;
+  }
+  * { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
+  :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+
+  /* Each comp state is its own full screen. */
+  .viewport { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ---------- the lid: shared, but with no cross-link ---------- */
+  /* The Lid Link exists so the pile and the chores can reach each other. On
+     the screen whose whole body is those two destinations it would be a third
+     copy of the same doors, so the lid here is only mark, wordmark, search. */
+
+  .lid {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 22px 13px;
+    background: var(--purple-dark);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand img {
+    width: 84px; height: 63px; display: block;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .3));
+  }
+  .wordmark {
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 900;
+    font-variation-settings: normal;
+    font-size: 26px;
+    letter-spacing: -.028em;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline);
+    paint-order: stroke fill;
+  }
+  .lid .spacer { flex: 1; }
+
+  .brim {
+    position: absolute; left: 0; top: 100%;
+    width: 100%; height: 30px; display: block; pointer-events: none;
+  }
+
+  .find {
+    flex: 0 1 280px; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline);
+    border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .find:focus-within { box-shadow: 0 3px 0 0 var(--outline), 0 0 0 3px var(--orange-lit); }
+  .find svg { flex: none; }
+  .find input {
+    flex: 1; min-width: 4ch; border: 0; background: transparent;
+    font: 500 14.5px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--outline); caret-color: var(--orange); padding: 0;
+  }
+  .find input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .find input:focus { outline: none; }
+
+  /* ---------- the field ---------- */
+
+  main {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    padding: 58px 22px 48px;
+  }
+
+  .homebox { width: min(720px, 100%); }
+
+  /* ---------- the two doors ---------- */
+
+  /* The two halves of what the box holds, and they are equals: one grid, two
+     identical cells, the same card stock, the same depth. A door is a place
+     to go, so it is a link — but it is a big physical thing you push, so
+     unlike the lid link it keeps the sticker's offset and presses flush like
+     everything else in this world. */
+  .doors {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+
+  .door {
+    display: flex; flex-direction: column; justify-content: center; gap: 7px;
+    min-height: 128px;
+    padding: 22px 24px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+    text-decoration: none;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .door:hover { background: var(--paper); }
+  .door:active {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 0 var(--outline), 0 10px 18px -14px rgba(0, 0, 0, .6);
+  }
+
+  /* The drawing on each door: printed on the stock, not stuck to it — no CSS
+     shadow, the art's own outline is its depth. A fixed slot height keeps the
+     two drawings the same size, which keeps the doors equals; the tilt is the
+     usual degree-and-a-bit, mirrored so neither door leads. */
+  .door .art { height: 86px; margin-bottom: 5px; display: flex; align-items: flex-end; justify-content: center; }
+  /* The pair is centred as one block, and the two lines keep a shared left
+     edge inside it: centred text would make the sub-line a caption, and the
+     door is a label rather than a poster. */
+  .door .label { align-self: center; text-align: left; display: flex; flex-direction: column; gap: 7px; }
+  .door .art img, .door .art svg { display: block; height: 100%; width: auto; }
+  .doors .door:first-child .art > * { transform: rotate(-1.6deg); }
+  .doors .door:last-child .art > * { transform: rotate(1.4deg); }
+
+  /* The door's name is the lid link's voice at a doorway's size: the
+     machine's axis, lowercase, quiet. Not a headline — the product is not
+     speaking a sentence, it is labelling a half of the box. The size is the
+     Note role's floor (21px, stepping to 23px on the phone), the same
+     documented pair the chore name already pins — no new step invented. */
+  .door .name {
+    font-size: 21px; line-height: 1.15;
+    letter-spacing: -.01em;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  /* What each half is, in the meta role the chores screen already uses for
+     exactly these words. Headphone brown: secondary type on cream. */
+  .door .what {
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+
+  /* ---------- the peek: one card left on top of the box ---------- */
+
+  /* Named once, softly, in the head style the other list screens use. "The
+     top card" is shoebox language: it says which card this is, not how many
+     sit under it. */
+  .peekhead {
+    margin: 34px 0 12px;
+    font-size: 13px; letter-spacing: .09em;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  /* The deck card's exact grammar — purple titlebar, acorn, arrival date, his
+     words on cream — minus the tray, because nothing here can be done to it.
+     The whole card is one link, and following it lands on the pile where this
+     same note is the top card with all four actions under it.
+
+     Deliberately NO cards behind it. The stack is the system's one licensed
+     way of saying "there is more", and the home screen does not say that.
+
+     It sits at a slight tilt: a card someone put down, not a widget. Hover
+     picks it up a little, which is what tapping it does. */
+  .peek {
+    display: block;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+    text-decoration: none;
+    transform: rotate(-.6deg);
+    transform-origin: 50% 20%;
+    transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  }
+  .peek:hover {
+    transform: rotate(-.6deg) translateY(-3px);
+    box-shadow: 0 8px 0 0 var(--outline), 0 22px 34px -18px rgba(0, 0, 0, .75);
+  }
+  .peek:active {
+    transform: rotate(-.6deg) translateY(5px);
+    box-shadow: 0 0 0 0 var(--outline), 0 10px 18px -14px rgba(0, 0, 0, .6);
+  }
+
+  .peek .titlebar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+    background: var(--purple);
+    color: var(--paper);
+    border-bottom: var(--line) solid var(--outline);
+    border-radius: 11px 11px 0 0;
+    font-size: 12.5px;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .09em;
+  }
+  .acorn { flex: none; }
+
+  /* His words, in his voice, at the Result role's size: on this screen the
+     note is glanced at, not decided on — the exact distinction the Result
+     role was written for. Clamped at four lines: a glimpse of a long note is
+     still a glimpse, and the rest is one tap away where the whole card is. */
+  .peek .glimpse { display: block; padding: 20px 24px 22px; }
+  .peek .glimpse span {
+    margin: 0;
+    font-size: 18px; line-height: 1.4; max-width: 46ch;
+    font-variation-settings: var(--casual), "wght" 480;
+    text-wrap: pretty;
+    display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4; overflow: hidden;
+  }
+
+  /* The product's one quiet line at the foot. The first screen of an
+     installed app is where a capture box would try to grow; this line states
+     where thoughts go in instead, and asks for nothing. */
+  .hint {
+    margin: 34px 0 0;
+    text-align: center;
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 550;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  /* ---------- comp chrome, not product ---------- */
+
+  .compnote {
+    padding: 18px 22px;
+    background: var(--purple-dark);
+    border-top: 2px dashed rgba(254, 214, 167, .5);
+    border-bottom: 2px dashed rgba(254, 214, 167, .5);
+    text-align: center;
+    font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: rgba(254, 214, 167, .8);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 1ms !important; }
+  }
+
+  /* ---------- the phone, one thumb ---------- */
+
+  @media (max-width: 620px) {
+    .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
+    .brand { gap: 8px; }
+    .brand img { width: 72px; height: 54px; }
+    .wordmark { font-size: 23px; -webkit-text-stroke-width: 1.8px; }
+    .brim { height: 22px; }
+    /* No cross-link on this lid, so the field can keep the brand's row where
+       it fits — and take its own row where it doesn't. */
+    .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
+    /* 16px so focusing the field does not make iOS zoom the page. */
+    .find input { font-size: 16px; }
+
+    main { padding: 36px 13px 32px; }
+
+    /* Still two doors side by side: their equality is the screen's one
+       statement, and a stacked pair reads as first and second. */
+    .doors { gap: 10px; }
+    .door { min-height: 118px; padding: 18px 16px; gap: 6px; }
+    /* The art steps down where the doors are ~177px wide; at 66px tall both
+       drawings still clear the padding with room to spare. */
+    .door .art { height: 66px; margin-bottom: 4px; }
+    /* The step-up: read at arm's length, in worse light. */
+    .door .name { font-size: 23px; }
+    .door .what { font-size: 12px; letter-spacing: .08em; }
+
+    .peekhead { margin-top: 28px; }
+    .peek .glimpse { padding: 18px 20px 20px; }
+    .peek .glimpse span { font-size: 18.5px; }
+    .peek .titlebar { padding: 12px 16px; font-size: 13px; }
+
+    .hint { margin-top: 26px; font-size: 12px; }
+  }
+</style>
+
+<!-- ================= home, with something on top of the pile ================= -->
+<section class="viewport">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" name="q" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3"
+            vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main>
+    <div class="homebox">
+      <!-- The two halves of what the box holds. Equals: neither leads. -->
+      <nav class="doors" aria-label="The two halves of the box">
+        <a class="door" href="#">
+          <!-- The owner's illustration: papers in a violet tray. Decorative —
+               the door's name is right below it — so empty alt. -->
+          <span class="art"><img src="assets/door-pile.png" alt="" width="512" height="383"></span>
+          <span class="label">
+            <span class="name">the pile</span>
+            <span class="what">what you said</span>
+          </span>
+        </a>
+        <a class="door" href="#">
+          <!-- Authored in the mark's language: flat fills, dark outline held
+               at 3px on screen. A broom through a violet return loop — the
+               loop comes back around toward the handle, which is what a chore
+               is. Not a list, not a tick, nothing done and nothing counted. -->
+          <span class="art"><img src="assets/door-chores.png" alt="" width="512" height="402"></span>
+          <span class="label">
+            <span class="name">the chores</span>
+            <span class="what">what comes back</span>
+          </span>
+        </a>
+      </nav>
+
+      <p class="hint">thoughts go in through the chat</p>
+    </div>
+  </main>
+</section>

@@ -10,7 +10,8 @@ the installed app to whichever one happens to be the mount path.
 
 After this:
 
-- `/` is a home screen: two doors and a peek at the newest untriaged note.
+- `/` is a home screen: two doors, and nothing that depends on what the
+  pile holds.
 - `/pile` is the deck, unchanged.
 - `/chores` is the chores screen, moved up from `/pile/chores`.
 - The configurable mount path goes away entirely.
@@ -81,33 +82,31 @@ looks like an application bug.
 
 ## The home screen
 
-Three things, and deliberately no fourth:
+Two doors, and deliberately nothing else: *the pile* and *the chores*, as
+equals, each carrying its own illustration. The shared lid keeps the mark, the
+wordmark and the search field, and drops its cross-link — the doors are the
+body of the page.
 
-1. **Two doors.** *The pile* and *the chores*, as equals. Neither is the
-   primary action; they are the two halves of what Squirrel holds.
-2. **A peek at the newest untriaged note** — its text and when it arrived,
-   readable but not actionable. Tapping it goes to `/pile`, where that same
-   note is the top card.
-3. The shared lid: mark, wordmark, search. No cross-link on this screen, since
-   both doors are on the page.
+**There is no preview of the pile.** An earlier draft put the newest note here,
+read-only and hedged about with guards. It was cut on sight: a home screen that
+shows what is waiting greets you with what is waiting, however carefully it is
+dressed. Nothing on this screen depends on what the pile holds, so a full pile
+and an empty one render identically — which is what "stopping partway is a
+normal ending" looks like when it is structural rather than a reassuring
+sentence.
 
-**The peek is read-only, and that is load-bearing.** If home could triage,
-there would be two places that do, and the two views could disagree about what
-a note is — the thing Principle 4 forbids. It also stops home growing into a
-dashboard: a surface that shows state and does nothing is hard to turn into
-one.
+That also removes the question of whether home may triage: there is nothing on
+it to triage. All writes stay on the two screens that own them, and the two
+views cannot disagree about a note because only one of them ever shows one.
 
-**No count, in any form.** Not "1 of 40", not "and more", not a dot beside a
-door. The peek shows one note because the deck shows one note, not because one
-is a number worth reporting.
-
-**The empty pile is a normal state.** Home says so in the same words the deck
-uses and keeps both doors exactly where they were. Nothing congratulates, and
-nothing suggests filling it.
+No count, in any form: not on a door, not beside it, not as a dot.
 
 The visual design is Fable's comp at `.impeccable/comps/home-screen.html`,
 which is normative for this screen the way the pile and chores comps are for
-theirs.
+theirs. The door illustrations are the owner's own, and the chores one carries
+a documented exception to two house rules — it shows grey and depicts a
+completion. That exception is recorded in the comp's notes and belongs in
+`DESIGN.md` beside the Door Art component rather than left to look like drift.
 
 ## What the code stops carrying
 
@@ -126,10 +125,10 @@ home — the convention every website has, and the cheapest possible way back.
 
 ## When the database is down
 
-When the database is unreachable, home fails the way every other screen does:
-503, the page that says Squirrel cannot reach its memory and that nothing has
-been lost. The doors are part of that page's absence rather than shown over an
-error — a door that leads to a 503 is worse than a page that says so once.
+Home reads nothing from the database, so there is nothing on it to fail. It
+renders from the templates alone and the doors work whether Postgres is
+reachable or not; the screen you walk into then says what is wrong, once, in
+the words it already uses.
 
 ## Testing
 
@@ -137,9 +136,9 @@ error — a door that leads to a 503 is worse than a page that says so once.
   shape is pinned rather than described.
 - The home screen inherits the screen-wide tests: never a count, never a
   capture box, fails visibly when the database is unreachable.
-- One test that home offers no triage control at all — no `act` field, no form
-  posting to a write route. This is the property that keeps the two views from
-  disagreeing, and it is invisible in a screenshot.
+- One test that home renders identically whether the pile is empty or full.
+  That is the property that keeps it from growing a preview by accident, and it
+  is the cheapest possible guard against the whole class of change.
 - A browser test that the worker's scope is `/` and that it controls the home
   page, replacing the current test of the same fact at `/pile`.
 - The existing browser tests move with their screens.
