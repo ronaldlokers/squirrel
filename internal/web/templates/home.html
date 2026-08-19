@@ -32,6 +32,9 @@
   </form>
   {{/* One word, and never a place you are behind. */}}
   {{if .Kept}}<p class="slotsaid" role="status">kept</p>{{end}}
+  {{/* Held by the worker, because there was no network. Not an error: the
+       words are somewhere and they go in when there is one. */}}
+  {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
   {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
 
   {{/* How is right now — right now, and not today: a day is a thing you can

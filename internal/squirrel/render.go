@@ -37,6 +37,19 @@ func NotesMessage(items []Item, more bool) Message {
 //
 // The capture rule comes first because it is the one that matters: if you
 // remember nothing else, typing a thought stores the thought.
+// screenURL is where the screen lives, or empty when nobody has said. It is a
+// package-level value rather than a parameter because the help message and the
+// evening message both want it and neither has any other reason to know about
+// configuration.
+//
+// Empty means chat says nothing about the screen. A link built from a guess is
+// a link that 404s, and a bot that confidently sends you nowhere is worse than
+// one that stays quiet.
+var screenURL string
+
+// SetScreenURL is called once at boot.
+func SetScreenURL(u string) { screenURL = u }
+
 func HelpMessage() Message {
 	return Message{Text: strings.Join([]string{
 		"Anything you type is a note. That is the default and it always wins.",
@@ -57,7 +70,7 @@ func HelpMessage() Message {
 		"nvm — undo a chore I just made from a note",
 		"",
 		"Start with a dot to store something I would otherwise read as a command.",
-	}, "\n")}
+	}, "\n") + screenLine()}
 }
 
 // choreLine is a chore as a line of a list. The words are ChoreWords', because
@@ -218,4 +231,12 @@ var MoodEmoji = map[Mood]string{
 	MoodLow:      "😔",
 	MoodFrazzled: "😵",
 	MoodWiped:    "😴",
+}
+
+// screenLine is the way in, when there is one to give.
+func screenLine() string {
+	if screenURL == "" {
+		return ""
+	}
+	return "\n\nThe same pile, to look at: " + screenURL
 }

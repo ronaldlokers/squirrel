@@ -369,6 +369,15 @@
     // is the directory it came from, which is the root — every screen. Naming
     // a scope here is how the previous version ended up claiming whichever
     // page happened to register it.
+    // Anything the worker is holding goes in when the network comes back.
+    // Both signals, because "online" fires on a network that is present but
+    // not yet working, and a page load is the other moment worth trying.
+    const flush = () => navigator.serviceWorker.ready
+      .then(reg => reg.active?.postMessage("flush"))
+      .catch(() => {});
+    addEventListener("online", flush);
+    flush();
+
     navigator.serviceWorker.register(sw)
       .catch(() => {
         // An install that fails costs the offline page and nothing else. The

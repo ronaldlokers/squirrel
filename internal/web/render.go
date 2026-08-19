@@ -54,6 +54,10 @@ type view struct {
 	// with different words, and only one of them keeps the words.
 	Kept   bool
 	NoKeep bool
+	// Held is the worker having taken the words because there was no network.
+	// A third state and not a flavour of the other two: the words are safe,
+	// which failure is not, and they are not in the pile yet, which kept is.
+	Held bool
 	// Mood is the latest reading when it still describes now, and empty
 	// otherwise. Never more than one, and never a date beside it.
 	Mood     string

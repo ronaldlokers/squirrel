@@ -782,6 +782,14 @@
   }
   /* The failure is not the success in different words. It says what is true,
      what happens next, and the words are still in the field above it. */
+  /* Held is not failure. The words are somewhere; only the pile has not seen
+     them yet. Cream rather than the warning orange, because nothing has gone
+     wrong. */
+  .slotsaid.held {
+    color: rgba(254, 214, 167, .9); text-transform: none; letter-spacing: .01em;
+    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 600;
+    max-width: 46ch;
+  }
   .slotsaid.bad {
     color: var(--orange-lit); text-transform: none; letter-spacing: .01em;
     font-size: 13.5px; font-variation-settings: var(--precise), "wght" 600;
