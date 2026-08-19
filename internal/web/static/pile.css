@@ -90,7 +90,10 @@
     padding: 11px 22px 13px;
     background: var(--purple-dark);
   }
-  .brand { display: flex; align-items: center; gap: 11px; }
+  /* On every screen but home the brand is a link back to home. It carries no
+     link decoration: the mark is the mark, and the whole lid is a place rather
+     than a control. */
+  .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
   .brand img {
     width: 84px; height: 63px; display: block;
     filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .3));
@@ -151,7 +154,64 @@
   main.scrolling { align-items: flex-start; padding-top: 62px; }
 
   .shoebox { width: min(720px, 100%); }
+  .homebox { width: min(720px, 100%); }
   .deck { position: relative; }
+
+  /* ---------- the two doors ---------- */
+
+  /* The two halves of what the box holds, and they are equals: one grid, two
+     identical cells, the same card stock, the same depth. A door is a place to
+     go, so it is a link — but it is a big physical thing you push, so unlike
+     the lid link it keeps the sticker's offset and presses flush like
+     everything else in this world. */
+  .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .door {
+    display: flex; flex-direction: column; justify-content: center; gap: 7px;
+    min-height: 128px;
+    padding: 22px 24px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+    text-decoration: none;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  /* A button hovers by deepening; a card you can walk into wants a "pick it
+     up" affordance instead. */
+  .door:hover { background: var(--paper); }
+  .door:active {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 0 var(--outline), 0 10px 18px -14px rgba(0, 0, 0, .6);
+  }
+
+  /* The drawing on each door: printed on the stock, not stuck to it — no CSS
+     shadow, the art's own outline is its depth. A fixed slot height keeps the
+     two drawings the same size, which keeps the doors equals; the tilt is the
+     usual degree-and-a-bit, mirrored so neither door leads. */
+  .door .art { height: 86px; margin-bottom: 5px; display: flex; align-items: flex-end; justify-content: center; }
+  .door .art img { display: block; height: 100%; width: auto; }
+  .doors .door:first-child .art > * { transform: rotate(-1.6deg); }
+  .doors .door:last-child .art > * { transform: rotate(1.4deg); }
+  /* The pair is centred as one block, and the two lines keep a shared left
+     edge inside it: centred text would make the sub-line a caption, and the
+     door is a label rather than a poster. */
+  .door .label { align-self: center; text-align: left; display: flex; flex-direction: column; gap: 7px; }
+
+  /* The door's name is the lid link's voice at a doorway's size: the machine's
+     axis, lowercase, quiet. The size is the Note role's floor — the same
+     documented pair the chore name pins, no new step invented. */
+  .door .name {
+    font-size: 21px; line-height: 1.15;
+    letter-spacing: -.01em;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  /* What each half is, in the meta role the chores screen already uses for
+     exactly these words. */
+  .door .what {
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
 
   /* The cards underneath: the only thing that says there is more, never how
      much more. Handled, so they do not sit square. */
@@ -691,6 +751,17 @@
 
     main { padding: 36px 13px 32px; }
     main.scrolling { padding-top: 38px; }
+
+    /* Still two doors side by side: their equality is the screen's one
+       statement, and a stacked pair reads as first and second. */
+    .doors { gap: 10px; }
+    .door { min-height: 118px; padding: 18px 16px; gap: 6px; }
+    /* The art steps down where the doors are ~177px wide; at 66px tall both
+       drawings still clear the padding with room to spare. */
+    .door .art { height: 66px; margin-bottom: 4px; }
+    /* The step-up: read at arm's length, in worse light. */
+    .door .name { font-size: 23px; }
+    .door .what { font-size: 12px; letter-spacing: .08em; }
     .note { padding: 26px 22px 10px; }
     .note p { font-size: 23px; }
     .card { min-height: 284px; }

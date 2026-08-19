@@ -4,35 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squirrel</title>
-<link rel="stylesheet" href="{{.Path}}/static/pile.css?v={{.V}}">
+<link rel="stylesheet" href="/static/pile.css?v={{.V}}">
 {{/* crossorigin="use-credentials" is load-bearing and looks like noise.
      A browser fetches a manifest with credentials *omitted* by default — even
      same-origin — so behind forward-auth it gets Authentik's redirect and a
      page of HTML instead of JSON. It cannot parse that, so it silently falls
      back to a letter tile: the installed app shows an "S". Nothing logs, and
      the icons are never even requested. */}}
-<link rel="manifest" href="{{.Path}}/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
-<link rel="apple-touch-icon" href="{{.Path}}/static/apple-touch-icon.png?v={{.V}}">
+<link rel="manifest" href="/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
 <meta name="theme-color" content="#3b2560">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Squirrel">
 </head>
 <body>
 <div class="lid">
+  {{if .Home}}
   <span class="brand">
-    <img alt="" src="{{.Path}}/static/logo.png?v={{.V}}" width="84" height="63">
+    <img alt="" src="/static/logo.png?v={{.V}}" width="84" height="63">
     <span class="wordmark">Squirrel</span>
   </span>
+  {{else}}
+  {{/* The convention every website has, and the cheapest possible way back. */}}
+  <a class="brand" href="/">
+    <img alt="" src="/static/logo.png?v={{.V}}" width="84" height="63">
+    <span class="wordmark">Squirrel</span>
+  </a>
+  {{end}}
   <span class="spacer"></span>
   {{/* The other half of the pile, and the way back from it. A chore was
        invisible until it nudged you, which is the one moment you are least
-       able to decide you never want it again. */}}
+       able to decide you never want it again.
+
+       Not on home: both doors are already the body of that page, and a third
+       copy of a door is furniture. */}}
+  {{if not .Home}}
   {{if eq .Here "chores"}}
-  <a class="lidlink" href="{{.Path}}">the pile</a>
+  <a class="lidlink" href="/pile">the pile</a>
   {{else}}
-  <a class="lidlink" href="{{.Path}}/chores">chores</a>
+  <a class="lidlink" href="/chores">chores</a>
   {{end}}
-  <form class="find" method="get" action="{{.Path}}" role="search">
+  {{end}}
+  {{/* Search posts to the deck, because that is where results live. */}}
+  <form class="find" method="get" action="/pile" role="search">
     <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
       <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
       <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
@@ -56,7 +70,7 @@
 {{with .Undo}}
 <div class="landed" role="status">
   <span class="said">{{.Said}}</span>
-  <form method="post" action="{{$.Path}}/act">
+  <form method="post" action="/pile/act">
     <input type="hidden" name="id" value="{{.ID}}">
     <input type="hidden" name="q" value="{{$.Query}}">
     <button class="undo" name="act" value="{{.State}}">PUT IT BACK</button>
@@ -65,6 +79,6 @@
 {{end}}
 {{template "content" .}}
 </main>
-<script src="{{.Path}}/static/pile.js?v={{.V}}" defer></script>
+<script src="/static/pile.js?v={{.V}}" defer></script>
 </body>
 </html>{{end}}

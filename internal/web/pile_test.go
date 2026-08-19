@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -9,6 +10,37 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+// TestTheRouteTable pins the shape of the screen rather than describing it. The
+// table is the spec's table, and a route that moves has to move here first.
+func TestTheRouteTable(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+
+	for _, route := range []string{
+		"GET /{$}",
+		"GET /pile",
+		"POST /pile/act",
+		"POST /pile/chore",
+		"GET /chores",
+		"POST /chores/act",
+		"GET /pile/chores",
+		"GET /manifest.webmanifest",
+		"GET /sw.js",
+		"GET /static/",
+	} {
+		require.Contains(t, m.routes, route, "the route table lost %s", route)
+	}
+	require.Len(t, m.routes, 10, "a route was added without being pinned here")
+}
+
+// The chores screen lived at /pile/chores for its whole life, and a bookmark
+// that dies quietly is worse than a redirect nobody notices.
+func TestTheOldChoresURLRedirects(t *testing.T) {
+	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/chores", nil)
+
+	require.Equal(t, http.StatusMovedPermanently, w.Code)
+	require.Equal(t, "/chores", w.Header().Get("Location"))
+}
 
 func TestPileShowsTheNewestOpenNote(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
@@ -126,8 +158,8 @@ func TestSearchEscapesTheQuery(t *testing.T) {
 func TestPileWaitsVisiblyForItsOwner(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, &fakeStore{}, Options{
-		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 0 },
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner:          func() int64 { return 0 },
 	}))
 
 	w := m.call(t, "GET", "/pile", nil)
@@ -137,6 +169,6 @@ func TestPileWaitsVisiblyForItsOwner(t *testing.T) {
 
 func TestMountRefusesWithoutAnOwner(t *testing.T) {
 	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
-		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
 	}))
 }

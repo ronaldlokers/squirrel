@@ -13,13 +13,13 @@
          phone, which has no space bar, and with scripting off, which has no
          key handler — pile.js presses this rather than knowing where it
          points. */}}
-    <a class="later" id="later" href="{{.Path}}?after={{.Note.ID}}">LATER <span aria-hidden="true">&rarr;</span></a>
+    <a class="later" id="later" href="/pile?after={{.Note.ID}}">LATER <span aria-hidden="true">&rarr;</span></a>
   </div>
   <div class="note"><p id="noteText">{{.Note.Text}}</p>
     <span class="stamp" id="stamp"><span class="dot"></span><span id="stampText"></span></span>
   </div>
   <div class="tray">
-    <form class="row actions" id="actions" method="post" action="{{.Path}}/act">
+    <form class="row actions" id="actions" method="post" action="/pile/act">
       <input type="hidden" name="id" value="{{.Note.ID}}">
       {{/* Where you were. A transition made three notes down comes back to
            the same place rather than to the top of the pile. */}}

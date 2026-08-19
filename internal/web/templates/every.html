@@ -16,10 +16,10 @@
      leaves the same thing on the card that the comp drew. */}}
 {{define "everyChips"}}<div class="row intervals">
   <span class="lead">HOW OFTEN?</span>
-  <button class="chip" name="every" value="every day" data-act="chore" formaction="{{.Path}}/chore">every day <span class="key" aria-hidden="true">1</span></button>
-  <button class="chip" name="every" value="every week" data-act="chore" formaction="{{.Path}}/chore">every week <span class="key" aria-hidden="true">2</span></button>
-  <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="{{.Path}}/chore">every 2 weeks <span class="key" aria-hidden="true">3</span></button>
-  <button class="chip" name="every" value="every month" data-act="chore" formaction="{{.Path}}/chore">every month <span class="key" aria-hidden="true">4</span></button>
+  <button class="chip" name="every" value="every day" data-act="chore" formaction="/pile/chore">every day <span class="key" aria-hidden="true">1</span></button>
+  <button class="chip" name="every" value="every week" data-act="chore" formaction="/pile/chore">every week <span class="key" aria-hidden="true">2</span></button>
+  <button class="chip" name="every" value="every 2 weeks" data-act="chore" formaction="/pile/chore">every 2 weeks <span class="key" aria-hidden="true">3</span></button>
+  <button class="chip" name="every" value="every month" data-act="chore" formaction="/pile/chore">every month <span class="key" aria-hidden="true">4</span></button>
   {{/* The way back out, and the one control here that is not a submit: a
        half-made chore must not be postable. It is rendered hidden because
        without pile.js there is nothing for it to close — the disclosure's own

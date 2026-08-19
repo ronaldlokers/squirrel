@@ -196,7 +196,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	var webOwner atomic.Int64
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
-			Path:           config.WebPath,
 			IdentityHeader: config.WebIdentityHeader,
 			Identity:       config.WebIdentity,
 			Owner:          webOwner.Load,
@@ -204,7 +203,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			cancel()
 			return nil, fmt.Errorf("mounting the pile: %w", err)
 		}
-		slog.Info("the pile is mounted", "path", config.WebPath)
+		slog.Info("the screen is mounted", "at", "/")
 	} else {
 		// Same precedent as the presence warning above: a mis-wired
 		// WEB_IDENTITY otherwise produces no log line at all, and a bot with

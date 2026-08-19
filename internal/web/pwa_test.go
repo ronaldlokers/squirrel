@@ -17,16 +17,19 @@ import (
 // leaves an installed app showing a letter tile and saying nothing about why.
 func TestTheManifestDoesNotNeedAnIdentity(t *testing.T) {
 	m := mounted(t, &fakeStore{})
-	r := httptest.NewRequest("GET", "/pile/manifest.webmanifest", nil)
+	r := httptest.NewRequest("GET", "/manifest.webmanifest", nil)
 	w := httptest.NewRecorder()
-	m.routes["GET /pile/manifest.webmanifest"](w, r)
+	m.routes["GET /manifest.webmanifest"](w, r)
 
 	require.Equal(t, http.StatusOK, w.Code, "no header, still answered")
 	require.Contains(t, w.Body.String(), "Squirrel")
 }
 
+// The installed app opens at home and its worker scopes to the whole screen.
+// start_url was /pile until v0.10.0; an app installed before that still opens
+// on the deck, which still serves, until the manifest is refetched.
 func TestTheManifestKnowsWhereTheScreenIs(t *testing.T) {
-	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/manifest.webmanifest", nil)
+	w := mounted(t, &fakeStore{}).call(t, "GET", "/manifest.webmanifest", nil)
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Contains(t, w.Header().Get("Content-Type"), "manifest+json")
@@ -40,32 +43,33 @@ func TestTheManifestKnowsWhereTheScreenIs(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &m))
 	require.Equal(t, "Squirrel", m.Name)
-	require.Equal(t, "/pile", m.StartURL)
-	require.Equal(t, "/pile", m.Scope)
+	require.Equal(t, "/", m.StartURL)
+	require.Equal(t, "/", m.Scope)
 	require.Equal(t, "standalone", m.Display)
 	require.NotEmpty(t, m.Icons)
 	for _, icon := range m.Icons {
-		require.True(t, strings.HasPrefix(icon.Src, "/pile/static/"), icon.Src)
+		require.True(t, strings.HasPrefix(icon.Src, "/static/"), icon.Src)
 	}
 }
 
-// A worker served from /pile/static/ would only ever control /pile/static/.
-// Serving it from the screen's own path is what lets it answer for the screen.
+// A worker served from /static/ would only ever control /static/. Serving it
+// from the root is what lets it answer for every screen — and, because the root
+// is where it comes from, it needs no header to be allowed to.
 func TestTheWorkerIsServedWhereItCanControlTheScreen(t *testing.T) {
-	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/sw.js", nil)
+	w := mounted(t, &fakeStore{}).call(t, "GET", "/sw.js", nil)
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Contains(t, w.Header().Get("Content-Type"), "javascript")
 	require.Contains(t, w.Body.String(), "addEventListener")
-	require.Equal(t, "/pile", w.Header().Get("Service-Worker-Allowed"),
-		"without this the worker controls everything under the screen except the screen")
+	require.Empty(t, w.Header().Get("Service-Worker-Allowed"),
+		"a worker from /sw.js already scopes to /; the header widened a scope that no longer needs widening")
 }
 
 // The pile is state. A cached page would show notes that have already been
 // triaged, which is the two views disagreeing with each other — so the worker
 // caches what cannot go stale and says so when it cannot reach the rest.
 func TestTheWorkerNeverCachesThePileItself(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/pile/sw.js", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/sw.js", nil).Body.String()
 
 	require.Contains(t, body, `url.pathname.includes("/static/")`,
 		"only assets are ever put in the cache")
@@ -77,7 +81,7 @@ func TestThePageOffersItselfForInstalling(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
 
-	require.Contains(t, body, `rel="manifest" href="/pile/manifest.webmanifest`)
+	require.Contains(t, body, `rel="manifest" href="/manifest.webmanifest`)
 	require.Contains(t, body, `name="theme-color"`)
 	require.Contains(t, body, `rel="apple-touch-icon"`)
 }
@@ -91,8 +95,8 @@ func TestTheIconsAreEmbedded(t *testing.T) {
 }
 
 func TestTheWorkerIsNotBehindTheYearLongCache(t *testing.T) {
-	h := swHandler(Options{Path: "/pile"})
-	r := httptest.NewRequest("GET", "/pile/sw.js", nil)
+	h := swHandler()
+	r := httptest.NewRequest("GET", "/sw.js", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 

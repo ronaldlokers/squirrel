@@ -268,10 +268,11 @@
   // not need to be told where the screen is mounted.
   if ("serviceWorker" in navigator && document.currentScript) {
     const sw = new URL("../sw.js", document.currentScript.src);
-    // The screen is {path}, not {path}/ — a scope with the trailing slash
-    // controls everything under the screen except the screen.
-    const scope = sw.pathname.replace(/\/sw\.js$/, "");
-    navigator.serviceWorker.register(sw, { scope })
+    // No scope option. The worker is served from /sw.js, so its default scope
+    // is the directory it came from, which is the root — every screen. Naming
+    // a scope here is how the previous version ended up claiming whichever
+    // page happened to register it.
+    navigator.serviceWorker.register(sw)
       .catch(() => {
         // An install that fails costs the offline page and nothing else. The
         // screen is a network thing; this was always the extra.

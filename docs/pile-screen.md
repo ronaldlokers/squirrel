@@ -4,18 +4,51 @@ The screen at `squirrel.ronaldlokers.nl` reads and triages the pile: one note at
 a time, the four transitions, undo, and search across every state. It never
 creates an item, and it never shows a count.
 
-Squirrel's half of this is three environment variables. The other half —
+Squirrel's half of this is two environment variables. The other half —
 Authentik and Traefik — is infrastructure, lives in
 [ronaldlokers/homelab](https://github.com/ronaldlokers/homelab), and is written
 down here because no test covers it.
+
+## The route table
+
+| URL | What it is | Who may reach it from outside |
+| --- | --- | --- |
+| `/` | home: two doors and nothing that depends on what the pile holds | LAN or tailnet, then Authentik |
+| `/pile` | the deck | LAN or tailnet, then Authentik |
+| `/pile/act`, `/pile/chore` | the deck's writes | LAN or tailnet, then Authentik |
+| `/chores` | what comes back | LAN or tailnet, then Authentik |
+| `/chores/act` | a chore's writes | LAN or tailnet, then Authentik |
+| `/pile/chores` | **301 to `/chores`** | LAN or tailnet, then Authentik |
+| `/static/…` | stylesheet, script, fonts, mark, icons, door art | LAN or tailnet, no identity |
+| `/manifest.webmanifest` | the manifest | LAN or tailnet, no identity |
+| `/sw.js` | the service worker | LAN or tailnet, no identity |
+| `/hooks/home` | presence webhook | LAN or tailnet, its own token |
+| `/transports/campfire` | Campfire's webhook | in-cluster; from outside, Authentik |
+| `/healthz` | liveness and readiness | in-cluster; from outside, Authentik |
+
+The assets, the manifest and the worker answer without an identity because a
+browser fetches all three without cookies — the manifest from the page, the
+icons and the worker from the browser process. Anything that can read a note
+still requires one.
+
+`/` is registered as Go's `GET /{$}`, which matches that path and nothing under
+it. A bare `/` would be the catch-all, and every typo would arrive looking like
+a working page.
+
+`/pile/chores` redirects rather than 404s: it is the URL the chores screen had
+for its whole life, and a bookmark that dies quietly is worse than a redirect
+nobody notices.
+
+There is no configurable mount path. `WEB_PATH` existed through v0.9.x, was
+never set to anything but its default, and cost a prefix on every URL in every
+template plus a header to widen the worker's scope by one character.
 
 ## Configuration
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `WEB_IDENTITY` | *(empty)* | The one identity that may read the pile. **Empty leaves the screen unmounted** — the route does not exist, and `GET /pile` is an ordinary 404. |
+| `WEB_IDENTITY` | *(empty)* | The one identity that may read the pile. **Empty leaves the screen unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
 | `WEB_IDENTITY_HEADER` | `X-Authentik-Username` | The header the forward-auth middleware fills. |
-| `WEB_PATH` | `/pile` | Where the screen is mounted. Its sub-routes (`/pile/act`, `/pile/chore`, `/pile/static/`) hang off it. |
 
 The comparison against `WEB_IDENTITY` is exact — no trimming, no case folding.
 Two identities that differ by a space are two identities.
@@ -89,9 +122,25 @@ default; if a middleware is ever added that rewrites it, every write on this
 screen turns into a 403 and the log line is
 `refused a cross-site write`.
 
+## Home
+
+`/` is two doors — *the pile* and *the chores* — and nothing else. It reads
+nothing: the handler takes no store, so a full pile and an empty one render the
+same bytes, and the page answers even when Postgres does not.
+
+That is the mechanism rather than a policy. A home screen that shows what is
+waiting greets you with what is waiting, however carefully it is dressed, and a
+handler with no way to ask cannot start showing it by accident. It also settles
+whether home may triage: there is nothing on it to triage, so the screen and the
+chat can never disagree about a note.
+
+The lid keeps the mark, the wordmark and the search field, and drops its
+cross-link — both doors are already on the page. Everywhere else the mark is a
+link back here.
+
 ## Chores
 
-`/pile/chores` is the other half of what Squirrel holds. A chore used to be
+`/chores` is the other half of what Squirrel holds. A chore used to be
 invisible: it appeared only when it nudged you, which is the one moment you are
 least able to decide you never want it again.
 
@@ -158,21 +207,24 @@ the mark come from the cache, and everything else goes to the network. With no
 network it answers with a page that says so and points out that nothing has
 been lost, since capture was never the screen's job.
 
-**The worker is served from `{WEB_PATH}/sw.js`, not from `/static/`.** A
-worker's scope is the directory it came from, and it needs to answer for the
-screen itself. That also needs the `Service-Worker-Allowed` header the handler
-sets: without it the worker installs, reports a healthy-looking scope of
-`{WEB_PATH}/`, and never controls `{WEB_PATH}` — the one URL you actually open.
+**The worker is served from `/sw.js`, not from `/static/sw.js`.** A worker's
+scope is the directory it came from, so one served out of `/static/` could only
+ever answer for the assets — the one thing it does not need to intercept. From
+the root it scopes to `/` and controls every screen, and it takes no
+`Service-Worker-Allowed` header to be allowed to: the header exists to widen a
+scope, and this one is already as wide as it goes. `pile.js` registers it with
+no `scope` option for the same reason — naming one is how a previous version
+ended up claiming whichever page happened to register it.
 
-**It is not behind squirrel's own identity check**, though Traefik's
-forward-auth still stands in front of it like everything else under
-`{WEB_PATH}`. The distinction matters when it fails: a browser registering a
-worker sends the session cookie, so an authenticated visit fetches it normally,
-but the file itself contains no notes — only which files to keep and what to say
+**It is not behind squirrel's own identity check**, and at the edge it sits with
+the assets rather than with the screens. A browser registering a worker does
+send the session cookie, so an authenticated visit would fetch it either way;
+the file itself contains no notes — only which files to keep and what to say
 when the network is gone.
 
-If a session has expired, registration gets the login redirect rather than a
-worker, and the page carries on working exactly as it did before there was one.
+**The installed app survived the move to the root.** Its `start_url` was `/pile`
+before v0.10.0, which still serves the deck; the manifest names `/` from its
+next fetch onward, so the app opens at home after that. Nobody had to reinstall.
 
 ## Reading it without seeing it
 

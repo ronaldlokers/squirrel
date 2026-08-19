@@ -58,8 +58,8 @@ func screen(t *testing.T, f *fakeStore) *httptest.Server {
 
 	m := &serveMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
-		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 },
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner:          func() int64 { return 1 },
 	}))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -220,16 +220,20 @@ func TestBrowserSkipIsALinkTheKeyPresses(t *testing.T) {
 func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
 	c, srv := open(t, aPile())
 
-	require.Equal(t, "/pile", c.eval(t, `
+	// Served from /sw.js, so it scopes to the root and controls every screen —
+	// including home, which is the URL an installed app opens. This needed a
+	// Service-Worker-Allowed header when the screen was mounted under a path,
+	// and needs none now.
+	require.Equal(t, "/", c.eval(t, `
 		const reg = await navigator.serviceWorker.ready;
 		return new URL(reg.scope).pathname;`),
-		"a scope with the trailing slash would control everything except the screen")
+		"a worker that does not scope to / controls everything except the screens")
 
 	// The second visit is the one that matters. On the first, the page's assets
 	// are already on their way before the worker takes control, so nothing goes
 	// through it and its cache is legitimately empty — asserting on that load
 	// was testing how quickly a worker installs rather than what it does.
-	c.navigate(t, srv.URL+"/pile")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
 	c.until(t, "an asset to be cached", `(await caches.keys()).length > 0`)
 
@@ -249,7 +253,7 @@ func TestBrowserTheChorePickerReplacesTheRow(t *testing.T) {
 			Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
 	}}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/pile/chores")
+	c.navigate(t, srv.URL+"/chores")
 
 	require.Equal(t, "flex", c.eval(t, `return getComputedStyle(document.querySelector(".abtn.did")).display`))
 	require.Equal(t, "every 2 weeks", c.eval(t, `return document.querySelector(".chip.current").textContent`),

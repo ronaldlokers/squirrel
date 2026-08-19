@@ -187,7 +187,18 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	best := ""
 	for pattern := range m.routes {
 		wantMethod, path, _ := strings.Cut(pattern, " ")
-		if wantMethod != method || !strings.HasPrefix(target, path) {
+		if wantMethod != method {
+			continue
+		}
+		// `{$}` is Go's "this path and nothing under it". Without honouring it
+		// here, "/" would answer for every URL on the screen and the home
+		// screen's tests would pass for the wrong reason.
+		if exact, ok := strings.CutSuffix(path, "{$}"); ok {
+			asked, _, _ := strings.Cut(target, "?")
+			if asked != exact {
+				continue
+			}
+		} else if !strings.HasPrefix(target, path) {
 			continue
 		}
 		if len(pattern) > len(best) {
@@ -220,8 +231,8 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 	t.Helper()
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		Path: "/pile", IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 },
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner:          func() int64 { return 1 },
 	}))
 	return m
 }

@@ -73,8 +73,6 @@ type Config struct {
 	// from the Authentik outpost. Squirrel writes no authentication code and
 	// holds no session; it compares one header to one configured value.
 	WebIdentityHeader string
-	// WebPath is where the screen is mounted.
-	WebPath string
 }
 
 var knownTransports = map[string]bool{"campfire": true}
@@ -251,7 +249,6 @@ func LoadConfig(env map[string]string) (Config, error) {
 
 		WebIdentity:       env["WEB_IDENTITY"],
 		WebIdentityHeader: optional(env, "WEB_IDENTITY_HEADER", "X-Authentik-Username"),
-		WebPath:           optional(env, "WEB_PATH", "/pile"),
 	}
 
 	if slicesContains(transports, "campfire") {

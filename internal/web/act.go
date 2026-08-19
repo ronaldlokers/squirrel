@@ -34,7 +34,7 @@ const intervalSentinel = "chore-name-placeholder"
 // The undo hint travels in the query string rather than a session, because
 // this binary has no sessions and the screen is stateless by construction.
 func back(w http.ResponseWriter, r *http.Request, opts Options, undo url.Values) {
-	target := opts.Path
+	target := "/pile"
 	if q := strings.TrimSpace(r.FormValue("q")); q != "" {
 		undo.Set("q", q)
 	}

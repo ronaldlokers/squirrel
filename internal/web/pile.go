@@ -27,25 +27,34 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.Owner == nil {
 		return fmt.Errorf("refusing to mount the pile: no owner")
 	}
-	m.Get(opts.Path, guard(opts, pileHandler(s, opts)))
+	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
+	// then answer for every URL nobody else claimed — including the typos, which
+	// would arrive looking like a working page.
+	m.Get("/{$}", guard(opts, homeHandler()))
+	m.Get("/pile", guard(opts, pileHandler(s, opts)))
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
-	m.Post(opts.Path+"/act", guard(opts, sameOrigin(actHandler(s, opts))))
-	m.Post(opts.Path+"/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
-	m.Get(opts.Path+"/chores", guard(opts, choresHandler(s, opts)))
-	m.Post(opts.Path+"/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
+	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
+	m.Get("/chores", guard(opts, choresHandler(s, opts)))
+	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	// The chores screen lived here for its whole life. A bookmark that dies
+	// quietly is worse than a redirect nobody notices.
+	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/chores", http.StatusMovedPermanently)
+	}))
 	// Outside the guard, like the worker below and for the same reason: a
 	// browser fetches a manifest without the cookies that carry the identity,
 	// and one that answers 403 leaves an installed app with no icon and no
 	// explanation. It names the app and lists four PNGs — there is nothing in
 	// it to protect.
-	m.Get(opts.Path+"/manifest.webmanifest", manifestHandler(opts))
+	m.Get("/manifest.webmanifest", manifestHandler())
 	// Not behind the guard: a browser fetches the worker without the cookies
 	// that carry the identity, and a worker that 302s to a login page is a
 	// worker that never installs. It contains no notes — only which files to
 	// keep and what to say when the network is gone.
-	m.Get(opts.Path+"/sw.js", swHandler(opts))
-	m.Get(opts.Path+"/static/", staticHandler(opts))
+	m.Get("/sw.js", swHandler())
+	m.Get("/static/", staticHandler())
 	return nil
 }
 
@@ -70,7 +79,7 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		v := view{Path: opts.Path, More: more, Undo: undo, After: after}
+		v := view{More: more, Undo: undo, After: after}
 		if len(items) == 0 {
 			// Nothing older is not an empty pile. Everything skipped past is
 			// still open, and a page that said "nothing in the pile" here
@@ -99,7 +108,7 @@ func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, p
 		fail(w, err)
 		return
 	}
-	v := view{Path: opts.Path, Query: q, More: more, Undo: undo}
+	v := view{Query: q, More: more, Undo: undo}
 	for _, it := range items {
 		v.Results = append(v.Results, toView(it))
 	}
