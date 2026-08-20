@@ -54,11 +54,24 @@ That is what this release changed.
 
 ---
 
-## Next: the coach
+## The coach — all eight phases shipped
 
-Chosen as the next body of work over the personalisation half, on the grounds
-that durations and learned timing are data-starved until the product has been
-used for a month.
+Chosen over the personalisation half on the grounds that durations and learned
+timing are data-starved until the product has been used for a month. Built A
+through H in one run on 20 August 2026; every phase is a merged pull request
+with its own argument written out.
+
+**What it actually is, in one paragraph.** An acorn on every screen opens a
+conversation about what is on that screen. It can hand you one thing and say
+why, break something into steps you are shown one at a time, take five things
+at once and answer with one, separate a brain dump into the things it was, do
+six things on your behalf, and ask before doing four more. Once a day, when a
+chore is already due and already inside its window, it may decide not to
+mention it.
+
+**What did not change.** Capture. No model runs on the path a thought arrives
+through, and none ever will. Nothing rewrites your words. Nothing counts.
+Nothing deletes. A buzz still means one thing.
 
 **21 decisions are settled** — see the coach proposal for each argued in full.
 The load-bearing ones:
@@ -97,9 +110,21 @@ product whose value is that it works.
 | **G** | Write tools and the confirmation policy. Six run, four ask, three are refused. | shipped |
 | **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* | shipped |
 
-**Ready:** the API key is stored (SOPS + vault, project-scoped, spend limit set),
-and the model IDs are verified against the live API: `gpt-5.6-luna` for routine
-work, `gpt-5.6-terra` for escalation.
+**Live configuration:** the API key is stored (SOPS + vault, project-scoped,
+spend limit set) and already wired into the base Deployment as an optional
+`secretKeyRef`, so **the coach turns itself on the moment a release carrying it
+is deployed** — `gpt-5.6-luna` for routine work, `gpt-5.6-terra` for escalation,
+under a €10/month in-process ceiling with the provider's own hard limit behind
+it. With the key removed it is `NoCoach{}` and the product is exactly what it
+was in v0.13.0.
+
+**Seven deviations from the proposal, each recorded where it happened:** C
+shipped with its box connected rather than deterministic-only; D shipped five
+read tools rather than six, and its cache with no invalidation hooks at all; E
+is synchronous rather than paint-then-replace; F runs on a press rather than on
+capture, and on the screen only; G answered the open question about pending
+proposals by making them unstorable; H found that two of the four rules it was
+told bound the model do not exist.
 
 ---
 
