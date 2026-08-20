@@ -54,8 +54,12 @@ var pages = map[string]*template.Template{
 }
 
 type noteView struct {
-	ID        int64
-	Text      string
+	ID   int64
+	Text string
+	// Photo is the note's own picture, or empty. The pile renders it above the
+	// words, because a photograph of a letter is the note and the words beside
+	// it are the caption.
+	Photo     string
 	When      string
 	State     string
 	StateWord string
@@ -105,6 +109,9 @@ type view struct {
 	// Anyway is the capacity gate lifted for this render, from the address bar
 	// and stored nowhere.
 	Anyway bool
+	// Camera is whether a photograph can be kept at all. False draws no
+	// camera: a control that cannot work is worse than one never drawn.
+	Camera bool
 	// PushKey is the VAPID public key, or empty when pushing is not
 	// configured. The script offers to subscribe only when there is one.
 	PushKey string
@@ -368,8 +375,16 @@ var stateWords = map[squirrel.ItemState]string{
 }
 
 func toView(it squirrel.Item) noteView {
+	photo := ""
+	if it.PhotoName != "" {
+		// By the note's id, never by the file's name: the name is the only
+		// string here that becomes a path, and a URL is a place a stranger can
+		// type. The row is what says which file belongs to you.
+		photo = "/photo/" + strconv.FormatInt(it.ID, 10)
+	}
 	return noteView{
 		ID:        it.ID,
+		Photo:     photo,
 		Text:      it.RawText,
 		When:      strings.ToUpper(it.ReceivedAt.Local().Format("2 January")),
 		State:     string(it.State),
@@ -383,6 +398,7 @@ func toView(it squirrel.Item) noteView {
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
+	v.Camera = opts.Photos != nil
 	v.Path = r.URL.Path
 	render(w, name, v)
 }

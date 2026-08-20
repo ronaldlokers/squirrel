@@ -146,6 +146,8 @@ func (d *Drain) one(ctx context.Context, name string) Outcome {
 		RawText:        capture.Text,
 		Payload:        capture.Payload,
 		ReceivedAt:     capture.ReceivedAt,
+		PhotoName:      capture.PhotoName,
+		PhotoType:      capture.PhotoType,
 	}
 	inserted, err := d.opts.Store.InsertItem(ctx, item)
 	if err != nil {

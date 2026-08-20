@@ -1826,3 +1826,27 @@
   }
   .aday .saidwhat { margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .aday .saidwhat img { width: 44px; height: auto; display: block; }
+
+  /* The camera in the slot. Same height as the words beside it and quieter
+     than the button: photographing is the alternative to typing, not the
+     headline. */
+  .camera {
+    flex: none; display: grid; place-items: center;
+    width: 44px; height: 44px; cursor: pointer;
+    border-radius: 999px;
+    transition: background-color 90ms ease-out;
+  }
+  .camera:hover { background: var(--paper-deep); }
+  .camera:focus-within { outline: 3px solid var(--orange-lit); outline-offset: 1px; }
+  /* The input cannot be styled, so it is the label that is the control. */
+  .camera input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  /* The photograph on a note. Above the words, because when there is one it is
+     the note and the words are the caption. Bounded so a portrait photo cannot
+     push the actions off a phone screen. */
+  .photo { margin: 0 0 10px; }
+  .photo img {
+    display: block; width: 100%; max-height: 46vh; object-fit: contain;
+    background: var(--card-deep);
+    border: var(--line) solid var(--outline); border-radius: 10px;
+  }

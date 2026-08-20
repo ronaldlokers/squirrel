@@ -40,6 +40,10 @@ type Options struct {
 	// means "not yet", and the screen says the same thing it says for any
 	// other unreachable database.
 	Owner func() int64
+	// Photos is where a photograph is kept, or nil. Nil means the camera is
+	// never offered — a control that cannot work is worse than one that was
+	// never drawn.
+	Photos Photos
 	// Spool is where a capture is made durable before anything says it was
 	// kept. Nil is refused at mount: a screen that captures without one is the
 	// gap this exists to close.

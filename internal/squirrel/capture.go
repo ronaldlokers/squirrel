@@ -26,6 +26,13 @@ type Capture struct {
 	// Payload is the original message bytes, untouched and never
 	// re-marshalled, for anything not worth a column.
 	Payload json.RawMessage `json:"payload"`
+	// PhotoName and PhotoType point at a photograph already on disk, or are
+	// empty. The bytes are written and fsynced before this capture is, so a
+	// spool entry never references a file that is not there — and an entry
+	// that failed to write leaves an unreferenced file, which is litter rather
+	// than loss.
+	PhotoName string `json:"photoName,omitempty"`
+	PhotoType string `json:"photoType,omitempty"`
 }
 
 type Outcome string

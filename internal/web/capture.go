@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -54,14 +55,38 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
-		if err := r.ParseForm(); err != nil {
+		// A photograph arrives as multipart; words alone do not. Parsing the
+		// multipart form handles both, and the memory bound is what keeps a
+		// large upload from being held in RAM before the size check below sees
+		// it.
+		if err := r.ParseMultipartForm(1 << 20); err != nil && err != http.ErrNotMultipart {
 			backToHome(w, r, "", true)
 			return
+		}
+		if r.MultipartForm != nil {
+			defer func() { _ = r.MultipartForm.RemoveAll() }()
 		}
 		// Verbatim, like every other capture in this system: never trimmed of
 		// its meaning, only of the whitespace a keyboard adds at the ends.
 		text := strings.TrimSpace(r.FormValue("text"))
-		if text == "" {
+
+		// The photograph goes to disk before the capture that references it,
+		// and is fsynced there. So a spool entry never points at a file that
+		// is not on the volume; the other order would give a note that renders
+		// a broken picture, which is a worse thing to find than a missing one.
+		//
+		// An entry that fails to write after the bytes landed leaves a file
+		// nothing references — litter on a volume, not a lost thought.
+		photo, kind, err := keepPhoto(r, opts)
+		if err != nil {
+			backToHome(w, r, text, true)
+			return
+		}
+
+		// Nothing said and nothing photographed is nothing to keep. A
+		// photograph on its own is a capture — that is most of the point of
+		// having one — so it is only the pair being empty that does nothing.
+		if text == "" && photo == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -81,6 +106,8 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			Text:       text,
 			Payload:    []byte(squirrel.ScreenCapture),
 			ReceivedAt: time.Now(),
+			PhotoName:  photo,
+			PhotoType:  kind,
 		}); err != nil {
 			// The words go back to the page rather than into a log. A capture
 			// box that clears on failure is a capture box that eats thoughts.
@@ -107,4 +134,36 @@ func backToHome(w http.ResponseWriter, r *http.Request, text string, failed bool
 		q.Set("said", text)
 	}
 	http.Redirect(w, r, "/?"+q.Encode(), http.StatusSeeOther)
+}
+
+// keepPhoto stores the photograph on the request, if there is one.
+//
+// No photograph is the ordinary case and is not an error. A photograph the
+// store will not keep — the wrong kind, too big, empty — is an error, and the
+// words come back with it rather than the capture quietly losing the picture
+// and saying it was kept.
+func keepPhoto(r *http.Request, opts Options) (name, kind string, err error) {
+	if opts.Photos == nil || r.MultipartForm == nil {
+		return "", "", nil
+	}
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		// No file part at all: words only, which is most captures.
+		return "", "", nil
+	}
+	defer file.Close()
+
+	// What the browser said it is, checked against the handful this keeps.
+	// The type stored is the one from that list rather than the browser's own
+	// string, so nothing it claimed is ever handed back as a content type.
+	declared := header.Header.Get("Content-Type")
+	if _, ok := squirrel.KnownKind(declared); !ok {
+		return "", "", fmt.Errorf("not a photograph this keeps: %q", declared)
+	}
+
+	name, err = opts.Photos.Keep(file, declared)
+	if err != nil {
+		return "", "", err
+	}
+	return name, squirrel.PhotoKind(declared), nil
 }

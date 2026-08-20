@@ -84,7 +84,7 @@ func (s *Store) HoldItem(ctx context.Context, personID, itemID int64, state Item
 func (s *Store) HeldItems(ctx context.Context, personID int64, limit int) ([]HeldItem, bool, error) {
 	rows, err := s.pool.Query(ctx, `
 		select id, raw_text, state, coalesce(held_because, ''), kind from items
-		 where person_id = $1 and raw_text <> ''
+		 where person_id = $1 and has_content
 		   and state in ('waiting', 'blocked', 'someday')
 		 order by state_at desc nulls last, id desc
 		 limit $2`, personID, limit+1)

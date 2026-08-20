@@ -65,6 +65,11 @@ type Item struct {
 	// column default, which is `note`: capture does not decide what a thought
 	// turns out to be.
 	Kind ItemKind
+	// PhotoName and PhotoType are the photograph this note carries, or empty.
+	// A note has at most one: a note that can carry five is an album, and an
+	// album is a thing you organise rather than glance at.
+	PhotoName string
+	PhotoType string
 }
 
 // InsertItemReturningID is InsertItem for the one caller that has to point at
@@ -77,14 +82,16 @@ func (s *Store) InsertItemReturningID(ctx context.Context, i Item) (int64, error
 	const q = `
 		insert into items (
 			transport, external_id, conversation_id, sender_id,
-			person_id, raw_text, payload, received_at
-		) values ($1, $2, $3, $4, $5, $6, $7, $8)
+			person_id, raw_text, payload, received_at,
+			attachment_path, attachment_type
+		) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		returning id`
 
 	var id int64
 	if err := s.pool.QueryRow(ctx, q,
 		i.Transport, i.ExternalID, i.ConversationID, i.SenderID,
 		i.PersonID, i.RawText, []byte(i.Payload), i.ReceivedAt,
+		nilIfEmpty(i.PhotoName), nilIfEmpty(i.PhotoType),
 	).Scan(&id); err != nil {
 		return 0, fmt.Errorf("inserting item: %w", err)
 	}
@@ -104,16 +111,28 @@ func (s *Store) InsertItem(ctx context.Context, i Item) (bool, error) {
 	const q = `
 		insert into items (
 			transport, external_id, conversation_id, sender_id,
-			person_id, raw_text, payload, received_at
-		) values ($1, $2, $3, $4, $5, $6, $7, $8)
+			person_id, raw_text, payload, received_at,
+			attachment_path, attachment_type
+		) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		on conflict (transport, external_id) where external_id is not null
 		do nothing`
 
 	tag, err := s.pool.Exec(ctx, q,
 		i.Transport, i.ExternalID, i.ConversationID, i.SenderID,
-		i.PersonID, i.RawText, []byte(i.Payload), i.ReceivedAt)
+		i.PersonID, i.RawText, []byte(i.Payload), i.ReceivedAt,
+		nilIfEmpty(i.PhotoName), nilIfEmpty(i.PhotoType))
 	if err != nil {
 		return false, err
 	}
 	return tag.RowsAffected() > 0, nil
+}
+
+// nilIfEmpty writes an absent photograph as null rather than as an empty
+// string, so has_content's `attachment_path is not null` means what it says
+// and a row with "" in it cannot pretend to hold a picture.
+func nilIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
