@@ -171,20 +171,27 @@
     <textarea name="text" rows="1" placeholder="tell me a thing"
       aria-label="Tell Squirrel a thing">{{.Said}}</textarea>
     {{if .Camera}}
-    {{/* The camera directly rather than a file picker: the moment you want
-         this is the moment you are stood in front of a letter holding a phone.
-         A browser without a camera falls back to picking a file on its own,
-         which is the desktop case and needs nothing said about it.
+    {{/* No `capture` attribute, and that is the whole of the second bug here.
+         It reads like "prefer the camera" and it is not: on a phone it removes
+         every other source, so the letter you photographed this morning and
+         the screenshot somebody sent you become unreachable. Without it the
+         browser offers its own chooser with the camera in it, which is one tap
+         for the case the proposal was written around and the only tap there is
+         for the case it forgot.
+
+         It also stops the full camera app being launched over the top of an
+         installed app, which is what was losing the photograph — see the
+         stash in pile.js.
 
          A label rather than a button, because a file input cannot be styled
          and a hidden input with a label is how everyone does this. */}}
-    <label class="camera" title="Photograph it instead">
-      <input type="file" name="photo" accept="image/*" capture="environment">
+    <label class="camera" title="Add a photograph">
+      <input type="file" name="photo" accept="image/*">
       <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
         <path d="M2 5.5h4.2L8 3h8l1.8 2.5H22v12H2z" fill="none" stroke="#1c110b" stroke-width="2.4" stroke-linejoin="round"/>
         <circle cx="12" cy="11" r="3.6" fill="none" stroke="#1c110b" stroke-width="2.4"/>
       </svg>
-      <span class="offscreen">Photograph it instead</span>
+      <span class="offscreen">Add a photograph</span>
     </label>
     {{end}}
     <button class="post" type="submit">Keep it</button>

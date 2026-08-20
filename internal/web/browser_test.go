@@ -103,6 +103,15 @@ func openWith(t *testing.T, f *fakeStore, coach *fakeCoach) (*cdp, *httptest.Ser
 	t.Helper()
 
 	srv := screenWith(t, f, coach)
+	return browserAt(t, srv, "/pile"), srv
+}
+
+// browserAt is the browser half on its own, for the tests that stand a screen
+// up themselves — the camera needs somewhere to put a photograph, which is not
+// something every test wants to have to say.
+func browserAt(t *testing.T, srv *httptest.Server, path string) *cdp {
+	t.Helper()
+
 	port := freePort(t)
 
 	// Not t.TempDir: a browser writes to its profile until the moment it dies,
@@ -140,8 +149,8 @@ func openWith(t *testing.T, f *fakeStore, coach *fakeCoach) (*cdp, *httptest.Ser
 	c := dialCDP(t, port, &said)
 	c.send(t, "Page.enable", nil)
 	c.send(t, "Runtime.enable", nil)
-	c.navigate(t, srv.URL+"/pile")
-	return c, srv
+	c.navigate(t, srv.URL+path)
+	return c
 }
 
 func aPile() *fakeStore {

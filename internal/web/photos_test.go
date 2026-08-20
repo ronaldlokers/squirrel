@@ -140,7 +140,7 @@ func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 func TestNoVolumeMeansNoCamera(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 	require.NotContains(t, body, `name="photo"`)
-	require.NotContains(t, body, "Photograph it instead")
+	require.NotContains(t, body, "Add a photograph")
 }
 
 func TestAVolumeMeansACamera(t *testing.T) {
@@ -148,8 +148,19 @@ func TestAVolumeMeansACamera(t *testing.T) {
 	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, `name="photo"`)
-	require.Contains(t, body, `capture="environment"`)
+	require.Contains(t, body, `accept="image/*"`)
 	require.Contains(t, body, `enctype="multipart/form-data"`)
+}
+
+// And it does not forbid the gallery. `capture` reads like "prefer the camera"
+// and does not mean that: on a phone it removes every other source, so a
+// photograph you already have becomes unreachable. It was there for one
+// release and that is exactly what it did.
+func TestTheCameraDoesNotForbidTheGallery(t *testing.T) {
+	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
+	body := m.call(t, "GET", "/", nil).Body.String()
+
+	require.NotContains(t, body, "capture=")
 }
 
 // And with no volume the route does not exist at all, rather than answering

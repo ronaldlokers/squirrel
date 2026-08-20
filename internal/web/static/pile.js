@@ -258,6 +258,138 @@
     });
   }
 
+  // ---- the photograph in the slot -----------------------------------------
+  //
+  // Two things, and they are the same thing said twice: a photograph you have
+  // chosen has to be visible, and it has to still be there when you come back.
+  //
+  // The input is a pixel wide and invisible, because a file input cannot be
+  // styled. So choosing one changed nothing on the screen — the camera looked
+  // identical before and after, and the only way to know whether the next
+  // press would keep a photograph was to press it and go and look.
+  //
+  // Worse, and this is the part that made it "saving doesn't work": choosing
+  // one on a phone hands the screen to another app, and an installed app that
+  // is handed away can be reclaimed while it waits. It comes back reloaded.
+  // The input is empty, the page looks exactly as it did before — because it
+  // never looked any different — and the press that follows keeps the words
+  // with no photograph attached.
+  //
+  // So the photograph goes somewhere durable the moment it is chosen, which is
+  // the same answer the spool is for the same problem one layer down: hold it
+  // before anything says it was kept. IndexedDB rather than a variable,
+  // because a variable is exactly what the reload takes away.
+  //
+  // Its own database rather than the worker's: that one is at version 1 with
+  // one store in it, and adding a second from here would mean a version bump
+  // racing a worker that has its own idea of the schema.
+  //
+  // Enhancement only. With this file absent the input is a file input in a
+  // multipart form, which posts a photograph perfectly well and shows you
+  // nothing — the floor, and it is the floor this was built on.
+  (() => {
+    const form = document.querySelector("form.slot[enctype]");
+    const input = form?.querySelector('input[name="photo"]');
+    // DataTransfer is how a file gets back onto an input. Without it a
+    // restored photograph could be shown and not sent, which is a screen that
+    // lies about what it has — worse than one that shows nothing.
+    if (!input || typeof DataTransfer === "undefined") return;
+
+    const DB = "squirrel-photo", STORE = "photo", ONE = "pending";
+
+    function open() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+
+    function inStore(mode, run) {
+      return open().then(db => new Promise((resolve, reject) => {
+        const req = run(db.transaction(STORE, mode).objectStore(STORE));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    const stash = file => inStore("readwrite", s => s.put(file, ONE));
+    const forget = () => inStore("readwrite", s => s.delete(ONE));
+    const stashed = () => inStore("readonly", s => s.get(ONE));
+
+    // What you are about to keep, under the words rather than beside them: it
+    // is the note and the box above it is the caption, which is the order the
+    // card puts them in too.
+    const shown = document.createElement("div");
+    shown.className = "gotphoto";
+    shown.hidden = true;
+    const thumb = document.createElement("img");
+    thumb.alt = "the photograph you are about to keep";
+    const off = document.createElement("button");
+    off.type = "button";
+    off.className = "unphoto";
+    off.textContent = "take it off";
+    shown.append(thumb, off);
+    form.append(shown);
+
+    let drawn = "";
+
+    function show(file) {
+      if (drawn) URL.revokeObjectURL(drawn);
+      drawn = URL.createObjectURL(file);
+      thumb.src = drawn;
+      shown.hidden = false;
+    }
+
+    function hide() {
+      if (drawn) URL.revokeObjectURL(drawn);
+      drawn = "";
+      thumb.removeAttribute("src");
+      shown.hidden = true;
+    }
+
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      if (!file) { hide(); forget().catch(() => {}); return; }
+      show(file);
+      // Deliberately not awaited before the picture appears: the screen must
+      // say it has the photograph the instant it does, and a write that fails
+      // costs the durability rather than the photograph in front of you.
+      stash(file).catch(() => {});
+    });
+
+    off.addEventListener("click", () => {
+      input.value = "";
+      hide();
+      forget().catch(() => {});
+    });
+
+    // On the way in. A capture that landed says so in the URL, and that is the
+    // one case where the photograph in the stash is one already kept — so it
+    // is dropped rather than offered back, which would keep it twice.
+    (async () => {
+      try {
+        if (new URLSearchParams(location.search).has("kept")) {
+          await forget();
+          return;
+        }
+        const file = await stashed();
+        if (!file) return;
+        // Put it back on the input before showing it, so the screen never
+        // claims a photograph the next press would not send.
+        const carrier = new DataTransfer();
+        carrier.items.add(file);
+        input.files = carrier.files;
+        if (input.files.length) show(file);
+      } catch {
+        // No IndexedDB, a private window, a browser that will not take files
+        // back: the slot is a slot and the input is an input, which is where
+        // this started.
+      }
+    })();
+  })();
+
   // ---- the chores screen -------------------------------------------------
   //
   // The deck has one card, so a key there needs no idea of which thing it

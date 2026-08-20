@@ -121,11 +121,19 @@ category sells the counter as the feature.
 rejected: "inbox", which imports inbox-zero and its counter. The owner chose
 "the pile" over the objection that it may read as self-deprecating.
 
-**A photograph instead of typing.** Camera-first from the screen, because the
-moment you want this is the moment you are stood in front of a letter holding a
-phone. One photograph per note — a note that can carry five is an album, and an
-album is a thing you organise rather than glance at. **A photograph with no
-words is a note**, which is most of the point of having a camera.
+**A photograph instead of typing.** The case is a letter, a serial plate, a
+parking sign: the moment you want this is usually the moment you are stood in
+front of the thing holding a phone. But **camera-first is not camera-only** —
+the letter you photographed this morning is the same case one hour later, and
+the browser's own chooser offers both. One photograph per note — a note that can
+carry five is an album, and an album is a thing you organise rather than glance
+at. **A photograph with no words is a note**, which is most of the point of
+having a camera.
+
+**A photograph you have chosen is already a capture.** It is shown back before
+it is kept, and it is held on the device the moment it is picked — choosing one
+hands the screen to another app, and an app handed away can be reclaimed before
+it comes back. Capture is sacred one layer further out than it used to be.
 
 They live on a volume beside the pod rather than in object storage: this
 cluster has none, and adding some would mean a service to patch, back up and
