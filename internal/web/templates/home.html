@@ -36,11 +36,18 @@
              else can be marked done. */}}
         {{if eq .Kind "again"}}
         <button class="obtn go" name="act" value="start">PICK IT UP</button>
+        <button class="obtn later" name="act" value="later">not now</button>
+        {{else if eq .Kind "moment"}}
+        {{/* A fixed point cannot be turned down: it is the one thing here the
+             world imposed rather than the product suggested, and a control
+             implying otherwise would be a lie with consequences. One button,
+             and it means the same as saying it in chat. */}}
+        <button class="obtn did" name="act" value="did">LEAVING</button>
         {{else}}
         <button class="obtn did" name="act" value="did">DID IT</button>
         <button class="obtn go" name="act" value="start">10 MIN</button>
-        {{end}}
         <button class="obtn later" name="act" value="later">not now</button>
+        {{end}}
       </form>
 
       {{/* Knowing what to do is not being able to do it.
@@ -50,6 +57,9 @@
            where the thing is, and closing it changes nothing. Quiet and small
            on purpose — refusing to start has to be easy to reach and must not
            read as the default. */}}
+      {{/* Not for a fixed point: "I can't start" is about a thing you are
+           putting off, and 14:30 is not one of those. */}}
+      {{if ne .Kind "moment"}}
       {{with .Unstuck}}
       <div class="unstuck" role="status">
         <p class="line">{{.Line}}</p>
@@ -84,6 +94,7 @@
           <button class="why" name="why" value="not today">not today</button>
         </form>
       </details>
+      {{end}}
       {{end}}
       {{end}}
     </section>

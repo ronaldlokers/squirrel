@@ -522,12 +522,44 @@ func (s *Scheduler) Run(ctx context.Context) {
 		if err := s.TimerTick(ctx, time.Now()); err != nil {
 			s.opts.OnError(err)
 		}
+		// Separate for the same reason, and more sharply: a fixed point at
+		// nine in the evening is the one message in this product that must not
+		// be skipped because something earlier in the day already ran.
+		if err := s.MomentTick(ctx, time.Now()); err != nil {
+			s.opts.OnError(err)
+		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 		}
 	}
+}
+
+// MomentTick says when to leave, once per fixed point.
+//
+// It is marked said before the send rather than after, the same ordering every
+// other outbound in this file uses and for the same reason: the row is what
+// makes "once" a guarantee rather than a hope. The cost is the same too — a
+// failed send spends the warning — and it is accepted here for a reason the
+// others do not have. The alternative is a leave-by message that repeats every
+// minute until it succeeds, at exactly the moment someone is trying to get out
+// of the door.
+//
+// A moment whose warning was missed entirely — the process was down, the
+// window passed — is not sent late. "Leave about 14:10" at 14:25 is worse than
+// silence: it is wrong, and it is wrong in the direction that makes you trust
+// the next one less.
+func (s *Scheduler) MomentTick(ctx context.Context, now time.Time) error {
+	m, found, err := s.opts.Store.DueMoment(ctx, s.opts.PersonID, now)
+	if err != nil || !found {
+		return err
+	}
+	if err := s.opts.Store.MarkMomentSaid(ctx, m.ID, now); err != nil {
+		return err
+	}
+	_, err = s.sendMessage(ctx, LeaveMessage(m))
+	return err
 }
 
 // TimerTick says "time" when a timer's time is up, once.

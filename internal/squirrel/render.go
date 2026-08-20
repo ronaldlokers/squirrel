@@ -81,6 +81,9 @@ func HelpMessage() Message {
 		"",
 		"!now — one thing, chosen. !now anyway ignores a low day",
 		"!stuck — I can't start. Four answers, and one of them helps",
+		"at 14:30 dentist, 20 minutes away — a time the world imposed",
+		"!bring keys, wallet — what to take to it",
+		"!leaving — you went, or it is off",
 		"!notes — the pile, newest first",
 		"!find <text> — search everything you have told me",
 		"!chores — what is due (same as ?)",
@@ -272,6 +275,38 @@ func doneWord(o Offer) string {
 		return o.Text
 	}
 	return "did it"
+}
+
+// MomentKeptMessage confirms a fixed point by saying the thing nobody works
+// out in time.
+//
+// It answers with the leaving time rather than the start time: the start is
+// what you already knew, and it is the leaving that gets missed. The offer to
+// say what to take rides along, because the moment just after making it is the
+// only moment anyone remembers there was something to take.
+func MomentKeptMessage(m Moment) Message {
+	return Message{Text: fmt.Sprintf("%s %s.\nI will say something at %s.\n!bring keys, wallet if there is something to take.",
+		m.Label, LeaveWords(m), m.WarnAt().Format("15:04"))}
+}
+
+// LeaveMessage is the one thing a fixed point says, at the moment it matters.
+//
+// No buttons, and the reason is structural rather than a choice about
+// interface: a numbered line points at a chore or an item, the database
+// enforces that it is exactly one of the two, and a moment is neither. Widening
+// that constraint to carry a third kind of target would touch every path that
+// resolves a number, for one message. `!leaving` says the same thing in a word,
+// and the screen — where a moment is the offer — has the button.
+//
+// There is deliberately no "in five minutes". A fixed point is the one thing
+// here that cannot be moved by pressing something, and a control implying
+// otherwise would be a lie with consequences.
+func LeaveMessage(m Moment) Message {
+	text := fmt.Sprintf("%s %s.", m.Label, LeaveWords(m))
+	if m.Bring != "" {
+		text += "\nTake: " + m.Bring
+	}
+	return Message{Text: text + "\n!leaving when you go."}
 }
 
 // StuckQuestion asks what is in the way — four answers, one line, no

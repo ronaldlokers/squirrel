@@ -34,14 +34,12 @@ type OfferKind string
 
 const (
 	// OfferMoment is a fixed point the world imposed, inside the window where
-	// leaving matters. Phase F fills this in; the rule holds its place here so
-	// the ordering never has to be renumbered.
+	// leaving matters. See moments.go for the rule it is allowed under.
 	OfferMoment OfferKind = "moment"
 	// OfferTimer is the thing you are already doing. Nothing is chosen: you
 	// chose, and the picker's job is to not talk over you.
 	OfferTimer OfferKind = "timer"
 	// OfferAgain is the breadcrumb — what you were on before you got up.
-	// Phase E fills this in.
 	OfferAgain OfferKind = "again"
 	OfferChore OfferKind = "chore"
 	OfferTask  OfferKind = "task"
@@ -118,7 +116,7 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 		}, true, nil
 	}
 
-	// Rule 3 — the breadcrumb. Phase E.
+	// Rule 3 — the breadcrumb: what you were on before you got up.
 	if o, found, err := s.pickAgain(ctx, personID, now); err != nil || found {
 		return o, found, err
 	}
@@ -186,16 +184,6 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 	// Rule 6 — nothing, which is a normal answer and not an empty state. The
 	// caller renders no region at all rather than an encouraging sentence:
 	// there is nothing here to be behind on.
-	return Offer{}, false, nil
-}
-
-// pickMoment and pickAgain are rules 1 and 3, and they answer "nothing" until
-// the phases that own them land — moments in phase F, the breadcrumb in phase
-// E. They exist now, as calls in the right place, so that adding either is a
-// change to one function body rather than a renumbering of the rules: the
-// order is the design, and an order that shifts as features arrive is an order
-// nobody can hold in their head.
-func (s *Store) pickMoment(context.Context, int64, time.Time) (Offer, bool, error) {
 	return Offer{}, false, nil
 }
 
@@ -316,6 +304,13 @@ func (s *Store) Did(ctx context.Context, personID int64, o Offer, at time.Time) 
 		}
 	case OfferTask:
 		if err := s.SetItemState(ctx, o.RefID, ItemDone, at); err != nil {
+			return err
+		}
+	case OfferMoment:
+		// You left, or it is off. Nothing records which, because whether you
+		// actually went is not this product's business — the job was to get you
+		// out of the door on time, and it is over either way.
+		if err := s.MomentDone(ctx, personID, o.RefID, at); err != nil {
 			return err
 		}
 	default:

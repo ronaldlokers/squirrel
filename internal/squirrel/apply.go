@@ -261,6 +261,13 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		a.pending = id
 		return DefinedMessage(c), nil
 
+	case IntentMoment:
+		kept, err := a.store.CreateMoment(ctx, personID, in.At)
+		if err != nil {
+			return Message{}, err
+		}
+		return MomentKeptMessage(kept), nil
+
 	case IntentComplete:
 		return a.complete(ctx, in, personID, conversationID)
 
@@ -397,6 +404,15 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "stuck":
 		return a.stuck(ctx, in.Arg, personID)
 
+	case "at":
+		return a.at(ctx, in.Arg, personID)
+
+	case "bring", "take":
+		return a.bring(ctx, in.Arg, personID)
+
+	case "leaving", "left":
+		return a.leaving(ctx, personID)
+
 	case "chores":
 		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
 
@@ -527,6 +543,73 @@ func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Messag
 		subject = o.Text
 	}
 	return StuckMessage(u, subject), nil
+}
+
+// at keeps a fixed point: `!at 14:30 dentist`, `!at 14:30 dentist, 20 minutes
+// away`, `!at tomorrow 09:00 school run`.
+//
+// The reply says when to leave rather than repeating when it starts, because
+// the start time is the thing you already knew and the leaving time is the one
+// nobody works out until it is too late.
+func (a *Applier) at(ctx context.Context, arg string, personID int64) (Message, error) {
+	// The command name ate the word the parser looks for. `!at 14:30 dentist`
+	// leaves "14:30 dentist", which is deliberately not a fixed point on its
+	// own — that bar exists so a note is never silently turned into something
+	// that interrupts you, and it must not be lowered just because the command
+	// says the same word the sentence would have.
+	said := strings.TrimSpace(arg)
+	if lower := strings.ToLower(said); !strings.HasPrefix(lower, "at ") && !strings.HasPrefix(lower, "tomorrow ") {
+		said = "at " + said
+	}
+
+	m, ok := ParseMoment(said, time.Now())
+	if !ok {
+		return Message{Text: "When, and what? Try !at 14:30 dentist."}, nil
+	}
+	kept, err := a.store.CreateMoment(ctx, personID, m)
+	if err != nil {
+		return Message{}, err
+	}
+	return MomentKeptMessage(kept), nil
+}
+
+// bring notes what to take, on the next fixed point: `!bring keys, wallet`.
+//
+// The next one rather than a named one, because it is only ever said a moment
+// after making it — and asking which appointment you mean, of the one you just
+// typed, is the tax this product exists to stop charging.
+func (a *Applier) bring(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return Message{Text: "Take what? Try !bring keys, wallet."}, nil
+	}
+	m, found, err := a.store.SetMomentBring(ctx, personID, arg, time.Now())
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return Message{Text: "Nothing coming up to take it to."}, nil
+	}
+	return Message{Text: fmt.Sprintf("%s — %s.", m.Label, m.Bring)}, nil
+}
+
+// leaving closes the next fixed point: you went, or it is off.
+//
+// One word for both, and nothing anywhere records which it was. Whether you
+// actually went is not this product's business — the job was to get you out of
+// the door on time, and it is over either way.
+func (a *Applier) leaving(ctx context.Context, personID int64) (Message, error) {
+	m, found, err := a.store.NextMoment(ctx, personID, time.Now())
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return Message{Text: "Nothing to leave for."}, nil
+	}
+	if err := a.store.MomentDone(ctx, personID, m.ID, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: "Go. I will stop mentioning it."}, nil
 }
 
 // andNext hands you one more thing, once, on the message that says you

@@ -119,6 +119,7 @@ const (
 	IntentDefine   IntentKind = "define"
 	IntentCommand  IntentKind = "command"
 	IntentKeep     IntentKind = "keep"
+	IntentMoment   IntentKind = "moment"
 )
 
 type Intent struct {
@@ -129,6 +130,8 @@ type Intent struct {
 	Position int
 	Name     string
 	Every    time.Duration
+	// At is the fixed point a message turned out to be, when it did.
+	At Moment
 	// Ask is when a definition said it was worth raising, if it said.
 	Ask Asking
 	// Command is the word after "!", lowercased — commands are typed, and a
@@ -260,6 +263,21 @@ func Match(raw string) Intent {
 
 	if name, every, ask, ok := ParseEveryAsking(trimmed); ok && deliberateDefine.MatchString(lower) {
 		return Intent{Kind: IntentDefine, Name: name, Every: every, Ask: ask}
+	}
+
+	// A time the world imposed. The bar is the same one the chore definition
+	// above sets, and ParseMoment sets it high on purpose: "at" or "tomorrow"
+	// in front of a real clock time. A bare "14:30 dentist" stays a note,
+	// because someone writing a thought down should never have to escape it,
+	// and the cost of being wrong in this direction is one command to say it
+	// again rather than a warning that never comes.
+	//
+	// The clock comes from time.Now rather than from a parameter, which is the
+	// one impurity in this function. Match is called on stored rows too — see
+	// CapturesSince — and there it only ever asks whether something was a
+	// capture, so the date it would resolve to is never read.
+	if m, ok := ParseMoment(trimmed, time.Now()); ok {
+		return Intent{Kind: IntentMoment, At: m}
 	}
 
 	// Verbatim: not the trimmed copy. The raw text is the record.
