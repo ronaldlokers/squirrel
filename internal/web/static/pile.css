@@ -1739,3 +1739,18 @@
     text-decoration: underline; text-underline-offset: 3px;
   }
   .askSplit:hover { color: var(--outline); }
+
+  /* A thing the coach wants permission for. Quiet, and it carries exactly one
+     press: the four things that need asking are the four that one press on
+     something already on screen would not undo. */
+  .asking {
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: var(--line) dashed var(--outline); border-radius: var(--r);
+  }
+  .asking .said {
+    margin: 0;
+    font-size: 16px; line-height: 1.4;
+    font-variation-settings: var(--casual), "wght" 500;
+  }

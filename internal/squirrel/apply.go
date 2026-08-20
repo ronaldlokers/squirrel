@@ -47,7 +47,8 @@ type Applier struct {
 	//
 	// Nil is the normal state. Every caller of it has a fixed answer to fall
 	// back to, and that answer is what shipped before the coach existed.
-	asker func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+	asker func(ctx context.Context, personID int64, kind, said, subject string) (
+		text string, did []string, err error)
 	// decider optionally lets a model choose among what the picker found. Nil
 	// is the normal state and PickNow is the whole answer then, which is what
 	// shipped before any of this existed.
@@ -62,7 +63,7 @@ type Applier struct {
 //
 // Boot builds it because boot is the only package that may import both the
 // core and internal/coach. See internal/boot/coach.go.
-func (a *Applier) SetCoach(ask func(context.Context, int64, string, string, string) (string, error)) {
+func (a *Applier) SetCoach(ask func(context.Context, int64, string, string, string) (string, []string, error)) {
 	a.asker = ask
 }
 
@@ -701,7 +702,7 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 		subject = o.Text
 	}
 
-	text, err := a.asker(ctx, personID, "chat", said, subject)
+	text, did, err := a.asker(ctx, personID, "chat", said, subject)
 	if err != nil {
 		// The floor, and it is the picker rather than an apology. Someone who
 		// has just typed out five things wants one of them chosen, and the
@@ -712,6 +713,13 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 			return Message{Text: "Nothing useful to say to that. Start with " + subject + "."}, nil
 		}
 		return Message{Text: "Nothing useful to say to that. Try !stuck."}, nil
+	}
+
+	// What actually changed, in the application's words, underneath what was
+	// said. A model claiming it did something is not evidence it did; these
+	// lines are written after the write succeeded.
+	if len(did) > 0 {
+		text += "\n" + strings.Join(did, "\n")
 	}
 	return Message{Text: text}, nil
 }

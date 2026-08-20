@@ -777,10 +777,11 @@ than leaving it to be discovered on an invoice.
 Everything architectural is decided. One small thing remains, and it can wait
 until the phase that needs it:
 
-1. **How long does an unanswered `create_moment` proposal stay pending?**
-   If the coach proposes a fixed point and you never press anything, it should
-   lapse rather than sit. An hour, matching the breadcrumb, is the obvious
-   answer unless you want otherwise. Needed at phase G.
+1. ~~**How long does an unanswered `create_moment` proposal stay pending?**~~
+   **Answered by construction at phase G.** A proposal is stored nowhere — it
+   travels in the form that renders it, exactly as a split does — so it lasts
+   as long as the page it is on and there is nothing pending anywhere to
+   expire. No lifetime, no sweep, no lapse rule to get wrong.
 
 2. **Should finished timers be kept, so durations can be measured?** *(raised
    at phase D, 20 August.)* `history(label)` was designed to answer "how long

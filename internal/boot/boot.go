@@ -274,7 +274,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	go func() {
 		defer close(s.drained)
 		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
-			asker(s.coach, store, s.talk), decide, makeSmaller)
+			coachChat(asker(s.coach, store, s.talk)), decide, makeSmaller)
 	}()
 
 	return s, nil
@@ -283,7 +283,8 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 // Asker is the seam the core reaches a model through: a func of primitives,
 // because internal/squirrel must not import internal/coach. Nil means there is
 // no coach, which is an ordinary state and not a failure.
-type Asker func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+type Asker func(ctx context.Context, personID int64, kind, said, subject string) (
+	text string, did []string, err error)
 
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.

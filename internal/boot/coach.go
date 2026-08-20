@@ -81,6 +81,7 @@ func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Sto
 		"fast", cfg.Fast, "deep", cfg.Deep, "ceiling_micros", cfg.BudgetMicros)
 	p := coach.NewProvider(cfg.BaseURL, cfg.APIKey, cfg.Fast, cfg.Deep, budget)
 	p.Facts = factsOver(store)
+	p.Hands = handsOver(store)
 	return p
 }
 
@@ -139,12 +140,12 @@ func decider(c coach.Coach, offers *coach.Offers) squirrel.Decider {
 // It returns nil when there is no coach at all, and the nil is meaningful: the
 // core checks it and does not advertise `!coach` in help when there is nothing
 // behind it.
-func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) Asker {
+func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) turnFn {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
 	}
 
-	return func(ctx context.Context, personID int64, kind, said, subject string) (string, error) {
+	return func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error) {
 		now := time.Now()
 
 		// The one place overwhelm is recognised, so the sheet and the chat
@@ -156,7 +157,7 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) Aske
 			kind = coach.KindOverwhelm
 		}
 
-		reply, err := c.Answer(ctx, coach.Turn{
+		return c.Answer(ctx, coach.Turn{
 			PersonID: personID,
 			Kind:     kind,
 			Deep:     deep,
@@ -165,15 +166,6 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) Aske
 			Subject:  subject,
 			Recent:   talk.Recent(personID, now),
 		})
-		if err != nil {
-			return "", err
-		}
-
-		// Only a reply that survived the guard joins the window. A rejected one
-		// left nothing for the next turn to refer back to, and putting it in
-		// would teach the model that its own bad shape was acceptable.
-		talk.Add(personID, said, reply.Text, now)
-		return reply.Text, nil
 	}
 }
 
@@ -249,14 +241,21 @@ func splitter(c coach.Coach) (
 	return split, coach.Overwhelmed
 }
 
+// turnFn is one conversational turn, in coach's own types. Both surfaces are
+// adapted from it below, because they want different parts of the same answer:
+// chat renders what changed as lines, and the screen also renders a proposal
+// as a press.
+type turnFn func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error)
+
 // coachWeb is the screen's half of the same seam.
 //
-// The screen declares its own Exchange for the same reason it declares its own
-// Store: it must not have to know internal/coach exists. So the conversion
-// lives here, next to the budget's, and boot stays the one place that knows
-// both shapes.
+// The screen declares its own Exchange, Answer and Proposal for the same
+// reason it declares its own Store: it must not have to know internal/coach
+// exists. So the conversion lives here, next to the budget's, and boot stays
+// the one place that knows both shapes.
 func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
-	Asker, func(int64) []web.Exchange, func(int64, string, string), func(int64)) {
+	func(context.Context, int64, string, string, string) (web.Answer, error),
+	func(int64) []web.Exchange, func(int64, string, string), func(int64)) {
 
 	recent := func(personID int64) []web.Exchange {
 		fresh := talk.Recent(personID, time.Now())
@@ -271,5 +270,48 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 	}
 	forget := func(personID int64) { talk.Forget(personID) }
 
-	return asker(c, store, talk), recent, remember, forget
+	ask := asker(c, store, talk)
+	if ask == nil {
+		return nil, recent, remember, forget
+	}
+
+	webAsk := func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error) {
+		reply, err := ask(ctx, personID, kind, said, subject)
+		if err != nil {
+			return web.Answer{}, err
+		}
+		a := web.Answer{Text: reply.Text, Did: reply.Did}
+		if reply.Propose != nil {
+			a.Propose = &web.Proposal{
+				Do: reply.Propose.Do, Said: reply.Propose.Said, Text: reply.Propose.Text,
+				At: reply.Propose.At, Every: reply.Propose.Every, RefID: reply.Propose.RefID,
+			}
+		}
+		return a, nil
+	}
+	return webAsk, recent, remember, forget
+}
+
+// coachChat is chat's half. It wants what was said and what changed, and it
+// has nowhere to render a proposal — so a turn that proposes something on this
+// surface says so and does nothing, which is the honest shape rather than a
+// silent drop.
+func coachChat(ask turnFn) Asker {
+	if ask == nil {
+		return nil
+	}
+	return func(ctx context.Context, personID int64, kind, said, subject string) (string, []string, error) {
+		reply, err := ask(ctx, personID, kind, said, subject)
+		if err != nil {
+			return "", nil, err
+		}
+		text := reply.Text
+		if reply.Propose != nil {
+			// Chat has no press to put it behind, and something that will
+			// interrupt you later must never happen without one. Naming the
+			// screen is better than pretending nothing was suggested.
+			text += squirrel.OnTheScreen()
+		}
+		return text, reply.Did, nil
+	}
 }

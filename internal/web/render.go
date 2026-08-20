@@ -257,6 +257,9 @@ type coachPanel struct {
 	Blockers []chipView
 	// From is the page the acorn was pressed on, so closing returns there.
 	From string
+	// Propose is a thing the coach wants permission for, on this render only.
+	// Nothing stores it, so it cannot be applied by anything but the press.
+	Propose *Proposal
 }
 
 // chipView is one blocker as a press. Why is what the form sends; Word is what

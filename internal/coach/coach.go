@@ -99,6 +99,13 @@ type Reply struct {
 	Model string
 	// InTokens and OutTokens are what it cost, for the budget.
 	InTokens, OutTokens int
+	// Did is what actually changed, in the application's words rather than
+	// the model's. A model saying "done" is not evidence anything happened;
+	// this is written after the write succeeded.
+	Did []string
+	// Propose is a thing the coach wants to do and may not do on its own, or
+	// nil. The caller renders it as one press and applies it only if pressed.
+	Propose *Proposal
 }
 
 // Coach is the surface the product asks. Methods are added as the phases that

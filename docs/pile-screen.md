@@ -28,6 +28,9 @@ down here because no test covers it.
 | `/coach` | the coach, as a page — a real route so the sheet is an upgrade rather than a requirement | LAN or tailnet, then Authentik |
 | `/coach/say` | one turn: a sentence, or one of the four chips | LAN or tailnet, then Authentik |
 | `/coach/close` | forgets the conversation and returns to the page the acorn was pressed on | LAN or tailnet, then Authentik |
+| `/coach/do` | applies a proposal, and only one that was pressed — four kinds, in a switch | LAN or tailnet, then Authentik |
+| `/steps` | a step finished, or a breakdown thrown away | LAN or tailnet, then Authentik |
+| `/pile/split` | asks for a note's separate things, and keeps them when pressed | LAN or tailnet, then Authentik |
 | `/chores` | what comes back | LAN or tailnet, then Authentik |
 | `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
 | `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |
