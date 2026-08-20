@@ -129,7 +129,7 @@ func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel
 	}
 	out := []squirrel.Item{}
 	for _, it := range f.items {
-		if it.State == squirrel.ItemOpen {
+		if it.State == squirrel.ItemOpen && it.Kind != squirrel.ItemTask {
 			out = append(out, it)
 		}
 	}
@@ -253,6 +253,56 @@ func (f *fakeStore) Reword(_ context.Context, _ int64, id int64, text string) (b
 	return false, nil
 }
 
+func (f *fakeStore) Tasks(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	return f.ofKind(squirrel.ItemTask, squirrel.ItemOpen, limit)
+}
+
+func (f *fakeStore) ArchivedTasks(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	return f.ofKind(squirrel.ItemTask, squirrel.ItemDone, limit)
+}
+
+func (f *fakeStore) ofKind(k squirrel.ItemKind, st squirrel.ItemState, limit int) ([]squirrel.Item, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	out := []squirrel.Item{}
+	for _, it := range f.items {
+		if it.Kind == k && it.State == st {
+			out = append(out, it)
+		}
+	}
+	more := len(out) > limit
+	if more {
+		out = out[:limit]
+	}
+	return out, more, nil
+}
+
+func (f *fakeStore) SetItemKind(_ context.Context, _ int64, id int64, k squirrel.ItemKind) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	for i := range f.items {
+		if f.items[i].ID == id {
+			f.items[i].Kind = k
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (f *fakeStore) InsertItemReturningID(_ context.Context, i squirrel.Item) (int64, error) {
+	if f.err != nil {
+		return 0, f.err
+	}
+	id := int64(len(f.items) + 1)
+	f.items = append([]squirrel.Item{{
+		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt,
+		State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
+	}}, f.items...)
+	return id, nil
+}
+
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {
 	if f.err != nil {
 		return squirrel.Item{}, false, f.err
@@ -343,7 +393,18 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 }
 
 func note(id int64, text string, state squirrel.ItemState) squirrel.Item {
-	return squirrel.Item{ID: id, RawText: text, ReceivedAt: time.Date(2026, 8, 14, 9, 0, 0, 0, time.UTC), State: state}
+	return squirrel.Item{
+		ID: id, RawText: text, ReceivedAt: time.Date(2026, 8, 14, 9, 0, 0, 0, time.UTC),
+		State: state, Kind: squirrel.ItemNote,
+	}
+}
+
+// task is a note that was decided on. Same row, different kind — which is the
+// whole model.
+func task(id int64, text string, state squirrel.ItemState) squirrel.Item {
+	it := note(id, text, state)
+	it.Kind = squirrel.ItemTask
+	return it
 }
 
 func mounted(t *testing.T, f *fakeStore) *testMux {

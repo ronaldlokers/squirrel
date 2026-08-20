@@ -24,6 +24,8 @@ var pages = map[string]*template.Template{
 	"home":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/home.html")),
 	"chores":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/chores.html")),
 	"kept":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/kept.html")),
+	"tasks":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/tasks.html")),
+	"archive": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/archive.html")),
 	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
@@ -42,6 +44,13 @@ type view struct {
 	// Here is which of the two screens this is, so the lid can offer the other
 	// one. A link that points at the page you are on is furniture.
 	Here string
+	// Scrolling is a list rather than a single card, so the field is
+	// top-aligned. The deck centres because it holds exactly one thing and a
+	// centred card is the shoebox's own composition; a list that grows from
+	// the middle of the screen is just a list that is hard to read.
+	Scrolling bool
+	// Elsewhere is the two places you are not, filled by render.
+	Elsewhere []linkView
 	// Home is the front door, where the lid carries no cross-link at all —
 	// both doors are already the body of the page — and where the mark is not
 	// a link, because it is a link to here.
@@ -93,6 +102,42 @@ type choreView struct {
 	Chip  string
 	Last  string
 	When  string
+}
+
+// linkView is one of the lid's cross-links.
+type linkView struct {
+	Href  string
+	Label string
+}
+
+// elsewhere is the two places you are not.
+//
+// With two screens the lid could carry one link and be complete. With three it
+// cannot, and a single link that cycles would mean the chores are two presses
+// from the pile — so it carries both of the others. Still quiet, still two
+// words each; the mark remains the way home, where all three doors are.
+//
+// The archive belongs to the tasks and the shelf to the pile, because that is
+// where each is reached from and what you would be looking for the way back to.
+func elsewhere(here string) []linkView {
+	all := []linkView{
+		{Href: "/pile", Label: "the pile"},
+		{Href: "/tasks", Label: "the tasks"},
+		{Href: "/chores", Label: "the chores"},
+	}
+	mine := map[string]string{
+		"pile": "/pile", "kept": "/pile",
+		"tasks": "/tasks", "archive": "/tasks",
+		"chores": "/chores",
+	}[here]
+
+	out := make([]linkView, 0, 2)
+	for _, l := range all {
+		if l.Href != mine {
+			out = append(out, l)
+		}
+	}
+	return out
 }
 
 // faceView is one of the five drawn answers. It carries no number and no
@@ -198,6 +243,11 @@ func render(w http.ResponseWriter, name string, v view) {
 		panic("no such page: " + name)
 	}
 	v.V = assetVersion
+	if !v.Home {
+		v.Elsewhere = elsewhere(v.Here)
+	}
+	v.Scrolling = v.Scrolling || v.Query != "" || len(v.Chores) > 0 ||
+		v.Here == "tasks" || v.Here == "archive" || v.Here == "kept"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Never cached. The pile is state, and a back button that showed a note you
 	// already triaged would be the two views disagreeing with themselves.

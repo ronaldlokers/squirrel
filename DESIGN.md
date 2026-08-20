@@ -400,9 +400,11 @@ monospace axis and this is a warm tool, not a terminal.
 One column, centred, `min(720px, 100%)`. No navigation, no sidebar, no second
 region — the shoebox has one opening.
 
-**The home screen is the one surface with two primary destinations.** They are
-equals: two cells of one grid, the same stock, the same depth, side by side at
-every width, and they must render identically in every state. Nothing on that
+**The home screen is the one surface with three primary destinations.** They
+are equals: three cells of one grid, the same stock, the same depth, side by
+side at every width, and they must render identically in every state. It was
+two until 20 August 2026, when tasks arrived and the sentence the screen tells
+became three things rather than two. Nothing on that
 screen depends on what the pile holds, so a full pile and an empty one are the
 same page — which is what *stopping partway is a normal ending* looks like when
 it is structural rather than a reassuring sentence.
@@ -534,9 +536,11 @@ it is the one control-shaped thing in the system that is deliberately not a
 button.
 
 On the home screen the lid carries no cross-link: the doors are the body of the
-page, and a third copy of a door is furniture. Everywhere else the mark and
-wordmark are themselves a link back to home — undecorated, because the mark is
-the mark.
+page, and another copy of a door is furniture. Everywhere else it carries
+**two** — the two places you are not. One link was complete when there were two
+screens; with three, a single link that cycled would put the chores two presses
+from the pile. The mark and wordmark remain a link back to home, undecorated,
+because the mark is the mark.
 
 ### The Door
 
@@ -554,8 +558,11 @@ body. Composed only of parts that already exist, but the composition is new:
 - **Hover:** brightens to paper. A button hovers by deepening; a card you can
   walk into wants a "pick it up" affordance instead, and that difference is the
   point rather than an inconsistency.
-- **Only ever two**, side by side at every width. Their equality is the screen's
-  one statement, and a stacked pair reads as first and second.
+- **Three, side by side at every width.** Their equality is the screen's one
+  statement, and a stacked one would read as first. Three cells are narrower
+  than two, so on a phone the art steps down to 50px and the name takes the
+  Note floor (17px) rather than the phone's step-up — the words have to fit the
+  cell, and the cell is what keeps them equal.
 
 ### Door Art
 
@@ -574,7 +581,7 @@ state colour *as a state* (amber as straw is a colour, a green tick is a claim);
 never grey; never orange. Only ever two drawings, because there are only ever
 two doors.
 
-**The exception the chores door carries.** The owner's own chores illustration
+**The exceptions the door art carries.** The owner's own chores illustration
 shows grey on a clipboard's clip and two ticked boxes beside one empty — a
 progress reading drawn as a picture, in the `done` green, on the product whose
 hardest rule is never a count in any form. It was refused on those grounds and
@@ -582,8 +589,17 @@ then chosen anyway, by the owner, for his own home screen: it is warm, it reads
 instantly as chores, and it is his product. This is the only surface in the
 system where grey appears and the only place a completion is depicted. It is
 illustration rather than interface — nothing here reports state — and it is
-recorded so nobody re-litigates it or quietly "fixes" it. It is not the
-precedent for a third door.
+recorded so nobody re-litigates it or quietly "fixes" it.
+
+A third door arrived on 20 August 2026 and its art carries the same two faults,
+chosen the same way: a clipboard with two ticked rows, one unticked, a grey
+clip. The line that used to sit here — *"if a third door is ever added, this is
+not the precedent to follow"* — turned out to be wrong, so it is replaced by
+what is actually true: **door art is the owner's, and the guard rails govern
+anything drawn by anyone else.** What it costs is unchanged and worth
+restating: these are the only surfaces in the system where grey appears or a
+completion is depicted, none of them reports state, and nothing on any screen
+counts.
 
 ### The Peek — removed, and why it stays removed
 

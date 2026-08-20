@@ -65,6 +65,19 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// Deciding is not disposing, so it takes its own branch rather than
+		// joining a map of states and pretending to be one. The three
+		// disposals end a note; this moves it, and it stays open because
+		// deciding to do a thing is not doing it.
+		if r.FormValue("act") == "task" {
+			if _, err := s.SetItemKind(r.Context(), personID, id, squirrel.ItemTask); err != nil {
+				fail(w, err)
+				return
+			}
+			back(w, r, opts, url.Values{})
+			return
+		}
+
 		state, ok := actions[r.FormValue("act")]
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)

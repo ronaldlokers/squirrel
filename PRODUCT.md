@@ -103,6 +103,12 @@ category sells the counter as the feature.
 rejected: "inbox", which imports inbox-zero and its counter. The owner chose
 "the pile" over the objection that it may read as self-deprecating.
 
+**Two kinds:** a **note** is a thought you had; a **task** is a thing you
+decided to do, once. The same row at different moments — promoting a note takes
+it out of the pile, because the pile holds what you have not decided about and
+that is what makes triage mean anything. A task that is done is archived, not
+deleted, and every step of that reverses.
+
 **Four states:** `open` (the pile), `done`, `dropped`, `kept`. `kept` is
 load-bearing — a serial number or a link is not a task and will never be done, so
 without it every reference note sits in triage forever.

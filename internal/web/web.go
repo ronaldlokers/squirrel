@@ -58,6 +58,13 @@ type Store interface {
 	// The screen captures as of v0.12.0. See captureHandler for what that
 	// overruled and what it cost.
 	InsertItem(ctx context.Context, i squirrel.Item) (bool, error)
+	InsertItemReturningID(ctx context.Context, i squirrel.Item) (int64, error)
+
+	// Tasks: what you decided. A kind rather than a state, so a done task is
+	// still a task and the archive can exist.
+	Tasks(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
+	ArchivedTasks(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
+	SetItemKind(ctx context.Context, personID, itemID int64, k squirrel.ItemKind) (bool, error)
 
 	// How you are right now. One reading in, one reading out — there is
 	// deliberately no way to ask this store for a series.
