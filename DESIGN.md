@@ -38,6 +38,8 @@ colors:
   state-dropped-lifted: "#9f8574"
   state-dropped-lifted-hover: "#af9a8b"
   state-kept-lifted-hover: "#ffc12e"
+  state-open-lifted: "#9e7bd0"
+  state-open-lifted-hover: "#b295da"
 typography:
   display:
     fontFamily: "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
@@ -315,6 +317,14 @@ as a change:
 | *did it* | `#71a73e` | `#89b65f` | `#529414` |
 | *how often* | `#ffb300` | `#ffc12e` | `#8a5c00` |
 | *stop asking* | `#9f8574` | `#af9a8b` | `#8a6a55` |
+| *not a task* | `#9e7bd0` | `#b295da` | `#5e23b1` |
+
+**The percentages are the outcome, not the rule.** *Not a task* returns a thing
+to the pile, so it wears the pile's own Notebook Violet — and violet is much the
+darkest of the four state colours, so 18% is not enough lift for the ink to
+read: it measures 3.17:1, which fails. It takes 40% to reach 5.46:1, inside the
+band the other three already sit in. Lift until the ink reads, then measure;
+do not lift by a number because the number worked somewhere else.
 
 Type on a lifted fill is always the outline ink, never cream — the lift exists
 precisely so the ink can stay dark, which is the Fill-and-Ink Rule holding

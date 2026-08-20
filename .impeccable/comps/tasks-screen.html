@@ -65,7 +65,13 @@ its place in the repo.
     --brown: #58413d;
     --white: #fefefe;
     --done: #529414;    --done-ink: #3c6d0e;
-    --done-lifted: #71a73e;
+    --done-lifted: #71a73e;  --done-lifted-hover: #89b65f;
+    /* The open state's colour, lifted so the card's dark ink reads on it.
+       Violet needed 40% toward white where done, kept and dropped needed 18%:
+       it is much the darkest of the four, and at 18% it measures 3.17:1
+       against the outline ink, which fails. At 40% it is 5.46:1, inside the
+       band the other three already sit in (5.4 to 10.3). */
+    --open-lifted: #9e7bd0;  --open-lifted-hover: #b295da;
 
     --line: 3px;
     --r: 14px;
@@ -173,21 +179,30 @@ its place in the repo.
     text-wrap: pretty;
   }
   .tacts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+  /* Coloured at rest, not only under the thumb — The Lifted Fill Rule: a
+     control that acts on something wears that thing's colour, lifted toward
+     white until the card's own dark ink reads on it. The chores screen's
+     controls have worked this way since they were built; these are the same
+     controls for the same kinds of change. */
   .tbtn {
     padding: 10px 14px; min-height: 44px;
-    background: var(--paper); color: var(--outline);
+    background: var(--done-lifted); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 4px 0 0 var(--outline);
     font: 600 12.5px/1 "Recursive", sans-serif;
     font-variation-settings: var(--precise), "wght" 720;
     letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
   }
-  .tbtn:hover { background: var(--paper-deep); }
-  /* Done green on the press, the same way the deck's own DONE presses. The
-     colour belongs to the transition, not to the card sitting there. */
+  .tbtn:hover { background: var(--done-lifted-hover); }
+  /* The press drops to the base colour, so it still reads as a change. */
   .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--done); color: var(--paper); }
-  /* Going back to the pile is not an exit and does not wear an exit's colour. */
-  .tbtn.back:active { background: var(--violet); }
+
+  /* Back to the pile is not an exit and must not wear an exit's colour. It
+     wears the pile's own: Notebook Violet is what a note in the pile is
+     already marked with everywhere else on this screen. */
+  .tbtn.back { background: var(--open-lifted); }
+  .tbtn.back:hover { background: var(--open-lifted-hover); }
+  .tbtn.back:active { background: var(--violet); color: var(--paper); }
 
   /* The slot's own grammar, because a task is a sentence rather than a
      configuration — the new-chore form asks three questions; this asks one. */
