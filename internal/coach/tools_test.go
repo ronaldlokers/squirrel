@@ -103,6 +103,15 @@ func newToolAPI(t *testing.T, turns ...map[string]any) *toolAPI {
 		require.NoError(t, json.Unmarshal(raw, &parsed))
 		api.sent = append(api.sent, parsed)
 
+		if why := refusedByTheRealAPI(parsed); why != "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"error": map[string]any{"message": why, "type": "invalid_request_error"},
+			})
+			return
+		}
+
 		turn := map[string]any{"content": "nothing scripted"}
 		if len(api.sent) <= len(api.turns) {
 			turn = api.turns[len(api.sent)-1]
@@ -329,4 +338,51 @@ func TestTooFewRunsReachTheModelAsAnAbsence(t *testing.T) {
 			require.NotContains(t, content, "0")
 		}
 	}
+}
+
+// refusedByTheRealAPI answers with what the live endpoint would have said, or
+// empty when it would have accepted.
+//
+// It exists because this fake used to accept anything. It answered whatever
+// the test scripted regardless of what was asked, so a request the real API
+// rejects outright looked identical to one it likes — and two releases went
+// out where every call 400'd while a hundred tests stayed green.
+//
+// Both rules are ones production taught us, quoted from the refusals it sent
+// back. Anything else the real API dislikes has to be added the same way,
+// which is the honest cost of not being able to reach it from a test.
+func refusedByTheRealAPI(sent map[string]any) string {
+	tools, _ := sent["tools"].([]any)
+	if len(tools) == 0 {
+		return ""
+	}
+
+	// "Function tools with reasoning_effort are not supported ... set
+	// reasoning_effort to 'none'."
+	if effort, _ := sent["reasoning_effort"].(string); effort != "none" {
+		return "Function tools with reasoning_effort are not supported for this " +
+			"model in /v1/chat/completions. To use function tools, use " +
+			"/v1/responses or set reasoning_effort to 'none'."
+	}
+
+	// "Invalid schema for function 'now': None is not of type 'array'."
+	for _, tool := range tools {
+		fn, _ := tool.(map[string]any)["function"].(map[string]any)
+		name, _ := fn["name"].(string)
+		params, ok := fn["parameters"].(map[string]any)
+		if !ok {
+			return "Invalid schema for function '" + name + "': parameters is required."
+		}
+		required, present := params["required"]
+		if !present || required == nil {
+			return "Invalid schema for function '" + name + "': None is not of type 'array'."
+		}
+		if _, isArray := required.([]any); !isArray {
+			return "Invalid schema for function '" + name + "': required must be an array."
+		}
+		if _, isObject := params["properties"].(map[string]any); !isObject {
+			return "Invalid schema for function '" + name + "': properties must be an object."
+		}
+	}
+	return ""
 }

@@ -31,6 +31,23 @@ const maxOutput = 200
 // them into JSON that will not parse.
 const maxToolOutput = 600
 
+// noReasoning is what this endpoint requires before it will accept tools.
+//
+// The API's own words: "Function tools with reasoning_effort are not supported
+// for gpt-5.6-luna in /v1/chat/completions. To use function tools, use
+// /v1/responses or set reasoning_effort to 'none'."
+//
+// It is a real cost and worth naming rather than burying: the deep model does
+// its deciding without extended reasoning. The alternative is /v1/responses,
+// which buys reasoning back and spends the portability that made
+// COACH_BASE_URL worth having. This is the cheap fix; the endpoint question is
+// left open, because a coach that answers plainly beats one that reasons and
+// 400s.
+//
+// Sent only alongside tools, so a plain turn's request is unchanged and a
+// provider that has never heard of the field is never shown it.
+const noReasoning = "none"
+
 type chatRequest struct {
 	Model    string        `json:"model"`
 	Messages []chatMessage `json:"messages"`
@@ -38,6 +55,9 @@ type chatRequest struct {
 	// rejected outright by current models rather than merely deprecated.
 	MaxCompletionTokens int              `json:"max_completion_tokens"`
 	Tools               []map[string]any `json:"tools,omitempty"`
+	// ReasoningEffort is only ever "none", and only ever when tools are
+	// offered. See noReasoning.
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type chatMessage struct {
@@ -103,12 +123,16 @@ func (p *Provider) completionWithTools(ctx context.Context, model string, messag
 	if len(tools) > 0 {
 		cap = maxToolOutput
 	}
-	body, err := json.Marshal(chatRequest{
+	asked := chatRequest{
 		Model:               model,
 		Messages:            messages,
 		MaxCompletionTokens: cap,
 		Tools:               tools,
-	})
+	}
+	if len(tools) > 0 {
+		asked.ReasoningEffort = noReasoning
+	}
+	body, err := json.Marshal(asked)
 	if err != nil {
 		return "", nil, 0, 0, fmt.Errorf("%w: building the request: %w", ErrUnavailable, err)
 	}

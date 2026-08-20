@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -145,6 +146,57 @@ func TestTheReadToolsRequireNothing(t *testing.T) {
 		}
 		required, _ := params["required"].([]any)
 		require.Empty(t, required, "%s asks the model for arguments it need not give", name)
+	}
+}
+
+// Tools and reasoning cannot both be asked for on this endpoint. The API
+// refuses the request outright — "Function tools with reasoning_effort are not
+// supported ... set reasoning_effort to 'none'" — which was the second 400 in
+// a row that only production could tell us about.
+func TestEveryRequestWithToolsTurnsReasoningOff(t *testing.T) {
+	api := newToolAPI(t, turnOf(call("a", "say", map[string]any{"text": "ok"})))
+	p := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{})
+	_, _ = p.Answer(context.Background(), aTurn())
+
+	require.Equal(t, "none", api.sent[0]["reasoning_effort"],
+		"a request carrying tools did not turn reasoning off")
+}
+
+// And a turn with no tools does not mention it at all, so a provider that has
+// never heard of the field is never shown it.
+func TestARequestWithoutToolsSaysNothingAboutReasoning(t *testing.T) {
+	api := newFakeAPI(t, "Start with the envelope.")
+	p := coach.NewProvider(api.server.URL, "sk", "gpt-5.6-luna", "gpt-5.6-terra",
+		coach.Budget{Log: &fakeLog{}})
+	p.Clock = func() time.Time { return august }
+
+	_, err := p.Answer(context.Background(), aTurn())
+	require.NoError(t, err)
+	require.NotContains(t, api.requests[0], "reasoning_effort")
+}
+
+// The same, for the three calls whose tools are written out by hand.
+func TestTheHandWrittenCallsAlsoTurnReasoningOff(t *testing.T) {
+	for name, ask := range map[string]func(p *coach.Provider){
+		"smaller": func(p *coach.Provider) {
+			_, _ = p.Smaller(context.Background(), 1, "the tax thing", "too big")
+		},
+		"split": func(p *coach.Provider) {
+			_, _ = p.Split(context.Background(), 1, dump)
+		},
+		"interrupt": func(p *coach.Provider) {
+			_, _ = p.ShouldInterrupt(context.Background(), 1, "put the bins out", afternoon)
+		},
+		"decide": func(p *coach.Provider) {
+			_, _ = p.Decide(context.Background(), 1)
+		},
+	} {
+		api := newToolAPI(t, turnOf(call("a", "say", map[string]any{"text": "ok"})))
+		p := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{})
+		ask(p)
+
+		require.NotEmpty(t, api.sent, "%s sent nothing", name)
+		require.Equal(t, "none", api.sent[0]["reasoning_effort"], "%s left reasoning on", name)
 	}
 }
 
