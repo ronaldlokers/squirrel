@@ -28,10 +28,18 @@ import (
 // that has checked it can write.
 type Photos struct{ dir string }
 
-// biggest is the ceiling on one photograph. Eight megabytes is a generous
-// phone photo and a bound on what one press can put on the volume — a guard
-// rather than a rule about what you may keep.
-const biggest = 8 << 20
+// biggest is the ceiling on one photograph, and a guard rather than a rule
+// about what you may keep.
+//
+// Twenty megabytes. Eight was the first number here and it was chosen as "a
+// generous phone photo" from memory rather than from a phone: a current camera
+// at full resolution clears it without trying, and the whole case for this
+// feature is photographing something rather than typing it out. A ceiling that
+// the ordinary case trips over is not a guard, it is a defect.
+//
+// It costs nothing to be generous now that the bytes stream from the socket
+// onto the volume — there is no copy of this anywhere else on the way past.
+const biggest = 20 << 20
 
 // kinds are what may be stored, by what the browser says it is sending.
 //

@@ -1,7 +1,10 @@
 package web
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -55,21 +58,6 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
-		// A photograph arrives as multipart; words alone do not. Parsing the
-		// multipart form handles both, and the memory bound is what keeps a
-		// large upload from being held in RAM before the size check below sees
-		// it.
-		if err := r.ParseMultipartForm(1 << 20); err != nil && err != http.ErrNotMultipart {
-			backToHome(w, r, "", true)
-			return
-		}
-		if r.MultipartForm != nil {
-			defer func() { _ = r.MultipartForm.RemoveAll() }()
-		}
-		// Verbatim, like every other capture in this system: never trimmed of
-		// its meaning, only of the whitespace a keyboard adds at the ends.
-		text := strings.TrimSpace(r.FormValue("text"))
-
 		// The photograph goes to disk before the capture that references it,
 		// and is fsynced there. So a spool entry never points at a file that
 		// is not on the volume; the other order would give a note that renders
@@ -77,9 +65,15 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		//
 		// An entry that fails to write after the bytes landed leaves a file
 		// nothing references — litter on a volume, not a lost thought.
-		photo, kind, err := keepPhoto(r, opts)
+		text, photo, kind, err := readCapture(r, opts)
 		if err != nil {
-			backToHome(w, r, text, true)
+			// Said out loud, because until this was written every way a
+			// capture could be refused was silent: the screen said "not kept"
+			// and the logs said nothing at all, so the only account of what
+			// went wrong was the sentence the person reading it could not
+			// act on.
+			slog.Warn("a capture was refused", "error", err)
+			backToHome(w, r, text, refusalOf(err))
 			return
 		}
 
@@ -89,9 +83,6 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		if text == "" && photo == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
-		}
-		if len(text) > captureLimit {
-			text = text[:captureLimit]
 		}
 
 		// Whose it is, said in the transport's own vocabulary rather than as a
@@ -112,23 +103,38 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// The words go back to the page rather than into a log. A capture
 			// box that clears on failure is a capture box that eats thoughts.
 			//
-			// This is now the only way a capture can fail, and it means the
-			// disk is unwritable — which is a different and much louder
-			// problem than a database being briefly unreachable.
-			backToHome(w, r, text, true)
+			// This means the disk is unwritable, which is a different and much
+			// louder problem than a database being briefly unreachable.
+			slog.Warn("a capture could not be spooled", "error", err)
+			backToHome(w, r, text, "nokeep")
 			return
 		}
 		http.Redirect(w, r, "/?kept=1", http.StatusSeeOther)
 	}
 }
 
+// errNotAPhotograph is a photograph this will not keep — the wrong kind, too
+// big, empty. Its own error because it is the one refusal that is about what
+// was sent rather than about the machine, and the screen has to say so: "I
+// cannot reach my memory" is a lie when the truth is "that photo is too big",
+// and it is a lie that makes you press the same button again.
+var errNotAPhotograph = errors.New("not a photograph this keeps")
+
+// refusalOf is which sentence the slot says back.
+func refusalOf(err error) string {
+	if errors.Is(err, errNotAPhotograph) {
+		return "nophoto"
+	}
+	return "nokeep"
+}
+
 // backToHome returns to the slot, carrying the words when there are any to
 // carry. 303 rather than 302: the method has to become GET so a reload does
 // not repost.
-func backToHome(w http.ResponseWriter, r *http.Request, text string, failed bool) {
+func backToHome(w http.ResponseWriter, r *http.Request, text, refused string) {
 	q := url.Values{}
-	if failed {
-		q.Set("nokeep", "1")
+	if refused != "" {
+		q.Set(refused, "1")
 	}
 	if text != "" {
 		q.Set("said", text)
@@ -136,34 +142,94 @@ func backToHome(w http.ResponseWriter, r *http.Request, text string, failed bool
 	http.Redirect(w, r, "/?"+q.Encode(), http.StatusSeeOther)
 }
 
-// keepPhoto stores the photograph on the request, if there is one.
+// readCapture pulls the words and the photograph off the request, streaming
+// the photograph straight onto the volume it is going to live on.
 //
-// No photograph is the ordinary case and is not an error. A photograph the
-// store will not keep — the wrong kind, too big, empty — is an error, and the
-// words come back with it rather than the capture quietly losing the picture
-// and saying it was kept.
-func keepPhoto(r *http.Request, opts Options) (name, kind string, err error) {
-	if opts.Photos == nil || r.MultipartForm == nil {
-		return "", "", nil
+// Not ParseMultipartForm, and that is the whole of the bug this replaced. That
+// call holds the first megabyte in memory and spills the rest to a temporary
+// file — and this pod runs with a read-only root filesystem and no writable
+// /tmp, because everything it writes has its own volume. So every photograph
+// over a megabyte, which is every photograph a phone takes, failed in the
+// parser before the handler ever saw it, and failed with the one message that
+// was not true: that Squirrel could not reach its memory.
+//
+// It was invisible to every test because the way to test an upload is with a
+// small file, and a small file is exactly the one that never touches the disk.
+//
+// Streaming is also simply the right shape: the bytes have a durable home to
+// go to and Keep already writes and fsyncs them there, so a copy through a
+// temporary file was doing nothing except needing somewhere to happen.
+func readCapture(r *http.Request, opts Options) (text, photo, kind string, err error) {
+	parts, err := r.MultipartReader()
+	if errors.Is(err, http.ErrNotMultipart) {
+		// Words alone, which is what the service worker's flush sends and what
+		// a browser sends from a form with no file on it.
+		if err := r.ParseForm(); err != nil {
+			return "", "", "", fmt.Errorf("reading what you said: %w", err)
+		}
+		return said(r.FormValue("text")), "", "", nil
 	}
-	file, header, err := r.FormFile("photo")
 	if err != nil {
-		// No file part at all: words only, which is most captures.
-		return "", "", nil
-	}
-	defer file.Close()
-
-	// What the browser said it is, checked against the handful this keeps.
-	// The type stored is the one from that list rather than the browser's own
-	// string, so nothing it claimed is ever handed back as a content type.
-	declared := header.Header.Get("Content-Type")
-	if _, ok := squirrel.KnownKind(declared); !ok {
-		return "", "", fmt.Errorf("not a photograph this keeps: %q", declared)
+		return "", "", "", fmt.Errorf("reading what you sent: %w", err)
 	}
 
-	name, err = opts.Photos.Keep(file, declared)
-	if err != nil {
-		return "", "", err
+	// By name rather than by position: the order of the parts is the order of
+	// the fields in the markup, and a capture must not break because someone
+	// moved the camera above the box.
+	for {
+		part, err := parts.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return text, photo, kind, fmt.Errorf("reading what you sent: %w", err)
+		}
+
+		switch part.FormName() {
+		case "text":
+			// Bounded here rather than after the fact, so a stuck key cannot
+			// be read into memory before it is cut.
+			raw, err := io.ReadAll(io.LimitReader(part, captureLimit+1))
+			_ = part.Close()
+			if err != nil {
+				return text, photo, kind, fmt.Errorf("reading what you said: %w", err)
+			}
+			text = said(string(raw))
+		case "photo":
+			// An empty file part is what a form with nothing chosen sends, and
+			// it is the ordinary case rather than a failure.
+			if part.FileName() == "" || opts.Photos == nil {
+				_ = part.Close()
+				continue
+			}
+			// What the browser said it is, checked against the handful this
+			// keeps. The type stored is the one from that list rather than the
+			// browser's own string, so nothing it claimed is ever handed back
+			// as a content type.
+			declared := part.Header.Get("Content-Type")
+			if _, ok := squirrel.KnownKind(declared); !ok {
+				_ = part.Close()
+				return text, "", "", fmt.Errorf("%w: %q", errNotAPhotograph, declared)
+			}
+			photo, err = opts.Photos.Keep(part, declared)
+			_ = part.Close()
+			if err != nil {
+				return text, "", "", fmt.Errorf("%w: %w", errNotAPhotograph, err)
+			}
+			kind = squirrel.PhotoKind(declared)
+		default:
+			_ = part.Close()
+		}
 	}
-	return name, squirrel.PhotoKind(declared), nil
+	return text, photo, kind, nil
+}
+
+// said is the one thing done to what you typed: the whitespace a keyboard adds
+// at the ends, and nothing else. Never trimmed of its meaning.
+func said(raw string) string {
+	text := strings.TrimSpace(raw)
+	if len(text) > captureLimit {
+		text = text[:captureLimit]
+	}
+	return text
 }

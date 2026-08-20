@@ -76,7 +76,7 @@ func TestATooBigPhotographIsRefusedAndLeavesNothingBehind(t *testing.T) {
 	photos, err := squirrel.OpenPhotos(dir)
 	require.NoError(t, err)
 
-	_, err = photos.Keep(strings.NewReader(strings.Repeat("x", (8<<20)+1)), "image/jpeg")
+	_, err = photos.Keep(strings.NewReader(strings.Repeat("x", (20<<20)+1)), "image/jpeg")
 	require.Error(t, err)
 
 	left, err := os.ReadDir(dir)

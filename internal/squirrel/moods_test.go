@@ -57,7 +57,12 @@ func TestTwoReadingsInADayShareTheDay(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
-	now := time.Now()
+	// Midday, and not time.Now(): two readings two hours apart are only on the
+	// same day if the first is not within two hours of midnight. This failed
+	// once, at 00:22, and would have failed every night between midnight and
+	// two. The date still has to be a real one — the reply says "today".
+	y, m, d := time.Now().Date()
+	now := time.Date(y, m, d, 12, 0, 0, 0, time.Local)
 
 	require.NoError(t, store.RecordCheckin(ctx, p, squirrel.MoodLow, "chat", now.Add(-2*time.Hour)))
 	require.NoError(t, store.RecordCheckin(ctx, p, squirrel.MoodGood, "chat", now))
