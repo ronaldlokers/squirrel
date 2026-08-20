@@ -71,8 +71,14 @@
     display: flex;
     flex-direction: column;
     background-color: var(--purple-deep);
+    /* The highlight is at .35 rather than .5, and the number is a contrast
+       result rather than a taste one. Cream on the lit centre of this radial
+       measured 4.19:1 at .5 — a fail — which quietly made every piece of
+       secondary type on the field illegible in the one corner of the screen
+       where the field is brightest. At .35 the lit centre carries cream at
+       4.8:1 and the room is still a room. */
     background-image:
-      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .5) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
       radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
     background-size: 100% 100%, 22px 22px;
     background-attachment: fixed;
@@ -135,7 +141,8 @@
   .find {
     flex: 0 1 280px; min-width: 0;
     display: flex; align-items: center; gap: 8px;
-    padding: 9px 14px;
+    /* The one control on every screen, so it clears 44 like the rest. */
+    padding: 12px 14px; min-height: 44px;
     background: var(--paper);
     border: var(--line) solid var(--outline);
     border-radius: 999px;
@@ -158,6 +165,12 @@
     flex: 1; display: flex; justify-content: center; align-items: center;
     padding: 58px 22px 48px;
   }
+  /* Centred until it does not fit, and then aligned to the top. A centred flex
+     child that overflows puts its own head above the scroll origin, where
+     nothing can scroll to it — a long enough note lost its first line that
+     way. `safe` is the one-word version of that rule; a browser without it
+     keeps the plain `center` above and the old behaviour with it. */
+  main { align-items: safe center; }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
 
   .shoebox { width: min(720px, 100%); }
@@ -283,9 +296,15 @@
   .later:hover, .later:focus-visible { opacity: 1; background: rgba(0, 0, 0, .16); }
   .acorn { flex: none; }
 
+  /* A column, and it has to be one now that a note can carry a photograph.
+     As a row, the photograph became a sibling of the words and landed beside
+     them — about seventy pixels wide on a phone, which is not a picture of a
+     letter, it is a swatch. The template has always said the opposite: the
+     photograph is the note and the words are its caption. */
   .note {
     padding: 30px 32px 12px; flex: 1; position: relative;
-    display: flex; align-items: center;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: flex-start; gap: 4px;
   }
   .note p {
     margin: 0;
@@ -420,7 +439,7 @@
     text-align: center;
     font-size: 13px;
     font-variation-settings: var(--precise), "wght" 550;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
 
   /* Present for anything that reads the page aloud, absent for anything that
@@ -455,7 +474,7 @@
     margin: 0 0 20px;
     font-size: 13px; letter-spacing: .09em;
     font-variation-settings: var(--precise), "wght" 750;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
 
   /* ---------- a chore card ---------- */
@@ -618,7 +637,7 @@
     display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
     font-size: 13px; letter-spacing: .09em;
     font-variation-settings: var(--precise), "wght" 750;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
   .resultsHead b {
     color: var(--paper);
@@ -679,7 +698,10 @@
     letter-spacing: .05em;
     color: var(--outline); background: var(--paper);
     border: 2px solid var(--outline); border-radius: 999px;
-    padding: 9px 13px; cursor: pointer; min-height: 38px;
+    /* 44px, like every other control that a thumb has to find. The search
+       results are the phone's main way back to a note, and these were the
+       smallest targets in the product at 38. */
+    padding: 11px 13px; cursor: pointer; min-height: 44px;
     box-shadow: 0 3px 0 0 var(--outline);
     transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
   }
@@ -694,7 +716,7 @@
     margin: 26px 0 0; text-align: center;
     font-size: 13px;
     font-variation-settings: var(--precise), "wght" 600;
-    color: rgba(254, 214, 167, .8);
+    color: var(--cream);
   }
 
   /* The product speaking, so it takes the Voice role rather than a size of
@@ -790,23 +812,34 @@
     margin: 9px 2px 0;
     font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 700;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
   /* The failure is not the success in different words. It says what is true,
-     what happens next, and the words are still in the field above it. */
-  /* Held is not failure. The words are somewhere; only the pile has not seen
-     them yet. Cream rather than the warning orange, because nothing has gone
-     wrong. */
-  .slotsaid.held {
-    color: rgba(254, 214, 167, .9); text-transform: none; letter-spacing: .01em;
-    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 600;
-    max-width: 46ch;
-  }
+     what happens next, and the words are still in the field above it.
+
+     Both of these take the card's own material rather than sitting as tinted
+     type on the field, and that is a legibility answer before it is a visual
+     one: orange on the lit purple measured 2.43:1, which made the sentence
+     that reports a failure the least readable thing on the screen. Paper under
+     it puts them at better than 12:1.
+
+     It is also the truer shape. "kept" is a status you glance at and these are
+     messages you have to read and act on, so they are objects on the field
+     rather than more of it. */
+  .slotsaid.held,
   .slotsaid.bad {
-    color: var(--orange-lit); text-transform: none; letter-spacing: .01em;
-    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 600;
+    text-transform: none; letter-spacing: .01em;
+    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 560;
     max-width: 46ch;
+    color: var(--outline); background: var(--card);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 3px 0 0 var(--outline);
+    padding: 10px 13px; margin: 12px 2px 0;
   }
+  /* Held is not failure. The words are somewhere; only the pile has not seen
+     them yet — so it carries the brown of a thing at rest, and the orange bar
+     that means "this needs you" stays on the one that does. */
+  .slotsaid.bad { border-bottom: 3px solid var(--orange); }
 
 
 
@@ -817,15 +850,32 @@
   /* On the chore, because you time the thing you are looking at. Quiet: the
      card's three answers are what it is for, and this is an offer beneath
      them. */
-  .timerRow {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  /* Shut, this is one quiet line under the chore's answers; open, it is the
+     three lengths. The dashed rule is the divider between what you manage
+     about a chore and what you do about it, and it stays on the disclosure so
+     it reads the same shut as it did before. */
+  .gofor {
     margin-top: 12px; padding-top: 12px;
     border-top: 2px dashed rgba(28, 17, 11, .18);
   }
-  .timerRow .lead {
-    font-size: 11.5px; letter-spacing: .1em;
-    font-variation-settings: var(--precise), "wght" 750;
+  .gofor > summary {
+    list-style: none; cursor: pointer;
+    display: inline-flex; align-items: center; min-height: 44px;
+    font-size: 12.5px; letter-spacing: .04em;
+    font-variation-settings: var(--precise), "wght" 620;
     color: var(--brown);
+    text-decoration: underline; text-underline-offset: 4px;
+    text-decoration-color: rgba(28, 17, 11, .3);
+  }
+  .gofor > summary::-webkit-details-marker { display: none; }
+  .gofor > summary:hover { color: var(--outline); text-decoration: underline; text-underline-offset: 4px; }
+  .gofor .ifopen { display: none; }
+  .gofor[open] .ifshut { display: none; }
+  .gofor[open] .ifopen { display: inline; }
+
+  .timerRow {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 4px;
   }
   .tbtn {
     padding: 9px 13px; min-height: 44px;
@@ -895,7 +945,7 @@
     margin: 14px 0 9px;
     font-size: 12px; letter-spacing: .09em;
     font-variation-settings: var(--precise), "wght" 720;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
   .newchore .namefield {
     display: flex; align-items: center;
@@ -944,23 +994,40 @@
   /* A correction happens where the note is, not on a page of its own — the
      same disclosure the interval question uses, and closing it changes
      nothing. Quiet when shut, because most notes are fine. */
+  /* The two ways of not answering, side by side at the card's foot. Open,
+     either one takes the whole width — a disclosure that has opened is the
+     thing you are doing. */
+  .ways {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 2px 18px; margin-top: 2px;
+  }
+  .ways > details[open] { flex-basis: 100%; }
+
   .reword { margin-bottom: 8px; }
+  /* The same object as the one beside it. They sit on one line now, so a
+     dotted-quiet one next to an underlined one read as two different kinds of
+     control offering the same kind of escape. */
   .reword > summary {
     list-style: none; cursor: pointer;
-    display: inline-flex; align-items: center; min-height: 44px;
-    font-size: 12.5px; letter-spacing: .04em;
+    display: inline-block; min-height: 44px; padding: 12px 2px;
+    color: var(--brown);
+    font: 600 13px/1 "Recursive", sans-serif;
     font-variation-settings: var(--precise), "wght" 620;
-    color: var(--brown); opacity: .75;
+    text-decoration: underline; text-underline-offset: 3px;
   }
   .reword > summary::-webkit-details-marker { display: none; }
-  .reword > summary:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+  .reword > summary:hover { color: var(--outline); }
   .reword .ifopen { display: none; }
   .reword[open] .ifshut { display: none; }
   .reword[open] .ifopen { display: inline; }
   /* Open, the note's own words are gone from view — the field holds them, and
      two copies of the same sentence on one card is a question about which one
-     is real. */
-  .reword[open] ~ #noteText { display: none; }
+     is real.
+     Reached through the card rather than as a sibling, because the disclosure
+     now lives at the foot and the words are in the block above it. Same rule,
+     addressed the way the chore picker already addresses its own row. */
+  .card:has(.reword[open]) #noteText,
+  .card:has(.reword[open]) .photo { display: none; }
   .reword textarea {
     display: block; width: 100%; resize: vertical;
     margin: 6px 0 10px; padding: 12px 14px;
@@ -1017,7 +1084,16 @@
      white until the card's own dark ink reads on it. The chores screen's
      controls have worked this way since they were built; these are the same
      controls for the same kinds of change. */
-  .tbtn {
+  /* Scoped to the tasks screen, and the scope is the whole point. This block
+     and the timer row's own .tbtn above were two unconditional rules with the
+     same specificity three hundred lines apart, so this one silently won and
+     painted the chores screen's 5/10/20 MIN buttons in done-green. Every chore
+     then showed four green pills, three of which started a timer.
+
+     DESIGN.md already argues this exactly once, about the offer's own timer:
+     it is paper "because orange means something was made and a timer makes
+     nothing". Green means a thing was finished, and the same argument holds. */
+  .tacts .tbtn {
     padding: 10px 14px; min-height: 44px;
     background: var(--done-lifted); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
@@ -1026,16 +1102,16 @@
     font-variation-settings: var(--precise), "wght" 720;
     letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
   }
-  .tbtn:hover { background: var(--done-lifted-hover); }
+  .tacts .tbtn:hover { background: var(--done-lifted-hover); }
   /* The press drops to the base colour, so it still reads as a change. */
-  .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--done); color: var(--paper); }
+  .tacts .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--done); color: var(--paper); }
 
   /* Back to the pile is not an exit and must not wear an exit's colour. It
      wears the pile's own: Notebook Violet is what a note in the pile is
      already marked with everywhere else on this screen. */
-  .tbtn.back { background: var(--open-lifted); }
-  .tbtn.back:hover { background: var(--open-lifted-hover); }
-  .tbtn.back:active { background: var(--violet); color: var(--paper); }
+  .tacts .tbtn.back { background: var(--open-lifted); }
+  .tacts .tbtn.back:hover { background: var(--open-lifted-hover); }
+  .tacts .tbtn.back:active { background: var(--violet); color: var(--paper); }
 
   /* The slot's own grammar, because a task is a sentence rather than a
      configuration — the new-chore form asks three questions; this asks one. */
@@ -1232,7 +1308,7 @@
     margin: 0 0 10px; text-align: center;
     font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 720;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
   .faces { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   /* The drawing is the button. No stock behind it and no outline of its own —
@@ -1242,7 +1318,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     padding: 6px 8px 8px; min-height: 44px;
     background: none; border: 0; border-radius: var(--r);
-    color: rgba(254, 214, 167, .85); cursor: pointer;
+    color: var(--cream); cursor: pointer;
     font: 600 10.5px/1 "Recursive", sans-serif;
     font-variation-settings: var(--precise), "wght" 700;
     letter-spacing: .07em; text-transform: uppercase;
@@ -1264,17 +1340,17 @@
     flex-wrap: wrap; margin: 0;
     font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 700;
-    color: rgba(254, 214, 167, .85);
+    color: var(--cream);
   }
   .noted img { height: 46px; width: auto; display: block; }
   .noted .again {
-    color: var(--cream); opacity: .8;
+    color: var(--cream);
     text-decoration: underline; text-underline-offset: 3px;
     text-transform: none; letter-spacing: 0;
     font-size: 12.5px; font-variation-settings: var(--precise), "wght" 620;
     display: inline-flex; align-items: center; min-height: 44px;
   }
-  .noted .again:hover { opacity: 1; }
+  .noted .again:hover { color: var(--paper); }
 
   /* Keycaps on the chores screen appear on the chore you are focused in, and
      nowhere else. Three sets of caps on every card is a poster; one set, on
@@ -1355,7 +1431,7 @@
     /* 16px so focusing the field does not make iOS zoom the page. */
     .find input { font-size: 16px; }
 
-    main { padding: 36px 13px 32px; }
+    main { padding: 36px 13px calc(32px + env(safe-area-inset-bottom)); }
     main.scrolling { padding-top: 38px; }
 
     /* Still two doors side by side: their equality is the screen's one
@@ -1405,10 +1481,16 @@
     .tray { padding: 18px 22px 22px; }
     .row { gap: 8px; }
 
-    /* The three ways out, side by side and the same size, then the one that
-       makes something across the full width beneath them. */
+    /* Two by two, then the one that makes something across the full width
+       beneath them.
+
+       Three columns for as long as there were three answers, and then a fourth
+       answer was added and nothing here changed: A TASK dropped into a
+       one-third cell on a row of its own and wrapped its label to two lines
+       while its siblings sat on one. It read as a rendering accident on the
+       one screen that has to be flawless. Four answers want an even grid. */
     .actions {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
     }
     .btn { padding: 14px 8px; min-height: 48px; justify-content: center; gap: 6px; font-size: 13.5px; }
     .btn.make { grid-column: 1 / -1; margin-left: 0; width: 100%; }
@@ -1420,7 +1502,7 @@
     .choreHit .name { font-size: 23px; }
     .choreHit .meta { font-size: 12px; }
     .rcard p { font-size: 18.5px; }
-    .rbtn { padding: 10px 12px; min-height: 42px; letter-spacing: .03em; }
+    .rbtn { padding: 11px 12px; min-height: 44px; letter-spacing: .03em; }
     .chore { padding: 17px 18px 18px; }
     .chore .name { font-size: 23px; }
     .chore .meta { font-size: 12px; }
@@ -1429,7 +1511,10 @@
       padding: 14px 8px; min-height: 48px;
       font-size: 12.5px; letter-spacing: .05em;
     }
-    .abtn.stop { margin-left: 0; grid-column: 1 / -1; }
+    /* Not the full width. It is the one press here that ends something, and
+       spanning the card made it the largest thing on it — a destructive
+       action wearing the emphasis of a primary one. */
+    .abtn.stop { margin-left: 0; }
     .often { display: flex; }
     .often > summary { width: 100%; }
     .often[open] { grid-column: 1 / -1; }
@@ -1505,7 +1590,7 @@
   .askpush {
     display: block; margin: 14px auto 0; min-height: 44px;
     background: none; border: 0; padding: 10px 4px;
-    color: rgba(254, 214, 167, .85); cursor: pointer;
+    color: var(--cream); cursor: pointer;
     font: 600 13px/1 "Recursive", sans-serif;
     font-variation-settings: var(--precise), "wght" 620;
     text-decoration: underline; text-underline-offset: 3px;
@@ -1848,8 +1933,25 @@
     font-variation-settings: var(--precise), "wght" 680;
     color: var(--cream);
   }
-  .aday .saidwhat { margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .aday .saidwhat { margin: 0; display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
   .aday .saidwhat img { width: 44px; height: auto; display: block; }
+  /* The face and the word it means, as one thing. */
+  .areading {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 14px; letter-spacing: .04em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: var(--paper);
+  }
+
+  /* The deck's own heading, which had no rule at all and was rendering on
+     browser defaults — a 2em UA-bold serif-metric heading in a product that
+     sets everything else. held and moods are the two screens that use it. */
+  .deckhead {
+    margin: 0 0 18px;
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 900; font-size: 21px; letter-spacing: -.01em;
+    color: var(--paper); text-wrap: balance;
+  }
 
   /* The camera in the slot. Same height as the words beside it and quieter
      than the button: photographing is the alternative to typing, not the

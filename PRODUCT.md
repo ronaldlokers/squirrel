@@ -51,10 +51,14 @@ category sells the counter as the feature.
 
 ## Operating Context
 
-- Capture happens **only** in Campfire. This screen never accepts a new note, and
-  that is permanent rather than a current limitation: two capture surfaces means
-  two places to look for a thought, which is the problem the product exists to
-  solve.
+- Capture happens in **both** places. It was Campfire only for the screen's whole
+  life, and the reasoning is worth keeping rather than deleting: two capture
+  surfaces means two places to look for a thought, which is the problem the
+  product exists to solve. The owner overruled it on 20 August 2026, choosing a
+  slot on this screen over a relay through Campfire. What makes that survivable
+  is that both surfaces write the same row to the same table through the same
+  fsynced spool — one pile with two doors into it. What it costs is that the
+  Campfire room stops being the complete record.
 - Reached at `squirrel.ronaldlokers.nl`, LAN-only via a Traefik ipAllowList,
   behind Authentik forward-auth. Runs in a homelab Kubernetes cluster.
 - The same notes are also reachable from chat: `!notes`, `!find <text>`,
@@ -69,8 +73,10 @@ category sells the counter as the feature.
 **Confirmed functionality for this surface:**
 
 - One screen, no navigation. Notes newest-first.
-- Four actions per note: **done · drop · keep · make it a chore.** The chore
-  action takes an interval.
+- Four answers per note: **done · keep · drop · a task** — and one thing you can
+  make from it, **make it a chore**, which takes an interval. Two ways of not
+  answering sit apart from those at the card's foot: correcting the words, and
+  saying you cannot act on it.
 - Search across every state, on the same screen.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.

@@ -12,8 +12,13 @@
   {{range .Days}}
   <article class="aday">
     <p class="when">{{.Day}}</p>
+    {{/* The word beside the face, not only inside it. The word lived in `alt`
+         and `title` alone, which means a screen reader had it and nobody
+         looking at the page did — `title` needs a hover and this page is read
+         on a phone. It made the one screen Principle 5 was relaxed for into
+         three small pictures you had to already know how to read. */}}
     <p class="saidwhat">
-      {{range .Moods}}<img alt="{{.Word}}" title="{{.Word}}" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">{{end}}
+      {{range .Moods}}<span class="areading"><img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">{{.Word}}</span>{{end}}
     </p>
   </article>
   {{end}}

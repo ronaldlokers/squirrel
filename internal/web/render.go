@@ -201,7 +201,20 @@ func elsewhere(here string) []linkView {
 		"pile": "/pile", "kept": "/pile",
 		"tasks": "/tasks", "archive": "/tasks", "held": "/tasks",
 		"chores": "/chores",
+		// The screens that belong to none of the three still get two links, not
+		// three. Before this they fell through the map and rendered all of
+		// them, which wrapped the lid onto a second row and broke the rule
+		// DESIGN.md states plainly: two, and they are the two places you are
+		// not. The moods page shipped that way and nothing caught it, because
+		// the miss is silent — a new screen inherits it by being new.
+		"moods": "/pile", "buddy": "/pile",
 	}[here]
+	if mine == "" {
+		// Nothing claimed it. Drop the first rather than showing three: a lid
+		// that grows a link for an unmapped route is a lid that breaks the next
+		// time someone adds a screen.
+		mine = all[0].Href
+	}
 
 	out := make([]linkView, 0, 2)
 	for _, l := range all {
