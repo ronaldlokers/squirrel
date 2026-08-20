@@ -105,9 +105,13 @@ type Reply struct {
 // need them land; each one answers ErrUnavailable from NoCoach.
 type Coach interface {
 	// Answer is a conversational turn: the sheet, `!coach`, and the overwhelm
-	// turn. It is the only method phase A defines, because it is the only one
-	// the next two phases need.
+	// turn.
 	Answer(ctx context.Context, t Turn) (Reply, error)
+	// Decide is what to do now. It reads through tools and hands back one
+	// thing it was actually shown; ErrUnavailable means the picker chooses,
+	// which is what happened before this method existed and what happens
+	// whenever it does not work.
+	Decide(ctx context.Context, personID int64) (Decision, error)
 }
 
 // NoCoach is the zero value and the default build. It is not a stub for tests
@@ -117,6 +121,10 @@ type NoCoach struct{}
 
 func (NoCoach) Answer(context.Context, Turn) (Reply, error) {
 	return Reply{}, ErrUnavailable
+}
+
+func (NoCoach) Decide(context.Context, int64) (Decision, error) {
+	return Decision{}, ErrUnavailable
 }
 
 // Trim keeps the newest exchanges that are still recent enough to be about

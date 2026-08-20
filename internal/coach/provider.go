@@ -31,6 +31,10 @@ type Provider struct {
 	// is the only thing that knows what kind of moment this is.
 	Fast, Deep string
 	Budget     Budget
+	// Facts is what the read tools see, or nil. Nil means Decide is not
+	// available and the picker chooses, which is what shipped before any of
+	// this existed.
+	Facts Facts
 	// Clock is time.Now unless a test says otherwise. The budget's month
 	// boundary is the only thing that reads it.
 	Clock func() time.Time

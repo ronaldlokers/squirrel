@@ -109,3 +109,13 @@ func (s *Store) UnrefuseToday(ctx context.Context, personID int64, kind OfferKin
 func suppressionKey(kind OfferKind, refID int64) string {
 	return string(kind) + ":" + strconv.FormatInt(refID, 10)
 }
+
+// SuppressionKey is the same, for the one caller outside this package.
+//
+// internal/boot needs it because the coach's read tools apply today's
+// refusals before the model ever sees the work — suppression belongs in the
+// fact, not in a prompt, or "not now" would mean less depending on which of
+// the two things answered. Exported rather than reimplemented there, because
+// two spellings of this key is exactly the bug the unexported one exists to
+// prevent.
+func SuppressionKey(kind OfferKind, refID int64) string { return suppressionKey(kind, refID) }

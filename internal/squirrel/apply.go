@@ -48,6 +48,10 @@ type Applier struct {
 	// Nil is the normal state. Every caller of it has a fixed answer to fall
 	// back to, and that answer is what shipped before the coach existed.
 	asker func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+	// decider optionally lets a model choose among what the picker found. Nil
+	// is the normal state and PickNow is the whole answer then, which is what
+	// shipped before any of this existed.
+	decider Decider
 }
 
 // SetCoach supplies the callback that asks a model, or nil for no coach.
@@ -57,6 +61,11 @@ type Applier struct {
 func (a *Applier) SetCoach(ask func(context.Context, int64, string, string, string) (string, error)) {
 	a.asker = ask
 }
+
+// SetDecider supplies the callback that lets a model choose among what the
+// picker found, or nil for none. Set after construction for the same reason
+// SetCoach is: boot is the only package that may build it.
+func (a *Applier) SetDecider(d Decider) { a.decider = d }
 
 // SetNudger supplies the callback that may attach a nudge to a capture. It is
 // set after construction because the Applier and the Scheduler each need the
@@ -498,8 +507,13 @@ func (a *Applier) now(ctx context.Context, arg string, personID int64, conversat
 		return Message{}, err
 	}
 	if !found {
+		// Nothing to hand over, and the coach is not asked. A model invited to
+		// find something when the rules found nothing would be answering a
+		// different question — "is there really nothing?" — and the honest
+		// answer to that one is already yes.
 		return NothingNowMessage(a.store.Capacity(ctx, personID, time.Now())), nil
 	}
+	o = a.judged(ctx, personID, o)
 
 	m := NowMessage(o)
 	if len(m.Actions) == 0 {
@@ -524,6 +538,23 @@ func (a *Applier) now(ctx context.Context, arg string, personID int64, conversat
 	}
 	a.pending = id
 	return m, nil
+}
+
+// judged is the offer after a model has had a look at it, or the same offer.
+//
+// Same shape in and out, so everything downstream — the buttons, the recorded
+// line, the tap that resolves against it — cannot tell which produced it. That
+// is the point: the model's answer is not a different kind of offer, it is the
+// same offer chosen differently.
+func (a *Applier) judged(ctx context.Context, personID int64, o Offer) Offer {
+	if a.decider == nil || !JudgementHelps(o.Kind) {
+		return o
+	}
+	kind, refID, text, because, ok := a.decider(ctx, personID, string(o.Kind), o.RefID)
+	if !ok || text == "" || because == "" {
+		return o
+	}
+	return Offer{Kind: OfferKind(kind), RefID: refID, Text: text, Because: because}
 }
 
 // stuck is the ladder, in chat: `!stuck`, or `!stuck too big`.

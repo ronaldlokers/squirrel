@@ -26,22 +26,46 @@ import (
 // of a cent rather than a full completion that is then thrown away.
 const maxOutput = 200
 
+// maxToolOutput is the cap on a round that may call tools. A tool call's
+// arguments are output tokens, and a cap sized for two sentences truncates
+// them into JSON that will not parse.
+const maxToolOutput = 600
+
 type chatRequest struct {
 	Model    string        `json:"model"`
 	Messages []chatMessage `json:"messages"`
 	// MaxCompletionTokens rather than the older max_tokens: the older name is
 	// rejected outright by current models rather than merely deprecated.
-	MaxCompletionTokens int `json:"max_completion_tokens"`
+	MaxCompletionTokens int              `json:"max_completion_tokens"`
+	Tools               []map[string]any `json:"tools,omitempty"`
 }
 
 type chatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
+	// Calls is the assistant asking for tools; ToolCallID is a result coming
+	// back. Both omitted on an ordinary turn, which is what keeps the
+	// conversational path's request byte-for-byte what it was before tools
+	// existed.
+	Calls      []toolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+}
+
+type toolCall struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
 }
 
 type chatResponse struct {
 	Choices []struct {
-		Message chatMessage `json:"message"`
+		Message struct {
+			Content string     `json:"content"`
+			Calls   []toolCall `json:"tool_calls"`
+		} `json:"message"`
 	} `json:"choices"`
 	Usage struct {
 		PromptTokens     int `json:"prompt_tokens"`
@@ -64,26 +88,42 @@ type chatResponse struct {
 // coach available" in a log line at three in the morning is not an answer to
 // anything.
 func (p *Provider) completion(ctx context.Context, model string, messages []chatMessage) (string, int, int, error) {
+	text, _, in, out, err := p.completionWithTools(ctx, model, messages, nil)
+	return text, in, out, err
+}
+
+// completionWithTools is the same call with tools offered.
+//
+// The output cap is lifted for a tool round, because a tool call's arguments
+// are output tokens too and a cap sized for two sentences of prose truncates
+// them into unparseable JSON. It is still bounded — the round trips are capped
+// above, which is the ceiling that actually protects the budget.
+func (p *Provider) completionWithTools(ctx context.Context, model string, messages []chatMessage, tools []map[string]any) (string, []toolCall, int, int, error) {
+	cap := maxOutput
+	if len(tools) > 0 {
+		cap = maxToolOutput
+	}
 	body, err := json.Marshal(chatRequest{
 		Model:               model,
 		Messages:            messages,
-		MaxCompletionTokens: maxOutput,
+		MaxCompletionTokens: cap,
+		Tools:               tools,
 	})
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("%w: building the request: %w", ErrUnavailable, err)
+		return "", nil, 0, 0, fmt.Errorf("%w: building the request: %w", ErrUnavailable, err)
 	}
 
 	url := strings.TrimSuffix(p.BaseURL, "/") + "/chat/completions"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("%w: building the request: %w", ErrUnavailable, err)
+		return "", nil, 0, 0, fmt.Errorf("%w: building the request: %w", ErrUnavailable, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.APIKey)
 
 	res, err := p.Client.Do(req)
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("%w: %w", ErrUnavailable, err)
+		return "", nil, 0, 0, fmt.Errorf("%w: %w", ErrUnavailable, err)
 	}
 	defer res.Body.Close()
 
@@ -91,7 +131,7 @@ func (p *Provider) completion(ctx context.Context, model string, messages []chat
 	// memory in full to be discarded.
 	raw, err := io.ReadAll(io.LimitReader(res.Body, 64<<10))
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("%w: reading the reply: %w", ErrUnavailable, err)
+		return "", nil, 0, 0, fmt.Errorf("%w: reading the reply: %w", ErrUnavailable, err)
 	}
 
 	var parsed chatResponse
@@ -100,7 +140,7 @@ func (p *Provider) completion(ctx context.Context, model string, messages []chat
 		// always a proxy or an auth failure rather than the model, and the
 		// status says which. The body itself is not logged: it may carry back
 		// whatever was sent, and what was sent is the person's own words.
-		return "", 0, 0, fmt.Errorf("%w: unreadable reply (status %d)", ErrUnavailable, res.StatusCode)
+		return "", nil, 0, 0, fmt.Errorf("%w: unreadable reply (status %d)", ErrUnavailable, res.StatusCode)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -108,15 +148,16 @@ func (p *Provider) completion(ctx context.Context, model string, messages []chat
 		if parsed.Error != nil {
 			detail = ": " + parsed.Error.Message
 		}
-		return "", 0, 0, fmt.Errorf("%w: status %d%s", ErrUnavailable, res.StatusCode, detail)
+		return "", nil, 0, 0, fmt.Errorf("%w: status %d%s", ErrUnavailable, res.StatusCode, detail)
 	}
 	if len(parsed.Choices) == 0 {
-		return "", 0, 0, fmt.Errorf("%w: no reply in the response", ErrUnavailable)
+		return "", nil, 0, 0, fmt.Errorf("%w: no reply in the response", ErrUnavailable)
 	}
 
 	// Tokens are returned even on the paths that then fail the guard, because
 	// a rejected reply was still paid for and the budget has to hear about it.
 	return parsed.Choices[0].Message.Content,
+		parsed.Choices[0].Message.Calls,
 		parsed.Usage.PromptTokens,
 		parsed.Usage.CompletionTokens,
 		nil
