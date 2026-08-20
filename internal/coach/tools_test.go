@@ -27,6 +27,11 @@ type fakeFacts struct {
 	item   coach.Work
 	hasIt  bool
 	err    error
+	// minutes is what a measured duration comes back as, and zero stands in
+	// for "not timed enough to say" — which must reach the model as an absence
+	// rather than as a zero.
+	minutes int
+	labels  []string
 	// asked names every tool that was actually run, so a test can assert the
 	// caps were applied here rather than hoped for in the prompt.
 	asked  []string
@@ -58,6 +63,12 @@ func (f *fakeFacts) Lately(_ context.Context, _ int64, limit int) ([]coach.Happe
 func (f *fakeFacts) Item(context.Context, int64, int64) (coach.Work, bool, error) {
 	f.asked = append(f.asked, "item")
 	return f.item, f.hasIt, f.err
+}
+
+func (f *fakeFacts) Typically(_ context.Context, _ int64, label string) (int, bool, error) {
+	f.asked = append(f.asked, "typically")
+	f.labels = append(f.labels, label)
+	return f.minutes, f.minutes > 0, f.err
 }
 
 // toolAPI answers with a scripted sequence of turns, so a test can drive a
@@ -273,4 +284,49 @@ func TestDecideWithNoFactsAsksNothing(t *testing.T) {
 func TestNoCoachDecidesNothing(t *testing.T) {
 	_, err := coach.NoCoach{}.Decide(context.Background(), 1)
 	require.ErrorIs(t, err, coach.ErrUnavailable)
+}
+
+// Measured rather than guessed. A model's estimate is fine for a first run and
+// should not survive a few real ones.
+func TestTypicallyHandsBackAMeasuredDuration(t *testing.T) {
+	f := &fakeFacts{minutes: 10}
+	api := newToolAPI(t,
+		turnOf(call("a", "typically", map[string]any{"label": "put the bins out"})),
+		turnOf(call("b", "say", map[string]any{"text": "ok"})),
+	)
+
+	_, _ = deciderFor(api, f, &fakeLog{}).Decide(context.Background(), 1)
+
+	require.Equal(t, []string{"put the bins out"}, f.labels)
+
+	sent, _ := api.sent[1]["messages"].([]any)
+	var told string
+	for _, m := range sent {
+		msg, _ := m.(map[string]any)
+		if msg["role"] == "tool" {
+			told, _ = msg["content"].(string)
+		}
+	}
+	require.Equal(t, `{"minutes":10}`, told)
+}
+
+// Absent rather than zero. Zero is a measurement and this is the absence of
+// one, and a model told "0 minutes" will believe it.
+func TestTooFewRunsReachTheModelAsAnAbsence(t *testing.T) {
+	api := newToolAPI(t,
+		turnOf(call("a", "typically", map[string]any{"label": "put the bins out"})),
+		turnOf(call("b", "say", map[string]any{"text": "ok"})),
+	)
+
+	_, _ = deciderFor(api, &fakeFacts{}, &fakeLog{}).Decide(context.Background(), 1)
+
+	sent, _ := api.sent[1]["messages"].([]any)
+	for _, m := range sent {
+		msg, _ := m.(map[string]any)
+		if msg["role"] == "tool" {
+			content, _ := msg["content"].(string)
+			require.Equal(t, "{}", content)
+			require.NotContains(t, content, "0")
+		}
+	}
 }

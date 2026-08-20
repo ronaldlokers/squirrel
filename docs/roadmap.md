@@ -105,7 +105,7 @@ product whose value is that it works.
 | **B** | Luna behind it, `!coach` in chat only. | shipped |
 | **C** | The coach surface: acorn, sheet, `/coach`, first paint, rolling window. The box is connected; the four chips stay deterministic. | shipped |
 | **C2** | The overwhelm turn — recognising it, and escalating it to Terra. *The phase that justifies the project.* | shipped |
-| **D** | Read tools (five of six), model-decides among what the picker found, offer cache, picker fallback. | shipped |
+| **D** | Read tools, model-decides among what the picker found, offer cache, picker fallback. | shipped |
 | **E** | `breakDownTask()`; "too big" routed through the coach, one step at a time. | shipped |
 | **F** | Splitting a brain dump, proposed and confirmed. On the screen; chat is unchanged. | shipped |
 | **G** | Write tools and the confirmation policy. Six run, four ask, three are refused. | shipped |
@@ -120,8 +120,9 @@ it. With the key removed it is `NoCoach{}` and the product is exactly what it
 was in v0.13.0.
 
 **Seven deviations from the proposal, each recorded where it happened:** C
-shipped with its box connected rather than deterministic-only; D shipped five
-read tools rather than six, and its cache with no invalidation hooks at all; E
+shipped with its box connected rather than deterministic-only; D shipped its
+cache with no invalidation hooks at all, and five read tools rather than six
+until the sixth was decided; E
 is synchronous rather than paint-then-replace; F runs on a press rather than on
 capture, and on the screen only; G answered the open question about pending
 proposals by making them unstorable; H found that two of the four rules it was

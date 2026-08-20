@@ -126,6 +126,17 @@ func (f *facts) Lately(ctx context.Context, personID int64, limit int) ([]coach.
 	return out, nil
 }
 
+// Typically is how long something usually takes, from timers that reached
+// their end.
+//
+// The store is what makes this narrow: it reads timer_runs, which only ever
+// holds finished runs, and it refuses to answer at all until there are enough
+// of them for a median to mean something. Both of those are the store's rules
+// rather than this adapter's, so there is no way to widen them from here.
+func (f *facts) Typically(ctx context.Context, personID int64, label string) (int, bool, error) {
+	return f.store.TypicalMinutes(ctx, personID, label)
+}
+
 // Item is one thing, by id, and only ever this person's.
 func (f *facts) Item(ctx context.Context, personID, id int64) (coach.Work, bool, error) {
 	it, found, err := f.store.ItemByID(ctx, personID, id)

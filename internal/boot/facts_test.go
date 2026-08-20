@@ -242,3 +242,39 @@ func TestClockCarriesCapacityAndNoMoodWord(t *testing.T) {
 	require.Equal(t, "low", clock.Capacity)
 	require.NotEmpty(t, clock.Clock)
 }
+
+// The sixth read tool. What it can say is how long something took; what it
+// cannot say is how often you did not finish, because those runs never exist.
+func TestTypicallyReadsFinishedRunsOnly(t *testing.T) {
+	ctx := context.Background()
+	store := factsStore(t)
+	p := factsOwner(t, store)
+	now := time.Now()
+	f := factsFor(t, store, now)
+
+	// Stopped early, five times over. Not a measurement.
+	for i := 0; i < 5; i++ {
+		_, err := store.StartTimer(ctx, p, "the kitchen", 10*time.Minute,
+			now.Add(time.Duration(i)*time.Hour))
+		require.NoError(t, err)
+		require.NoError(t, store.StopTimer(ctx, p))
+	}
+	_, found, err := f.Typically(ctx, p, "the kitchen")
+	require.NoError(t, err)
+	require.False(t, found, "stopping early reached the model as a measurement")
+
+	// Ran to the end, three times. That is one.
+	for i := 0; i < 3; i++ {
+		at := now.Add(time.Duration(10+i) * time.Hour)
+		_, err := store.StartTimer(ctx, p, "put the bins out", 10*time.Minute, at)
+		require.NoError(t, err)
+		_, ok, err := store.ClaimFinishedTimer(ctx, p, at.Add(10*time.Minute))
+		require.NoError(t, err)
+		require.True(t, ok)
+	}
+
+	minutes, found, err := f.Typically(ctx, p, "put the bins out")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, 10, minutes)
+}

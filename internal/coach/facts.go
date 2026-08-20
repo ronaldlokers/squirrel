@@ -60,21 +60,17 @@ type Facts interface {
 	NextFixed(ctx context.Context, personID int64) (Fixed, bool, error)
 	Lately(ctx context.Context, personID int64, limit int) ([]Happened, error)
 	Item(ctx context.Context, personID, id int64) (Work, bool, error)
+	// Typically is how long something usually takes, measured from timers that
+	// reached their end, or false when there are too few runs to say.
+	//
+	// The sixth tool, and it arrived after the other five: answering it needs
+	// a history of finished timers, and migration 0017 refused a timer history
+	// in writing. Migration 0022 narrows that refusal rather than reversing
+	// it — only runs that finished are recorded, so there is no failure rate
+	// in the table and the median is a fact about the bins rather than about
+	// you.
+	Typically(ctx context.Context, personID int64, label string) (int, bool, error)
 }
-
-// Five tools, not the six the design listed. The missing one is typically(),
-// which would say how many minutes something usually takes — and answering it
-// honestly needs a history of finished timers, which migration 0017 refuses on
-// stated grounds: it becomes a record of what you started and abandoned, which
-// is a report card.
-//
-// There is probably a version of it that is not — completed runs only, label
-// and length, never an abandonment, which makes it a fact about the bins
-// rather than about you. But reversing a written refusal is a product decision
-// and not a detail of the phase that happened to want it, so it is raised in
-// the proposal's open questions instead of taken quietly here. Until then the
-// model estimates duration and says so, which is what decision 4 already
-// allows for the first run of anything.
 
 // The caps. Ten is the number the pile screen already uses for a page of
 // notes, and it is here for the same reason: past ten, a list stops being
