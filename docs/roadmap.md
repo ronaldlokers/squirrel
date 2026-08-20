@@ -85,17 +85,17 @@ product whose value is that it works.
 
 ### Phases
 
-| | |
-| --- | --- |
-| **A** | Skeleton: interface, `NoCoach{}`, guard, budget counter, config, `coach_answers`. No provider. **Needs no key.** |
-| **B** | Luna behind it, `!coach` in chat only. |
-| **C** | The coach surface: acorn, sheet, `/coach`, first paint, rolling window — deterministic content only. |
-| **C2** | The overwhelm turn. *The phase that justifies the project.* |
-| **D** | Read tools, model-decides, offer cache, picker fallback. |
-| **E** | `breakDownTask()`; "I can't start" routed through the coach. |
-| **F** | Split-on-capture, proposed and confirmed. |
-| **G** | Write tools and the confirmation policy. |
-| **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* |
+| | | |
+| --- | --- | --- |
+| **A** | Skeleton: interface, `NoCoach{}`, guard, budget counter, config, `coach_answers`. No provider. **Needs no key.** | shipped |
+| **B** | Luna behind it, `!coach` in chat only. | shipped |
+| **C** | The coach surface: acorn, sheet, `/coach`, first paint, rolling window — deterministic content only. | |
+| **C2** | The overwhelm turn. *The phase that justifies the project.* | |
+| **D** | Read tools, model-decides, offer cache, picker fallback. | |
+| **E** | `breakDownTask()`; "I can't start" routed through the coach. | |
+| **F** | Split-on-capture, proposed and confirmed. | |
+| **G** | Write tools and the confirmation policy. | |
+| **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* | |
 
 **Ready:** the API key is stored (SOPS + vault, project-scoped, spend limit set),
 and the model IDs are verified against the live API: `gpt-5.6-luna` for routine

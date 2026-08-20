@@ -2,6 +2,7 @@ package squirrel
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -75,12 +76,29 @@ var screenURL string
 // SetScreenURL is called once at boot.
 func SetScreenURL(u string) { screenURL = u }
 
+// coachHere is whether a model is reachable. Help does not list `!coach` when
+// it is not: a command that only ever answers "there is no coach" is worse
+// than one that was never advertised, and no key is an ordinary shipping
+// state rather than something broken.
+//
+// Package-level and set once at boot, the same shape and the same reason as
+// screenURL directly above.
+var coachHere bool
+
+// stuckHelp is named because the coach's line is inserted directly after it,
+// and a help list that quietly stops matching itself is how a line ends up in
+// the wrong place.
+const stuckHelp = "!stuck — I can't start. Four answers, and one of them helps"
+
+// SetCoachHere is called once at boot.
+func SetCoachHere(here bool) { coachHere = here }
+
 func HelpMessage() Message {
-	return Message{Text: strings.Join([]string{
+	lines := []string{
 		"Anything you type is a note. That is the default and it always wins.",
 		"",
 		"!now — one thing, chosen. !now anyway ignores a low day",
-		"!stuck — I can't start. Four answers, and one of them helps",
+		stuckHelp,
 		"at 14:30 dentist, 20 minutes away — a time the world imposed",
 		"!bring keys, wallet — what to take to it",
 		"!leaving — you went, or it is off",
@@ -104,7 +122,17 @@ func HelpMessage() Message {
 		"nvm — undo a chore I just made from a note",
 		"",
 		"Start with a dot to store something I would otherwise read as a command.",
-	}, "\n") + screenLine()}
+	}
+
+	if coachHere {
+		// Next to !stuck, because it is the same moment reached a different
+		// way: the ladder when you can name what is in the way, this when you
+		// cannot.
+		lines = slices.Insert(lines, slices.Index(lines, stuckHelp)+1,
+			"!coach <words> — say what is going on, in your own words")
+	}
+
+	return Message{Text: strings.Join(lines, "\n") + screenLine()}
 }
 
 // choreLine is a chore as a line of a list. The words are ChoreWords', because
