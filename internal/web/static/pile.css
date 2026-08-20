@@ -1754,3 +1754,13 @@
     font-size: 16px; line-height: 1.4;
     font-variation-settings: var(--casual), "wght" 500;
   }
+
+  /* What the coach has cost this month. Deliberately the quietest thing in the
+     sheet's lid: it is there to be findable, not to be watched. Tabular
+     figures so it does not shift as it climbs. */
+  .spend {
+    font-size: 12px;
+    font-variation-settings: var(--precise), "wght" 550;
+    font-variant-numeric: tabular-nums;
+    color: var(--brown);
+  }

@@ -287,3 +287,46 @@ func TestTheCoachNeverEmitsACount(t *testing.T) {
 		require.NotContains(t, body, n)
 	}
 }
+
+// What the coach has cost, in the sheet's own lid and nowhere else.
+func TestTheSheetSaysWhatItHasCost(t *testing.T) {
+	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
+	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/coach", nil).Body.String()
+
+	require.Contains(t, body, "€2.61")
+	require.Contains(t, body, "€10.00")
+}
+
+// Nowhere else, and that is the point. A running cost on the home screen would
+// be a number you meet before you have asked for anything.
+func TestNoOtherScreenSaysWhatItHasCost(t *testing.T) {
+	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
+	m := mountedWith(t, withOffer(nil), c)
+
+	for _, path := range []string{"/", "/pile", "/tasks", "/chores"} {
+		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
+			"the spend leaked onto %s", path)
+	}
+}
+
+// A figure that cannot be trusted is a figure not drawn.
+func TestASpendThatCannotBeReadIsNotShown(t *testing.T) {
+	body := mountedWith(t, withOffer(nil), &fakeCoach{}).
+		call(t, "GET", "/coach", nil).Body.String()
+	require.NotContains(t, body, "€")
+}
+
+// With no coach there is nothing to report on, so nothing reports.
+func TestWithNoCoachThereIsNoSpendLine(t *testing.T) {
+	require.NotContains(t, mounted(t, withOffer(nil)).call(t, "GET", "/coach", nil).Body.String(), "€")
+}
+
+// No ceiling is a supported choice, and "of €0.00" would read as one that had
+// been reached.
+func TestWithNoCeilingOnlyTheSpendIsShown(t *testing.T) {
+	c := &fakeCoach{spent: "€2.61"}
+	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/coach", nil).Body.String()
+
+	require.Contains(t, body, "€2.61")
+	require.NotContains(t, body, " of ")
+}

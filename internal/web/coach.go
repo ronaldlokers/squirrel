@@ -305,6 +305,14 @@ func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, 
 	if opts.Recent != nil {
 		v.Coach.Said = opts.Recent(personID)
 	}
+	if opts.Spent != nil {
+		// Only here, and only in the sheet's own lid. It belongs where the
+		// spending happens and nowhere else: a running cost on the home screen
+		// would be a number you meet before you have asked for anything.
+		if spent, ceiling, ok := opts.Spent(r.Context(), personID); ok {
+			v.Coach.Spent, v.Coach.Ceiling = spent, ceiling
+		}
+	}
 	renderWith(w, r, s, opts, "coach", v)
 }
 

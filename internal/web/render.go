@@ -257,6 +257,11 @@ type coachPanel struct {
 	Blockers []chipView
 	// From is the page the acorn was pressed on, so closing returns there.
 	From string
+	// Spent and Ceiling are what the coach has cost this month and what it may
+	// cost, as money. Empty when there is no coach or the sum cannot be read —
+	// a figure that cannot be trusted is a figure not drawn.
+	Spent   string
+	Ceiling string
 	// Propose is a thing the coach wants permission for, on this render only.
 	// Nothing stores it, so it cannot be applied by anything but the press.
 	Propose *Proposal

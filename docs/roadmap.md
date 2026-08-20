@@ -176,7 +176,7 @@ micro-steps for two or three chores · novelty in **art and phrasing only**.
 
 ## Open
 
-**Quiet hours on the nudge path.** A chore with no stated preference is open at
+**Quiet hours on the nudge path.** *(Being built.)* A chore with no stated preference is open at
 every hour, so a presence ping at four in the morning nudges. Noticed while
 building phase H, which names quiet hours as one of the floors the model cannot
 lift — and it is not actually one, because nothing enforces it. Not fixed there
