@@ -486,6 +486,18 @@ type fakeCoach struct {
 	// talk is the window, which the real one keeps in memory too.
 	talk   []Exchange
 	forgot int
+
+	// decision is what the model chooses instead of the picker's answer, or
+	// nil for "the picker was right". picked records what it was shown.
+	decision *fakeDecision
+	picked   []string
+}
+
+type fakeDecision struct {
+	kind    string
+	refID   int64
+	text    string
+	because string
 }
 
 func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) (string, error) {
@@ -496,8 +508,23 @@ func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) 
 	return c.reply, nil
 }
 
+// decided is what the model chooses instead, when a test says it chooses
+// anything. The zero value chooses nothing, which is the shipping state
+// whenever the picker's answer is good enough or nothing is configured.
+func (c *fakeCoach) decide(_ context.Context, _ int64, pickedKind string, pickedRef int64) (
+	string, int64, string, string, bool) {
+
+	c.picked = append(c.picked, pickedKind)
+	if c.decision == nil {
+		return "", 0, "", "", false
+	}
+	d := *c.decision
+	return d.kind, d.refID, d.text, d.because, true
+}
+
 func (c *fakeCoach) options(o Options) Options {
 	o.Ask = c.ask
+	o.Decide = c.decide
 	o.Recent = func(int64) []Exchange { return c.talk }
 	o.Remember = func(_ int64, said, replied string) {
 		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})

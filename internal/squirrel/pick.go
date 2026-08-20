@@ -280,6 +280,40 @@ func startOfDay(t time.Time) time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
 
+// Decider is the seam a model reaches this decision through, or nil.
+//
+// A func of primitives, like the coach's other seam and for the same reason:
+// this package must not import internal/coach. It takes the picker's own
+// answer and hands back one to render instead, or says it has nothing.
+//
+// Every caller must be written so that nil, and false, and a model that never
+// answers are all ordinary. PickNow is the whole answer whenever this is not
+// available, which is most of the time by design.
+type Decider func(ctx context.Context, personID int64, pickedKind string, pickedRef int64) (
+	kind string, refID int64, text, because string, ok bool)
+
+// JudgementHelps reports whether a model is allowed near this offer.
+//
+// Only three of the five kinds. A running timer is a thing you are already
+// doing rather than a thing that was picked, and a fixed point is the one
+// thing here the world imposed rather than the product suggested — a model
+// second-guessing either would be overruling a rule with an opinion.
+//
+// It lives in the core rather than in the wiring so both surfaces ask the same
+// question, and so the rule is next to the rules it protects.
+func JudgementHelps(kind OfferKind) bool {
+	switch kind {
+	case OfferChore, OfferTask, OfferAgain:
+		return true
+	}
+	return false
+}
+
+// StartOfDay is the same, for internal/boot: the coach's read tools use the
+// picker's own window for today's refusals, and two definitions of "today"
+// would put them out of step across a DST boundary.
+func StartOfDay(t time.Time) time.Time { return startOfDay(t) }
+
 // Refuse records a "not now" and is the only thing that suppresses an offer.
 //
 // It costs one press, it changes nothing about the thing itself, and it is

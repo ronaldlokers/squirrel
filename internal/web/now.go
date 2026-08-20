@@ -39,8 +39,14 @@ func offerFor(s Store, opts Options, r *http.Request, anyway bool) *offerView {
 	}
 	o, found, err := s.PickNow(r.Context(), personID, now(), anyway)
 	if err != nil || !found {
+		// Nothing to hand over, and the coach is not asked. A model invited to
+		// find something when the rules found nothing would be answering a
+		// different question, and this region is absent rather than empty when
+		// there is nothing — which is a rule about the screen, not about who
+		// chose.
 		return nil
 	}
+	o = judged(opts, r, personID, o)
 	v := &offerView{
 		Kind:    string(o.Kind),
 		RefID:   o.RefID,
@@ -52,6 +58,23 @@ func offerFor(s Store, opts Options, r *http.Request, anyway bool) *offerView {
 	// control it needs, which is the way to stop.
 	v.Running = o.Kind == squirrel.OfferTimer
 	return v
+}
+
+// judged is the offer after a model has had a look at it, or the same offer.
+//
+// Same type in and out, so the card, its three buttons and the ladder beneath
+// it cannot tell which produced it. JudgementHelps is the core's own rule
+// about which kinds a model may touch, asked here rather than restated: a
+// running timer and a fixed point are not opinions to be revisited.
+func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer) squirrel.Offer {
+	if opts.Decide == nil || !squirrel.JudgementHelps(o.Kind) {
+		return o
+	}
+	kind, refID, text, because, ok := opts.Decide(r.Context(), personID, string(o.Kind), o.RefID)
+	if !ok || text == "" || because == "" {
+		return o
+	}
+	return squirrel.Offer{Kind: squirrel.OfferKind(kind), RefID: refID, Text: text, Because: because}
 }
 
 // nowActHandler is the offer's three answers.

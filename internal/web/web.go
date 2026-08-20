@@ -61,6 +61,10 @@ type Options struct {
 	// Forget drops it. Closing the sheet has to mean the conversation is over,
 	// and it has to mean nothing else.
 	Forget func(personID int64)
+	// Decide lets a model choose among what the picker found, or is nil. The
+	// screen never calls it when the picker found nothing: absent rather than
+	// empty is a rule about this region, not about who chose.
+	Decide squirrel.Decider
 }
 
 // person answers who the pile belongs to, and whether that is known yet.

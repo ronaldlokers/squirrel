@@ -202,6 +202,14 @@ changed:
 | a moment entering its leave-by window | the world imposed something |
 | 30 minutes elapsed | a floor, so nothing is stale forever |
 
+**Shipped without a single invalidation hook.** The cache is keyed on the
+picker's own answer, and `PickNow()` already reflects every row above: a
+check-in changes capacity, a timer changes rules 2 and 3, a completion or a
+refusal removes the row, a moment entering its leave-by window outranks
+everything else. Comparing its answer catches all five at once, for the cost of
+one `PickNow` per open — which every open already did. Hooks are the version of
+this that gets forgotten when a seventh write path is added.
+
 Two reasons, both already in the codebase: it cuts model calls on the idle
 repeated action by roughly two thirds, and `pick.go` already argues an offer
 that changes on every reload "reads as the product changing its mind."
@@ -218,7 +226,7 @@ long-context recall, which is why it never runs the tool loop.
 | Operation | No AI | Luna | Terra | Reason |
 | --- | :---: | :---: | :---: | --- |
 | Creating a task from an explicit ask | ✅ | | | One insert. |
-| **Deciding what to do now** | fallback | | ✅ | Decision 1. Rules become the floor. |
+| **Deciding what to do now** | fallback | | ✅ | Decision 1. Rules become the floor, and the model only ever chooses *among what they found*. |
 | Serving a cached offer | ✅ | | | ~70% of home opens. |
 | Producing interrupt *candidates* | ✅ | | | Budget, windows, capacity. 1,435 of 1,440 ticks end here. |
 | **Deciding to interrupt** | | | ✅ | Decision 6, on candidates only. |
@@ -299,6 +307,23 @@ Each is inspectable, correctable, deletable. None is a model's opinion about you
 Six, not twelve. Every one is capped. There is no tool that returns the pile,
 and none that returns mood history — `now()` gives the derived capacity and
 nothing behind it.
+
+**Five shipped, not six.** `history(label)` is the missing one, and it needs a
+median over finished timers — which needs a history of finished timers, which
+migration 0017 refuses on stated grounds: it becomes a record of what you
+started and abandoned, which is a report card. There is probably a version that
+is not one (completed runs only, label and length, never an abandonment, making
+it a fact about the bins rather than about you), but reversing a written refusal
+is a product decision and not a detail of the phase that happened to want it.
+See open question 2.
+
+**Two things moved out of the prompt and into the tools.** The caps, because a
+cap the model is asked to respect is a cap it can ignore. And today's
+refusals: `open_work` applies the picker's own suppression, so "not now" means
+the same thing whichever of the two is choosing. Which also made
+`recent(limit)` smaller than planned — it answers what was *done*, never what
+was turned down, because a list of refusals adds nothing once they are already
+absent from the work, except a record of what you keep saying no to.
 
 ### Write tools and the confirmation policy
 
@@ -705,6 +730,22 @@ until the phase that needs it:
    If the coach proposes a fixed point and you never press anything, it should
    lapse rather than sit. An hour, matching the breadcrumb, is the obvious
    answer unless you want otherwise. Needed at phase G.
+
+2. **Should finished timers be kept, so durations can be measured?** *(raised
+   at phase D, 20 August.)* `history(label)` was designed to answer "how long
+   does this usually take" from real timers and replace the model's guess.
+   Answering it needs a row per finished run, and migration 0017 refuses a
+   timer history in writing: it becomes a record of what you started and
+   abandoned, which is a report card.
+
+   There is a narrower version that may not be: **completed runs only** — label
+   and length, written when a timer reaches its end and never when one is
+   stopped early. Nothing about abandonment is recorded, so there is nothing to
+   read back as a failure rate, and the median is a fact about the bins rather
+   than about you. It would also be the first thing in this product that
+   *measures* rather than *remembers*, which is why it is being asked rather
+   than assumed. Phase D shipped five tools instead of six; nothing is blocked
+   on the answer.
 
 *Resolved 20 August: the coach lives in a widget on every screen (§8a), which
 answers the earlier route-versus-home question — it is chrome, so home keeps its

@@ -66,7 +66,7 @@ func budgetFor(cfg squirrel.CoachConfig, store *squirrel.Store) coach.Budget {
 // warning. It means the budget will price every call at zero and the monthly
 // ceiling silently stops existing, which is a thing to hear about at start
 // rather than discover on an invoice.
-func coachFor(cfg squirrel.CoachConfig, budget coach.Budget) coach.Coach {
+func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Store) coach.Coach {
 	if !cfg.Enabled() {
 		slog.Info("no coach configured; the picker and the ladder answer alone")
 		return coach.NoCoach{}
@@ -79,7 +79,54 @@ func coachFor(cfg squirrel.CoachConfig, budget coach.Budget) coach.Coach {
 	}
 	slog.Info("the coach is configured",
 		"fast", cfg.Fast, "deep", cfg.Deep, "ceiling_micros", cfg.BudgetMicros)
-	return coach.NewProvider(cfg.BaseURL, cfg.APIKey, cfg.Fast, cfg.Deep, budget)
+	p := coach.NewProvider(cfg.BaseURL, cfg.APIKey, cfg.Fast, cfg.Deep, budget)
+	p.Facts = factsOver(store)
+	return p
+}
+
+// decider is the seam both surfaces choose through, or nil.
+//
+// The cache is the reason this is worth having at all. Opening home is the
+// most repeated action in the product and most opens change nothing, so
+// without it the deep model is paid over and over for the same answer — and
+// pick.go's own argument applies too: an offer that changes on every reload
+// reads as the product changing its mind, and a model asked twice will not
+// answer identically.
+//
+// What it is keyed on is the picker's own answer. PickNow already reflects
+// every event the design listed as an invalidator — a check-in changes
+// capacity, a timer changes rules 2 and 3, a completion or a refusal removes
+// the row, a moment entering its leave-by window outranks everything — so
+// comparing its answer catches all of them without a hook at a single write
+// site. Hooks are the version of this that gets forgotten when a seventh write
+// path is added.
+func decider(c coach.Coach, offers *coach.Offers) squirrel.Decider {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+
+	return func(ctx context.Context, personID int64, pickedKind string, pickedRef int64) (
+		string, int64, string, string, bool) {
+
+		now := time.Now()
+		basis := squirrel.SuppressionKey(squirrel.OfferKind(pickedKind), pickedRef)
+
+		if d, ok := offers.Get(personID, basis, now); ok {
+			return d.Kind, d.RefID, d.Text, d.Because, true
+		}
+
+		d, err := c.Decide(ctx, personID)
+		if err != nil {
+			// Not cached. A failure is usually the network or the budget, and
+			// holding "the coach could not answer" for half an hour would turn
+			// a blip into an outage — the picker answers this open, and the
+			// next one asks again.
+			return "", 0, "", "", false
+		}
+
+		offers.Put(personID, basis, d, now)
+		return d.Kind, d.RefID, d.Text, d.Because, true
+	}
 }
 
 // asker is the seam the core reaches a model through.

@@ -67,7 +67,10 @@ type Squirrel struct {
 	budget coach.Budget
 	// talk is the rolling window, shared by every surface so that two of them
 	// cannot disagree about how long a conversation lasts.
-	talk    *coach.Conversations
+	talk *coach.Conversations
+	// offers holds the last decision per person, so an idle reopen costs
+	// nothing and does not read as the product changing its mind.
+	offers  *coach.Offers
 	cancel  context.CancelFunc
 	drained chan struct{}
 	// wg tracks background goroutines that touch the store outside the
@@ -203,7 +206,8 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// sheet. Neither one connecting to anything yet is the point: a coach that
 	// is not there must be an ordinary state at boot, not an error path.
 	s.budget = budgetFor(config.Coach, store)
-	s.coach = coachFor(config.Coach, s.budget)
+	s.coach = coachFor(config.Coach, s.budget, store)
+	s.offers = coach.NewOffers()
 	s.talk = coach.NewConversations()
 
 	// The owner is filled in by connectAndDrain once Postgres answers, which
@@ -218,6 +222,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// no coach the acorn still opens, the four chips still answer, and the
 	// ladder behind them is what shipped before any of this existed.
 	webAsk, webRecent, webRemember, webForget := coachWeb(s.coach, store, s.talk)
+	// One decider, shared by the screen and the chat, so both see the same
+	// cached answer and asking twice costs once.
+	decide := decider(s.coach, s.offers)
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
@@ -234,6 +241,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 			Remember: webRemember,
 			Forget:   webForget,
+			Decide:   decide,
 		}); err != nil {
 			cancel()
 			return nil, fmt.Errorf("mounting the pile: %w", err)
@@ -260,7 +268,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	go func() {
 		defer close(s.drained)
 		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
-			asker(s.coach, store, s.talk))
+			asker(s.coach, store, s.talk), decide)
 	}()
 
 	return s, nil
@@ -273,7 +281,7 @@ type Asker func(ctx context.Context, personID int64, kind, said, subject string)
 
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64, ask Asker) {
+func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64, ask Asker, decide squirrel.Decider) {
 	var personID int64
 	for {
 		var err error
@@ -329,6 +337,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		// command that only ever answers "there is no coach" is worse than one
 		// that was never offered.
 		applier.SetCoach(ask)
+		applier.SetDecider(decide)
 		squirrel.SetCoachHere(ask != nil)
 
 		if config.Campfire != nil {
