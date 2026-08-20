@@ -1,0 +1,29 @@
+{{define "content"}}
+<section class="every">
+  <h1 class="deckhead">what you said before</h1>
+
+  {{/* The readings and their days, and nothing else. No average, no streak, no
+       "you have been low three days" — the interpretation is yours, and a
+       product that offered one would be doing the thing the rule against
+       reading this table existed to prevent.
+
+       Grouped by day, because two answers on one Tuesday is a Tuesday you
+       checked in twice, not two facts about you. */}}
+  {{range .Days}}
+  <article class="aday">
+    <p class="when">{{.Day}}</p>
+    <p class="saidwhat">
+      {{range .Moods}}<img alt="{{.Word}}" title="{{.Word}}" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">{{end}}
+    </p>
+  </article>
+  {{end}}
+
+  {{if not .Days}}
+  <p class="nothing">you have not said how you are lately.</p>
+  {{end}}
+
+  {{/* A fortnight, and the page says so rather than leaving you wondering
+       whether it is everything. It is not a total — it is the window. */}}
+  <p class="ends">the last two weeks &middot; <a href="/">home</a></p>
+</section>
+{{end}}

@@ -477,6 +477,15 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "did":
 		return a.did(ctx, in.Arg, personID, conversationID)
 
+	case "moods":
+		// Only ever when asked for by name. Nothing else in this product reads
+		// the readings back — not home, not the evening message, not Buddy.
+		readings, err := a.store.CheckinsSince(ctx, personID, MoodWindowStart(time.Now()))
+		if err != nil {
+			return Message{}, err
+		}
+		return MoodsMessage(readings, time.Now()), nil
+
 	case "mood", "feel":
 		return a.checkin(ctx, in.Arg, personID)
 

@@ -91,6 +91,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// held.go for why home does not carry it.
 	m.Get("/held", guard(opts, heldHandler(s, opts)))
 	m.Post("/held/act", guard(opts, sameOrigin(heldActHandler(s, opts))))
+	// How you have been, and only when asked for by name. Nothing links here
+	// except the check-in you just answered.
+	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	m.Get("/tasks", guard(opts, tasksHandler(s, opts)))

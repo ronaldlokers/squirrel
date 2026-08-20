@@ -109,6 +109,14 @@
            nothing about having asked is remembered. */}}
       {{if not .Anyway}}<a class="again" href="/?anyway=1">show me something anyway</a>{{end}}
       <a class="again" href="/?ask=1">say something else</a>
+      {{/* The one way in. A link is not a series: pressing it is asking, and
+           nothing here shows the readings until you do.
+
+           "what you said before" rather than "how you have been", and the
+           difference is the rule: this region may report what you said and may
+           never characterise you. The page behind it shows your own answers
+           back — it does not conclude anything from them. */}}
+      <a class="again" href="/moods">what you said before</a>
     </p>
     {{end}}
     {{else}}

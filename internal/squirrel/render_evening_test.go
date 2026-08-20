@@ -9,7 +9,7 @@ import (
 )
 
 func TestEveningMessageShowsBothSections(t *testing.T) {
-	m := squirrel.EveningMessage(squirrel.Handled{Chores: []string{"bin day"}}, []string{"buy milk"}, nil)
+	m := squirrel.EveningMessage(squirrel.Handled{Chores: []string{"bin day"}}, []string{"buy milk"}, nil, "")
 	require.Contains(t, m.Text, "Today")
 	require.Contains(t, m.Text, "bin day")
 	require.Contains(t, m.Text, "Since yesterday")
@@ -21,14 +21,14 @@ func TestEveningMessageShowsBothSections(t *testing.T) {
 // about you. This is the difference, and it is the whole reason "what you did"
 // is safe to add at all.
 func TestEveningMessageOmitsTodayWhenNothingWasDone(t *testing.T) {
-	m := squirrel.EveningMessage(squirrel.Handled{}, []string{"buy milk"}, nil)
+	m := squirrel.EveningMessage(squirrel.Handled{}, []string{"buy milk"}, nil, "")
 	require.NotContains(t, m.Text, "Today")
 	require.NotContains(t, m.Text, "0")
 	require.Contains(t, m.Text, "buy milk")
 }
 
 func TestEveningMessageIsEmptyWhenThereIsNothingToSay(t *testing.T) {
-	m := squirrel.EveningMessage(squirrel.Handled{}, nil, nil)
+	m := squirrel.EveningMessage(squirrel.Handled{}, nil, nil, "")
 	require.Empty(t, m.Text)
 	require.Empty(t, m.Actions)
 }
@@ -37,7 +37,7 @@ func TestEveningMessageIsEmptyWhenThereIsNothingToSay(t *testing.T) {
 // arriving as a second notification a second later.
 func TestEveningMessageCarriesTheFallbackNudge(t *testing.T) {
 	c := overdue(1, "bin day", 19, 14)
-	m := squirrel.EveningMessage(squirrel.Handled{}, []string{"buy milk"}, &c)
+	m := squirrel.EveningMessage(squirrel.Handled{}, []string{"buy milk"}, &c, "")
 
 	require.Contains(t, m.Text, "bin day")
 	require.Contains(t, m.Text, "buy milk")
@@ -55,7 +55,7 @@ func TestEveningMessageNamesTasksAsWellAsChores(t *testing.T) {
 		Chores: []string{"bin day"},
 		Tasks:  []string{"rang the vet"},
 		Notes:  3,
-	}, nil, nil)
+	}, nil, nil, "")
 
 	require.Contains(t, m.Text, "bin day")
 	require.Contains(t, m.Text, "rang the vet")
@@ -66,7 +66,7 @@ func TestEveningMessageNamesTasksAsWellAsChores(t *testing.T) {
 // much is left, in any form.
 func TestEveningMessageNeverCountsWhatRemains(t *testing.T) {
 	m := squirrel.EveningMessage(squirrel.Handled{Tasks: []string{"rang the vet"}},
-		[]string{"buy milk"}, nil)
+		[]string{"buy milk"}, nil, "")
 
 	require.NotContains(t, m.Text, "left")
 	require.NotContains(t, m.Text, "outstanding")
@@ -76,6 +76,6 @@ func TestEveningMessageNeverCountsWhatRemains(t *testing.T) {
 
 // One note is a note.
 func TestEveningMessageSaysOneNoteSingular(t *testing.T) {
-	m := squirrel.EveningMessage(squirrel.Handled{Notes: 1}, nil, nil)
+	m := squirrel.EveningMessage(squirrel.Handled{Notes: 1}, nil, nil, "")
 	require.Contains(t, m.Text, "1 note cleared")
 }
