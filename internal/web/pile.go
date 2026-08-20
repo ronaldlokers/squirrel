@@ -53,6 +53,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
 	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Post("/pile/fix", guard(opts, sameOrigin(fixHandler(s, opts))))
+	// Four thoughts captured as one note, offered as four. Both halves —
+	// asking, and keeping what was asked for — because they are the only two
+	// things you can do to a proposal.
+	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
 	// The coach. A real route rather than a JavaScript-only construct, so it
 	// works with scripting off, deep-links, and survives a reload — and so
 	// pile.js has something real to upgrade into a sheet.
@@ -128,8 +132,40 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		n := toView(items[0])
 		v.Note = &n
+		v.Splittable = splittable(opts, n.Text)
 		renderWith(w, r, s, opts, "pile", v)
 	}
+}
+
+// splittable reports whether the note on the card is worth asking about.
+//
+// A free check, and it is what keeps a model off every note in the pile: the
+// press is only drawn on the ones that look like several things, so the
+// expensive part never happens for the ordinary ones.
+func splittable(opts Options, text string) bool {
+	return opts.Split != nil && opts.Splittable != nil && opts.Splittable(text)
+}
+
+// pileInto renders the pile with a proposal attached to the top card.
+//
+// The same page the pile handler draws, so the proposal appears where the note
+// is rather than on a screen of its own — the confirmation surface is the card
+// that is already there, which is what the architecture asked for.
+func pileInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, sp *splitView) {
+	items, more, err := s.OpenItemsAfter(r.Context(), personID, 0, pileLimit)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if len(items) == 0 {
+		http.Redirect(w, r, "/pile", http.StatusSeeOther)
+		return
+	}
+	n := toView(items[0])
+	renderWith(w, r, s, opts, "pile", view{
+		Here: "pile", More: more, Note: &n, Split: sp,
+		Splittable: splittable(opts, n.Text),
+	})
 }
 
 // searchLimit caps the result list. The cap is what makes "there is more"

@@ -224,6 +224,31 @@ func breaker(c coach.Coach) squirrel.Breaker {
 	}
 }
 
+// splitter is the seam a note is separated through, or nil.
+//
+// Two halves. The cheap one is a rule and runs on every note the pile draws;
+// the expensive one is a call and runs only when something is pressed. Which
+// is the interruption pre-filter's argument applied to triage: rules narrow,
+// and the model answers the few that survive.
+func splitter(c coach.Coach) (
+	func(context.Context, int64, string) ([]string, bool), func(string) bool) {
+
+	if _, none := c.(coach.NoCoach); none {
+		return nil, nil
+	}
+	split := func(ctx context.Context, personID int64, text string) ([]string, bool) {
+		pieces, err := c.Split(ctx, personID, text)
+		if err != nil {
+			return nil, false
+		}
+		return pieces, true
+	}
+	// The same rule that recognises the overwhelm turn, because a brain dump
+	// and an overwhelm turn are the same shape — and one definition of "this
+	// is several things" is one place for it to be wrong.
+	return split, coach.Overwhelmed
+}
+
 // coachWeb is the screen's half of the same seam.
 //
 // The screen declares its own Exchange for the same reason it declares its own

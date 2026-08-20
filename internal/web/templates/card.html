@@ -30,6 +30,10 @@
       </form>
     </details>
     <p id="noteText">{{.Note.Text}}</p>
+    {{/* The proposal, when one has been asked for. It sits under the words it
+         came from, because the question is "is this what you meant" and that
+         cannot be answered without both. */}}
+    {{with .Split}}{{template "split" .}}{{end}}
     <span class="stamp" id="stamp"><span class="dot"></span><span id="stampText"></span></span>
   </div>
   <div class="tray">
@@ -48,7 +52,16 @@
            The disclosure is the scriptless way to ask; pile.js opens it on C
            and gives the chips keys 1-4. */}}
       {{template "everyCard" .}}
+      {{/* Only on a note that looks like several things, and only when there
+           is something to ask. A press that is always there would be a press
+           that is usually wrong. */}}
     </form>
+    {{if and .Splittable (not .Split)}}
+    <form class="row" method="post" action="/pile/split">
+      <input type="hidden" name="id" value="{{.Note.ID}}">
+      <button class="askSplit" name="act" value="propose">this is more than one thing</button>
+    </form>
+    {{end}}
     <div class="row undoRow" id="undoRow" role="status" hidden>
       <button class="undo" id="undo" type="button">PUT IT BACK</button>
       <span class="said" id="said"></span>

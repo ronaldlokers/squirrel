@@ -352,6 +352,7 @@ button the human could have pressed:
 | `drop(item_id)` | disposal |
 | `split(items[])` | decision 8 — capture must never be silently rewritten |
 
+
 **Never available to the model:**
 
 | Refused | Why |
@@ -363,6 +364,36 @@ button the human could have pressed:
 The confirmation surface is the button that already exists. A proposed
 `create_moment` renders as the moment card with a *keep it* press — not a modal,
 not a yes/no dialog.
+
+**Splitting shipped at phase F, and it is not a write tool.** `Split` returns
+strings; it has no way to write anything, which is decision 8 stated as a
+property of the code rather than as an intention about it. The pieces travel in
+the form that renders them and are written only by the press underneath — so
+there is no stored proposal, nothing pending, and nothing to expire. That also
+disposes of open question 1 for this case: an unanswered proposal lasts exactly
+as long as the page it is on.
+
+Two things it refuses that the design did not think to ask for:
+
+- **A piece has to be made of the note.** Every word is checked against the
+  original — dropping is allowed, because splitting drops the joins; inventing
+  is not. "Use their own words" is exactly the instruction a model is most
+  willing to improve on, and something a model wrote must never be proposed
+  back as a thing you said.
+- **The original is kept, not dropped.** It goes to the shelf, next to the
+  things it turned into, through the same transition every other exit uses —
+  so undo works on it normally. Dropping it would make a machine's reading of
+  your words the only surviving version of them.
+
+Not on capture, despite the phase's name. It runs when a press asks, on a card
+that only draws the press when `Overwhelmed()` says the note looks like several
+things — the same rule that recognises the overwhelm turn, because a brain dump
+and an overwhelm turn are the same shape. Capture stays exactly as it was: no
+model runs on the path a thought arrives through.
+
+Screen only. Chat's confirmation surface would be a button carrying four
+strings back through the tap mechanism, which is a worse fit than the card that
+is already there; the PWA is the main interface and this is a triage step.
 
 ---
 
@@ -709,7 +740,7 @@ are untouched), `stuck.go` (`breakDownTask` behind the ladder), `apply.go`
 | **C2** | **The overwhelm turn** (Terra) behind that surface. | The genuinely new capability. |
 | **D** | Read tools + **model-decides** with the offer cache and `PickNow()` fallback. | Decision 1 lands, cost-controlled. |
 | **E** | `breakDownTask()`, and "I can't start" routed through the coach. | The ladder gets specific; it stays as the first paint. |
-| **F** | Split-on-capture, proposed and confirmed. | Capture stops flattening four thoughts into one. |
+| **F** | Splitting a brain dump, proposed and confirmed. ~~On capture~~ — on a press, on the card. | Capture stops flattening four thoughts into one. |
 | **G** | Write tools + confirmation policy. | The coach can act, reversibly. |
 | **H** | `shouldInterrupt()` on rule-produced candidates. | Proactive, bounded. |
 

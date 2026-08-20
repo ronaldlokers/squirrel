@@ -116,6 +116,10 @@ type Coach interface {
 	// a list, and it is safe because nothing renders one: the sequence is
 	// stored and handed back a step at a time.
 	Smaller(ctx context.Context, personID int64, task, blocker string) ([]string, error)
+	// Split proposes the separate things in one note. It returns strings and
+	// nothing else — it has no way to write anything, which is decision 8
+	// stated as a property rather than an intention.
+	Split(ctx context.Context, personID int64, text string) ([]string, error)
 }
 
 // NoCoach is the zero value and the default build. It is not a stub for tests
@@ -132,6 +136,10 @@ func (NoCoach) Decide(context.Context, int64) (Decision, error) {
 }
 
 func (NoCoach) Smaller(context.Context, int64, string, string) ([]string, error) {
+	return nil, ErrUnavailable
+}
+
+func (NoCoach) Split(context.Context, int64, string) ([]string, error) {
 	return nil, ErrUnavailable
 }
 

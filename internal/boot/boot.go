@@ -226,6 +226,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// cached answer and asking twice costs once.
 	decide := decider(s.coach, s.offers)
 	makeSmaller := breaker(s.coach)
+	split, splittable := splitter(s.coach)
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
@@ -244,6 +245,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			Forget:   webForget,
 			Decide:   decide,
 			Smaller:  makeSmaller,
+
+			Split:      split,
+			Splittable: splittable,
 		}); err != nil {
 			cancel()
 			return nil, fmt.Errorf("mounting the pile: %w", err)
