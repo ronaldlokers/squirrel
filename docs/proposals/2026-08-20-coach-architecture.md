@@ -624,6 +624,23 @@ index on `(person, kind, date)`; quiet hours 22:00–06:00; the capacity gate; a
 active refusal. The model may decline to interrupt when the rules would have
 allowed it. It may never interrupt when the rules would not.
 
+**Two of those four do not actually exist**, which phase H found rather than
+assumed. The budget does — the unique index enforces it, and a chore already
+raised today stops being due, so the day's second trigger ends before the model
+is reached at all. Asking windows do. **Quiet hours and the capacity gate do
+not**: a chore with no stated preference is open at every hour, and nothing on
+the nudge path reads capacity. Neither was added here, because a rule about
+when the product may speak is a product decision rather than a detail of the
+phase that noticed it, and quiet hours in particular would make the test suite
+depend on the hour it runs at. Both are in the roadmap's open list.
+
+The asymmetry survives regardless, because it does not rest on those rules — it
+rests on **where the call sits**. The model is only ever handed a candidate the
+rules already produced, so there is no path by which it can say yes to anything
+else. It fails open for the same reason, and that is the one place in this
+architecture that inverts the usual rule: a coach that is down must not
+silently turn off a feature that worked without one for months.
+
 **Which channel it may use (decision 15).** Push is reserved for interruptions
 *about a fixed point* — something the world imposed and that has a moment worth
 catching. Everything else the coach raises goes to the Campfire room, which you

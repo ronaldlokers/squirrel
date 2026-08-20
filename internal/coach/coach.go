@@ -127,6 +127,11 @@ type Coach interface {
 	// nothing else — it has no way to write anything, which is decision 8
 	// stated as a property rather than an intention.
 	Split(ctx context.Context, personID int64, text string) ([]string, error)
+	// ShouldInterrupt is a veto on something the rules already allowed, and
+	// optional wording for it. It cannot cause an interruption that would not
+	// otherwise have happened, because nothing else is ever passed to it — and
+	// it fails open, so an absent coach leaves the nudge exactly as it was.
+	ShouldInterrupt(ctx context.Context, personID int64, about string, n Now) (string, bool)
 }
 
 // NoCoach is the zero value and the default build. It is not a stub for tests
@@ -148,6 +153,14 @@ func (NoCoach) Smaller(context.Context, int64, string, string) ([]string, error)
 
 func (NoCoach) Split(context.Context, int64, string) ([]string, error) {
 	return nil, ErrUnavailable
+}
+
+// NoCoach lets every interruption through, unchanged. Alone among these it
+// does not answer "unavailable": there is nothing to be unavailable for, since
+// the rules already decided and the nudge worked on its own for months before
+// any of this.
+func (NoCoach) ShouldInterrupt(context.Context, int64, string, Now) (string, bool) {
+	return "", true
 }
 
 // Trim keeps the newest exchanges that are still recent enough to be about

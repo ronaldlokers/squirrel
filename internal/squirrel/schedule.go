@@ -27,7 +27,34 @@ type SchedulerOptions struct {
 	// warning uses it. Nil means no pushing, which is a supported state: the
 	// room is the channel that always works and this is the one that is fast.
 	Push Pusher
+	// Interrupt is a veto on a nudge the rules already allowed, and optional
+	// wording for it. Nil means every candidate goes out exactly as it did
+	// before this existed.
+	//
+	// A veto and never a trigger. It is only ever called with something the
+	// rules already chose to raise — due, inside its asking window, and inside
+	// the day's budget — so it can make Squirrel quieter than the rules permit
+	// and has no way to make it louder.
+	//
+	// Worth knowing what is *not* among those rules: there are no quiet hours
+	// on this path. A chore with no stated preference is open at every hour,
+	// so a presence ping at four in the morning nudges. That is a defect and
+	// it predates this field; it is not fixed here because a rule about when
+	// the product may speak is a product decision, not a detail of the phase
+	// that noticed it. See the roadmap.
+	Interrupt Interrupter
 }
+
+// Interrupter decides whether to say something now, and what.
+//
+// A func of primitives, like the coach's other seams. It returns the wording
+// to use — empty means the deterministic message stands — and whether to speak
+// at all.
+//
+// It **fails open** by contract: an implementation that cannot answer must
+// return ("", true), because a coach that is down must not silently turn off a
+// feature that worked without one for months.
+type Interrupter func(ctx context.Context, personID int64, about string, at time.Time) (string, bool)
 
 type Scheduler struct {
 	opts SchedulerOptions
@@ -43,6 +70,31 @@ type Scheduler struct {
 	// is enforced by the same index, keyed on a different kind, and is never
 	// held in memory at all.
 	sentDate string
+
+	// saying is the wording the interrupter supplied for the nudge about to be
+	// sent, or empty for the deterministic message. It lives for the few lines
+	// between nudgeFor deciding and Nudge sending, the same way the applier's
+	// pending prompt id does, and is cleared on every pass.
+	saying string
+}
+
+// allowed is the veto, and it defaults to yes.
+//
+// Nil interrupter, or one that cannot answer, means the nudge goes out exactly
+// as it did before this existed. That is the opposite of how the budget treats
+// a database it cannot read, and the exception is deliberate: a failure there
+// costs money, and a failure here would silently stop a feature that never
+// needed a model.
+func (s *Scheduler) allowed(ctx context.Context, c Chore, now time.Time) (string, bool) {
+	if s.opts.Interrupt == nil {
+		return "", true
+	}
+	say, ok := s.opts.Interrupt(ctx, s.opts.PersonID, c.Name, now)
+	if !ok {
+		slog.Info("nudge: held back", "person_id", s.opts.PersonID, "chore", c.Name)
+		return "", false
+	}
+	return say, true
 }
 
 func NewScheduler(o SchedulerOptions) *Scheduler {
@@ -305,6 +357,10 @@ func (s *Scheduler) localMidnight(now time.Time) time.Time {
 // evening message uses and for the same reason: the row is what makes the
 // index the guarantee.
 func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64, error) {
+	// Cleared here rather than at either caller, so both passes start from the
+	// deterministic message and neither can inherit the other's wording.
+	s.saying = ""
+
 	due, err := s.opts.Store.DueChores(ctx, s.opts.PersonID, now)
 	if err != nil {
 		return nil, 0, err
@@ -336,6 +392,18 @@ func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64,
 		slog.Info("nudge: nothing due", "person_id", s.opts.PersonID)
 		return nil, 0, nil
 	}
+
+	// Asked before the slot is claimed, and that ordering is the whole of it.
+	// RecordPrompt below spends the day's one nudge in a unique index; a
+	// decision to stay quiet taken after that would spend the day on a message
+	// nobody ever received, and the next trigger — including the evening
+	// fallback — would be refused by it. Declining here costs nothing and
+	// leaves the day open.
+	say, ok := s.allowed(ctx, c, now)
+	if !ok {
+		return nil, 0, nil
+	}
+	s.saying = say
 
 	forDate := s.localMidnight(now)
 	id, err := s.opts.Store.RecordPrompt(ctx, s.opts.PersonID, s.opts.ConversationID,
@@ -377,7 +445,14 @@ func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) e
 	// external_message_id ever gets recorded for, and so nothing can ever
 	// close. See once()'s comment for why this is a known, unfixed gap
 	// rather than something patched inline here.
-	messageID, err := s.sendMessage(ctx, NudgeMessage(*c, why))
+	// The coach's wording when it gave one, and the fixed message otherwise.
+	// The buttons are the same either way: what may be said is a matter of
+	// words, and what may be done is not.
+	m := NudgeMessage(*c, why)
+	if s.saying != "" {
+		m.Text = s.saying
+	}
+	messageID, err := s.sendMessage(ctx, m)
 	if err != nil {
 		// nudgeFor already committed promptID, claiming today's nudge slot
 		// in the unique index — before it was known whether the send would
