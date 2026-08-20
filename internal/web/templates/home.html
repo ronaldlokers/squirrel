@@ -1,5 +1,65 @@
 {{define "content"}}
 <div class="homebox">
+  {{/* One interactive thing above the doors, and it is either the question or
+       the answer to it.
+
+       How is right now — right now, and not today: a day is a thing you can
+       have had a bad one of, and the question is about the minute you are in.
+       There is no yesterday here and there never will be: a fortnight of your
+       own bad days on a screen is the counter this product refuses, wearing a
+       face. */}}
+  <div class="checkin">
+    {{if .Mood}}
+    {{/* Answered. The region becomes the one thing, when there is one — and
+         when there is not, it is one quiet line rather than an empty box or a
+         sentence encouraging you to find something. */}}
+    {{with .Offer}}
+    <section class="offer" aria-label="Right now">
+      <p class="head">RIGHT NOW</p>
+      <p class="what">{{.Text}}</p>
+      <p class="because">{{.Because}}</p>
+      {{if .Running}}
+      {{/* You are already on it. Nothing to press: the lid carries the only
+           control this needs, which is the way to stop. */}}
+      {{else}}
+      <form class="oacts" method="post" action="/now/act">
+        <input type="hidden" name="kind" value="{{.Kind}}">
+        <input type="hidden" name="id" value="{{.RefID}}">
+        <input type="hidden" name="label" value="{{.Text}}">
+        {{/* Ten minutes, and only ten. A row of lengths is a decision about a
+             decision: the chores screen offers three because you are already
+             looking at the thing and choosing to do it, and here you are being
+             handed it. */}}
+        <input type="hidden" name="minutes" value="10">
+        <button class="obtn did" name="act" value="did">DID IT</button>
+        <button class="obtn go" name="act" value="start">10 MIN</button>
+        <button class="obtn later" name="act" value="later">not now</button>
+      </form>
+      {{end}}
+    </section>
+    {{else}}
+    <p class="noted" role="status">
+      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">
+      <span>noted &mdash; {{.MoodWord}}</span>
+      {{/* Saying you are wiped must not be a wall. It offers once, and
+           nothing about having asked is remembered. */}}
+      {{if not .Anyway}}<a class="again" href="/?anyway=1">show me something anyway</a>{{end}}
+      <a class="again" href="/?ask=1">say something else</a>
+    </p>
+    {{end}}
+    {{else}}
+    <p class="lead">how do you feel?</p>
+    <form class="faces" method="post" action="/mood">
+      {{range .Faces}}
+      <button class="face" name="mood" value="{{.Mood}}">
+        <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+        <span>{{.Word}}</span>
+      </button>
+      {{end}}
+    </form>
+    {{end}}
+  </div>
+
   {{/* The two halves of what the box holds, and they are equals: one grid, two
        identical cells, the same stock, the same depth, side by side at every
        width. A stacked pair would read as first and second. */}}
@@ -44,30 +104,5 @@
   {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
   {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
 
-  {{/* How is right now — right now, and not today: a day is a thing you can
-       have had a bad one of, and the question is about the minute you are in.
-
-       Answered, it shows the one you pressed and stops. There is no yesterday
-       here and there never will be: a fortnight of your own bad days on a
-       screen is the counter this product refuses, wearing a face. */}}
-  <div class="checkin">
-    {{if .Mood}}
-    <p class="noted" role="status">
-      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">
-      <span>noted &mdash; {{.MoodWord}}</span>
-      <a class="again" href="/?ask=1">say something else</a>
-    </p>
-    {{else}}
-    <p class="lead">how do you feel?</p>
-    <form class="faces" method="post" action="/mood">
-      {{range .Faces}}
-      <button class="face" name="mood" value="{{.Mood}}">
-        <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
-        <span>{{.Word}}</span>
-      </button>
-      {{end}}
-    </form>
-    {{end}}
-  </div>
 </div>
 {{end}}

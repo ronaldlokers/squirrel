@@ -1096,6 +1096,87 @@
      say. Answered, the row collapses to the one you pressed. There is no
      yesterday here and there never will be. */
   .checkin { margin-top: 26px; }
+  /* The question moved above the doors, because it configures the page rather
+     than filing a diary entry: answered, this same region becomes the one
+     thing. So home has exactly one interactive thing above the doors, and it
+     is either the question or the answer to it. */
+  .homebox > .checkin:first-child { margin-top: 0; margin-bottom: 26px; }
+
+  /* ---------- the one thing ---------- */
+
+  /* Card stock and the result card's depth, because it is a card you act on
+     rather than a door you walk through. No page tab: a tab says what a note
+     ended up as, and this has no outcome yet. No state colour anywhere on it,
+     and nothing that says how long it has been waiting — it is never late.
+
+     Absent rather than empty when there is nothing: this block simply does not
+     render, and home is then exactly the page it was before the picker
+     existed. */
+  .offer {
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+    padding: 18px 22px 16px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .offer .head {
+    margin: 0;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  /* The thing itself, in the owner's own words wherever there are any — so it
+     is set in the casual axis, like every other sentence he typed. */
+  .offer .what {
+    margin: 0;
+    font-size: 21px; line-height: 1.3;
+    font-variation-settings: var(--casual), "wght" 560;
+  }
+  /* The clause that explains the choice. Squirrel speaking in a full sentence,
+     which is the one other place the casual axis is allowed. */
+  .offer .because {
+    margin: 0 0 4px;
+    font-size: 15px; line-height: 1.35;
+    font-variation-settings: var(--casual), "wght" 450;
+    color: var(--brown);
+  }
+  .oacts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .obtn {
+    min-height: 44px; padding: 11px 16px;
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    cursor: pointer;
+    font: 700 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--outline);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .obtn:active { transform: translateY(4px); box-shadow: none; }
+  /* The lifted done green the chores screen already uses for the same verb.
+     One colour for "it happened", wherever it is said. */
+  .obtn.did { background: var(--done-lifted); }
+  .obtn.did:hover { background: var(--done-lifted-hover); }
+  .obtn.did:active { background: var(--done); }
+  /* Starting is paper, not orange: orange means something was made, and a
+     timer makes nothing. */
+  .obtn.go { background: var(--paper); }
+  .obtn.go:hover { background: var(--paper-deep); }
+  /* Turning it down is quieter than doing it and quieter than starting it —
+     it has to be easy to reach and must not read as the default. No pill, no
+     outline, no offset: it is the one control here that is a way out rather
+     than a thing to do. */
+  .obtn.later {
+    margin-left: auto;
+    background: none; border: 0; box-shadow: none;
+    padding: 11px 4px;
+    text-transform: none; letter-spacing: 0;
+    font-size: 14px; font-variation-settings: var(--precise), "wght" 620;
+    color: var(--brown);
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .obtn.later:hover { color: var(--outline); }
+  .obtn.later:active { transform: translateY(2px); }
   .checkin .lead {
     margin: 0 0 10px; text-align: center;
     font-size: 12px; letter-spacing: .09em; text-transform: uppercase;

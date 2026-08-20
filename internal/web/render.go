@@ -73,6 +73,14 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
+	// Offer is the one thing, or nil. Nil renders nothing at all rather than
+	// an empty region: having nothing to be handed is a normal state, and a
+	// reassuring sentence in its place would be the product deciding you ought
+	// to be busy.
+	Offer *offerView
+	// Anyway is the capacity gate lifted for this render, from the address bar
+	// and stored nowhere.
+	Anyway bool
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
 	// V stamps every asset URL on the page. render fills it, so no handler can
@@ -145,6 +153,22 @@ func elsewhere(here string) []linkView {
 type faceView struct {
 	Mood string
 	Word string
+}
+
+// offerView is the one thing, as the screen says it.
+//
+// No state, no colour, no date and nothing about how long it has been waiting.
+// Because is the clause that explains the choice and is not optional — an
+// offer that cannot say why it is the offer is a demand.
+type offerView struct {
+	Kind    string
+	RefID   int64
+	Text    string
+	Because string
+	// Running means this is the timer you already started rather than
+	// something chosen for you, so the card offers nothing to press: the lid
+	// already carries the only control it needs.
+	Running bool
 }
 
 type undoView struct {

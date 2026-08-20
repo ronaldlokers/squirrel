@@ -71,6 +71,15 @@ type Store interface {
 	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
 
+	// The one thing. PickNow chooses it, and the other three are the only
+	// answers it takes. There is deliberately no function here that returns
+	// more than one offer, for the same reason there is none that returns more
+	// than one check-in: a caller cannot render a list it cannot obtain.
+	PickNow(ctx context.Context, personID int64, now time.Time, showAnyway bool) (squirrel.Offer, bool, error)
+	Did(ctx context.Context, personID int64, o squirrel.Offer, at time.Time) error
+	Refuse(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, at time.Time) error
+	RecordAnswer(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, answer squirrel.OfferAnswer, at time.Time) error
+
 	// The body double. One per person, replaced each time, and nothing kept
 	// once it is over.
 	StartTimer(ctx context.Context, personID int64, label string, d time.Duration, now time.Time) (squirrel.Timer, error)
