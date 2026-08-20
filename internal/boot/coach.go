@@ -205,6 +205,25 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 	return n
 }
 
+// breaker is the seam the ladder makes a thing smaller through, or nil.
+//
+// No cache here, deliberately. A breakdown is asked for by pressing something,
+// once, at the moment of least capacity — there is no idle repeated open to
+// protect against, and holding an old sequence would mean pressing "too big"
+// on a different thing and being handed steps for the last one.
+func breaker(c coach.Coach) squirrel.Breaker {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return func(ctx context.Context, personID int64, task, blocker string) ([]string, bool) {
+		steps, err := c.Smaller(ctx, personID, task, blocker)
+		if err != nil {
+			return nil, false
+		}
+		return steps, true
+	}
+}
+
 // coachWeb is the screen's half of the same seam.
 //
 // The screen declares its own Exchange for the same reason it declares its own

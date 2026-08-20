@@ -166,6 +166,13 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
+		// Broken into steps first, when that is what this blocker wants and
+		// there is something to break down. The redirect is the same either
+		// way — the step is read back out of the store on the next render, so
+		// a reload shows where you actually are rather than repeating a press.
+		if o, found, err := s.PickNow(r.Context(), personID, now(), true); err == nil && found {
+			smallerFor(s, opts, r, b, o)
+		}
 		http.Redirect(w, r, "/?stuck="+url.QueryEscape(string(b)), http.StatusSeeOther)
 	}
 }
@@ -185,6 +192,17 @@ func unstuckFrom(q url.Values) *unstuckView {
 		return nil
 	}
 	return &unstuckView{Line: u.Line, Minutes: u.Minutes, Ask: u.Ask}
+}
+
+// withStep is the ladder's answer with the sequence's next step attached, when
+// there is one. The line stays underneath it: what you could not start is
+// still the thing, and the fixed answer is the floor rather than a draft.
+func withStep(u *unstuckView, s Store, opts Options, r *http.Request) *unstuckView {
+	if u == nil {
+		return nil
+	}
+	u.Step = stepFor(s, opts, r)
+	return u
 }
 
 // offerKinds is the vocabulary, as a map rather than a switch so an unknown

@@ -92,7 +92,7 @@ product whose value is that it works.
 | **C** | The coach surface: acorn, sheet, `/coach`, first paint, rolling window. The box is connected; the four chips stay deterministic. | shipped |
 | **C2** | The overwhelm turn — recognising it, and escalating it to Terra. *The phase that justifies the project.* | shipped |
 | **D** | Read tools (five of six), model-decides among what the picker found, offer cache, picker fallback. | shipped |
-| **E** | `breakDownTask()`; "I can't start" routed through the coach. | |
+| **E** | `breakDownTask()`; "too big" routed through the coach, one step at a time. | shipped |
 | **F** | Split-on-capture, proposed and confirmed. | |
 | **G** | Write tools and the confirmation policy. | |
 | **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* | |

@@ -1,6 +1,9 @@
 package squirrel
 
-import "strings"
+import (
+	"context"
+	"strings"
+)
 
 // I can't start.
 //
@@ -88,6 +91,24 @@ type Unstuck struct {
 	// offer down and says nothing further.
 	Refuse bool
 }
+
+// Breaker is the seam a model breaks a thing into steps through, or nil.
+//
+// A func of primitives, like the coach's other two seams and for the same
+// reason. It reports false for everything — no coach, no budget, a model that
+// numbered its steps — and false means the fixed line stands, which is what it
+// did on its own before this existed.
+type Breaker func(ctx context.Context, personID int64, task, blocker string) ([]string, bool)
+
+// BreakingHelps reports whether a breakdown is the right answer to this
+// blocker.
+//
+// Only "too big". The other three already have answers that are not a
+// sequence: "don't know how" ends in a question whose answer is a thought, and
+// thoughts go in the pile; "boring" ends in a timer, because the going is the
+// point; "not today" is not an obstacle at all. Handing any of them a list of
+// steps would be answering a question nobody asked.
+func BreakingHelps(b Blocker) bool { return b == BlockerBig }
 
 // UnstuckFor is the ladder. Every branch ends in something smaller than the
 // thing that could not be started, and none of them ends in a question about

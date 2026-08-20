@@ -38,6 +38,12 @@ type fakeStore struct {
 	refused    []int64
 	subscribed []string
 
+	// The sequence in progress, newest first, and what was done to it.
+	steps    []squirrel.Step
+	stepItem *int64
+	finished []int64
+	cleared  int
+
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
 	completed  []int64
@@ -464,6 +470,53 @@ func task(id int64, text string, state squirrel.ItemState) squirrel.Item {
 	return it
 }
 
+// The step half of the fake store. One sequence, replaced wholesale, the same
+// way the real one behaves — and, like the real one, with no way to ask it for
+// the list.
+func (f *fakeStore) SaveSteps(_ context.Context, _ int64, itemID *int64, label string, steps []string) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.steps = nil
+	for i, body := range steps {
+		f.steps = append(f.steps, squirrel.Step{
+			ID: int64(i + 1), Label: label, Body: body, Last: i == len(steps)-1,
+		})
+	}
+	f.stepItem = itemID
+	return nil
+}
+
+func (f *fakeStore) NextStep(_ context.Context, _ int64) (squirrel.Step, bool, error) {
+	if f.err != nil {
+		return squirrel.Step{}, false, f.err
+	}
+	if len(f.steps) == 0 {
+		return squirrel.Step{}, false, nil
+	}
+	return f.steps[0], true, nil
+}
+
+func (f *fakeStore) StepDone(_ context.Context, _ int64, stepID int64, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.finished = append(f.finished, stepID)
+	if len(f.steps) > 0 && f.steps[0].ID == stepID {
+		f.steps = f.steps[1:]
+	}
+	return nil
+}
+
+func (f *fakeStore) ClearSteps(_ context.Context, _ int64) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.steps = nil
+	f.cleared++
+	return nil
+}
+
 func mounted(t *testing.T, f *fakeStore) *testMux {
 	t.Helper()
 	m := newTestMux()
@@ -491,6 +544,14 @@ type fakeCoach struct {
 	// nil for "the picker was right". picked records what it was shown.
 	decision *fakeDecision
 	picked   []string
+
+	// steps is what a breakdown returns, and empty means it could not do one.
+	// broke counts the asks, so a test can show the three blockers that are
+	// not "too big" never reach it.
+	steps        []string
+	broke        int
+	brokeDown    string
+	brokeBlocker string
 }
 
 type fakeDecision struct {
@@ -522,9 +583,16 @@ func (c *fakeCoach) decide(_ context.Context, _ int64, pickedKind string, picked
 	return d.kind, d.refID, d.text, d.because, true
 }
 
+func (c *fakeCoach) smaller(_ context.Context, _ int64, task, blocker string) ([]string, bool) {
+	c.broke++
+	c.brokeDown, c.brokeBlocker = task, blocker
+	return c.steps, len(c.steps) > 0
+}
+
 func (c *fakeCoach) options(o Options) Options {
 	o.Ask = c.ask
 	o.Decide = c.decide
+	o.Smaller = c.smaller
 	o.Recent = func(int64) []Exchange { return c.talk }
 	o.Remember = func(_ int64, said, replied string) {
 		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})

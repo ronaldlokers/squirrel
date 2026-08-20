@@ -71,7 +71,7 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 				// The ladder's answer, when one has been asked for. It hangs
 				// off the offer rather than replacing it: the thing you could
 				// not start is still the thing.
-				v.Offer.Unstuck = unstuckFrom(q)
+				v.Offer.Unstuck = withStep(unstuckFrom(q), s, opts, r)
 			}
 		}
 

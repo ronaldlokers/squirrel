@@ -129,7 +129,8 @@ func HelpMessage() Message {
 		// way: the ladder when you can name what is in the way, this when you
 		// cannot.
 		lines = slices.Insert(lines, slices.Index(lines, stuckHelp)+1,
-			"!coach <words> — say what is going on, in your own words")
+			"!coach <words> — say what is going on, in your own words",
+			"!next — the step after the one you just did")
 	}
 
 	return Message{Text: strings.Join(lines, "\n") + screenLine()}
@@ -350,6 +351,31 @@ func StuckQuestion() Message {
 	}
 	return Message{Text: "What is in the way?\n" + strings.Join(words, " · ") +
 		"\n\nSay !stuck and one of those."}
+}
+
+// StepMessage is one step, and never the sequence.
+//
+// It says what to do and how to say it is done, and nothing about how many
+// there are or how far through you got. "Step 2 of 5" is a count of what you
+// have left, which is the accruing number this product refuses — and on the
+// last one it says so, because being left waiting for a step that never comes
+// is its own small failure.
+func StepMessage(st Step) Message {
+	if st.Last {
+		return Message{Text: st.Body + "\nThat is the last one. Say !next when it is done."}
+	}
+	return Message{Text: st.Body + "\nSay !next when it is done."}
+}
+
+// StepsFinishedMessage is the end of a sequence.
+//
+// Nothing is celebrated and nothing is totalled. Finishing a breakdown is a
+// normal ending, and a reward here would be a counter wearing a different hat.
+func StepsFinishedMessage(label string) Message {
+	if label == "" {
+		return Message{Text: "That is all of them."}
+	}
+	return Message{Text: "That is all of them for " + label + "."}
 }
 
 // StuckMessage is the answer, and it never grows into a plan.

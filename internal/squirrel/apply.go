@@ -52,6 +52,10 @@ type Applier struct {
 	// is the normal state and PickNow is the whole answer then, which is what
 	// shipped before any of this existed.
 	decider Decider
+	// breaker optionally breaks a thing into steps. Nil is the normal state
+	// and the ladder's fixed line is the whole answer then, which is what
+	// shipped before any of this existed.
+	breaker Breaker
 }
 
 // SetCoach supplies the callback that asks a model, or nil for no coach.
@@ -66,6 +70,9 @@ func (a *Applier) SetCoach(ask func(context.Context, int64, string, string, stri
 // picker found, or nil for none. Set after construction for the same reason
 // SetCoach is: boot is the only package that may build it.
 func (a *Applier) SetDecider(d Decider) { a.decider = d }
+
+// SetBreaker supplies the callback that breaks a thing into steps, or nil.
+func (a *Applier) SetBreaker(b Breaker) { a.breaker = b }
 
 // SetNudger supplies the callback that may attach a nudge to a capture. It is
 // set after construction because the Applier and the Scheduler each need the
@@ -430,6 +437,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "stuck":
 		return a.stuck(ctx, in.Arg, personID)
 
+	case "next":
+		return a.next(ctx, personID)
+
 	case "coach":
 		return a.coach(ctx, in.Arg, personID)
 
@@ -593,7 +603,72 @@ func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Messag
 	if found {
 		subject = o.Text
 	}
+
+	// Smaller, when smaller is the answer and something can make it so. The
+	// fixed line is what shows if nothing does, which is what it was doing on
+	// its own before this existed.
+	if st, ok := a.smaller(ctx, personID, b, o, found); ok {
+		return StepMessage(st), nil
+	}
 	return StuckMessage(u, subject), nil
+}
+
+// smaller breaks the thing being offered into steps and hands back the first
+// one, or reports that the ladder's own line stands.
+//
+// Only ever the first one. The sequence is stored and this returns a single
+// step, which is the whole safety argument: a model may produce a list, and
+// nothing here may show one.
+func (a *Applier) smaller(ctx context.Context, personID int64, b Blocker, o Offer, found bool) (Step, bool) {
+	if a.breaker == nil || !found || !BreakingHelps(b) {
+		return Step{}, false
+	}
+	steps, ok := a.breaker(ctx, personID, o.Text, BlockerWords[b])
+	if !ok {
+		return Step{}, false
+	}
+
+	var itemID *int64
+	if o.Kind == OfferTask && o.RefID != 0 {
+		id := o.RefID
+		itemID = &id
+	}
+	if err := a.store.SaveSteps(ctx, personID, itemID, o.Text, steps); err != nil {
+		a.onError(err)
+		return Step{}, false
+	}
+
+	st, found, err := a.store.NextStep(ctx, personID)
+	if err != nil || !found {
+		return Step{}, false
+	}
+	return st, true
+}
+
+// next marks the step you were shown and hands over the one after it.
+//
+// Nothing is said about how many are left, and nothing is celebrated at the
+// end. Finishing a breakdown is a normal ending.
+func (a *Applier) next(ctx context.Context, personID int64) (Message, error) {
+	st, found, err := a.store.NextStep(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return Message{Text: "Nothing broken down right now. Try !stuck too big."}, nil
+	}
+	if err := a.store.StepDone(ctx, personID, st.ID, time.Now()); err != nil {
+		return Message{}, err
+	}
+
+	after, found, err := a.store.NextStep(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return StepsFinishedMessage(st.Label), nil
+	}
+	return StepMessage(after), nil
 }
 
 // coach is the ladder's other half: `!coach I can't face the tax thing`.

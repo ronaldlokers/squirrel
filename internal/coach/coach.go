@@ -112,6 +112,10 @@ type Coach interface {
 	// which is what happened before this method existed and what happens
 	// whenever it does not work.
 	Decide(ctx context.Context, personID int64) (Decision, error)
+	// Smaller breaks one thing into steps. It is the one method that returns
+	// a list, and it is safe because nothing renders one: the sequence is
+	// stored and handed back a step at a time.
+	Smaller(ctx context.Context, personID int64, task, blocker string) ([]string, error)
 }
 
 // NoCoach is the zero value and the default build. It is not a stub for tests
@@ -125,6 +129,10 @@ func (NoCoach) Answer(context.Context, Turn) (Reply, error) {
 
 func (NoCoach) Decide(context.Context, int64) (Decision, error) {
 	return Decision{}, ErrUnavailable
+}
+
+func (NoCoach) Smaller(context.Context, int64, string, string) ([]string, error) {
+	return nil, ErrUnavailable
 }
 
 // Trim keeps the newest exchanges that are still recent enough to be about

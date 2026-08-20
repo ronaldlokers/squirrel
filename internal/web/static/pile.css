@@ -1672,3 +1672,28 @@
     .acorn { width: 56px; height: 56px; }
     .acorn img { width: 42px; height: 32px; }
   }
+
+  /* One step of a breakdown. Never the sequence, and there is deliberately no
+     room here for a second one — the same argument the offer's own answer
+     makes, at the scale of a block. */
+  .step {
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 4px 0 0 var(--outline);
+    padding: 12px 14px;
+  }
+  .step .do {
+    margin: 0;
+    font-size: 18px; line-height: 1.3;
+    font-variation-settings: var(--casual), "wght" 560;
+  }
+  /* Not a count. The difference between finishing and waiting for something
+     that never comes. */
+  .step .lastone {
+    margin: 0;
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: var(--brown);
+  }
+  .stepacts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

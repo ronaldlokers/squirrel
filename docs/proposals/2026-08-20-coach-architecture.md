@@ -459,6 +459,26 @@ which the application stores and reveals one at a time. **The list never
 renders.** Pacing stays deterministic, which is the guarantee that keeps
 decision 5 from becoming the twelve-step plan.
 
+**Shipped at phase E, with the guarantee moved into the store.** There is no
+function on `*Store` that returns the sequence — only `NextStep`, which returns
+one — so no surface *could* render a list even if a later author wanted one.
+The same device already keeps a caller from rendering a count of the pile or a
+series of moods. `Last` says whether anything comes after; there is deliberately
+no position and no total, because "step 2 of 5" is a count of what you have
+left.
+
+**Only "too big" asks for one.** The other three blockers already end somewhere
+that is not a sequence: "don't know how" ends in a question whose answer is a
+thought, and thoughts go in the pile; "boring" ends in a timer, because the
+going is the point; "not today" is not an obstacle. `BreakingHelps()` says so in
+the core, next to the ladder it belongs to.
+
+**Synchronous, not first-paint-then-replace.** The diagram in §3 shows the fixed
+line painting and a step arriving a second later. That needs polling, and §8a
+already refused streaming for a related reason. What shipped instead: the call
+happens on the press, and the fixed line is what renders whenever it does not
+answer — so the failure is invisible rather than late.
+
 ---
 
 ## 8a. The coach surface

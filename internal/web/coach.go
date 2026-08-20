@@ -140,6 +140,14 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 		return
 	}
 
+	// Smaller first, when that is what this blocker wants and there is
+	// something to break down. The redirect is the same either way: the step
+	// is read back out of the store on the next render, so a reload shows
+	// where you are rather than repeating a press.
+	if o, found, err := s.PickNow(r.Context(), personID, now(), true); err == nil && found {
+		smallerFor(s, opts, r, b, o)
+	}
+
 	// The answer travels in the address bar, the same way /now/stuck already
 	// sends it — so the ladder's words live in one place, in the core, and the
 	// control that comes with them is drawn from the same view the home screen
@@ -239,6 +247,10 @@ func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, 
 			// Read out of the address bar and read the way a stranger's typing
 			// is read: anything that is not one of the four is no answer.
 			Unstuck: unstuckFrom(r.URL.Query()),
+			// Shown whether or not a chip was just pressed. Coming back an
+			// hour later and finding the step you were on is the whole reason
+			// the sequence is stored rather than held in a reply.
+			Step: stepFor(s, opts, r),
 		},
 	}
 	if opts.Recent != nil {

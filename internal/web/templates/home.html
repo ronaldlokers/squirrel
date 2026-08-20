@@ -63,6 +63,9 @@
       {{with .Unstuck}}
       <div class="unstuck" role="status">
         <p class="line">{{.Line}}</p>
+        {{/* The ladder having got specific. The line above it stays: the fixed
+             answer is the floor this stands on, not a draft it replaces. */}}
+        {{if .Step}}{{template "step" (dict "Step" .Step "From" "/")}}{{end}}
         {{if .Ask}}
         {{/* The one branch that captures. "What would I have to find out
              first" is a thought, and thoughts go where thoughts go. */}}
