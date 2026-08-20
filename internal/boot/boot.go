@@ -228,6 +228,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	makeSmaller := breaker(s.coach)
 	split, splittable := splitter(s.coach)
 	hold := interrupter(s.coach, store)
+	spent := spentFor(s.coach, s.budget)
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
@@ -249,6 +250,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 			Split:      split,
 			Splittable: splittable,
+			Spent:      spent,
 		}); err != nil {
 			cancel()
 			return nil, fmt.Errorf("mounting the pile: %w", err)

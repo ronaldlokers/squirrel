@@ -118,3 +118,47 @@ func TestRecordCountsARejectedReply(t *testing.T) {
 	require.False(t, log.recorded[0].Used)
 	require.Equal(t, int64(640), log.recorded[0].CostMicros)
 }
+
+// The only accruing number this product puts on a screen. It is money rather
+// than a score, bounded by a ceiling that was set on purpose, and a fact about
+// a machine rather than about the person reading it.
+func TestSpentReportsTheMonthAndTheCeiling(t *testing.T) {
+	b := coach.Budget{Log: &fakeLog{spent: 2_610_000}, CeilingMicros: 10_000_000}
+
+	spent, ceiling, ok := b.Spent(context.Background(), 1, august)
+	require.True(t, ok)
+	require.Equal(t, int64(2_610_000), spent)
+	require.Equal(t, int64(10_000_000), ceiling)
+}
+
+// It fails quiet, not closed. A spend that cannot be read is a line that is
+// not drawn — unlike Allows, where the same failure has to stop a call.
+func TestSpentFailsQuietRatherThanClosed(t *testing.T) {
+	b := coach.Budget{Log: &fakeLog{err: errors.New("no database")}, CeilingMicros: 10_000_000}
+
+	_, _, ok := b.Spent(context.Background(), 1, august)
+	require.False(t, ok)
+
+	// And the same failure on the gate still refuses the call.
+	allowed, _ := b.Allows(context.Background(), 1, august)
+	require.False(t, allowed)
+}
+
+func TestSpentWithNoLogSaysNothing(t *testing.T) {
+	var b coach.Budget
+	_, _, ok := b.Spent(context.Background(), 1, august)
+	require.False(t, ok)
+}
+
+// Rounded up rather than to nearest, so the figure never reads lower than what
+// was actually spent. Being told €0.00 after a month of calls would be worse
+// than being told €0.01.
+func TestEurosNeverReadsLowerThanWhatWasSpent(t *testing.T) {
+	require.Equal(t, "€0.00", coach.Euros(0))
+	require.Equal(t, "€0.01", coach.Euros(1))
+	require.Equal(t, "€0.01", coach.Euros(640))
+	require.Equal(t, "€0.01", coach.Euros(10_000))
+	require.Equal(t, "€0.02", coach.Euros(10_001))
+	require.Equal(t, "€2.61", coach.Euros(2_610_000))
+	require.Equal(t, "€10.00", coach.Euros(10_000_000))
+}

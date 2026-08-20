@@ -721,6 +721,12 @@ still governs everything else.
 - **The four chips are the Offer's own**, unchanged and equal in weight. One
   press, no typing — the surface must be usable at the moment of least
   capacity, which is the moment it exists for.
+- **What it has cost this month**, in the lid, at the meta role's smallest size
+  in headphone brown, with tabular figures so it does not shift as it climbs.
+  This is the one number in the system that accrues and is still allowed on a
+  screen — see `PRODUCT.md` for why, and note that it is an exception rather
+  than a precedent. It is the quietest thing in the sheet on purpose: it is
+  there to be findable, not to be watched, and it appears on no other screen.
 
 ### Cards / Containers
 
@@ -781,7 +787,9 @@ border that a card UI would reach for by default.
 
 - **Don't** emit a count, a total, a badge, a percentage or a page number, in
   any form, on any surface. This is the product's single hardest rule and the
-  one most likely to be broken by accident.
+  one most likely to be broken by accident. *One exception exists — the coach's
+  monthly cost, in the coach sheet's lid — recorded under The Coach Sheet with
+  its reasoning, the same way the Door Art exception is.*
 - **Don't** use white or grey for any surface or any secondary type. Tint from
   the tail cream on purple, from the headphone brown on cream.
 - **Don't** draw a count either. The rule above does not care whether the total

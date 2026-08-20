@@ -8,6 +8,14 @@
     <img class="acornmark" alt="" src="/static/logo.png?v={{$.V}}" width="36" height="27">
     <span class="sheetname">Squirrel</span>
     <span class="spacer"></span>
+    {{/* What this has cost, this month. The only accruing number on any screen
+         in this product, and it is here because it is money rather than a
+         score: it is bounded by a ceiling that was set on purpose, and it is a
+         fact about a machine rather than about the person reading it.
+
+         In the sheet's lid and nowhere else. A running cost on the home screen
+         would be a number you meet before you have asked for anything. */}}
+    {{if .Spent}}<span class="spend" title="what the coach has cost this month">{{.Spent}}{{if .Ceiling}} of {{.Ceiling}}{{end}}</span>{{end}}
     {{/* Closing means the conversation is over. It does not mean anything
          else: nothing is counted, the acorn does not dim, and nothing goes
          quiet. */}}

@@ -589,6 +589,11 @@ type fakeCoach struct {
 	// permission for. Both empty on an ordinary turn, which is most of them.
 	did     []string
 	propose *Proposal
+
+	// spent and ceiling are what the sheet reports. Empty spent stands in for
+	// a sum that could not be read, which must draw no line at all.
+	spent   string
+	ceiling string
 }
 
 type fakeDecision struct {
@@ -640,6 +645,9 @@ func (c *fakeCoach) options(o Options) Options {
 		return c.pieces, len(c.pieces) > 0
 	}
 	o.Splittable = func(string) bool { return c.splittable }
+	o.Spent = func(context.Context, int64) (string, string, bool) {
+		return c.spent, c.ceiling, c.spent != ""
+	}
 	o.Recent = func(int64) []Exchange { return c.talk }
 	o.Remember = func(_ int64, said, replied string) {
 		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})

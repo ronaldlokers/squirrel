@@ -272,6 +272,28 @@ func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
 	}
 }
 
+// spentFor is what the coach has cost this month, already rendered as money.
+//
+// Nil when there is no coach: a line saying "€0.00 of €10" under a sheet that
+// cannot call anything would be reporting on a thing that is not there.
+func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (string, string, bool) {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return func(ctx context.Context, personID int64) (string, string, bool) {
+		spent, ceiling, ok := budget.Spent(ctx, personID, time.Now())
+		if !ok {
+			return "", "", false
+		}
+		if ceiling <= 0 {
+			// No in-process ceiling is a supported choice, and "of €0.00"
+			// would read as one that had been reached.
+			return coach.Euros(spent), "", true
+		}
+		return coach.Euros(spent), coach.Euros(ceiling), true
+	}
+}
+
 // coachWeb is the screen's half of the same seam.
 //
 // The screen declares its own Exchange, Answer and Proposal for the same

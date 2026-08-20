@@ -89,6 +89,16 @@ category sells the counter as the feature.
 - **Never a count.** No badge, no total, no "N to review", no page count. A
   capped list may say *that* there is more, never *how much* more. This is the
   single rule most likely to be broken by accident.
+
+  **One exception, added 20 August 2026: what the coach has cost this month.**
+  It sits in the coach sheet's own lid and on no other screen. The rule bans
+  the number that accrues against your work and implies a target of zero; this
+  is money, it is a fact about a machine rather than about you, and it is
+  bounded by a ceiling that was set on purpose rather than open-ended. What it
+  buys is that the ceiling stops being invisible until the month it is reached
+  — before this, the only way to know what the coach cost was SQL. It is an
+  exception rather than a precedent, and it is the reason no running cost
+  appears on home.
 - ~~**Never a capture box.**~~ **Overruled by the owner on 20 August 2026.**
   The screen now captures, and it writes straight to the pile rather than
   relaying through Campfire. The rule existed because two capture surfaces

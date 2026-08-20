@@ -2,6 +2,7 @@ package coach
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -88,6 +89,39 @@ func (b Budget) Allows(ctx context.Context, personID int64, now time.Time) (bool
 		return true, spent
 	}
 	return spent < b.CeilingMicros, spent
+}
+
+// Spent is what this month has cost so far and what the ceiling is, both in
+// micro-euros, and whether the question could be answered at all.
+//
+// It exists so one surface can show it. This is the only number in the product
+// that accrues and is allowed on a screen, and the exception is narrow on
+// purpose: it is money rather than a score, it is bounded by a ceiling you set
+// rather than open-ended, and it is a fact about a machine rather than about
+// you. Rule 2 bans the counter that counts what remains of *your* work. This
+// counts what a model has spent of *its* allowance.
+//
+// It fails quiet, not closed. A spend that cannot be read is a line that is
+// not drawn — unlike Allows, where the same failure has to stop a call.
+func (b Budget) Spent(ctx context.Context, personID int64, now time.Time) (int64, int64, bool) {
+	if b.Log == nil {
+		return 0, 0, false
+	}
+	spent, err := b.Log.CoachSpentSince(ctx, personID, MonthStart(now))
+	if err != nil {
+		return 0, 0, false
+	}
+	return spent, b.CeilingMicros, true
+}
+
+// Euros renders micro-euros the way money is written, to the cent.
+//
+// Rounded up rather than to nearest, so the figure never reads lower than what
+// was actually spent. Being told €0.00 after a month of calls would be worse
+// than being told €0.01.
+func Euros(micros int64) string {
+	cents := (micros + 9_999) / 10_000
+	return fmt.Sprintf("€%d.%02d", cents/100, cents%100)
 }
 
 // Record stores what a call cost, whether or not its answer was used. A reply

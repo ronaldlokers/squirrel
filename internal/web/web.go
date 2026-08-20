@@ -69,6 +69,13 @@ type Options struct {
 	// the ladder's own fixed line is the whole answer, which is what it was
 	// before this existed.
 	Smaller squirrel.Breaker
+	// Spent is what the coach has cost this month and what it is allowed, both
+	// already rendered as money, or empty. Nil when there is no coach.
+	//
+	// The only accruing number this product puts on a screen, and the
+	// exception is narrow: it is money rather than a score, it is bounded by a
+	// ceiling you set, and it is a fact about a machine rather than about you.
+	Spent func(ctx context.Context, personID int64) (spent, ceiling string, ok bool)
 	// Split proposes the separate things in one note, or is nil. Splittable is
 	// the free check that decides whether asking is worth a call at all —
 	// separate, because the card has to know whether to draw the press before
