@@ -671,6 +671,20 @@ are untouched), `stuck.go` (`breakDownTask` behind the ladder), `apply.go`
 C is what justifies the project. H is the most dangerous and goes last on
 purpose — it is the only one that speaks without being spoken to.
 
+### Settings (shipped at phase A)
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | *(empty)* | **Empty means no coach**, and that is a supported shipping state, not a degraded one: the picker chooses, the ladder answers, and every screen works. Logged at info, not as a warning. |
+| `COACH_BASE_URL` | `https://api.openai.com/v1` | Where to call. Present with one provider so that moving behind a gateway is a deployment change rather than a code change. |
+| `COACH_MODEL_FAST` | `gpt-5.6-luna` | The routine tier. |
+| `COACH_MODEL_DEEP` | `gpt-5.6-terra` | The escalation tier, for the turns where judgement matters. |
+| `COACH_BUDGET_EUR` | `10` | The monthly ceiling, in whole euros. `0` disables the in-process ceiling; the provider's own hard spend limit is unaffected and remains the control that matters against a stolen key. |
+
+A model the price table does not know is priced at zero, which means the
+ceiling silently stops existing. Boot warns about exactly that at start rather
+than leaving it to be discovered on an invoice.
+
 ---
 
 ## 15. Open questions
