@@ -57,7 +57,7 @@ type Turn struct {
 	Kind string
 	// Deep asks for the escalation tier. The caller decides, because the
 	// caller is the only thing that knows whether this is a routine turn or
-	// one where judgement matters.
+	// one where judgement matters. Overwhelmed() is what sets it today.
 	Deep bool
 	Now  Now
 	// Said is what the person typed, verbatim. Never trimmed of meaning.

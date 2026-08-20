@@ -85,13 +85,30 @@ func TestCoachStillHasASubjectOnALowDay(t *testing.T) {
 }
 
 // The floor. No key, no network, the budget spent, or a reply the guard threw
-// away — all four end in the same sentence, and it points at what always works.
-func TestCoachFallsBackToTheLadderWhenItCannotAnswer(t *testing.T) {
+// away — all four end in the same place, and it is the product answering
+// rather than apologising.
+func TestCoachFallsBackToTheLadderWhenThereIsNothingToHand(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
 
 	ask := &askRecord{err: errors.New("no coach available")}
 	require.Contains(t, coached(t, store, p, "!coach help", ask), "!stuck")
+}
+
+// With something to hand, the floor is the picker. Someone who has just typed
+// out five things wants one of them chosen, and the product can choose one
+// without a model — that is what PickNow is for. Answering a pile with a
+// question about a thing nobody has named yet would be worse than useless.
+func TestCoachThatCannotAnswerHandsYouTheOneThing(t *testing.T) {
+	store := withStore(t)
+	p := owner(t, store)
+
+	taskOf(t, store, p, "ring the vet")
+	ask := &askRecord{err: errors.New("no coach available")}
+	reply := coached(t, store, p, "!coach the tax thing, the vet, the bins and mum", ask)
+
+	require.Contains(t, reply, "ring the vet")
+	require.NotContains(t, reply, "!stuck")
 }
 
 func TestCoachWithNoCoachWiredSaysSoAndPointsAtTheLadder(t *testing.T) {
