@@ -48,7 +48,18 @@ type Now struct {
 
 // Turn is one thing said to the coach.
 type Turn struct {
-	Now Now
+	// PersonID is whose budget this spends. Carried on the turn rather than
+	// checked by the caller, so that no call site can forget the ceiling.
+	PersonID int64
+	// Kind is which surface asked: "chat", "sheet", "overwhelm". It reaches
+	// the log and nothing else, and it is what makes "which surface produces
+	// the answers that land badly" a question with an answer.
+	Kind string
+	// Deep asks for the escalation tier. The caller decides, because the
+	// caller is the only thing that knows whether this is a routine turn or
+	// one where judgement matters.
+	Deep bool
+	Now  Now
 	// Said is what the person typed, verbatim. Never trimmed of meaning.
 	Said string
 	// Subject is what is on screen, when there is something: the offer's text,

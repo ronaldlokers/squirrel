@@ -65,7 +65,7 @@ func budgetFor(cfg squirrel.CoachConfig, store *squirrel.Store) coach.Budget {
 // warning. It means the budget will price every call at zero and the monthly
 // ceiling silently stops existing, which is a thing to hear about at start
 // rather than discover on an invoice.
-func coachFor(cfg squirrel.CoachConfig) coach.Coach {
+func coachFor(cfg squirrel.CoachConfig, budget coach.Budget) coach.Coach {
 	if !cfg.Enabled() {
 		slog.Info("no coach configured; the picker and the ladder answer alone")
 		return coach.NoCoach{}
@@ -76,9 +76,73 @@ func coachFor(cfg squirrel.CoachConfig) coach.Coach {
 				"model", model)
 		}
 	}
-	// Phase A ships the skeleton and no provider. A key that is configured
-	// before there is anything to call it with must still leave the product
-	// working, so this is NoCoach until phase B replaces it.
-	slog.Info("coach configured; no provider built yet", "fast", cfg.Fast, "deep", cfg.Deep)
-	return coach.NoCoach{}
+	slog.Info("the coach is configured",
+		"fast", cfg.Fast, "deep", cfg.Deep, "ceiling_micros", cfg.BudgetMicros)
+	return coach.NewProvider(cfg.BaseURL, cfg.APIKey, cfg.Fast, cfg.Deep, budget)
+}
+
+// asker is the seam the core reaches a model through.
+//
+// A closure over primitives, because internal/squirrel must not import
+// internal/coach. Everything the model is told about the day is assembled here
+// rather than there, which is what keeps the core from knowing that a prompt
+// is a thing that exists.
+//
+// It returns nil when there is no coach at all, and the nil is meaningful: the
+// core checks it and does not advertise `!coach` in help when there is nothing
+// behind it.
+func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) Asker {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+
+	return func(ctx context.Context, personID int64, kind, said, subject string) (string, error) {
+		now := time.Now()
+
+		reply, err := c.Answer(ctx, coach.Turn{
+			PersonID: personID,
+			Kind:     kind,
+			Now:      nowFor(ctx, store, personID, now),
+			Said:     said,
+			Subject:  subject,
+			Recent:   talk.Recent(personID, now),
+		})
+		if err != nil {
+			return "", err
+		}
+
+		// Only a reply that survived the guard joins the window. A rejected one
+		// left nothing for the next turn to refer back to, and putting it in
+		// would teach the model that its own bad shape was acceptable.
+		talk.Add(personID, said, reply.Text, now)
+		return reply.Text, nil
+	}
+}
+
+// nowFor is the state of the day, as the four small facts the model is told.
+//
+// Every read here fails soft. A missing capacity or an unreachable moment
+// costs the model a hint; it must not cost the person an answer, because the
+// alternative to a slightly less informed reply is no reply at all.
+func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time.Time) coach.Now {
+	n := coach.Now{
+		Clock:     now.Format("15:04"),
+		PartOfDay: string(squirrel.PartOfDay(now)),
+		// Derived before it gets here, and derived deliberately: the model is
+		// told "ok" or "low", never a mood word and never a history. A signal,
+		// not a diagnosis.
+		Capacity: string(store.Capacity(ctx, personID, now)),
+	}
+
+	if m, found, err := store.NextMoment(ctx, personID, now); err == nil && found {
+		// Minutes to the thing itself rather than to when to leave for it.
+		// Leave-by arithmetic is the product's own job and it is already done
+		// on the screen; handing the model a second version of it invites two
+		// answers to one question.
+		if mins := int(m.Starts.Sub(now).Minutes()); mins >= 0 {
+			n.FreeUntil = &mins
+		}
+	}
+
+	return n
 }

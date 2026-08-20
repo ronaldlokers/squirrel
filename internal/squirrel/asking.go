@@ -38,6 +38,23 @@ var partHours = map[DayPart][2]int{
 	Evening:   {17, 22},
 }
 
+// PartOfDay is which part now falls in, or AnyPart outside all of them.
+//
+// AnyPart between 22:00 and 06:00 rather than a fifth word for the night. The
+// four parts are the vocabulary this product already has, and something asked
+// at three in the morning is better described as having no part of the day
+// than as belonging to one nothing else knows about.
+func PartOfDay(now time.Time) DayPart {
+	h := now.Hour()
+	for _, part := range []DayPart{Morning, Afternoon, Evening} {
+		hours := partHours[part]
+		if h >= hours[0] && h < hours[1] {
+			return part
+		}
+	}
+	return AnyPart
+}
+
 // PartWords is what each part is called, for the screen and the chat.
 var PartWords = map[DayPart]string{
 	AnyPart:   "any time",

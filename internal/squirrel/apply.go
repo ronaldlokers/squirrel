@@ -39,6 +39,23 @@ type Applier struct {
 	// construction via SetNudger, since the Applier and the Scheduler each
 	// need the other and boot builds them in that order.
 	nudger func(ctx context.Context, now time.Time, why NudgeReason) error
+	// asker optionally asks a model. A function rather than an interface for
+	// one reason: internal/coach must not be imported here — the core would
+	// then depend on a model being reachable — and a func of primitives is the
+	// one shape that crosses that line without either package knowing about
+	// the other's types. Set after construction via SetCoach, same as nudger.
+	//
+	// Nil is the normal state. Every caller of it has a fixed answer to fall
+	// back to, and that answer is what shipped before the coach existed.
+	asker func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+}
+
+// SetCoach supplies the callback that asks a model, or nil for no coach.
+//
+// Boot builds it because boot is the only package that may import both the
+// core and internal/coach. See internal/boot/coach.go.
+func (a *Applier) SetCoach(ask func(context.Context, int64, string, string, string) (string, error)) {
+	a.asker = ask
 }
 
 // SetNudger supplies the callback that may attach a nudge to a capture. It is
@@ -404,6 +421,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "stuck":
 		return a.stuck(ctx, in.Arg, personID)
 
+	case "coach":
+		return a.coach(ctx, in.Arg, personID)
+
 	case "at":
 		return a.at(ctx, in.Arg, personID)
 
@@ -543,6 +563,43 @@ func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Messag
 		subject = o.Text
 	}
 	return StuckMessage(u, subject), nil
+}
+
+// coach is the ladder's other half: `!coach I can't face the tax thing`.
+//
+// `!stuck` wants you to name what is in the way, and its four answers are
+// good precisely because they are fixed. This is for the times you cannot
+// name it. It is the same moment reached from the other direction.
+//
+// Everything about it degrades to `!stuck`. No key, no network, the month's
+// budget spent, or a reply the guard threw away — all four end in the same
+// sentence, and that sentence points at the thing that always works.
+//
+// What is on screen goes with the question. The picker is asked with
+// showAnyway, because someone who has just typed a paragraph about being
+// stuck has already overridden the low-day quiet by asking.
+func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Message, error) {
+	said := strings.TrimSpace(arg)
+	if said == "" {
+		return Message{Text: "Say what is going on. Try !coach I can't face the tax thing."}, nil
+	}
+	if a.asker == nil {
+		return Message{Text: "No coach here. Try !stuck."}, nil
+	}
+
+	// A failure to pick is not a failure to answer. The subject is context,
+	// not the question, so an unreachable picker costs the model a hint and
+	// costs the person nothing.
+	subject := ""
+	if o, found, err := a.store.PickNow(ctx, personID, time.Now(), true); err == nil && found {
+		subject = o.Text
+	}
+
+	text, err := a.asker(ctx, personID, "chat", said, subject)
+	if err != nil {
+		return Message{Text: "Nothing useful to say to that. Try !stuck."}, nil
+	}
+	return Message{Text: text}, nil
 }
 
 // at keeps a fixed point: `!at 14:30 dentist`, `!at 14:30 dentist, 20 minutes

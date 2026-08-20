@@ -60,11 +60,14 @@ type Squirrel struct {
 	server *squirrel.Server
 	store  *squirrel.Store
 	stops  []func(context.Context) error
-	// coach and budget are built at boot and used by the surfaces that ask a
-	// model. Both are safe to hold before Postgres answers: coach is NoCoach
-	// until a provider exists, and budget only touches the store when asked.
-	coach   coach.Coach
-	budget  coach.Budget
+	// coach, budget and talk are built at boot and used by every surface that
+	// asks a model. All three are safe to hold before Postgres answers:
+	// nothing here touches the store until something is actually asked.
+	coach  coach.Coach
+	budget coach.Budget
+	// talk is the rolling window, shared by every surface so that two of them
+	// cannot disagree about how long a conversation lasts.
+	talk    *coach.Conversations
 	cancel  context.CancelFunc
 	drained chan struct{}
 	// wg tracks background goroutines that touch the store outside the
@@ -199,8 +202,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// because the screen will ask for the coach in the phase that adds the
 	// sheet. Neither one connecting to anything yet is the point: a coach that
 	// is not there must be an ordinary state at boot, not an error path.
-	s.coach = coachFor(config.Coach)
 	s.budget = budgetFor(config.Coach, store)
+	s.coach = coachFor(config.Coach, s.budget)
+	s.talk = coach.NewConversations()
 
 	// The owner is filled in by connectAndDrain once Postgres answers, which
 	// may be a while after boot or never. Same shape and same reason as
@@ -245,15 +249,21 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 	go func() {
 		defer close(s.drained)
-		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner)
+		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
+			asker(s.coach, store, s.talk))
 	}()
 
 	return s, nil
 }
 
+// Asker is the seam the core reaches a model through: a func of primitives,
+// because internal/squirrel must not import internal/coach. Nil means there is
+// no coach, which is an ordinary state and not a failure.
+type Asker func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64) {
+func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64, ask Asker) {
 	var personID int64
 	for {
 		var err error
@@ -303,6 +313,13 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		applier = squirrel.NewApplier(store, send, chat, func(err error) {
 			slog.Error("applying intent", "error", err)
 		})
+
+		// Nil when there is no coach, and the nil carries meaning: chat does
+		// not advertise `!coach` in help when there is nothing behind it. A
+		// command that only ever answers "there is no coach" is worse than one
+		// that was never offered.
+		applier.SetCoach(ask)
+		squirrel.SetCoachHere(ask != nil)
 
 		if config.Campfire != nil {
 			scheduler := squirrel.NewScheduler(squirrel.SchedulerOptions{
