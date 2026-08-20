@@ -95,7 +95,7 @@ product whose value is that it works.
 | **E** | `breakDownTask()`; "too big" routed through the coach, one step at a time. | shipped |
 | **F** | Splitting a brain dump, proposed and confirmed. On the screen; chat is unchanged. | shipped |
 | **G** | Write tools and the confirmation policy. Six run, four ask, three are refused. | shipped |
-| **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* | |
+| **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* | shipped |
 
 **Ready:** the API key is stored (SOPS + vault, project-scoped, spend limit set),
 and the model IDs are verified against the live API: `gpt-5.6-luna` for routine
@@ -150,6 +150,16 @@ micro-steps for two or three chores · novelty in **art and phrasing only**.
 ---
 
 ## Open
+
+**Quiet hours on the nudge path.** A chore with no stated preference is open at
+every hour, so a presence ping at four in the morning nudges. Noticed while
+building phase H, which names quiet hours as one of the floors the model cannot
+lift — and it is not actually one, because nothing enforces it. Not fixed there
+on purpose: a rule about when the product may speak is a product decision, not
+a detail of the phase that noticed it, and adding it makes the test suite
+depend on the hour it runs at. Two decisions needed: the hours, and whether the
+capacity gate should apply to nudges too (a low day might be the day you least
+want a chore raised, or the day you most need it).
 
 1. **Attachment storage.** No object storage exists in the cluster. Either a PVC
    on the pod — simplest, but the restore drill has to cover it — or add MinIO

@@ -247,6 +247,24 @@ func splitter(c coach.Coach) (
 // as a press.
 type turnFn func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error)
 
+// interrupter is the veto on a nudge the rules already allowed, or nil.
+//
+// Nil rather than a pass-through when there is no coach, so the scheduler's
+// own nil check is the one that decides and there is no call at all — the
+// nudge path stays exactly what it was, which is the point of failing open.
+//
+// The Now handed over is deliberately thin: the clock, the part of the day and
+// capacity. The model is deciding whether *this moment* is a bad one to speak
+// into, and what is on the pile is not evidence about that.
+func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return func(ctx context.Context, personID int64, about string, at time.Time) (string, bool) {
+		return c.ShouldInterrupt(ctx, personID, about, nowFor(ctx, store, personID, at))
+	}
+}
+
 // coachWeb is the screen's half of the same seam.
 //
 // The screen declares its own Exchange, Answer and Proposal for the same
