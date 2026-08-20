@@ -200,10 +200,12 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
 			Identity:       config.WebIdentity,
-			// Empty unless the VAPID pair is configured, which leaves the
-			// screen never offering to subscribe — a button with no key behind
-			// it fails silently, which is worse than one that was never drawn.
-			PushKey: config.Push.PublicKey,
+			// Empty unless the *whole* pair plus the contact is configured,
+			// not merely the public half. A public key alone would mount the
+			// subscribe route and let a browser sign up to a channel nothing
+			// can send on: subscriptions stored, permission spent, and silence
+			// — which is the one shape worse than never offering.
+			PushKey: pushKeyFor(config.Push),
 			Owner:   webOwner.Load,
 		}); err != nil {
 			cancel()
@@ -438,4 +440,16 @@ func host(endpoint string) string {
 		return "?"
 	}
 	return u.Host
+}
+
+// pushKeyFor is the public key, and only when sending would actually work.
+//
+// Enabled() wants all three settings. Handing the screen a public key while
+// the private half is missing would draw a button, spend a permission prompt,
+// and store a subscription that nothing will ever push to.
+func pushKeyFor(cfg squirrel.PushConfig) string {
+	if !cfg.Enabled() {
+		return ""
+	}
+	return cfg.PublicKey
 }

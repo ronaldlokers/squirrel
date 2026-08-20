@@ -61,21 +61,33 @@ template plus a header to widen the worker's scope by one character.
 | `WEB_IDENTITY_HEADER` | `X-Authentik-Username` | The header the forward-auth middleware fills. |
 | `WEB_URL` | *(empty)* | Where the screen is reachable from outside, so chat can link to it. **Empty means chat says nothing about the screen** — a link built from a guess is a link that 404s, and a bot that confidently sends you nowhere is worse than one that stays quiet. |
 | `VAPID_PUBLIC_KEY` | *(empty)* | The application server key the browser subscribes with. **Empty leaves `/push/subscribe` unmounted** and the screen never offers — a subscribe button with no key behind it fails silently, which is worse than one that was never drawn. |
-| `VAPID_PRIVATE_KEY` | *(empty)* | The raw 32-byte P-256 scalar, base64url. **From Proton Pass, never from this repository.** |
+| `VAPID_PRIVATE_KEY` | *(empty)* | The raw 32-byte P-256 scalar, base64url. **A credential: it comes from a Kubernetes Secret, never from this repository.** |
 | `PUSH_CONTACT` | *(empty)* | A `mailto:` the push service can complain to. Part of RFC 8292 rather than a courtesy: services reject a token without one. |
 
-All three must be set for pushing to happen at all. None of them being set is a
-supported state rather than a degraded one — the leave-by warning still reaches
-the Campfire room, which is the channel that always works.
+All three must be set for pushing to happen at all, and the screen checks all
+three before it offers to subscribe: a public key on its own would draw a
+button, spend a permission prompt, and store a subscription nothing can send
+to. None of them being set is a supported state rather than a degraded one —
+the leave-by warning still reaches the Campfire room, which is the channel that
+always works.
 
-### Minting the VAPID pair
+### Where the pair lives
 
-Any Web Push key generator produces a P-256 pair; the two values Squirrel wants
-are the uncompressed public point and the raw private scalar, both base64url
-without padding. Put the private half in the Proton Pass **Dotfiles** vault and
-reference it the way `PRESENCE_SECRET` already is. Nothing about the pair may
-land in this repository, and rotating it only costs the subscriptions, which
-every browser re-creates on its next visit.
+The public key and the contact are not credentials and are plain values on the
+Deployment. The private scalar is a credential and follows `PRESENCE_SECRET`
+exactly: a SOPS-encrypted Secret in
+[ronaldlokers/homelab](https://github.com/ronaldlokers/homelab), decrypted by
+Flux with the cluster's age key, mounted through an `optional: true`
+`secretKeyRef` so a rollout before the Secret exists costs pushing and nothing
+else.
+
+Not Proton Pass. The vault is where *dotfiles* secrets come from, and nothing
+in the cluster can read it at deploy time — a copy may live there for the day
+the age key is lost, but the Secret in homelab is the source of truth.
+
+Rotating the pair costs only the subscriptions, which every browser re-creates
+on its next visit. See `docs/runbooks/squirrel.md` in homelab for the
+procedure.
 
 The comparison against `WEB_IDENTITY` is exact — no trimming, no case folding.
 Two identities that differ by a space are two identities.
