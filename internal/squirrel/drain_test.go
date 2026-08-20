@@ -252,19 +252,41 @@ func (f *flakyStore) snapshot() []time.Time {
 // off while the database is unreachable, and reset once it recovers, rather
 // than either hammering Postgres on every tick or staying slow forever after
 // one blip. flakyStore forces exactly two deferred passes before letting real
-// ones through, so growth (tick 1 to 3) and reset (tick 3 to 4) both show up
-// as measured gaps between ticks on one Drain instance — no sleeping out the
-// real 30-second backoff ceiling, just a deliberately small Interval and
-// require.Eventually instead of a fixed sleep.
+// ones through, so growth and reset both happen on one Drain instance.
+//
+// It asserts on the waits Run *chose*, reported through OnWait, rather than on
+// the gaps between ticks as measured by a clock. Measuring the gaps timed the
+// runner as much as the code: the assertion was loosened once (a half to three
+// quarters) and flaked again anyway at 213ms against a 150ms threshold, on a
+// docs-only pull request. There is no ratio that fixes that — a shared CI
+// runner can stall for longer than the difference being measured, so the only
+// honest fix is to stop measuring elapsed time.
+//
+// What is checked is now exact rather than approximate, which is a gain and not
+// a compromise: the doubling is arithmetic and the reset is an assignment, so
+// both have right answers.
 func TestDrainRunGrowsBackoffOnDeferralAndResetsAfterSuccess(t *testing.T) {
 	store, sp, _ := drainFixture(t)
 	_, err := sp.Write(capture(nil))
 	require.NoError(t, err)
 
 	flaky := &flakyStore{real: store, failTimes: 2}
+
+	var waitMu sync.Mutex
+	waits := []time.Duration{}
 	drain := squirrel.NewDrain(squirrel.DrainOptions{
 		Spool: sp, Store: flaky, Interval: 50 * time.Millisecond, MaxBackoff: time.Minute,
+		OnWait: func(d time.Duration) {
+			waitMu.Lock()
+			waits = append(waits, d)
+			waitMu.Unlock()
+		},
 	})
+	waitsSoFar := func() []time.Duration {
+		waitMu.Lock()
+		defer waitMu.Unlock()
+		return append([]time.Duration(nil), waits...)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
@@ -298,24 +320,14 @@ func TestDrainRunGrowsBackoffOnDeferralAndResetsAfterSuccess(t *testing.T) {
 		t.Fatal("Run did not return after cancellation")
 	}
 
-	calls := flaky.snapshot()
-	require.GreaterOrEqual(t, len(calls), 4)
-	gap12 := calls[1].Sub(calls[0])
-	gap23 := calls[2].Sub(calls[1])
-	gap34 := calls[3].Sub(calls[2])
-
-	// Growth: each deferred pass roughly doubles the wait before the next.
-	require.Greater(t, gap23, gap12*3/2, "backoff should grow between deferred passes")
-	// Reset: the tick right after a clean pass waits only the base interval
-	// again, not the backed-off one it would have used had it kept deferring.
-	//
-	// Three quarters rather than a half. What is being distinguished is a base
-	// wait from a doubled one — roughly 100ms against 200ms — and a shared CI
-	// runner adds tens of milliseconds of scheduler jitter to whichever it
-	// measures. At half, a 112ms reset failed a 100ms threshold on a machine
-	// that was doing something else; at three quarters, the same measurement
-	// passes and a backoff that had not reset at all still cannot.
-	require.Less(t, gap34, gap23*3/4, "backoff should reset after a clean pass")
+	// The first three passes are the whole story, and every one of them is an
+	// exact number rather than a range: the two deferred passes double the
+	// base, and the clean pass assigns it straight back.
+	waited := waitsSoFar()
+	require.GreaterOrEqual(t, len(waited), 3)
+	require.Equal(t, 100*time.Millisecond, waited[0], "a deferred pass doubles the base")
+	require.Equal(t, 200*time.Millisecond, waited[1], "a second deferred pass doubles again")
+	require.Equal(t, 50*time.Millisecond, waited[2], "a clean pass resets to the base")
 
 	require.Equal(t, 2, countItems(t, store))
 	names, err := sp.List()

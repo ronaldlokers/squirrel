@@ -38,6 +38,16 @@ type DrainOptions struct {
 	// OnUnknownIdentity is not an error channel. The row still lands; nobody
 	// knows whose it is yet.
 	OnUnknownIdentity func(transport, senderID string)
+	// OnWait reports the interval Run decided to wait before its next pass,
+	// every pass. It exists for one reason: the backoff is the only part of
+	// this loop whose behaviour is a *duration*, and a test that measures it
+	// by timing real ticks is measuring the machine as much as the code.
+	//
+	// Reporting the decision makes the test assert what Run chose rather than
+	// what a loaded CI runner delivered — which is both the thing worth
+	// checking and the only version of it that does not flake. Nil in
+	// production; nothing outside a test sets it.
+	OnWait func(time.Duration)
 	// Applier runs after a capture lands. Nil keeps phase-1 behaviour.
 	Applier *Applier
 }
@@ -193,6 +203,10 @@ func (d *Drain) Run(ctx context.Context) {
 			slog.Warn("drain deferred", "files", result.Deferred, "retry_in", backoff)
 		} else {
 			backoff = d.opts.Interval
+		}
+
+		if d.opts.OnWait != nil {
+			d.opts.OnWait(backoff)
 		}
 
 		timer := time.NewTimer(backoff)
