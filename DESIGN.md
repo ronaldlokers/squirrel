@@ -699,6 +699,12 @@ still governs everything else.
   product's second mark, available as a badge anywhere the full mascot is too
   much. Cream stock, the 3px outline, the sticker offset every raised thing
   here wears. Fixed bottom-right, thumb-reachable.
+
+  It is `.askacorn` in the markup, and the card's drawn badge keeps `.acorn`.
+  Worth stating because for one release they shared the name: every note's
+  16px badge became a 62px circle stuck to the corner of the screen, and the
+  script wired the badge instead of the button, so the sheet never opened on
+  the pile at all. **The same mark in two roles needs two names.**
 - **Not in the lid.** The lid already carries mark, wordmark, timer strip, two
   cross-links and search, and the Lid Step-Down Rule exists because it was
   taking a fifth of a phone screen. A seventh element is not available.

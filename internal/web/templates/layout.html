@@ -98,9 +98,15 @@
      taking a fifth of a phone screen. A seventh element is not available.
 
      A link to a real page, so it works with this script absent. pile.js
-     upgrades it into a sheet. */}}
+     upgrades it into a sheet.
+
+     Not `.acorn`: the card's title bar already uses that for the drawn badge,
+     and taking the name for this turned every note's badge into a 62px circle
+     stuck to the corner of the screen — and pile.js wired the badge instead of
+     this, so the sheet never opened on the pile at all. Two bugs from one
+     word. */}}
 {{if ne .Here "coach"}}
-<a class="acorn" href="/coach?from={{.Path}}" aria-label="Ask Squirrel">
+<a class="askacorn" href="/coach?from={{.Path}}" aria-label="Ask Squirrel">
   <img alt="" src="/static/logo.png?v={{.V}}" width="46" height="35">
 </a>
 {{end}}

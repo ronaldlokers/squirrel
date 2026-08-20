@@ -395,3 +395,98 @@ func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
 			};
 		});`), "the words are held")
 }
+
+// Closing the coach, reported broken from production. The sheet never opened
+// on the pile at all: `.acorn` was the card's drawn badge as well as the
+// button, and pile.js wired the badge — so the acorn navigated away instead,
+// and what looked like "closing does not work" was "this was never a sheet".
+func TestBrowserClosingTheCoach(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
+	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
+	require.Equal(t, "/pile", c.eval(t, `return location.pathname`),
+		"closing the sheet navigated instead of closing")
+}
+
+// Escape, which the platform gives us and which nothing here implements.
+func TestBrowserEscapeClosesTheCoach(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.key(t, "Escape")
+	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
+}
+
+// The acorn opens a sheet over the page rather than going anywhere. This is
+// the half of the bug above that was invisible: it did navigate, and the page
+// it landed on worked, so nothing looked broken until you tried to get out.
+func TestBrowserTheAcornDoesNotNavigate(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+	require.Equal(t, "/pile", c.eval(t, `return location.pathname`))
+}
+
+// The card's badge is a 16px drawing in a title bar, not a button stuck to the
+// corner of the screen. It was the latter for one release.
+func TestBrowserTheCardsBadgeIsStillInItsTitleBar(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	require.Equal(t, "static", c.eval(t,
+		`return getComputedStyle(document.querySelector(".titlebar .acorn")).position`))
+	require.Equal(t, "fixed", c.eval(t,
+		`return getComputedStyle(document.querySelector(".askacorn")).position`))
+}
+
+// Every letter here is an action — d is done, s is stop, c asks for an
+// interval — and until this was fixed they fired while you were typing.
+// Naming a chore "shopping" pressed stop and then opened the interval
+// question, and each press moved the focus, which on a phone shuts the
+// keyboard.
+func TestBrowserTypingAChoreNameIsNotAnAction(t *testing.T) {
+	c, srv := open(t, aPile())
+	c.navigate(t, srv.URL+"/chores")
+	c.until(t, "the new chore field", `!!document.querySelector('form[action="/chores/new"] input[name=name]')`)
+
+	// The form lives in a disclosure, so it has to be opened before anything
+	// in it can take focus.
+	c.eval(t, `document.querySelector("details.newchore").open = true`)
+	c.eval(t, `document.querySelector('form[action="/chores/new"] input[name=name]').focus()`)
+	c.until(t, "the field to hold focus", `document.activeElement.name === "name"`)
+	for _, k := range []string{"s", "h", "o", "p"} {
+		c.key(t, k)
+	}
+
+	require.Equal(t, "shop", c.eval(t, `return document.querySelector('form[action="/chores/new"] input[name=name]').value`),
+		"the letters did not reach the field")
+	require.Equal(t, "INPUT", c.eval(t, `return document.activeElement.tagName`),
+		"a key moved the focus out of the field, which shuts the keyboard on a phone")
+	require.Equal(t, false, c.eval(t, `return !!document.querySelector("details.often[open]")`),
+		"typing opened the interval question")
+}
+
+// The same rule in the coach's own box, which is reachable from every screen
+// and so meets the deck's keys as well as the chores'.
+func TestBrowserTypingToTheCoachIsNotAnAction(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.eval(t, `document.querySelector('dialog.coachsheet textarea[name=said]').focus()`)
+	for _, k := range []string{"d", "k", "x"} {
+		c.key(t, k)
+	}
+
+	require.Equal(t, "dkx", c.eval(t,
+		`return document.querySelector('dialog.coachsheet textarea[name=said]').value`))
+	require.Equal(t, false, c.eval(t, `return document.getElementById("card").classList.contains("stamped")`),
+		"typing to the coach triaged the note behind it")
+}

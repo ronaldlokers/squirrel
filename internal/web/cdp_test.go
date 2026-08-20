@@ -266,12 +266,33 @@ func (c *cdp) navigate(t *testing.T, url string) {
 // key dispatches a real key event through the browser's input pipeline, rather
 // than a synthetic one from a script. What the page sees is what a keyboard
 // would have produced.
+// virtualKeys are the codes for the named keys this suite presses.
+//
+// A key event with no virtual code reaches JavaScript perfectly well, which is
+// why every test here worked without them — our own handlers only ever read
+// e.key. It does not reach the *browser's* own handling, though, and that is
+// what closes a <dialog> on Escape. Without a code the sheet stays open under
+// a synthetic Escape and looks like a bug in the page.
+var virtualKeys = map[string]int{
+	"Escape":     27,
+	"Enter":      13,
+	" ":          32,
+	"ArrowLeft":  37,
+	"ArrowUp":    38,
+	"ArrowRight": 39,
+	"ArrowDown":  40,
+}
+
 func (c *cdp) key(t *testing.T, k string) {
 	t.Helper()
 	for _, kind := range []string{"keyDown", "keyUp"} {
 		params := map[string]any{"type": kind, "key": k}
 		if kind == "keyDown" && len(k) == 1 {
 			params["text"] = k
+		}
+		if code, ok := virtualKeys[k]; ok {
+			params["windowsVirtualKeyCode"] = code
+			params["nativeVirtualKeyCode"] = code
 		}
 		c.send(t, "Input.dispatchKeyEvent", params)
 	}
