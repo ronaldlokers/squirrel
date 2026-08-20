@@ -80,6 +80,7 @@ func HelpMessage() Message {
 		"Anything you type is a note. That is the default and it always wins.",
 		"",
 		"!now — one thing, chosen. !now anyway ignores a low day",
+		"!stuck — I can't start. Four answers, and one of them helps",
 		"!notes — the pile, newest first",
 		"!find <text> — search everything you have told me",
 		"!chores — what is due (same as ?)",
@@ -263,6 +264,33 @@ func doneWord(o Offer) string {
 		return o.Text
 	}
 	return "did it"
+}
+
+// StuckQuestion asks what is in the way — four answers, one line, no
+// follow-up.
+//
+// It is asked once and never twice. A product that answers "I can't start"
+// with a second question has charged the person another decision at the moment
+// they said they had none left.
+func StuckQuestion() Message {
+	words := make([]string, 0, len(Blockers))
+	for _, b := range Blockers {
+		words = append(words, BlockerWords[b])
+	}
+	return Message{Text: "What is in the way?\n" + strings.Join(words, " · ") +
+		"\n\nSay !stuck and one of those."}
+}
+
+// StuckMessage is the answer, and it never grows into a plan.
+func StuckMessage(u Unstuck, subject string) Message {
+	if u.Ask {
+		return Message{Text: u.Line + "\nTell me and I will keep it."}
+	}
+	m := Message{Text: u.Line}
+	if u.Minutes > 0 && subject != "" {
+		m.Text += fmt.Sprintf("\n!timer %d %s when you are ready.", u.Minutes, subject)
+	}
+	return m
 }
 
 // NothingNowMessage is what the picker says when it has nothing.

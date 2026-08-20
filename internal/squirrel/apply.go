@@ -394,6 +394,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "now":
 		return a.now(ctx, in.Arg, personID, conversationID)
 
+	case "stuck":
+		return a.stuck(ctx, in.Arg, personID)
+
 	case "chores":
 		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
 
@@ -485,6 +488,45 @@ func (a *Applier) now(ctx context.Context, arg string, personID int64, conversat
 	}
 	a.pending = id
 	return m, nil
+}
+
+// stuck is the ladder, in chat: `!stuck`, or `!stuck too big`.
+//
+// It acts on whatever the picker would hand you right now rather than asking
+// which thing you mean. Someone who has just said they cannot start is not the
+// person to ask a disambiguating question, and the answer is almost always the
+// thing they were just looking at.
+//
+// "Not today" turns that same thing down, which is the one branch that writes
+// anything — and it writes exactly what pressing "not now" writes, because
+// they are the same answer arrived at from two directions.
+func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Message, error) {
+	b, ok := ParseBlocker(arg)
+	if !ok {
+		return StuckQuestion(), nil
+	}
+
+	o, found, err := a.store.PickNow(ctx, personID, time.Now(), true)
+	if err != nil {
+		return Message{}, err
+	}
+
+	u := UnstuckFor(b)
+	if u.Refuse {
+		if !found {
+			return Message{Text: "Nothing to put off."}, nil
+		}
+		if err := a.store.Refuse(ctx, personID, o.Kind, o.RefID, time.Now()); err != nil {
+			return Message{}, err
+		}
+		return Message{Text: "Not today, then."}, nil
+	}
+
+	subject := ""
+	if found {
+		subject = o.Text
+	}
+	return StuckMessage(u, subject), nil
 }
 
 // promote turns note n into a recurring chore: `!chore 1 every 2 weeks`.

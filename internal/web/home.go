@@ -67,6 +67,12 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 			// this product exists to reduce, and the answer is what shapes the
 			// offer anyway.
 			v.Offer = offerFor(s, opts, r, v.Anyway)
+			if v.Offer != nil {
+				// The ladder's answer, when one has been asked for. It hangs
+				// off the offer rather than replacing it: the thing you could
+				// not start is still the thing.
+				v.Offer.Unstuck = unstuckFrom(q)
+			}
 		}
 
 		renderWith(w, r, s, opts, "home", v)

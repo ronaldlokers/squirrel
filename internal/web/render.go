@@ -169,6 +169,20 @@ type offerView struct {
 	// something chosen for you, so the card offers nothing to press: the lid
 	// already carries the only control it needs.
 	Running bool
+	// Unstuck is the ladder's answer, once one has been asked for. The offer
+	// stays on the card underneath it: the thing you could not start is still
+	// the thing, and taking it away would make "I can't start" a way of losing
+	// it.
+	Unstuck *unstuckView
+}
+
+// unstuckView is one line and at most one control. There is deliberately
+// nowhere here to put a second step — the failure being avoided is the
+// twelve-step plan, and a struct that cannot hold one cannot render one.
+type unstuckView struct {
+	Line    string
+	Minutes int
+	Ask     bool
 }
 
 type undoView struct {

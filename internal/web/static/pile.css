@@ -1177,6 +1177,57 @@
   }
   .obtn.later:hover { color: var(--outline); }
   .obtn.later:active { transform: translateY(2px); }
+
+  /* ---------- I can't start ---------- */
+
+  /* Quieter than everything above it, and deliberately so: it has to be easy
+     to reach and must not read as the default. The disclosure grammar is the
+     chore picker's and the reword box's — the answer happens where the thing
+     is, and closing it changes nothing. */
+  .cantstart > summary {
+    list-style: none; cursor: pointer;
+    display: inline-flex; align-items: center; min-height: 44px;
+    color: var(--brown);
+    font-size: 14px; font-variation-settings: var(--precise), "wght" 620;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .cantstart > summary::-webkit-details-marker { display: none; }
+  .cantstart > summary:hover { color: var(--outline); }
+  .cantstart .ifopen { display: none; }
+  .cantstart[open] .ifshut { display: none; }
+  .cantstart[open] .ifopen { display: inline; }
+
+  .whys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0 2px; }
+  .whys .lead {
+    width: 100%; margin: 0 0 2px;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  /* Four answers, all the same weight. One of them being louder would be the
+     product guessing which it is, and it does not know. */
+  .why {
+    min-height: 44px; padding: 10px 14px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    cursor: pointer;
+    font: 600 13.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 700;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .why:hover { background: var(--paper-deep); }
+  .why:active { transform: translateY(4px); box-shadow: none; }
+
+  /* The answer. One line and at most one control — there is nowhere here for a
+     second step, which is the whole point. */
+  .unstuck { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+  .unstuck .line {
+    margin: 0;
+    font-size: 17px; line-height: 1.35;
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+  .unstuck .slot.small { margin: 0; }
   .checkin .lead {
     margin: 0 0 10px; text-align: center;
     font-size: 12px; letter-spacing: .09em; text-transform: uppercase;

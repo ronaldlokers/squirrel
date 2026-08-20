@@ -35,6 +35,49 @@
         <button class="obtn go" name="act" value="start">10 MIN</button>
         <button class="obtn later" name="act" value="later">not now</button>
       </form>
+
+      {{/* Knowing what to do is not being able to do it.
+
+           A disclosure rather than a second page, the same mechanism the chore
+           interval picker and the reword box already use: the answer happens
+           where the thing is, and closing it changes nothing. Quiet and small
+           on purpose — refusing to start has to be easy to reach and must not
+           read as the default. */}}
+      {{with .Unstuck}}
+      <div class="unstuck" role="status">
+        <p class="line">{{.Line}}</p>
+        {{if .Ask}}
+        {{/* The one branch that captures. "What would I have to find out
+             first" is a thought, and thoughts go where thoughts go. */}}
+        <form class="slot small" method="post" action="/capture">
+          <textarea name="text" rows="1" placeholder="the first thing to find out"
+            aria-label="The first thing you would have to find out"></textarea>
+          <button class="post" type="submit">Keep it</button>
+        </form>
+        {{else if .Minutes}}
+        <form method="post" action="/now/act">
+          <input type="hidden" name="kind" value="{{$.Offer.Kind}}">
+          <input type="hidden" name="id" value="{{$.Offer.RefID}}">
+          <input type="hidden" name="label" value="{{$.Offer.Text}}">
+          <input type="hidden" name="minutes" value="{{.Minutes}}">
+          <button class="obtn go" name="act" value="start">{{.Minutes}} MIN</button>
+        </form>
+        {{end}}
+      </div>
+      {{else}}
+      <details class="cantstart">
+        <summary role="button"><span class="ifshut">i can't start</span><span class="ifopen">never mind</span></summary>
+        <form class="whys" method="post" action="/now/stuck">
+          <input type="hidden" name="kind" value="{{.Kind}}">
+          <input type="hidden" name="id" value="{{.RefID}}">
+          <p class="lead">WHAT IS IN THE WAY</p>
+          <button class="why" name="why" value="big">too big</button>
+          <button class="why" name="why" value="how">don&rsquo;t know how</button>
+          <button class="why" name="why" value="boring">boring</button>
+          <button class="why" name="why" value="not today">not today</button>
+        </form>
+      </details>
+      {{end}}
       {{end}}
     </section>
     {{else}}

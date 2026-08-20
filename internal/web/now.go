@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -99,6 +100,68 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+}
+
+// nowStuckHandler is "I can't start", and it is the one branch of the offer
+// that can end without anything having been done to anything.
+//
+// It answers with a redirect carrying the answer in the address bar rather
+// than rendering here, so the response is a page you can reload, bookmark or
+// come back to — and so the ladder's words live in one place, in the core,
+// where the chat reads them too.
+func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		b, ok := squirrel.ParseBlocker(r.FormValue("why"))
+		if !ok {
+			// Not one of the four. Nothing is done and nothing is said: this
+			// arrives from a form, and a value that was never offered is read
+			// the way a stranger's typing is read.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		// "Not today" is not an obstacle, it is a no — and it is the same no
+		// that "not now" writes, arrived at from a different direction.
+		if u := squirrel.UnstuckFor(b); u.Refuse {
+			kind := squirrel.OfferKind(r.FormValue("kind"))
+			refID, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+			if offerKinds[kind] {
+				if err := s.Refuse(r.Context(), personID, kind, refID, now()); err != nil {
+					fail(w, err)
+					return
+				}
+			}
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/?stuck="+url.QueryEscape(string(b)), http.StatusSeeOther)
+	}
+}
+
+// unstuckFrom reads the ladder's answer back out of the address bar.
+//
+// It arrives from a redirect this package wrote, but it arrives through the
+// address bar, so it is read as though a stranger typed it: anything that is
+// not one of the four is no answer rather than a bad one.
+func unstuckFrom(q url.Values) *unstuckView {
+	b, ok := squirrel.ParseBlocker(q.Get("stuck"))
+	if !ok {
+		return nil
+	}
+	u := squirrel.UnstuckFor(b)
+	if u.Refuse {
+		return nil
+	}
+	return &unstuckView{Line: u.Line, Minutes: u.Minutes, Ask: u.Ask}
 }
 
 // offerKinds is the vocabulary, as a map rather than a switch so an unknown

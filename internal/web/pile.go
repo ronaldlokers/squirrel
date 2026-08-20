@@ -39,6 +39,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// The one thing's three answers. Behind the origin check like every other
 	// write here.
 	m.Post("/now/act", guard(opts, sameOrigin(nowActHandler(s, opts))))
+	// I can't start. Its own route rather than a fourth act, because it is the
+	// one answer that is about you rather than about the thing.
+	m.Post("/now/stuck", guard(opts, sameOrigin(nowStuckHandler(s, opts))))
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
