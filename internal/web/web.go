@@ -40,6 +40,27 @@ type Options struct {
 	// means "not yet", and the screen says the same thing it says for any
 	// other unreachable database.
 	Owner func() int64
+
+	// The coach's three seams. Funcs rather than an interface, and funcs of
+	// primitives rather than of coach types, because this package must not
+	// have to know internal/coach exists — it is a transport, and a transport
+	// that depends on a model being reachable is the thing this architecture
+	// refuses. internal/boot supplies all three.
+	//
+	// Ask is nil when there is no coach, and the nil carries meaning: the
+	// acorn is still drawn and the four chips still answer, but typing a
+	// sentence gets the chips back rather than a reply.
+	Ask func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+	// Recent is the conversation so far, oldest first, or nil.
+	Recent func(personID int64) []Exchange
+	// Remember adds one round to it. The screen calls this for the ladder's
+	// deterministic answers as well as the model's, because what makes the
+	// window worth having is that it is the conversation — not the part of it
+	// a model happened to produce.
+	Remember func(personID int64, said, replied string)
+	// Forget drops it. Closing the sheet has to mean the conversation is over,
+	// and it has to mean nothing else.
+	Forget func(personID int64)
 }
 
 // person answers who the pile belongs to, and whether that is known yet.

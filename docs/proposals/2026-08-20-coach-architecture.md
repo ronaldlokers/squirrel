@@ -660,7 +660,7 @@ are untouched), `stuck.go` (`breakDownTask` behind the ladder), `apply.go`
 | --- | --- | --- |
 | **A** | Skeleton: interface, `NoCoach{}`, guard, budget counter, config, `coach_answers`. No provider. | The boundary exists and is tested. |
 | **B** | Luna behind it. `!coach <text>` in chat only. | You hear how it talks before it is near the product. |
-| **C** | **The coach surface**: acorn button, `/coach` route, sheet, rolling window, first paint. Deterministic content only — no model yet. | The whole interface exists and is usable, running on `UnstuckFor()` and the cached offer. |
+| **C** | **The coach surface**: acorn button, `/coach` route, sheet, rolling window, first paint. ~~Deterministic content only — no model yet.~~ | The whole interface exists and is usable, running on `UnstuckFor()` and the cached offer. |
 | **C2** | **The overwhelm turn** (Terra) behind that surface. | The genuinely new capability. |
 | **D** | Read tools + **model-decides** with the offer cache and `PickNow()` fallback. | Decision 1 lands, cost-controlled. |
 | **E** | `breakDownTask()`, and "I can't start" routed through the coach. | The ladder gets specific; it stays as the first paint. |
@@ -670,6 +670,15 @@ are untouched), `stuck.go` (`breakDownTask` behind the ladder), `apply.go`
 
 C is what justifies the project. H is the most dangerous and goes last on
 purpose — it is the only one that speaks without being spoken to.
+
+**C shipped with the box connected, which this table originally said it would
+not.** The phase was written before B existed, on the assumption that the
+surface would be judged with nothing behind it. By the time C was built B had
+shipped a working provider, and a sheet whose text box could not be answered
+would have been a worse thing to judge, not a purer one. What C2 still adds is
+unchanged and is the part that matters: recognising the overwhelm turn and
+escalating it to Terra. The four chips are still answered by `UnstuckFor()`
+alone and stay that way until E.
 
 ### Settings (shipped at phase A)
 

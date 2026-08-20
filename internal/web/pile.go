@@ -53,6 +53,14 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
 	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Post("/pile/fix", guard(opts, sameOrigin(fixHandler(s, opts))))
+	// The coach. A real route rather than a JavaScript-only construct, so it
+	// works with scripting off, deep-links, and survives a reload — and so
+	// pile.js has something real to upgrade into a sheet.
+	m.Get("/coach", guard(opts, coachHandler(s, opts)))
+	m.Post("/coach/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
+	// Closing is a write because it forgets the conversation, and a write here
+	// carries the origin check like every other one.
+	m.Post("/coach/close", guard(opts, sameOrigin(coachCloseHandler(opts))))
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	m.Get("/tasks", guard(opts, tasksHandler(s, opts)))

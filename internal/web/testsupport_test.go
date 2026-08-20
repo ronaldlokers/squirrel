@@ -473,3 +473,52 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 	}))
 	return m
 }
+
+// fakeCoach stands in for the model, and its zero value is the shipping
+// configuration with no key: nothing behind the box, and the four chips
+// answering on their own.
+type fakeCoach struct {
+	reply string
+	err   error
+	// asked is every turn it was handed, so a test can assert on what the
+	// model was told rather than on a rendering of it.
+	asked []struct{ kind, said, subject string }
+	// talk is the window, which the real one keeps in memory too.
+	talk   []Exchange
+	forgot int
+}
+
+func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) (string, error) {
+	c.asked = append(c.asked, struct{ kind, said, subject string }{kind, said, subject})
+	if c.err != nil {
+		return "", c.err
+	}
+	return c.reply, nil
+}
+
+func (c *fakeCoach) options(o Options) Options {
+	o.Ask = c.ask
+	o.Recent = func(int64) []Exchange { return c.talk }
+	o.Remember = func(_ int64, said, replied string) {
+		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})
+	}
+	o.Forget = func(int64) { c.forgot++; c.talk = nil }
+	return o
+}
+
+// mountedWith is mounted plus a coach. Passing nil mounts the screen with no
+// coach at all, which is what ships whenever no key is set and therefore what
+// most of these tests should still work under.
+func mountedWith(t *testing.T, f *fakeStore, c *fakeCoach) *testMux {
+	t.Helper()
+	m := newTestMux()
+	opts := Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 },
+	}
+	if c != nil {
+		opts = c.options(opts)
+	}
+	require.NoError(t, Mount(m, f, opts))
+	return m
+}

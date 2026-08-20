@@ -25,6 +25,9 @@ down here because no test covers it.
 | `/tasks` | what you decided | LAN or tailnet, then Authentik |
 | `/tasks/done` | what you have done | LAN or tailnet, then Authentik |
 | `/tasks/act`, `/tasks/new` | a task's writes | LAN or tailnet, then Authentik |
+| `/coach` | the coach, as a page — a real route so the sheet is an upgrade rather than a requirement | LAN or tailnet, then Authentik |
+| `/coach/say` | one turn: a sentence, or one of the four chips | LAN or tailnet, then Authentik |
+| `/coach/close` | forgets the conversation and returns to the page the acorn was pressed on | LAN or tailnet, then Authentik |
 | `/chores` | what comes back | LAN or tailnet, then Authentik |
 | `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
 | `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |

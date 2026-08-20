@@ -28,6 +28,7 @@ var pages = map[string]*template.Template{
 	"archive": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/archive.html")),
 	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
 	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
+	"coach":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/coach.html")),
 	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
 	"results": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/results.html")),
 }
@@ -86,6 +87,14 @@ type view struct {
 	PushKey string
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
+	// Path is the page the acorn is being drawn on, so closing the coach
+	// returns to it. renderWith fills it, so no handler can forget.
+	Path string
+	// Coach is the sheet's contents, and only the coach page fills it. Every
+	// other page carries the acorn and nothing more — the sheet's markup
+	// arrives when it is opened, because a conversation nobody has started is
+	// not worth putting in every response.
+	Coach *coachPanel
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -188,6 +197,41 @@ type unstuckView struct {
 	Ask     bool
 }
 
+// coachPanel is the sheet.
+//
+// One conversation, one offer, four chips and a box. There is deliberately
+// nowhere here to put a second thing being worked on, and nowhere to put a
+// list: the struct is the same argument unstuckView makes, at the scale of a
+// whole surface.
+type coachPanel struct {
+	// Offer is what you would be handed right now, painted on open. Nil is an
+	// ordinary state and renders nothing — having nothing to be handed is not
+	// a failure, and a sentence in its place would be the product deciding you
+	// ought to be busy.
+	Offer *offerView
+	// Said is the conversation so far, oldest first.
+	Said []Exchange
+	// Unstuck is the ladder's control, when a chip was the last thing pressed.
+	Unstuck *unstuckView
+	// Talking is whether there is a model behind the box.
+	Talking bool
+	// AskWhich puts the question back: which of the four is it. True when
+	// there is no coach, and when there was one that could not say anything
+	// usable.
+	AskWhich bool
+	Blockers []chipView
+	// From is the page the acorn was pressed on, so closing returns there.
+	From string
+}
+
+// chipView is one blocker as a press. Why is what the form sends; Word is what
+// it says, and they differ because "not today" is an answer and `not today` is
+// a value.
+type chipView struct {
+	Why  string
+	Word string
+}
+
 type undoView struct {
 	// ID is the note to move, and State is where to move it back to. The pair
 	// is a plain transition — undo is not a special case, it is `act=open` on
@@ -276,6 +320,7 @@ func toView(it squirrel.Item) noteView {
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
+	v.Path = r.URL.Path
 	render(w, name, v)
 }
 

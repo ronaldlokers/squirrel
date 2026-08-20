@@ -213,6 +213,11 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// the pile is unreadable because its memory is unreachable, which is what
 	// that status already means on this screen.
 	var webOwner atomic.Int64
+	// The coach's three seams for the screen, converted here because boot is
+	// the only package that may know both shapes. All three are nil-safe: with
+	// no coach the acorn still opens, the four chips still answer, and the
+	// ladder behind them is what shipped before any of this existed.
+	webAsk, webRecent, webRemember, webForget := coachWeb(s.coach, store, s.talk)
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
@@ -224,6 +229,11 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// — which is the one shape worse than never offering.
 			PushKey: pushKeyFor(config.Push),
 			Owner:   webOwner.Load,
+			Ask:     webAsk,
+			Recent:  webRecent,
+
+			Remember: webRemember,
+			Forget:   webForget,
 		}); err != nil {
 			cancel()
 			return nil, fmt.Errorf("mounting the pile: %w", err)

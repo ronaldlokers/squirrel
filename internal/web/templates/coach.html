@@ -1,0 +1,84 @@
+{{define "content"}}
+{{with .Coach}}
+{{/* The sheet, as a page. pile.js lifts this same markup into an overlay; with
+     scripting off it is what you see, and it is complete. */}}
+<section class="sheet" aria-label="The coach">
+
+  <div class="sheetlid">
+    <img class="acornmark" alt="" src="/static/logo.png?v={{$.V}}" width="36" height="27">
+    <span class="sheetname">Squirrel</span>
+    <span class="spacer"></span>
+    {{/* Closing means the conversation is over. It does not mean anything
+         else: nothing is counted, the acorn does not dim, and nothing goes
+         quiet. */}}
+    <form method="post" action="/coach/close">
+      <input type="hidden" name="from" value="{{.From}}">
+      <button class="shut" type="submit" aria-label="Close the coach">close</button>
+    </form>
+  </div>
+
+  <div class="talk">
+    {{/* First paint, and it costs nothing: the picker chose this, not a
+         model. Opening has to be free or the acorn becomes a thing you think
+         about before pressing. */}}
+    {{with .Offer}}
+    <div class="onscreen">
+      <p class="head">ON SCREEN</p>
+      <p class="what">{{.Text}}</p>
+      <p class="because">{{.Because}}</p>
+    </div>
+    {{end}}
+
+    {{/* The conversation, oldest first. Your words on cream in the casual
+         axis, Squirrel's on paper in the Voice role — the same two voices as
+         everywhere else. */}}
+    {{range .Said}}
+    <p class="mine">{{.Said}}</p>
+    <p class="his">{{.Replied}}</p>
+    {{end}}
+
+    {{/* The ladder's one control, when a chip was the last thing pressed.
+         There is deliberately nowhere here for a second step. */}}
+    {{with .Unstuck}}
+    {{if .Ask}}
+    {{/* The one branch that captures. "What would I have to find out first"
+         is a thought, and thoughts go where thoughts go. */}}
+    <form class="slot small" method="post" action="/capture">
+      <textarea name="text" rows="1" placeholder="the first thing to find out"
+        aria-label="The first thing you would have to find out"></textarea>
+      <button class="post" type="submit">Keep it</button>
+    </form>
+    {{else if .Minutes}}
+    {{with $.Coach.Offer}}
+    <form class="withtimer" method="post" action="/now/act">
+      <input type="hidden" name="kind" value="{{.Kind}}">
+      <input type="hidden" name="id" value="{{.RefID}}">
+      <input type="hidden" name="label" value="{{.Text}}">
+      <input type="hidden" name="minutes" value="{{$.Coach.Unstuck.Minutes}}">
+      <button class="obtn go" name="act" value="start">{{$.Coach.Unstuck.Minutes}} MIN</button>
+    </form>
+    {{end}}
+    {{end}}
+    {{end}}
+  </div>
+
+  {{/* Typing is never required. One press, no words, and the answer still
+       comes back about this thing rather than in general. */}}
+  <form class="whys" method="post" action="/coach/say">
+    {{if .AskWhich}}<p class="lead">WHICH OF THESE IS IT</p>{{end}}
+    {{range .Blockers}}
+    <button class="why" name="why" value="{{.Why}}">{{.Word}}</button>
+    {{end}}
+  </form>
+
+  {{/* What you typed never disappears. Close mid-sentence and it is here on
+       reopen; a failed ask puts it back rather than eating it. */}}
+  <form class="slot say" method="post" action="/coach/say">
+    <textarea name="said" rows="2" placeholder="what is going on"
+      aria-label="Tell the coach what is going on">{{$.Said}}</textarea>
+    <button class="post" type="submit">Say it</button>
+  </form>
+
+</section>
+{{end}}
+{{end}}
