@@ -581,25 +581,30 @@ state colour *as a state* (amber as straw is a colour, a green tick is a claim);
 never grey; never orange. Only ever two drawings, because there are only ever
 two doors.
 
-**The exceptions the door art carries.** The owner's own chores illustration
-shows grey on a clipboard's clip and two ticked boxes beside one empty — a
-progress reading drawn as a picture, in the `done` green, on the product whose
-hardest rule is never a count in any form. It was refused on those grounds and
-then chosen anyway, by the owner, for his own home screen: it is warm, it reads
-instantly as chores, and it is his product. This is the only surface in the
-system where grey appears and the only place a completion is depicted. It is
-illustration rather than interface — nothing here reports state — and it is
-recorded so nobody re-litigates it or quietly "fixes" it.
+**The exception the door art carries, and the one that was retired.**
 
-A third door arrived on 20 August 2026 and its art carries the same two faults,
-chosen the same way: a clipboard with two ticked rows, one unticked, a grey
-clip. The line that used to sit here — *"if a third door is ever added, this is
-not the precedent to follow"* — turned out to be wrong, so it is replaced by
-what is actually true: **door art is the owner's, and the guard rails govern
-anything drawn by anyone else.** What it costs is unchanged and worth
-restating: these are the only surfaces in the system where grey appears or a
-completion is depicted, none of them reports state, and nothing on any screen
-counts.
+The chores door wore a clipboard with two ticked boxes beside one empty, and a
+grey clip — a progress reading drawn as a picture, in the `done` green, on the
+product whose hardest rule is never a count in any form. It was refused on
+those grounds, chosen anyway by the owner, and recorded here as a deliberate
+exception rather than an oversight.
+
+**On 20 August 2026 the owner replaced it** with a bucket, a mop, a sponge and
+a spray bottle — violet and amber, no ticks, no checklist, nothing depicting a
+completion and no grey. It obeys the rails. So that exception is retired rather
+than defended, and the entry stays because the reasoning is the useful part: a
+drawing that reads instantly as chores did not need a checklist to do it, and
+the version that avoided one is also the version that stopped colliding with
+the tasks door.
+
+**The tasks door still carries one.** Its clipboard shows two ticked rows, one
+unticked, and a grey clip — the same two faults, chosen the same way. The line
+that used to sit here, *"if a third door is ever added, this is not the
+precedent to follow"*, turned out to be wrong, so it is replaced by what is
+actually true: **door art is the owner's, and the guard rails govern anything
+drawn by anyone else.** What it costs is one surface where grey appears and one
+where a completion is depicted. Neither reports state, and nothing on any
+screen counts.
 
 ### The Peek — removed, and why it stays removed
 
