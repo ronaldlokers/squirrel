@@ -10,7 +10,7 @@ import (
 // means a chore.
 type ActionIntent struct {
 	MessageID string
-	// Kind is "done", "undefine" or "snooze".
+	// Kind is "done", "undefine", "snooze" or "later".
 	Kind     string
 	Position int
 	// Mood is set for a "mood" tap and empty otherwise. It is a word rather
@@ -23,7 +23,12 @@ type ActionIntent struct {
 
 // Anchored at both ends, like every other matcher in this system: a message
 // that merely contains this shape is a thought about it, not a tap.
-var actionPattern = regexp.MustCompile(`^!action (\d+) (done|undefine|snooze):(\d{1,3}) (true|false)$`)
+//
+// `later` is the picker's refusal, and it is deliberately not `snooze`. A
+// snooze silences a chore's asking for a day and belongs to the chore; a
+// refusal says "not from you, today" to the picker and touches nothing about
+// the thing itself. Sharing one word would let one press silence two surfaces.
+var actionPattern = regexp.MustCompile(`^!action (\d+) (done|undefine|snooze|later):(\d{1,3}) (true|false)$`)
 
 // A mood tap carries a word where the others carry a position. Its own pattern
 // rather than a widened one: "mood:3" should not parse, because a mood is not

@@ -79,6 +79,7 @@ func HelpMessage() Message {
 	return Message{Text: strings.Join([]string{
 		"Anything you type is a note. That is the default and it always wins.",
 		"",
+		"!now — one thing, chosen. !now anyway ignores a low day",
 		"!notes — the pile, newest first",
 		"!find <text> — search everything you have told me",
 		"!chores — what is due (same as ?)",
@@ -225,6 +226,55 @@ func EveningMessage(completed []string, captures []string, nudge *Chore) Message
 		}
 	}
 	return m
+}
+
+// NowMessage is the one thing, in chat.
+//
+// One line and never a list — the same discipline the nudge keeps, and for the
+// same reason: six things due is six decisions charged to the resource that is
+// already short. The clause is on its own line rather than in brackets,
+// because it is the answer to "why this" and that question deserves a sentence
+// rather than an aside.
+//
+// Two buttons, matching the nudge's shape exactly. Anything that can be
+// answered has to be answerable the same way everywhere, or the two surfaces
+// have grown two vocabularies.
+func NowMessage(o Offer) Message {
+	m := Message{Text: fmt.Sprintf("%s\n%s.", o.Text, o.Because)}
+	// A timer names no row, so there is nothing for a button to resolve
+	// against — and nothing to press, either. You are already doing it.
+	if o.Kind == OfferTimer {
+		return m
+	}
+	m.SelectionMode = "single"
+	m.Actions = []Action{
+		{Label: doneWord(o), Value: "done:1", Emoji: "✅"},
+		{Label: "not now", Value: "later:1", Emoji: "🌙"},
+	}
+	return m
+}
+
+// doneWord is what the completing button says. A chore is named — the nudge
+// already puts a chore's own name on its button and the two must agree — and a
+// task says what was done to it, because a task's text is a whole sentence and
+// a sentence on a button is unreadable.
+func doneWord(o Offer) string {
+	if o.Kind == OfferChore {
+		return o.Text
+	}
+	return "did it"
+}
+
+// NothingNowMessage is what the picker says when it has nothing.
+//
+// Stated plainly, and nothing is suggested. Having nothing to be handed is a
+// normal state rather than a setup failure, and a sentence encouraging you to
+// go and find something would be the product deciding you ought to be busy.
+func NothingNowMessage(capacity Capacity) Message {
+	if capacity == CapacityLow {
+		return Message{Text: "Nothing from me today. Say !now anyway if you want something."}
+	}
+	return Message{Text: "Nothing to hand you."}
 }
 
 // CheckinQuestion is the five faces as words, since chat has no pictures.

@@ -48,7 +48,12 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // cannot collide in the once-a-day index, and it is *meant* to shadow an older
 // numbered surface — after `!tasks`, a bare `done 1` should mean the first
 // thing you decided rather than line 1 of this morning's nudge.
-const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find', 'tasks')`
+// 'now' joins for the same reasons 'notes', 'find' and 'tasks' did, with one
+// addition worth writing down: it carries exactly one line, and that line may
+// be a chore or an item. Its buttons therefore resolve through LineOnPrompt
+// rather than ChoreOnPrompt — the picker is the first surface that can put a
+// task under a ✅.
+const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find', 'tasks', 'now')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
 type Prompt struct {
@@ -462,6 +467,68 @@ func (s *Store) ChoreOnPrompt(ctx context.Context, promptID int64, position int)
 	c.Tolerance = time.Duration(tolSec) * time.Second
 	c.EveryDays = int(c.Every.Hours() / 24)
 	return c, true, nil
+}
+
+// LineOnPrompt resolves a position against one specific prompt, whatever that
+// line turned out to name.
+//
+// It is ChoreOnPrompt generalised the way LineAtPosition generalises
+// ChoreAtPosition, and it exists for the same reason: since the picker, a
+// numbered line under a button can be a task. A tap names the message it came
+// from, so it resolves against that message even if a newer prompt has since
+// been sent — that is what ChoreOnPrompt was already for and none of it
+// changes here.
+//
+// Exactly one of Line.Chore and Line.Item is non-nil. The check constraint on
+// prompt_lines makes that true; the left joins make it observable.
+func (s *Store) LineOnPrompt(ctx context.Context, promptID int64, position int) (Line, bool, error) {
+	const q = `
+		select l.position,
+		       c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
+		       i.id, i.raw_text, i.received_at
+		  from prompt_lines l
+		  left join chores c on c.id = l.chore_id
+		  left join items  i on i.id = l.item_id
+		 where l.prompt_id = $1 and l.position = $2`
+
+	var (
+		line                 Line
+		choreID, chorePerson *int64
+		choreName            *string
+		everySec, tolSec     *int64
+		itemID               *int64
+		itemText             *string
+		itemAt               *time.Time
+	)
+	err := s.pool.QueryRow(ctx, q, promptID, position).Scan(
+		&line.Position,
+		&choreID, &chorePerson, &choreName, &everySec, &tolSec,
+		&itemID, &itemText, &itemAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Line{}, false, nil
+	}
+	if err != nil {
+		return Line{}, false, fmt.Errorf("reading prompt line: %w", err)
+	}
+
+	switch {
+	case choreID != nil:
+		c := Chore{
+			ID:        *choreID,
+			PersonID:  *chorePerson,
+			Name:      *choreName,
+			Active:    true,
+			Every:     time.Duration(*everySec) * time.Second,
+			Tolerance: time.Duration(*tolSec) * time.Second,
+		}
+		c.EveryDays = int(c.Every.Hours() / 24)
+		line.Chore = &c
+	case itemID != nil:
+		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt}
+	default:
+		return Line{}, false, fmt.Errorf("prompt line %d names neither a chore nor a note", position)
+	}
+	return line, true, nil
 }
 
 // ChoresOnPrompt is every chore a prompt carried, in the position order it

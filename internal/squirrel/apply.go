@@ -391,6 +391,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 		}
 		return a.numbered(ctx, "find", items, more, personID, conversationID)
 
+	case "now":
+		return a.now(ctx, in.Arg, personID, conversationID)
+
 	case "chores":
 		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
 
@@ -432,6 +435,55 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	// as a note along with the correction. Say what exists instead.
 	m := HelpMessage()
 	m.Text = fmt.Sprintf("I don't know !%s.\n\n%s", in.Command, m.Text)
+	return m, nil
+}
+
+// now hands you one thing: `!now`, or `!now anyway` on a day you said you were
+// wiped and then decided otherwise.
+//
+// It records a prompt with exactly one line, so the buttons resolve and so a
+// typed `done 1` means the same thing the ✅ does. That line may be a chore or
+// a task — the picker is the first surface where a numbered line can be
+// either, which is what LineOnPrompt exists for.
+//
+// "anyway" is the whole of the escape from the capacity gate, and it is a word
+// rather than a second command because it is the same question asked twice.
+// Nothing about saying it is remembered: it lifts the gate for this answer and
+// not for the day, so a person who is genuinely wiped does not have to keep
+// re-deciding that they were.
+func (a *Applier) now(ctx context.Context, arg string, personID int64, conversationID string) (Message, error) {
+	anyway := strings.EqualFold(strings.TrimSpace(arg), "anyway")
+
+	o, found, err := a.store.PickNow(ctx, personID, time.Now(), anyway)
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return NothingNowMessage(a.store.Capacity(ctx, personID, time.Now())), nil
+	}
+
+	m := NowMessage(o)
+	if len(m.Actions) == 0 {
+		// A running timer names no row, so there is no line to record and
+		// nothing to resolve a tap against. Saying what you are on is the
+		// whole answer.
+		return m, nil
+	}
+
+	line := LineRef{}
+	switch o.Kind {
+	case OfferChore:
+		id := o.RefID
+		line.ChoreID = &id
+	default:
+		id := o.RefID
+		line.ItemID = &id
+	}
+	id, err := a.store.RecordPromptLines(ctx, personID, conversationID, "now", time.Now(), nil, []LineRef{line})
+	if err != nil {
+		return Message{}, err
+	}
+	a.pending = id
 	return m, nil
 }
 
@@ -1139,10 +1191,19 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		return nil
 	}
 
-	c, ok, err := a.store.ChoreOnPrompt(ctx, prompt.ID, in.Position)
+	// Resolved as a line rather than as a chore, because since the picker a
+	// button can sit over a task. Every branch below that is about a chore
+	// checks for one first — a `snooze` on a task is not a thing that can
+	// happen from any surface Squirrel prints, so it is a no-op rather than an
+	// error.
+	line, ok, err := a.store.LineOnPrompt(ctx, prompt.ID, in.Position)
 	if err != nil || !ok {
 		return err
 	}
+	if line.Item != nil {
+		return a.applyItemAction(ctx, in, personID, prompt, *line.Item)
+	}
+	c := *line.Chore
 
 	switch in.Kind {
 	case "undefine":
@@ -1171,6 +1232,16 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		_, err := a.store.SnoozeChore(ctx, c.ID, personID, when)
 		return err
 
+	case "later":
+		// The picker's refusal, on a chore. It changes nothing about the chore
+		// — the clock runs, the nudge keeps its own budget — and it only tells
+		// the picker not to hand you this one again today. Untapping takes it
+		// back, like everything else here.
+		if !in.Selected {
+			return a.store.UnrefuseToday(ctx, personID, OfferChore, c.ID, time.Now())
+		}
+		return a.store.Refuse(ctx, personID, OfferChore, c.ID, time.Now())
+
 	case "done":
 		if !in.Selected {
 			_, err := a.store.RetractCompletion(ctx, c.ID, personID, prompt.ID, time.Now())
@@ -1181,6 +1252,42 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 			return err
 		}
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now()); err != nil {
+			return err
+		}
+		a.react(ctx, prompt)
+		return nil
+	}
+	return nil
+}
+
+// applyItemAction is a tap that landed on a note or a task rather than a
+// chore.
+//
+// It exists because the picker can put a ✅ over something you decided to do,
+// and that button has to mean the same thing the tasks screen's own "did it"
+// means — the same store call, the same reversal. Silent like every other tap
+// path: the boost is the receipt.
+func (a *Applier) applyItemAction(ctx context.Context, in ActionIntent, personID int64, prompt Prompt, it Item) error {
+	switch in.Kind {
+	case "later":
+		if !in.Selected {
+			return a.store.UnrefuseToday(ctx, personID, OfferTask, it.ID, time.Now())
+		}
+		return a.store.Refuse(ctx, personID, OfferTask, it.ID, time.Now())
+
+	case "done":
+		// A state assertion rather than a delta, exactly as it is for a chore:
+		// "selected" means it is done, unselected means it is not, and applying
+		// either twice lands in the same place. Untapping returns it to the
+		// pile's own `open`, which for a task is the tasks screen — the kind is
+		// untouched, because undoing a completion is not undoing the decision.
+		if !in.Selected {
+			return a.store.SetItemState(ctx, it.ID, ItemOpen, time.Now())
+		}
+		if err := a.store.SetItemState(ctx, it.ID, ItemDone, time.Now()); err != nil {
+			return err
+		}
+		if err := a.store.RecordAnswer(ctx, personID, OfferTask, it.ID, AnswerDid, time.Now()); err != nil {
 			return err
 		}
 		a.react(ctx, prompt)
