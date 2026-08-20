@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ronaldlokers/squirrel/internal/coach"
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 	"github.com/ronaldlokers/squirrel/internal/transport"
 	"github.com/ronaldlokers/squirrel/internal/web"
@@ -55,10 +56,15 @@ func (r *nudgeRelay) Nudge(ctx context.Context, now time.Time, why squirrel.Nudg
 }
 
 type Squirrel struct {
-	port    int
-	server  *squirrel.Server
-	store   *squirrel.Store
-	stops   []func(context.Context) error
+	port   int
+	server *squirrel.Server
+	store  *squirrel.Store
+	stops  []func(context.Context) error
+	// coach and budget are built at boot and used by the surfaces that ask a
+	// model. Both are safe to hold before Postgres answers: coach is NoCoach
+	// until a provider exists, and budget only touches the store when asked.
+	coach   coach.Coach
+	budget  coach.Budget
 	cancel  context.CancelFunc
 	drained chan struct{}
 	// wg tracks background goroutines that touch the store outside the
@@ -188,6 +194,13 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		return nil, err
 	}
 	s.store = store
+
+	// After the store, because the budget reads through it; before the screen,
+	// because the screen will ask for the coach in the phase that adds the
+	// sheet. Neither one connecting to anything yet is the point: a coach that
+	// is not there must be an ordinary state at boot, not an error path.
+	s.coach = coachFor(config.Coach)
+	s.budget = budgetFor(config.Coach, store)
 
 	// The owner is filled in by connectAndDrain once Postgres answers, which
 	// may be a while after boot or never. Same shape and same reason as

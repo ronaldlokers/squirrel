@@ -31,6 +31,32 @@ type CampfireConfig struct {
 	BotKey         string
 }
 
+// CoachConfig is the model layer's settings, gathered so that swapping
+// provider is a configuration change rather than an edit spread across the
+// codebase.
+//
+// BaseURL exists even though only one provider is used today. It is what makes
+// "gateway-shaped internally" true rather than aspirational: pointing this at a
+// gateway is a deployment change, not a code change.
+type CoachConfig struct {
+	APIKey  string
+	BaseURL string
+	// Fast answers routine turns; Deep answers the ones where judgement
+	// matters. Two rather than one because the difference in price between
+	// them is tenfold and the difference in need is real.
+	Fast string
+	Deep string
+	// BudgetMicros is the monthly ceiling in micro-euros. Zero means no
+	// ceiling in this process; the provider's own spend limit still applies and
+	// is the one that guards against a stolen key.
+	BudgetMicros int64
+}
+
+// Enabled reports whether there is enough here to build a coach at all.
+func (c CoachConfig) Enabled() bool {
+	return c.APIKey != "" && c.Fast != "" && c.Deep != ""
+}
+
 type Config struct {
 	Port          int
 	Transports    []string
@@ -73,6 +99,10 @@ type Config struct {
 	// from the Authentik outpost. Squirrel writes no authentication code and
 	// holds no session; it compares one header to one configured value.
 	WebIdentityHeader string
+	// Coach is what the model layer needs, or empty. Empty is the default and a
+	// supported state: with no key the coach is never built, and the picker and
+	// the ladder answer instead — the deterministic floor they were kept as.
+	Coach CoachConfig
 	// Push is the VAPID identity, or empty. Empty is a supported state and not
 	// a degraded one: the leave-by message still reaches the room, and the
 	// screen simply never offers to subscribe. The private key comes from the
@@ -240,6 +270,14 @@ func LoadConfig(env map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	// Whole euros. A ceiling nobody can state out loud is a ceiling nobody
+	// checks, and "ten euros a month" is the sentence this setting exists to
+	// hold. Zero disables the in-process ceiling; the provider's own spend
+	// limit is unaffected either way.
+	budget, err := number(env, "COACH_BUDGET_EUR", 10)
+	if err != nil {
+		return Config{}, err
+	}
 
 	config := Config{
 		Port:          port,
@@ -256,6 +294,16 @@ func LoadConfig(env map[string]string) (Config, error) {
 		PresenceSecret: env["PRESENCE_SECRET"],
 		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
 		PresenceDelay:  presenceDelay,
+
+		Coach: CoachConfig{
+			APIKey:  env["OPENAI_API_KEY"],
+			BaseURL: optional(env, "COACH_BASE_URL", "https://api.openai.com/v1"),
+			// Confirmed against GET /v1/models on 20 August 2026 rather than
+			// copied from a pricing page.
+			Fast:         optional(env, "COACH_MODEL_FAST", "gpt-5.6-luna"),
+			Deep:         optional(env, "COACH_MODEL_DEEP", "gpt-5.6-terra"),
+			BudgetMicros: int64(budget) * 1_000_000,
+		},
 
 		Push: PushConfig{
 			PublicKey:  env["VAPID_PUBLIC_KEY"],
