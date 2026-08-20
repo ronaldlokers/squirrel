@@ -45,7 +45,7 @@ var pages = map[string]*template.Template{
 	"tasks":   page("templates/layout.html", "templates/tasks.html"),
 	"archive": page("templates/layout.html", "templates/archive.html"),
 	"bottom":  page("templates/layout.html", "templates/bottom.html"),
-	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html"),
+	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
 	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
 	"empty":   page("templates/layout.html", "templates/empty.html"),
 	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
@@ -108,6 +108,14 @@ type view struct {
 	// Path is the page the acorn is being drawn on, so closing the coach
 	// returns to it. renderWith fills it, so no handler can forget.
 	Path string
+	// Split is a proposal about the note on the card, or nil. It exists only
+	// for the render that answers the press — nothing stores it, which is what
+	// makes it impossible for one to be applied without a second press.
+	Split *splitView
+	// Splittable says the note on the card looks like several things, so the
+	// card can offer to ask. A free check, and it is what keeps the model off
+	// every note in the pile.
+	Splittable bool
 	// Coach is the sheet's contents, and only the coach page fills it. Every
 	// other page carries the acorn and nothing more — the sheet's markup
 	// arrives when it is opened, because a conversation nobody has started is

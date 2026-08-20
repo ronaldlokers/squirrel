@@ -38,6 +38,12 @@ type fakeStore struct {
 	refused    []int64
 	subscribed []string
 
+	// What was written, so a test can assert on the write rather than on a
+	// rendering of it. inserted is every note's words in the order they were
+	// stored; states is where each id ended up.
+	inserted []string
+	states   map[int64]squirrel.ItemState
+
 	// The sequence in progress, newest first, and what was done to it.
 	steps    []squirrel.Step
 	stepItem *int64
@@ -235,6 +241,7 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 	f.items = append([]squirrel.Item{{
 		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt, State: squirrel.ItemOpen,
 	}}, f.items...)
+	f.inserted = append(f.inserted, i.RawText)
 	return true, nil
 }
 
@@ -387,6 +394,10 @@ func (f *fakeStore) SetItemState(_ context.Context, id int64, state squirrel.Ite
 			f.items[i].State = state
 		}
 	}
+	if f.states == nil {
+		f.states = map[int64]squirrel.ItemState{}
+	}
+	f.states[id] = state
 	return nil
 }
 
@@ -552,6 +563,11 @@ type fakeCoach struct {
 	broke        int
 	brokeDown    string
 	brokeBlocker string
+
+	// pieces is what a split proposes, and empty means it could not. splittable
+	// is the free rule that decides whether the press is drawn at all.
+	pieces     []string
+	splittable bool
 }
 
 type fakeDecision struct {
@@ -593,6 +609,10 @@ func (c *fakeCoach) options(o Options) Options {
 	o.Ask = c.ask
 	o.Decide = c.decide
 	o.Smaller = c.smaller
+	o.Split = func(_ context.Context, _ int64, _ string) ([]string, bool) {
+		return c.pieces, len(c.pieces) > 0
+	}
+	o.Splittable = func(string) bool { return c.splittable }
 	o.Recent = func(int64) []Exchange { return c.talk }
 	o.Remember = func(_ int64, said, replied string) {
 		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})

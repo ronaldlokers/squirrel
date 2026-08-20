@@ -69,6 +69,12 @@ type Options struct {
 	// the ladder's own fixed line is the whole answer, which is what it was
 	// before this existed.
 	Smaller squirrel.Breaker
+	// Split proposes the separate things in one note, or is nil. Splittable is
+	// the free check that decides whether asking is worth a call at all —
+	// separate, because the card has to know whether to draw the press before
+	// anything has been asked.
+	Split      func(ctx context.Context, personID int64, text string) ([]string, bool)
+	Splittable func(text string) bool
 }
 
 // person answers who the pile belongs to, and whether that is known yet.
