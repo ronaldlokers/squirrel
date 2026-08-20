@@ -273,7 +273,7 @@ func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int
 	const q = `
 		select l.position,
 		       c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
-		       i.id, i.raw_text, i.received_at
+		       i.id, i.raw_text, i.received_at, i.kind
 		  from prompt_lines l
 		  left join chores c on c.id = l.chore_id
 		  left join items  i on i.id = l.item_id
@@ -291,11 +291,12 @@ func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int
 		itemID               *int64
 		itemText             *string
 		itemAt               *time.Time
+		itemKind             *string
 	)
 	err := s.pool.QueryRow(ctx, q, personID, position).Scan(
 		&line.Position,
 		&choreID, &chorePerson, &choreName, &everySec, &tolSec,
-		&itemID, &itemText, &itemAt)
+		&itemID, &itemText, &itemAt, &itemKind)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Line{}, false, nil
 	}
@@ -316,7 +317,11 @@ func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int
 		c.EveryDays = int(c.Every.Hours() / 24)
 		line.Chore = &c
 	case itemID != nil:
-		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt}
+		// The kind comes with it because the caller needs to tell a note from
+		// a task: only a task earns the hand-off after it is completed, and
+		// without this that check silently compares against an empty string.
+		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt,
+			Kind: itemKindOf(itemKind)}
 	default:
 		// Unreachable while prompt_lines_one_target holds. Reported rather
 		// than returned as a zero Line, because a silent empty line would read
@@ -485,7 +490,7 @@ func (s *Store) LineOnPrompt(ctx context.Context, promptID int64, position int) 
 	const q = `
 		select l.position,
 		       c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
-		       i.id, i.raw_text, i.received_at
+		       i.id, i.raw_text, i.received_at, i.kind
 		  from prompt_lines l
 		  left join chores c on c.id = l.chore_id
 		  left join items  i on i.id = l.item_id
@@ -499,11 +504,12 @@ func (s *Store) LineOnPrompt(ctx context.Context, promptID int64, position int) 
 		itemID               *int64
 		itemText             *string
 		itemAt               *time.Time
+		itemKind             *string
 	)
 	err := s.pool.QueryRow(ctx, q, promptID, position).Scan(
 		&line.Position,
 		&choreID, &chorePerson, &choreName, &everySec, &tolSec,
-		&itemID, &itemText, &itemAt)
+		&itemID, &itemText, &itemAt, &itemKind)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Line{}, false, nil
 	}
@@ -524,7 +530,11 @@ func (s *Store) LineOnPrompt(ctx context.Context, promptID int64, position int) 
 		c.EveryDays = int(c.Every.Hours() / 24)
 		line.Chore = &c
 	case itemID != nil:
-		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt}
+		// The kind comes with it because the caller needs to tell a note from
+		// a task: only a task earns the hand-off after it is completed, and
+		// without this that check silently compares against an empty string.
+		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt,
+			Kind: itemKindOf(itemKind)}
 	default:
 		return Line{}, false, fmt.Errorf("prompt line %d names neither a chore nor a note", position)
 	}
@@ -582,4 +592,15 @@ func (s *Store) CompletedSince(ctx context.Context, choreID, promptID int64) (bo
 		return false, fmt.Errorf("checking completion: %w", err)
 	}
 	return done, nil
+}
+
+// itemKindOf reads the kind column, which is not null in the table but arrives
+// through a left join and so can be null here — a line that names a chore has
+// no item beside it. An absent kind is a note, which is what the column's own
+// default says.
+func itemKindOf(kind *string) ItemKind {
+	if kind == nil {
+		return ItemNote
+	}
+	return ItemKind(*kind)
 }

@@ -413,7 +413,7 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 		return a.snooze(ctx, in.Arg, personID)
 
 	case "did":
-		return a.did(ctx, in.Arg, personID)
+		return a.did(ctx, in.Arg, personID, conversationID)
 
 	case "mood", "feel":
 		return a.checkin(ctx, in.Arg, personID)
@@ -527,6 +527,60 @@ func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Messag
 		subject = o.Text
 	}
 	return StuckMessage(u, subject), nil
+}
+
+// andNext hands you one more thing, once, on the message that says you
+// finished something.
+//
+// The moment straight after a completion is the cheapest moment to start the
+// next thing: the decision has already been made once, the momentum is already
+// spent, and until now the product walked away from it — an acknowledgement,
+// and then silence. This is the whole of the hand-off.
+//
+// Once, and never a queue. It rides on the completion's own message rather
+// than arriving as a second notification, it carries the same two buttons
+// every other offer carries, and ignoring it does nothing at all.
+//
+// Deliberately not attached to triaging a note. Clearing the pile is a run of
+// small decisions about what things are, and a suggestion after each one would
+// be the interruption this product exists to reduce. This fires when you
+// finished a thing you had set out to do.
+func (a *Applier) andNext(ctx context.Context, m Message, personID int64, conversationID string) (Message, error) {
+	// The gate applies here as much as anywhere: on a low day, finishing one
+	// thing must not be read as evidence that you have more in you.
+	o, found, err := a.store.PickNow(ctx, personID, time.Now(), false)
+	if err != nil || !found {
+		// A hand-off that cannot be built is not a failure of the completion.
+		// The thing was done; that is the message.
+		return m, err
+	}
+	// Already on something. Finishing one thing while a timer runs is not a
+	// moment to be handed a second — the picker names what you are doing, and
+	// saying it back here would read as a suggestion to abandon it.
+	if o.Kind == OfferTimer {
+		return m, nil
+	}
+
+	m.Text += "\n\nNext, if you want it:\n" + o.Text
+	m.SelectionMode = "single"
+	m.Actions = []Action{
+		{Label: doneWord(o), Value: "done:1", Emoji: "✅"},
+		{Label: "not now", Value: "later:1", Emoji: "🌙"},
+	}
+
+	line := LineRef{}
+	id := o.RefID
+	if o.Kind == OfferChore {
+		line.ChoreID = &id
+	} else {
+		line.ItemID = &id
+	}
+	promptID, err := a.store.RecordPromptLines(ctx, personID, conversationID, "now", time.Now(), nil, []LineRef{line})
+	if err != nil {
+		return Message{}, err
+	}
+	a.pending = promptID
+	return m, nil
 }
 
 // promote turns note n into a recurring chore: `!chore 1 every 2 weeks`.
@@ -723,7 +777,7 @@ func (a *Applier) findChore(ctx context.Context, arg string, personID int64, act
 //
 // It records the same completion the tap does, through the same store call, so
 // the two ways of saying it cannot mean different things.
-func (a *Applier) did(ctx context.Context, arg string, personID int64) (Message, error) {
+func (a *Applier) did(ctx context.Context, arg string, personID int64, conversationID string) (Message, error) {
 	arg = strings.TrimSpace(arg)
 
 	active, err := a.store.ActiveChores(ctx, personID)
@@ -750,7 +804,9 @@ func (a *Applier) did(ctx context.Context, arg string, personID int64) (Message,
 	}
 	// The same varied reaction a tap earns, and varied for the same reason:
 	// the same word every time stops being read inside a week.
-	return Message{Text: fmt.Sprintf("%s %s.", Reactions[rand.Intn(len(Reactions))], target.Name)}, nil
+	return a.andNext(ctx,
+		Message{Text: fmt.Sprintf("%s %s.", Reactions[rand.Intn(len(Reactions))], target.Name)},
+		personID, conversationID)
 }
 
 // checkin asks how you are, or records the answer.
@@ -1115,13 +1171,25 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 			return noSuchLine(in.Position), nil
 		}
 		if line.Item != nil {
-			return a.triage(ctx, in.Position, personID, ItemDone, "Done —")
+			m, err := a.triage(ctx, in.Position, personID, ItemDone, "Done —")
+			if err != nil {
+				return Message{}, err
+			}
+			// Only a task earns the hand-off. Clearing the pile is a run of
+			// small decisions about what things are, and a suggestion after
+			// each one would be the interruption this exists to reduce.
+			if line.Item.Kind != ItemTask {
+				return m, nil
+			}
+			return a.andNext(ctx, m, personID, conversationID)
 		}
 		c := *line.Chore
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
+		return a.andNext(ctx,
+			Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))},
+			personID, conversationID)
 	}
 
 	outstanding, err := a.store.OutstandingLines(ctx, personID)
@@ -1136,7 +1204,9 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
+		return a.andNext(ctx,
+			Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))},
+			personID, conversationID)
 	default:
 		// Never guess. Re-number and ask, so the reply can be a bare digit —
 		// the same shape as IntentQuery, down to recording its own prompt.
