@@ -81,6 +81,9 @@ type view struct {
 	// Anyway is the capacity gate lifted for this render, from the address bar
 	// and stored nowhere.
 	Anyway bool
+	// PushKey is the VAPID public key, or empty when pushing is not
+	// configured. The script offers to subscribe only when there is one.
+	PushKey string
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
 	// V stamps every asset URL on the page. render fills it, so no handler can
@@ -272,6 +275,7 @@ func toView(it squirrel.Item) noteView {
 // handler would mean five places to forget it.
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
 	v.Timer = runningTimer(s, opts, r)
+	v.PushKey = opts.PushKey
 	render(w, name, v)
 }
 

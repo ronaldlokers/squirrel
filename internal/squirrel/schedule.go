@@ -23,6 +23,10 @@ type SchedulerOptions struct {
 	At       time.Duration
 	Location *time.Location
 	OnError  func(error)
+	// Push reaches a browser rather than the room, and only the leave-by
+	// warning uses it. Nil means no pushing, which is a supported state: the
+	// room is the channel that always works and this is the one that is fast.
+	Push Pusher
 }
 
 type Scheduler struct {
@@ -558,7 +562,27 @@ func (s *Scheduler) MomentTick(ctx context.Context, now time.Time) error {
 	if err := s.opts.Store.MarkMomentSaid(ctx, m.ID, now); err != nil {
 		return err
 	}
+
+	// The room first, always. Push is the improvement and never the only
+	// channel: a browser that has revoked its subscription, a phone with
+	// notifications off, a laptop that is closed — all of those still leave the
+	// message somewhere it can be found.
 	_, err = s.sendMessage(ctx, LeaveMessage(m))
+
+	// And then the fast one, whose failure is nobody's problem: the message
+	// has already arrived somewhere by the time this runs.
+	if s.opts.Push != nil {
+		body := LeaveWords(m)
+		if m.Bring != "" {
+			body += " · take " + m.Bring
+		}
+		if pushErr := s.opts.Push(ctx, s.opts.PersonID, Push{
+			Title: m.Label,
+			Body:  body,
+		}); pushErr != nil {
+			s.opts.OnError(fmt.Errorf("pushing a leave-by warning: %w", pushErr))
+		}
+	}
 	return err
 }
 

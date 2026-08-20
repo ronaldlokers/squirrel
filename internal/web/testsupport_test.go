@@ -34,8 +34,9 @@ type fakeStore struct {
 	gated bool
 	// What the offer's buttons did, so a test can assert on the write rather
 	// than on a rendering of it.
-	answers []string
-	refused []int64
+	answers    []string
+	refused    []int64
+	subscribed []string
 
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
@@ -231,8 +232,6 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 	return true, nil
 }
 
-// The check-in. The fake keeps only the latest because that is all the store
-// will ever hand back — a series is not obtainable by construction.
 // The picker, faked. The rules themselves are proved against a real database
 // in internal/squirrel; what the screen has to be tested for is what it does
 // with an offer and with the absence of one, so this hands back whatever the
@@ -269,6 +268,14 @@ func (f *fakeStore) RecordAnswer(_ context.Context, _ int64, kind squirrel.Offer
 		return f.err
 	}
 	f.answers = append(f.answers, string(answer)+":"+string(kind))
+	return nil
+}
+
+func (f *fakeStore) SaveSubscription(_ context.Context, _ int64, sub squirrel.Subscription) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.subscribed = append(f.subscribed, sub.Endpoint)
 	return nil
 }
 

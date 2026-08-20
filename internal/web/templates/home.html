@@ -165,5 +165,12 @@
   {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
   {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
 
+  {{/* The one thing Squirrel will interrupt you for is having to leave, and
+       it has to ask before it can. Hidden until the script has established
+       that there is a key, that the browser can, and that the question has
+       not already been answered — a control that cannot change anything is
+       furniture, and one that asks again after a no is a nag. */}}
+  {{if .PushKey}}<button id="askPush" class="askpush" type="button" hidden>tell me when to leave</button>{{end}}
+
 </div>
 {{end}}

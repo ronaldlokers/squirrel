@@ -380,9 +380,69 @@
     flush();
 
     navigator.serviceWorker.register(sw)
+      .then(subscribe)
       .catch(() => {
         // An install that fails costs the offline page and nothing else. The
         // screen is a network thing; this was always the extra.
       });
+  }
+
+  // Where to reach you when you are not looking at the screen.
+  //
+  // Only asked for after you press the button, and the button only exists when
+  // there is a key to subscribe with. A permission prompt on page load is the
+  // rudest thing a web page can do, and this one is asking to interrupt
+  // someone specifically because they are bad at being interrupted — so it has
+  // to be a thing you went and turned on.
+  //
+  // Re-subscribing on every load is deliberate and cheap: a push subscription
+  // expires without telling anyone, and the endpoint is upserted, so the only
+  // cost of doing it again is one request that changes nothing.
+  async function subscribe(registration) {
+    const key = document.body.dataset.pushKey;
+    if (!key || !("PushManager" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    try {
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: keyBytes(key)
+      });
+      await fetch("/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub)
+      });
+    } catch {
+      // A subscription that cannot be made costs the fast channel and nothing
+      // else: every message this would carry still reaches the room.
+    }
+  }
+
+  // The base64url the server hands over, as the bytes the browser wants.
+  function keyBytes(key) {
+    const padded = (key + "=".repeat((4 - key.length % 4) % 4))
+      .replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(padded);
+    return Uint8Array.from(raw, c => c.charCodeAt(0));
+  }
+
+  // The button, which only appears when there is a key and permission has not
+  // been answered. Once it has been answered — either way — it goes: a control
+  // that cannot change anything is furniture, and one that asks again after a
+  // no is a nag.
+  const askPush = document.getElementById("askPush");
+  if (askPush) {
+    if (!document.body.dataset.pushKey || !("Notification" in window) ||
+        Notification.permission !== "default") {
+      askPush.hidden = true;
+    } else {
+      askPush.addEventListener("click", async () => {
+        askPush.hidden = true;
+        if (await Notification.requestPermission() !== "granted") return;
+        const registration = await navigator.serviceWorker.ready;
+        await subscribe(registration);
+      });
+    }
   }
 })();

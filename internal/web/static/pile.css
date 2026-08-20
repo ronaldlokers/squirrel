@@ -1498,3 +1498,16 @@
     font-variation-settings: var(--precise), "wght" 600;
     color: var(--cream);
   }
+
+  /* The one permission this product asks for, and it asks quietly. Not a
+     banner and not a dialog: a line under the slot that is gone the moment it
+     has been answered either way. */
+  .askpush {
+    display: block; margin: 14px auto 0; min-height: 44px;
+    background: none; border: 0; padding: 10px 4px;
+    color: rgba(254, 214, 167, .85); cursor: pointer;
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .askpush:hover { color: var(--paper); }

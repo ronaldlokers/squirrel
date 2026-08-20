@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Squirrel">
 </head>
-<body>
+<body{{if .PushKey}} data-push-key="{{.PushKey}}"{{end}}>
 <div class="lid">
   {{if .Home}}
   <span class="brand">
