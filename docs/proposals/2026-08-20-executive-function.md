@@ -1,5 +1,11 @@
 # Squirrel as an external executive-function system
 
+> **Shipped, 20 August 2026.** Phases A through G are implemented on
+> `feat/executive-function`: the picker, the offer on home, "I can't start",
+> the hand-off after a completion, the re-entry breadcrumb, the fuller evening
+> message, fixed points and Web Push. What changed along the way is recorded at
+> the end of §13; the binding record of the decisions is now PRODUCT.md.
+
 A proposal, written after reading the whole codebase. Nothing has been
 implemented. Section 15 lists what I want decided before anything is.
 

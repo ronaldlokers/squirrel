@@ -16,6 +16,9 @@ down here because no test covers it.
 | `/` | home: three doors, the slot and the check-in | LAN or tailnet, then Authentik |
 | `/capture` | the slot's write | LAN or tailnet, then Authentik |
 | `/mood` | the check-in's write | LAN or tailnet, then Authentik |
+| `/now/act` | the offer's answers: did it, ten minutes, not now | LAN or tailnet, then Authentik |
+| `/now/stuck` | I can't start, and its four answers | LAN or tailnet, then Authentik |
+| `/push/subscribe` | where to reach this browser — **only mounted when a VAPID pair is configured** | LAN or tailnet, then Authentik |
 | `/pile` | the deck | LAN or tailnet, then Authentik |
 | `/pile/act`, `/pile/chore`, `/pile/fix` | the deck's writes | LAN or tailnet, then Authentik |
 | `/kept` | the shelf: notes you kept | LAN or tailnet, then Authentik |
@@ -57,6 +60,22 @@ template plus a header to widen the worker's scope by one character.
 | `WEB_IDENTITY` | *(empty)* | The one identity that may read the pile. **Empty leaves the screen unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
 | `WEB_IDENTITY_HEADER` | `X-Authentik-Username` | The header the forward-auth middleware fills. |
 | `WEB_URL` | *(empty)* | Where the screen is reachable from outside, so chat can link to it. **Empty means chat says nothing about the screen** — a link built from a guess is a link that 404s, and a bot that confidently sends you nowhere is worse than one that stays quiet. |
+| `VAPID_PUBLIC_KEY` | *(empty)* | The application server key the browser subscribes with. **Empty leaves `/push/subscribe` unmounted** and the screen never offers — a subscribe button with no key behind it fails silently, which is worse than one that was never drawn. |
+| `VAPID_PRIVATE_KEY` | *(empty)* | The raw 32-byte P-256 scalar, base64url. **From Proton Pass, never from this repository.** |
+| `PUSH_CONTACT` | *(empty)* | A `mailto:` the push service can complain to. Part of RFC 8292 rather than a courtesy: services reject a token without one. |
+
+All three must be set for pushing to happen at all. None of them being set is a
+supported state rather than a degraded one — the leave-by warning still reaches
+the Campfire room, which is the channel that always works.
+
+### Minting the VAPID pair
+
+Any Web Push key generator produces a P-256 pair; the two values Squirrel wants
+are the uncompressed public point and the raw private scalar, both base64url
+without padding. Put the private half in the Proton Pass **Dotfiles** vault and
+reference it the way `PRESENCE_SECRET` already is. Nothing about the pair may
+land in this repository, and rotating it only costs the subscriptions, which
+every browser re-creates on its next visit.
 
 The comparison against `WEB_IDENTITY` is exact — no trimming, no case folding.
 Two identities that differ by a space are two identities.

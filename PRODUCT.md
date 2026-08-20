@@ -129,6 +129,70 @@ hide, and the thing being corrected is usually a typo.
 resurfacing old notes unprompted (rejected, not deferred —
 it would become a second stream competing with the nudge for the same attention).
 
+**Decided on 20 August 2026: Squirrel chooses.** Every surface was organised by
+what kind of thing a row is and none of them by whether it deserves attention
+now, so opening the product while overwhelmed asked which of three boxes to
+open first. There is now one offer — one thing, chosen by six deterministic
+rules in a fixed order, carrying one clause that explains itself. It is on home
+above the doors, and it is `!now` in chat.
+
+The rules, in order, and the order is the design rather than an implementation
+detail: a fixed point inside its leave-by window; the timer you are already
+running; what you were on before you got up; a chore that is due and inside its
+asking window; the oldest thing you decided to do; nothing. When the picker is
+wrong you can read six rules and see why, which is not true of anything that
+scores, learns or generates.
+
+**The check-in is an input now, not a record.** A fresh *wiped* or *frazzled*
+reading drops the two rules that are Squirrel's own initiative and keeps the
+three that are the world's business and yours. *Low* is deliberately not one of
+them: low is how you feel and those two are how much you have, and an empty day
+handed to someone flat but functional reads as the product agreeing they are
+finished. A quiet *show me anyway* lifts it once and is remembered nowhere.
+
+**Refusing is one press, has no consequence, and is never followed by a
+question.** It lasts the day, it reverses, and it touches nothing about the
+thing itself — a chore turned down in the picker is exactly as due as it was,
+because the picker's memory and the nudge's budget are two different things.
+
+**Decided on 20 August 2026: Squirrel may hold a time the world imposed.** The
+deadline rule is sharpened rather than broken, and the new wording is the one
+to hold everything against:
+
+> Squirrel never invents a time you can be late for. It may hold one the world
+> did.
+
+A dentist appointment at 14:30 exists whether or not this app knows about it,
+and refusing to hold it does not remove the lateness — it only means Squirrel
+cannot help you leave. What is still refused: nothing is ever marked late,
+nothing accrues, there is no recurrence (that is a chore), and there is no list
+screen, because a browsable set of your appointments is a calendar and a
+calendar is a thing you are behind on. A moment is shown only inside the window
+where leaving matters, and afterwards it is simply over.
+
+**Decided on 20 August 2026: one count is allowed, and only this one.** The
+evening message may say *three notes cleared*. The banned counter counts what
+*remains* — it grows while nobody is looking, sits beside an implied target of
+zero, and can be lost. This counts what happened, on one day, in the past. If
+that reading is ever rejected the line becomes *some notes cleared* and nothing
+else moves.
+
+**Decided on 20 August 2026: one thing may interrupt you, and only one.** The
+leave-by warning goes to the room and to the browser. Nothing else is ever
+pushed — a nudge is a suggestion, and a suggestion that waits is doing its job.
+The permission is asked for by a quiet line you have to go and press, never on
+load, and once answered either way the control disappears.
+
+**Decided on 20 August 2026: knowing what to do is not being able to do it.**
+Every offer carries a quiet way to say you cannot start it, and four answers
+behind it — too big, don't know how, boring, not today. Each produces one
+sentence and at most one control; there is nowhere in the answer to put a
+second step, which is what makes the twelve-step productivity reply impossible
+rather than merely discouraged. *No energy* is absent because the check-in
+already asks it, and *anxious* is absent because it invites a therapeutic
+response this product should not attempt and its useful action is already the
+first option.
+
 ## Brand Commitments
 
 The name is Squirrel. In chat it speaks in short, plain sentences and never
@@ -206,6 +270,9 @@ which pull toward a precision tool — the design has to be both, not average th
    in surface.
 5. **Say nothing about the person.** Report what was said and what happened.
    Never grade, rank, compare, or imply a norm.
+6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
+   are fixed, readable and the same every time. An offer nobody can account for
+   is a demand.
 
 ## Accessibility & Inclusion
 
