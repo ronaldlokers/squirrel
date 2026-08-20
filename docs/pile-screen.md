@@ -13,11 +13,18 @@ down here because no test covers it.
 
 | URL | What it is | Who may reach it from outside |
 | --- | --- | --- |
-| `/` | home: two doors and nothing that depends on what the pile holds | LAN or tailnet, then Authentik |
+| `/` | home: three doors, the slot and the check-in | LAN or tailnet, then Authentik |
+| `/capture` | the slot's write | LAN or tailnet, then Authentik |
+| `/mood` | the check-in's write | LAN or tailnet, then Authentik |
 | `/pile` | the deck | LAN or tailnet, then Authentik |
-| `/pile/act`, `/pile/chore` | the deck's writes | LAN or tailnet, then Authentik |
+| `/pile/act`, `/pile/chore`, `/pile/fix` | the deck's writes | LAN or tailnet, then Authentik |
+| `/kept` | the shelf: notes you kept | LAN or tailnet, then Authentik |
+| `/tasks` | what you decided | LAN or tailnet, then Authentik |
+| `/tasks/done` | what you have done | LAN or tailnet, then Authentik |
+| `/tasks/act`, `/tasks/new` | a task's writes | LAN or tailnet, then Authentik |
 | `/chores` | what comes back | LAN or tailnet, then Authentik |
-| `/chores/act` | a chore's writes | LAN or tailnet, then Authentik |
+| `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
+| `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |
 | `/pile/chores` | **301 to `/chores`** | LAN or tailnet, then Authentik |
 | `/static/…` | stylesheet, script, fonts, mark, icons, door art | LAN or tailnet, no identity |
 | `/manifest.webmanifest` | the manifest | LAN or tailnet, no identity |
