@@ -43,7 +43,12 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // *meant* to shadow an older numbered surface: after `!notes`, a bare `done 1`
 // should mean line 1 of the pile, not line 1 of this morning's nudge. Newest
 // numbering wins, exactly as it already does for 'query'.
-const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find')`
+// 'tasks' joins for exactly the reasons 'notes' and 'find' did: it prints a
+// list, the reply to a list is a number, it carries no sent_for_date so it
+// cannot collide in the once-a-day index, and it is *meant* to shadow an older
+// numbered surface — after `!tasks`, a bare `done 1` should mean the first
+// thing you decided rather than line 1 of this morning's nudge.
+const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find', 'tasks')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
 type Prompt struct {
