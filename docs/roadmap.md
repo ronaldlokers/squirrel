@@ -41,6 +41,7 @@ That is what this release changed.
 | **A fuller evening** | Chores *and* tasks *and* cleared notes. |
 | **Fixed points** | `at 14:30 dentist`, the leave-by chain, `!bring`, `!leaving`. |
 | **Web Push** | RFC 8291 + 8292 against the standard library. No new dependency. |
+| **Two floors under the nudge** | Nothing arrives unasked between 22:00 and 06:00, and nothing is raised on a low day. |
 
 **Rules that moved to allow it**, all recorded in `PRODUCT.md`:
 
@@ -176,15 +177,9 @@ micro-steps for two or three chores · novelty in **art and phrasing only**.
 
 ## Open
 
-**Quiet hours on the nudge path.** *(Being built.)* A chore with no stated preference is open at
-every hour, so a presence ping at four in the morning nudges. Noticed while
-building phase H, which names quiet hours as one of the floors the model cannot
-lift — and it is not actually one, because nothing enforces it. Not fixed there
-on purpose: a rule about when the product may speak is a product decision, not
-a detail of the phase that noticed it, and adding it makes the test suite
-depend on the hour it runs at. Two decisions needed: the hours, and whether the
-capacity gate should apply to nudges too (a low day might be the day you least
-want a chore raised, or the day you most need it).
+*(The nudge's two missing floors were decided and built on 20 August — quiet
+hours 22:00–06:00 on the unasked path, and no nudge on a low day. See the
+shipped list.)*
 
 1. **Attachment storage.** No object storage exists in the cluster. Either a PVC
    on the pod — simplest, but the restore drill has to cover it — or add MinIO

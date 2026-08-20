@@ -179,6 +179,35 @@ func truncateAll(t *testing.T, store *squirrel.Store) {
 // doc comment describes), which would blow TestBootNudgesOnArrival's 15s
 // Eventually budget many times over. One second keeps the arrival-to-nudge
 // gap real without making the test slow.
+// daytimeZone is a real timezone in which it is currently the middle of the
+// day.
+//
+// Nudges have quiet hours now, read in the scheduler's own location — so an
+// end-to-end test that pings a real socket and expects a nudge back would
+// otherwise be a test about what time the suite runs at. It cannot pass a
+// fixed clock in, because the whole point of these tests is that they go
+// through the real path; what it can do is say which part of the world the
+// person is notionally in, which is a setting the product already has.
+//
+// The Etc/GMT names are guaranteed to exist in tzdata and their signs are
+// inverted by POSIX convention — Etc/GMT+5 is UTC-5. Which one is picked does
+// not matter; that one of them is mid-morning always does.
+func daytimeZone(t *testing.T) string {
+	t.Helper()
+	for offset := -11; offset <= 12; offset++ {
+		name := fmt.Sprintf("Etc/GMT%+d", -offset)
+		loc, err := time.LoadLocation(name)
+		if err != nil {
+			continue
+		}
+		if h := time.Now().In(loc).Hour(); h >= 9 && h <= 16 {
+			return name
+		}
+	}
+	t.Fatal("no timezone is currently mid-morning, which cannot happen")
+	return ""
+}
+
 func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 	t.Helper()
 	store := withStore(t)
@@ -187,6 +216,7 @@ func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 		"PRESENCE_SECRET":          testPresenceSecret,
 		"EVENING_AT":               "23:59",
 		"PRESENCE_DELAY":           "1s",
+		"DIGEST_TZ":                daytimeZone(t),
 	}))
 	return s, store
 }

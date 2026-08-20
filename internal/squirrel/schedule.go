@@ -36,13 +36,33 @@ type SchedulerOptions struct {
 	// the day's budget — so it can make Squirrel quieter than the rules permit
 	// and has no way to make it louder.
 	//
-	// Worth knowing what is *not* among those rules: there are no quiet hours
-	// on this path. A chore with no stated preference is open at every hour,
-	// so a presence ping at four in the morning nudges. That is a defect and
-	// it predates this field; it is not fixed here because a rule about when
-	// the product may speak is a product decision, not a detail of the phase
-	// that noticed it. See the roadmap.
+	// The two floors below it — quiet hours and capacity — were added after
+	// this field and are what make the list of rules it cannot lift true
+	// rather than aspirational.
 	Interrupt Interrupter
+}
+
+// quietFrom and quietUntil are the hours nothing arrives unasked in, in the
+// scheduler's own location.
+//
+// A chore with no stated preference is open at every hour, so before this a
+// presence ping at four in the morning nudged. Fixed here rather than in
+// Asking because it is a rule about interrupting, not about a chore's
+// preference: a chore may perfectly well *want* raising at any hour and still
+// not be worth waking someone for.
+//
+// Applied to the unasked path only — see Nudge. One of the rules the
+// interrupter below cannot lift; it only ever quietens.
+const (
+	quietFrom  = 22
+	quietUntil = 6
+)
+
+// quiet reports whether now is inside the hours nothing is raised in, read in
+// the location the rest of the scheduler's day is read in.
+func quiet(now time.Time, loc *time.Location) bool {
+	h := now.In(loc).Hour()
+	return h >= quietFrom || h < quietUntil
 }
 
 // Interrupter decides whether to say something now, and what.
@@ -380,6 +400,20 @@ func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64,
 			worth = append(worth, c)
 		}
 	}
+	if s.opts.Store.Capacity(ctx, s.opts.PersonID, now) == CapacityLow {
+		// The same reading the picker already acts on, applied to the one
+		// thing in this product that speaks first. A chore raised on a wiped
+		// day is the product asking for something on the day you have least
+		// to give — and the chore's own clock keeps running, so nothing is
+		// lost by waiting for tomorrow.
+		//
+		// Unlike the picker there is no "anyway" here, because there is
+		// nobody asking: this is Squirrel deciding to speak, and the answer
+		// on a low day is not today.
+		slog.Info("nudge: a low day", "person_id", s.opts.PersonID)
+		return nil, 0, nil
+	}
+
 	c, ok := PickChore(worth, rand.Float64())
 	if !ok {
 		// The case that motivated this whole line: a presence ping that
@@ -434,6 +468,17 @@ func (s *Scheduler) nudgeFor(ctx context.Context, now time.Time) (*Chore, int64,
 // numbered surface" true, the same bound once()'s own comment on the crash
 // window above invokes.
 func (s *Scheduler) Nudge(ctx context.Context, now time.Time, why NudgeReason) error {
+	// Quiet hours live here rather than in nudgeFor, and the distinction is
+	// the point: this is the path that arrives unasked — a message, an
+	// arrival — and nothing here is worth waking up for. The evening message
+	// calls nudgeFor too, and it is not an interruption: it is a once-a-day
+	// thing at an hour that was chosen. Setting that hour to 22:30 should not
+	// quietly cost it its chore line.
+	if quiet(now, s.opts.Location) {
+		slog.Info("nudge: quiet hours", "person_id", s.opts.PersonID)
+		return nil
+	}
+
 	c, promptID, err := s.nudgeFor(ctx, now)
 	if err != nil || c == nil {
 		return err

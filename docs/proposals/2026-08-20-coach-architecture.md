@@ -633,15 +633,20 @@ index on `(person, kind, date)`; quiet hours 22:00–06:00; the capacity gate; a
 active refusal. The model may decline to interrupt when the rules would have
 allowed it. It may never interrupt when the rules would not.
 
-**Two of those four do not actually exist**, which phase H found rather than
-assumed. The budget does — the unique index enforces it, and a chore already
+**Two of those four did not exist when phase H shipped**, which it found rather
+than assumed — both were decided and built immediately after, so all four hold
+now. The budget does — the unique index enforces it, and a chore already
 raised today stops being due, so the day's second trigger ends before the model
-is reached at all. Asking windows do. **Quiet hours and the capacity gate do
+is reached at all. Asking windows do. **Quiet hours and the capacity gate did
 not**: a chore with no stated preference is open at every hour, and nothing on
-the nudge path reads capacity. Neither was added here, because a rule about
-when the product may speak is a product decision rather than a detail of the
-phase that noticed it, and quiet hours in particular would make the test suite
-depend on the hour it runs at. Both are in the roadmap's open list.
+the nudge path read capacity. Both were added straight after, once decided.
+
+Quiet hours sit on `Nudge` rather than on `nudgeFor`, and the distinction
+matters: they are about what arrives *unasked*. The evening message calls the
+same function and is not an interruption — it is a once-a-day thing at an hour
+that was chosen, and setting that hour to 22:30 must not quietly cost it its
+chore line. The capacity gate does sit on both, because it is about how much
+you have to give rather than about the hour.
 
 The asymmetry survives regardless, because it does not rest on those rules — it
 rests on **where the call sits**. The model is only ever handed a candidate the
