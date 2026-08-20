@@ -140,7 +140,7 @@ Chosen on 20 August once Buddy shipped, and argued in
 | ~~**1**~~ | ~~Three states for things you cannot act on~~ — **shipped** | An offer you cannot act on spends the one decision you were given. Excluded from every existing list by construction, so it was smaller than it sounded. |
 | ~~**2**~~ | ~~The capture gap~~ — **shipped** | The front door acknowledged before the words were durable. Now it spools like the room, and one mechanism covers both. |
 | ~~**3**~~ | ~~Mood readable, and resurfacing~~ — **shipped** | Both shown only on request, never as their own stream. |
-| **4** | Attachments, on a PVC | Last: the only one that adds infrastructure. |
+| ~~**4**~~ | ~~Attachments, on a PVC~~ — **shipped** | The only one that added infrastructure. |
 
 ## Decided, not yet built
 
@@ -151,7 +151,7 @@ Chosen on 20 August once Buddy shipped, and argued in
 | ~~**Three new states**~~ | **Shipped 20 August.** *waiting on someone* · *blocked on a thing* · *someday*, named separately rather than one "parked" state. |
 | ~~**Mood series**~~ | **Shipped 20 August.** One page and one command, both asked for by name. Nothing else reads them. |
 | ~~**Resurfacing**~~ | **Shipped 20 August.** One kept note, roughly one evening in three, riding along with the evening message. |
-| **Attachments** | Through the PWA, camera-first on mobile. *Storage undecided — see open questions.* |
+| ~~**Attachments**~~ | **Shipped 20 August.** Camera-first from the PWA, one per note, on a volume beside the pod. |
 | **Devices** | Phone primary and better; desktop first-class. |
 
 ### Structural

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -604,6 +605,29 @@ func (f *fakeStore) ClearSteps(_ context.Context, _ int64) error {
 	return nil
 }
 
+// fakePhotos stands in for the volume. The durability — write, fsync, rename,
+// fsync the directory — is proved in internal/squirrel; what the screen has to
+// be tested for is that it offers a camera only when there is somewhere to put
+// a photograph, and what it stores when there is.
+type fakePhotos struct {
+	kept []string
+	err  error
+}
+
+func (p *fakePhotos) Keep(r io.Reader, contentType string) (string, error) {
+	if p.err != nil {
+		return "", p.err
+	}
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+	p.kept = append(p.kept, string(b))
+	return "photo-1.jpg", nil
+}
+
+func (p *fakePhotos) Open(string) (*os.File, error) { return nil, os.ErrNotExist }
+
 // fakeSpool stands in for the durable half of capture. The spool's own
 // durability — write, fsync, rename, fsync the directory — is proved in
 // internal/squirrel; what the screen has to be tested for is that it goes
@@ -626,6 +650,17 @@ func (s *fakeSpool) Writable() bool { return !s.readonly }
 
 // mountedSpooling is mounted with a spool the test can inspect, for the two
 // things that are about capture itself rather than about the pile.
+// mountedWithCamera is mounted plus somewhere to keep a photograph.
+func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *testMux {
+	t.Helper()
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 }, Spool: sp, Photos: ph,
+	}))
+	return m
+}
+
 func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
 	t.Helper()
 	m := newTestMux()

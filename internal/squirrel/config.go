@@ -99,6 +99,10 @@ type Config struct {
 	// from the Authentik outpost. Squirrel writes no authentication code and
 	// holds no session; it compares one header to one configured value.
 	WebIdentityHeader string
+	// PhotoDir is where photographs are kept, or empty. Empty is a supported
+	// state and the default: with nowhere to put them the screen never offers
+	// a camera, exactly as it never offers to subscribe without a push key.
+	PhotoDir string
 	// Coach is what the model layer needs, or empty. Empty is the default and a
 	// supported state: with no key the coach is never built, and the picker and
 	// the ladder answer instead — the deterministic floor they were kept as.
@@ -291,6 +295,7 @@ func LoadConfig(env map[string]string) (Config, error) {
 		},
 		EveningAt:      eveningAt,
 		DigestLocation: location,
+		PhotoDir:       env["PHOTO_DIR"],
 		PresenceSecret: env["PRESENCE_SECRET"],
 		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
 		PresenceDelay:  presenceDelay,

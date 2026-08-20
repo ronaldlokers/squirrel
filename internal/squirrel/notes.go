@@ -185,7 +185,7 @@ func (s *Store) AKeptItem(ctx context.Context, personID int64) (string, bool, er
 	var text string
 	err := s.pool.QueryRow(ctx, `
 		select raw_text from items
-		 where person_id = $1 and state = 'kept' and raw_text <> ''
+		 where person_id = $1 and state = 'kept' and has_content
 		 order by random() limit 1`, personID).Scan(&text)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", false, nil
@@ -286,14 +286,16 @@ func likeEscape(term string) string {
 // found. Bounded by how many commands were typed consecutively, which is small,
 // and there is no SQL limit to make it wrong when it is not.
 func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ...any) ([]Item, bool, error) {
-	// raw_text <> '' matches CapturesSince exactly. An attachment-only message
+	// has_content matches CapturesSince exactly. An attachment-only message
 	// lands as an empty row — campfire.go takes the body's plain text with no
 	// guard — and without this the pile prints a blank numbered line while the
 	// evening list, which has always filtered them, does not. The two surfaces
 	// disagreeing about what a note is is the thing this function's comment
 	// warns about.
-	q := `select id, raw_text, received_at, payload, state, kind from items
-	       where raw_text <> '' and ` + where +
+	q := `select id, raw_text, received_at, payload, state, kind,
+	             coalesce(attachment_path, ''), coalesce(attachment_type, '')
+	        from items
+	       where has_content and ` + where +
 		` order by received_at desc, id desc`
 
 	rows, err := s.pool.Query(ctx, q, args...)
@@ -306,7 +308,8 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 	for rows.Next() && len(items) <= limit {
 		var it Item
 		var payload json.RawMessage
-		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind); err != nil {
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind,
+			&it.PhotoName, &it.PhotoType); err != nil {
 			return nil, false, fmt.Errorf("scanning item: %w", err)
 		}
 		if !isNote(it.RawText, payload) {
@@ -335,9 +338,12 @@ func (s *Store) ItemByID(ctx context.Context, personID, itemID int64) (Item, boo
 	var it Item
 	var payload json.RawMessage
 	err := s.pool.QueryRow(ctx, `
-		select id, raw_text, received_at, payload, state, kind from items
+		select id, raw_text, received_at, payload, state, kind,
+		       coalesce(attachment_path, ''), coalesce(attachment_type, '')
+		  from items
 		 where id = $1 and person_id = $2`, itemID, personID).
-		Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind)
+		Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind,
+			&it.PhotoName, &it.PhotoType)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, false, nil
 	}
@@ -397,8 +403,10 @@ func (s *Store) PromoteItem(ctx context.Context, personID, itemID int64, every t
 // is the pile.
 func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, error) {
 	rows, err := s.pool.Query(ctx, `
-		select id, raw_text, received_at, payload, state, kind from items
-		 where person_id = $1 and raw_text <> ''
+		select id, raw_text, received_at, payload, state, kind,
+		       coalesce(attachment_path, ''), coalesce(attachment_type, '')
+		  from items
+		 where person_id = $1 and has_content
 		   and state <> 'open' and state_at is not null
 		 order by state_at desc, id desc
 		 limit 20`, personID)
@@ -410,7 +418,8 @@ func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, er
 	for rows.Next() {
 		var it Item
 		var payload json.RawMessage
-		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind); err != nil {
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind,
+			&it.PhotoName, &it.PhotoType); err != nil {
 			return Item{}, false, fmt.Errorf("scanning item: %w", err)
 		}
 		// The same test the pile applies. A typed command is stored like

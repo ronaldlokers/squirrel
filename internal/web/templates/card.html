@@ -29,6 +29,13 @@
         <button class="rewordSave" type="submit">Say it this way</button>
       </form>
     </details>
+    {{/* Above the words, because when there is a photograph the photograph is
+         the note and the words are its caption. A note with no words is a
+         perfectly good note here — it is the whole reason for having a
+         camera. */}}
+    {{with .Note.Photo}}
+    <p class="photo"><img src="{{.}}" alt="the photograph on this note" loading="lazy"></p>
+    {{end}}
     <p id="noteText">{{.Note.Text}}</p>
     {{/* The proposal, when one has been asked for. It sits under the words it
          came from, because the question is "is this what you meant" and that

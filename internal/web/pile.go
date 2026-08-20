@@ -41,6 +41,11 @@ func Mount(m Mux, s Store, opts Options) error {
 	// The slot. Behind the origin check like every other write here: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
+	// A photograph, behind the same guard as everything else: a picture of a
+	// letter is at least as private as the note beside it.
+	if opts.Photos != nil {
+		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
+	}
 	m.Post("/mood", guard(opts, sameOrigin(moodHandler(s, opts))))
 	// The one thing's three answers. Behind the origin check like every other
 	// write here.

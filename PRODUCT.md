@@ -121,6 +121,19 @@ category sells the counter as the feature.
 rejected: "inbox", which imports inbox-zero and its counter. The owner chose
 "the pile" over the objection that it may read as self-deprecating.
 
+**A photograph instead of typing.** Camera-first from the screen, because the
+moment you want this is the moment you are stood in front of a letter holding a
+phone. One photograph per note — a note that can carry five is an album, and an
+album is a thing you organise rather than glance at. **A photograph with no
+words is a note**, which is most of the point of having a camera.
+
+They live on a volume beside the pod rather than in object storage: this
+cluster has none, and adding some would mean a service to patch, back up and
+keep alive for one feature. What that costs is stated rather than discovered —
+photographs join the pod's lifecycle, and **the restore drill has to cover the
+volume**. Nowhere to put them is a supported state: with no volume the camera
+is never offered.
+
 **The shelf may speak, once in a while.** A kept note can ride along with the
 evening message — never its own message, never more than one, and never when
 there was nothing else to say. A shelf that taps you on the shoulder is a

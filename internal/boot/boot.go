@@ -216,6 +216,23 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// thing it needs arrives later. Until it does, the screen answers 503 —
 	// the pile is unreadable because its memory is unreachable, which is what
 	// that status already means on this screen.
+	// Nowhere to keep a photograph is a supported state and the default. It is
+	// checked at boot rather than at the first press, for the reason the spool
+	// is: the first photograph is the worst moment to discover the volume is
+	// not there.
+	var photos *squirrel.Photos
+	if config.PhotoDir != "" {
+		var err error
+		if photos, err = squirrel.OpenPhotos(config.PhotoDir); err != nil {
+			slog.Warn("no photo directory; the camera is not offered", "error", err)
+			photos = nil
+		} else {
+			slog.Info("photographs are kept", "at", config.PhotoDir)
+		}
+	} else {
+		slog.Info("no photo directory configured; the camera is not offered")
+	}
+
 	var webOwner atomic.Int64
 	// The coach's three seams for the screen, converted here because boot is
 	// the only package that may know both shapes. All three are nil-safe: with
@@ -242,7 +259,13 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			Owner:   webOwner.Load,
 			// The same spool the room's captures go through, so there is one
 			// durable path into the pile rather than two to keep in step.
-			Spool:  spool,
+			Spool: spool,
+			// Assigned through a helper rather than straight from the pointer:
+			// a nil *squirrel.Photos in an interface field is not a nil
+			// interface, and the screen's own `opts.Photos == nil` would then
+			// be false while every call panicked. It would draw the camera and
+			// break on the press.
+			Photos: photoStore(photos),
 			Ask:    webAsk,
 			Recent: webRecent,
 
@@ -532,4 +555,16 @@ func pushKeyFor(cfg squirrel.PushConfig) string {
 		return ""
 	}
 	return cfg.PublicKey
+}
+
+// photoStore keeps a nil pointer from becoming a non-nil interface.
+//
+// The classic Go trap, and it would land exactly where it hurts: the screen
+// asks `opts.Photos == nil` to decide whether to offer a camera, and a typed
+// nil answers false. It would draw the button and panic on the press.
+func photoStore(p *squirrel.Photos) web.Photos {
+	if p == nil {
+		return nil
+	}
+	return p
 }

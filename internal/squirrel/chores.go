@@ -277,7 +277,7 @@ func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore,
 func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Time) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `
 		select raw_text, payload from items
-		 where person_id = $1 and received_at >= $2 and raw_text <> ''
+		 where person_id = $1 and received_at >= $2 and has_content
 		 order by received_at`, personID, since)
 	if err != nil {
 		return nil, fmt.Errorf("querying captures: %w", err)
@@ -369,7 +369,7 @@ func (s *Store) HandledSince(ctx context.Context, personID int64, since time.Tim
 	if err := s.pool.QueryRow(ctx, `
 		select count(*) from items
 		 where person_id = $1 and kind = 'note' and state <> 'open'
-		   and state_at >= $2 and raw_text <> ''`, personID, since).Scan(&h.Notes); err != nil {
+		   and state_at >= $2 and has_content`, personID, since).Scan(&h.Notes); err != nil {
 		return Handled{}, fmt.Errorf("counting what you cleared: %w", err)
 	}
 	return h, nil
