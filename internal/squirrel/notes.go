@@ -433,6 +433,13 @@ func isNote(text string, payload json.RawMessage) bool {
 // ScreenCapture is the payload the screen writes, and the marker isNote reads.
 const ScreenCapture = `{"type":"screen"}`
 
+// ScreenTransport is what the screen's own captures are filed under.
+//
+// A transport like any other, now that the slot spools rather than writing
+// straight to Postgres: the drain reads a capture's transport to resolve whose
+// it is, so the screen needs a name and an identity under that name.
+const ScreenTransport = "screen"
+
 func isScreenCapture(payload json.RawMessage) bool {
 	var p struct {
 		Type string `json:"type"`

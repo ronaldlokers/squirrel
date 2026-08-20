@@ -589,12 +589,44 @@ func (f *fakeStore) ClearSteps(_ context.Context, _ int64) error {
 	return nil
 }
 
+// fakeSpool stands in for the durable half of capture. The spool's own
+// durability — write, fsync, rename, fsync the directory — is proved in
+// internal/squirrel; what the screen has to be tested for is that it goes
+// through one at all, and what it does when it cannot.
+type fakeSpool struct {
+	written  []squirrel.Capture
+	err      error
+	readonly bool
+}
+
+func (s *fakeSpool) Write(c squirrel.Capture) (string, error) {
+	if s.err != nil {
+		return "", s.err
+	}
+	s.written = append(s.written, c)
+	return "spooled", nil
+}
+
+func (s *fakeSpool) Writable() bool { return !s.readonly }
+
+// mountedSpooling is mounted with a spool the test can inspect, for the two
+// things that are about capture itself rather than about the pile.
+func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
+	t.Helper()
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 }, Spool: sp,
+	}))
+	return m
+}
+
 func mounted(t *testing.T, f *fakeStore) *testMux {
 	t.Helper()
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 },
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
 	}))
 	return m
 }
@@ -712,7 +744,7 @@ func mountedWith(t *testing.T, f *fakeStore, c *fakeCoach) *testMux {
 	m := newTestMux()
 	opts := Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 },
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
 	}
 	if c != nil {
 		opts = c.options(opts)

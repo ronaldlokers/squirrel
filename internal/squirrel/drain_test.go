@@ -359,3 +359,49 @@ func TestDrainRunStopsWithTheContext(t *testing.T) {
 		t.Fatal("Run did not return after cancellation")
 	}
 }
+
+// A capture with no conversation is not applied at all.
+//
+// The rule is about what the applier is for: every branch of it ends in
+// something said back, so with nowhere to say it there is nothing to run. The
+// screen's slot is the case that made it matter — it spools like the room now,
+// and "anything you type is a note" has always been the whole of what it does.
+// Running Match over it would quietly turn the slot into a command line.
+func TestDrainDoesNotApplyACaptureWithNoConversation(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	spool, err := squirrel.OpenSpool(t.TempDir())
+	require.NoError(t, err)
+
+	sender := "ronald"
+	_, err = store.SeedOwner(ctx, "ronald",
+		[]squirrel.IdentitySeed{{Transport: squirrel.ScreenTransport, ExternalID: sender}})
+	require.NoError(t, err)
+
+	_, err = spool.Write(squirrel.Capture{
+		Transport:  squirrel.ScreenTransport,
+		SenderID:   &sender,
+		Text:       "done 2",
+		Payload:    []byte(squirrel.ScreenCapture),
+		ReceivedAt: time.Now(),
+	})
+	require.NoError(t, err)
+
+	chat, sent := chatRecorder("1")
+	applier := squirrel.NewApplier(store, nil, chat, nil)
+	drain := squirrel.NewDrain(squirrel.DrainOptions{
+		Store: store, Spool: spool, Applier: applier,
+	})
+	drain.Once(ctx)
+
+	// The thought landed, verbatim, and belongs to you.
+	items, _, err := store.OpenItems(ctx, p, 20)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, "done 2", items[0].RawText)
+
+	// And nothing was said back, because there was nowhere to say it.
+	require.Empty(t, *sent, "the slot was read as a command")
+}

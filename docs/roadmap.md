@@ -138,7 +138,7 @@ Chosen on 20 August once Buddy shipped, and argued in
 | | | Why here |
 | --- | --- | --- |
 | ~~**1**~~ | ~~Three states for things you cannot act on~~ — **shipped** | An offer you cannot act on spends the one decision you were given. Excluded from every existing list by construction, so it was smaller than it sounded. |
-| **2** | The capture gap | The front door acknowledges before the words are durable. Disaster-shaped rather than daily, but it is the first principle. |
+| ~~**2**~~ | ~~The capture gap~~ — **shipped** | The front door acknowledged before the words were durable. Now it spools like the room, and one mechanism covers both. |
 | **3** | Mood readable, and resurfacing | Two small ones. Both shown only on request, never as their own stream. |
 | **4** | Attachments, on a PVC | Last: the only one that adds infrastructure. |
 
@@ -159,11 +159,10 @@ Chosen on 20 August once Buddy shipped, and argued in
 **PWA primary, Campfire secondary.** This inverts three things and none of them
 is free:
 
-1. **Capture durability is backwards.** Campfire capture is protected by an
-   fsynced spool before anything acknowledges it. The PWA's `/capture` writes
-   straight to Postgres with no spool — accepted when it was secondary, wrong
-   now it is the front door. The service worker already holds captures when the
-   network is gone; the gap is a live network and a dead database.
+1. ~~**Capture durability is backwards.**~~ **Fixed 20 August.** The slot goes
+   through the same fsynced spool the room does. The drain does not apply a
+   capture with no conversation, which is what keeps the slot a slot rather
+   than turning it into a command line.
 2. **Push becomes the primary channel**, not an improvement on Campfire.
 3. **Feature parity relaxes** to best-effort in one direction. Chat keeps
    capture and answering a nudge; it does not need every screen feature.

@@ -65,7 +65,7 @@ func screenWith(t *testing.T, f *fakeStore, c *fakeCoach) *httptest.Server {
 
 	opts := Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 },
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
 	}
 	if c != nil {
 		opts = c.options(opts)

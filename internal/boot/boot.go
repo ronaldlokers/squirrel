@@ -240,8 +240,11 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// — which is the one shape worse than never offering.
 			PushKey: pushKeyFor(config.Push),
 			Owner:   webOwner.Load,
-			Ask:     webAsk,
-			Recent:  webRecent,
+			// The same spool the room's captures go through, so there is one
+			// durable path into the pile rather than two to keep in step.
+			Spool:  spool,
+			Ask:    webAsk,
+			Recent: webRecent,
 
 			Remember: webRemember,
 			Forget:   webForget,
@@ -436,12 +439,25 @@ func allowsFrom(c squirrel.Config) []squirrel.Allow {
 }
 
 func seedsFrom(c squirrel.Config) []squirrel.IdentitySeed {
-	if c.Campfire == nil {
-		return nil
+	// The screen is an identity like any other transport's.
+	//
+	// It has to be, now that the slot spools rather than writing straight to
+	// Postgres: the drain resolves a capture's owner from its sender, and a
+	// capture whose sender resolves to nobody lands as a row belonging to no
+	// one. Seeding this is what keeps a note typed on the screen yours.
+	var seeds []squirrel.IdentitySeed
+	if c.WebIdentity != "" {
+		seeds = append(seeds, squirrel.IdentitySeed{
+			Transport: squirrel.ScreenTransport, ExternalID: c.WebIdentity,
+		})
 	}
-	return []squirrel.IdentitySeed{{
+
+	if c.Campfire == nil {
+		return seeds
+	}
+	return append(seeds, squirrel.IdentitySeed{
 		Transport: transport.CampfireName, ExternalID: c.Campfire.SenderID,
-	}}
+	})
 }
 
 func deref(s *string) string {
