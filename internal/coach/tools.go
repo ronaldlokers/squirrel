@@ -53,15 +53,21 @@ func spec(name, about string, props map[string]any) map[string]any {
 	if props == nil {
 		props = map[string]any{}
 	}
-	required := make([]string, 0, len(props))
-	for k := range props {
-		required = append(required, k)
-	}
 	// choose is the only tool whose arguments all matter; the read tools'
 	// arguments all have sensible defaults, so requiring them would make the
 	// model spell out a limit it does not care about.
-	if name != "choose" {
-		required = nil
+	//
+	// Empty and never nil. A nil slice marshals to `null`, and the API answers
+	// `None is not of type 'array'` and rejects the whole request — which took
+	// down every call that offered tools, so the decide path and every
+	// conversational turn fell through to the deterministic floor and stayed
+	// there. The floor worked, which is why it looked like a quiet model
+	// rather than a broken one.
+	required := []string{}
+	if name == "choose" {
+		for k := range props {
+			required = append(required, k)
+		}
 	}
 	return map[string]any{
 		"type": "function",
