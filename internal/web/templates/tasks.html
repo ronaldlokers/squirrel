@@ -1,0 +1,40 @@
+{{define "content"}}
+<section class="shoebox">
+  {{/* Named for what these are. Never how many. */}}
+  <p class="head">what you decided</p>
+  {{range .Results}}
+  {{/* The result card's stock and depth, with no page tab: a tab says what a
+       note ended up as, and a task has no outcome until it has one. */}}
+  <article class="tcard">
+    <p class="meta"><span>DECIDED {{.When}}</span></p>
+    <p>{{.Text}}</p>
+    <form class="tacts" method="post" action="/tasks/act">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <button class="tbtn" name="act" value="done">did it</button>
+      {{/* Deciding can be the mistake, and undoing one must not require
+           finishing it. */}}
+      <button class="tbtn back" name="act" value="untask">not a task</button>
+    </form>
+  </article>
+  {{else}}
+  {{/* Absence, not encouragement: an empty task list is a normal state and not
+       a failure to set up. */}}
+  <section class="empty">
+    <img alt="" src="/static/logo.png?v={{.V}}" width="186" height="140">
+    <h1>nothing decided</h1>
+    <p>a note becomes a task when you decide to do it.</p>
+  </section>
+  {{end}}
+
+  {{/* One question, in the slot's grammar: a task is a sentence rather than a
+       configuration. */}}
+  <form class="newtask" method="post" action="/tasks/new">
+    <textarea name="text" rows="1" placeholder="something to do once"
+      aria-label="Something to do once"></textarea>
+    <button class="decide" type="submit">Decide it</button>
+  </form>
+
+  {{if .More}}<p class="more">there is more &mdash; search finds any of it</p>{{end}}
+  <p class="ends"><a href="/tasks/done">what you have done</a></p>
+</section>
+{{end}}

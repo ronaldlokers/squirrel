@@ -215,7 +215,8 @@
   // Letters are actions, always. Movement is space and the arrows, because in
   // a one-card topology j/k has nothing to move between and k is keep.
 
-  const KEYS = { d: "done", k: "keep", x: "drop" };
+  // T decides: not a disposal, but the same one-key gesture.
+  const KEYS = { d: "done", k: "keep", x: "drop", t: "task" };
 
   // The key presses the card's own LATER link rather than working out where
   // to go: one answer to "what does skipping mean", and it is the one a phone

@@ -43,6 +43,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/pile/fix", guard(opts, sameOrigin(fixHandler(s, opts))))
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
+	m.Get("/tasks", guard(opts, tasksHandler(s, opts)))
+	m.Get("/tasks/done", guard(opts, archiveHandler(s, opts)))
+	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
+	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
 	m.Post("/chores/new", guard(opts, sameOrigin(newChoreHandler(s, opts))))
 	m.Post("/timer", guard(opts, sameOrigin(timerHandler(s, opts))))
@@ -87,7 +91,7 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		v := view{More: more, Undo: undo, After: after}
+		v := view{Here: "pile", More: more, Undo: undo, After: after}
 		if len(items) == 0 {
 			// Nothing older is not an empty pile. Everything skipped past is
 			// still open, and a page that said "nothing in the pile" here
@@ -129,7 +133,7 @@ func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, p
 		fail(w, err)
 		return
 	}
-	v := view{Query: q, More: more, Undo: undo}
+	v := view{Here: "pile", Query: q, More: more, Undo: undo}
 	for _, c := range chores {
 		v.Chores = append(v.Chores, toChoreView(c))
 	}

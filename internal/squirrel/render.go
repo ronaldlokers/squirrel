@@ -32,6 +32,31 @@ func NotesMessage(items []Item, more bool) Message {
 	return Message{Text: strings.TrimRight(b.String(), "\n")}
 }
 
+// TasksMessage is what you decided, numbered so `done 2` can name one.
+//
+// The numbers are how you point at a task and nothing else. The last of them
+// happens to equal how many there are, which is true of any numbered list and
+// is why the list is capped and says "…and more" rather than reporting a
+// total: what is refused is a number that means "how much is outstanding".
+//
+// Nothing decided is stated plainly and nothing is suggested. An empty task
+// list is a normal state, not a failure to set up.
+func TasksMessage(items []Item, more bool) Message {
+	if len(items) == 0 {
+		return Message{Text: "Nothing decided."}
+	}
+
+	var b strings.Builder
+	b.WriteString("What you decided\n")
+	for i, it := range items {
+		fmt.Fprintf(&b, " %d. %s\n", i+1, it.RawText)
+	}
+	if more {
+		b.WriteString("…and more.")
+	}
+	return Message{Text: strings.TrimRight(b.String(), "\n")}
+}
+
 // HelpMessage is the vocabulary. Until now it existed nowhere, so the only way
 // to learn what Squirrel understood was to have written it.
 //
@@ -58,6 +83,10 @@ func HelpMessage() Message {
 		"!find <text> — search everything you have told me",
 		"!chores — what is due (same as ?)",
 		"!chore <n> every <interval> — turn note n into a chore",
+		"!task <n> — a note is something you decided to do",
+		"!task <words> — decide something outright",
+		"!tasks — what you decided, newest first",
+		"!untask <n> — back in the pile, undecided",
 		"every other tuesday: bins out — a rhythm, and when to raise it",
 		"!did <chore> — a chore is done, by name",
 		"!retire <chore> — stop a chore coming back",

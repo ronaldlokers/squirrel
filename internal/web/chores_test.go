@@ -104,12 +104,32 @@ func TestChoresRefusesAnUnknownAction(t *testing.T) {
 
 // The two screens have to be reachable from each other, or the chores are as
 // invisible as they were before.
-func TestThePileAndTheChoresLinkToEachOther(t *testing.T) {
+// With three screens the lid carries both of the others: one link that cycled
+// would put the chores two presses from the pile.
+func TestTheLidOffersTheTwoPlacesYouAreNot(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
-	require.Contains(t, m.call(t, "GET", "/pile", nil).Body.String(), `href="/chores"`)
-	require.Contains(t, m.call(t, "GET", "/chores", nil).Body.String(), `href="/pile"`)
+	for _, c := range []struct {
+		on    string
+		wants []string
+		not   string
+	}{
+		{"/pile", []string{`href="/tasks"`, `href="/chores"`}, `class="lidlink" href="/pile"`},
+		{"/tasks", []string{`href="/pile"`, `href="/chores"`}, `class="lidlink" href="/tasks"`},
+		{"/chores", []string{`href="/pile"`, `href="/tasks"`}, `class="lidlink" href="/chores"`},
+		// The archive belongs to the tasks and the shelf to the pile: each is
+		// reached from one of them, and that is what you would be looking for
+		// the way back to.
+		{"/tasks/done", []string{`href="/pile"`, `href="/chores"`}, `class="lidlink" href="/tasks"`},
+		{"/kept", []string{`href="/tasks"`, `href="/chores"`}, `class="lidlink" href="/pile"`},
+	} {
+		body := m.call(t, "GET", c.on, nil).Body.String()
+		for _, want := range c.wants {
+			require.Contains(t, body, want, c.on)
+		}
+		require.NotContains(t, body, c.not, "a link to where you already are is furniture")
+	}
 }
 
 // A chore nobody has ever done has a baseline anyway — its own birthday — and

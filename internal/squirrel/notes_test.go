@@ -509,10 +509,22 @@ func TestSearchCanUseTheIndex(t *testing.T) {
 	_, err := store.Pool().Exec(ctx, `set enable_seqscan = off`)
 	require.NoError(t, err)
 
+	// The text predicate on its own, deliberately, rather than the whole of
+	// SearchItems' query.
+	//
+	// What migration 0010 bought is that a substring match is *indexable* —
+	// that the term is escaped into a LIKE rather than hidden inside strpos.
+	// Asserting on the plan of the full query pinned something else: which
+	// index the planner happens to prefer. Adding items_person_kind_state for
+	// the tasks screen made it prefer that one on a table of a single row, and
+	// this test failed while nothing about search had changed.
+	//
+	// So it asks the question it means to ask. A regression that put strpos
+	// back would fail this; a new index on another column will not.
 	rows, err := store.Pool().Query(ctx, `
 		explain select id from items
-		 where person_id = $1 and lower(raw_text) like $2 escape '\'`,
-		p, "%boiler%")
+		 where lower(raw_text) like $1 escape '\'`,
+		"%boiler%")
 	require.NoError(t, err)
 	defer rows.Close()
 
@@ -523,5 +535,5 @@ func TestSearchCanUseTheIndex(t *testing.T) {
 		plan += line + "\n"
 	}
 	require.Contains(t, plan, "items_raw_text_trgm",
-		"the query has to be shaped so the index can answer it")
+		"a substring match has to be shaped so the trigram index can answer it")
 }

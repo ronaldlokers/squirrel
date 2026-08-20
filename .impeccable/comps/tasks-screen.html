@@ -1,0 +1,572 @@
+<!--
+THESIS: what you decided. The pile is what you said and the chores are what
+come back; this is the third thing, and it is the only one of the three that
+you put there on purpose. A note in the pile has not been decided about — that
+is what triage is for, and why stopping partway is fine. A task has been. So a
+task leaves the pile, and this screen holds only things you already chose.
+
+WHAT THIS SCREEN REFUSES:
+  - No count, of what is open or of what is archived. A list of things to do is
+    structurally what every product in this category sells, and it is exactly
+    where a counter wants to appear.
+  - No deadline, no "overdue", nothing red. A task is a thing to do, not a
+    thing to be late for. Chores carry a rhythm rather than a deadline for
+    precisely this reason.
+  - No priority, and no ordering that implies one. Newest first, like the pile:
+    a task decided this morning is the one you still remember deciding.
+  - No drop. A task you no longer want is a note you no longer want, and it
+    gets there by ceasing to be a task first. One way to say a thing.
+  - No encouragement on the empty state. An empty task list is a normal state,
+    not a failure to set up.
+
+TWO ACTIONS, DELIBERATELY:
+  DID IT     — archives it. The one thing a task is for.
+  NOT A TASK — back to the pile as a note. Undoing a decision must not require
+               finishing it.
+
+STATES BUILT: the tasks screen with three tasks; the archive; the empty state;
+and the home screen with three doors.
+
+THE TASKS ART is four errands — an appointment to make, someone to ring,
+something to post, somewhere to drive — replacing a ticked checklist. The count
+is gone, which was the fault that mattered; a single green tick and a black key
+remain. The calendar is the appointment, not a due date: a door's art names the
+kind of thing behind it, and these are things you decided to do.
+
+THE CHORES ART was replaced by the owner on 20 August 2026 — a bucket, a mop, a
+sponge and a spray bottle where a ticked checklist used to be. It obeys the
+door art guard rails (no ticks, no completion, no grey), so the exception the
+chores door carried is retired; and it stops the chores and the tasks reading
+as the same picture, which two clipboards did.
+
+THE THIRD DOOR amends DESIGN.md's "only ever two", in writing and on purpose:
+the sentence the home screen tells is three things now. The doors stay equals —
+one grid, identical cells, identical stock and depth. On a phone three cells are
+narrower, so the art steps down and the names take the Note floor rather than
+the phone's step-up.
+
+FONTS AND MARK: linked relatively to internal/web/static/ — open this file from
+its place in the repo.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<style>
+  @font-face {
+    font-family: "Recursive";
+    src: url("../../internal/web/static/recursive.woff2") format("woff2");
+    font-weight: 300 900; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+    font-weight: 900; font-style: normal; font-display: block;
+  }
+
+  :root {
+    --purple: #6c4da9;
+    --purple-deep: #58388a;
+    --purple-dark: #3b2560;
+    --violet: #5e23b1;   --violet-ink: #56209f;
+    --orange: #e66d0d;   --orange-lit: #ff8a2b;
+    --outline: #1c110b;
+    --cream: #fed6a7;
+    --card: #fdecd4;
+    --card-deep: #f6d5ab;
+    --paper: #fffbf3;
+    --paper-deep: #f7e9d4;
+    --brown: #58413d;
+    --white: #fefefe;
+    --done: #529414;    --done-ink: #3c6d0e;
+    --done-lifted: #71a73e;  --done-lifted-hover: #89b65f;
+    /* The open state's colour, lifted so the card's dark ink reads on it.
+       Violet needed 40% toward white where done, kept and dropped needed 18%:
+       it is much the darkest of the four, and at 18% it measures 3.17:1
+       against the outline ink, which fails. At 40% it is 5.46:1, inside the
+       band the other three already sit in (5.4 to 10.3). */
+    --open-lifted: #9e7bd0;  --open-lifted-hover: #b295da;
+
+    --line: 3px;
+    --r: 14px;
+    --casual: "MONO" 0, "CASL" 1;
+    --precise: "MONO" 0, "CASL" 0;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overflow-x: clip; }
+
+  body {
+    margin: 0;
+    color: var(--paper);
+    font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise);
+    background-color: var(--purple-deep);
+    background-image:
+      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .5) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  ::selection { background: var(--orange); color: var(--white); }
+  :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+
+  .viewport { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ---------- the lid, as built ---------- */
+
+  .lid {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 22px 13px;
+    background: var(--purple-dark);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+  .brand img { width: 84px; height: 63px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+  .wordmark {
+    font-family: "Inter", Helvetica, Arial, sans-serif; font-weight: 900;
+    font-variation-settings: normal; font-size: 26px; letter-spacing: -.028em;
+    color: var(--paper); -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+  }
+  .lid .spacer { flex: 1; }
+  .lidlink {
+    color: var(--cream); opacity: .8; text-decoration: none;
+    font-size: 13px; font-variation-settings: var(--precise), "wght" 650;
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .lidlink:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .brim { position: absolute; left: 0; top: 100%; width: 100%; height: 30px; display: block; pointer-events: none; }
+  .find {
+    flex: 0 1 280px; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: var(--paper); border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .find input {
+    flex: 1; min-width: 4ch; border: 0; background: transparent;
+    font: 500 14.5px/1.4 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--outline); caret-color: var(--orange); padding: 0;
+  }
+  .find input::placeholder { color: #8a7361; }
+  .find input:focus { outline: none; }
+
+  main { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 58px 22px 48px; }
+  main.middle { align-items: center; }
+  .shoebox, .homebox { width: min(720px, 100%); }
+
+  .head {
+    margin: 0 0 14px;
+    font-size: 13px; letter-spacing: .09em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: rgba(254, 214, 167, .85);
+  }
+
+  /* ---------- a task ---------- */
+
+  /* The result card's stock and depth, with no page tab: a tab says what a
+     note ended up AS, and a task has no outcome until it has one. */
+  .tcard {
+    position: relative;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    padding: 15px 20px 16px; margin: 0 0 15px;
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+  .tcard .meta {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 8px;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  /* His words, in his voice — the same Result role a search hit takes, because
+     a task on this screen is being scanned rather than decided on. It was
+     decided on already; that is what put it here. */
+  .tcard p {
+    margin: 0;
+    font-size: 18px; line-height: 1.4;
+    font-variation-settings: var(--casual), "wght" 480;
+    text-wrap: pretty;
+  }
+  .tacts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+  /* Coloured at rest, not only under the thumb — The Lifted Fill Rule: a
+     control that acts on something wears that thing's colour, lifted toward
+     white until the card's own dark ink reads on it. The chores screen's
+     controls have worked this way since they were built; these are the same
+     controls for the same kinds of change. */
+  .tbtn {
+    padding: 10px 14px; min-height: 44px;
+    background: var(--done-lifted); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 12.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 720;
+    letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
+  }
+  .tbtn:hover { background: var(--done-lifted-hover); }
+  /* The press drops to the base colour, so it still reads as a change. */
+  .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--done); color: var(--paper); }
+
+  /* Back to the pile is not an exit and must not wear an exit's colour. It
+     wears the pile's own: Notebook Violet is what a note in the pile is
+     already marked with everywhere else on this screen. */
+  .tbtn.back { background: var(--open-lifted); }
+  .tbtn.back:hover { background: var(--open-lifted-hover); }
+  .tbtn.back:active { background: var(--violet); color: var(--paper); }
+
+  /* The slot's own grammar, because a task is a sentence rather than a
+     configuration — the new-chore form asks three questions; this asks one. */
+  .newtask {
+    display: flex; align-items: flex-end; gap: 10px;
+    margin: 22px 0 0;
+    padding: 12px 12px 12px 18px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35);
+  }
+  .newtask textarea {
+    flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0;
+    font: 400 18px/1.45 "Recursive", sans-serif;
+    font-variation-settings: var(--casual), "wght" 480;
+    color: var(--outline); caret-color: var(--orange);
+    min-height: 1.45em; max-height: 8.7em;
+  }
+  .newtask textarea:focus { outline: none; }
+  .newtask textarea::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .decide {
+    flex: none;
+    padding: 11px 18px; min-height: 44px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+  .decide:hover { background: var(--orange-lit); }
+  .decide:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); }
+
+  /* The way to what you have done. A line rather than a section: the archive
+     is somewhere you go, not something this screen reports on. */
+  .ends { margin: 22px 0 0; text-align: center; font-size: 13.5px; font-variation-settings: var(--precise), "wght" 560; }
+  .ends a { color: var(--cream); text-decoration: underline; text-underline-offset: 4px; }
+  .ends a:hover { color: var(--paper); }
+
+  /* ---------- the archive ---------- */
+
+  /* Done, and quieter for it: the stock steps back to the cards-behind cream,
+     because these are underneath the ones that matter now. Still legible,
+     still reversible — never crossed out, which would be the product marking
+     your own words as spent. */
+  .acard { background: var(--card-deep); }
+  .acard .meta .did { color: var(--done-ink); }
+
+  /* ---------- empty ---------- */
+
+  .empty { width: min(560px, 100%); text-align: center; margin: 0 auto; }
+  .empty img { width: 186px; height: 140px; display: block; margin: 0 auto 22px; filter: drop-shadow(0 5px 0 rgba(0,0,0,.3)); }
+  .empty h1 {
+    margin: 0 0 10px;
+    font-size: clamp(27px, 3.4vw, 36px); line-height: 1.15;
+    font-variation-settings: var(--casual), "wght" 800;
+    letter-spacing: -.01em; color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+  }
+  .empty p {
+    margin: 0 auto; max-width: 34ch; font-size: 17px;
+    font-variation-settings: var(--casual), "wght" 450; color: var(--cream);
+  }
+
+  /* ---------- the doors, now three ---------- */
+
+  .doors { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .door {
+    display: flex; flex-direction: column; justify-content: center; gap: 7px;
+    min-height: 128px; padding: 20px 18px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0,0,0,.7);
+    text-decoration: none;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .door:hover { background: var(--paper); }
+  .door:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline), 0 10px 18px -14px rgba(0,0,0,.6); }
+  .door .art { height: 78px; margin-bottom: 5px; display: flex; align-items: flex-end; justify-content: center; }
+  .door .art img { display: block; height: 100%; width: auto; }
+  /* Mirrored tilts, and the middle one square — three things cannot alternate
+     without one of them being the odd one, so the odd one is the centre and it
+     reads as deliberate. */
+  .doors .door:first-child .art > * { transform: rotate(-1.6deg); }
+  .doors .door:last-child .art > * { transform: rotate(1.4deg); }
+  .door .label { align-self: center; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+  .door .name { font-size: 21px; line-height: 1.15; letter-spacing: -.01em; font-variation-settings: var(--precise), "wght" 800; }
+  .door .what { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; font-variation-settings: var(--precise), "wght" 750; color: var(--brown); }
+
+  .slot {
+    margin-top: 26px;
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 12px 12px 12px 18px;
+    background: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35);
+  }
+  .slot textarea {
+    flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0;
+    font: 400 18px/1.45 "Recursive", sans-serif;
+    font-variation-settings: var(--casual), "wght" 480;
+    color: var(--outline); caret-color: var(--orange); min-height: 1.45em;
+  }
+  .slot textarea::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .post {
+    flex: none; padding: 11px 18px; min-height: 44px;
+    background: var(--orange); color: var(--paper);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+
+  .compnote {
+    padding: 18px 22px; background: var(--purple-dark);
+    border-top: 2px dashed rgba(254,214,167,.5); border-bottom: 2px dashed rgba(254,214,167,.5);
+    text-align: center; font-size: 11.5px; letter-spacing: .1em;
+    font-variation-settings: var(--precise), "wght" 700; color: rgba(254,214,167,.8);
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: 1ms !important; } }
+
+  @media (max-width: 620px) {
+    .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
+    .brand { gap: 7px; }
+    .brand img { width: 56px; height: 42px; }
+    .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
+    .brim { height: 22px; }
+    .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
+    .find input { font-size: 16px; }
+    main { padding: 36px 13px 32px; }
+    .tcard p { font-size: 18.5px; }
+    .tcard .meta { font-size: 12px; }
+    .newtask { flex-direction: column; align-items: stretch; padding: 12px; }
+    .newtask textarea { font-size: 18.5px; }
+    .decide { width: 100%; }
+
+    /* Three across still, because their equality is the statement and a
+       stacked one would read as first. The art steps down and the name takes
+       the Note floor rather than the phone's step-up — three cells are
+       narrower than two and the words have to fit them. */
+    .doors { gap: 7px; }
+    .door { min-height: 104px; padding: 13px 9px; gap: 5px; }
+    .door .art { height: 50px; margin-bottom: 3px; }
+    .door .name { font-size: 17px; letter-spacing: -.015em; }
+    /* The documented Meta size, not the phone step-up: three cells are
+       narrower than two, and the sub-line has to fit one. */
+    .door .what { font-size: 11.5px; letter-spacing: .04em; }
+    .door .label { align-self: stretch; }
+    .empty h1 { font-size: 31px; }
+  }
+</style>
+
+<!-- ================= 1. THE TASKS ================= -->
+<section class="viewport" id="tasks">
+  <div class="lid">
+    <a class="brand" href="#">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </a>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the pile</a>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main>
+    <div class="shoebox">
+      <!-- Named for what these are. Never how many. -->
+      <p class="head">what you decided</p>
+
+      <article class="tcard">
+        <p class="meta"><span>DECIDED TODAY</span></p>
+        <p>ring the vet about the booster</p>
+        <div class="tacts">
+          <button class="tbtn">did it</button>
+          <button class="tbtn back">not a task</button>
+        </div>
+      </article>
+
+      <article class="tcard">
+        <p class="meta"><span>DECIDED YESTERDAY</span></p>
+        <p>send the meter reading before the bill comes out</p>
+        <div class="tacts">
+          <button class="tbtn">did it</button>
+          <button class="tbtn back">not a task</button>
+        </div>
+      </article>
+
+      <article class="tcard">
+        <p class="meta"><span>DECIDED THIS WEEK</span></p>
+        <p>book the car in for the rattle the garage mentioned</p>
+        <div class="tacts">
+          <button class="tbtn">did it</button>
+          <button class="tbtn back">not a task</button>
+        </div>
+      </article>
+
+      <!-- One question, asked in the slot's own grammar: a task is a sentence
+           rather than a configuration. -->
+      <form class="newtask">
+        <textarea rows="1" placeholder="something to do once" aria-label="Something to do once"></textarea>
+        <button class="decide" type="submit">Decide it</button>
+      </form>
+
+      <p class="ends"><a href="#">what you have done</a></p>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">THE ARCHIVE — WHAT YOU DID, NEVER HOW MANY</p>
+
+<!-- ================= 2. THE ARCHIVE ================= -->
+<section class="viewport" id="archive">
+  <div class="lid">
+    <a class="brand" href="#">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </a>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the tasks</a>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main>
+    <div class="shoebox">
+      <p class="head">what you have done</p>
+
+      <article class="tcard acard">
+        <p class="meta"><span class="did">DID IT TODAY</span></p>
+        <p>cancel the old insurance before it renews</p>
+        <div class="tacts">
+          <button class="tbtn back">not done after all</button>
+        </div>
+      </article>
+
+      <article class="tcard acard">
+        <p class="meta"><span class="did">DID IT THIS WEEK</span></p>
+        <p>take the boiler serial to the plumber</p>
+        <div class="tacts">
+          <button class="tbtn back">not done after all</button>
+        </div>
+      </article>
+
+      <p class="ends"><a href="#">back to what you decided</a></p>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">NOTHING DECIDED — ABSENCE, NOT ENCOURAGEMENT</p>
+
+<!-- ================= 3. EMPTY ================= -->
+<section class="viewport" id="empty">
+  <div class="lid">
+    <a class="brand" href="#">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </a>
+    <span class="spacer"></span>
+    <a class="lidlink" href="#">the pile</a>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main class="middle">
+    <div class="shoebox">
+      <section class="empty">
+        <img src="../../internal/web/static/logo.png" alt="" width="186" height="140">
+        <h1>nothing decided</h1>
+        <p>a note becomes a task when you decide to do it.</p>
+      </section>
+      <form class="newtask">
+        <textarea rows="1" placeholder="something to do once" aria-label="Something to do once"></textarea>
+        <button class="decide" type="submit">Decide it</button>
+      </form>
+    </div>
+  </main>
+</section>
+
+<p class="compnote">HOME, WITH THREE DOORS</p>
+
+<!-- ================= 4. THE THIRD DOOR ================= -->
+<section class="viewport" id="doors">
+  <div class="lid">
+    <span class="brand">
+      <img src="../../internal/web/static/logo.png" alt="" width="84" height="63">
+      <span class="wordmark">Squirrel</span>
+    </span>
+    <span class="spacer"></span>
+    <form class="find" method="get" action="" role="search">
+      <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
+        <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <input type="search" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+    <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
+      <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+    </svg>
+  </div>
+
+  <main class="middle">
+    <div class="homebox">
+      <nav class="doors" aria-label="The three halves of the box">
+        <a class="door" href="#">
+          <span class="art"><img src="../../internal/web/static/door-pile.png" alt="" width="342" height="256"></span>
+          <span class="label"><span class="name">the pile</span><span class="what">what you said</span></span>
+        </a>
+        <a class="door" href="#">
+          <span class="art"><img src="../../internal/web/static/door-tasks.png" alt="" width="302" height="256"></span>
+          <span class="label"><span class="name">the tasks</span><span class="what">what you decided</span></span>
+        </a>
+        <a class="door" href="#">
+          <span class="art"><img src="../../internal/web/static/door-chores.png" alt="" width="326" height="256"></span>
+          <span class="label"><span class="name">the chores</span><span class="what">what comes back</span></span>
+        </a>
+      </nav>
+
+      <form class="slot">
+        <textarea rows="1" placeholder="tell me a thing" aria-label="Tell Squirrel a thing"></textarea>
+        <button class="post" type="submit">Keep it</button>
+      </form>
+    </div>
+  </main>
+</section>

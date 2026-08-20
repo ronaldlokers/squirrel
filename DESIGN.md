@@ -38,6 +38,8 @@ colors:
   state-dropped-lifted: "#9f8574"
   state-dropped-lifted-hover: "#af9a8b"
   state-kept-lifted-hover: "#ffc12e"
+  state-open-lifted: "#9e7bd0"
+  state-open-lifted-hover: "#b295da"
 typography:
   display:
     fontFamily: "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
@@ -315,6 +317,14 @@ as a change:
 | *did it* | `#71a73e` | `#89b65f` | `#529414` |
 | *how often* | `#ffb300` | `#ffc12e` | `#8a5c00` |
 | *stop asking* | `#9f8574` | `#af9a8b` | `#8a6a55` |
+| *not a task* | `#9e7bd0` | `#b295da` | `#5e23b1` |
+
+**The percentages are the outcome, not the rule.** *Not a task* returns a thing
+to the pile, so it wears the pile's own Notebook Violet — and violet is much the
+darkest of the four state colours, so 18% is not enough lift for the ink to
+read: it measures 3.17:1, which fails. It takes 40% to reach 5.46:1, inside the
+band the other three already sit in. Lift until the ink reads, then measure;
+do not lift by a number because the number worked somewhere else.
 
 Type on a lifted fill is always the outline ink, never cream — the lift exists
 precisely so the ink can stay dark, which is the Fill-and-Ink Rule holding
@@ -390,9 +400,11 @@ monospace axis and this is a warm tool, not a terminal.
 One column, centred, `min(720px, 100%)`. No navigation, no sidebar, no second
 region — the shoebox has one opening.
 
-**The home screen is the one surface with two primary destinations.** They are
-equals: two cells of one grid, the same stock, the same depth, side by side at
-every width, and they must render identically in every state. Nothing on that
+**The home screen is the one surface with three primary destinations.** They
+are equals: three cells of one grid, the same stock, the same depth, side by
+side at every width, and they must render identically in every state. It was
+two until 20 August 2026, when tasks arrived and the sentence the screen tells
+became three things rather than two. Nothing on that
 screen depends on what the pile holds, so a full pile and an empty one are the
 same page — which is what *stopping partway is a normal ending* looks like when
 it is structural rather than a reassuring sentence.
@@ -524,9 +536,11 @@ it is the one control-shaped thing in the system that is deliberately not a
 button.
 
 On the home screen the lid carries no cross-link: the doors are the body of the
-page, and a third copy of a door is furniture. Everywhere else the mark and
-wordmark are themselves a link back to home — undecorated, because the mark is
-the mark.
+page, and another copy of a door is furniture. Everywhere else it carries
+**two** — the two places you are not. One link was complete when there were two
+screens; with three, a single link that cycled would put the chores two presses
+from the pile. The mark and wordmark remain a link back to home, undecorated,
+because the mark is the mark.
 
 ### The Door
 
@@ -544,8 +558,11 @@ body. Composed only of parts that already exist, but the composition is new:
 - **Hover:** brightens to paper. A button hovers by deepening; a card you can
   walk into wants a "pick it up" affordance instead, and that difference is the
   point rather than an inconsistency.
-- **Only ever two**, side by side at every width. Their equality is the screen's
-  one statement, and a stacked pair reads as first and second.
+- **Three, side by side at every width.** Their equality is the screen's one
+  statement, and a stacked one would read as first. Three cells are narrower
+  than two, so on a phone the art steps down to 50px and the name takes the
+  Note floor (17px) rather than the phone's step-up — the words have to fit the
+  cell, and the cell is what keeps them equal.
 
 ### Door Art
 
@@ -564,16 +581,46 @@ state colour *as a state* (amber as straw is a colour, a green tick is a claim);
 never grey; never orange. Only ever two drawings, because there are only ever
 two doors.
 
-**The exception the chores door carries.** The owner's own chores illustration
-shows grey on a clipboard's clip and two ticked boxes beside one empty — a
-progress reading drawn as a picture, in the `done` green, on the product whose
-hardest rule is never a count in any form. It was refused on those grounds and
-then chosen anyway, by the owner, for his own home screen: it is warm, it reads
-instantly as chores, and it is his product. This is the only surface in the
-system where grey appears and the only place a completion is depicted. It is
-illustration rather than interface — nothing here reports state — and it is
-recorded so nobody re-litigates it or quietly "fixes" it. It is not the
-precedent for a third door.
+**The exception the door art carries, and the one that was retired.**
+
+The chores door wore a clipboard with two ticked boxes beside one empty, and a
+grey clip — a progress reading drawn as a picture, in the `done` green, on the
+product whose hardest rule is never a count in any form. It was refused on
+those grounds, chosen anyway by the owner, and recorded here as a deliberate
+exception rather than an oversight.
+
+**On 20 August 2026 the owner replaced it** with a bucket, a mop, a sponge and
+a spray bottle — violet and amber, no ticks, no checklist, nothing depicting a
+completion and no grey. It obeys the rails. So that exception is retired rather
+than defended, and the entry stays because the reasoning is the useful part: a
+drawing that reads instantly as chores did not need a checklist to do it, and
+the version that avoided one is also the version that stopped colliding with
+the tasks door.
+
+**The tasks door carries what is left of one.** It was a clipboard with two
+ticked rows and one empty — a progress reading drawn as a picture. The owner
+replaced it the same day with errands: a calendar, a phone, an envelope, a set
+of keys. **The count is gone**, which was the larger of the two faults and the
+one the never-a-count rule actually cares about. What remains is a single green
+tick on the calendar — a completion depicted, in the `done` colour, as ornament
+— and a black key, which is the only grey left in the system.
+
+**The four objects are four errands, not four affordances**, and the difference
+is the whole reading of this drawing. The calendar is *an appointment to make* —
+the task — rather than a date the task is due on. So are the others: someone to
+ring, something to post, somewhere to drive. That is precisely what a door's art
+is for, which is naming the kind of thing behind it, and it is why the drawing
+does not imply the due dates a task deliberately does not have.
+
+Worth writing down because the first reading of it here was the wrong one: a
+calendar was taken for a deadline, which would have put a picture of lateness on
+the one screen built to have none. It depicts a thing you decided to do. Read
+door art as a subject, not as a control.
+
+The line that used to sit here, *"if a third door is ever added, this is not the
+precedent to follow"*, turned out to be wrong, so it is replaced by what is
+actually true: **door art is the owner's, and the guard rails govern anything
+drawn by anyone else.**
 
 ### The Peek — removed, and why it stays removed
 

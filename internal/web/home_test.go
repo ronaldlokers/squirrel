@@ -85,3 +85,17 @@ func TestHomeDoesNotAnswerForEverything(t *testing.T) {
 	require.NotContains(t, m.routes, "GET /")
 	require.Contains(t, m.routes, "GET /{$}")
 }
+
+// Three doors now, and they are still equals: one grid, identical cells, and
+// nothing on any of them that depends on what is behind it.
+func TestHomeHasThreeDoors(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+
+	for _, href := range []string{`href="/pile"`, `href="/tasks"`, `href="/chores"`} {
+		require.Equal(t, 1, strings.Count(body, href), href)
+	}
+	require.Contains(t, body, "what you decided")
+	// The one statement the screen makes is that they are equals, so nothing
+	// may mark one of them out.
+	require.Equal(t, 3, strings.Count(body, `class="door"`))
+}

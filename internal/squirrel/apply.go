@@ -359,6 +359,22 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 		}
 		return a.numbered(ctx, "notes", items, more, personID, conversationID)
 
+	case "task":
+		return a.task(ctx, in.Arg, personID)
+
+	case "untask":
+		return a.untask(ctx, in.Arg, personID)
+
+	case "tasks":
+		if in.Arg != "" {
+			break
+		}
+		items, more, err := a.store.Tasks(ctx, personID, listCap)
+		if err != nil {
+			return Message{}, err
+		}
+		return a.numberedAs(ctx, "tasks", items, more, personID, conversationID, TasksMessage)
+
 	case "find":
 		if in.Arg == "" {
 			// An empty search reads as a mistake, not as a request for all of
@@ -756,6 +772,78 @@ func TimerUpMessage(t Timer) Message {
 	return Message{Text: fmt.Sprintf("That's %s. Stop wherever you are.", t.Label)}
 }
 
+// task is the third promotion, beside !chore: a note becomes a thing you
+// decided to do, once.
+//
+// A number promotes the note on that line; words make one outright — the same
+// number-or-name shape !did and !snooze already use, because a person refers to
+// a thing by whichever they have to hand.
+//
+// Promoting takes it out of the pile, and that is the point rather than a side
+// effect: the pile holds what you have not decided about, and this is the
+// deciding.
+func (a *Applier) task(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return Message{Text: "Which line, or what? Try !task 2, or !task ring the vet."}, nil
+	}
+
+	if n, err := strconv.Atoi(arg); err == nil {
+		line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+		if err != nil {
+			return Message{}, err
+		}
+		if !ok {
+			return noSuchLine(n), nil
+		}
+		if line.Item == nil {
+			return Message{Text: fmt.Sprintf("Line %d is a chore, and a chore already comes back on its own.", n)}, nil
+		}
+		if _, err := a.store.SetItemKind(ctx, personID, line.Item.ID, ItemTask); err != nil {
+			return Message{}, err
+		}
+		return Message{Text: "Decided — " + line.Item.RawText}, nil
+	}
+
+	// Made outright. Marked a task in the same breath as it is stored: capture
+	// does not decide what a thought turns out to be, but this one arrived
+	// decided.
+	id, err := a.store.InsertItemReturningID(ctx, Item{
+		Transport: "chat", PersonID: &personID, RawText: arg,
+		Payload: []byte(ScreenCapture), ReceivedAt: time.Now(),
+	})
+	if err != nil {
+		return Message{}, err
+	}
+	if _, err := a.store.SetItemKind(ctx, personID, id, ItemTask); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: "Decided — " + arg}, nil
+}
+
+// untask returns a task to the pile. Deciding was the mistake, and undoing a
+// decision must not require finishing it first.
+func (a *Applier) untask(ctx context.Context, arg string, personID int64) (Message, error) {
+	n, err := strconv.Atoi(strings.TrimSpace(arg))
+	if err != nil || n < 1 {
+		return Message{Text: "Which line? Try !untask 1."}, nil
+	}
+	line, ok, err := a.store.LineAtPosition(ctx, personID, n)
+	if err != nil {
+		return Message{}, err
+	}
+	if !ok {
+		return noSuchLine(n), nil
+	}
+	if line.Item == nil {
+		return Message{Text: fmt.Sprintf("Line %d is a chore, not a task.", n)}, nil
+	}
+	if _, err := a.store.SetItemKind(ctx, personID, line.Item.ID, ItemNote); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: "Back in the pile — " + line.Item.RawText}, nil
+}
+
 // undoLast puts the most recently triaged note back in the pile.
 //
 // Which note that is comes from the store rather than from anything this
@@ -852,11 +940,18 @@ func (a *Applier) retireChore(ctx context.Context, c Chore) (Message, error) {
 // numbered records a prompt whose lines are notes, so a typed position
 // resolves back to the right one, and returns the message that prints them.
 func (a *Applier) numbered(ctx context.Context, kind string, items []Item, more bool, personID int64, conversationID string) (Message, error) {
+	return a.numberedAs(ctx, kind, items, more, personID, conversationID, NotesMessage)
+}
+
+// numberedAs is numbered with the words chosen by the caller. The numbering is
+// the same mechanism whatever is being listed — it is how `done 2` names a
+// thing — and only the heading differs.
+func (a *Applier) numberedAs(ctx context.Context, kind string, items []Item, more bool, personID int64, conversationID string, say func([]Item, bool) Message) (Message, error) {
 	if len(items) == 0 {
 		// No prompt for an empty list: an empty numbered surface would still
 		// become the newest one and would shadow a live nudge's numbering,
 		// which is the shape phase 4 spent a round removing.
-		return NotesMessage(items, more), nil
+		return say(items, more), nil
 	}
 
 	lines := make([]LineRef, 0, len(items))
@@ -868,7 +963,7 @@ func (a *Applier) numbered(ctx context.Context, kind string, items []Item, more 
 		return Message{}, err
 	}
 	a.pending = id
-	return NotesMessage(items, more), nil
+	return say(items, more), nil
 }
 
 // noSuchLine is the one reply for a position nothing answers to. Shared so the

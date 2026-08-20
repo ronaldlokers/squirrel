@@ -51,12 +51,8 @@
 
        Not on home: both doors are already the body of that page, and a third
        copy of a door is furniture. */}}
-  {{if not .Home}}
-  {{if eq .Here "chores"}}
-  <a class="lidlink" href="/pile">the pile</a>
-  {{else}}
-  <a class="lidlink" href="/chores">chores</a>
-  {{end}}
+  {{range .Elsewhere}}
+  <a class="lidlink" href="{{.Href}}">{{.Label}}</a>
   {{end}}
   {{/* Search posts to the deck, because that is where results live. */}}
   <form class="find" method="get" action="/pile" role="search">
@@ -75,7 +71,7 @@
      and a region that is replaced announces nothing. pile.js writes here when
      it changes what is on screen without a navigation. */}}
 <p id="say" class="offscreen" role="status" aria-live="polite"></p>
-<main id="stage" class="{{if or .Query .Chores}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
+<main id="stage" class="{{if .Scrolling}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
 {{/* The undo lives here rather than on the card, because by the time this
      page is drawn the card it undoes has gone. pile.js shows the card's own
      row during the hold; this is the same offer once the write has landed,

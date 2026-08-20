@@ -27,6 +27,10 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /pile/fix",
 		"GET /chores",
 		"GET /kept",
+		"GET /tasks",
+		"GET /tasks/done",
+		"POST /tasks/act",
+		"POST /tasks/new",
 		"POST /chores/act",
 		"POST /chores/new",
 		"GET /pile/chores",
@@ -36,7 +40,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 16, "a route was added without being pinned here")
+	require.Len(t, m.routes, 20, "a route was added without being pinned here")
 }
 
 // The chores screen lived at /pile/chores for its whole life, and a bookmark

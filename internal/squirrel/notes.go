@@ -30,6 +30,33 @@ const (
 	ItemKept    ItemState = "kept"
 )
 
+// ItemKind is what a row is, beside what state it is in.
+//
+// A note is a thought you had; a task is a thing you decided to do, once. The
+// two are the same row at different moments, which is why this is a column and
+// not a second table: undoing a decision has to return the row to where it
+// was, not copy it back.
+type ItemKind string
+
+const (
+	ItemNote ItemKind = "note"
+	ItemTask ItemKind = "task"
+)
+
+// SetItemKind promotes a note to a task, or demotes it back.
+//
+// Scoped by person like every other write here, and idempotent for the same
+// reason SetItemState is: saying a thing twice is saying it, not an error.
+func (s *Store) SetItemKind(ctx context.Context, personID, itemID int64, k ItemKind) (bool, error) {
+	tag, err := s.pool.Exec(ctx,
+		`update items set kind = $3 where id = $1 and person_id = $2`,
+		itemID, personID, string(k))
+	if err != nil {
+		return false, fmt.Errorf("setting item kind: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
 // SetItemState moves a note.
 //
 // Writing the state a note already holds is a no-op rather than an error: a tap
@@ -84,7 +111,19 @@ func (s *Store) Reword(ctx context.Context, personID, itemID int64, text string)
 // if a later author wanted one. The rule is enforced by the signature rather
 // than by a comment someone has to read.
 func (s *Store) OpenItems(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {
-	return s.itemsWhere(ctx, `person_id = $1 and state = 'open'`, limit, personID)
+	return s.itemsWhere(ctx, `person_id = $1 and kind = 'note' and state = 'open'`, limit, personID)
+}
+
+// Tasks is what you decided and have not done. Newest first, like the pile: a
+// task decided this morning is the one you still remember deciding.
+func (s *Store) Tasks(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {
+	return s.itemsWhere(ctx, `person_id = $1 and kind = 'task' and state = 'open'`, limit, personID)
+}
+
+// ArchivedTasks is what you did. Never a note that got done — those were never
+// decided on, and the archive is a record of decisions carried out.
+func (s *Store) ArchivedTasks(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {
+	return s.itemsWhere(ctx, `person_id = $1 and kind = 'task' and state = 'done'`, limit, personID)
 }
 
 // KeptItems is the shelf: the notes that were kept rather than done or
@@ -124,7 +163,7 @@ func (s *Store) OpenItemsAfter(ctx context.Context, personID, afterID int64, lim
 	if afterID == 0 {
 		return s.OpenItems(ctx, personID, limit)
 	}
-	return s.itemsWhere(ctx, `person_id = $1 and state = 'open'
+	return s.itemsWhere(ctx, `person_id = $1 and kind = 'note' and state = 'open'
 		 and (
 		   not exists (select 1 from items where id = $2)
 		   or (received_at, id) < (select received_at, id from items where id = $2)
@@ -183,7 +222,7 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 	// evening list, which has always filtered them, does not. The two surfaces
 	// disagreeing about what a note is is the thing this function's comment
 	// warns about.
-	q := `select id, raw_text, received_at, payload, state from items
+	q := `select id, raw_text, received_at, payload, state, kind from items
 	       where raw_text <> '' and ` + where +
 		` order by received_at desc, id desc`
 
@@ -197,7 +236,7 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 	for rows.Next() && len(items) <= limit {
 		var it Item
 		var payload json.RawMessage
-		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State); err != nil {
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind); err != nil {
 			return nil, false, fmt.Errorf("scanning item: %w", err)
 		}
 		if !isNote(it.RawText, payload) {
@@ -226,9 +265,9 @@ func (s *Store) ItemByID(ctx context.Context, personID, itemID int64) (Item, boo
 	var it Item
 	var payload json.RawMessage
 	err := s.pool.QueryRow(ctx, `
-		select id, raw_text, received_at, payload, state from items
+		select id, raw_text, received_at, payload, state, kind from items
 		 where id = $1 and person_id = $2`, itemID, personID).
-		Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State)
+		Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, false, nil
 	}
@@ -288,7 +327,7 @@ func (s *Store) PromoteItem(ctx context.Context, personID, itemID int64, every t
 // is the pile.
 func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, error) {
 	rows, err := s.pool.Query(ctx, `
-		select id, raw_text, received_at, payload, state from items
+		select id, raw_text, received_at, payload, state, kind from items
 		 where person_id = $1 and raw_text <> ''
 		   and state <> 'open' and state_at is not null
 		 order by state_at desc, id desc
@@ -301,7 +340,7 @@ func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, er
 	for rows.Next() {
 		var it Item
 		var payload json.RawMessage
-		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State); err != nil {
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind); err != nil {
 			return Item{}, false, fmt.Errorf("scanning item: %w", err)
 		}
 		// The same test the pile applies. A typed command is stored like

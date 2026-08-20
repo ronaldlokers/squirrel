@@ -61,6 +61,34 @@ type Item struct {
 	// and a capture that had to know about triage would be a capture that can
 	// fail for a triage reason.
 	State ItemState
+	// Kind is filled on the read path only, like State. A fresh row takes the
+	// column default, which is `note`: capture does not decide what a thought
+	// turns out to be.
+	Kind ItemKind
+}
+
+// InsertItemReturningID is InsertItem for the one caller that has to point at
+// the row afterwards: something decided outright is a task the moment it
+// exists, and marking it needs its id.
+//
+// No ON CONFLICT clause, because there is no external id to conflict on — this
+// row did not arrive from a transport, it was typed here.
+func (s *Store) InsertItemReturningID(ctx context.Context, i Item) (int64, error) {
+	const q = `
+		insert into items (
+			transport, external_id, conversation_id, sender_id,
+			person_id, raw_text, payload, received_at
+		) values ($1, $2, $3, $4, $5, $6, $7, $8)
+		returning id`
+
+	var id int64
+	if err := s.pool.QueryRow(ctx, q,
+		i.Transport, i.ExternalID, i.ConversationID, i.SenderID,
+		i.PersonID, i.RawText, []byte(i.Payload), i.ReceivedAt,
+	).Scan(&id); err != nil {
+		return 0, fmt.Errorf("inserting item: %w", err)
+	}
+	return id, nil
 }
 
 // InsertItem is idempotent for a real external id. Redelivery is harmless to
