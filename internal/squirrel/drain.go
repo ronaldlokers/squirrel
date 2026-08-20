@@ -164,7 +164,16 @@ func (d *Drain) one(ctx context.Context, name string) Outcome {
 	// the row already existed, so this message was already applied once.
 	// Gating on it here is what keeps a redelivered "done" from recording a
 	// second completion or sending a second reply.
-	if inserted && d.opts.Applier != nil {
+	//
+	// A capture with no conversation is not applied at all, and the rule is
+	// about what the applier is *for*: every branch of it ends in something
+	// said back, so with nowhere to say it there is nothing to run. The
+	// screen's slot is the case that made this matter — it spools now, the
+	// same as the room, and "anything you type is a note" has always been the
+	// whole of what it does. Running Match over it would quietly turn the slot
+	// into a command line and try to answer into a conversation that does not
+	// exist.
+	if inserted && d.opts.Applier != nil && item.ConversationID != nil {
 		if err := d.opts.Applier.Apply(ctx, item, personID); err != nil {
 			// The row landed and the file is gone. A failed reply is a lost
 			// answer, never a lost thought, so it is reported and not retried.

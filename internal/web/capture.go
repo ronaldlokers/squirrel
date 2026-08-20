@@ -23,16 +23,31 @@ const captureLimit = 4000
 // through Campfire. What makes that survivable is that both surfaces write the
 // same row to the same table, so there is one pile with two doors into it.
 //
-// What it costs is real and is not hidden: the Campfire room stops being the
-// complete record, and there is no spool behind this write. The chat's 👀 means
-// the words reached disk before anything else could go wrong; here there is no
-// such stage, so an unreachable database is a note that was never taken. The
-// answer is to say so loudly and give the words back, which is what the failure
-// path below does — never a redirect that looks like success.
+// What it cost was real, and for one release it was not paid: there was no
+// spool behind this write. The chat's 👀 means the words reached disk before
+// anything else could go wrong, and here there was no such stage — so a live
+// network and an unhealthy database was a note that was never taken. The
+// screen said so loudly and gave the words back, which is honest and is not
+// the same as durable, because a page is one reload from empty.
+//
+// It goes through the same spool the room's captures do now. Written, fsynced
+// and renamed before anything says it was kept; the drain moves it on, and the
+// drain has always known how to wait for a database. One durability mechanism
+// for both doors rather than two that have to be kept in step.
+//
+// What that costs, stated: a note is in the pile a moment later rather than
+// instantly — the drain runs every second by default. The slot is on home and
+// the pile is a different screen, so the gap is invisible in practice; and the
+// room has always worked this way.
+//
+// The Campfire room still stops being the complete record. That part of the
+// original bargain stands.
 func captureHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
+		// Still checked, and still refuses: the owner not being known yet means
+		// the drain cannot resolve this capture to anybody either, so
+		// accepting it would spool a note nobody owns.
+		if _, ok := opts.person(); !ok {
 			// The same 503 the rest of the screen gives when nobody knows
 			// whose pile this is: a redirect here would look like the words
 			// went somewhere.
@@ -54,16 +69,25 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			text = text[:captureLimit]
 		}
 
-		_, err := s.InsertItem(r.Context(), squirrel.Item{
-			Transport:  "screen",
-			PersonID:   &personID,
-			RawText:    text,
+		// Whose it is, said in the transport's own vocabulary rather than as a
+		// person id: the drain resolves every capture's owner from its sender,
+		// and this one is no different for being typed on the screen. boot
+		// seeds the matching identity.
+		sender := opts.Identity
+
+		if _, err := opts.Spool.Write(squirrel.Capture{
+			Transport:  squirrel.ScreenTransport,
+			SenderID:   &sender,
+			Text:       text,
 			Payload:    []byte(squirrel.ScreenCapture),
 			ReceivedAt: time.Now(),
-		})
-		if err != nil {
+		}); err != nil {
 			// The words go back to the page rather than into a log. A capture
 			// box that clears on failure is a capture box that eats thoughts.
+			//
+			// This is now the only way a capture can fail, and it means the
+			// disk is unwritable — which is a different and much louder
+			// problem than a database being briefly unreachable.
 			backToHome(w, r, text, true)
 			return
 		}

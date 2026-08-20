@@ -15,7 +15,7 @@ func withPush(t *testing.T, f *fakeStore) *testMux {
 	require.NoError(t, Mount(m, f, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
 		PushKey: "BKtestkey",
-		Owner:   func() int64 { return 1 },
+		Owner:   func() int64 { return 1 }, Spool: &fakeSpool{},
 	}))
 	return m
 }

@@ -27,6 +27,12 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.Owner == nil {
 		return fmt.Errorf("refusing to mount the pile: no owner")
 	}
+	if opts.Spool == nil {
+		// A screen that captures with nowhere durable to put the words is the
+		// gap this closes. Refusing at mount rather than at the first capture,
+		// because the first capture is the worst moment to find out.
+		return fmt.Errorf("refusing to mount the pile: no spool")
+	}
 	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.

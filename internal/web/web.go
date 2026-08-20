@@ -40,6 +40,10 @@ type Options struct {
 	// means "not yet", and the screen says the same thing it says for any
 	// other unreachable database.
 	Owner func() int64
+	// Spool is where a capture is made durable before anything says it was
+	// kept. Nil is refused at mount: a screen that captures without one is the
+	// gap this exists to close.
+	Spool Spool
 
 	// The coach's three seams. Funcs rather than an interface, and funcs of
 	// primitives rather than of coach types, because this package must not
@@ -91,6 +95,23 @@ func (o Options) person() (int64, bool) {
 	}
 	id := o.Owner()
 	return id, id != 0
+}
+
+// Spool is the durable half of capture, and the same one the room's captures
+// go through.
+//
+// Declared here and satisfied structurally by *squirrel.Spool, like Store. The
+// screen wrote straight to Postgres for its whole life, which meant a live
+// network and an unhealthy database lost the words — accepted while the screen
+// was secondary, wrong once it became the front door, and recorded as wrong at
+// the time.
+type Spool interface {
+	// Write is durable when it returns: written, fsynced, renamed, and the
+	// directory fsynced too.
+	Write(c squirrel.Capture) (string, error)
+	// Writable reports whether the directory can be written to at all, so the
+	// slot can refuse loudly rather than accept a thought it cannot keep.
+	Writable() bool
 }
 
 // Store is the narrow surface the screen consumes. Declared here rather than

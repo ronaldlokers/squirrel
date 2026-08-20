@@ -200,12 +200,22 @@ func TestPileWaitsVisiblyForItsOwner(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, &fakeStore{}, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 0 },
+		Owner: func() int64 { return 0 }, Spool: &fakeSpool{},
 	}))
 
 	w := m.call(t, "GET", "/pile", nil)
 	require.Equal(t, 503, w.Code)
 	require.Contains(t, w.Body.String(), "cannot reach")
+}
+
+// A screen that captures with nowhere durable to put the words is the gap
+// this closes, so it refuses at mount rather than at the first capture — which
+// is the worst possible moment to find out.
+func TestMountRefusesWithoutASpool(t *testing.T) {
+	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 },
+	}))
 }
 
 func TestMountRefusesWithoutAnOwner(t *testing.T) {

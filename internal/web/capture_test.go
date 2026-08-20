@@ -11,16 +11,26 @@ import (
 )
 
 func TestTheSlotKeepsAThought(t *testing.T) {
-	f := &fakeStore{}
-	m := mounted(t, f)
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, &fakeStore{}, sp)
 
 	w := post(t, m, "/capture", url.Values{"text": {"ask the garage about the rattle"}})
 
 	require.Equal(t, 303, w.Code)
 	require.Equal(t, "/?kept=1", w.Header().Get("Location"))
-	require.Len(t, f.items, 1)
-	require.Equal(t, "ask the garage about the rattle", f.items[0].RawText)
-	require.Equal(t, squirrel.ItemOpen, f.items[0].State, "a captured note is in the pile")
+
+	// Through the spool, not straight to Postgres. Durable before anything
+	// says it was kept, which is what the room's captures have always had and
+	// this one did not.
+	require.Len(t, sp.written, 1)
+	require.Equal(t, "ask the garage about the rattle", sp.written[0].Text)
+	require.Equal(t, squirrel.ScreenTransport, sp.written[0].Transport)
+
+	// Whose it is, in the transport's own vocabulary — the drain resolves the
+	// owner from this, and a capture that resolves to nobody is a note that
+	// belongs to no one.
+	require.NotNil(t, sp.written[0].SenderID)
+	require.Equal(t, "ronald", *sp.written[0].SenderID)
 }
 
 // The one word the slot says back, and it names no place you are behind.
@@ -37,8 +47,11 @@ func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
 // disk before anything else could go wrong; here there is no such stage, so an
 // unreachable database is a note that was never taken — and the only honest
 // answer is to say so and give the words back.
+// The only way a capture can fail now is an unwritable disk, which is a much
+// louder problem than a database being briefly unreachable — and the words
+// still come back rather than disappearing.
 func TestAFailedCaptureKeepsTheWords(t *testing.T) {
-	m := mounted(t, &fakeStore{err: errTest})
+	m := mountedSpooling(t, &fakeStore{}, &fakeSpool{err: errTest})
 
 	w := post(t, m, "/capture", url.Values{"text": {"the boiler makes a noise"}})
 
@@ -61,12 +74,16 @@ func TestAFailedCaptureKeepsTheWords(t *testing.T) {
 // a thought lost silently.
 func TestTheSlotNeverReadsAThoughtAsACommand(t *testing.T) {
 	for _, text := range []string{"done 2", "!notes", "every day vacuum", "?"} {
-		f := &fakeStore{}
-		w := post(t, mounted(t, f), "/capture", url.Values{"text": {text}})
+		sp := &fakeSpool{}
+		w := post(t, mountedSpooling(t, &fakeStore{}, sp), "/capture", url.Values{"text": {text}})
 
 		require.Equal(t, 303, w.Code, text)
-		require.Len(t, f.items, 1, text)
-		require.Equal(t, text, f.items[0].RawText, text)
+		require.Len(t, sp.written, 1, text)
+		require.Equal(t, text, sp.written[0].Text, text)
+		// Verbatim into the spool, and the drain will not apply it: a capture
+		// with no conversation has nowhere to answer into, so nothing runs
+		// Match over it. That is what keeps the slot a slot.
+		require.Nil(t, sp.written[0].ConversationID, text)
 	}
 }
 
