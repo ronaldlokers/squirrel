@@ -20,7 +20,7 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
-	href := regexp.MustCompile(`<a class="acorn" href="([^"]+)"`)
+	href := regexp.MustCompile(`<a class="askacorn" href="([^"]+)"`)
 	for _, path := range []string{"/", "/pile", "/tasks", "/chores"} {
 		body := m.call(t, "GET", path, nil).Body.String()
 		found := href.FindStringSubmatch(body)
@@ -40,7 +40,21 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 // Not on the coach page itself. A link to the page you are on is furniture.
 func TestTheAcornIsNotOnTheCoachPage(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/coach", nil).Body.String()
-	require.NotContains(t, body, `class="acorn"`)
+	require.NotContains(t, body, `class="askacorn"`)
+}
+
+// The button and the card's drawn badge are two different things with two
+// different names, and this is here because for one release they were not:
+// taking `.acorn` for the button turned every note's badge into a 62px circle
+// in the corner of the screen, and made pile.js wire the badge instead of the
+// button, so the sheet never opened on the pile at all.
+func TestTheAcornButtonDoesNotTakeTheCardsBadgeName(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+
+	require.Contains(t, body, `<svg class="acorn"`, "the card lost its badge")
+	require.Contains(t, body, `<a class="askacorn"`, "the button lost its own name")
+	require.NotContains(t, body, `<a class="acorn"`)
 }
 
 // Opening costs nothing: the sheet paints with what the picker would hand you,

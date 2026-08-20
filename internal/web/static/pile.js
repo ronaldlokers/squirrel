@@ -300,11 +300,30 @@
     return true;
   }
 
+  // Anything you can type into owns the keys it is given.
+  //
+  // Every letter on this screen is an action — d is done, s is stop, c asks
+  // for an interval — and until this existed those actions fired while you
+  // were typing. Naming a chore "shopping" pressed stop, then opened the
+  // interval question, and each press moved the focus, which on a phone shuts
+  // the keyboard. The reword box and the slot had the same problem.
+  //
+  // The search field is not covered here because it has its own branch below:
+  // Escape means "clear the search" there, and that is worth keeping.
+  function typing(target) {
+    if (!target || target === find) return false;
+    return target.isContentEditable === true ||
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  }
+
   addEventListener("keydown", e => {
     if (e.target === find) {
       if (e.key === "Escape") { find.value = ""; clearTimeout(timer); swap(""); }
       return;
     }
+    // Before "/" as well, or typing a path into a box would jump you into the
+    // search field.
+    if (typing(e.target)) return;
     if (e.key === "/") { e.preventDefault(); find?.focus(); return; }
     // A focused control owns space and enter; that is the platform's contract.
     if ((e.key === " " || e.key === "Enter") && e.target.closest("button, summary, a")) return;
@@ -460,7 +479,7 @@
   // posts and redirects.
   // ---------------------------------------------------------------- //
   (() => {
-    const acorn = document.querySelector(".acorn");
+    const acorn = document.querySelector(".askacorn");
     if (!acorn || typeof HTMLDialogElement === "undefined") return;
 
     let sheet = null;

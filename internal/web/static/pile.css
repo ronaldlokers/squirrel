@@ -1528,8 +1528,12 @@
      the outline weight, the sticker offset every raised thing here wears.
 
      Bottom right and fixed: the live-chat convention, and thumb-reachable on
-     the phone this is primarily used on. */
-  .acorn {
+     the phone this is primarily used on.
+
+     `.askacorn` and not `.acorn`, because the card's title bar had that name
+     first for the drawn badge. Taking it made every note's badge a 62px circle
+     in the corner of the screen. */
+  .askacorn {
     position: fixed; z-index: 40;
     right: max(16px, env(safe-area-inset-right));
     bottom: max(16px, env(safe-area-inset-bottom));
@@ -1540,8 +1544,8 @@
     box-shadow: 0 5px 0 0 var(--outline), 0 14px 24px -14px rgba(0, 0, 0, .7);
     transition: transform 90ms ease-out, box-shadow 90ms ease-out;
   }
-  .acorn img { display: block; }
-  .acorn:active { transform: translateY(4px); box-shadow: 0 1px 0 0 var(--outline); }
+  .askacorn img { display: block; }
+  .askacorn:active { transform: translateY(4px); box-shadow: 0 1px 0 0 var(--outline); }
   /* It never dims and it never carries a badge. Closing the sheet means the
      conversation is over and nothing else; three opens with no engagement is
      not a signal, and the product does not form opinions from how a button
@@ -1669,8 +1673,8 @@
       border-bottom: 0;
       box-shadow: 0 -16px 30px -20px rgba(0, 0, 0, .8);
     }
-    .acorn { width: 56px; height: 56px; }
-    .acorn img { width: 42px; height: 32px; }
+    .askacorn { width: 56px; height: 56px; }
+    .askacorn img { width: 42px; height: 32px; }
   }
 
   /* One step of a breakdown. Never the sequence, and there is deliberately no
