@@ -202,6 +202,10 @@
        words are somewhere and they go in when there is one. */}}
   {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
   {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
+  {{/* The photograph was refused, which is a different thing from the machine
+       failing and has to say so: the message above sends you to press the same
+       button again, and pressing it again will not make the picture smaller. */}}
+  {{if .NoPhoto}}<p class="slotsaid bad" role="status">That photograph was not kept &mdash; too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.</p>{{end}}
 
   {{/* The one thing Squirrel will interrupt you for is having to leave, and
        it has to ask before it can. Hidden until the script has established

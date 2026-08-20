@@ -28,10 +28,22 @@ func TestTheMoodsPageShowsWhatYouSaidAndWhen(t *testing.T) {
 	require.Contains(t, body, "mood-wiped.png")
 }
 
+// midday is today, in the middle of it. The page says "today" and "yesterday"
+// against the real clock, so the date has to be the real one — but the hour
+// does not, and leaving it real is how a test starts depending on when it runs.
+func midday() time.Time {
+	y, m, d := time.Now().Date()
+	return time.Date(y, m, d, 12, 0, 0, 0, time.Local)
+}
+
 // Two answers on one day is a day you checked in twice, not two facts about
 // you, so they share a day.
 func TestTwoReadingsInADayShareTheDayOnScreen(t *testing.T) {
-	now := time.Now()
+	// Midday, and not time.Now(): two readings two hours apart are only on the
+	// same day if the first one is not within two hours of midnight. This
+	// failed once, at 00:22, and would have failed every night between
+	// midnight and two.
+	now := midday()
 	f := &fakeStore{readings: []squirrel.Checkin{
 		reading(squirrel.MoodGood, now),
 		reading(squirrel.MoodLow, now.Add(-2*time.Hour)),

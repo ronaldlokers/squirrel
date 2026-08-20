@@ -88,6 +88,12 @@ type view struct {
 	// with different words, and only one of them keeps the words.
 	Kept   bool
 	NoKeep bool
+	// NoPhoto is the photograph having been refused rather than the machine
+	// having failed, and it is separate because saying the wrong one of those
+	// is worse than saying nothing. "Squirrel cannot reach its memory" sends
+	// you to press the same button again; "that photograph is too big" tells
+	// you the one thing you can act on. The words are kept either way.
+	NoPhoto bool
 	// Held is the worker having taken the words because there was no network.
 	// A third state and not a flavour of the other two: the words are safe,
 	// which failure is not, and they are not in the pile yet, which kept is.

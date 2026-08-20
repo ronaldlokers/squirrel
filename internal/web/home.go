@@ -35,10 +35,11 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 			// All four arrive from the address bar, so they are read the way a
 			// stranger's typing is read: a present flag, and words that are
 			// escaped on the way out like any other text on this screen.
-			Kept:   q.Get("kept") != "",
-			NoKeep: q.Get("nokeep") != "",
-			Held:   q.Get("held") != "",
-			Said:   q.Get("said"),
+			Kept:    q.Get("kept") != "",
+			NoKeep:  q.Get("nokeep") != "",
+			NoPhoto: q.Get("nophoto") != "",
+			Held:    q.Get("held") != "",
+			Said:    q.Get("said"),
 			// "Show me anyway" lifts the capacity gate for this render and
 			// nothing else. It lives in the address bar rather than in the
 			// database on purpose: a person who says they are wiped and then

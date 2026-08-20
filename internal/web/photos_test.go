@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -102,7 +103,9 @@ func TestAKindThisDoesNotKeepIsRefusedAndTheWordsComeBack(t *testing.T) {
 	w := postPhoto(t, m, kind, body)
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Contains(t, w.Header().Get("Location"), "nokeep=1")
+	require.Contains(t, w.Header().Get("Location"), "nophoto=1")
+	require.NotContains(t, w.Header().Get("Location"), "nokeep=1",
+		"a refused photograph was reported as a machine that had failed")
 	require.Contains(t, w.Header().Get("Location"), "the+tax+letter")
 	require.Empty(t, ph.kept, "it kept something it does not keep")
 	require.Empty(t, sp.written, "it captured a note referencing nothing")
@@ -117,7 +120,7 @@ func TestAVolumeThatRefusesKeepsTheWords(t *testing.T) {
 	kind, body := photographed(t, "the tax letter", "image/jpeg", []byte("jpegbytes"))
 	w := postPhoto(t, m, kind, body)
 
-	require.Contains(t, w.Header().Get("Location"), "nokeep=1")
+	require.Contains(t, w.Header().Get("Location"), "nophoto=1")
 	require.Contains(t, w.Header().Get("Location"), "the+tax+letter")
 	require.Empty(t, sp.written)
 }
@@ -184,4 +187,101 @@ func TestThePileShowsAPhotographByTheNotesID(t *testing.T) {
 
 	require.Contains(t, body, `src="/photo/7"`)
 	require.NotContains(t, body, "photo-1.jpg")
+}
+
+// The one that only production could tell us about, until now.
+//
+// ParseMultipartForm holds the first megabyte in memory and spills the rest to
+// a temporary file. This pod runs with a read-only root filesystem and no
+// writable /tmp, because everything it writes has a volume of its own — so
+// every photograph over a megabyte, which is every photograph a phone takes,
+// failed in the parser before the handler saw it. And it failed with the one
+// message that was not true: that Squirrel could not reach its memory.
+//
+// It survived a whole release of tests because the natural way to test an
+// upload is with a small file, and a small file is exactly the one that never
+// touches the disk. So this one is deliberately over the bound, and TMPDIR is
+// pointed somewhere that does not exist, which is what the container is.
+func TestAPhotographTooBigForMemoryNeedsNoTemporaryFile(t *testing.T) {
+	t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "there-is-no-such-place"))
+
+	sp, ph := &fakeSpool{}, &fakePhotos{}
+	m := mountedWithCamera(t, &fakeStore{}, sp, ph)
+
+	// Over the megabyte ParseMultipartForm would have kept in memory.
+	big := bytes.Repeat([]byte("x"), (1<<20)+4096)
+	kind, body := photographed(t, "the tax letter", "image/jpeg", big)
+	w := postPhoto(t, m, kind, body)
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Contains(t, w.Header().Get("Location"), "kept=1",
+		"a photograph too big to hold in memory was refused")
+	require.Len(t, ph.kept, 1)
+	require.Len(t, ph.kept[0], len(big), "the photograph arrived truncated")
+	require.Len(t, sp.written, 1)
+	require.Equal(t, "the tax letter", sp.written[0].Text)
+}
+
+// And the words still get through on their own with nowhere to spill to, which
+// is the same request without the part that needed a disk.
+func TestWordsAloneNeedNoTemporaryFileEither(t *testing.T) {
+	t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "there-is-no-such-place"))
+
+	sp, ph := &fakeSpool{}, &fakePhotos{}
+	m := mountedWithCamera(t, &fakeStore{}, sp, ph)
+
+	kind, body := photographed(t, "just the words", "image/jpeg", nil)
+	w := postPhoto(t, m, kind, body)
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Len(t, sp.written, 1)
+	require.Equal(t, "just the words", sp.written[0].Text)
+}
+
+// The parts are read by name, so moving the camera above the box in the markup
+// is a change to the markup and not to what gets kept.
+func TestTheCameraCanComeBeforeTheWords(t *testing.T) {
+	sp, ph := &fakeSpool{}, &fakePhotos{}
+	m := mountedWithCamera(t, &fakeStore{}, sp, ph)
+
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	h := map[string][]string{
+		"Content-Disposition": {`form-data; name="photo"; filename="IMG_0042.jpg"`},
+		"Content-Type":        {"image/jpeg"},
+	}
+	part, err := w.CreatePart(h)
+	require.NoError(t, err)
+	_, err = part.Write([]byte("jpegbytes"))
+	require.NoError(t, err)
+	require.NoError(t, w.WriteField("text", "the tax letter"))
+	require.NoError(t, w.Close())
+
+	res := postPhoto(t, m, w.FormDataContentType(), &body)
+
+	require.Contains(t, res.Header().Get("Location"), "kept=1")
+	require.Len(t, sp.written, 1)
+	require.Equal(t, "the tax letter", sp.written[0].Text)
+	require.NotEmpty(t, sp.written[0].PhotoName)
+}
+
+// A form with the camera on it and nothing chosen sends an empty file part.
+// That is most captures, and it is not a refusal.
+func TestAnEmptyFilePartIsJustWords(t *testing.T) {
+	sp, ph := &fakeSpool{}, &fakePhotos{}
+	m := mountedWithCamera(t, &fakeStore{}, sp, ph)
+
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	require.NoError(t, w.WriteField("text", "no picture today"))
+	_, err := w.CreateFormFile("photo", "")
+	require.NoError(t, err)
+	require.NoError(t, w.Close())
+
+	res := postPhoto(t, m, w.FormDataContentType(), &body)
+
+	require.Contains(t, res.Header().Get("Location"), "kept=1")
+	require.Empty(t, ph.kept, "an empty file part was kept as a photograph")
+	require.Len(t, sp.written, 1)
+	require.Empty(t, sp.written[0].PhotoName)
 }
