@@ -682,7 +682,7 @@ implying it can be moved would be a lie with consequences.
 **The lid is the only place a number counts down**, and the offer never joins
 it: the timer strip is a fact about a thing you chose to start.
 
-### The Coach Sheet
+### Buddy's Sheet
 
 The live-chat convention, rendered in this product's own materials.
 
@@ -713,8 +713,9 @@ still governs everything else.
   gets used. Closing the sheet means the conversation is over and nothing else.
 - **Bottom sheet on a phone, right panel on desktop.** The page behind stays
   visible and in place: the conversation is about what is on that screen.
-- **Its own little lid:** the mark at 36px, the wordmark in Inter, and *close*
-  in the lid link's voice. Not a copy of the real lid — it carries two
+- **Its own little lid:** the mark at 36px, **the name Buddy** in Inter where
+  the real lid says Squirrel, and *close* in the lid link's voice. Same mark,
+  different name: the acorn is the product's, the name is this surface's. Not a copy of the real lid — it carries two
   elements, not six.
 - **On screen:** what the picker would hand you, painted on open and carrying
   no controls at all. An orange rule down its left rather than a second card:
@@ -794,7 +795,7 @@ border that a card UI would reach for by default.
 - **Don't** emit a count, a total, a badge, a percentage or a page number, in
   any form, on any surface. This is the product's single hardest rule and the
   one most likely to be broken by accident. *One exception exists — the coach's
-  monthly cost, in the coach sheet's lid — recorded under The Coach Sheet with
+  monthly cost, in the coach sheet's lid — recorded under Buddy's Sheet with
   its reasoning, the same way the Door Art exception is.*
 - **Don't** use white or grey for any surface or any secondary type. Tint from
   the tail cream on purple, from the headphone brown on cream.

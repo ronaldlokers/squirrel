@@ -2,11 +2,11 @@
 {{with .Coach}}
 {{/* The sheet, as a page. pile.js lifts this same markup into an overlay; with
      scripting off it is what you see, and it is complete. */}}
-<section class="sheet" aria-label="The coach">
+<section class="sheet" aria-label="Buddy">
 
   <div class="sheetlid">
     <img class="acornmark" alt="" src="/static/logo.png?v={{$.V}}" width="36" height="27">
-    <span class="sheetname">Squirrel</span>
+    <span class="sheetname">Buddy</span>
     <span class="spacer"></span>
     {{/* What this has cost, this month. The only accruing number on any screen
          in this product, and it is here because it is money rather than a
@@ -15,13 +15,13 @@
 
          In the sheet's lid and nowhere else. A running cost on the home screen
          would be a number you meet before you have asked for anything. */}}
-    {{if .Spent}}<span class="spend" title="what the coach has cost this month">{{.Spent}}{{if .Ceiling}} of {{.Ceiling}}{{end}}</span>{{end}}
+    {{if .Spent}}<span class="spend" title="what Buddy has cost this month">{{.Spent}}{{if .Ceiling}} of {{.Ceiling}}{{end}}</span>{{end}}
     {{/* Closing means the conversation is over. It does not mean anything
          else: nothing is counted, the acorn does not dim, and nothing goes
          quiet. */}}
-    <form method="post" action="/coach/close">
+    <form method="post" action="/buddy/close">
       <input type="hidden" name="from" value="{{.From}}">
-      <button class="shut" type="submit" aria-label="Close the coach">close</button>
+      <button class="shut" type="submit" aria-label="Close Buddy">close</button>
     </form>
   </div>
 
@@ -52,7 +52,7 @@
     {{with .Propose}}
     <div class="asking" role="status">
       <p class="said">{{.Said}}</p>
-      <form method="post" action="/coach/do">
+      <form method="post" action="/buddy/do">
         <input type="hidden" name="do" value="{{.Do}}">
         <input type="hidden" name="text" value="{{.Text}}">
         <input type="hidden" name="at" value="{{.At}}">
@@ -62,13 +62,13 @@
       </form>
       {{/* Never mind is a link: nothing was written, so there is nothing to
            undo and nothing to post. */}}
-      <a class="later" href="/coach">never mind</a>
+      <a class="later" href="/buddy">never mind</a>
     </div>
     {{end}}
 
     {{/* Where you are in a breakdown, whether or not a chip was just
          pressed. */}}
-    {{if .Step}}{{template "step" (dict "Step" .Step "From" "/coach")}}{{end}}
+    {{if .Step}}{{template "step" (dict "Step" .Step "From" "/buddy")}}{{end}}
 
     {{/* The ladder's one control, when a chip was the last thing pressed.
          There is deliberately nowhere here for a second step. */}}
@@ -97,7 +97,7 @@
 
   {{/* Typing is never required. One press, no words, and the answer still
        comes back about this thing rather than in general. */}}
-  <form class="whys" method="post" action="/coach/say">
+  <form class="whys" method="post" action="/buddy/say">
     {{if .AskWhich}}<p class="lead">WHICH OF THESE IS IT</p>{{end}}
     {{range .Blockers}}
     <button class="why" name="why" value="{{.Why}}">{{.Word}}</button>
@@ -106,9 +106,9 @@
 
   {{/* What you typed never disappears. Close mid-sentence and it is here on
        reopen; a failed ask puts it back rather than eating it. */}}
-  <form class="slot say" method="post" action="/coach/say">
+  <form class="slot say" method="post" action="/buddy/say">
     <textarea name="said" rows="2" placeholder="what is going on"
-      aria-label="Tell the coach what is going on">{{$.Said}}</textarea>
+      aria-label="Tell Buddy what is going on">{{$.Said}}</textarea>
     <button class="post" type="submit">Say it</button>
   </form>
 

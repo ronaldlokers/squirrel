@@ -27,7 +27,7 @@ func TestAProposalIsRenderedAndNothingIsWritten(t *testing.T) {
 	})
 
 	body := mountedWith(t, f, c).
-		call(t, "POST", "/coach/say", strings.NewReader("said=dentist+at+half+two")).Body.String()
+		call(t, "POST", "/buddy/say", strings.NewReader("said=dentist+at+half+two")).Body.String()
 
 	require.Contains(t, body, "Shall I keep 14:30 for the dentist?")
 	require.Contains(t, body, `value="moment"`)
@@ -43,16 +43,16 @@ func TestAProposalIsStoredNowhere(t *testing.T) {
 	c := proposes(&Proposal{Do: "chore", Said: "Shall I?", Text: "bins", Every: "every 2 weeks"})
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/coach/say", strings.NewReader("said=the+bins+keep+piling+up"))
+	m.call(t, "POST", "/buddy/say", strings.NewReader("said=the+bins+keep+piling+up"))
 
-	body := m.call(t, "GET", "/coach", nil).Body.String()
+	body := m.call(t, "GET", "/buddy", nil).Body.String()
 	require.NotContains(t, body, "KEEP IT", "a proposal survived the page it was on")
 }
 
 func TestKeepingAMomentCreatesIt(t *testing.T) {
 	f := withOffer(nil)
 
-	w := mounted(t, f).call(t, "POST", "/coach/do",
+	w := mounted(t, f).call(t, "POST", "/buddy/do",
 		strings.NewReader("do=moment&text=dentist&at=14%3A30"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
@@ -67,7 +67,7 @@ func TestKeepingAMomentCreatesIt(t *testing.T) {
 func TestAMomentThatDoesNotParseCreatesNothing(t *testing.T) {
 	f := withOffer(nil)
 
-	w := mounted(t, f).call(t, "POST", "/coach/do",
+	w := mounted(t, f).call(t, "POST", "/buddy/do",
 		strings.NewReader("do=moment&text=dentist&at=sometime+soon"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
@@ -77,7 +77,7 @@ func TestAMomentThatDoesNotParseCreatesNothing(t *testing.T) {
 func TestKeepingAChoreCreatesItWithItsRhythm(t *testing.T) {
 	f := withOffer(nil)
 
-	mounted(t, f).call(t, "POST", "/coach/do",
+	mounted(t, f).call(t, "POST", "/buddy/do",
 		strings.NewReader("do=chore&text=put+the+bins+out&every=every+2+weeks"))
 
 	require.Equal(t, "put the bins out", f.reinterval.name)
@@ -87,7 +87,7 @@ func TestKeepingAChoreCreatesItWithItsRhythm(t *testing.T) {
 func TestAChoreWithNoRhythmCreatesNothing(t *testing.T) {
 	f := withOffer(nil)
 
-	mounted(t, f).call(t, "POST", "/coach/do",
+	mounted(t, f).call(t, "POST", "/buddy/do",
 		strings.NewReader("do=chore&text=put+the+bins+out&every=whenever"))
 
 	require.Empty(t, f.reinterval.name)
@@ -99,10 +99,10 @@ func TestRetiringOnlyEverTouchesYourOwnChore(t *testing.T) {
 	f.chores = []squirrel.Chore{{ID: 3, Name: "put the bins out"}}
 	m := mounted(t, f)
 
-	m.call(t, "POST", "/coach/do", strings.NewReader("do=retire&id=99"))
+	m.call(t, "POST", "/buddy/do", strings.NewReader("do=retire&id=99"))
 	require.Empty(t, f.retired, "it retired something that is not yours")
 
-	m.call(t, "POST", "/coach/do", strings.NewReader("do=retire&id=3"))
+	m.call(t, "POST", "/buddy/do", strings.NewReader("do=retire&id=3"))
 	require.Equal(t, []int64{3}, f.retired)
 }
 
@@ -111,10 +111,10 @@ func TestDroppingOnlyEverTouchesYourOwnNote(t *testing.T) {
 	f.items = []squirrel.Item{note(1, "the boiler makes a noise", squirrel.ItemOpen)}
 	m := mounted(t, f)
 
-	m.call(t, "POST", "/coach/do", strings.NewReader("do=drop&id=99"))
+	m.call(t, "POST", "/buddy/do", strings.NewReader("do=drop&id=99"))
 	require.Empty(t, f.states)
 
-	m.call(t, "POST", "/coach/do", strings.NewReader("do=drop&id=1"))
+	m.call(t, "POST", "/buddy/do", strings.NewReader("do=drop&id=1"))
 	require.Equal(t, map[int64]squirrel.ItemState{1: squirrel.ItemDropped}, f.states)
 }
 
@@ -125,7 +125,7 @@ func TestAnUnknownProposalDoesNothing(t *testing.T) {
 	f.items = []squirrel.Item{note(1, "the boiler makes a noise", squirrel.ItemOpen)}
 
 	for _, do := range []string{"reword", "delete", "checkin", ""} {
-		w := mounted(t, f).call(t, "POST", "/coach/do",
+		w := mounted(t, f).call(t, "POST", "/buddy/do",
 			strings.NewReader("do="+do+"&id=1&text=anything"))
 		require.Equal(t, http.StatusSeeOther, w.Code)
 	}
@@ -141,9 +141,9 @@ func TestWhatChangedIsShownInTheConversation(t *testing.T) {
 	c := &fakeCoach{reply: "Done.", did: []string{"put the bins out is done"}}
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/coach/say", strings.NewReader("said=I+did+the+bins"))
+	m.call(t, "POST", "/buddy/say", strings.NewReader("said=I+did+the+bins"))
 
-	body := m.call(t, "GET", "/coach", nil).Body.String()
+	body := m.call(t, "GET", "/buddy", nil).Body.String()
 	require.Contains(t, body, "Done.")
 	require.Contains(t, body, "put the bins out is done")
 }

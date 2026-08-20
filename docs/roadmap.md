@@ -55,7 +55,7 @@ That is what this release changed.
 
 ---
 
-## The coach — all eight phases shipped
+## Buddy — all eight phases shipped
 
 Chosen over the personalisation half on the grounds that durations and learned
 timing are data-starved until the product has been used for a month. Built A
@@ -63,7 +63,7 @@ through H in one run on 20 August 2026; every phase is a merged pull request
 with its own argument written out.
 
 **What it actually is, in one paragraph.** An acorn on every screen opens a
-conversation about what is on that screen. It can hand you one thing and say
+conversation with **Buddy** about what is on that screen. It can hand you one thing and say
 why, break something into steps you are shown one at a time, take five things
 at once and answer with one, separate a brain dump into the things it was, do
 six things on your behalf, and ask before doing four more. Once a day, when a

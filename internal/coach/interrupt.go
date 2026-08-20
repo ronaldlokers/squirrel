@@ -29,7 +29,7 @@ import (
 
 // interruptPreamble is what the model is told, and the last line is the one
 // that matters. Saying nothing is the answer that must be easy to give.
-const interruptPreamble = `You are Squirrel. Something is due and you are deciding whether to
+const interruptPreamble = `You are Buddy. Something is due and you are deciding whether to
 interrupt one person with ADHD about it, right now.
 
 Interrupting badly costs more than staying quiet. If they are in the

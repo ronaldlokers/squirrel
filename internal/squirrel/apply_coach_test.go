@@ -14,7 +14,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// `!coach` is the ladder's other half: for the times you cannot name what is
+// `!buddy` is the ladder's other half: for the times you cannot name what is
 // in the way. Everything about it degrades to `!stuck`.
 
 // askRecord is what the seam was handed, so the tests can check that the thing
@@ -51,7 +51,7 @@ func TestCoachAnswersInTheCoachsWords(t *testing.T) {
 	p := owner(t, store)
 
 	ask := &askRecord{reply: "Open the envelope. That is the whole of it."}
-	reply := coached(t, store, p, "!coach I can't face the tax thing", ask)
+	reply := coached(t, store, p, "!buddy I can't face the tax thing", ask)
 
 	require.Equal(t, "Open the envelope. That is the whole of it.", reply)
 	require.Equal(t, p, ask.personID)
@@ -67,7 +67,7 @@ func TestCoachSendsWhatYouWouldBeHanded(t *testing.T) {
 
 	taskOf(t, store, p, "ring the vet")
 	ask := &askRecord{reply: "Ring them. It is two minutes."}
-	coached(t, store, p, "!coach everything is too much", ask)
+	coached(t, store, p, "!buddy everything is too much", ask)
 
 	require.Equal(t, "ring the vet", ask.subject)
 }
@@ -83,7 +83,7 @@ func TestCoachStillHasASubjectOnALowDay(t *testing.T) {
 	require.NoError(t, store.RecordCheckin(ctx, p, squirrel.MoodWiped, "chat", time.Now()))
 
 	ask := &askRecord{reply: "Ring them. Two minutes."}
-	coached(t, store, p, "!coach I don't know where to start", ask)
+	coached(t, store, p, "!buddy I don't know where to start", ask)
 	require.Equal(t, "ring the vet", ask.subject)
 }
 
@@ -95,7 +95,7 @@ func TestCoachFallsBackToTheLadderWhenThereIsNothingToHand(t *testing.T) {
 	p := owner(t, store)
 
 	ask := &askRecord{err: errors.New("no coach available")}
-	require.Contains(t, coached(t, store, p, "!coach help", ask), "!stuck")
+	require.Contains(t, coached(t, store, p, "!buddy help", ask), "!stuck")
 }
 
 // With something to hand, the floor is the picker. Someone who has just typed
@@ -108,7 +108,7 @@ func TestCoachThatCannotAnswerHandsYouTheOneThing(t *testing.T) {
 
 	taskOf(t, store, p, "ring the vet")
 	ask := &askRecord{err: errors.New("no coach available")}
-	reply := coached(t, store, p, "!coach the tax thing, the vet, the bins and mum", ask)
+	reply := coached(t, store, p, "!buddy the tax thing, the vet, the bins and mum", ask)
 
 	require.Contains(t, reply, "ring the vet")
 	require.NotContains(t, reply, "!stuck")
@@ -118,8 +118,8 @@ func TestCoachWithNoCoachWiredSaysSoAndPointsAtTheLadder(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
 
-	reply := coached(t, store, p, "!coach help", nil)
-	require.Contains(t, reply, "No coach here")
+	reply := coached(t, store, p, "!buddy help", nil)
+	require.Contains(t, reply, "Buddy is not here")
 	require.Contains(t, reply, "!stuck")
 }
 
@@ -128,7 +128,7 @@ func TestCoachWithNothingSaidAsksForWords(t *testing.T) {
 	p := owner(t, store)
 
 	ask := &askRecord{reply: "should not be called"}
-	reply := coached(t, store, p, "!coach", ask)
+	reply := coached(t, store, p, "!buddy", ask)
 
 	require.Contains(t, reply, "Say what is going on")
 	require.Empty(t, ask.said, "nothing is asked of the model")
@@ -139,11 +139,11 @@ func TestHelpMentionsTheCoachOnlyWhenThereIsOne(t *testing.T) {
 	t.Cleanup(func() { squirrel.SetCoachHere(false) })
 
 	squirrel.SetCoachHere(false)
-	require.NotContains(t, squirrel.HelpMessage().Text, "!coach")
+	require.NotContains(t, squirrel.HelpMessage().Text, "!buddy")
 
 	squirrel.SetCoachHere(true)
 	help := squirrel.HelpMessage().Text
-	require.Contains(t, help, "!coach <words>")
+	require.Contains(t, help, "!buddy <words>")
 	require.Contains(t, help, "!stuck", "the ladder is still the first thing offered")
 }
 
@@ -157,8 +157,20 @@ func TestCoachSaysWhatActuallyChanged(t *testing.T) {
 		reply: "Done. The bins are out of the way.",
 		did:   []string{"put the bins out is done"},
 	}
-	reply := coached(t, store, p, "!coach I did the bins", ask)
+	reply := coached(t, store, p, "!buddy I did the bins", ask)
 
 	require.Contains(t, reply, "Done. The bins are out of the way.")
 	require.Contains(t, reply, "put the bins out is done")
+}
+
+// The word it shipped under still answers. A command that used to work and now
+// says "what?" is a worse welcome than a second word in a switch.
+func TestTheOldCoachCommandStillAnswers(t *testing.T) {
+	store := withStore(t)
+	p := owner(t, store)
+
+	ask := &askRecord{reply: "Open the envelope."}
+	require.Equal(t, "Open the envelope.",
+		coached(t, store, p, "!coach I can't face the tax thing", ask))
+	require.Equal(t, "I can't face the tax thing", ask.said)
 }

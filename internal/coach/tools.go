@@ -97,7 +97,7 @@ type Decision struct {
 // model from wasting a round trip on an answer that will be thrown away.
 // "Prefer the fixed time" is the product's own rule 1, stated so the model
 // agrees with the floor rather than fighting it.
-const decidePreamble = `You are Squirrel. You hand one person with ADHD exactly one thing to do
+const decidePreamble = `You are Buddy. You hand one person with ADHD exactly one thing to do
 now, and you say why in one clause.
 
 Look at what is open, what is coming, and how long things take. Then call

@@ -40,7 +40,7 @@ const stepLongest = 60
 // "The first one must be doable in two minutes" is the load-bearing line.
 // Every breakdown a model writes unprompted starts with something like
 // "gather the necessary documents", which is the original task wearing a hat.
-const smallerPreamble = `You are Squirrel. Someone with ADHD cannot start one thing, and you are
+const smallerPreamble = `You are Buddy. Someone with ADHD cannot start one thing, and you are
 breaking it into steps they will actually do.
 
 Two to five steps. Each one is a single physical action, in plain words,

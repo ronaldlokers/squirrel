@@ -9,7 +9,10 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The coach, on the screen.
+// Buddy, on the screen.
+//
+// The package and the types keep the word coach, which is what this is; Buddy
+// is what it is called.
 //
 // A widget on every screen rather than a fourth door. DESIGN.md's rule against
 // modals carries its own condition — "for anything that needs neither
@@ -18,7 +21,7 @@ import (
 // whole point of the surface. The chore picker was refused a modal because
 // choosing an interval needs neither. That reasoning is untouched.
 //
-// `/coach` is a real page. The sheet is pile.js upgrading a real route, the
+// `/buddy` is a real page. The sheet is pile.js upgrading a real route, the
 // same progressive enhancement the chore picker's <details> already uses: it
 // works with scripting off, it deep-links, and it survives a reload. And
 // because it is chrome rather than a destination, the home screen still has
@@ -66,7 +69,7 @@ type Proposal struct {
 
 // coachAvailable reports whether there is anything behind the acorn.
 //
-// When there is not, the acorn is still drawn and `/coach` still answers: the
+// When there is not, the acorn is still drawn and `/buddy` still answers: the
 // four chips are deterministic and the ladder behind them is what shipped
 // before any of this existed. The only difference a missing key makes is that
 // typing a sentence gets the four chips back instead of an answer.
@@ -104,7 +107,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/coach", http.StatusSeeOther)
+			http.Redirect(w, r, "/buddy", http.StatusSeeOther)
 			return
 		}
 
@@ -118,7 +121,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 
 		said := strings.TrimSpace(r.FormValue("said"))
 		if said == "" {
-			http.Redirect(w, r, "/coach", http.StatusSeeOther)
+			http.Redirect(w, r, "/buddy", http.StatusSeeOther)
 			return
 		}
 
@@ -157,7 +160,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 		// Redirect rather than render, so the answer survives a reload and
 		// pressing back does not offer to ask again. The conversation is in
 		// the window; this page is a view of it.
-		http.Redirect(w, r, "/coach", http.StatusSeeOther)
+		http.Redirect(w, r, "/buddy", http.StatusSeeOther)
 	}
 }
 
@@ -197,7 +200,7 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 	// control that comes with them is drawn from the same view the home screen
 	// draws. A reload re-reads rather than repeating the press.
 	remember(opts, personID, squirrel.BlockerWords[b], squirrel.UnstuckFor(b).Line)
-	http.Redirect(w, r, "/coach?stuck="+url.QueryEscape(string(b)), http.StatusSeeOther)
+	http.Redirect(w, r, "/buddy?stuck="+url.QueryEscape(string(b)), http.StatusSeeOther)
 }
 
 // coachCloseHandler is the way out, and closing means one thing: the
@@ -278,7 +281,9 @@ type coachView struct {
 // chips and the box.
 func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, cv coachView) {
 	v := view{
-		Here:      "coach",
+		// "buddy" is what the layout checks to leave the acorn off the page
+		// it would link to, so this and the route have to agree.
+		Here:      "buddy",
 		Scrolling: true,
 		Said:      cv.Said,
 		Coach: &coachPanel{
@@ -352,7 +357,7 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/coach", http.StatusSeeOther)
+			http.Redirect(w, r, "/buddy", http.StatusSeeOther)
 			return
 		}
 
@@ -371,7 +376,7 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/coach", http.StatusSeeOther)
+		http.Redirect(w, r, "/buddy", http.StatusSeeOther)
 	}
 }
 

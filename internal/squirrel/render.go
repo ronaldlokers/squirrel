@@ -76,8 +76,8 @@ var screenURL string
 // SetScreenURL is called once at boot.
 func SetScreenURL(u string) { screenURL = u }
 
-// coachHere is whether a model is reachable. Help does not list `!coach` when
-// it is not: a command that only ever answers "there is no coach" is worse
+// coachHere is whether a model is reachable. Help does not list `!buddy` when
+// it is not: a command that only ever answers "Buddy is not here" is worse
 // than one that was never advertised, and no key is an ordinary shipping
 // state rather than something broken.
 //
@@ -129,7 +129,7 @@ func HelpMessage() Message {
 		// way: the ladder when you can name what is in the way, this when you
 		// cannot.
 		lines = slices.Insert(lines, slices.Index(lines, stuckHelp)+1,
-			"!coach <words> — say what is going on, in your own words",
+			"!buddy <words> — say what is going on, in your own words",
 			"!next — the step after the one you just did")
 	}
 
@@ -457,8 +457,8 @@ var MoodEmoji = map[Mood]string{
 }
 
 // screenLine is the way in, when there is one to give.
-// OnTheScreen is what chat says when the coach has suggested something chat
-// cannot offer a press for.
+// OnTheScreen is what chat says when Buddy has suggested something chat cannot
+// offer a press for.
 //
 // A fixed point, a chore, a retirement and a drop all need confirming, and
 // confirming means a button. Chat's buttons resolve against recorded lines and

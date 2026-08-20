@@ -75,7 +75,7 @@ category sells the counter as the feature.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.
 - Keyboard-first: move between notes, one key per action.
-- **The coach**, behind the acorn on every screen: a conversation about what is
+- **Buddy**, behind the acorn on every screen: a conversation about what is
   on that screen. Chrome rather than a fourth door — home still has three. It
   is a real page (`/coach`), so it works with scripting off and survives a
   reload; the sheet is an upgrade over that, not a requirement. Opening it
@@ -298,14 +298,24 @@ which pull toward a precision tool — the design has to be both, not average th
 6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
    are fixed, readable and the same every time. An offer nobody can account for
    is a demand.
-7. **Squirrel does not speak first at a bad moment.** Nothing arrives unasked
+7. **Anything a model wrote is Buddy's; anything the rules produced is
+   Squirrel's.** Buddy is the name of the thing you talk to, and the line is
+   about authorship rather than about features. The picker's own clause, the
+   ladder's fixed sentences and a nudge that fires because a chore is due are
+   Squirrel. The clause a model chose, the steps it broke a thing into, the
+   wording it gave a nudge and every word in the sheet are Buddy. Nothing
+   renders that distinction — you are not shown a label saying which — but it
+   is what decides whose voice a sentence is written in, and it is why the
+   deterministic floor never sounds like a degraded Buddy. It is Squirrel,
+   speaking as it always did.
+8. **Squirrel does not speak first at a bad moment.** Nothing arrives unasked
    between 22:00 and 06:00, and nothing is raised on a low day. Both are floors
    under the one path that speaks without being spoken to; neither can be
    lifted, including by the coach, which is asked afterwards or not at all.
    The chore's own clock keeps running while it waits, so nothing is lost —
    only the asking stops. A message you *chose* the hour of, like the evening
    one, is not covered by this: it is not arriving unasked.
-8. **The deterministic answer is never deleted; it becomes the floor.** Every
+9. **The deterministic answer is never deleted; it becomes the floor.** Every
    place a model speaks has a fixed answer underneath it that shipped first and
    keeps working — the picker chooses, the ladder answers, the asking windows
    decide when to interrupt. No key, no network, or a month's budget spent must

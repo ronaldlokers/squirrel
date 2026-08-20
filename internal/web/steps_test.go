@@ -69,7 +69,7 @@ func TestTheStepIsStillThereOnTheSheet(t *testing.T) {
 	f := withOffer(nil)
 	f.steps = []squirrel.Step{{ID: 1, Label: "the tax thing", Body: "open the letter"}}
 
-	body := mounted(t, f).call(t, "GET", "/coach", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/buddy", nil).Body.String()
 	require.Contains(t, body, "open the letter")
 }
 
@@ -81,12 +81,12 @@ func TestFinishingAStepMovesToTheNext(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/steps", strings.NewReader("act=done&id=1&from=%2Fcoach"))
+	w := m.call(t, "POST", "/steps", strings.NewReader("act=done&id=1&from=%2Fbuddy"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/coach", w.Header().Get("Location"))
+	require.Equal(t, "/buddy", w.Header().Get("Location"))
 	require.Equal(t, []int64{1}, f.finished)
 
-	body := m.call(t, "GET", "/coach", nil).Body.String()
+	body := m.call(t, "GET", "/buddy", nil).Body.String()
 	require.Contains(t, body, "ring the number")
 	require.Contains(t, body, "that is the last one")
 }
@@ -98,10 +98,10 @@ func TestForgettingTheStepsCostsOnePress(t *testing.T) {
 	f.steps = []squirrel.Step{{ID: 1, Body: "open the letter"}}
 	m := mounted(t, f)
 
-	m.call(t, "POST", "/steps", strings.NewReader("act=clear&from=%2Fcoach"))
+	m.call(t, "POST", "/steps", strings.NewReader("act=clear&from=%2Fbuddy"))
 	require.Equal(t, 1, f.cleared)
 
-	body := m.call(t, "GET", "/coach", nil).Body.String()
+	body := m.call(t, "GET", "/buddy", nil).Body.String()
 	require.NotContains(t, body, "open the letter")
 }
 
@@ -121,7 +121,7 @@ func TestAStepOnTheScreenNeverSaysHowManyAreLeft(t *testing.T) {
 	f := withOffer(nil)
 	f.steps = []squirrel.Step{{ID: 1, Body: "open the letter"}}
 
-	body := mounted(t, f).call(t, "GET", "/coach", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/buddy", nil).Body.String()
 	for _, count := range []string{"of 3", "1/3", "step 1", "1 of"} {
 		require.NotContains(t, body, count)
 	}
@@ -135,7 +135,7 @@ func TestAnUnreadableSequenceIsNoStep(t *testing.T) {
 	f.err = errTest
 
 	require.NotPanics(t, func() {
-		_ = mounted(t, f).call(t, "GET", "/coach", nil)
+		_ = mounted(t, f).call(t, "GET", "/buddy", nil)
 	})
 }
 
@@ -146,7 +146,7 @@ func TestTheBreakdownIsAboutWhatIsOnScreen(t *testing.T) {
 	c := breaksInto(&fakeCoach{}, "open the letter", "ring the number")
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/coach/say", strings.NewReader("why=big"))
+	m.call(t, "POST", "/buddy/say", strings.NewReader("why=big"))
 
 	require.Equal(t, "the tax thing", c.brokeDown)
 	require.Equal(t, "too big", c.brokeBlocker)
