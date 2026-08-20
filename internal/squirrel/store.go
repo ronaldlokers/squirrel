@@ -61,6 +61,10 @@ type Item struct {
 	// and a capture that had to know about triage would be a capture that can
 	// fail for a triage reason.
 	State ItemState
+	// Kind is filled on the read path only, like State. A fresh row takes the
+	// column default, which is `note`: capture does not decide what a thought
+	// turns out to be.
+	Kind ItemKind
 }
 
 // InsertItem is idempotent for a real external id. Redelivery is harmless to
