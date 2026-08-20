@@ -9,7 +9,7 @@ import (
 )
 
 func TestSystemAsksForOneThingAndNoPlan(t *testing.T) {
-	s := coach.System(coach.Now{Capacity: "ok"})
+	s := coach.System(coach.Now{Capacity: "ok"}, "sheet")
 	require.Contains(t, s, "Never produce a plan")
 	require.Contains(t, s, "Two sentences at most")
 	// The line that matters most: a model allowed to decline produces silence,
@@ -47,4 +47,24 @@ func TestContextCarriesNoMoodWord(t *testing.T) {
 	require.Contains(t, line, "capacity is low")
 	require.NotContains(t, line, "wiped")
 	require.NotContains(t, line, "frazzled")
+}
+
+// The overwhelm turn's addition, and the line in it that does the work: every
+// instinct a chat model has says to acknowledge what it was told, and
+// acknowledging a list is reading the list out.
+func TestSystemAddsTheOrderingRuleForAnOverwhelmTurn(t *testing.T) {
+	s := coach.System(coach.Now{Capacity: "ok"}, coach.KindOverwhelm)
+	require.Contains(t, s, "do not reflect it back")
+	require.Contains(t, s, "Choose ONE")
+	require.Contains(t, s, "Do not list the rest")
+
+	require.NotContains(t, coach.System(coach.Now{Capacity: "ok"}, "sheet"), "Choose ONE")
+}
+
+// They compose, and the turn where both matter most is the one where both
+// apply: several things at once, on a bad day.
+func TestSystemComposesOverwhelmAndTheLowVoice(t *testing.T) {
+	s := coach.System(coach.Now{Capacity: "low"}, coach.KindOverwhelm)
+	require.Contains(t, s, "Choose ONE")
+	require.Contains(t, s, "drop warmth and character")
 }

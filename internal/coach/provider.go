@@ -144,7 +144,7 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 // part worth caching, and the clock changes every minute.
 func (p *Provider) messages(t Turn) []chatMessage {
 	msgs := make([]chatMessage, 0, 2*len(t.Recent)+3)
-	msgs = append(msgs, chatMessage{Role: "system", Content: System(t.Now)})
+	msgs = append(msgs, chatMessage{Role: "system", Content: System(t.Now, t.Kind)})
 
 	for _, e := range t.Recent {
 		msgs = append(msgs, chatMessage{Role: "user", Content: e.Said})

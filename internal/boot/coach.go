@@ -100,9 +100,19 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) Aske
 	return func(ctx context.Context, personID int64, kind, said, subject string) (string, error) {
 		now := time.Now()
 
+		// The one place overwhelm is recognised, so the sheet and the chat
+		// cannot disagree about what it is. The caller says which surface
+		// asked; whether this particular turn is a pile rather than a question
+		// is a property of the words, not of the surface.
+		deep := coach.Overwhelmed(said)
+		if deep {
+			kind = coach.KindOverwhelm
+		}
+
 		reply, err := c.Answer(ctx, coach.Turn{
 			PersonID: personID,
 			Kind:     kind,
+			Deep:     deep,
 			Now:      nowFor(ctx, store, personID, now),
 			Said:     said,
 			Subject:  subject,

@@ -597,6 +597,14 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 
 	text, err := a.asker(ctx, personID, "chat", said, subject)
 	if err != nil {
+		// The floor, and it is the picker rather than an apology. Someone who
+		// has just typed out five things wants one of them chosen, and the
+		// product can choose one without a model — that is what PickNow is.
+		// Pointing at !stuck instead would be answering a pile with a
+		// question about a thing nobody has named yet.
+		if subject != "" {
+			return Message{Text: "Nothing useful to say to that. Start with " + subject + "."}, nil
+		}
 		return Message{Text: "Nothing useful to say to that. Try !stuck."}, nil
 	}
 	return Message{Text: text}, nil

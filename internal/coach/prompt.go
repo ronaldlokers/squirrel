@@ -39,10 +39,17 @@ const lowVoice = `
 When capacity is "low", drop warmth and character. Shorter sentences,
 plainer words, no turns of phrase. Say the thing and stop.`
 
-// System is the preamble plus the part that varies with the turn.
-func System(n Now) string {
+// System is the preamble plus the parts that vary with the turn.
+//
+// Both additions are appended rather than substituted, and they compose: an
+// overwhelm turn on a low day gets the ordering rule and the plainer voice,
+// which is exactly the turn where both matter most.
+func System(n Now, kind string) string {
 	var b strings.Builder
 	b.WriteString(preamble)
+	if kind == KindOverwhelm {
+		b.WriteString(overwhelmVoice)
+	}
 	if n.Capacity == "low" {
 		b.WriteString(lowVoice)
 	}

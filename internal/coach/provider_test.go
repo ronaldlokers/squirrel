@@ -123,6 +123,35 @@ func TestProviderRecordsARejectedReplyAndStillRefusesIt(t *testing.T) {
 	require.Equal(t, int64(640), log.recorded[0].CostMicros)
 }
 
+// The brief's worked example, end to end through the real wire format: five
+// things and a low day, answered with one bodily thing and the rest kept.
+func TestTheOverwhelmTurnGetsTheOrderingRuleAndTheDeepModel(t *testing.T) {
+	api := newFakeAPI(t, "Get in the shower. I have the other four written down.")
+	log := &fakeLog{}
+	p := providerFor(api, log)
+
+	reply, err := p.Answer(context.Background(), coach.Turn{
+		PersonID: 1,
+		Kind:     coach.KindOverwhelm,
+		Deep:     true,
+		Now:      coach.Now{Clock: "16:20", PartOfDay: "afternoon", Capacity: "low"},
+		Said:     "the tax thing, the vet, the bins, mum's birthday and a shower",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Get in the shower. I have the other four written down.", reply.Text)
+
+	system, ok := api.messages(t, 0)[0]["content"].(string)
+	require.True(t, ok)
+	require.Contains(t, system, "do not reflect it back")
+	require.Contains(t, system, "something bodily")
+	// A low day and an overwhelm turn compose. This is the turn where both
+	// matter most.
+	require.Contains(t, system, "drop warmth and character")
+
+	require.Equal(t, "gpt-5.6-terra", reply.Model)
+	require.Equal(t, coach.KindOverwhelm, log.recorded[0].Kind)
+}
+
 func TestProviderRoutesToTheDeepModelWhenAsked(t *testing.T) {
 	api := newFakeAPI(t, "Get in the shower. The other four are written down.")
 	log := &fakeLog{}
