@@ -28,7 +28,56 @@ const (
 	ItemDone    ItemState = "done"
 	ItemDropped ItemState = "dropped"
 	ItemKept    ItemState = "kept"
+
+	// The three for a thing you cannot act on. See migration 0023 for why they
+	// are three rather than one — they end differently, and that is the whole
+	// of it.
+	ItemWaiting ItemState = "waiting"
+	ItemBlocked ItemState = "blocked"
+	ItemSomeday ItemState = "someday"
 )
+
+// Held is the three, in the order every surface offers them: the two that
+// something outside you will end, then the one only you can.
+var Held = []ItemState{ItemWaiting, ItemBlocked, ItemSomeday}
+
+// HeldWords is what each is called. The words are what you would say — "waiting
+// on the vet", not "status: blocked" — because these are answers to "why is
+// this not moving" rather than labels for a category.
+var HeldWords = map[ItemState]string{
+	ItemWaiting: "waiting on",
+	ItemBlocked: "blocked on",
+	ItemSomeday: "someday",
+}
+
+// ParseHeld reads one of the three, generously, the same way ParseBlocker does
+// and for the same reason: this arrives from someone who has just found out
+// they cannot do the thing, and being strict about a wording the product chose
+// itself is a tax at the wrong moment.
+func ParseHeld(s string) (ItemState, bool) {
+	t := strings.ToLower(strings.TrimSpace(s))
+	switch {
+	case t == "":
+		return "", false
+	case strings.HasPrefix(t, "wait"):
+		return ItemWaiting, true
+	case strings.HasPrefix(t, "block"), strings.HasPrefix(t, "stuck on"):
+		return ItemBlocked, true
+	case strings.HasPrefix(t, "someday"), strings.HasPrefix(t, "some day"),
+		strings.HasPrefix(t, "maybe"), strings.HasPrefix(t, "one day"):
+		return ItemSomeday, true
+	}
+	return "", false
+}
+
+// IsHeld reports whether a state is one of the three. A map rather than a
+// switch so an unknown state is a lookup miss rather than a default branch
+// somebody later fills in.
+func IsHeld(state ItemState) bool { return heldStates[state] }
+
+var heldStates = map[ItemState]bool{
+	ItemWaiting: true, ItemBlocked: true, ItemSomeday: true,
+}
 
 // ItemKind is what a row is, beside what state it is in.
 //

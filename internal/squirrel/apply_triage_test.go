@@ -27,7 +27,10 @@ func pileOf(t *testing.T, store *squirrel.Store, personID int64, notes ...string
 	for _, n := range notes {
 		insertItem(t, store, personID, n)
 	}
-	chat, _ := chatRecorder("m-list")
+	// Its own message id per call, for the reason triage's own comment gives:
+	// a fixed one means two pilings in a single test store the same
+	// external_message_id, and the unique index correctly refuses the second.
+	chat, _ := chatRecorder(strconv.FormatInt(replyIDs.Add(1), 10))
 	require.NoError(t, squirrel.NewApplier(store, nil, chat, nil).
 		Apply(ctx, itemOf("!notes"), &personID))
 }

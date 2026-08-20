@@ -441,6 +441,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "next":
 		return a.next(ctx, personID)
 
+	case "waiting", "blocked", "someday":
+		return a.hold(ctx, in.Command, in.Arg, personID, conversationID)
+
 	case "buddy", "coach":
 		// `!coach` still answers. It is what this was called for the release
 		// it shipped in, and a command that used to work and now says "what?"
@@ -675,6 +678,68 @@ func (a *Applier) next(ctx context.Context, personID int64) (Message, error) {
 		return StepsFinishedMessage(st.Label), nil
 	}
 	return StepMessage(after), nil
+}
+
+// hold sets something aside: `!waiting 3 on the vet`, `!blocked 2`,
+// `!someday 5`. With no number it lists what is already set aside.
+//
+// The number is a line on the last numbered surface, the same way `done 3` and
+// `!task 3` resolve — so this is the same gesture as every other thing you do
+// to a listed note, and it needs no new vocabulary to point at one.
+//
+// Everything after the number is what you are waiting on, with a leading "on"
+// dropped because that is how the sentence reads: `!waiting 3 on the vet`
+// stores "the vet".
+func (a *Applier) hold(ctx context.Context, command, arg string, personID int64, conversationID string) (Message, error) {
+	state, ok := ParseHeld(command)
+	if !ok {
+		return Message{}, nil
+	}
+
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		// Nothing to point at is a request to see the list. Setting things
+		// aside is only safe if they are easy to find again.
+		return a.heldList(ctx, personID)
+	}
+
+	position, rest, _ := strings.Cut(arg, " ")
+	n, err := strconv.Atoi(strings.TrimSpace(position))
+	if err != nil {
+		return Message{Text: "Which one? Try !" + command + " 2."}, nil
+	}
+
+	line, found, err := a.store.LineAtPosition(ctx, personID, n)
+	if err != nil {
+		return Message{}, err
+	}
+	if !found || line.Item == nil {
+		return Message{Text: "No line " + position + " to set aside."}, nil
+	}
+
+	because := strings.TrimSpace(rest)
+	because = strings.TrimPrefix(because, "on ")
+	because = strings.TrimSpace(because)
+
+	moved, err := a.store.HoldItem(ctx, personID, line.Item.ID, state, because, time.Now())
+	if err != nil {
+		return Message{}, err
+	}
+	if !moved {
+		return Message{Text: "That one is not in the pile any more."}, nil
+	}
+	return HeldMessage(HeldItem{
+		Text: line.Item.RawText, State: state, Because: because,
+	}), nil
+}
+
+// heldList is everything set aside, in one message.
+func (a *Applier) heldList(ctx context.Context, personID int64) (Message, error) {
+	held, more, err := a.store.HeldItems(ctx, personID, listCap)
+	if err != nil {
+		return Message{}, err
+	}
+	return HeldListMessage(held, more), nil
 }
 
 // coach is the ladder's other half: `!buddy I can't face the tax thing`.

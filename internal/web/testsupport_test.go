@@ -47,6 +47,10 @@ type fakeStore struct {
 	// Fixed points created by a proposal that was pressed.
 	moments []squirrel.Moment
 
+	// What was set aside, and what was picked back up.
+	aside  []squirrel.HeldItem
+	unheld []int64
+
 	// The sequence in progress, newest first, and what was done to it.
 	steps    []squirrel.Step
 	stepItem *int64
@@ -482,6 +486,50 @@ func task(id int64, text string, state squirrel.ItemState) squirrel.Item {
 	it := note(id, text, state)
 	it.Kind = squirrel.ItemTask
 	return it
+}
+
+// Things you cannot act on, faked. The transitions themselves are proved
+// against a real database in internal/squirrel; what the screen has to be
+// tested for is what it draws and what it refuses to draw.
+func (f *fakeStore) HoldItem(_ context.Context, _, itemID int64, state squirrel.ItemState, because string, _ time.Time) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	for i := range f.items {
+		if f.items[i].ID == itemID && f.items[i].State == squirrel.ItemOpen {
+			f.items[i].State = state
+			f.aside = append(f.aside, squirrel.HeldItem{
+				ID: itemID, Text: f.items[i].RawText, State: state,
+				Because: because, Kind: f.items[i].Kind,
+			})
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (f *fakeStore) HeldItems(_ context.Context, _ int64, limit int) ([]squirrel.HeldItem, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	if len(f.aside) > limit {
+		return f.aside[:limit], true, nil
+	}
+	return f.aside, false, nil
+}
+
+func (f *fakeStore) Unhold(_ context.Context, _, itemID int64, _ time.Time) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	for i, h := range f.aside {
+		if h.ID == itemID {
+			f.aside = append(f.aside[:i], f.aside[i+1:]...)
+			f.unheld = append(f.unheld, itemID)
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // A fixed point the coach proposed and you kept. The screen's own `!at`

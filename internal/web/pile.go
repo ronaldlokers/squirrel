@@ -81,6 +81,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	// A step finished, or a sequence thrown away. One route because they are
 	// the only two things you can do to a breakdown.
 	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))
+	// What you cannot act on. Its own page rather than a fourth door: see
+	// held.go for why home does not carry it.
+	m.Get("/held", guard(opts, heldHandler(s, opts)))
+	m.Post("/held/act", guard(opts, sameOrigin(heldActHandler(s, opts))))
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	m.Get("/tasks", guard(opts, tasksHandler(s, opts)))
@@ -146,6 +150,7 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 		n := toView(items[0])
 		v.Note = &n
 		v.Splittable = splittable(opts, n.Text)
+		v.HeldChips = heldChips()
 		renderWith(w, r, s, opts, "pile", v)
 	}
 }
@@ -177,7 +182,7 @@ func pileInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, per
 	n := toView(items[0])
 	renderWith(w, r, s, opts, "pile", view{
 		Here: "pile", More: more, Note: &n, Split: sp,
-		Splittable: splittable(opts, n.Text),
+		Splittable: splittable(opts, n.Text), HeldChips: heldChips(),
 	})
 }
 
