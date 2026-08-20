@@ -47,6 +47,7 @@ var pages = map[string]*template.Template{
 	"bottom":  page("templates/layout.html", "templates/bottom.html"),
 	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
 	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
+	"held":    page("templates/layout.html", "templates/held.html"),
 	"empty":   page("templates/layout.html", "templates/empty.html"),
 	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
 }
@@ -112,6 +113,14 @@ type view struct {
 	// for the render that answers the press — nothing stores it, which is what
 	// makes it impossible for one to be applied without a second press.
 	Split *splitView
+	// SetAside is what you cannot act on, grouped, and only the held page
+	// fills it. Not `Held`: that is already the worker having taken your words
+	// offline, and one word meaning two things in one struct is how a template
+	// ends up rendering the wrong one.
+	SetAside []heldGroup
+	// HeldChips is the three ways to set the card's note aside, offered on the
+	// pile. Filled by the pile handler alone.
+	HeldChips []chipView
 	// Splittable says the note on the card looks like several things, so the
 	// card can offer to ask. A free check, and it is what keeps the model off
 	// every note in the pile.
@@ -173,7 +182,7 @@ func elsewhere(here string) []linkView {
 	}
 	mine := map[string]string{
 		"pile": "/pile", "kept": "/pile",
-		"tasks": "/tasks", "archive": "/tasks",
+		"tasks": "/tasks", "archive": "/tasks", "held": "/tasks",
 		"chores": "/chores",
 	}[here]
 

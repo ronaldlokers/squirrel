@@ -56,6 +56,25 @@
            is something to ask. A press that is always there would be a press
            that is usually wrong. */}}
     </form>
+    {{/* Not a fifth and sixth and seventh button in the row above: the row is
+         four answers and a disclosure already, and DESIGN.md's step-down rule
+         exists because it was getting crowded. A disclosure, in the same
+         grammar the interval question and the reword box use — quiet, and it
+         changes nothing by being opened. */}}
+    {{if .HeldChips}}
+    <details class="cantact">
+      <summary role="button"><span class="ifshut">i can't act on this</span><span class="ifopen">never mind</span></summary>
+      <form class="whys" method="post" action="/held/act">
+        <input type="hidden" name="id" value="{{.Note.ID}}">
+        <input type="hidden" name="from" value="/pile">
+        <p class="lead">WHY NOT</p>
+        {{range .HeldChips}}
+        <button class="why" name="aside" value="{{.Why}}">{{.Word}}</button>
+        {{end}}
+      </form>
+    </details>
+    {{end}}
+
     {{if and .Splittable (not .Split)}}
     <form class="row" method="post" action="/pile/split">
       <input type="hidden" name="id" value="{{.Note.ID}}">

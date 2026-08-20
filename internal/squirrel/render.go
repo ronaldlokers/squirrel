@@ -110,6 +110,8 @@ func HelpMessage() Message {
 		"!task <words> — decide something outright",
 		"!tasks — what you decided, newest first",
 		"!untask <n> — back in the pile, undecided",
+		"!waiting <n> on <who> · !blocked <n> on <what> · !someday <n>",
+		"!waiting — everything you set aside, and what would move it",
 		"every other tuesday: bins out — a rhythm, and when to raise it",
 		"!did <chore> — a chore is done, by name",
 		"!retire <chore> — stop a chore coming back",
@@ -376,6 +378,59 @@ func StepsFinishedMessage(label string) Message {
 		return Message{Text: "That is all of them."}
 	}
 	return Message{Text: "That is all of them for " + label + "."}
+}
+
+// HeldMessage says what was set aside and what would bring it back.
+//
+// One line, and no encouragement. Setting something aside is an ordinary thing
+// to do with a thing you cannot do — not a failure to be softened, and not a
+// decision to be congratulated.
+func HeldMessage(h HeldItem) Message {
+	return Message{Text: h.Text + " — " + h.Words() + "."}
+}
+
+// HeldListMessage is everything you set aside.
+//
+// Grouped by which of the three, because they are different questions: the
+// waiting ones have somebody to chase, the blocked ones have something to
+// arrive, and the somedays have neither and want leaving alone.
+//
+// No count anywhere, in either direction. `more` says that the list was capped
+// and never by how much, exactly like the pile — and there is deliberately no
+// line saying how many you have set aside, because a number beside stalled
+// work is a reproach and the point of setting it aside was to stop being asked.
+func HeldListMessage(held []HeldItem, more bool) Message {
+	if len(held) == 0 {
+		return Message{Text: "Nothing set aside."}
+	}
+
+	lines := make([]string, 0, len(held)+len(Held))
+	for _, state := range Held {
+		var group []string
+		for _, h := range held {
+			if h.State != state {
+				continue
+			}
+			line := h.Text
+			if h.Because != "" {
+				line += " — " + h.Because
+			}
+			group = append(group, line)
+		}
+		if len(group) == 0 {
+			continue
+		}
+		if len(lines) > 0 {
+			lines = append(lines, "")
+		}
+		lines = append(lines, strings.ToUpper(HeldWords[state]))
+		lines = append(lines, group...)
+	}
+
+	if more {
+		lines = append(lines, "", "There is more.")
+	}
+	return Message{Text: strings.Join(lines, "\n")}
 }
 
 // StuckMessage is the answer, and it never grows into a plan.

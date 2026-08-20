@@ -31,6 +31,8 @@ down here because no test covers it.
 | `/buddy/do` | applies a proposal, and only one that was pressed — four kinds, in a switch | LAN or tailnet, then Authentik |
 | `/steps` | a step finished, or a breakdown thrown away | LAN or tailnet, then Authentik |
 | `/pile/split` | asks for a note's separate things, and keeps them when pressed | LAN or tailnet, then Authentik |
+| `/held` | what you cannot act on: waiting, blocked, someday — grouped, never counted | LAN or tailnet, then Authentik |
+| `/held/act` | setting one aside, and picking it back up | LAN or tailnet, then Authentik |
 | `/chores` | what comes back | LAN or tailnet, then Authentik |
 | `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
 | `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |

@@ -121,6 +121,19 @@ category sells the counter as the feature.
 rejected: "inbox", which imports inbox-zero and its counter. The owner chose
 "the pile" over the objection that it may read as self-deprecating.
 
+**Three ways to say you cannot act on it:** *waiting on someone*, *blocked on a
+thing*, *someday*. Three rather than one because they end differently — a
+waiting-on ends when somebody replies, a blocked-on when something arrives, and
+a someday only when you say so. One "parked" state would make *chase the vet*
+and *learn to solder* the same kind of thing, which is how a someday list
+becomes a guilt list.
+
+Each carries what would move it, in your words. Nothing counts them and nothing
+ever will: a number beside stalled work is a reproach, and the point of setting
+something aside is to stop being asked about it. They are read on their own
+page, reached from the bottom of the tasks — never a fourth door on home, which
+would put them back in front of you.
+
 **Two kinds:** a **note** is a thought you had; a **task** is a thing you
 decided to do, once. The same row at different moments — promoting a note takes
 it out of the pile, because the pile holds what you have not decided about and

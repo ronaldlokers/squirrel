@@ -118,6 +118,13 @@ type Store interface {
 	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
 
+	// Things you cannot act on. Note what is absent and stays absent: nothing
+	// here counts them, so this screen could not render "4 waiting" even if a
+	// later author wanted it to.
+	HoldItem(ctx context.Context, personID, itemID int64, state squirrel.ItemState, because string, at time.Time) (bool, error)
+	HeldItems(ctx context.Context, personID int64, limit int) ([]squirrel.HeldItem, bool, error)
+	Unhold(ctx context.Context, personID, itemID int64, at time.Time) (bool, error)
+
 	// The one thing. PickNow chooses it, and the other three are the only
 	// answers it takes. There is deliberately no function here that returns
 	// more than one offer, for the same reason there is none that returns more
