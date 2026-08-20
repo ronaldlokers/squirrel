@@ -605,11 +605,17 @@ one the never-a-count rule actually cares about. What remains is a single green
 tick on the calendar — a completion depicted, in the `done` colour, as ornament
 — and a black key, which is the only grey left in the system.
 
-One thing to keep an eye on rather than fix: **a calendar is the picture of a
-deadline**, and a task deliberately has none — no date, no overdue, nothing to
-be late for. Illustration is not interface and nothing on the screen contradicts
-it, but if the tasks screen is ever accused of implying due dates, this drawing
-is where the idea came from.
+**The four objects are four errands, not four affordances**, and the difference
+is the whole reading of this drawing. The calendar is *an appointment to make* —
+the task — rather than a date the task is due on. So are the others: someone to
+ring, something to post, somewhere to drive. That is precisely what a door's art
+is for, which is naming the kind of thing behind it, and it is why the drawing
+does not imply the due dates a task deliberately does not have.
+
+Worth writing down because the first reading of it here was the wrong one: a
+calendar was taken for a deadline, which would have put a picture of lateness on
+the one screen built to have none. It depicts a thing you decided to do. Read
+door art as a subject, not as a control.
 
 The line that used to sit here, *"if a third door is ever added, this is not the
 precedent to follow"*, turned out to be wrong, so it is replaced by what is
