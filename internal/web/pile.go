@@ -57,17 +57,27 @@ func Mount(m Mux, s Store, opts Options) error {
 	// asking, and keeping what was asked for — because they are the only two
 	// things you can do to a proposal.
 	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
-	// The coach. A real route rather than a JavaScript-only construct, so it
-	// works with scripting off, deep-links, and survives a reload — and so
-	// pile.js has something real to upgrade into a sheet.
-	m.Get("/coach", guard(opts, coachHandler(s, opts)))
-	m.Post("/coach/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
+	// Buddy. A real route rather than a JavaScript-only construct, so it works
+	// with scripting off, deep-links, and survives a reload — and so pile.js
+	// has something real to upgrade into a sheet.
+	m.Get("/buddy", guard(opts, coachHandler(s, opts)))
+	m.Post("/buddy/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
 	// Closing is a write because it forgets the conversation, and a write here
 	// carries the origin check like every other one.
-	m.Post("/coach/close", guard(opts, sameOrigin(coachCloseHandler(opts))))
+	m.Post("/buddy/close", guard(opts, sameOrigin(coachCloseHandler(opts))))
 	// A proposal, applied because it was pressed. Four things and no more —
 	// see coachDoHandler for why it is a switch rather than a dispatcher.
-	m.Post("/coach/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
+	m.Post("/buddy/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
+	// It was /coach for the release it shipped in. A bookmark that dies
+	// quietly is worse than a redirect nobody notices — the same reasoning
+	// /pile/chores already gets, and the same status.
+	m.Get("/coach", guard(opts, func(w http.ResponseWriter, r *http.Request) {
+		to := "/buddy"
+		if q := r.URL.RawQuery; q != "" {
+			to += "?" + q
+		}
+		http.Redirect(w, r, to, http.StatusMovedPermanently)
+	}))
 	// A step finished, or a sequence thrown away. One route because they are
 	// the only two things you can do to a breakdown.
 	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))

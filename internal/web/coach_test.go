@@ -31,7 +31,7 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 		// html/template rather than about the link.
 		u, err := url.Parse(found[1])
 		require.NoError(t, err)
-		require.Equal(t, "/coach", u.Path)
+		require.Equal(t, "/buddy", u.Path)
 		require.Equal(t, path, u.Query().Get("from"),
 			"the acorn on %s does not know where to come back to", path)
 	}
@@ -39,7 +39,7 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 
 // Not on the coach page itself. A link to the page you are on is furniture.
 func TestTheAcornIsNotOnTheCoachPage(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/coach", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/buddy", nil).Body.String()
 	require.NotContains(t, body, `class="askacorn"`)
 }
 
@@ -67,7 +67,7 @@ func TestOpeningTheCoachCallsNoModel(t *testing.T) {
 	}}
 	c := &fakeCoach{reply: "should not be called"}
 
-	body := mountedWith(t, f, c).call(t, "GET", "/coach", nil).Body.String()
+	body := mountedWith(t, f, c).call(t, "GET", "/buddy", nil).Body.String()
 
 	require.Contains(t, body, "ring the vet")
 	require.Contains(t, body, "you decided this one")
@@ -88,7 +88,7 @@ func TestOpeningTheCoachNeverPaysForADecision(t *testing.T) {
 		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
 	}}
 
-	body := mountedWith(t, f, c).call(t, "GET", "/coach", nil).Body.String()
+	body := mountedWith(t, f, c).call(t, "GET", "/buddy", nil).Body.String()
 
 	require.Equal(t, 1, c.peeked, "the sheet did not go through the cache")
 	require.Contains(t, body, "ring the vet", "the sheet did not fall back to the picker")
@@ -119,7 +119,7 @@ func TestTheCoachPaintsOnALowDay(t *testing.T) {
 		offer: &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet"},
 		gated: true,
 	}
-	body := mounted(t, f).call(t, "GET", "/coach", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/buddy", nil).Body.String()
 	require.Contains(t, body, "ring the vet")
 }
 
@@ -127,7 +127,7 @@ func TestTheCoachPaintsOnALowDay(t *testing.T) {
 // as a reassuring sentence, which would be the product deciding you ought to
 // be busy.
 func TestTheCoachWithNothingToHandSaysNothingAboutIt(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/coach", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/buddy", nil).Body.String()
 	require.NotContains(t, body, "ON SCREEN")
 	// The way in is still there. Having nothing offered is not a reason to
 	// have nothing to say.
@@ -137,7 +137,7 @@ func TestTheCoachWithNothingToHandSaysNothingAboutIt(t *testing.T) {
 // Typing is never required. Four chips, one press, and the words the ladder
 // already uses.
 func TestTheCoachOffersTheFourWithoutTyping(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/coach", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/buddy", nil).Body.String()
 	for _, b := range squirrel.Blockers {
 		require.Contains(t, body, `value="`+string(b)+`"`, "no chip for %q", b)
 		// The words, escaped the way the template escapes them — "don't know
@@ -153,19 +153,19 @@ func TestSayingSomethingAsksTheCoachAboutWhatIsOnScreen(t *testing.T) {
 	c := &fakeCoach{reply: "Ring them. It is two minutes."}
 	m := mountedWith(t, f, c)
 
-	w := m.call(t, "POST", "/coach/say", strings.NewReader("said=I+can%27t+face+it"))
+	w := m.call(t, "POST", "/buddy/say", strings.NewReader("said=I+can%27t+face+it"))
 
 	// A redirect, so the answer survives a reload and back does not offer to
 	// ask again. The conversation is in the window; the page is a view of it.
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/coach", w.Header().Get("Location"))
+	require.Equal(t, "/buddy", w.Header().Get("Location"))
 
 	require.Len(t, c.asked, 1)
 	require.Equal(t, "sheet", c.asked[0].kind)
 	require.Equal(t, "I can't face it", c.asked[0].said)
 	require.Equal(t, "ring the vet", c.asked[0].subject)
 
-	require.Contains(t, m.call(t, "GET", "/coach", nil).Body.String(),
+	require.Contains(t, m.call(t, "GET", "/buddy", nil).Body.String(),
 		"Ring them. It is two minutes.")
 }
 
@@ -175,7 +175,7 @@ func TestTheCoachShowsWhatWasSaidAndAnswered(t *testing.T) {
 		{Said: "what now", Replied: "The envelope."},
 		{Said: "no, something else", Replied: "The bins, then."},
 	}}
-	body := mountedWith(t, &fakeStore{}, c).call(t, "GET", "/coach", nil).Body.String()
+	body := mountedWith(t, &fakeStore{}, c).call(t, "GET", "/buddy", nil).Body.String()
 
 	require.Contains(t, body, "what now")
 	require.Contains(t, body, "The envelope.")
@@ -188,7 +188,7 @@ func TestTheCoachShowsWhatWasSaidAndAnswered(t *testing.T) {
 func TestACoachThatCannotAnswerKeepsTheWords(t *testing.T) {
 	c := &fakeCoach{err: errors.New("no coach available")}
 	body := mountedWith(t, &fakeStore{}, c).
-		call(t, "POST", "/coach/say", strings.NewReader("said=everything+at+once")).Body.String()
+		call(t, "POST", "/buddy/say", strings.NewReader("said=everything+at+once")).Body.String()
 
 	require.Contains(t, body, "everything at once", "the words were eaten")
 	require.Contains(t, body, "WHICH OF THESE IS IT", "nothing was offered instead")
@@ -199,7 +199,7 @@ func TestACoachThatCannotAnswerKeepsTheWords(t *testing.T) {
 // asked which of four things is in the way.
 func TestTheSheetWorksWithNoCoachAtAll(t *testing.T) {
 	body := mounted(t, &fakeStore{}).
-		call(t, "POST", "/coach/say", strings.NewReader("said=everything+at+once")).Body.String()
+		call(t, "POST", "/buddy/say", strings.NewReader("said=everything+at+once")).Body.String()
 
 	require.Contains(t, body, "everything at once")
 	require.Contains(t, body, "WHICH OF THESE IS IT")
@@ -215,12 +215,12 @@ func TestAChipIsAnsweredByTheLadderAndNotByAModel(t *testing.T) {
 	c := &fakeCoach{reply: "should not be called"}
 	m := mountedWith(t, f, c)
 
-	w := m.call(t, "POST", "/coach/say", strings.NewReader("why=big"))
+	w := m.call(t, "POST", "/buddy/say", strings.NewReader("why=big"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/coach?stuck=big", w.Header().Get("Location"))
+	require.Equal(t, "/buddy?stuck=big", w.Header().Get("Location"))
 	require.Empty(t, c.asked, "a chip called a model")
 
-	body := m.call(t, "GET", "/coach?stuck=big", nil).Body.String()
+	body := m.call(t, "GET", "/buddy?stuck=big", nil).Body.String()
 	require.Contains(t, body, squirrel.UnstuckFor(squirrel.BlockerBig).Line)
 	// One line and at most one control. There is nowhere here for a second
 	// step, which is the whole point.
@@ -236,7 +236,7 @@ func TestNotTodayTurnsTheThingDownAndEndsTheConversation(t *testing.T) {
 	c := &fakeCoach{}
 	m := mountedWith(t, f, c)
 
-	w := m.call(t, "POST", "/coach/say", strings.NewReader("why=not+today"))
+	w := m.call(t, "POST", "/buddy/say", strings.NewReader("why=not+today"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
 	require.Equal(t, "/", w.Header().Get("Location"))
@@ -249,7 +249,7 @@ func TestClosingForgetsTheConversationAndGoesBack(t *testing.T) {
 	c := &fakeCoach{talk: []Exchange{{Said: "what now", Replied: "The envelope."}}}
 	m := mountedWith(t, &fakeStore{}, c)
 
-	w := m.call(t, "POST", "/coach/close", strings.NewReader("from=%2Ftasks"))
+	w := m.call(t, "POST", "/buddy/close", strings.NewReader("from=%2Ftasks"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
 	require.Equal(t, "/tasks", w.Header().Get("Location"))
@@ -262,7 +262,7 @@ func TestClosingWillNotBeSentSomewhereElse(t *testing.T) {
 	for _, from := range []string{
 		"https://example.com/", "//example.com/", "javascript:alert(1)", "",
 	} {
-		w := mounted(t, &fakeStore{}).call(t, "POST", "/coach/close",
+		w := mounted(t, &fakeStore{}).call(t, "POST", "/buddy/close",
 			strings.NewReader("from="+from))
 		require.Equal(t, "/", w.Header().Get("Location"), "sent away by %q", from)
 	}
@@ -272,7 +272,7 @@ func TestClosingWillNotBeSentSomewhereElse(t *testing.T) {
 func TestSayingNothingAsksNothing(t *testing.T) {
 	c := &fakeCoach{reply: "should not be called"}
 	w := mountedWith(t, &fakeStore{}, c).
-		call(t, "POST", "/coach/say", strings.NewReader("said=+++"))
+		call(t, "POST", "/buddy/say", strings.NewReader("said=+++"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
 	require.Empty(t, c.asked)
@@ -295,7 +295,7 @@ func TestTheCoachNeverEmitsACount(t *testing.T) {
 	c := &fakeCoach{talk: []Exchange{
 		{Said: "one", Replied: "a"}, {Said: "two", Replied: "b"}, {Said: "three", Replied: "c"},
 	}}
-	body := mountedWith(t, &fakeStore{}, c).call(t, "GET", "/coach", nil).Body.String()
+	body := mountedWith(t, &fakeStore{}, c).call(t, "GET", "/buddy", nil).Body.String()
 
 	for _, n := range []string{">3<", "3 ", "three messages", "3 of"} {
 		require.NotContains(t, body, n)
@@ -305,7 +305,7 @@ func TestTheCoachNeverEmitsACount(t *testing.T) {
 // What the coach has cost, in the sheet's own lid and nowhere else.
 func TestTheSheetSaysWhatItHasCost(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
-	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/coach", nil).Body.String()
+	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/buddy", nil).Body.String()
 
 	require.Contains(t, body, "€2.61")
 	require.Contains(t, body, "€10.00")
@@ -326,20 +326,20 @@ func TestNoOtherScreenSaysWhatItHasCost(t *testing.T) {
 // A figure that cannot be trusted is a figure not drawn.
 func TestASpendThatCannotBeReadIsNotShown(t *testing.T) {
 	body := mountedWith(t, withOffer(nil), &fakeCoach{}).
-		call(t, "GET", "/coach", nil).Body.String()
+		call(t, "GET", "/buddy", nil).Body.String()
 	require.NotContains(t, body, "€")
 }
 
 // With no coach there is nothing to report on, so nothing reports.
 func TestWithNoCoachThereIsNoSpendLine(t *testing.T) {
-	require.NotContains(t, mounted(t, withOffer(nil)).call(t, "GET", "/coach", nil).Body.String(), "€")
+	require.NotContains(t, mounted(t, withOffer(nil)).call(t, "GET", "/buddy", nil).Body.String(), "€")
 }
 
 // No ceiling is a supported choice, and "of €0.00" would read as one that had
 // been reached.
 func TestWithNoCeilingOnlyTheSpendIsShown(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61"}
-	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/coach", nil).Body.String()
+	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/buddy", nil).Body.String()
 
 	require.Contains(t, body, "€2.61")
 	require.NotContains(t, body, " of ")

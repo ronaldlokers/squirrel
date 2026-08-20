@@ -441,7 +441,10 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "next":
 		return a.next(ctx, personID)
 
-	case "coach":
+	case "buddy", "coach":
+		// `!coach` still answers. It is what this was called for the release
+		// it shipped in, and a command that used to work and now says "what?"
+		// is a worse welcome than a second word in a switch.
 		return a.coach(ctx, in.Arg, personID)
 
 	case "at":
@@ -674,7 +677,7 @@ func (a *Applier) next(ctx context.Context, personID int64) (Message, error) {
 	return StepMessage(after), nil
 }
 
-// coach is the ladder's other half: `!coach I can't face the tax thing`.
+// coach is the ladder's other half: `!buddy I can't face the tax thing`.
 //
 // `!stuck` wants you to name what is in the way, and its four answers are
 // good precisely because they are fixed. This is for the times you cannot
@@ -690,10 +693,10 @@ func (a *Applier) next(ctx context.Context, personID int64) (Message, error) {
 func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Message, error) {
 	said := strings.TrimSpace(arg)
 	if said == "" {
-		return Message{Text: "Say what is going on. Try !coach I can't face the tax thing."}, nil
+		return Message{Text: "Say what is going on. Try !buddy I can't face the tax thing."}, nil
 	}
 	if a.asker == nil {
-		return Message{Text: "No coach here. Try !stuck."}, nil
+		return Message{Text: "Buddy is not here. Try !stuck."}, nil
 	}
 
 	// A failure to pick is not a failure to answer. The subject is context,

@@ -28,10 +28,11 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /pile/chore",
 		"POST /pile/fix",
 		"POST /pile/split",
+		"GET /buddy",
+		"POST /buddy/say",
+		"POST /buddy/close",
+		"POST /buddy/do",
 		"GET /coach",
-		"POST /coach/say",
-		"POST /coach/close",
-		"POST /coach/do",
 		"POST /steps",
 		"GET /chores",
 		"GET /kept",
@@ -48,7 +49,21 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 28, "a route was added without being pinned here")
+	require.Len(t, m.routes, 29, "a route was added without being pinned here")
+}
+
+// Buddy was /coach for the release it shipped in, and the same rule applies:
+// a bookmark that dies quietly is worse than a redirect nobody notices.
+func TestTheOldCoachURLRedirects(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+
+	w := m.call(t, "GET", "/coach", nil)
+	require.Equal(t, http.StatusMovedPermanently, w.Code)
+	require.Equal(t, "/buddy", w.Header().Get("Location"))
+
+	// Carrying whatever it was asked with, so the acorn's own link survives.
+	w = m.call(t, "GET", "/coach?from=%2Fpile", nil)
+	require.Equal(t, "/buddy?from=%2Fpile", w.Header().Get("Location"))
 }
 
 // The chores screen lived at /pile/chores for its whole life, and a bookmark

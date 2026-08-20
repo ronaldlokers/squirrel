@@ -466,16 +466,16 @@
   }
 
   // ---------------------------------------------------------------- //
-  // The coach.
+  // Buddy.
   //
-  // /coach is a real page and the acorn is a real link to it; everything here
+  // /buddy is a real page and the acorn is a real link to it; everything here
   // upgrades that into a sheet over whatever you were already looking at,
   // because the conversation is about the screen behind it and navigating away
   // from that screen is the one thing this must not do.
   //
   // A native <dialog>, so Escape closes it and focus stays inside it without
   // either being implemented here. Nothing below is load-bearing: with this
-  // file absent the acorn is a link, /coach is a page, and every form on it
+  // file absent the acorn is a link, /buddy is a page, and every form on it
   // posts and redirects.
   // ---------------------------------------------------------------- //
   (() => {
@@ -502,11 +502,11 @@
       if (t && !t.value && draft) t.value = draft;
     }
 
-    // Pulls /coach and lifts its sheet out. The response is a whole page
+    // Pulls /buddy and lifts its sheet out. The response is a whole page
     // because it has to be one for the scriptless path; taking one element out
     // of it is the cheapest possible upgrade.
     async function fetchSheet() {
-      const res = await fetch("/coach?from=" + encodeURIComponent(location.pathname),
+      const res = await fetch("/buddy?from=" + encodeURIComponent(location.pathname),
         { headers: { "X-Requested-With": "fetch" } });
       if (!res.ok) return null;
       const doc = new DOMParser().parseFromString(await res.text(), "text/html");
@@ -536,10 +536,10 @@
         // The capture slot and the timer are the rest of the product reached
         // from in here. Let them navigate: starting a timer is leaving the
         // conversation to go and do the thing, which is the point of it.
-        if (action !== "/coach/say" && action !== "/coach/close") return;
+        if (action !== "/buddy/say" && action !== "/buddy/close") return;
         e.preventDefault();
 
-        if (action === "/coach/close") {
+        if (action === "/buddy/close") {
           // Not posted here: the dialog's own close event does it, so every
           // route out — Escape, the backdrop, this button — forgets the
           // conversation exactly once and in one place.
@@ -554,7 +554,7 @@
         // is re-read rather than patched. One source for what the conversation
         // is, and no chance of the two disagreeing.
         const fresh = await fetchSheet();
-        if (!fresh) { location.href = "/coach"; return; }
+        if (!fresh) { location.href = "/buddy"; return; }
         // The box empties when something was actually said, and keeps its
         // words when the server sent them back.
         draft = "";
@@ -625,7 +625,7 @@
         // same close, and it forgets the conversation on the server exactly
         // once.
         dialog.addEventListener("close", () => {
-          post("/coach/close", new FormData());
+          post("/buddy/close", new FormData());
         });
         dialog.addEventListener("click", e => {
           if (e.target === dialog) close();

@@ -595,5 +595,5 @@ func TestBrowserTheSheetPostsTheWayAFormPosts(t *testing.T) {
 		`document.querySelector("dialog.coachsheet")?.textContent.includes("Start with the envelope.")`)
 
 	require.Contains(t, c.eval(t, `return JSON.stringify(window.__sent)`),
-		"/coach/say application/x-www-form-urlencoded")
+		"/buddy/say application/x-www-form-urlencoded")
 }

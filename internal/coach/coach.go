@@ -1,5 +1,16 @@
 // Package coach is the one place a model is allowed to speak.
 //
+// On screen it is called **Buddy**, and the line is worth stating because it
+// is a line about authorship rather than about features: **anything a model
+// wrote is Buddy's, and anything the rules produced is Squirrel's.** The
+// picker's own clause, the ladder's fixed sentences, the nudge that fires
+// because a chore is due — those are Squirrel. The clause a model chose, the
+// steps it broke a thing into, the wording it gave a nudge, and every word in
+// the sheet are Buddy.
+//
+// The package keeps its name. `internal/coach` is what this *is* — the seam a
+// model reaches the product through — and Buddy is what it is *called*.
+//
 // It is deliberately small and deliberately optional. Everything it does has a
 // deterministic answer underneath it — the picker chooses, the ladder answers
 // "I can't start", the asking windows decide when to interrupt — and those
