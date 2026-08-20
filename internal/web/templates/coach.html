@@ -37,6 +37,27 @@
     <p class="his">{{.Replied}}</p>
     {{end}}
 
+    {{/* A thing the coach wants permission for. It is not stored anywhere:
+         everything it needs travels in this form, so it cannot be applied by
+         anything except the press below, and a reload asks again rather than
+         doing it. */}}
+    {{with .Propose}}
+    <div class="asking" role="status">
+      <p class="said">{{.Said}}</p>
+      <form method="post" action="/coach/do">
+        <input type="hidden" name="do" value="{{.Do}}">
+        <input type="hidden" name="text" value="{{.Text}}">
+        <input type="hidden" name="at" value="{{.At}}">
+        <input type="hidden" name="every" value="{{.Every}}">
+        <input type="hidden" name="id" value="{{.RefID}}">
+        <button class="obtn did" type="submit">KEEP IT</button>
+      </form>
+      {{/* Never mind is a link: nothing was written, so there is nothing to
+           undo and nothing to post. */}}
+      <a class="later" href="/coach">never mind</a>
+    </div>
+    {{end}}
+
     {{/* Where you are in a breakdown, whether or not a chip was just
          pressed. */}}
     {{if .Step}}{{template "step" (dict "Step" .Step "From" "/coach")}}{{end}}

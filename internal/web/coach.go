@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -32,6 +33,35 @@ import (
 type Exchange struct {
 	Said    string
 	Replied string
+}
+
+// Answer is one turn's result: what the coach said, what actually changed, and
+// what it wants permission for.
+//
+// Did is written by the application after a write succeeded, not by the model
+// — a model saying "done" is not evidence anything happened. Propose is a
+// thing it may not do on its own, rendered as one press.
+type Answer struct {
+	Text    string
+	Did     []string
+	Propose *Proposal
+}
+
+// Proposal is the four things the coach must ask about: a fixed point, because
+// it will interrupt you later; a chore, because it comes back forever; a
+// retirement, because it stops something recurring; and a drop, because it is
+// disposal. None is undone by one press on a control already on screen, which
+// is the whole of the test.
+//
+// Stored nowhere. It travels in the form that renders it, exactly as a split
+// does, so an unanswered proposal lasts as long as the page it is on.
+type Proposal struct {
+	Do    string
+	Said  string
+	Text  string
+	At    string
+	Every string
+	RefID int64
 }
 
 // coachAvailable reports whether there is anything behind the acorn.
@@ -100,7 +130,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		reply, err := opts.Ask(r.Context(), personID, "sheet", said, subjectFor(s, opts, r))
+		answer, err := opts.Ask(r.Context(), personID, "sheet", said, subjectFor(s, opts, r))
 		if err != nil {
 			// The floor. What was typed stays in the box — a box that clears
 			// on failure is a box that eats thoughts, which is the slot's rule
@@ -109,7 +139,21 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		remember(opts, personID, said, reply)
+		// What actually changed goes into the conversation alongside what was
+		// said, because it is part of the same turn and because the next turn
+		// should know it happened. The words are the application's — a model
+		// saying "done" is not evidence anything did.
+		remember(opts, personID, said, withDid(answer))
+
+		if answer.Propose != nil {
+			// A proposal cannot survive a redirect: it is stored nowhere and
+			// travels in the form that renders it. So this render is the page
+			// it lives on, and reloading asks again rather than applying
+			// anything — which is the safe direction for a press that has not
+			// happened yet.
+			renderCoach(w, r, s, opts, personID, coachView{Propose: answer.Propose})
+			return
+		}
 		// Redirect rather than render, so the answer survives a reload and
 		// pressing back does not offer to ask again. The conversation is in
 		// the window; this page is a view of it.
@@ -226,6 +270,8 @@ type coachView struct {
 	// AskWhich means the four chips are the answer this time — no coach, or a
 	// coach that could not say anything usable.
 	AskWhich bool
+	// Propose is a thing the coach wants permission for, on this render only.
+	Propose *Proposal
 }
 
 // renderCoach draws the page: the offer first, then the conversation, then the
@@ -247,6 +293,7 @@ func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, 
 			// Read out of the address bar and read the way a stranger's typing
 			// is read: anything that is not one of the four is no answer.
 			Unstuck: unstuckFrom(r.URL.Query()),
+			Propose: cv.Propose,
 			// Shown whether or not a chip was just pressed. Coming back an
 			// hour later and finding the step you were on is the whole reason
 			// the sequence is stored rather than held in a reply.
@@ -267,4 +314,117 @@ func blockerChips() []chipView {
 		out = append(out, chipView{Why: string(b), Word: squirrel.BlockerWords[b]})
 	}
 	return out
+}
+
+// withDid is the reply plus what actually changed, as one thing said.
+func withDid(a Answer) string {
+	if len(a.Did) == 0 {
+		return a.Text
+	}
+	return a.Text + " (" + strings.Join(a.Did, "; ") + ")"
+}
+
+// coachDoHandler applies a proposal, and only ever one that was pressed.
+//
+// Everything arrives back through the form, so everything is read the way a
+// stranger's typing is read: the kind is checked against the four, the time and
+// the rhythm go through the core's own parsers rather than being trusted, and
+// anything that does not parse does nothing at all.
+//
+// Deliberately not a general "do what the model said" route. There are four
+// things it can apply and they are named here, in a switch, so adding a fifth
+// is a code change someone reviews.
+func coachDoHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/coach", http.StatusSeeOther)
+			return
+		}
+
+		var err error
+		switch r.FormValue("do") {
+		case "moment":
+			err = keepMoment(r, s, personID)
+		case "chore":
+			err = keepChore(r, s, personID)
+		case "retire":
+			err = retireProposed(r, s, personID)
+		case "drop":
+			err = dropProposed(r, s, personID)
+		}
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/coach", http.StatusSeeOther)
+	}
+}
+
+// keepMoment creates a fixed point, and the time is parsed by the core rather
+// than trusted from the form. A guessed time is a missed appointment.
+func keepMoment(r *http.Request, s Store, personID int64) error {
+	said := strings.TrimSpace(r.FormValue("at") + " " + r.FormValue("text"))
+	m, ok := squirrel.ParseMoment("at "+said, now())
+	if !ok {
+		// It did not parse, so nothing is created. The bar exists so a note is
+		// never silently turned into something that interrupts you, and it is
+		// not lowered because a model was the one asking.
+		return nil
+	}
+	_, err := s.CreateMoment(r.Context(), personID, m)
+	return err
+}
+
+// keepChore creates a recurring thing, with its rhythm parsed by the core.
+func keepChore(r *http.Request, s Store, personID int64) error {
+	name := strings.TrimSpace(r.FormValue("text"))
+	every := strings.TrimSpace(r.FormValue("every"))
+	if name == "" {
+		return nil
+	}
+	if len(name) > choreNameLimit {
+		name = name[:choreNameLimit]
+	}
+	_, interval, ok := squirrel.ParseEvery(every + ": " + name)
+	if !ok {
+		return nil
+	}
+	_, err := s.UpsertChore(r.Context(), personID, name, interval, interval/10)
+	return err
+}
+
+// retireProposed stops a chore coming back, and only one that is yours.
+func retireProposed(r *http.Request, s Store, personID int64) error {
+	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+	if err != nil {
+		return nil
+	}
+	chores, err := s.ActiveChores(r.Context(), personID)
+	if err != nil {
+		return err
+	}
+	for _, c := range chores {
+		if c.ID == id {
+			return s.DeactivateChore(r.Context(), id)
+		}
+	}
+	return nil
+}
+
+// dropProposed throws a note away, and only one that is yours. It reverses the
+// way every other transition does.
+func dropProposed(r *http.Request, s Store, personID int64) error {
+	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+	if err != nil {
+		return nil
+	}
+	if _, found, err := s.ItemByID(r.Context(), personID, id); err != nil || !found {
+		return err
+	}
+	return s.SetItemState(r.Context(), id, squirrel.ItemDropped, now())
 }

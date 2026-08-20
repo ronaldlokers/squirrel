@@ -65,6 +65,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Closing is a write because it forgets the conversation, and a write here
 	// carries the origin check like every other one.
 	m.Post("/coach/close", guard(opts, sameOrigin(coachCloseHandler(opts))))
+	// A proposal, applied because it was pressed. Four things and no more —
+	// see coachDoHandler for why it is a switch rather than a dispatcher.
+	m.Post("/coach/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
 	// A step finished, or a sequence thrown away. One route because they are
 	// the only two things you can do to a breakdown.
 	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))

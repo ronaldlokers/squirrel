@@ -457,6 +457,24 @@ var MoodEmoji = map[Mood]string{
 }
 
 // screenLine is the way in, when there is one to give.
+// OnTheScreen is what chat says when the coach has suggested something chat
+// cannot offer a press for.
+//
+// A fixed point, a chore, a retirement and a drop all need confirming, and
+// confirming means a button. Chat's buttons resolve against recorded lines and
+// cannot carry a proposal's four fields, so the honest answer is to name the
+// place that can — and naming it is better than pretending nothing was
+// suggested.
+//
+// Empty when there is no screen configured, which makes the whole sentence
+// disappear rather than pointing nowhere.
+func OnTheScreen() string {
+	if screenURL == "" {
+		return ""
+	}
+	return " There is something to say yes to on the screen: " + screenURL
+}
+
 func screenLine() string {
 	if screenURL == "" {
 		return ""

@@ -50,7 +50,7 @@ type Options struct {
 	// Ask is nil when there is no coach, and the nil carries meaning: the
 	// acorn is still drawn and the four chips still answer, but typing a
 	// sentence gets the chips back rather than a reply.
-	Ask func(ctx context.Context, personID int64, kind, said, subject string) (string, error)
+	Ask func(ctx context.Context, personID int64, kind, said, subject string) (Answer, error)
 	// Recent is the conversation so far, oldest first, or nil.
 	Recent func(personID int64) []Exchange
 	// Remember adds one round to it. The screen calls this for the ladder's
@@ -148,6 +148,10 @@ type Store interface {
 	// is no function here that returns the sequence, so this screen could not
 	// render one if a later author wanted it to — the same device that keeps
 	// it from rendering a count of the pile.
+	// A fixed point the coach proposed and you kept. The same function `!at`
+	// and the screen already call.
+	CreateMoment(ctx context.Context, personID int64, m squirrel.Moment) (squirrel.Moment, error)
+
 	SaveSteps(ctx context.Context, personID int64, itemID *int64, label string, steps []string) error
 	NextStep(ctx context.Context, personID int64) (squirrel.Step, bool, error)
 	StepDone(ctx context.Context, personID, stepID int64, at time.Time) error

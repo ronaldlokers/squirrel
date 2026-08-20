@@ -44,6 +44,9 @@ type fakeStore struct {
 	inserted []string
 	states   map[int64]squirrel.ItemState
 
+	// Fixed points created by a proposal that was pressed.
+	moments []squirrel.Moment
+
 	// The sequence in progress, newest first, and what was done to it.
 	steps    []squirrel.Step
 	stepItem *int64
@@ -481,6 +484,16 @@ func task(id int64, text string, state squirrel.ItemState) squirrel.Item {
 	return it
 }
 
+// A fixed point the coach proposed and you kept. The screen's own `!at`
+// equivalent, faked; the moment parsing itself is proved in internal/squirrel.
+func (f *fakeStore) CreateMoment(_ context.Context, _ int64, m squirrel.Moment) (squirrel.Moment, error) {
+	if f.err != nil {
+		return squirrel.Moment{}, f.err
+	}
+	f.moments = append(f.moments, m)
+	return m, nil
+}
+
 // The step half of the fake store. One sequence, replaced wholesale, the same
 // way the real one behaves — and, like the real one, with no way to ask it for
 // the list.
@@ -568,6 +581,11 @@ type fakeCoach struct {
 	// is the free rule that decides whether the press is drawn at all.
 	pieces     []string
 	splittable bool
+
+	// did is what a turn actually changed, and propose is what it wants
+	// permission for. Both empty on an ordinary turn, which is most of them.
+	did     []string
+	propose *Proposal
 }
 
 type fakeDecision struct {
@@ -577,12 +595,12 @@ type fakeDecision struct {
 	because string
 }
 
-func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) (string, error) {
+func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) (Answer, error) {
 	c.asked = append(c.asked, struct{ kind, said, subject string }{kind, said, subject})
 	if c.err != nil {
-		return "", c.err
+		return Answer{}, c.err
 	}
-	return c.reply, nil
+	return Answer{Text: c.reply, Did: c.did, Propose: c.propose}, nil
 }
 
 // decided is what the model chooses instead, when a test says it chooses

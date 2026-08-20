@@ -94,7 +94,7 @@ product whose value is that it works.
 | **D** | Read tools (five of six), model-decides among what the picker found, offer cache, picker fallback. | shipped |
 | **E** | `breakDownTask()`; "too big" routed through the coach, one step at a time. | shipped |
 | **F** | Splitting a brain dump, proposed and confirmed. On the screen; chat is unchanged. | shipped |
-| **G** | Write tools and the confirmation policy. | |
+| **G** | Write tools and the confirmation policy. Six run, four ask, three are refused. | shipped |
 | **H** | `shouldInterrupt()` on rule-produced candidates. *Last on purpose — the only one that speaks without being spoken to.* | |
 
 **Ready:** the API key is stored (SOPS + vault, project-scoped, spend limit set),

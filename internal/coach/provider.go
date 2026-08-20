@@ -35,6 +35,10 @@ type Provider struct {
 	// available and the picker chooses, which is what shipped before any of
 	// this existed.
 	Facts Facts
+	// Hands is what the write tools do, or nil. Nil means a conversational
+	// turn can only talk, which is every turn this product had until the
+	// phase that added this.
+	Hands Hands
 	// Clock is time.Now unless a test says otherwise. The budget's month
 	// boundary is the only thing that reads it.
 	Clock func() time.Time
@@ -83,6 +87,13 @@ func (p *Provider) modelFor(t Turn) string {
 
 // Answer is a conversational turn.
 func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
+	// With hands and facts, the turn can act. Without either, it can only
+	// talk — which is what every turn did before the phase that changed it,
+	// and what it goes back to whenever the wiring is absent.
+	if p.Hands != nil && p.Facts != nil {
+		return p.answerActing(ctx, t)
+	}
+
 	now := p.now()
 
 	if ok, spent := p.Budget.Allows(ctx, t.PersonID, now); !ok {

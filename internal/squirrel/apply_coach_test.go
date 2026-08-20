@@ -23,7 +23,10 @@ type askRecord struct {
 	personID            int64
 	kind, said, subject string
 	reply               string
-	err                 error
+	// did is what the turn actually changed, in the application's words. A
+	// model claiming it acted is not evidence it did.
+	did []string
+	err error
 }
 
 // coached runs one message through an Applier with a stand-in coach. The seam
@@ -33,9 +36,9 @@ func coached(t *testing.T, store *squirrel.Store, personID int64, text string, a
 	chat, got := chatRecorder(strconv.FormatInt(replyIDs.Add(1), 10))
 	a := squirrel.NewApplier(store, nil, chat, nil)
 	if ask != nil {
-		a.SetCoach(func(_ context.Context, p int64, kind, said, subject string) (string, error) {
+		a.SetCoach(func(_ context.Context, p int64, kind, said, subject string) (string, []string, error) {
 			ask.personID, ask.kind, ask.said, ask.subject = p, kind, said, subject
-			return ask.reply, ask.err
+			return ask.reply, ask.did, ask.err
 		})
 	}
 	require.NoError(t, a.Apply(context.Background(), itemOf(text), &personID))
@@ -142,4 +145,20 @@ func TestHelpMentionsTheCoachOnlyWhenThereIsOne(t *testing.T) {
 	help := squirrel.HelpMessage().Text
 	require.Contains(t, help, "!coach <words>")
 	require.Contains(t, help, "!stuck", "the ladder is still the first thing offered")
+}
+
+// What actually changed goes underneath what was said, in the application's
+// words. A model claiming it did something is not evidence it did.
+func TestCoachSaysWhatActuallyChanged(t *testing.T) {
+	store := withStore(t)
+	p := owner(t, store)
+
+	ask := &askRecord{
+		reply: "Done. The bins are out of the way.",
+		did:   []string{"put the bins out is done"},
+	}
+	reply := coached(t, store, p, "!coach I did the bins", ask)
+
+	require.Contains(t, reply, "Done. The bins are out of the way.")
+	require.Contains(t, reply, "put the bins out is done")
 }
