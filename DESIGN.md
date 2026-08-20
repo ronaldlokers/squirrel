@@ -597,14 +597,24 @@ drawing that reads instantly as chores did not need a checklist to do it, and
 the version that avoided one is also the version that stopped colliding with
 the tasks door.
 
-**The tasks door still carries one.** Its clipboard shows two ticked rows, one
-unticked, and a grey clip — the same two faults, chosen the same way. The line
-that used to sit here, *"if a third door is ever added, this is not the
+**The tasks door carries what is left of one.** It was a clipboard with two
+ticked rows and one empty — a progress reading drawn as a picture. The owner
+replaced it the same day with errands: a calendar, a phone, an envelope, a set
+of keys. **The count is gone**, which was the larger of the two faults and the
+one the never-a-count rule actually cares about. What remains is a single green
+tick on the calendar — a completion depicted, in the `done` colour, as ornament
+— and a black key, which is the only grey left in the system.
+
+One thing to keep an eye on rather than fix: **a calendar is the picture of a
+deadline**, and a task deliberately has none — no date, no overdue, nothing to
+be late for. Illustration is not interface and nothing on the screen contradicts
+it, but if the tasks screen is ever accused of implying due dates, this drawing
+is where the idea came from.
+
+The line that used to sit here, *"if a third door is ever added, this is not the
 precedent to follow"*, turned out to be wrong, so it is replaced by what is
 actually true: **door art is the owner's, and the guard rails govern anything
-drawn by anyone else.** What it costs is one surface where grey appears and one
-where a completion is depicted. Neither reports state, and nothing on any
-screen counts.
+drawn by anyone else.**
 
 ### The Peek — removed, and why it stays removed
 
