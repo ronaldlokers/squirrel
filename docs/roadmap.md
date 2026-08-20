@@ -151,7 +151,7 @@ Chosen on 20 August once Buddy shipped, and argued in
 | ~~**Three new states**~~ | **Shipped 20 August.** *waiting on someone* · *blocked on a thing* · *someday*, named separately rather than one "parked" state. |
 | ~~**Mood series**~~ | **Shipped 20 August.** One page and one command, both asked for by name. Nothing else reads them. |
 | ~~**Resurfacing**~~ | **Shipped 20 August.** One kept note, roughly one evening in three, riding along with the evening message. |
-| ~~**Attachments**~~ | **Shipped 20 August.** Camera-first from the PWA, one per note, on a volume beside the pod. |
+| ~~**Attachments**~~ | **Shipped 20 August.** From the PWA — camera or gallery — one per note, on a volume beside the pod. Shown back before it is kept, and held on the device from the moment it is picked. |
 | **Devices** | Phone primary and better; desktop first-class. |
 
 ### Structural

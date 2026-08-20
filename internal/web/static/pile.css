@@ -1656,9 +1656,31 @@
     border-right: 0;
     box-shadow: -16px 0 30px -20px rgba(0, 0, 0, .8);
     overflow-y: auto;
+    /* No top padding of its own: the lid below is sticky, and a sticky child
+       cannot rise above its parent's content box — so any padding here is a
+       strip the conversation scrolls through, above the thing meant to be
+       covering it. The lid carries that padding instead. */
+    padding-top: 0;
     padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
   dialog.coachsheet .talk { flex: 1; }
+
+  /* The way out does not scroll away.
+   *
+   * The sheet is what scrolls — a panel on a desktop, a bottom sheet on a
+   * phone — and the lid is its first child, so reading an answer of any length
+   * carried the close button off the top of it. What was left was Escape,
+   * which wants a keyboard, and the strip of backdrop above an 88vh sheet.
+   * That is what "I still can't close Buddy" was, and it only happens once
+   * there is a conversation to scroll — which is why every test of it passed.
+   *
+   * Its own background, because the conversation now travels underneath it. */
+  dialog.coachsheet .sheetlid {
+    position: sticky; top: 0; z-index: 2;
+    margin: 0 -18px 0; padding: 14px 18px 10px;
+    background: var(--card);
+    border-radius: var(--r) 0 0 0;
+  }
 
   @media (max-width: 620px) {
     /* A bottom sheet on a phone, because that is where the thumb is. */
@@ -1673,6 +1695,8 @@
       border-bottom: 0;
       box-shadow: 0 -16px 30px -20px rgba(0, 0, 0, .8);
     }
+    /* Both top corners here, because the bottom sheet is rounded on both. */
+    dialog.coachsheet .sheetlid { border-radius: var(--r) var(--r) 0 0; }
     .askacorn { width: 56px; height: 56px; }
     .askacorn img { width: 42px; height: 32px; }
   }
@@ -1840,6 +1864,37 @@
   .camera:focus-within { outline: 3px solid var(--orange-lit); outline-offset: 1px; }
   /* The input cannot be styled, so it is the label that is the control. */
   .camera input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  /* What you are about to keep. Drawn by pile.js and by nothing else — with
+     the script absent there is no preview and the form still posts, which is
+     the floor this was built on.
+
+     On its own line under the box rather than in the row beside it: a
+     photograph squeezed into a 44px gap is a photograph you cannot check, and
+     checking it is the entire reason it is here. */
+  .slot { flex-wrap: wrap; }
+  .gotphoto {
+    flex-basis: 100%;
+    display: flex; align-items: flex-end; gap: 10px;
+    margin-top: 4px;
+  }
+  .gotphoto img {
+    display: block; width: 84px; height: 84px; object-fit: cover;
+    border: var(--line) solid var(--outline); border-radius: 10px;
+    background: var(--card-deep);
+  }
+  /* Reversal, in the one place where nothing has been written down yet: this
+     takes the photograph off before it is kept, so there is nothing to undo
+     afterwards. */
+  .unphoto {
+    min-height: 44px; padding: 8px 10px;
+    background: none; border: 0; cursor: pointer;
+    color: var(--brown);
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .unphoto:hover { color: var(--outline); }
 
   /* The photograph on a note. Above the words, because when there is one it is
      the note and the words are the caption. Bounded so a portrait photo cannot
