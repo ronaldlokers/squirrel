@@ -88,6 +88,22 @@
 {{end}}
 {{template "content" .}}
 </main>
+{{/* The acorn. DESIGN.md already establishes it as the product's second mark,
+     available as a badge anywhere the full mascot is too much — so the
+     live-chat convention is rendered in the product's own materials rather
+     than in generic SaaS chrome.
+
+     Not in the lid: the lid already carries mark, wordmark, timer strip, two
+     cross-links and search, and the Lid Step-Down Rule exists because it was
+     taking a fifth of a phone screen. A seventh element is not available.
+
+     A link to a real page, so it works with this script absent. pile.js
+     upgrades it into a sheet. */}}
+{{if ne .Here "coach"}}
+<a class="acorn" href="/coach?from={{.Path}}" aria-label="Ask Squirrel">
+  <img alt="" src="/static/logo.png?v={{.V}}" width="46" height="35">
+</a>
+{{end}}
 <script src="/static/pile.js?v={{.V}}" defer></script>
 </body>
 </html>{{end}}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/coach"
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
+	"github.com/ronaldlokers/squirrel/internal/web"
 )
 
 // Where the coach is joined to the store.
@@ -145,4 +146,29 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 	}
 
 	return n
+}
+
+// coachWeb is the screen's half of the same seam.
+//
+// The screen declares its own Exchange for the same reason it declares its own
+// Store: it must not have to know internal/coach exists. So the conversion
+// lives here, next to the budget's, and boot stays the one place that knows
+// both shapes.
+func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
+	Asker, func(int64) []web.Exchange, func(int64, string, string), func(int64)) {
+
+	recent := func(personID int64) []web.Exchange {
+		fresh := talk.Recent(personID, time.Now())
+		out := make([]web.Exchange, 0, len(fresh))
+		for _, e := range fresh {
+			out = append(out, web.Exchange{Said: e.Said, Replied: e.Replied})
+		}
+		return out
+	}
+	remember := func(personID int64, said, replied string) {
+		talk.Add(personID, said, replied, time.Now())
+	}
+	forget := func(personID int64) { talk.Forget(personID) }
+
+	return asker(c, store, talk), recent, remember, forget
 }

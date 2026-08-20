@@ -75,6 +75,14 @@ category sells the counter as the feature.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.
 - Keyboard-first: move between notes, one key per action.
+- **The coach**, behind the acorn on every screen: a conversation about what is
+  on that screen. Chrome rather than a fourth door — home still has three. It
+  is a real page (`/coach`), so it works with scripting off and survives a
+  reload; the sheet is an upgrade over that, not a requirement. Opening it
+  costs nothing and calls no model. Four one-press chips mean typing is never
+  required, which is what makes it usable at the moment of least capacity —
+  the moment it exists for. Closing it means the conversation is over and
+  means nothing else: nothing is counted and the acorn never dims.
 
 **Constraints that are not negotiable:**
 
@@ -268,11 +276,24 @@ which pull toward a precision tool — the design has to be both, not average th
 4. **Two views, one pile.** Chat and screen must agree about what a note is and
    what state it is in; a disagreement is a bug in the product, not a difference
    in surface.
-5. **Say nothing about the person.** Report what was said and what happened.
-   Never grade, rank, compare, or imply a norm.
+5. ~~**Say nothing about the person.**~~ **Opened by the owner on 20 August
+   2026.** The coach may evaluate, compare, and mention counts and streaks in
+   what it says. What the rule protected against is still real — the accruing
+   number on a surface — and rule 2 is what protects against it; this one was
+   about *speech*, and it was making the coach useless at the only thing a
+   coach is for. What it costs, and it is not nothing: the coach is now allowed
+   to say something that lands badly on a bad day. `coach_answers` keeps every
+   exchange for exactly that reason — so "it was tactless" can be told apart
+   from "I remember it as tactless".
 6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
    are fixed, readable and the same every time. An offer nobody can account for
    is a demand.
+7. **The deterministic answer is never deleted; it becomes the floor.** Every
+   place a model speaks has a fixed answer underneath it that shipped first and
+   keeps working — the picker chooses, the ladder answers, the asking windows
+   decide when to interrupt. No key, no network, or a month's budget spent must
+   leave a product that works exactly as it did before the model existed. This
+   is what makes the coach safe to add and safe to switch off.
 
 ## Accessibility & Inclusion
 

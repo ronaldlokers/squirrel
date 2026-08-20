@@ -445,4 +445,128 @@
       });
     }
   }
+
+  // ---------------------------------------------------------------- //
+  // The coach.
+  //
+  // /coach is a real page and the acorn is a real link to it; everything here
+  // upgrades that into a sheet over whatever you were already looking at,
+  // because the conversation is about the screen behind it and navigating away
+  // from that screen is the one thing this must not do.
+  //
+  // A native <dialog>, so Escape closes it and focus stays inside it without
+  // either being implemented here. Nothing below is load-bearing: with this
+  // file absent the acorn is a link, /coach is a page, and every form on it
+  // posts and redirects.
+  // ---------------------------------------------------------------- //
+  (() => {
+    const acorn = document.querySelector(".acorn");
+    if (!acorn || typeof HTMLDialogElement === "undefined") return;
+
+    let sheet = null;
+    // What was typed, kept across a close. A box that clears when you close it
+    // is a box that eats thoughts — the slot's rule, and it holds here for the
+    // same reason. In memory only: it is a half-written sentence, not a note.
+    let draft = "";
+
+    function box() { return sheet?.querySelector('textarea[name="said"]'); }
+
+    function keepDraft() {
+      const t = box();
+      if (t) draft = t.value;
+    }
+
+    function restoreDraft() {
+      const t = box();
+      // Only when the server sent nothing back itself. A failed ask returns
+      // the words it could not answer, and those are the newer ones.
+      if (t && !t.value && draft) t.value = draft;
+    }
+
+    // Pulls /coach and lifts its sheet out. The response is a whole page
+    // because it has to be one for the scriptless path; taking one element out
+    // of it is the cheapest possible upgrade.
+    async function fetchSheet() {
+      const res = await fetch("/coach?from=" + encodeURIComponent(location.pathname),
+        { headers: { "X-Requested-With": "fetch" } });
+      if (!res.ok) return null;
+      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      return doc.querySelector(".sheet");
+    }
+
+    function wireSheet() {
+      restoreDraft();
+
+      sheet.addEventListener("submit", async e => {
+        const form = e.target;
+        const action = form.getAttribute("action");
+        // The capture slot and the timer are the rest of the product reached
+        // from in here. Let them navigate: starting a timer is leaving the
+        // conversation to go and do the thing, which is the point of it.
+        if (action !== "/coach/say" && action !== "/coach/close") return;
+        e.preventDefault();
+
+        if (action === "/coach/close") {
+          // Not posted here: the dialog's own close event does it, so every
+          // route out — Escape, the backdrop, this button — forgets the
+          // conversation exactly once and in one place.
+          close();
+          return;
+        }
+
+        const data = new FormData(form, e.submitter);
+        keepDraft();
+        await fetch(action, { method: "POST", body: data });
+        // Whatever was said is now in the window on the server, so the sheet
+        // is re-read rather than patched. One source for what the conversation
+        // is, and no chance of the two disagreeing.
+        const fresh = await fetchSheet();
+        if (!fresh) { location.href = "/coach"; return; }
+        // The box empties when something was actually said, and keeps its
+        // words when the server sent them back.
+        draft = "";
+        sheet.replaceWith(fresh);
+        sheet = fresh;
+        wireSheet();
+        announce("Squirrel answered");
+        sheet.querySelector(".talk")?.lastElementChild?.scrollIntoView({ block: "nearest" });
+        box()?.focus();
+      });
+    }
+
+    let dialog = null;
+
+    function close() {
+      keepDraft();
+      dialog?.close();
+    }
+
+    acorn.addEventListener("click", async e => {
+      e.preventDefault();
+      const fresh = await fetchSheet();
+      // No sheet means no upgrade, so the link does what the link does. A
+      // failure here must never leave the acorn doing nothing.
+      if (!fresh) { location.href = acorn.href; return; }
+
+      if (!dialog) {
+        dialog = document.createElement("dialog");
+        dialog.className = "coachsheet";
+        document.body.appendChild(dialog);
+        // Closing by any route — Escape, the backdrop, the button — is the
+        // same close, and it forgets the conversation on the server exactly
+        // once.
+        dialog.addEventListener("close", () => {
+          fetch("/coach/close", { method: "POST", body: new FormData() });
+        });
+        dialog.addEventListener("click", e => {
+          if (e.target === dialog) close();
+        });
+      }
+      dialog.replaceChildren(fresh);
+      sheet = fresh;
+      wireSheet();
+      dialog.showModal();
+      box()?.focus();
+    });
+  })();
 })();

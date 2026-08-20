@@ -682,6 +682,46 @@ implying it can be moved would be a lie with consequences.
 **The lid is the only place a number counts down**, and the offer never joins
 it: the timer strip is a fact about a thing you chose to start.
 
+### The Coach Sheet
+
+The live-chat convention, rendered in this product's own materials.
+
+**The exception it takes, recorded rather than taken quietly.** The rule above
+says: *don't open a modal for the chore interval, or for anything else that
+needs neither interruption nor protected focus.* The rule carries its own
+condition, and this is the one thing in the system that meets it — a coach
+conversation happens when everything else on screen is noise, and protected
+focus is the whole point of the surface. The chore picker was refused a modal
+because choosing an interval needs neither. That reasoning is untouched and
+still governs everything else.
+
+- **The button is the acorn**, which this document already establishes as the
+  product's second mark, available as a badge anywhere the full mascot is too
+  much. Cream stock, the 3px outline, the sticker offset every raised thing
+  here wears. Fixed bottom-right, thumb-reachable.
+- **Not in the lid.** The lid already carries mark, wordmark, timer strip, two
+  cross-links and search, and the Lid Step-Down Rule exists because it was
+  taking a fifth of a phone screen. A seventh element is not available.
+- **It never dims and never carries a badge.** A badge here would be a count,
+  and a dimmed acorn would be the product reading meaning into how a button
+  gets used. Closing the sheet means the conversation is over and nothing else.
+- **Bottom sheet on a phone, right panel on desktop.** The page behind stays
+  visible and in place: the conversation is about what is on that screen.
+- **Its own little lid:** the mark at 36px, the wordmark in Inter, and *close*
+  in the lid link's voice. Not a copy of the real lid — it carries two
+  elements, not six.
+- **On screen:** what the picker would hand you, painted on open and carrying
+  no controls at all. An orange rule down its left rather than a second card:
+  it is context for the conversation, not a second thing being offered.
+- **Two voices, and only position tells them apart.** Yours on the tail cream,
+  right-aligned, casual axis. Squirrel's on paper, left-aligned, with the
+  sticker offset — the same two voices as everywhere else. No names, no
+  avatars, and no timestamps: a time beside a sentence is a fact about how long
+  you have been stuck.
+- **The four chips are the Offer's own**, unchanged and equal in weight. One
+  press, no typing — the surface must be usable at the moment of least
+  capacity, which is the moment it exists for.
+
 ### Cards / Containers
 
 - **Corner:** 14px.
@@ -756,7 +796,9 @@ border that a card UI would reach for by default.
 - **Don't** put a gradient on anything that can be pressed.
 - **Don't** open a modal for the chore interval, or for anything else that needs
   neither interruption nor protected focus. The picker replaces the action row
-  in place, on the card.
+  in place, on the card. *The one exception in the system is recorded under The
+  Coach Sheet, and it is an exception rather than a precedent — it is admitted
+  because the rule's own condition admits it.*
 - **Don't** take a letter key for navigation. Letters are actions; `k` is keep.
   Movement is space and the arrow keys.
 - **Don't** let a control leave the surface it belongs to — undo lives on the
