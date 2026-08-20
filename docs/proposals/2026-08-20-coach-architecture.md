@@ -237,7 +237,7 @@ long-context recall, which is why it never runs the tool loop.
 | Low-capacity day | ✅ | | | `CapacityOf()`. |
 | Evening reflection | ✅ | | | A generated summary is a sentence about the person. |
 | **Duration estimate (first)** | | ✅ | | Decision 4. Cheap, replaced by measurement. |
-| Duration estimate (after ~5 runs) | learned | | | Median of real timers overrides the guess. |
+| Duration estimate (after 3 runs) | learned | | | Median of real *finished* timers overrides the guess. |
 | **Split a brain dump** | | ✅ | | Structured, proposed, confirmed. |
 | **Say the offer's clause** | | ✅ | | Rides on the decision call — no extra request. |
 | Messy sentence, `Match` missed | | ✅ | | Rare by design. |
@@ -282,7 +282,7 @@ in the prompt.
 
 | Learned | Where | Read by |
 | --- | --- | --- |
-| What a thing actually takes | `timers` → median per label | fit arithmetic; overrides the model's guess |
+| What a thing actually takes | `timer_runs` → median per label, finished runs only | `typically()`; overrides the model's guess |
 | What you turn down | `offers` | suppression |
 | When you actually complete chores | `events.occurred_at` | asking windows (phase 5) |
 | Which unstuck branch you pick, and whether a completion follows | `offers` + `items.state_at` | which intervention works |
@@ -308,14 +308,18 @@ Six, not twelve. Every one is capped. There is no tool that returns the pile,
 and none that returns mood history — `now()` gives the derived capacity and
 nothing behind it.
 
-**Five shipped, not six.** `history(label)` is the missing one, and it needs a
-median over finished timers — which needs a history of finished timers, which
-migration 0017 refuses on stated grounds: it becomes a record of what you
-started and abandoned, which is a report card. There is probably a version that
-is not one (completed runs only, label and length, never an abandonment, making
-it a fact about the bins rather than about you), but reversing a written refusal
-is a product decision and not a detail of the phase that happened to want it.
-See open question 2.
+**Six, after a decision.** `history(label)` — shipped as `typically(label)` —
+needs a median over finished timers, and migration 0017 refused a timer history
+in writing: it becomes a record of what you started and abandoned. Phase D
+shipped without it and raised it rather than reversing the refusal quietly.
+
+Migration 0022 **narrows** 0017 rather than reversing it. Only runs that
+reached their end are recorded — a timer stopped early writes nothing, and one
+replaced by starting another writes nothing. So there is no failure rate in the
+table, because the rows that would answer for one never exist, and the median
+is a fact about the bins rather than about you. Three finished runs before it
+will answer at all: a median of one is the last time you did it, wearing a word
+that implies more.
 
 **Two things moved out of the prompt and into the tools.** The caps, because a
 cap the model is asked to respect is a cap it can ignore. And today's
@@ -814,8 +818,12 @@ until the phase that needs it:
    as long as the page it is on and there is nothing pending anywhere to
    expire. No lifetime, no sweep, no lapse rule to get wrong.
 
-2. **Should finished timers be kept, so durations can be measured?** *(raised
-   at phase D, 20 August.)* `history(label)` was designed to answer "how long
+2. ~~**Should finished timers be kept, so durations can be measured?**~~
+   **Answered yes, narrowly, 20 August.** Migration 0022 records only runs that
+   reached their end; `typically()` is the sixth read tool. The rest of this
+   entry is kept for the reasoning.
+
+   *(raised at phase D, 20 August.)* `history(label)` was designed to answer "how long
    does this usually take" from real timers and replace the model's guess.
    Answering it needs a row per finished run, and migration 0017 refuses a
    timer history in writing: it becomes a record of what you started and

@@ -10,7 +10,7 @@ import (
 
 // The tool loop, and the one thing it is for: choosing what to do now.
 //
-// Five read tools and one way to finish. The model asks for what it needs, and
+// Six read tools and one way to finish. The model asks for what it needs, and
 // then calls choose() with a thing it was actually handed. It cannot invent a
 // task — the id has to have come back from a tool in this same call, and
 // anything else is thrown away and the picker's answer used instead. That
@@ -21,11 +21,11 @@ import (
 
 // maxRounds is how many times the model may ask for more before it has to
 // decide. Three, which is what the architecture predicted it would need:
-// what is open, what is coming, and one thing looked at more closely.
+// what is open, what is coming, and how long one of them usually takes.
 const maxRounds = 3
 
 // toolSpecs is the wire description. It is written out rather than generated
-// because there are six of them and a schema generator would be more code
+// because there are seven of them and a schema generator would be more code
 // than the schemas.
 //
 // Every description is one line. The model is told what a tool returns, not
@@ -39,6 +39,8 @@ var toolSpecs = []map[string]any{
 		map[string]any{"limit": map[string]any{"type": "integer", "description": "How many, at most ten."}}),
 	spec("item", "One thing, by id.",
 		map[string]any{"id": map[string]any{"type": "integer", "description": "The id."}}),
+	spec("typically", "How many minutes something usually takes, measured from timers that finished. Absent when it has not been timed enough to say.",
+		map[string]any{"label": map[string]any{"type": "string", "description": "What it is called."}}),
 	spec("choose", "Hand over one thing to do now. Only ever something a tool returned in this conversation.",
 		map[string]any{
 			"kind":    map[string]any{"type": "string", "enum": []string{"task", "chore", "moment"}},
@@ -98,7 +100,8 @@ type Decision struct {
 const decidePreamble = `You are Squirrel. You hand one person with ADHD exactly one thing to do
 now, and you say why in one clause.
 
-Look at what is open and what is coming. Then call choose with one of them.
+Look at what is open, what is coming, and how long things take. Then call
+choose with one of them.
 
 Only ever choose something a tool returned in this conversation.
 Prefer something at a fixed time. Then something short. On a low-capacity
@@ -237,8 +240,9 @@ func key(kind string, id int64) string { return kind + ":" + fmt.Sprint(id) }
 // asked what to do next.
 func (p *Provider) answerTool(ctx context.Context, personID int64, call toolCall, handed map[string]Work) string {
 	var args struct {
-		Limit int   `json:"limit"`
-		ID    int64 `json:"id"`
+		Limit int    `json:"limit"`
+		ID    int64  `json:"id"`
+		Label string `json:"label"`
 	}
 	_ = json.Unmarshal([]byte(call.Function.Arguments), &args)
 
@@ -284,6 +288,14 @@ func (p *Provider) answerTool(ctx context.Context, personID int64, call toolCall
 		remember(handed, w)
 		return asJSON(w)
 
+	case "typically":
+		mins, found, err := p.Facts.Typically(ctx, personID, args.Label)
+		if err != nil || !found {
+			// Absent rather than zero. Zero is a measurement and this is the
+			// absence of one, and a model told "0 minutes" will believe it.
+			return "{}"
+		}
+		return asJSON(map[string]int{"minutes": mins})
 	}
 
 	return "{}"

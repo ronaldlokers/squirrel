@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -119,7 +121,61 @@ func (s *Store) ClaimFinishedTimer(ctx context.Context, personID int64, now time
 		}
 		return Timer{}, false, fmt.Errorf("claiming finished timer: %w", err)
 	}
+
+	// The one place a run is recorded, and it is this one because this is the
+	// only path that means "it reached its end". StopTimer deliberately writes
+	// nothing: a timer stopped early is not a measurement, and a table that
+	// held both would be a record of what you do not finish. See migration
+	// 0022 for the whole of that argument.
+	//
+	// Best effort. A run that fails to record costs the median one sample; a
+	// timer that fails to finish because the recording failed would cost
+	// someone the thing they were waiting for.
+	if minutes := int(t.Ends.Sub(t.Started).Minutes()); minutes > 0 {
+		if _, err := s.pool.Exec(ctx,
+			`insert into timer_runs (person_id, label, minutes, ended_at) values ($1, $2, $3, $4)`,
+			personID, t.Label, minutes, now); err != nil {
+			slog.Error("recording a finished timer", "error", err)
+		}
+	}
 	return t, true, nil
+}
+
+// fewestRuns is how many finished runs it takes before the median is worth
+// having. Three, because a median of one is not a median — it is the last time
+// you did it, wearing a word that implies more.
+const fewestRuns = 3
+
+// TypicalMinutes is how long something usually takes, from runs that actually
+// finished, or false when there are too few to say.
+//
+// The only reader is the coach's typically() tool, and nothing renders it.
+// What it exists to do is replace a model's guess about duration with an
+// observation — a guess is fine for a first run and should not survive a few
+// real ones.
+//
+// Matched on the label the timer carried, case-insensitively and trimmed,
+// because "the bins" and "The Bins " are the same thing to everyone except a
+// string comparison.
+func (s *Store) TypicalMinutes(ctx context.Context, personID int64, label string) (int, bool, error) {
+	label = strings.ToLower(strings.TrimSpace(label))
+	if label == "" {
+		return 0, false, nil
+	}
+
+	var median float64
+	var runs int
+	if err := s.pool.QueryRow(ctx, `
+		select coalesce(percentile_cont(0.5) within group (order by minutes), 0), count(*)
+		  from timer_runs
+		 where person_id = $1 and lower(btrim(label)) = $2`, personID, label).
+		Scan(&median, &runs); err != nil {
+		return 0, false, fmt.Errorf("reading how long that usually takes: %w", err)
+	}
+	if runs < fewestRuns {
+		return 0, false, nil
+	}
+	return int(median + 0.5), true, nil
 }
 
 // breadcrumb is how long what you were on stays worth mentioning.
