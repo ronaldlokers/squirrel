@@ -1811,3 +1811,18 @@
   .cantact .ifopen { display: none; }
   .cantact[open] .ifshut { display: none; }
   .cantact[open] .ifopen { display: inline; }
+
+  /* One day's readings. The faces are the same five drawings the check-in
+     offers, small: what you said, in the language you said it in. */
+  .aday {
+    display: flex; align-items: center; gap: 14px;
+    width: min(720px, 100%); margin-bottom: 10px;
+  }
+  .aday .when {
+    margin: 0; min-width: 9.5em;
+    font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 680;
+    color: var(--cream);
+  }
+  .aday .saidwhat { margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .aday .saidwhat img { width: 44px; height: auto; display: block; }

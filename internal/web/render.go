@@ -48,6 +48,7 @@ var pages = map[string]*template.Template{
 	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
 	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
 	"held":    page("templates/layout.html", "templates/held.html"),
+	"moods":   page("templates/layout.html", "templates/moods.html"),
 	"empty":   page("templates/layout.html", "templates/empty.html"),
 	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
 }
@@ -93,6 +94,9 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
+	// Days is how you have been, grouped, and only the moods page fills it.
+	// Nothing else on any screen reads the readings back.
+	Days []moodDayView
 	// Offer is the one thing, or nil. Nil renders nothing at all rather than
 	// an empty region: having nothing to be handed is a normal state, and a
 	// reassuring sentence in its place would be the product deciding you ought
@@ -193,6 +197,13 @@ func elsewhere(here string) []linkView {
 		}
 	}
 	return out
+}
+
+// moodDayView is one day's readings. No count on it and no judgement about
+// it: what is here is what you said, and what it means is yours.
+type moodDayView struct {
+	Day   string
+	Moods []faceView
 }
 
 // faceView is one of the five drawn answers. It carries no number and no

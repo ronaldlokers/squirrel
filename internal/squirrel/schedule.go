@@ -42,6 +42,14 @@ type SchedulerOptions struct {
 	Interrupt Interrupter
 }
 
+// resurfaceOdds is how often a kept note rides along with the evening message.
+//
+// One in three. Every evening would make the shelf a stream, and a stream is a
+// second inbox — the thing this product exists not to have. Never is what it
+// was before, and the shelf was then a place notes went to be forgotten
+// properly rather than kept.
+const resurfaceOdds = 0.34
+
 // quietFrom and quietUntil are the hours nothing arrives unasked in, in the
 // scheduler's own location.
 //
@@ -229,7 +237,20 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	m := EveningMessage(handled, captures, nudge)
+	// A kept note, sometimes, riding along. Roughly one evening in three,
+	// because every evening would make the shelf a stream and a stream is a
+	// second inbox. A failure to read one costs a nicety and never the
+	// message, so it is swallowed rather than returned.
+	kept := ""
+	if rand.Float64() < resurfaceOdds {
+		if text, found, err := s.opts.Store.AKeptItem(ctx, s.opts.PersonID); err != nil {
+			s.opts.OnError(err)
+		} else if found {
+			kept = text
+		}
+	}
+
+	m := EveningMessage(handled, captures, nudge, kept)
 	if m.Text == "" {
 		return nil
 	}

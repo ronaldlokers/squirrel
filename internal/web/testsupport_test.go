@@ -23,8 +23,10 @@ type fakeStore struct {
 	items   []squirrel.Item
 	chores  []squirrel.Chore
 	checkin *squirrel.Checkin
-	timer   *squirrel.Timer
-	err     error
+	// readings is the fortnight the moods page reads, newest first.
+	readings []squirrel.Checkin
+	timer    *squirrel.Timer
+	err      error
 
 	// offer is what the picker hands back, and nil is "nothing to hand you" —
 	// the case the screen has to render as an absence rather than as an empty
@@ -305,6 +307,19 @@ func (f *fakeStore) RecordCheckin(_ context.Context, _ int64, m squirrel.Mood, _
 	}
 	f.checkin = &squirrel.Checkin{Mood: m, SaidAt: at}
 	return nil
+}
+
+func (f *fakeStore) CheckinsSince(_ context.Context, _ int64, since time.Time) ([]squirrel.Checkin, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	out := []squirrel.Checkin{}
+	for _, c := range f.readings {
+		if !c.SaidAt.Before(since) {
+			out = append(out, c)
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeStore) LatestCheckin(_ context.Context, _ int64) (squirrel.Checkin, bool, error) {

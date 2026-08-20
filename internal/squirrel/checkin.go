@@ -80,6 +80,53 @@ func (c Checkin) Fresh(now time.Time) bool {
 	return now.Sub(c.SaidAt) < 6*time.Hour
 }
 
+// moodWindow is how far back the readings go when you ask for them.
+//
+// A fortnight: long enough to see whether a bad week was a bad week, short
+// enough that it is not a record of your year. It is a window rather than a
+// count, because "the last thirty readings" means something different
+// depending on how often you answered, and the question being asked is about
+// time.
+const moodWindow = 14 * 24 * time.Hour
+
+// CheckinsSince is the readings, newest first, for the one screen and the one
+// command that ask.
+//
+// What it deliberately does not do: total anything, average anything, count
+// anything, or say a word about what the readings mean. It hands back what you
+// said, when you said it, and nothing else — the interpretation is yours, and
+// a product that offered one would be doing the thing the original rule
+// existed to prevent.
+func (s *Store) CheckinsSince(ctx context.Context, personID int64, since time.Time) ([]Checkin, error) {
+	rows, err := s.pool.Query(ctx, `
+		select mood, said_at from checkins
+		 where person_id = $1 and said_at >= $2
+		 order by said_at desc`, personID, since)
+	if err != nil {
+		return nil, fmt.Errorf("reading how you have been: %w", err)
+	}
+	defer rows.Close()
+
+	readings := []Checkin{}
+	for rows.Next() {
+		var c Checkin
+		var mood string
+		if err := rows.Scan(&mood, &c.SaidAt); err != nil {
+			return nil, fmt.Errorf("scanning how you have been: %w", err)
+		}
+		c.Mood = Mood(mood)
+		readings = append(readings, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading how you have been: %w", err)
+	}
+	return readings, nil
+}
+
+// MoodWindowStart is when the readings start from, so a caller does not have to
+// know the window to ask the question.
+func MoodWindowStart(now time.Time) time.Time { return now.Add(-moodWindow) }
+
 // RecordCheckin stores one answer. Every answer, not the latest — see the
 // migration for what that buys and what it costs.
 func (s *Store) RecordCheckin(ctx context.Context, personID int64, m Mood, source string, at time.Time) error {
@@ -91,10 +138,23 @@ func (s *Store) RecordCheckin(ctx context.Context, personID int64, m Mood, sourc
 	return nil
 }
 
-// LatestCheckin is the only way to read this table, and it returns one row on
-// purpose. There is deliberately no LatestCheckins, no CheckinsSince and no
-// count: a caller cannot render a series it cannot obtain, which is a stronger
-// guarantee than a rule someone has to remember.
+// LatestCheckin is how everything except one screen reads this table, and it
+// returns one row on purpose.
+//
+// It used to be the *only* way, and the comment here said so: a caller cannot
+// render a series it cannot obtain, which is a stronger guarantee than a rule
+// someone has to remember. That guarantee is gone as of 20 August 2026, and
+// what replaced it is narrower and worth stating exactly.
+//
+// CheckinsSince below exists, and is reachable from precisely two places, both
+// of which you have to ask for by name. Nothing reads it on its own: not home,
+// not the evening message, not the picker, and not Buddy — the coach is handed
+// a capacity of "ok" or "low" derived from this one reading and has no way to
+// ask for more.
+//
+// So the rule is no longer enforced by the absence of a function. It is
+// enforced by there being exactly two callers, and by this paragraph telling
+// the next person why a third would be a different product.
 func (s *Store) LatestCheckin(ctx context.Context, personID int64) (Checkin, bool, error) {
 	var c Checkin
 	var mood string

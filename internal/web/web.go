@@ -138,6 +138,9 @@ type Store interface {
 	// deliberately no way to ask this store for a series.
 	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
+	// The readings, for the one page that asks. See internal/web/moods.go for
+	// what giving up "unreadable by construction" was traded for.
+	CheckinsSince(ctx context.Context, personID int64, since time.Time) ([]squirrel.Checkin, error)
 
 	// Things you cannot act on. Note what is absent and stays absent: nothing
 	// here counts them, so this screen could not render "4 waiting" even if a

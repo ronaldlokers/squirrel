@@ -121,6 +121,13 @@ category sells the counter as the feature.
 rejected: "inbox", which imports inbox-zero and its counter. The owner chose
 "the pile" over the objection that it may read as self-deprecating.
 
+**The shelf may speak, once in a while.** A kept note can ride along with the
+evening message — never its own message, never more than one, and never when
+there was nothing else to say. A shelf that taps you on the shoulder is a
+second inbox, which is the thing this product exists not to have. Roughly one
+evening in three, chosen at random rather than from a queue: a queue would give
+the shelf a front, and a front is a place to be behind.
+
 **Three ways to say you cannot act on it:** *waiting on someone*, *blocked on a
 thing*, *someday*. Three rather than one because they end differently — a
 waiting-on ends when somebody replies, a blocked-on when something arrives, and
@@ -311,7 +318,18 @@ which pull toward a precision tool — the design has to be both, not average th
 6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
    are fixed, readable and the same every time. An offer nobody can account for
    is a demand.
-7. **Anything a model wrote is Buddy's; anything the rules produced is
+7. **The readings are yours to look at, and nobody else's to use.** The
+   check-in was unreadable by construction for the product's whole life: the
+   store returned one reading and no function could return more, which is
+   stronger than a rule someone has to remember. **That guarantee was given up
+   on 20 August 2026** and replaced with a narrower one — there is one page and
+   one command, both of which you have to go to by name. Home shows today's
+   answer and a link, never a series. Nothing else reads them: not the evening
+   message, not the picker, not Buddy, which is handed "ok" or "low" derived
+   from a single reading and cannot ask for more. And nothing anywhere totals,
+   averages or compares them. What it means is yours; the product only hands
+   back what you said.
+8. **Anything a model wrote is Buddy's; anything the rules produced is
    Squirrel's.** Buddy is the name of the thing you talk to, and the line is
    about authorship rather than about features. The picker's own clause, the
    ladder's fixed sentences and a nudge that fires because a chore is due are
@@ -321,14 +339,14 @@ which pull toward a precision tool — the design has to be both, not average th
    is what decides whose voice a sentence is written in, and it is why the
    deterministic floor never sounds like a degraded Buddy. It is Squirrel,
    speaking as it always did.
-8. **Squirrel does not speak first at a bad moment.** Nothing arrives unasked
+9. **Squirrel does not speak first at a bad moment.** Nothing arrives unasked
    between 22:00 and 06:00, and nothing is raised on a low day. Both are floors
    under the one path that speaks without being spoken to; neither can be
    lifted, including by the coach, which is asked afterwards or not at all.
    The chore's own clock keeps running while it waits, so nothing is lost —
    only the asking stops. A message you *chose* the hour of, like the evening
    one, is not covered by this: it is not arriving unasked.
-9. **The deterministic answer is never deleted; it becomes the floor.** Every
+10. **The deterministic answer is never deleted; it becomes the floor.** Every
    place a model speaks has a fixed answer underneath it that shipped first and
    keeps working — the picker chooses, the ladder answers, the asking windows
    decide when to interrupt. No key, no network, or a month's budget spent must

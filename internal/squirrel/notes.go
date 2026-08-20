@@ -175,6 +175,27 @@ func (s *Store) ArchivedTasks(ctx context.Context, personID int64, limit int) ([
 	return s.itemsWhere(ctx, `person_id = $1 and kind = 'task' and state = 'done'`, limit, personID)
 }
 
+// AKeptItem is one kept note, chosen at random, or none.
+//
+// It exists for resurfacing and for nothing else: a kept note may come back,
+// but only riding along with a message that was going out anyway. Random
+// rather than oldest-first on purpose — a queue would make the shelf a thing
+// with a front, and a front is a place to be behind.
+func (s *Store) AKeptItem(ctx context.Context, personID int64) (string, bool, error) {
+	var text string
+	err := s.pool.QueryRow(ctx, `
+		select raw_text from items
+		 where person_id = $1 and state = 'kept' and raw_text <> ''
+		 order by random() limit 1`, personID).Scan(&text)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, fmt.Errorf("reading the shelf: %w", err)
+	}
+	return text, true, nil
+}
+
 // KeptItems is the shelf: the notes that were kept rather than done or
 // dropped.
 //

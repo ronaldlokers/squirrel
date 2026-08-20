@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 )
 
 // NotesMessage renders a numbered list of notes — the pile, or the results of
@@ -113,6 +114,7 @@ func HelpMessage() Message {
 		"!waiting <n> on <who> · !blocked <n> on <what> · !someday <n>",
 		"!waiting — everything you set aside, and what would move it",
 		"every other tuesday: bins out — a rhythm, and when to raise it",
+		"!moods — what you said before, when you ask. Nothing else reads it",
 		"!did <chore> — a chore is done, by name",
 		"!retire <chore> — stop a chore coming back",
 		"!snooze <chore> for <how long> — stop asking for a while",
@@ -223,7 +225,7 @@ func DefinedMessage(c Chore) Message {
 //
 // When nothing was completed the section is absent rather than empty. An empty
 // list is a scoreboard reading nil; an absent section says nothing about you.
-func EveningMessage(handled Handled, captures []string, nudge *Chore) Message {
+func EveningMessage(handled Handled, captures []string, nudge *Chore, kept string) Message {
 	var b strings.Builder
 
 	if nudge != nil {
@@ -247,6 +249,18 @@ func EveningMessage(handled Handled, captures []string, nudge *Chore) Message {
 		for _, text := range captures {
 			fmt.Fprintf(&b, " · %s\n", text)
 		}
+	}
+
+	// One kept note, sometimes, riding along with a message that was going out
+	// anyway. Never its own message and never more than one: a shelf that taps
+	// you on the shoulder is a second inbox, which is the thing this product
+	// exists not to have.
+	//
+	// Last, and unprompted by anything — it is not a task, it is not due, and
+	// nothing is being asked of you. It is there in case it is the thing you
+	// had forgotten you wrote down.
+	if kept != "" && b.Len() > 0 {
+		fmt.Fprintf(&b, "\nYou kept this: %s\n", kept)
 	}
 
 	m := Message{Text: strings.TrimRight(b.String(), "\n")}
@@ -431,6 +445,55 @@ func HeldListMessage(held []HeldItem, more bool) Message {
 		lines = append(lines, "", "There is more.")
 	}
 	return Message{Text: strings.Join(lines, "\n")}
+}
+
+// MoodsMessage is how you have been, when you ask.
+//
+// The readings and their days, and nothing else. No average, no streak, no
+// "you have been low three days" — the interpretation is yours, and a product
+// that offered one would be doing the thing the rule against reading this
+// table existed to prevent.
+//
+// Grouped by day rather than listed by timestamp, because two answers on one
+// Tuesday is a Tuesday you checked in twice, not two facts about you.
+func MoodsMessage(readings []Checkin, now time.Time) Message {
+	if len(readings) == 0 {
+		return Message{Text: "You have not said how you are lately."}
+	}
+
+	var b strings.Builder
+	day := ""
+	for _, c := range readings {
+		if d := moodDay(c.SaidAt, now); d != day {
+			if day != "" {
+				b.WriteString("\n")
+			}
+			b.WriteString(d)
+			b.WriteString(": ")
+			day = d
+		} else {
+			b.WriteString(", ")
+		}
+		b.WriteString(Words[c.Mood])
+	}
+	return Message{Text: b.String()}
+}
+
+// MoodDay is moodDay, for the screen. Both surfaces name a day identically or
+// they are two products.
+func MoodDay(at, now time.Time) string { return moodDay(at, now) }
+
+// moodDay names a day the way you would say it. Two names and then the date:
+// past "yesterday" a weekday alone is ambiguous within a fortnight.
+func moodDay(at, now time.Time) string {
+	today := startOfDay(now)
+	switch startOfDay(at) {
+	case today:
+		return "today"
+	case today.AddDate(0, 0, -1):
+		return "yesterday"
+	}
+	return strings.ToLower(at.Format("Monday 2 January"))
 }
 
 // StuckMessage is the answer, and it never grows into a plan.

@@ -139,7 +139,7 @@ Chosen on 20 August once Buddy shipped, and argued in
 | --- | --- | --- |
 | ~~**1**~~ | ~~Three states for things you cannot act on~~ — **shipped** | An offer you cannot act on spends the one decision you were given. Excluded from every existing list by construction, so it was smaller than it sounded. |
 | ~~**2**~~ | ~~The capture gap~~ — **shipped** | The front door acknowledged before the words were durable. Now it spools like the room, and one mechanism covers both. |
-| **3** | Mood readable, and resurfacing | Two small ones. Both shown only on request, never as their own stream. |
+| ~~**3**~~ | ~~Mood readable, and resurfacing~~ — **shipped** | Both shown only on request, never as their own stream. |
 | **4** | Attachments, on a PVC | Last: the only one that adds infrastructure. |
 
 ## Decided, not yet built
@@ -149,8 +149,8 @@ Chosen on 20 August once Buddy shipped, and argued in
 | | Decision |
 | --- | --- |
 | ~~**Three new states**~~ | **Shipped 20 August.** *waiting on someone* · *blocked on a thing* · *someday*, named separately rather than one "parked" state. |
-| **Mood series** | Readable, and shown back on request. Reverses the rule that made it unreadable by construction. |
-| **Resurfacing** | A kept note may come back — **only** riding along with something already being raised. Never its own stream. |
+| ~~**Mood series**~~ | **Shipped 20 August.** One page and one command, both asked for by name. Nothing else reads them. |
+| ~~**Resurfacing**~~ | **Shipped 20 August.** One kept note, roughly one evening in three, riding along with the evening message. |
 | **Attachments** | Through the PWA, camera-first on mobile. *Storage undecided — see open questions.* |
 | **Devices** | Phone primary and better; desktop first-class. |
 
