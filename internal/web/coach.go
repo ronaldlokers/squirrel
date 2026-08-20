@@ -282,9 +282,11 @@ func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, 
 		Scrolling: true,
 		Said:      cv.Said,
 		Coach: &coachPanel{
-			// Painted from the picker, not from a model. Opening costs
-			// nothing and has to keep costing nothing.
-			Offer:    offerFor(s, opts, r, true),
+			// Painted from the picker, or from a decision that was already
+			// paid for. Never from a new call: opening costs nothing and has
+			// to keep costing nothing, or the acorn becomes a thing you think
+			// about before pressing.
+			Offer:    offerFor(s, opts, r, true, false),
 			Talking:  coachAvailable(opts),
 			AskWhich: cv.AskWhich || !coachAvailable(opts),
 			Blockers: blockerChips(),

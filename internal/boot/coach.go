@@ -106,14 +106,21 @@ func decider(c coach.Coach, offers *coach.Offers) squirrel.Decider {
 		return nil
 	}
 
-	return func(ctx context.Context, personID int64, pickedKind string, pickedRef int64) (
-		string, int64, string, string, bool) {
+	return func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
+		mayAsk bool) (string, int64, string, string, bool) {
 
 		now := time.Now()
 		basis := squirrel.SuppressionKey(squirrel.OfferKind(pickedKind), pickedRef)
 
 		if d, ok := offers.Get(personID, basis, now); ok {
 			return d.Kind, d.RefID, d.Text, d.Because, true
+		}
+		if !mayAsk {
+			// A surface that must be free to open. It shows a decision that
+			// was already paid for and otherwise shows the picker's — which
+			// means the two surfaces agree whenever there is anything to agree
+			// about, and nothing here is ever a reason to spend.
+			return "", 0, "", "", false
 		}
 
 		d, err := c.Decide(ctx, personID)

@@ -555,6 +555,15 @@ chrome rather than a destination, **the home screen still has three doors.**
 - **Opening costs nothing.** The sheet paints with the *cached* offer already
   there (decision 13). No model call on open — idle opens are free, which is the
   same trap the offer cache exists to close.
+
+  *Shipped at C, broken at D, fixed after.* Phase D wired the decision into the
+  shared `offerFor`, which the sheet also calls — so every acorn press became a
+  chance to pay for a tool loop. The seam now carries whether the caller may
+  spend: home may, the sheet may not, and the sheet shows a decision already
+  paid for or the picker's own. Worth recording how it got through: the phase-C
+  test asserting this checked only the conversational seam, so it stayed green
+  while the picker's seam paid. A test that names a property has to check every
+  way the property can be broken, not the one that existed when it was written.
 - **What you typed never disappears.** Close mid-sentence and it is there on
   reopen. *A capture box that clears on failure is a capture box that eats
   thoughts* — the slot's rule, and it applies here for the same reason.

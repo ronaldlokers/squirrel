@@ -60,6 +60,44 @@ func TestOpeningTheCoachCallsNoModel(t *testing.T) {
 	require.Empty(t, c.asked, "opening the sheet asked a model")
 }
 
+// The narrower half of the same rule, and the one that was missed: the sheet
+// may consult a decision that was already paid for, and may never cause one.
+//
+// This test exists because the first version of it only checked the
+// conversational seam, which stayed quiet while the picker's seam paid for a
+// tool loop on every acorn press.
+func TestOpeningTheCoachNeverPaysForADecision(t *testing.T) {
+	f := withOffer(&squirrel.Offer{
+		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
+	})
+	c := &fakeCoach{decision: &fakeDecision{
+		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
+	}}
+
+	body := mountedWith(t, f, c).call(t, "GET", "/coach", nil).Body.String()
+
+	require.Equal(t, 1, c.peeked, "the sheet did not go through the cache")
+	require.Contains(t, body, "ring the vet", "the sheet did not fall back to the picker")
+	require.NotContains(t, body, "put the bins out")
+}
+
+// Home is the screen the decision is for, so it may pay. Stated as its own
+// test because the rule is asymmetric and an asymmetry nobody pinned is an
+// asymmetry that quietly becomes symmetric.
+func TestHomeMayPayForADecision(t *testing.T) {
+	f := withOffer(&squirrel.Offer{
+		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
+	})
+	c := &fakeCoach{decision: &fakeDecision{
+		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
+	}}
+
+	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
+
+	require.Zero(t, c.peeked, "home went through the cache instead of asking")
+	require.Contains(t, body, "put the bins out")
+}
+
 // A low day does not empty the sheet. Someone who has opened the coach has
 // already overridden the quiet by asking.
 func TestTheCoachPaintsOnALowDay(t *testing.T) {
