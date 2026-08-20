@@ -65,6 +65,10 @@ type Options struct {
 	// screen never calls it when the picker found nothing: absent rather than
 	// empty is a rule about this region, not about who chose.
 	Decide squirrel.Decider
+	// Smaller breaks the thing being offered into steps, or is nil. Nil means
+	// the ladder's own fixed line is the whole answer, which is what it was
+	// before this existed.
+	Smaller squirrel.Breaker
 }
 
 // person answers who the pile belongs to, and whether that is known yet.
@@ -133,4 +137,13 @@ type Store interface {
 	UpsertChoreAsking(ctx context.Context, personID int64, name string, every, tolerance time.Duration, ask squirrel.Asking) (squirrel.Chore, error)
 	DeactivateChore(ctx context.Context, choreID int64) error
 	RecordCompletion(ctx context.Context, choreID, personID int64, source string, at time.Time) error
+
+	// A thing broken into steps. Note what is absent and stays absent: there
+	// is no function here that returns the sequence, so this screen could not
+	// render one if a later author wanted it to — the same device that keeps
+	// it from rendering a count of the pile.
+	SaveSteps(ctx context.Context, personID int64, itemID *int64, label string, steps []string) error
+	NextStep(ctx context.Context, personID int64) (squirrel.Step, bool, error)
+	StepDone(ctx context.Context, personID, stepID int64, at time.Time) error
+	ClearSteps(ctx context.Context, personID int64) error
 }

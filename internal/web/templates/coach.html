@@ -37,6 +37,10 @@
     <p class="his">{{.Replied}}</p>
     {{end}}
 
+    {{/* Where you are in a breakdown, whether or not a chip was just
+         pressed. */}}
+    {{if .Step}}{{template "step" (dict "Step" .Step "From" "/coach")}}{{end}}
+
     {{/* The ladder's one control, when a chip was the last thing pressed.
          There is deliberately nowhere here for a second step. */}}
     {{with .Unstuck}}

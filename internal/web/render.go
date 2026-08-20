@@ -20,17 +20,35 @@ var templateFS embed.FS
 // Each page parses layout, card and exactly one content template. Go's
 // templates are a flat namespace, so two files both defining "content" cannot
 // live in one set — the set is the page.
+// dict lets one template be handed two values, which Go's templates otherwise
+// cannot do. Only "step" needs it, and only because a step is drawn on two
+// screens that disagree about where its buttons should come back to.
+var helpers = template.FuncMap{
+	"dict": func(pairs ...any) map[string]any {
+		out := make(map[string]any, len(pairs)/2)
+		for i := 0; i+1 < len(pairs); i += 2 {
+			key, _ := pairs[i].(string)
+			out[key] = pairs[i+1]
+		}
+		return out
+	},
+}
+
+func page(files ...string) *template.Template {
+	return template.Must(template.New("layout.html").Funcs(helpers).ParseFS(templateFS, files...))
+}
+
 var pages = map[string]*template.Template{
-	"home":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/home.html")),
-	"chores":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/chores.html")),
-	"kept":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/kept.html")),
-	"tasks":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/tasks.html")),
-	"archive": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/archive.html")),
-	"bottom":  template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/bottom.html")),
-	"pile":    template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html")),
-	"coach":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/coach.html")),
-	"empty":   template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/empty.html")),
-	"results": template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/every.html", "templates/results.html")),
+	"home":    page("templates/layout.html", "templates/step.html", "templates/home.html"),
+	"chores":  page("templates/layout.html", "templates/chores.html"),
+	"kept":    page("templates/layout.html", "templates/kept.html"),
+	"tasks":   page("templates/layout.html", "templates/tasks.html"),
+	"archive": page("templates/layout.html", "templates/archive.html"),
+	"bottom":  page("templates/layout.html", "templates/bottom.html"),
+	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/pile.html"),
+	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
+	"empty":   page("templates/layout.html", "templates/empty.html"),
+	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
 }
 
 type noteView struct {
@@ -195,6 +213,11 @@ type unstuckView struct {
 	Line    string
 	Minutes int
 	Ask     bool
+	// Step is the ladder having got specific: one step of a stored sequence,
+	// or nil. The line above it is what shows when this is nil, which is what
+	// it did on its own before a model existed — the fixed answer is not
+	// replaced, it is the floor this stands on.
+	Step *stepView
 }
 
 // coachPanel is the sheet.
@@ -213,6 +236,10 @@ type coachPanel struct {
 	Said []Exchange
 	// Unstuck is the ladder's control, when a chip was the last thing pressed.
 	Unstuck *unstuckView
+	// Step is the sequence's next one, when there is one in progress. Shown
+	// whether or not a chip was just pressed: coming back to the sheet an hour
+	// later and finding the step you were on is the whole point of storing it.
+	Step *stepView
 	// Talking is whether there is a model behind the box.
 	Talking bool
 	// AskWhich puts the question back: which of the four is it. True when
