@@ -66,7 +66,9 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 			// then handing you a job in the same breath is the interruption
 			// this product exists to reduce, and the answer is what shapes the
 			// offer anyway.
-			v.Offer = offerFor(s, opts, r, v.Anyway)
+			// Home may pay. It is the screen the decision is *for*, and the
+			// cache is what keeps a run of opens down to one call.
+			v.Offer = offerFor(s, opts, r, v.Anyway, true)
 			if v.Offer != nil {
 				// The ladder's answer, when one has been asked for. It hangs
 				// off the offer rather than replacing it: the thing you could

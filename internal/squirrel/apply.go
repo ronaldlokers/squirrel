@@ -561,7 +561,9 @@ func (a *Applier) judged(ctx context.Context, personID int64, o Offer) Offer {
 	if a.decider == nil || !JudgementHelps(o.Kind) {
 		return o
 	}
-	kind, refID, text, because, ok := a.decider(ctx, personID, string(o.Kind), o.RefID)
+	// Chat's `!now` is an explicit ask, so it may pay. The screen's own rule
+	// about which surfaces may is in internal/web.
+	kind, refID, text, because, ok := a.decider(ctx, personID, string(o.Kind), o.RefID, true)
 	if !ok || text == "" || because == "" {
 		return o
 	}

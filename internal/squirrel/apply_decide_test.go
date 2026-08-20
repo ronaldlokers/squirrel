@@ -18,10 +18,13 @@ import (
 
 type decideRecord struct {
 	shown []string
-	kind  string
-	refID int64
-	text  string
-	why   string
+	// mayAsk is whether chat was allowed to spend a call. It always is: `!now`
+	// is an explicit ask, unlike opening a sheet.
+	mayAsk bool
+	kind   string
+	refID  int64
+	text   string
+	why    string
 }
 
 func deciding(t *testing.T, store *squirrel.Store, personID int64, text string, d *decideRecord) string {
@@ -29,9 +32,10 @@ func deciding(t *testing.T, store *squirrel.Store, personID int64, text string, 
 	chat, got := chatRecorder(strconv.FormatInt(replyIDs.Add(1), 10))
 	a := squirrel.NewApplier(store, nil, chat, nil)
 	if d != nil {
-		a.SetDecider(func(_ context.Context, _ int64, pickedKind string, _ int64) (
-			string, int64, string, string, bool) {
+		a.SetDecider(func(_ context.Context, _ int64, pickedKind string, _ int64,
+			mayAsk bool) (string, int64, string, string, bool) {
 			d.shown = append(d.shown, pickedKind)
+			d.mayAsk = mayAsk
 			if d.text == "" {
 				return "", 0, "", "", false
 			}
@@ -99,4 +103,17 @@ func TestTheRecordedLinePointsAtWhatWasChosen(t *testing.T) {
 	require.True(t, found)
 	require.NotNil(t, line.Item)
 	require.Equal(t, other, line.Item.ID)
+}
+
+// `!now` is an explicit ask, so chat may pay for one. The screen's coach sheet
+// may not — see internal/web, where the asymmetry lives.
+func TestNowMayPayForADecision(t *testing.T) {
+	store := withStore(t)
+	p := owner(t, store)
+
+	taskOf(t, store, p, "ring the vet")
+	d := &decideRecord{}
+	deciding(t, store, p, "!now", d)
+
+	require.True(t, d.mayAsk)
 }

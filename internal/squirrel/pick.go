@@ -286,11 +286,16 @@ func startOfDay(t time.Time) time.Time {
 // this package must not import internal/coach. It takes the picker's own
 // answer and hands back one to render instead, or says it has nothing.
 //
+// mayAsk is whether this caller is allowed to spend a call. False means "use
+// an answer you already have, or say you have nothing" — which is what makes
+// a surface that must be free to open able to show the same thing the paying
+// surface shows, without ever becoming a reason to pay.
+//
 // Every caller must be written so that nil, and false, and a model that never
 // answers are all ordinary. PickNow is the whole answer whenever this is not
 // available, which is most of the time by design.
-type Decider func(ctx context.Context, personID int64, pickedKind string, pickedRef int64) (
-	kind string, refID int64, text, because string, ok bool)
+type Decider func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
+	mayAsk bool) (kind string, refID int64, text, because string, ok bool)
 
 // JudgementHelps reports whether a model is allowed near this offer.
 //

@@ -32,7 +32,11 @@ import (
 // offerFor reads it, and answers nil for every failure. A picker that cannot
 // answer must not be able to take down a page that rendered without one for
 // the product's whole life.
-func offerFor(s Store, opts Options, r *http.Request, anyway bool) *offerView {
+// mayAsk says whether this render is allowed to spend a model call. Home may;
+// the coach sheet may not, because opening it has to cost nothing — an acorn
+// that might be expensive is an acorn you think about before pressing, and
+// thinking about it is the cost this product spends everything else avoiding.
+func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offerView {
 	personID, ok := opts.person()
 	if !ok {
 		return nil
@@ -46,7 +50,7 @@ func offerFor(s Store, opts Options, r *http.Request, anyway bool) *offerView {
 		// chose.
 		return nil
 	}
-	o = judged(opts, r, personID, o)
+	o = judged(opts, r, personID, o, mayAsk)
 	v := &offerView{
 		Kind:    string(o.Kind),
 		RefID:   o.RefID,
@@ -66,11 +70,11 @@ func offerFor(s Store, opts Options, r *http.Request, anyway bool) *offerView {
 // it cannot tell which produced it. JudgementHelps is the core's own rule
 // about which kinds a model may touch, asked here rather than restated: a
 // running timer and a fixed point are not opinions to be revisited.
-func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer) squirrel.Offer {
+func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer, mayAsk bool) squirrel.Offer {
 	if opts.Decide == nil || !squirrel.JudgementHelps(o.Kind) {
 		return o
 	}
-	kind, refID, text, because, ok := opts.Decide(r.Context(), personID, string(o.Kind), o.RefID)
+	kind, refID, text, because, ok := opts.Decide(r.Context(), personID, string(o.Kind), o.RefID, mayAsk)
 	if !ok || text == "" || because == "" {
 		return o
 	}
