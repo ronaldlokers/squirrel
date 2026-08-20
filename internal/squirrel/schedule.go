@@ -126,7 +126,10 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	completed, err := s.opts.Store.CompletedToday(ctx, s.opts.PersonID, midnight)
+	// Everything worth saying back, not only the chores. A day with four
+	// tasks finished and no chores used to produce a message that mentioned
+	// none of it.
+	handled, err := s.opts.Store.HandledSince(ctx, s.opts.PersonID, midnight)
 	if err != nil {
 		return err
 	}
@@ -150,7 +153,7 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	m := EveningMessage(completed, captures, nudge)
+	m := EveningMessage(handled, captures, nudge)
 	if m.Text == "" {
 		return nil
 	}

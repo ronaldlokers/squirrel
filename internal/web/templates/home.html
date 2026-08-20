@@ -31,8 +31,15 @@
              looking at the thing and choosing to do it, and here you are being
              handed it. */}}
         <input type="hidden" name="minutes" value="10">
+        {{/* A breadcrumb names what you were on rather than a row Squirrel
+             can act on, so it offers only the way back into it. Everything
+             else can be marked done. */}}
+        {{if eq .Kind "again"}}
+        <button class="obtn go" name="act" value="start">PICK IT UP</button>
+        {{else}}
         <button class="obtn did" name="act" value="did">DID IT</button>
         <button class="obtn go" name="act" value="start">10 MIN</button>
+        {{end}}
         <button class="obtn later" name="act" value="later">not now</button>
       </form>
 

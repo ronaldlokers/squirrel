@@ -149,3 +149,16 @@ func TestARunningTimerOfferCarriesNoButtons(t *testing.T) {
 	require.Contains(t, body, "the kitchen")
 	require.NotContains(t, body, `class="oacts"`)
 }
+
+// A breadcrumb names what you were on rather than a row Squirrel can act on,
+// so it offers the way back into it and nothing else.
+func TestTheBreadcrumbOffersOnlyTheWayBackIn(t *testing.T) {
+	body := mounted(t, answered(&squirrel.Offer{
+		Kind: squirrel.OfferAgain, Text: "the kitchen",
+		Because: "you were on this a little while ago",
+	})).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, "PICK IT UP")
+	require.NotContains(t, body, "DID IT")
+	require.Contains(t, body, "not now")
+}

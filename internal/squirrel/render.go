@@ -189,20 +189,20 @@ func DefinedMessage(c Chore) Message {
 //
 // When nothing was completed the section is absent rather than empty. An empty
 // list is a scoreboard reading nil; an absent section says nothing about you.
-func EveningMessage(completed []string, captures []string, nudge *Chore) Message {
+func EveningMessage(handled Handled, captures []string, nudge *Chore) Message {
 	var b strings.Builder
 
 	if nudge != nil {
 		b.WriteString(choreSentence(*nudge))
 		b.WriteString("\n")
 	}
-	if len(completed) > 0 {
+	if lines := handledLines(handled); len(lines) > 0 {
 		if b.Len() > 0 {
 			b.WriteString("\n")
 		}
 		b.WriteString("Today\n")
-		for _, name := range completed {
-			fmt.Fprintf(&b, " · %s\n", name)
+		for _, line := range lines {
+			fmt.Fprintf(&b, " · %s\n", line)
 		}
 	}
 	if len(captures) > 0 {
@@ -245,6 +245,14 @@ func NowMessage(o Offer) Message {
 	// A timer names no row, so there is nothing for a button to resolve
 	// against — and nothing to press, either. You are already doing it.
 	if o.Kind == OfferTimer {
+		return m
+	}
+	// A breadcrumb names a label rather than a row, so it cannot be marked
+	// done: Squirrel does not know what that label was. Picking it back up is
+	// the whole of what it can offer, and in chat that is one line naming the
+	// command rather than a button that would have to resolve against nothing.
+	if o.Kind == OfferAgain {
+		m.Text += fmt.Sprintf("\n!timer 10 %s to pick it up.", o.Text)
 		return m
 	}
 	m.SelectionMode = "single"
@@ -303,6 +311,25 @@ func NothingNowMessage(capacity Capacity) Message {
 		return Message{Text: "Nothing from me today. Say !now anyway if you want something."}
 	}
 	return Message{Text: "Nothing to hand you."}
+}
+
+// handledLines is what happened today, as lines, and nothing when nothing did.
+//
+// Chores and tasks are named because they are the things you set out to do.
+// Notes are counted because naming a dozen cleared notes would bury the two
+// lines above them in the bookkeeping — and because what matters about a
+// cleared note is that it is no longer waiting, not what it said.
+//
+// Never "nothing today". An absent section says nothing about you; an empty
+// one is a scoreboard reading nil.
+func handledLines(h Handled) []string {
+	lines := make([]string, 0, len(h.Chores)+len(h.Tasks)+1)
+	lines = append(lines, h.Chores...)
+	lines = append(lines, h.Tasks...)
+	if h.Notes > 0 {
+		lines = append(lines, plural(h.Notes, "note")+" cleared")
+	}
+	return lines
 }
 
 // CheckinQuestion is the five faces as words, since chat has no pictures.

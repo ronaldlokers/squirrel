@@ -199,8 +199,40 @@ func (s *Store) pickMoment(context.Context, int64, time.Time) (Offer, bool, erro
 	return Offer{}, false, nil
 }
 
-func (s *Store) pickAgain(context.Context, int64, time.Time) (Offer, bool, error) {
-	return Offer{}, false, nil
+// pickAgain is rule 3: what you were on before you got up.
+//
+// Ahead of anything Squirrel would raise and behind a running timer, which is
+// the order the person's own attention is already in. It survives the capacity
+// gate for the same reason the timer does — picking something back up is not
+// Squirrel's initiative, it is yours from an hour ago.
+//
+// The words never mention finishing. "You were on this" is a fact; "you did
+// not finish this" is a sentence about the person, and the difference is the
+// whole reason this is safe to show.
+func (s *Store) pickAgain(ctx context.Context, personID int64, now time.Time) (Offer, bool, error) {
+	t, found, err := s.LastFocus(ctx, personID, now)
+	if err != nil || !found {
+		return Offer{}, false, err
+	}
+	return Offer{
+		Kind:    OfferAgain,
+		Text:    t.Label,
+		Because: "you were on this " + agoWords(now.Sub(t.Ended)),
+	}, true, nil
+}
+
+// agoWords says how long ago, softly, and stops at the hour because the
+// breadcrumb does. The buckets are the Soft Elapsed Rule's own shape: a number
+// attached to something unfinished goes up while nobody is looking.
+func agoWords(d time.Duration) string {
+	switch {
+	case d < 5*time.Minute:
+		return "a moment ago"
+	case d < 20*time.Minute:
+		return "a little while ago"
+	default:
+		return "earlier"
+	}
 }
 
 // taskPickDepth is how far back the picker will reach for a task.
@@ -282,11 +314,15 @@ func (s *Store) Did(ctx context.Context, personID int64, o Offer, at time.Time) 
 		if err := s.RecordCompletion(ctx, o.RefID, personID, "offer", at); err != nil {
 			return err
 		}
-	case OfferTask, OfferAgain:
+	case OfferTask:
 		if err := s.SetItemState(ctx, o.RefID, ItemDone, at); err != nil {
 			return err
 		}
 	default:
+		// A breadcrumb and a running timer both name a label rather than a
+		// row, and Squirrel does not know what a label was. Picking it back up
+		// is the only thing either can offer, which is why neither carries a
+		// way to mark it done.
 		return fmt.Errorf("nothing to complete for a %s offer", o.Kind)
 	}
 	return s.RecordAnswer(ctx, personID, o.Kind, o.RefID, AnswerDid, at)

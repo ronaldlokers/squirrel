@@ -557,7 +557,10 @@ func (a *Applier) andNext(ctx context.Context, m Message, personID int64, conver
 	// Already on something. Finishing one thing while a timer runs is not a
 	// moment to be handed a second — the picker names what you are doing, and
 	// saying it back here would read as a suggestion to abandon it.
-	if o.Kind == OfferTimer {
+	//
+	// A breadcrumb is excluded for a different reason: it names a label rather
+	// than a row, so there is nothing for these buttons to resolve against.
+	if o.Kind == OfferTimer || o.Kind == OfferAgain {
 		return m, nil
 	}
 

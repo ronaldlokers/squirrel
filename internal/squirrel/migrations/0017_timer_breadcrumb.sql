@@ -1,0 +1,25 @@
+-- What you were doing before you got up.
+--
+-- The cost of an interruption is not the interruption, it is the
+-- reconstruction: you come back twenty minutes later and the expensive part is
+-- working out what you were in the middle of. The timer already knew, and then
+-- threw it away — ClaimFinishedTimer deleted the row as it read it, and
+-- stopping deleted it outright.
+--
+-- So the row stays a little while after it ends, and that is the whole
+-- feature. It is deliberately NOT a history:
+--
+--   * Still one row per person, still replaced by the next timer. There is
+--     nowhere for timers started and abandoned to accumulate, which is what
+--     the original table comment was protecting and remains true — a record of
+--     how many you gave up on is a streak with a different name.
+--
+--   * The picker only reads it for an hour. After that it is stale rather than
+--     deleted, and the next timer overwrites it. Nothing sweeps, nothing
+--     counts, and nothing is ever shown about how long ago it was beyond the
+--     product's usual soft words.
+--
+-- Null means running. Set means it finished or you stopped it, and either way
+-- it is a breadcrumb rather than a result: this column never says whether the
+-- thing got done, because that was never the timer's business.
+alter table timers add column if not exists ended_at timestamptz;
