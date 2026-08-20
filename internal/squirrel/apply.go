@@ -261,6 +261,13 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		a.pending = id
 		return DefinedMessage(c), nil
 
+	case IntentMoment:
+		kept, err := a.store.CreateMoment(ctx, personID, in.At)
+		if err != nil {
+			return Message{}, err
+		}
+		return MomentKeptMessage(kept), nil
+
 	case IntentComplete:
 		return a.complete(ctx, in, personID, conversationID)
 
@@ -391,6 +398,21 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 		}
 		return a.numbered(ctx, "find", items, more, personID, conversationID)
 
+	case "now":
+		return a.now(ctx, in.Arg, personID, conversationID)
+
+	case "stuck":
+		return a.stuck(ctx, in.Arg, personID)
+
+	case "at":
+		return a.at(ctx, in.Arg, personID)
+
+	case "bring", "take":
+		return a.bring(ctx, in.Arg, personID)
+
+	case "leaving", "left":
+		return a.leaving(ctx, personID)
+
 	case "chores":
 		return a.replyFor(ctx, Intent{Kind: IntentQuery}, personID, conversationID)
 
@@ -407,7 +429,7 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 		return a.snooze(ctx, in.Arg, personID)
 
 	case "did":
-		return a.did(ctx, in.Arg, personID)
+		return a.did(ctx, in.Arg, personID, conversationID)
 
 	case "mood", "feel":
 		return a.checkin(ctx, in.Arg, personID)
@@ -432,6 +454,218 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	// as a note along with the correction. Say what exists instead.
 	m := HelpMessage()
 	m.Text = fmt.Sprintf("I don't know !%s.\n\n%s", in.Command, m.Text)
+	return m, nil
+}
+
+// now hands you one thing: `!now`, or `!now anyway` on a day you said you were
+// wiped and then decided otherwise.
+//
+// It records a prompt with exactly one line, so the buttons resolve and so a
+// typed `done 1` means the same thing the ✅ does. That line may be a chore or
+// a task — the picker is the first surface where a numbered line can be
+// either, which is what LineOnPrompt exists for.
+//
+// "anyway" is the whole of the escape from the capacity gate, and it is a word
+// rather than a second command because it is the same question asked twice.
+// Nothing about saying it is remembered: it lifts the gate for this answer and
+// not for the day, so a person who is genuinely wiped does not have to keep
+// re-deciding that they were.
+func (a *Applier) now(ctx context.Context, arg string, personID int64, conversationID string) (Message, error) {
+	anyway := strings.EqualFold(strings.TrimSpace(arg), "anyway")
+
+	o, found, err := a.store.PickNow(ctx, personID, time.Now(), anyway)
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return NothingNowMessage(a.store.Capacity(ctx, personID, time.Now())), nil
+	}
+
+	m := NowMessage(o)
+	if len(m.Actions) == 0 {
+		// A running timer names no row, so there is no line to record and
+		// nothing to resolve a tap against. Saying what you are on is the
+		// whole answer.
+		return m, nil
+	}
+
+	line := LineRef{}
+	switch o.Kind {
+	case OfferChore:
+		id := o.RefID
+		line.ChoreID = &id
+	default:
+		id := o.RefID
+		line.ItemID = &id
+	}
+	id, err := a.store.RecordPromptLines(ctx, personID, conversationID, "now", time.Now(), nil, []LineRef{line})
+	if err != nil {
+		return Message{}, err
+	}
+	a.pending = id
+	return m, nil
+}
+
+// stuck is the ladder, in chat: `!stuck`, or `!stuck too big`.
+//
+// It acts on whatever the picker would hand you right now rather than asking
+// which thing you mean. Someone who has just said they cannot start is not the
+// person to ask a disambiguating question, and the answer is almost always the
+// thing they were just looking at.
+//
+// "Not today" turns that same thing down, which is the one branch that writes
+// anything — and it writes exactly what pressing "not now" writes, because
+// they are the same answer arrived at from two directions.
+func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Message, error) {
+	b, ok := ParseBlocker(arg)
+	if !ok {
+		return StuckQuestion(), nil
+	}
+
+	o, found, err := a.store.PickNow(ctx, personID, time.Now(), true)
+	if err != nil {
+		return Message{}, err
+	}
+
+	u := UnstuckFor(b)
+	if u.Refuse {
+		if !found {
+			return Message{Text: "Nothing to put off."}, nil
+		}
+		if err := a.store.Refuse(ctx, personID, o.Kind, o.RefID, time.Now()); err != nil {
+			return Message{}, err
+		}
+		return Message{Text: "Not today, then."}, nil
+	}
+
+	subject := ""
+	if found {
+		subject = o.Text
+	}
+	return StuckMessage(u, subject), nil
+}
+
+// at keeps a fixed point: `!at 14:30 dentist`, `!at 14:30 dentist, 20 minutes
+// away`, `!at tomorrow 09:00 school run`.
+//
+// The reply says when to leave rather than repeating when it starts, because
+// the start time is the thing you already knew and the leaving time is the one
+// nobody works out until it is too late.
+func (a *Applier) at(ctx context.Context, arg string, personID int64) (Message, error) {
+	// The command name ate the word the parser looks for. `!at 14:30 dentist`
+	// leaves "14:30 dentist", which is deliberately not a fixed point on its
+	// own — that bar exists so a note is never silently turned into something
+	// that interrupts you, and it must not be lowered just because the command
+	// says the same word the sentence would have.
+	said := strings.TrimSpace(arg)
+	if lower := strings.ToLower(said); !strings.HasPrefix(lower, "at ") && !strings.HasPrefix(lower, "tomorrow ") {
+		said = "at " + said
+	}
+
+	m, ok := ParseMoment(said, time.Now())
+	if !ok {
+		return Message{Text: "When, and what? Try !at 14:30 dentist."}, nil
+	}
+	kept, err := a.store.CreateMoment(ctx, personID, m)
+	if err != nil {
+		return Message{}, err
+	}
+	return MomentKeptMessage(kept), nil
+}
+
+// bring notes what to take, on the next fixed point: `!bring keys, wallet`.
+//
+// The next one rather than a named one, because it is only ever said a moment
+// after making it — and asking which appointment you mean, of the one you just
+// typed, is the tax this product exists to stop charging.
+func (a *Applier) bring(ctx context.Context, arg string, personID int64) (Message, error) {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return Message{Text: "Take what? Try !bring keys, wallet."}, nil
+	}
+	m, found, err := a.store.SetMomentBring(ctx, personID, arg, time.Now())
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return Message{Text: "Nothing coming up to take it to."}, nil
+	}
+	return Message{Text: fmt.Sprintf("%s — %s.", m.Label, m.Bring)}, nil
+}
+
+// leaving closes the next fixed point: you went, or it is off.
+//
+// One word for both, and nothing anywhere records which it was. Whether you
+// actually went is not this product's business — the job was to get you out of
+// the door on time, and it is over either way.
+func (a *Applier) leaving(ctx context.Context, personID int64) (Message, error) {
+	m, found, err := a.store.NextMoment(ctx, personID, time.Now())
+	if err != nil {
+		return Message{}, err
+	}
+	if !found {
+		return Message{Text: "Nothing to leave for."}, nil
+	}
+	if err := a.store.MomentDone(ctx, personID, m.ID, time.Now()); err != nil {
+		return Message{}, err
+	}
+	return Message{Text: "Go. I will stop mentioning it."}, nil
+}
+
+// andNext hands you one more thing, once, on the message that says you
+// finished something.
+//
+// The moment straight after a completion is the cheapest moment to start the
+// next thing: the decision has already been made once, the momentum is already
+// spent, and until now the product walked away from it — an acknowledgement,
+// and then silence. This is the whole of the hand-off.
+//
+// Once, and never a queue. It rides on the completion's own message rather
+// than arriving as a second notification, it carries the same two buttons
+// every other offer carries, and ignoring it does nothing at all.
+//
+// Deliberately not attached to triaging a note. Clearing the pile is a run of
+// small decisions about what things are, and a suggestion after each one would
+// be the interruption this product exists to reduce. This fires when you
+// finished a thing you had set out to do.
+func (a *Applier) andNext(ctx context.Context, m Message, personID int64, conversationID string) (Message, error) {
+	// The gate applies here as much as anywhere: on a low day, finishing one
+	// thing must not be read as evidence that you have more in you.
+	o, found, err := a.store.PickNow(ctx, personID, time.Now(), false)
+	if err != nil || !found {
+		// A hand-off that cannot be built is not a failure of the completion.
+		// The thing was done; that is the message.
+		return m, err
+	}
+	// Already on something. Finishing one thing while a timer runs is not a
+	// moment to be handed a second — the picker names what you are doing, and
+	// saying it back here would read as a suggestion to abandon it.
+	//
+	// A breadcrumb is excluded for a different reason: it names a label rather
+	// than a row, so there is nothing for these buttons to resolve against.
+	if o.Kind == OfferTimer || o.Kind == OfferAgain {
+		return m, nil
+	}
+
+	m.Text += "\n\nNext, if you want it:\n" + o.Text
+	m.SelectionMode = "single"
+	m.Actions = []Action{
+		{Label: doneWord(o), Value: "done:1", Emoji: "✅"},
+		{Label: "not now", Value: "later:1", Emoji: "🌙"},
+	}
+
+	line := LineRef{}
+	id := o.RefID
+	if o.Kind == OfferChore {
+		line.ChoreID = &id
+	} else {
+		line.ItemID = &id
+	}
+	promptID, err := a.store.RecordPromptLines(ctx, personID, conversationID, "now", time.Now(), nil, []LineRef{line})
+	if err != nil {
+		return Message{}, err
+	}
+	a.pending = promptID
 	return m, nil
 }
 
@@ -629,7 +863,7 @@ func (a *Applier) findChore(ctx context.Context, arg string, personID int64, act
 //
 // It records the same completion the tap does, through the same store call, so
 // the two ways of saying it cannot mean different things.
-func (a *Applier) did(ctx context.Context, arg string, personID int64) (Message, error) {
+func (a *Applier) did(ctx context.Context, arg string, personID int64, conversationID string) (Message, error) {
 	arg = strings.TrimSpace(arg)
 
 	active, err := a.store.ActiveChores(ctx, personID)
@@ -656,7 +890,9 @@ func (a *Applier) did(ctx context.Context, arg string, personID int64) (Message,
 	}
 	// The same varied reaction a tap earns, and varied for the same reason:
 	// the same word every time stops being read inside a week.
-	return Message{Text: fmt.Sprintf("%s %s.", Reactions[rand.Intn(len(Reactions))], target.Name)}, nil
+	return a.andNext(ctx,
+		Message{Text: fmt.Sprintf("%s %s.", Reactions[rand.Intn(len(Reactions))], target.Name)},
+		personID, conversationID)
 }
 
 // checkin asks how you are, or records the answer.
@@ -1021,13 +1257,25 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 			return noSuchLine(in.Position), nil
 		}
 		if line.Item != nil {
-			return a.triage(ctx, in.Position, personID, ItemDone, "Done —")
+			m, err := a.triage(ctx, in.Position, personID, ItemDone, "Done —")
+			if err != nil {
+				return Message{}, err
+			}
+			// Only a task earns the hand-off. Clearing the pile is a run of
+			// small decisions about what things are, and a suggestion after
+			// each one would be the interruption this exists to reduce.
+			if line.Item.Kind != ItemTask {
+				return m, nil
+			}
+			return a.andNext(ctx, m, personID, conversationID)
 		}
 		c := *line.Chore
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
+		return a.andNext(ctx,
+			Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))},
+			personID, conversationID)
 	}
 
 	outstanding, err := a.store.OutstandingLines(ctx, personID)
@@ -1042,7 +1290,9 @@ func (a *Applier) complete(ctx context.Context, in Intent, personID int64, conve
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "ack", time.Now()); err != nil {
 			return Message{}, err
 		}
-		return Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))}, nil
+		return a.andNext(ctx,
+			Message{Text: fmt.Sprintf("%s — next in %s.", c.Name, plural(c.EveryDays, "day"))},
+			personID, conversationID)
 	default:
 		// Never guess. Re-number and ask, so the reply can be a bare digit —
 		// the same shape as IntentQuery, down to recording its own prompt.
@@ -1139,10 +1389,19 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		return nil
 	}
 
-	c, ok, err := a.store.ChoreOnPrompt(ctx, prompt.ID, in.Position)
+	// Resolved as a line rather than as a chore, because since the picker a
+	// button can sit over a task. Every branch below that is about a chore
+	// checks for one first — a `snooze` on a task is not a thing that can
+	// happen from any surface Squirrel prints, so it is a no-op rather than an
+	// error.
+	line, ok, err := a.store.LineOnPrompt(ctx, prompt.ID, in.Position)
 	if err != nil || !ok {
 		return err
 	}
+	if line.Item != nil {
+		return a.applyItemAction(ctx, in, personID, prompt, *line.Item)
+	}
+	c := *line.Chore
 
 	switch in.Kind {
 	case "undefine":
@@ -1171,6 +1430,16 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		_, err := a.store.SnoozeChore(ctx, c.ID, personID, when)
 		return err
 
+	case "later":
+		// The picker's refusal, on a chore. It changes nothing about the chore
+		// — the clock runs, the nudge keeps its own budget — and it only tells
+		// the picker not to hand you this one again today. Untapping takes it
+		// back, like everything else here.
+		if !in.Selected {
+			return a.store.UnrefuseToday(ctx, personID, OfferChore, c.ID, time.Now())
+		}
+		return a.store.Refuse(ctx, personID, OfferChore, c.ID, time.Now())
+
 	case "done":
 		if !in.Selected {
 			_, err := a.store.RetractCompletion(ctx, c.ID, personID, prompt.ID, time.Now())
@@ -1181,6 +1450,42 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 			return err
 		}
 		if err := a.store.RecordCompletion(ctx, c.ID, personID, "tap", time.Now()); err != nil {
+			return err
+		}
+		a.react(ctx, prompt)
+		return nil
+	}
+	return nil
+}
+
+// applyItemAction is a tap that landed on a note or a task rather than a
+// chore.
+//
+// It exists because the picker can put a ✅ over something you decided to do,
+// and that button has to mean the same thing the tasks screen's own "did it"
+// means — the same store call, the same reversal. Silent like every other tap
+// path: the boost is the receipt.
+func (a *Applier) applyItemAction(ctx context.Context, in ActionIntent, personID int64, prompt Prompt, it Item) error {
+	switch in.Kind {
+	case "later":
+		if !in.Selected {
+			return a.store.UnrefuseToday(ctx, personID, OfferTask, it.ID, time.Now())
+		}
+		return a.store.Refuse(ctx, personID, OfferTask, it.ID, time.Now())
+
+	case "done":
+		// A state assertion rather than a delta, exactly as it is for a chore:
+		// "selected" means it is done, unselected means it is not, and applying
+		// either twice lands in the same place. Untapping returns it to the
+		// pile's own `open`, which for a task is the tasks screen — the kind is
+		// untouched, because undoing a completion is not undoing the decision.
+		if !in.Selected {
+			return a.store.SetItemState(ctx, it.ID, ItemOpen, time.Now())
+		}
+		if err := a.store.SetItemState(ctx, it.ID, ItemDone, time.Now()); err != nil {
+			return err
+		}
+		if err := a.store.RecordAnswer(ctx, personID, OfferTask, it.ID, AnswerDid, time.Now()); err != nil {
 			return err
 		}
 		a.react(ctx, prompt)

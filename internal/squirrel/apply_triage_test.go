@@ -4,7 +4,9 @@ package squirrel_test
 
 import (
 	"context"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -38,9 +40,18 @@ func stateOf(t *testing.T, store *squirrel.Store, itemID int64) string {
 	return state
 }
 
+// replyIDs hands every reply its own message id.
+//
+// A fixed id was fine while at most one reply per test recorded a prompt.
+// Since the hand-off, a completion's own reply carries a numbered surface too,
+// so two calls in one test would store the same external_message_id twice and
+// the unique index would — correctly — refuse it. Campfire's ids are unique;
+// the helper's were the thing that was not.
+var replyIDs atomic.Int64
+
 func triage(t *testing.T, store *squirrel.Store, personID int64, text string) string {
 	t.Helper()
-	chat, got := chatRecorder("m-reply")
+	chat, got := chatRecorder(strconv.FormatInt(replyIDs.Add(1), 10))
 	require.NoError(t, squirrel.NewApplier(store, nil, chat, nil).
 		Apply(context.Background(), itemOf(text), &personID))
 	require.Len(t, *got, 1)

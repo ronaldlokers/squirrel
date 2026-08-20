@@ -23,6 +23,10 @@ type SchedulerOptions struct {
 	At       time.Duration
 	Location *time.Location
 	OnError  func(error)
+	// Push reaches a browser rather than the room, and only the leave-by
+	// warning uses it. Nil means no pushing, which is a supported state: the
+	// room is the channel that always works and this is the one that is fast.
+	Push Pusher
 }
 
 type Scheduler struct {
@@ -126,7 +130,10 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	completed, err := s.opts.Store.CompletedToday(ctx, s.opts.PersonID, midnight)
+	// Everything worth saying back, not only the chores. A day with four
+	// tasks finished and no chores used to produce a message that mentioned
+	// none of it.
+	handled, err := s.opts.Store.HandledSince(ctx, s.opts.PersonID, midnight)
 	if err != nil {
 		return err
 	}
@@ -150,7 +157,7 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	m := EveningMessage(completed, captures, nudge)
+	m := EveningMessage(handled, captures, nudge)
 	if m.Text == "" {
 		return nil
 	}
@@ -519,12 +526,64 @@ func (s *Scheduler) Run(ctx context.Context) {
 		if err := s.TimerTick(ctx, time.Now()); err != nil {
 			s.opts.OnError(err)
 		}
+		// Separate for the same reason, and more sharply: a fixed point at
+		// nine in the evening is the one message in this product that must not
+		// be skipped because something earlier in the day already ran.
+		if err := s.MomentTick(ctx, time.Now()); err != nil {
+			s.opts.OnError(err)
+		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 		}
 	}
+}
+
+// MomentTick says when to leave, once per fixed point.
+//
+// It is marked said before the send rather than after, the same ordering every
+// other outbound in this file uses and for the same reason: the row is what
+// makes "once" a guarantee rather than a hope. The cost is the same too — a
+// failed send spends the warning — and it is accepted here for a reason the
+// others do not have. The alternative is a leave-by message that repeats every
+// minute until it succeeds, at exactly the moment someone is trying to get out
+// of the door.
+//
+// A moment whose warning was missed entirely — the process was down, the
+// window passed — is not sent late. "Leave about 14:10" at 14:25 is worse than
+// silence: it is wrong, and it is wrong in the direction that makes you trust
+// the next one less.
+func (s *Scheduler) MomentTick(ctx context.Context, now time.Time) error {
+	m, found, err := s.opts.Store.DueMoment(ctx, s.opts.PersonID, now)
+	if err != nil || !found {
+		return err
+	}
+	if err := s.opts.Store.MarkMomentSaid(ctx, m.ID, now); err != nil {
+		return err
+	}
+
+	// The room first, always. Push is the improvement and never the only
+	// channel: a browser that has revoked its subscription, a phone with
+	// notifications off, a laptop that is closed — all of those still leave the
+	// message somewhere it can be found.
+	_, err = s.sendMessage(ctx, LeaveMessage(m))
+
+	// And then the fast one, whose failure is nobody's problem: the message
+	// has already arrived somewhere by the time this runs.
+	if s.opts.Push != nil {
+		body := LeaveWords(m)
+		if m.Bring != "" {
+			body += " · take " + m.Bring
+		}
+		if pushErr := s.opts.Push(ctx, s.opts.PersonID, Push{
+			Title: m.Label,
+			Body:  body,
+		}); pushErr != nil {
+			s.opts.OnError(fmt.Errorf("pushing a leave-by warning: %w", pushErr))
+		}
+	}
+	return err
 }
 
 // TimerTick says "time" when a timer's time is up, once.

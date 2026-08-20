@@ -73,6 +73,11 @@ type Config struct {
 	// from the Authentik outpost. Squirrel writes no authentication code and
 	// holds no session; it compares one header to one configured value.
 	WebIdentityHeader string
+	// Push is the VAPID identity, or empty. Empty is a supported state and not
+	// a degraded one: the leave-by message still reaches the room, and the
+	// screen simply never offers to subscribe. The private key comes from the
+	// secret store and must never appear in the repository.
+	Push PushConfig
 	// WebURL is where the screen can be reached from outside, so chat can
 	// point at it. Empty means chat says nothing about the screen, which is
 	// the honest answer when nobody has said where it is — a link built from a
@@ -251,6 +256,12 @@ func LoadConfig(env map[string]string) (Config, error) {
 		PresenceSecret: env["PRESENCE_SECRET"],
 		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
 		PresenceDelay:  presenceDelay,
+
+		Push: PushConfig{
+			PublicKey:  env["VAPID_PUBLIC_KEY"],
+			PrivateKey: env["VAPID_PRIVATE_KEY"],
+			Contact:    env["PUSH_CONTACT"],
+		},
 
 		WebIdentity:       env["WEB_IDENTITY"],
 		WebIdentityHeader: optional(env, "WEB_IDENTITY_HEADER", "X-Authentik-Username"),

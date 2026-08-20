@@ -26,6 +26,18 @@ type fakeStore struct {
 	timer   *squirrel.Timer
 	err     error
 
+	// offer is what the picker hands back, and nil is "nothing to hand you" —
+	// the case the screen has to render as an absence rather than as an empty
+	// box. gated stands in for a low day: the offer exists and is withheld
+	// until something asks anyway.
+	offer *squirrel.Offer
+	gated bool
+	// What the offer's buttons did, so a test can assert on the write rather
+	// than on a rendering of it.
+	answers    []string
+	refused    []int64
+	subscribed []string
+
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
 	completed  []int64
@@ -220,8 +232,53 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 	return true, nil
 }
 
-// The check-in. The fake keeps only the latest because that is all the store
-// will ever hand back — a series is not obtainable by construction.
+// The picker, faked. The rules themselves are proved against a real database
+// in internal/squirrel; what the screen has to be tested for is what it does
+// with an offer and with the absence of one, so this hands back whatever the
+// test set and records the answers.
+func (f *fakeStore) PickNow(_ context.Context, _ int64, _ time.Time, showAnyway bool) (squirrel.Offer, bool, error) {
+	if f.err != nil {
+		return squirrel.Offer{}, false, f.err
+	}
+	if f.offer == nil || (f.gated && !showAnyway) {
+		return squirrel.Offer{}, false, nil
+	}
+	return *f.offer, true, nil
+}
+
+func (f *fakeStore) Did(_ context.Context, _ int64, o squirrel.Offer, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.answers = append(f.answers, string(squirrel.AnswerDid)+":"+string(o.Kind))
+	return nil
+}
+
+func (f *fakeStore) Refuse(_ context.Context, _ int64, kind squirrel.OfferKind, refID int64, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.refused = append(f.refused, refID)
+	f.answers = append(f.answers, string(squirrel.AnswerLater)+":"+string(kind))
+	return nil
+}
+
+func (f *fakeStore) RecordAnswer(_ context.Context, _ int64, kind squirrel.OfferKind, _ int64, answer squirrel.OfferAnswer, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.answers = append(f.answers, string(answer)+":"+string(kind))
+	return nil
+}
+
+func (f *fakeStore) SaveSubscription(_ context.Context, _ int64, sub squirrel.Subscription) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.subscribed = append(f.subscribed, sub.Endpoint)
+	return nil
+}
+
 func (f *fakeStore) RecordCheckin(_ context.Context, _ int64, m squirrel.Mood, _ string, at time.Time) error {
 	if f.err != nil {
 		return f.err

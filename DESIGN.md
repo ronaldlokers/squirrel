@@ -622,16 +622,65 @@ precedent to follow"*, turned out to be wrong, so it is replaced by what is
 actually true: **door art is the owner's, and the guard rails govern anything
 drawn by anyone else.**
 
-### The Peek — removed, and why it stays removed
+### The Peek — removed, and what replaced it
 
 An earlier home screen showed the newest note: readable, not actionable, one
 card, no stack behind it, absent without residue when the pile was empty. It was
 cut on sight. A home screen that shows what is waiting greets you with what is
-waiting, however carefully it is dressed.
+waiting, however carefully it is dressed. That reasoning is still right and is
+why this entry stays.
 
-If a preview ever returns, the seven prohibitions return with it: no count, no
-stack behind it, no *more*, no action, no state colour, no urgency copy, and no
-residue when the pile is empty.
+**On 20 August 2026 the offer took that space, and it breaks exactly one of the
+seven prohibitions.** The Peek showed a slice of the backlog, chosen by arrival
+order, that you could not act on. The offer is one thing *the product chose*,
+with one way to do it and a one-press way to turn it down — so the prohibition
+it breaks is "no action", and breaking it is precisely what stops the region
+being a greeting from the pile.
+
+The other six hold, and two more join them:
+
+- never more than one, and never a list;
+- never a count, a stack, or a *more*;
+- no state colour and no urgency copy — it is never late, never red, never
+  bold;
+- **absent** rather than empty when there is nothing to offer, so home is then
+  byte-for-byte the page it was before the picker existed;
+- refusing costs one press, has no consequence and asks nothing back;
+- it changes what is *offered*, never what is *true*;
+- it is chosen deterministically and explains itself in one clause.
+
+### The Offer
+
+The one card on home, above the doors, composed only of parts that already
+exist:
+
+- **Stock and depth:** card fill, 3px outline, 14px radius, the result card's
+  shadow. A card you act on rather than a door you walk through, so it does not
+  take the door's hover.
+- **No page tab.** A tab says what a note ended up as; this has no outcome yet.
+- **Head:** the meta role in headphone brown — *RIGHT NOW*.
+- **What:** the Note role's floor at 21px, in the casual axis, because it is
+  the owner's own words wherever there are any.
+- **Because:** the Voice role, in headphone brown. One clause, lower case, no
+  full stop. Squirrel speaking in a full sentence is the second of the two
+  places the casual axis is allowed.
+- **Controls:** *did it* in the chores screen's own lifted done green, because
+  one colour means "it happened" wherever it is said; *10 min* in paper,
+  because orange means something was **made** and a timer makes nothing;
+  *not now* as the one control in the system that is deliberately not a pill —
+  no outline, no offset, pushed to the far end. It has to be easy to reach and
+  must never read as the default.
+- **I can't start** is quieter still: the lid link's voice, underlined, opening
+  a disclosure in the same grammar the chore picker and the reword box use. Its
+  four answers are paper chips of equal weight — one of them louder would be
+  the product guessing which it is, and it does not know.
+
+**A fixed point carries one button and no refusal.** It is the one thing on
+this screen the world imposed rather than the product suggested, and a control
+implying it can be moved would be a lie with consequences.
+
+**The lid is the only place a number counts down**, and the offer never joins
+it: the timer strip is a fact about a thing you chose to start.
 
 ### Cards / Containers
 
@@ -714,3 +763,9 @@ border that a card UI would reach for by default.
   card it undoes, not in a corner of the screen.
 - **Don't** celebrate an empty pile. It is a normal ending, not an achievement,
   and a reward here is a counter wearing a different hat.
+- **Don't** render an offer with nothing in it. The region is absent when there
+  is nothing to hand over — an empty box, or a sentence encouraging you to find
+  something, is the product deciding you ought to be busy.
+- **Don't** give the offer more than one thing, at any width, in any state.
+- **Don't** put a second permission prompt anywhere. One notification exists in
+  this product and it is about having to leave.

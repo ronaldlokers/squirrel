@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -198,7 +200,13 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
 			Identity:       config.WebIdentity,
-			Owner:          webOwner.Load,
+			// Empty unless the *whole* pair plus the contact is configured,
+			// not merely the public half. A public key alone would mount the
+			// subscribe route and let a browser sign up to a channel nothing
+			// can send on: subscriptions stored, permission spent, and silence
+			// — which is the one shape worse than never offering.
+			PushKey: pushKeyFor(config.Push),
+			Owner:   webOwner.Load,
 		}); err != nil {
 			cancel()
 			return nil, fmt.Errorf("mounting the pile: %w", err)
@@ -377,4 +385,71 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// pusher builds the fast channel, or nil.
+//
+// Nil when there is no VAPID pair, which is a supported state rather than a
+// degraded one: every message this would carry still reaches the room, and the
+// room is the channel that always works.
+//
+// Every failure here is swallowed by the caller. A push service being slow, a
+// browser having revoked its subscription, a laptop that is closed — none of
+// those may turn a message that has already arrived somewhere into an error.
+func pusher(cfg squirrel.PushConfig, store *squirrel.Store) squirrel.Pusher {
+	if !cfg.Enabled() {
+		slog.Warn("no push keys configured; only the room is told about leaving")
+		return nil
+	}
+	// Its own client with a short timeout rather than the default one: a push
+	// service that hangs must not hold the scheduler's minute open, and a
+	// warning about leaving is worthless by the time a default timeout would
+	// have expired anyway.
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	return func(ctx context.Context, personID int64, p squirrel.Push) error {
+		subs, err := store.LiveSubscriptions(ctx, personID)
+		if err != nil {
+			return err
+		}
+		for _, sub := range subs {
+			gone, err := squirrel.SendPush(ctx, client, cfg, sub, p)
+			if err != nil {
+				slog.Error("push", "endpoint", host(sub.Endpoint), "error", err)
+				continue
+			}
+			if gone {
+				// The browser is gone for good. Retrying it forever makes every
+				// later send slower for nothing.
+				if err := store.SubscriptionGone(ctx, sub.ID, time.Now()); err != nil {
+					slog.Error("retiring a push subscription", "error", err)
+				}
+			}
+		}
+		return nil
+	}
+}
+
+// host is the push service's name without the path, which is the part of an
+// endpoint that identifies a browser. A whole endpoint in a log line is a
+// credential of sorts — anyone holding it can push to that browser — and the
+// same reasoning already keeps the bot key and the presence token out of logs.
+func host(endpoint string) string {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "?"
+	}
+	return u.Host
+}
+
+// pushKeyFor is the public key, and only when sending would actually work.
+//
+// Enabled() wants all three settings. Handing the screen a public key while
+// the private half is missing would draw a button, spend a permission prompt,
+// and store a subscription that nothing will ever push to.
+func pushKeyFor(cfg squirrel.PushConfig) string {
+	if !cfg.Enabled() {
+		return ""
+	}
+	return cfg.PublicKey
 }

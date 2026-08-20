@@ -159,3 +159,51 @@ self.addEventListener("fetch", event => {
     )
   );
 });
+
+// The one thing that arrives when you are not looking at the screen.
+//
+// Only the leave-by warning is ever pushed. A nudge is a suggestion and a
+// suggestion that waits is doing its job; "leave about 14:10" has one useful
+// minute, and a message noticed at 14:40 is worse than none because it teaches
+// you not to trust the next one.
+//
+// requireInteraction is deliberate and is the only place this product asks for
+// your attention rather than waiting for it: a notification that vanishes into
+// the shade while you are in another room is the failure this exists to fix.
+self.addEventListener("push", event => {
+  event.waitUntil((async () => {
+    let said = { title: "Squirrel", body: "" };
+    try {
+      if (event.data) said = { ...said, ...event.data.json() };
+    } catch {
+      // A push that will not parse is still worth showing: something is
+      // happening and staying silent about it is the one outcome with no
+      // recovery.
+      said.body = event.data ? event.data.text() : "";
+    }
+    await self.registration.showNotification(said.title, {
+      body: said.body,
+      icon: "/static/icon-192.png",
+      badge: "/static/icon-192.png",
+      // One at a time. A stack of these is a list of things you are late for,
+      // which is the shape this product does not have.
+      tag: "squirrel-now",
+      renotify: true,
+      requireInteraction: true
+    });
+  })());
+});
+
+// Pressing it goes to the front door rather than to a deep link. The offer is
+// there, and a link to something that has since been done is worse than a page
+// that says what is true now.
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const open = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of open) {
+      if (new URL(client.url).origin === self.location.origin) return client.focus();
+    }
+    return self.clients.openWindow("/");
+  })());
+});

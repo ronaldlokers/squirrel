@@ -26,6 +26,11 @@ type Options struct {
 	// Identity is the one value that may read this pile. Mount refuses to
 	// register a single route when it is empty.
 	Identity string
+	// PushKey is the VAPID public key the browser needs to subscribe, or empty.
+	// Empty means the screen never offers: a subscribe button with no key
+	// behind it is a button that fails silently, which is worse than one that
+	// was never drawn.
+	PushKey string
 	// Owner answers whose pile this is. There is one person and SeedOwner
 	// reconciles them once, so this is not a per-request lookup — it is a
 	// function only because of when it can be answered. Routes must be
@@ -70,6 +75,19 @@ type Store interface {
 	// deliberately no way to ask this store for a series.
 	RecordCheckin(ctx context.Context, personID int64, m squirrel.Mood, source string, at time.Time) error
 	LatestCheckin(ctx context.Context, personID int64) (squirrel.Checkin, bool, error)
+
+	// The one thing. PickNow chooses it, and the other three are the only
+	// answers it takes. There is deliberately no function here that returns
+	// more than one offer, for the same reason there is none that returns more
+	// than one check-in: a caller cannot render a list it cannot obtain.
+	PickNow(ctx context.Context, personID int64, now time.Time, showAnyway bool) (squirrel.Offer, bool, error)
+	Did(ctx context.Context, personID int64, o squirrel.Offer, at time.Time) error
+	Refuse(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, at time.Time) error
+	RecordAnswer(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, answer squirrel.OfferAnswer, at time.Time) error
+
+	// Where to reach you when you are not looking at the room. Only the
+	// leave-by warning ever uses it.
+	SaveSubscription(ctx context.Context, personID int64, sub squirrel.Subscription) error
 
 	// The body double. One per person, replaced each time, and nothing kept
 	// once it is over.

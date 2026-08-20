@@ -309,6 +309,72 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 	return texts, rows.Err()
 }
 
+// HandledToday is everything that happened today that is worth saying back.
+//
+// The evening message used to list completed chores and nothing else, so a day
+// with four tasks finished and no chores said nothing at all — on the one
+// surface positioned to correct "I did nothing today". It now names the chores
+// and the tasks, and counts the notes cleared.
+//
+// The count is the one number in this product, and it is worth being explicit
+// about why it is allowed. The banned counter is a count of what *remains*: it
+// grows while nobody is looking, it sits beside an implied target of zero, and
+// it can be lost. This counts what happened, in the past, on one day. It cannot
+// grow while you are not looking and there is nothing to lose. If that reading
+// is ever rejected, the fix is one line in EveningMessage — the words become
+// "some notes" — and nothing else moves.
+type Handled struct {
+	Chores []string
+	Tasks  []string
+	// Notes is how many notes were triaged today, in any direction. Clearing
+	// one is work whichever exit it took, and splitting it into done, dropped
+	// and kept would be three numbers where one is already the most that
+	// should be said.
+	Notes int
+}
+
+// HandledSince gathers it in one place so the evening message does not have to
+// know three queries.
+func (s *Store) HandledSince(ctx context.Context, personID int64, since time.Time) (Handled, error) {
+	var h Handled
+
+	chores, err := s.CompletedToday(ctx, personID, since)
+	if err != nil {
+		return Handled{}, err
+	}
+	h.Chores = chores
+
+	rows, err := s.pool.Query(ctx, `
+		select raw_text from items
+		 where person_id = $1 and kind = 'task' and state = 'done'
+		   and state_at >= $2
+		 order by state_at`, personID, since)
+	if err != nil {
+		return Handled{}, fmt.Errorf("querying what you did: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var text string
+		if err := rows.Scan(&text); err != nil {
+			return Handled{}, fmt.Errorf("scanning what you did: %w", err)
+		}
+		h.Tasks = append(h.Tasks, text)
+	}
+	if err := rows.Err(); err != nil {
+		return Handled{}, fmt.Errorf("querying what you did: %w", err)
+	}
+
+	// Notes only: a task leaving the pile is already named above, and counting
+	// it here as well would say the same thing twice.
+	if err := s.pool.QueryRow(ctx, `
+		select count(*) from items
+		 where person_id = $1 and kind = 'note' and state <> 'open'
+		   and state_at >= $2 and raw_text <> ''`, personID, since).Scan(&h.Notes); err != nil {
+		return Handled{}, fmt.Errorf("counting what you cleared: %w", err)
+	}
+	return h, nil
+}
+
 // CompletedToday names the chores completed since `since`, in the order they
 // were done. Retracted events are excluded: a retraction means it did not
 // happen, and reporting it back would contradict every other surface.

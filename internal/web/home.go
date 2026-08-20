@@ -6,30 +6,45 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The home screen reads almost nothing, and that absence is the design.
+// The home screen reads two things, and both are about the minute you are in
+// rather than about what is waiting.
 //
-// A home screen that shows what is waiting greets you with what is waiting,
-// however carefully it is dressed — so nothing here depends on what the pile
-// holds. A full pile and an empty one render the same bytes, which also means
-// there is nothing on this page to disagree with the chat about.
+// It used to read almost nothing, and that absence was the design: a home
+// screen that shows what is waiting greets you with what is waiting, however
+// carefully it is dressed. That argument still holds and is why the doors and
+// the slot depend on nothing — a full pile and an empty one render the same
+// bytes below the offer.
 //
-// The one thing it does read is how you are right now, which is not a fact
-// about the pile: it is about the minute you are in, it is answered here, and
-// it is shown back one reading at a time. If the database cannot answer, the
-// question is simply asked — a check-in that cannot be read is not a reason to
-// fail a page that otherwise needs nothing.
+// What changed is that "nothing about the pile" was doing a second job it was
+// never meant to do: it also meant Squirrel never chose anything, so the front
+// door asked which of three boxes you would like to open. The offer is one
+// thing the product picked, with an action on it. It is not a preview of the
+// pile and it is not a count of anything; when there is nothing to hand you it
+// is absent rather than empty, which is the same rule the deck's own empty
+// state follows.
+//
+// The check-in and the offer share one region, and the sharing is the point:
+// the question configures the page rather than filing a diary entry, so home
+// has exactly one interactive thing above the doors. Stale reading, and it
+// asks; fresh reading, and it offers.
 func homeHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		v := view{
 			Home: true,
-			// All three arrive from the address bar, so they are read the way
-			// a stranger's typing is read: a present flag, and words that are
+			// All four arrive from the address bar, so they are read the way a
+			// stranger's typing is read: a present flag, and words that are
 			// escaped on the way out like any other text on this screen.
 			Kept:   q.Get("kept") != "",
 			NoKeep: q.Get("nokeep") != "",
 			Held:   q.Get("held") != "",
 			Said:   q.Get("said"),
+			// "Show me anyway" lifts the capacity gate for this render and
+			// nothing else. It lives in the address bar rather than in the
+			// database on purpose: a person who says they are wiped and then
+			// works anyway has not changed their answer, and storing it would
+			// make them re-decide tomorrow that they meant it.
+			Anyway: q.Get("anyway") != "",
 		}
 
 		// `?ask=1` is "say something else": the question again, without
@@ -45,6 +60,18 @@ func homeHandler(s Store, opts Options) http.HandlerFunc {
 		if v.Mood == "" {
 			for _, m := range squirrel.Moods {
 				v.Faces = append(v.Faces, faceView{Mood: string(m), Word: squirrel.Words[m]})
+			}
+		} else {
+			// Only once the question has been answered. Asking how you are and
+			// then handing you a job in the same breath is the interruption
+			// this product exists to reduce, and the answer is what shapes the
+			// offer anyway.
+			v.Offer = offerFor(s, opts, r, v.Anyway)
+			if v.Offer != nil {
+				// The ladder's answer, when one has been asked for. It hangs
+				// off the offer rather than replacing it: the thing you could
+				// not start is still the thing.
+				v.Offer.Unstuck = unstuckFrom(q)
 			}
 		}
 

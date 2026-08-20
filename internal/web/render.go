@@ -73,6 +73,17 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
+	// Offer is the one thing, or nil. Nil renders nothing at all rather than
+	// an empty region: having nothing to be handed is a normal state, and a
+	// reassuring sentence in its place would be the product deciding you ought
+	// to be busy.
+	Offer *offerView
+	// Anyway is the capacity gate lifted for this render, from the address bar
+	// and stored nowhere.
+	Anyway bool
+	// PushKey is the VAPID public key, or empty when pushing is not
+	// configured. The script offers to subscribe only when there is one.
+	PushKey string
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
 	// V stamps every asset URL on the page. render fills it, so no handler can
@@ -145,6 +156,36 @@ func elsewhere(here string) []linkView {
 type faceView struct {
 	Mood string
 	Word string
+}
+
+// offerView is the one thing, as the screen says it.
+//
+// No state, no colour, no date and nothing about how long it has been waiting.
+// Because is the clause that explains the choice and is not optional — an
+// offer that cannot say why it is the offer is a demand.
+type offerView struct {
+	Kind    string
+	RefID   int64
+	Text    string
+	Because string
+	// Running means this is the timer you already started rather than
+	// something chosen for you, so the card offers nothing to press: the lid
+	// already carries the only control it needs.
+	Running bool
+	// Unstuck is the ladder's answer, once one has been asked for. The offer
+	// stays on the card underneath it: the thing you could not start is still
+	// the thing, and taking it away would make "I can't start" a way of losing
+	// it.
+	Unstuck *unstuckView
+}
+
+// unstuckView is one line and at most one control. There is deliberately
+// nowhere here to put a second step — the failure being avoided is the
+// twelve-step plan, and a struct that cannot hold one cannot render one.
+type unstuckView struct {
+	Line    string
+	Minutes int
+	Ask     bool
 }
 
 type undoView struct {
@@ -234,6 +275,7 @@ func toView(it squirrel.Item) noteView {
 // handler would mean five places to forget it.
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
 	v.Timer = runningTimer(s, opts, r)
+	v.PushKey = opts.PushKey
 	render(w, name, v)
 }
 

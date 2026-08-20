@@ -36,6 +36,18 @@ func Mount(m Mux, s Store, opts Options) error {
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
 	m.Post("/mood", guard(opts, sameOrigin(moodHandler(s, opts))))
+	// The one thing's three answers. Behind the origin check like every other
+	// write here.
+	m.Post("/now/act", guard(opts, sameOrigin(nowActHandler(s, opts))))
+	// I can't start. Its own route rather than a fourth act, because it is the
+	// one answer that is about you rather than about the thing.
+	m.Post("/now/stuck", guard(opts, sameOrigin(nowStuckHandler(s, opts))))
+	// Where to reach this browser. Only mounted when there is a key to
+	// subscribe with — a route that always answers 400 is a route that teaches
+	// the client to stop asking.
+	if opts.PushKey != "" {
+		m.Post("/push/subscribe", guard(opts, sameOrigin(pushSubscribeHandler(s, opts))))
+	}
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
