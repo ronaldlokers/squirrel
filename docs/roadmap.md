@@ -130,6 +130,18 @@ told bound the model do not exist.
 
 ---
 
+## Next, in order
+
+Chosen on 20 August once Buddy shipped, and argued in
+`docs/proposals/2026-08-20-after-the-coach.md`.
+
+| | | Why here |
+| --- | --- | --- |
+| **1** | Three states for things you cannot act on | An offer you cannot act on spends the one decision you were given. Excluded from every existing list by construction, so it is smaller than it sounds. |
+| **2** | The capture gap | The front door acknowledges before the words are durable. Disaster-shaped rather than daily, but it is the first principle. |
+| **3** | Mood readable, and resurfacing | Two small ones. Both shown only on request, never as their own stream. |
+| **4** | Attachments, on a PVC | Last: the only one that adds infrastructure. |
+
 ## Decided, not yet built
 
 ### Product
@@ -182,19 +194,24 @@ micro-steps for two or three chores · novelty in **art and phrasing only**.
 hours 22:00–06:00 on the unasked path, and no nudge on a low day. See the
 shipped list.)*
 
-1. **Attachment storage.** No object storage exists in the cluster. Either a PVC
-   on the pod — simplest, but the restore drill has to cover it — or add MinIO
-   or Garage. Needed before attachments.
-2. **`create_moment` proposal lapse.** How long an unanswered proposed fixed
-   point stays pending. Defaulting to an hour, matching the breadcrumb, unless
-   decided otherwise. Needed at coach phase G.
-3. **Records to amend before coach phase C.** `DESIGN.md` gains the modal
-   exception and the coach sheet; `PRODUCT.md` gains the coach surface and the
-   floor principle; `docs/pile-screen.md` gains `/coach`.
-4. **Two homelab commits unpushed** — the coach key and its rotation.
-5. **The vault note** for `squirrel openai key` still carries the *known
+1. ~~**Attachment storage.**~~ **Decided 20 August: a PVC on the pod.** No
+   object storage exists in the cluster and adding MinIO or Garage would mean a
+   service to patch, back up and keep alive for one feature. The cost, stated:
+   attachments join the pod's lifecycle and the restore drill has to grow to
+   cover the volume.
+2. ~~**`create_moment` proposal lapse.**~~ **Answered by construction at phase
+   G:** a proposal is stored nowhere, so it lasts as long as the page it is on
+   and there is nothing pending to expire.
+3. ~~**Records to amend before coach phase C.**~~ **Done** — `DESIGN.md`,
+   `PRODUCT.md` and the route table were all amended before C shipped.
+4. **The vault note** for `squirrel openai key` still carries the *known
    exposed* paragraph from the revoked key. App-only edit; `pass-cli` reaches
    named fields but not the note body.
+5. **Whether `/v1/responses` is worth the portability.** Buddy decides without
+   extended reasoning today, because tools and reasoning cannot both be asked
+   for on `/v1/chat/completions`. Two calls of evidence is not enough to spend
+   `COACH_BASE_URL`'s portability on. Revisit if the overwhelm turn reads
+   shallow.
 
 ---
 
