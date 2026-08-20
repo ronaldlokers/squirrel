@@ -298,7 +298,14 @@ which pull toward a precision tool — the design has to be both, not average th
 6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
    are fixed, readable and the same every time. An offer nobody can account for
    is a demand.
-7. **The deterministic answer is never deleted; it becomes the floor.** Every
+7. **Squirrel does not speak first at a bad moment.** Nothing arrives unasked
+   between 22:00 and 06:00, and nothing is raised on a low day. Both are floors
+   under the one path that speaks without being spoken to; neither can be
+   lifted, including by the coach, which is asked afterwards or not at all.
+   The chore's own clock keeps running while it waits, so nothing is lost —
+   only the asking stops. A message you *chose* the hour of, like the evening
+   one, is not covered by this: it is not arriving unasked.
+8. **The deterministic answer is never deleted; it becomes the floor.** Every
    place a model speaks has a fixed answer underneath it that shipped first and
    keeps working — the picker chooses, the ladder answers, the asking windows
    decide when to interrupt. No key, no network, or a month's budget spent must

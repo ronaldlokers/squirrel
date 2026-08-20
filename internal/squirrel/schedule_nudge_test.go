@@ -40,7 +40,7 @@ func TestNudgeSendsOneChore(t *testing.T) {
 	chat, sent := chatRecorder("1")
 	s := schedulerWithChat(t, store, p, chat)
 
-	require.NoError(t, s.Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+	require.NoError(t, s.Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 1)
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
 	// Done and "not today": one chore, two answers.
@@ -60,7 +60,9 @@ func TestSecondNudgeInADaySendsNothing(t *testing.T) {
 
 	chat, sent := chatRecorder("1", "2")
 	s := schedulerWithChat(t, store, p, chat)
-	now := time.Now()
+	// Ten in the morning rather than now: quiet hours are a floor on this
+	// path, so the real clock would make this a test about when the suite runs.
+	now := today(t, 10, 0, 0)
 
 	require.NoError(t, s.Nudge(ctx, now, squirrel.NudgeFromMessage))
 	require.NoError(t, s.Nudge(ctx, now.Add(time.Hour), squirrel.NudgeFromArrival),
@@ -269,7 +271,7 @@ func TestNudgeWithNothingDueSendsNothing(t *testing.T) {
 	chat, sent := chatRecorder("1")
 	s := schedulerWithChat(t, store, p, chat)
 
-	require.NoError(t, s.Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+	require.NoError(t, s.Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 	require.Empty(t, *sent)
 }
 
@@ -290,7 +292,7 @@ func TestNudgeWithNothingDueLogsIt(t *testing.T) {
 	s := schedulerWithChat(t, store, p, chat)
 
 	logs := captureLogs(t)
-	require.NoError(t, s.Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+	require.NoError(t, s.Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 	require.Empty(t, *sent)
 
 	require.Contains(t, logs.String(), "nudge: nothing due")
@@ -460,7 +462,7 @@ func TestNudgedChoreIsNotOfferedAgainWithinItsTolerance(t *testing.T) {
 
 	chat, sent := chatRecorder("1", "2")
 	s := schedulerWithChat(t, store, p, chat)
-	now := time.Now()
+	now := today(t, 10, 0, 0)
 
 	require.NoError(t, s.Nudge(ctx, now, squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 1)

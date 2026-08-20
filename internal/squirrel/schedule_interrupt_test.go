@@ -14,6 +14,10 @@ import (
 
 // The veto. What these tests are about is the direction it can fail in, and
 // the fact that it cannot cause an interruption — only prevent one.
+//
+// Every one of them nudges at a fixed ten in the morning rather than at
+// time.Now(). Quiet hours are a floor on this path now, so a test using the
+// real clock would be a test about what time the suite runs at.
 
 type heldBack struct {
 	asked []string
@@ -58,7 +62,7 @@ func TestAHeldBackNudgeSaysNothing(t *testing.T) {
 	hold := &heldBack{allow: false}
 
 	require.NoError(t, schedulerHolding(t, store, p, chat, hold).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 
 	require.Empty(t, *sent)
 	require.Equal(t, []string{"vacuum"}, hold.asked)
@@ -77,13 +81,13 @@ func TestBeingHeldBackDoesNotSpendTheDay(t *testing.T) {
 
 	quiet, nothing := chatRecorder("1")
 	require.NoError(t, schedulerHolding(t, store, p, quiet, &heldBack{allow: false}).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 	require.Empty(t, *nothing)
 
 	// A later trigger the same day still works, because nothing was claimed.
 	chat, sent := chatRecorder("2")
 	require.NoError(t, schedulerHolding(t, store, p, chat, &heldBack{allow: true}).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 1)
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
 }
@@ -100,7 +104,7 @@ func TestSuppliedWordingReplacesTheTextAndNothingElse(t *testing.T) {
 	hold := &heldBack{allow: true, say: "The hallway is getting bad."}
 
 	require.NoError(t, schedulerHolding(t, store, p, chat, hold).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 
 	require.Len(t, *sent, 1)
 	require.Equal(t, "The hallway is getting bad.", (*sent)[0].message.Text)
@@ -119,7 +123,7 @@ func TestAgreeingWithoutWordingLeavesTheNudgeAsItWas(t *testing.T) {
 	chat, sent := chatRecorder("1")
 
 	require.NoError(t, schedulerHolding(t, store, p, chat, &heldBack{allow: true}).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 
 	require.Len(t, *sent, 1)
 	require.Contains(t, (*sent)[0].message.Text, "vacuum")
@@ -135,7 +139,7 @@ func TestWithNoInterrupterTheNudgeIsUnchanged(t *testing.T) {
 	chat, sent := chatRecorder("1")
 
 	require.NoError(t, schedulerHolding(t, store, p, chat, nil).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 	require.Len(t, *sent, 1)
 }
 
@@ -151,7 +155,7 @@ func TestItIsNeverAskedWhenNothingIsDue(t *testing.T) {
 	hold := &heldBack{allow: true}
 
 	require.NoError(t, schedulerHolding(t, store, p, chat, hold).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 
 	require.Empty(t, *sent)
 	require.Empty(t, hold.asked, "it was asked about a nudge the rules never made")
@@ -167,12 +171,12 @@ func TestItIsNotAskedTwiceInADay(t *testing.T) {
 
 	first, _ := chatRecorder("1")
 	require.NoError(t, schedulerHolding(t, store, p, first, &heldBack{allow: true}).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 
 	second, sent := chatRecorder("2")
 	hold := &heldBack{allow: true}
 	require.NoError(t, schedulerHolding(t, store, p, second, hold).
-		Nudge(ctx, time.Now(), squirrel.NudgeFromArrival))
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
 
 	require.Empty(t, *sent)
 	// And it was not even asked. A chore that has already been raised today
