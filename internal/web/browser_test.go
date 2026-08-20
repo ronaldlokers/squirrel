@@ -54,13 +54,25 @@ func (m *serveMux) Post(pattern string, h http.HandlerFunc) { m.mux.HandleFunc("
 // Postgres: what is under test is the script, and the fake store is the same
 // one the rest of this package's tests use.
 func screen(t *testing.T, f *fakeStore) *httptest.Server {
+	return screenWith(t, f, nil)
+}
+
+// screenWith is screen plus a coach, for the tests that need one behind the
+// sheet. Without it the sheet already shows "which of these is it", which
+// makes a test looking for an answer pass before anything has been sent.
+func screenWith(t *testing.T, f *fakeStore, c *fakeCoach) *httptest.Server {
 	t.Helper()
 
-	m := &serveMux{mux: http.NewServeMux()}
-	require.NoError(t, Mount(m, f, Options{
+	opts := Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
 		Owner: func() int64 { return 1 },
-	}))
+	}
+	if c != nil {
+		opts = c.options(opts)
+	}
+
+	m := &serveMux{mux: http.NewServeMux()}
+	require.NoError(t, Mount(m, f, opts))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Header.Set("X-Authentik-Username", "ronald")
@@ -84,9 +96,13 @@ func freePort(t *testing.T) int {
 // open starts a browser, points it at the pile, and hands back something to
 // drive it with.
 func open(t *testing.T, f *fakeStore) (*cdp, *httptest.Server) {
+	return openWith(t, f, nil)
+}
+
+func openWith(t *testing.T, f *fakeStore, coach *fakeCoach) (*cdp, *httptest.Server) {
 	t.Helper()
 
-	srv := screen(t, f)
+	srv := screenWith(t, f, coach)
 	port := freePort(t)
 
 	// Not t.TempDir: a browser writes to its profile until the moment it dies,
@@ -489,4 +505,95 @@ func TestBrowserTypingToTheCoachIsNotAnAction(t *testing.T) {
 		`return document.querySelector('dialog.coachsheet textarea[name=said]').value`))
 	require.Equal(t, false, c.eval(t, `return document.getElementById("card").classList.contains("stamped")`),
 		"typing to the coach triaged the note behind it")
+}
+
+// Sending from the sheet. Reported: you cannot send a message to the coach
+// from the app. Enter is the send affordance — it is how the slot works and
+// how the room this product lives in works — and the sheet's box never had it,
+// because the slot's handler is bound once at load to the page's own box and
+// the sheet arrives later.
+func TestBrowserEnterSendsToTheCoach(t *testing.T) {
+	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.eval(t, `
+		const t = document.querySelector('dialog.coachsheet textarea[name=said]');
+		t.focus(); t.value = "everything at once";
+	`)
+	c.key(t, "Enter")
+
+	c.until(t, "the coach to answer",
+		`document.querySelector("dialog.coachsheet")?.textContent.includes("Start with the envelope.")`)
+}
+
+// Shift+Enter is the newline, for a thought with two parts. Same rule as the
+// slot, because it is the same interaction.
+func TestBrowserShiftEnterDoesNotSendToTheCoach(t *testing.T) {
+	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.eval(t, `
+		const t = document.querySelector('dialog.coachsheet textarea[name=said]');
+		t.focus(); t.value = "one thing";
+	`)
+	c.eval(t, `
+		document.querySelector('dialog.coachsheet textarea[name=said]')
+			.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", shiftKey: true, bubbles: true, cancelable: true}));
+	`)
+
+	require.Equal(t, false, c.eval(t,
+		`return document.querySelector("dialog.coachsheet").textContent.includes("Start with the envelope.")`),
+		"shift+enter sent instead of making a newline")
+}
+
+// The chips send too, and they carry which one was pressed. Same path as the
+// box, so the same bug hit both: a chip press reached the server with no
+// answer in it and bounced straight back.
+func TestBrowserAChipSendsToTheCoach(t *testing.T) {
+	f := withOffer(&squirrel.Offer{
+		Kind: squirrel.OfferTask, RefID: 7, Text: "the tax thing",
+	})
+	f.items = aPile().items
+	c, _ := openWith(t, f, breaksInto(&fakeCoach{}, "open the letter", "ring the number"))
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.eval(t, `document.querySelector('dialog.coachsheet .why[value="big"]').click()`)
+	c.until(t, "the ladder to answer",
+		`document.querySelector("dialog.coachsheet")?.textContent.includes("open the letter")`)
+}
+
+// What the sheet puts on the wire, pinned. It is not a detail: a FormData body
+// goes out as multipart, Go's ParseForm reads only urlencoded, and the
+// mismatch is silent at both ends — the server finds no words and answers as
+// though nothing was said.
+func TestBrowserTheSheetPostsTheWayAFormPosts(t *testing.T) {
+	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
+
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	c.eval(t, `
+		window.__sent = [];
+		const real = window.fetch;
+		window.fetch = (url, opts) => {
+			if (opts?.method === "POST") {
+				window.__sent.push(String(url) + " " + (opts.headers?.["Content-Type"] || "none"));
+			}
+			return real(url, opts);
+		};
+		const t = document.querySelector('dialog.coachsheet textarea[name=said]');
+		t.focus(); t.value = "everything at once";
+	`)
+	c.key(t, "Enter")
+	c.until(t, "the coach to answer",
+		`document.querySelector("dialog.coachsheet")?.textContent.includes("Start with the envelope.")`)
+
+	require.Contains(t, c.eval(t, `return JSON.stringify(window.__sent)`),
+		"/coach/say application/x-www-form-urlencoded")
 }

@@ -516,6 +516,20 @@
     function wireSheet() {
       restoreDraft();
 
+      // Enter sends, Shift+Enter is the newline — the same rule the slot has,
+      // because it is the same interaction and because it is how a message is
+      // sent in the room this product lives in.
+      //
+      // Bound here rather than with the slot's: that one is attached once at
+      // load to the page's own box, and this box does not exist yet. Without
+      // it, pressing return on a phone put a newline in and nothing happened,
+      // which is what "I can't send a message to the coach" was.
+      box()?.addEventListener("keydown", e => {
+        if (e.key !== "Enter" || e.shiftKey) return;
+        e.preventDefault();
+        if (e.target.value.trim()) e.target.form.requestSubmit();
+      });
+
       sheet.addEventListener("submit", async e => {
         const form = e.target;
         const action = form.getAttribute("action");
@@ -533,9 +547,9 @@
           return;
         }
 
-        const data = new FormData(form, e.submitter);
+        const data = formDataFor(form, e.submitter);
         keepDraft();
-        await fetch(action, { method: "POST", body: data });
+        await post(action, data);
         // Whatever was said is now in the window on the server, so the sheet
         // is re-read rather than patched. One source for what the conversation
         // is, and no chance of the two disagreeing.
@@ -551,6 +565,42 @@
         sheet.querySelector(".talk")?.lastElementChild?.scrollIntoView({ block: "nearest" });
         box()?.focus();
       });
+    }
+
+    // Posted the way a form posts, and that is not a detail.
+    //
+    // A FormData body goes out as multipart, and Go's ParseForm only reads
+    // urlencoded — it does not error on multipart, it just finds nothing. So
+    // every message sent from the sheet arrived at the server with no words in
+    // it, was treated as "nothing was said", and redirected back. The box
+    // cleared and nothing happened, which is what "I can't send a message to
+    // the coach" was.
+    //
+    // The service worker's own capture flush has always done it this way. This
+    // is the same shape, so the script's path and the scriptless path put
+    // identical bytes on the wire.
+    function post(action, data) {
+      return fetch(action, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data),
+      });
+    }
+
+    // FormData's second argument is what carries which button was pressed, and
+    // it is newer than the rest of what this file uses — a browser without it
+    // throws rather than ignoring it. That matters more here than it looks:
+    // the submit has already been prevented by the time this runs, so a throw
+    // means the form neither posts nor navigates and the press does nothing at
+    // all. The chips would go the same way, since which chip is a submitter.
+    function formDataFor(form, submitter) {
+      try {
+        return new FormData(form, submitter);
+      } catch {
+        const data = new FormData(form);
+        if (submitter?.name) data.append(submitter.name, submitter.value);
+        return data;
+      }
     }
 
     let dialog = null;
@@ -575,7 +625,7 @@
         // same close, and it forgets the conversation on the server exactly
         // once.
         dialog.addEventListener("close", () => {
-          fetch("/coach/close", { method: "POST", body: new FormData() });
+          post("/coach/close", new FormData());
         });
         dialog.addEventListener("click", e => {
           if (e.target === dialog) close();
