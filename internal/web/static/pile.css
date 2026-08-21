@@ -528,14 +528,6 @@
 
   .chorebox { width: min(720px, 100%); }
 
-  /* The screen says what these are, once, and never how many. */
-  .chorehead {
-    margin: 0 0 20px;
-    font-size: 13px; letter-spacing: .09em;
-    font-variation-settings: var(--precise), "wght" 750;
-    color: var(--cream);
-  }
-
   /* ---------- a chore card ---------- */
 
   /* Kept flat in the bottom of the box: cream stock, sticker depth, but no
@@ -691,18 +683,6 @@
   /* ---------- search results ---------- */
 
   .results { width: min(720px, 100%); }
-  .resultsHead {
-    margin: 0 0 20px;
-    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-    font-size: 13px; letter-spacing: .09em;
-    font-variation-settings: var(--precise), "wght" 750;
-    color: var(--cream);
-  }
-  .resultsHead b {
-    color: var(--paper);
-    font-variation-settings: var(--casual), "wght" 800;
-    letter-spacing: 0; font-size: 17px;
-  }
 
   .rcard {
     position: relative;
@@ -2051,14 +2031,32 @@
     color: var(--paper);
   }
 
-  /* The deck's own heading, which had no rule at all and was rendering on
-     browser defaults — a 2em UA-bold serif-metric heading in a product that
-     sets everything else. held and moods are the two screens that use it. */
+  /* Every screen's title, and the only one.
+   *
+   * There were five: <h1 class="deckhead"> on two screens, a bare <h1> on the
+   * empty states, and three different <p> classes doing the same job in three
+   * different sizes and cases everywhere else. Ten of thirteen templates had
+   * no <h1> at all, so heading navigation did not work anywhere in a product
+   * built for someone who might well use it.
+   *
+   * One element, one class, sentence case — the register the two newest
+   * screens had already found. The empty states keep their own larger
+   * treatment: a screen that is an absence is a different composition, not a
+   * different size of the same one, and that is two headings with a reason
+   * rather than five without one. */
   .deckhead {
     margin: 0 0 18px;
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
     font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 900; font-size: 21px; letter-spacing: -.01em;
     color: var(--paper); text-wrap: balance;
+  }
+  /* What was searched for, inside the title that reports it. His words, so
+     the casual axis, the way his words are set everywhere else. */
+  .deckhead b {
+    font-family: "Recursive", sans-serif;
+    font-variation-settings: var(--casual), "wght" 800;
+    font-weight: 400; letter-spacing: 0;
   }
 
   /* The camera in the slot. Same height as the words beside it and quieter

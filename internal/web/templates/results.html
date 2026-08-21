@@ -6,7 +6,7 @@
        screen owns what can be done to it, and two places to do it is two
        views that can disagree. */}}
   {{if .Chores}}
-  <p class="resultsHead">CHORES THAT SAY <b>{{.Query}}</b></p>
+  <h1 class="deckhead">chores that say <b>{{.Query}}</b></h1>
   {{range .Chores}}
   <a class="choreHit" href="/chores">
     <span class="name">{{.Name}}</span>
@@ -16,7 +16,7 @@
   {{end}}
 
   {{if .Results}}
-  <p class="resultsHead" aria-live="polite">EVERYTHING THAT SAYS <b>{{.Query}}</b></p>
+  <h1 class="deckhead" aria-live="polite">everything that says <b>{{.Query}}</b></h1>
   {{range .Results}}
   <article class="rcard state-{{.State}}">
     <span class="tab"></span>
