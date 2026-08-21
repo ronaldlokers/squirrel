@@ -376,6 +376,13 @@
       // Deliberately not awaited before the picture appears: the screen must
       // say it has the photograph the instant it does, and a write that fails
       // costs the durability rather than the photograph in front of you.
+      //
+      // Which leaves a window — chosen, drawn, not yet held — where losing the
+      // page loses the picture. It is the few milliseconds an IndexedDB write
+      // takes, and closing it would mean holding the preview back until the
+      // disk agreed, which trades a visible delay on every photograph for a
+      // race nobody can hit on purpose. Stated rather than hidden: CI lost
+      // this race once, which is how it came to be written down.
       stash(file).catch(() => {});
     });
 

@@ -55,6 +55,24 @@ func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Se
 	return c, srv
 }
 
+// heldPhoto asks the page's own database whether a photograph is being held.
+//
+// The preview and the hold are two moments, not one: the picture is drawn the
+// instant it is chosen so the screen never lags behind the finger, and the
+// write lands afterwards. Anything that means to test the hold has to wait for
+// the hold.
+const heldPhoto = `new Promise(done => {
+	const open = indexedDB.open("squirrel-photo", 1);
+	open.onerror = () => done(false);
+	open.onsuccess = () => {
+		try {
+			const got = open.result.transaction("photo", "readonly").objectStore("photo").get("pending");
+			got.onsuccess = () => done(!!got.result);
+			got.onerror = () => done(false);
+		} catch { done(false); }
+	};
+})`
+
 // aPhotograph writes a real file for the browser to attach. The bytes are a
 // one-pixel JPEG's worth of nothing: what is under test is the plumbing, and
 // the store never looks inside.
@@ -191,6 +209,11 @@ func TestBrowserAPhotographSurvivesTheAppBeingReclaimed(t *testing.T) {
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the slot to show the photograph",
 		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+	// And then wait for it to actually be held, which is a different moment.
+	// The picture appears the instant it is chosen and the write to IndexedDB
+	// lands after that, so navigating in between tests the race rather than the
+	// restore. CI is slow enough to lose that race and did.
+	c.until(t, "the photograph to be held", heldPhoto)
 
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "the photograph to come back",
@@ -216,6 +239,7 @@ func TestBrowserAKeptPhotographIsNotOfferedAgain(t *testing.T) {
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the slot to show the photograph",
 		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+	c.until(t, "the photograph to be held", heldPhoto)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	// The whole page, not just the URL: the stash is dropped by the script on
 	// the page that confirms the capture, the same way the worker deletes a
