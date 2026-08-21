@@ -185,17 +185,19 @@ func TestClosePreviousCapsRebuiltActions(t *testing.T) {
 	ctx := context.Background()
 	p := owner(t, store)
 
+	// A query prompt from earlier that morning, carrying all 13 lines — the
+	// "previous numbered surface" closePrevious will find and rebuild.
+	queryAt := time.Date(2026, 8, 15, 7, 0, 0, 0, amsterdam(t))
+
+	// Twenty days before the run this test performs, not before today. The
+	// two used to be the same thing and drifted a day apart every day.
 	chores := make([]squirrel.Chore, 0, 13)
 	for i := range 13 {
 		c, err := store.UpsertChore(ctx, p, fmt.Sprintf("chore %02d", i), twoWeeks, oneWeek)
 		require.NoError(t, err)
-		backdateChore(t, store, c.ID, 20*24*time.Hour)
+		backdateChoreTo(t, store, c.ID, queryAt.Add(-20*24*time.Hour))
 		chores = append(chores, c)
 	}
-
-	// A query prompt from earlier that morning, carrying all 13 lines — the
-	// "previous numbered surface" closePrevious will find and rebuild.
-	queryAt := time.Date(2026, 8, 15, 7, 0, 0, 0, amsterdam(t))
 	queryPromptID, err := store.RecordPrompt(ctx, p, "9", "query", queryAt, nil, chores)
 	require.NoError(t, err)
 	require.NoError(t, store.MarkPromptSent(ctx, queryPromptID, "m-0", queryAt))
