@@ -23,6 +23,10 @@
   <h2 class="heldgroup">{{.Word}}</h2>
   {{range .Rows}}
   <article class="aside">
+    {{/* The photograph follows the note here too. */}}
+    {{with .Photo}}
+    <p class="rphoto"><img src="{{.}}" alt="the photograph on this note" loading="lazy"></p>
+    {{end}}
     <p class="what">{{.Text}}</p>
     {{if .Because}}<p class="onwhat">{{.Because}}</p>{{end}}
     <form method="post" action="/held/act">

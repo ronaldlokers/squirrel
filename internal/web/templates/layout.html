@@ -137,29 +137,25 @@
 {{end}}
 {{template "content" .}}
 </main>
-{{/* The acorn. DESIGN.md already establishes it as the product's second mark,
-     available as a badge anywhere the full mascot is too much — so the
-     live-chat convention is rendered in the product's own materials rather
-     than in generic SaaS chrome.
+{{/* The acorn was here: fixed, bottom right, 62px, on every screen.
 
-     Not in the lid: the lid already carries mark, wordmark, timer strip, two
-     cross-links and search, and the Lid Step-Down Rule exists because it was
-     taking a fifth of a phone screen. A seventh element is not available.
+     It is a lid icon now — see the top of this file — and outside the menu
+     rather than in it, because a conversation about what is in front of you
+     should be one tap from anywhere.
 
-     A link to a real page, so it works with this script absent. pile.js
-     upgrades it into a sheet.
+     What it cost as a floating button was real: it sat on top of a chore's
+     timer row on a phone and on top of the sheet's own send button on a wide
+     screen, and a fixed control over live ones turns a mis-tap into the wrong
+     thing entirely.
 
-     Not `.acorn`: the card's title bar already uses that for the drawn badge,
-     and taking the name for this turned every note's badge into a 62px circle
-     stuck to the corner of the screen — and pile.js wired the badge instead of
-     this, so the sheet never opened on the pile at all. Two bugs from one
-     word. */}}
-{{/* The acorn was here: fixed, bottom right, on every screen. It has gone
-     into the lid's menu, where Buddy is a place like the others. What it cost
-     as a floating button was real — it sat on top of a chore's timer row on a
-     phone and on top of the sheet's own send button on a wide screen, and a
-     fixed control over live ones turns a mis-tap into the wrong thing
-     entirely. */}}
+     Two of its rules outlived it and hold wherever Buddy goes next. It was
+     `.askacorn` and not `.acorn`, because the card's title bar had that name
+     first for the drawn badge — taking it turned every note's badge into a
+     62px circle in the corner of the screen, and pile.js then wired the badge
+     instead of the button, so the sheet never opened on the pile at all. Two
+     bugs from one word. And it never dimmed and never carried a badge: a badge
+     would be a count, and a dimmed acorn would be the product forming an
+     opinion out of how a button gets used. */}}
 <script src="/static/pile.js?v={{.V}}" defer></script>
 </body>
 </html>{{end}}

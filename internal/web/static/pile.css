@@ -367,49 +367,9 @@
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row[hidden] { display: none; }
 
-  /* ---------- the question, and the answers behind it ---------- */
-  /*
-   * The card's one control. It is not an answer, so it takes none of the four
-   * exit colours and none of the orange that means something was made — it is
-   * paper, the card's own stock, lifted off it.
-   */
-  .answer > summary {
-    list-style: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    min-height: 52px; padding: 14px 18px;
-    background: var(--paper); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    font: 700 14px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 830;
-    letter-spacing: .08em; text-transform: uppercase;
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-  }
-  .answer > summary::-webkit-details-marker { display: none; }
-  .answer > summary:hover { background: var(--paper-deep); }
-  .answer > summary:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
-  /* Open, the question has been answered by being asked — it steps back to a
-     way out, in the same words every other disclosure here uses. */
-  .answer[open] > summary {
-    background: none; border: 0; box-shadow: none;
-    justify-content: flex-start; min-height: 44px; padding: 12px 2px;
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 620;
-    letter-spacing: 0; text-transform: none;
-    color: var(--brown); text-decoration: underline; text-underline-offset: 3px;
-  }
-  .answer[open] > summary:hover { color: var(--outline); background: none; }
-  .answer[open] > summary:active { transform: none; }
-  /* Direct children only. As a descendant selector this reached inside the
-     nested disclosures too, so opening the question relabelled "i can't act on
-     this" as a second "never mind" sitting under the answers. */
-  .answer > summary .ifopen { display: none; }
-  .answer[open] > summary .ifshut { display: none; }
-  .answer[open] > summary .ifopen { display: inline; }
-  /* Answered. The question and the repair both go, so what is left on the card
-     is the stamp and the way back. */
-  .card.stamped .answer,
-  .card.stamped .ways { display: none; }
+  /* The gate was here: one control that opened the four answers. It is gone —
+     used for a day and asked for back. The escapes it grouped stay grouped.
+     See card.html. */
 
   .btn {
     font: 700 13px/1 "Recursive", sans-serif;
@@ -1076,10 +1036,8 @@
   .reword[open] .ifopen { display: inline; }
   /* Open, the note's own words are gone from view — the field holds them, and
      two copies of the same sentence on one card is a question about which one
-     is real.
-     Reached through the card rather than as a sibling, because the disclosure
-     now lives at the foot and the words are in the block above it. Same rule,
-     addressed the way the chore picker already addresses its own row. */
+     is real. Reached through the card rather than as a sibling, because the
+     disclosure lives at the foot and the words are in the block above it. */
   .card:has(.reword[open]) #noteText,
   .card:has(.reword[open]) .photo { display: none; }
   .reword textarea {
@@ -1270,7 +1228,7 @@
     font-variation-settings: var(--casual), "wght" 450;
     color: var(--brown);
   }
-  .oacts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .oacts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
   .obtn {
     min-height: 44px; padding: 11px 16px;
     border: var(--line) solid var(--outline); border-radius: 999px;
@@ -1293,20 +1251,29 @@
   .obtn.go { background: var(--paper); }
   .obtn.go:hover { background: var(--paper-deep); }
   /* Turning it down is quieter than doing it and quieter than starting it —
-     it has to be easy to reach and must not read as the default. No pill, no
-     outline, no offset: it is the one control here that is a way out rather
-     than a thing to do. */
+     but it is the same kind of object as both, and for a long time it was not.
+     The card offered four choices in four shapes: filled green, filled paper,
+     an outlined pill, and a chevron disclosure. Nothing said which was the
+     ordinary answer, so choosing meant comparing four kinds of thing before
+     you could compare four options.
+     
+     One shape now, and only colour separates them. Refusing wears the card's
+     own deeper stock: present, pressable, and plainly not the default. */
   .obtn.later {
     margin-left: auto;
-    background: none; border: 0; box-shadow: none;
-    padding: 11px 4px;
-    text-transform: none; letter-spacing: 0;
-    font-size: 14px; font-variation-settings: var(--precise), "wght" 620;
-    color: var(--brown);
-    text-decoration: underline; text-underline-offset: 3px;
+    background: var(--card-deep); color: var(--brown);
+    /* Spelled out, and it has to be. `.later` further down this file gives
+       every quiet pill a 2px currentColor border — right for a pill standing
+       on the field with no fill behind it, wrong here, where this is one of
+       three controls in a row and the other two carry the system's 3px
+       outline. Same specificity, later in the file, so it won: the one control
+       on this card that is meant to differ from its siblings only in colour
+       was also the only one with a thinner border, in brown, over a black
+       offset. */
+    border: var(--line) solid var(--outline);
   }
-  .obtn.later:hover { color: var(--outline); }
-  .obtn.later:active { transform: translateY(2px); }
+  .obtn.later:hover { background: var(--paper-deep); color: var(--outline); }
+  .obtn.later:active { background: var(--dropped); color: var(--paper); }
 
   /* ---------- I can't start ---------- */
 
@@ -1389,20 +1356,40 @@
 
   /* Answered: the one you pressed, the word, and a way to say something else.
      Never a sentence about the person. */
+  /* The answer, as one chip.
+   *
+   * It was a centred row that sat flush against the offer — margin: 0 here and
+   * no margin-top there — so the one thing you said about yourself and the one
+   * thing you are being handed touched. It has room below it now, the same
+   * step the doors and the slot use, so home has one vertical rhythm rather
+   * than two.
+   *
+   * The face and the word are a single object rather than two things in a
+   * line, and the two ways to change your answer trail behind it. */
   .noted {
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    flex-wrap: wrap; margin: 0;
-    font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: flex-start;
+    gap: 8px 14px; flex-wrap: wrap; margin: 0 0 26px;
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 700;
     color: var(--cream);
   }
-  .noted img { height: 46px; width: auto; display: block; }
+  .noted > span {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 13px 7px 7px;
+    background: rgba(0, 0, 0, .18); border-radius: 999px;
+  }
+  .noted img { height: 26px; width: auto; display: block; }
+  /* The tap target stays 44px and stops setting the row's height: as a box it
+     was eleven pixels taller than the text it wraps, which read as space that
+     was not there on purpose. */
+  .noted a { position: relative; min-height: 0; }
+  .noted a::after { content: ""; position: absolute; inset: -14px -8px; }
   .noted .again {
     color: var(--cream);
     text-decoration: underline; text-underline-offset: 3px;
     text-transform: none; letter-spacing: 0;
-    font-size: 12.5px; font-variation-settings: var(--precise), "wght" 620;
-    display: inline-flex; align-items: center; min-height: 44px;
+    font-size: 12.5px; font-variation-settings: var(--precise), "wght" 600;
+    display: inline-flex; align-items: center;
   }
   .noted .again:hover { color: var(--paper); }
 
@@ -1468,9 +1455,11 @@
 
   @media (max-width: 620px) {
     :root { --o: 5px; }
-    /* The field takes its own row on a phone; the mark and the crossing link
-       keep the first. Wrapping is what makes that happen — without it all
-       three fight over one line and the field loses. */
+    /* Wrapping is still what lets the lid be two rows, but nothing about the
+       search field needs it any more: the mark and the three icons fit one
+       row at every width this product is used at. It is the running timer that
+       wraps now — it takes `order: 6` and the full width, so it sits under the
+       mark rather than squeezing the icons. */
     .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
     /* The lid steps DOWN on a phone, against the Step-Up Rule and for the
        reason that rule gives. Roles grow on a phone because a phone is read at
@@ -1481,9 +1470,19 @@
     .brand img { width: 56px; height: 42px; }
     .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
     .brim { height: 22px; }
-    .find { flex: 1 1 100%; order: 5; padding: 9px 12px; }
-    /* 16px so focusing the field does not make iOS zoom the page. */
-    .find input { font-size: 16px; }
+    /* The search field's own phone size is not here.
+     *
+     * It used to be: `.find { flex: 1 1 100%; order: 5 }` put the field on its
+     * own row of the lid, and `.find input { font-size: 16px }` kept iOS from
+     * zooming the page when it was focused. Both are gone rather than moved.
+     * The lid is three icons now — the field lives in a panel hanging off one
+     * of them, so it is a flex child of nothing, and its selector became
+     * `.findbox .find input`, which outranks a bare `.find input`.
+     *
+     * That is why the size now sits beside that selector at the foot of this
+     * file rather than in this block: a rule here would have the same
+     * specificity and lose on source order, which is exactly how the 16px
+     * floor came to be quietly outvoted in the first place. */
 
     main { padding: 36px 13px calc(32px + env(safe-area-inset-bottom)); }
     main.scrolling { padding-top: 38px; }
@@ -2103,15 +2102,23 @@
     background: var(--card-deep);
     border: var(--line) solid var(--outline); border-radius: 10px;
   }
-/* One frame — the proposal, as a delta.
+/* One frame — approved, and folded in.
  *
- * This file is loaded *after* the real internal/web/static/pile.css, so the
- * comp shows the actual product with exactly these changes on top and nothing
- * else. Everything not written here is unchanged, which is most of it: the
- * palette, both type axes, the sticker shadows, the four state colours, the
- * mascot, the deck's whole composition.
+ * This was a second stylesheet loaded after pile.css, so a comp could show the
+ * real product with exactly these changes on top and nothing else. It was
+ * approved on 21 August 2026 and folded in here, which is what it said it
+ * would do; the separate file is gone.
  *
- * When this is approved it folds into pile.css and stops existing.
+ * It stays one block rather than being dissolved into the sections above,
+ * because what these rules have in common is the argument they came from — one
+ * frame, one vocabulary of controls, navigation in one place — and splitting
+ * them across the file would leave that argument nowhere. Everything it does
+ * not mention is unchanged, which is most of the product: the palette, both
+ * type axes, the sticker shadows, the four state colours, the mascot, the
+ * deck's whole composition.
+ *
+ * Its rules are still written at column zero where the rest of this file is
+ * indented two, which is the last visible trace of it having been a file.
  */
 
 /* ---------------------------------------------------------------- */
@@ -2141,7 +2148,6 @@
 .gofor > summary,
 .newchore > summary,
 .often > summary,
-.answer > summary,
 .everyFallback > summary {
   position: relative;
 }
@@ -2152,7 +2158,6 @@
 .gofor > summary::after,
 .newchore > summary::after,
 .often > summary::after,
-.answer > summary::after,
 .everyFallback > summary::after {
   content: "";
   flex: none;
@@ -2178,7 +2183,6 @@
 .gofor[open] > summary::after,
 .newchore[open] > summary::after,
 .often[open] > summary::after,
-.answer[open] > summary::after,
 .everyFallback[open] > summary::after {
   transform: rotate(180deg);
 }
@@ -2348,8 +2352,7 @@
 .card .later,
 .acard .later,
 .asking .later,
-.proposal .later,
-.obtn.later {
+.proposal .later {
   color: var(--brown);
   /* Every one of these is spelled out because the rule this overrides zeroes
      the border and adds an underline: `not now` is a <button> that has been
@@ -2367,8 +2370,7 @@
 .card .later:hover,
 .acard .later:hover,
 .asking .later:hover,
-.proposal .later:hover,
-.obtn.later:hover { background: var(--paper-deep); color: var(--outline); }
+.proposal .later:hover { background: var(--paper-deep); color: var(--outline); }
 
 /* The card's title bar is purple, so LATER stays cream there. */
 .titlebar .later { color: var(--cream); }
@@ -2469,6 +2471,22 @@
 .findbox .find input:focus { outline: none; }
 .findbox .find input::placeholder { color: var(--brown); }
 
+/* The 16px floor, on the selector that actually wins.
+ *
+ * Anything under 16px makes iOS zoom the page the moment the field takes
+ * focus, which on a phone means the lid, the panel and whatever you were
+ * looking at all jump. Every other field in this product clears the floor by
+ * being large for the Step-Up Rule's own reasons; this one is small on purpose
+ * — it sits in a 320px panel — so the floor is the only thing holding it up.
+ *
+ * It has to live here, after the rule it corrects. The breakpoint block above
+ * carried a `.find input` version of this from before search moved behind an
+ * icon; `.findbox .find input` outranks it, so the floor silently stopped
+ * applying and the field went back to 15px. */
+@media (max-width: 620px) {
+  .findbox .find input { font-size: 16px; }
+}
+
 /* ---------------------------------------------------------------- */
 /* 7. Home, once the slot moved to the top.                          */
 /* ---------------------------------------------------------------- */
@@ -2530,3 +2548,14 @@
   }
   .enough .leavehere:hover { background: var(--orange-lit); }
   .enough .leavehere:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline); }
+
+  /* A photograph on a row in a list. Bounded harder than the card's, because
+     here you are scanning rather than deciding: enough to recognise the thing,
+     not enough to push the next row off the screen. */
+  .rphoto { margin: 0 0 10px; }
+  .rphoto img {
+    display: block; width: 100%; max-width: 260px; max-height: 180px;
+    object-fit: cover;
+    background: var(--card-deep);
+    border: var(--line) solid var(--outline); border-radius: 10px;
+  }

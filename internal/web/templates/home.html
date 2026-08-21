@@ -113,21 +113,14 @@
 
          Small, above the offer, and never a series: this reports what you
          said and may never characterise you. */}}
+    {{/* The answer, as one chip: the face and the word are a single object,
+         and the two ways to change it trail behind. Room below it, which it
+         did not have — it sat flush against the offer, so the one thing you
+         said about yourself and the one thing you are handed touched. */}}
     <p class="noted" role="status">
-      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">
-      <span>noted &mdash; {{.MoodWord}}</span>
-      {{/* Saying you are wiped must not be a wall. It offers once, and
-           nothing about having asked is remembered. */}}
-      {{/* Only when there is nothing in front of you — either the day was
-           low and the picker withheld what it had, or there is genuinely
-           nothing. Offering to show you something anyway while something is
-           already on the screen is offering to do what is done. */}}
+      <span><img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">noted &mdash; {{.MoodWord}}</span>
       {{if and (not .Offer) (not .Anyway)}}<a class="again" href="/?anyway=1">show me something anyway</a>{{end}}
       <a class="again" href="/?ask=1">say something else</a>
-      {{/* "what you said before" rather than "how you have been", and the
-           difference is the rule: this region may report what you said and may
-           never characterise you. The page behind it shows your own answers
-           back — it does not conclude anything from them. */}}
       <a class="view" href="/moods">what you said before</a>
     </p>
     {{with .Offer}}

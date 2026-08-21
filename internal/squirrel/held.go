@@ -30,6 +30,11 @@ type HeldItem struct {
 	// are waiting on is work with a dependency, and a note is a thought you
 	// have parked.
 	Kind ItemKind
+	// PhotoName is the picture this row carries, or empty. It follows the note
+	// here for the same reason it follows it everywhere: a note with no words
+	// and only a photograph is a perfectly good note, and a screen that drops
+	// the picture shows an empty row.
+	PhotoName string
 }
 
 // Words is the whole reason in one phrase — "waiting on the vet" — or just the
@@ -83,7 +88,8 @@ func (s *Store) HoldItem(ctx context.Context, personID, itemID int64, state Item
 // receives.
 func (s *Store) HeldItems(ctx context.Context, personID int64, limit int) ([]HeldItem, bool, error) {
 	rows, err := s.pool.Query(ctx, `
-		select id, raw_text, state, coalesce(held_because, ''), kind from items
+		select id, raw_text, state, coalesce(held_because, ''), kind,
+		       coalesce(attachment_path, '') from items
 		 where person_id = $1 and has_content
 		   and state in ('waiting', 'blocked', 'someday')
 		 order by state_at desc nulls last, id desc
@@ -97,7 +103,7 @@ func (s *Store) HeldItems(ctx context.Context, personID int64, limit int) ([]Hel
 	for rows.Next() {
 		var h HeldItem
 		var kind string
-		if err := rows.Scan(&h.ID, &h.Text, &h.State, &h.Because, &kind); err != nil {
+		if err := rows.Scan(&h.ID, &h.Text, &h.State, &h.Because, &kind, &h.PhotoName); err != nil {
 			return nil, false, fmt.Errorf("scanning what you set aside: %w", err)
 		}
 		h.Kind = ItemKind(kind)

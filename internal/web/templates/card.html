@@ -31,25 +31,18 @@
     <span class="stamp" id="stamp"><span class="dot"></span><span id="stampText"></span></span>
   </div>
   <div class="tray">
-    {{/* One question, and the answers are behind it.
+    {{/* Every answer on the card, visible.
 
-         The card used to put eight decision points in front of a note. That is
-         the wrong question asked eight ways: what actually stalls is not which
-         of done, keep, drop, a task, a chore — it is whether you are deciding
-         about this thing at all, right now. So the card asks that, and the
-         answers are one press away for the times you already know.
+         It asked one question — WHAT IS THIS? — and kept the four answers
+         behind it, on the reasoning that what stalls is not which of the five
+         but whether you are deciding about this thing at all. The owner chose
+         that from a set of options, used it for a day, and asked for the
+         buttons back. That is the only evidence that was ever going to settle
+         it, and it beats the argument.
 
-         Nothing is hidden that was reachable before. LATER is still in the
-         title bar, so skipping never costs an open; the letter keys still act
-         from a shut card, because a key is for the times you already knew; and
-         with no script at all this is a disclosure like every other one here.
-
-         What it costs, said plainly: two presses instead of one for someone
-         who is sure and is using a mouse. That is the trade — a slower expert
-         path for a cheaper stalled one, on a screen whose whole argument is
-         that the scarce resource is deciding. */}}
-    <details class="answer">
-      <summary><span class="ifshut">WHAT IS THIS?</span><span class="ifopen">never mind</span></summary>
+         What the argument was right about is kept: the two ways of not
+         answering are still one quiet row at the foot rather than a fifth and
+         sixth button in this one. */}}
     <form class="row actions" id="actions" method="post" action="/pile/act">
       <input type="hidden" name="id" value="{{.Note.ID}}">
       {{/* Where you were. A transition made three notes down comes back to
@@ -66,7 +59,6 @@
            and gives the chips keys 1-4. */}}
       {{template "everyCard" .}}
     </form>
-      {{/* Inside the question, because "I can't" is an answer to it. */}}
       {{if .HeldChips}}
       <details class="cantact">
         <summary><span class="ifshut">i can't act on this</span><span class="ifopen">never mind</span></summary>
@@ -80,7 +72,6 @@
         </form>
       </details>
       {{end}}
-    </details>
     {{/* Correcting the words is not an answer to the question, so it sits
          outside it: it is a repair to the thing being asked about, and it has
          to be reachable without first saying you are deciding.
