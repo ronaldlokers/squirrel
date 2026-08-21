@@ -55,6 +55,13 @@ func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Se
 	return c, srv
 }
 
+// landed is the slot saying a capture went in. It used to be a navigation to
+// /?kept=1 — the capture posted the form, the browser left, and the page came
+// back at the top with a word on it. It keeps in place now, so the sign that
+// it worked is the slot's own answer rather than a change of address.
+const landed = `!document.querySelector("#slotsaid").hidden &&
+	document.querySelector("#slotsaid").textContent.trim() === "kept"`
+
 // heldPhoto asks the page's own database whether a photograph is being held.
 //
 // The preview and the hold are two moments, not one: the picture is drawn the
@@ -110,7 +117,7 @@ func TestBrowserAPhotographIsKept(t *testing.T) {
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the capture to land", `location.search.includes("kept")`)
+	c.until(t, "the capture to land", landed)
 
 	require.Len(t, sp.written, 1, "nothing was spooled")
 	require.NotEmpty(t, sp.written[0].PhotoName, "the capture carried no photograph")
@@ -126,7 +133,7 @@ func TestBrowserAPhotographKeepsItsWords(t *testing.T) {
 	c.eval(t, `document.querySelector(".slot textarea").value = "the tax letter"`)
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the capture to land", `location.search.includes("kept")`)
+	c.until(t, "the capture to land", landed)
 
 	require.Len(t, sp.written, 1)
 	require.Equal(t, "the tax letter", sp.written[0].Text)
@@ -150,7 +157,7 @@ func TestBrowserAPhotographSurvivesTheWorker(t *testing.T) {
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the capture to land", `location.search.includes("kept")`)
+	c.until(t, "the capture to land", landed)
 
 	require.Len(t, sp.written, 1, "nothing was spooled")
 	require.NotEmpty(t, sp.written[0].PhotoName, "the worker dropped the photograph")
@@ -164,12 +171,12 @@ func TestBrowserChoosingAPhotographSaysSo(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	c, _ := openCamera(t, sp, ph)
 
-	before := c.eval(t, `return !!document.querySelector(".slot .gotphoto:not([hidden])")`)
+	before := c.eval(t, `return (`+visible+`)(".slot .gotphoto")`)
 	require.Equal(t, false, before, "the slot claimed a photograph before there was one")
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the slot to show the photograph",
-		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+		`(`+visible+`)(".slot .gotphoto")`)
 }
 
 // And taking it off again, because a photograph attached by accident must not
@@ -180,15 +187,15 @@ func TestBrowserAPhotographCanBeTakenOffAgain(t *testing.T) {
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the slot to show the photograph",
-		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+		`(`+visible+`)(".slot .gotphoto")`)
 
 	c.eval(t, `document.querySelector(".slot .unphoto").click()`)
 	c.until(t, "the photograph to go",
-		`!document.querySelector(".slot .gotphoto:not([hidden])")`)
+		`!(`+visible+`)(".slot .gotphoto")`)
 
 	c.eval(t, `document.querySelector(".slot textarea").value = "words only"`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the capture to land", `location.search.includes("kept")`)
+	c.until(t, "the capture to land", landed)
 
 	require.Len(t, sp.written, 1)
 	require.Empty(t, sp.written[0].PhotoName, "a removed photograph was kept anyway")
@@ -208,7 +215,7 @@ func TestBrowserAPhotographSurvivesTheAppBeingReclaimed(t *testing.T) {
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the slot to show the photograph",
-		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+		`(`+visible+`)(".slot .gotphoto")`)
 	// And then wait for it to actually be held, which is a different moment.
 	// The picture appears the instant it is chosen and the write to IndexedDB
 	// lands after that, so navigating in between tests the race rather than the
@@ -217,13 +224,13 @@ func TestBrowserAPhotographSurvivesTheAppBeingReclaimed(t *testing.T) {
 
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "the photograph to come back",
-		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+		`(`+visible+`)(".slot .gotphoto")`)
 	require.Equal(t, float64(1), c.eval(t,
 		`return document.querySelector(".slot input[name=photo]").files.length`),
 		"the photograph was shown but not put back on the input")
 
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the capture to land", `location.search.includes("kept")`)
+	c.until(t, "the capture to land", landed)
 
 	require.Len(t, sp.written, 1)
 	require.NotEmpty(t, sp.written[0].PhotoName, "the photograph did not survive the reload")
@@ -238,28 +245,27 @@ func TestBrowserAKeptPhotographIsNotOfferedAgain(t *testing.T) {
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the slot to show the photograph",
-		`!!document.querySelector(".slot .gotphoto:not([hidden])")`)
+		`(`+visible+`)(".slot .gotphoto")`)
 	c.until(t, "the photograph to be held", heldPhoto)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	// The whole page, not just the URL: the stash is dropped by the script on
-	// the page that confirms the capture, the same way the worker deletes a
-	// held note the moment it lands. Leaving before that page has run is
-	// leaving before the acknowledgement, which is a thing a person can do and
-	// which costs an offer of the photograph back — visibly, and refusable.
-	c.until(t, "the confirmation to have loaded",
-		`location.search.includes("kept") && document.readyState === "complete"`)
+	// The hold is dropped by the same press that keeps it, rather than by the
+	// page that used to load afterwards. There is no page afterwards now, and
+	// a photograph still on hold after it has been kept is one press from
+	// being kept twice.
+	c.until(t, "the capture to land", landed)
+	c.until(t, "the hold to be let go", `!(await (`+heldPhoto+`))`)
 	require.Len(t, sp.written, 1)
 
 	c.navigate(t, srv.URL+"/")
-	// Long enough for a restore to have happened if one were going to.
 	c.until(t, "the slot", `!!document.querySelector(".slot input[name=photo]")`)
 	require.Equal(t, false, c.eval(t,
-		`return !!document.querySelector(".slot .gotphoto:not([hidden])")`),
+		`return (`+visible+`)(".slot .gotphoto")`),
 		"a photograph already kept was offered back")
 
-	c.eval(t, `document.querySelector(".slot textarea").value = "a later thought"`)
+	c.eval(t, `const t = document.querySelector(".slot textarea");
+		t.value = "a later thought"; t.dispatchEvent(new Event("input")); return 1`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the second capture to land", `location.search.includes("kept")`)
+	c.until(t, "the second capture to land", landed)
 
 	require.Len(t, sp.written, 2)
 	require.Empty(t, sp.written[1].PhotoName, "the photograph was kept a second time")

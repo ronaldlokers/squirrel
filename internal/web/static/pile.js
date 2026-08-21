@@ -293,12 +293,18 @@
   // multipart form, which posts a photograph perfectly well and shows you
   // nothing — the floor, and it is the floor this was built on.
   (() => {
-    const form = document.querySelector("form.slot[enctype]");
-    const input = form?.querySelector('input[name="photo"]');
+    // The capture slot on home, camera or no camera. Two things live here and
+    // only one of them needs a camera: holding a chosen photograph, and
+    // keeping a capture without the page going anywhere.
+    const form = document.querySelector('form.slot[action="/capture"]');
+    if (!form) return;
+
     // DataTransfer is how a file gets back onto an input. Without it a
     // restored photograph could be shown and not sent, which is a screen that
-    // lies about what it has — worse than one that shows nothing.
-    if (!input || typeof DataTransfer === "undefined") return;
+    // lies about what it has — worse than one that shows nothing. No camera
+    // and no DataTransfer are both fine; the slot still keeps things.
+    const input = typeof DataTransfer === "undefined"
+      ? null : form.querySelector('input[name="photo"]');
 
     const DB = "squirrel-photo", STORE = "photo", ONE = "pending";
 
@@ -336,7 +342,7 @@
     off.className = "unphoto";
     off.textContent = "take it off";
     shown.append(thumb, off);
-    form.append(shown);
+    if (input) form.append(shown);
 
     let drawn = "";
 
@@ -363,12 +369,12 @@
     // would therefore give up the offline hold on every words-only capture,
     // which is the case the hold exists for.
     function enctypeFor() {
-      form.enctype = input.files?.length
+      form.enctype = input?.files?.length
         ? "multipart/form-data"
         : "application/x-www-form-urlencoded";
     }
 
-    input.addEventListener("change", () => {
+    if (input) input.addEventListener("change", () => {
       const file = input.files?.[0];
       enctypeFor();
       if (!file) { hide(); forget().catch(() => {}); return; }
@@ -387,7 +393,7 @@
     });
 
     off.addEventListener("click", () => {
-      input.value = "";
+      if (input) input.value = "";
       enctypeFor();
       hide();
       forget().catch(() => {});
@@ -396,7 +402,7 @@
     // On the way in. A capture that landed says so in the URL, and that is the
     // one case where the photograph in the stash is one already kept — so it
     // is dropped rather than offered back, which would keep it twice.
-    (async () => {
+    if (input) (async () => {
       try {
         if (new URLSearchParams(location.search).has("kept")) {
           await forget();
@@ -423,6 +429,84 @@
     // before any photograph has been chosen — would still go out as multipart
     // and lose its offline hold.
     enctypeFor();
+
+    // ---------------------------------------------------------------- //
+    // Keeping something, without the page going anywhere.
+    //
+    // Posting the form navigates: the browser leaves, the server answers 303,
+    // the page comes back and you are at the top of it reading a small word
+    // that is nowhere near the box you typed in. Two things go wrong there and
+    // neither is the capture — you lose your place, and the answer to "did
+    // that work?" is somewhere other than the thing you used.
+    //
+    // So the script posts it and stays put. The box empties, the button says
+    // it landed, and nothing on the screen moves. What the server thinks is
+    // still the only opinion that counts: the outcome is read out of the URL
+    // it redirects to, in exactly the vocabulary the scriptless path uses, so
+    // there is one set of answers rather than two that can disagree.
+    //
+    // Enhancement only. With this file gone the form posts, the page reloads,
+    // and the same words appear in the same element — slower, and correct.
+    // ---------------------------------------------------------------- //
+    const said = form.querySelector("#slotsaid");
+    const post = form.querySelector(".post");
+    const box = form.querySelector("textarea");
+    if (!said || !post) return;
+
+    const words = { kept: "kept", held: "no network — I have it. it goes in when you are back.", nokeep: "not kept — Squirrel cannot reach its memory. your words are still here.", nophoto: "that photograph was not kept — too big, or a kind Squirrel does not take. your words are still here." };
+    let telling = 0;
+
+    function tell(which) {
+      said.textContent = words[which] || words.nokeep;
+      said.className = "slotsaid" + (which === "kept" ? "" : which === "held" ? " held" : " bad");
+      said.hidden = false;
+      clearTimeout(telling);
+      // The good news goes; the bad news stays until something else happens.
+      // A failure you have to be quick to read is a failure you will meet
+      // again without knowing why.
+      if (which === "kept") telling = setTimeout(() => { said.hidden = true; }, 4000);
+    }
+
+    form.addEventListener("submit", async e => {
+      // A browser with no fetch, or a form somehow without an action: let it
+      // navigate, which is the floor and works.
+      if (typeof fetch !== "function") return;
+      e.preventDefault();
+      if (post.disabled) return;
+
+      const carrying = !!input.files?.length;
+      // The same bytes the form itself would have sent. FormData when there is
+      // a file, because that is what multipart is for; URLSearchParams when
+      // there is not, so the worker can still hold it offline.
+      const body = carrying ? new FormData(form)
+        : new URLSearchParams([...new FormData(form)].filter(([, v]) => typeof v === "string"));
+      const init = { method: "POST", body, credentials: "same-origin" };
+      if (!carrying) init.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+
+      post.disabled = true;
+      try {
+        const res = await fetch(form.action, init);
+        const out = new URL(res.url, location.href).searchParams;
+        const which = ["kept", "held", "nokeep", "nophoto"].find(k => out.has(k));
+        // Nothing at all in the URL means the server decided there was nothing
+        // to keep — an empty box, pressed. Say nothing back; it did nothing.
+        if (!which) { post.disabled = false; return; }
+
+        tell(which);
+        if (which === "kept" || which === "held") {
+          box.value = "";
+          box.style.height = "auto";
+          if (input.files?.length) { input.value = ""; enctypeFor(); hide(); forget().catch(() => {}); }
+        }
+      } catch {
+        // The network went while it was in the air. The words and the
+        // photograph are both still on the screen, which is the whole reason
+        // this box never clears until the server has said so.
+        tell("nokeep");
+      } finally {
+        post.disabled = false;
+      }
+    });
   })();
 
   // ---- the chores screen -------------------------------------------------

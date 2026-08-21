@@ -858,11 +858,15 @@
 
   /* One line, and it never names a total. "kept" is the whole confirmation:
      the chat's ✅ in words. */
+  /* Inside the box, on its own line under the controls. Squeezed in beside
+     the button it was one long word from being clipped, and a confirmation
+     you have to squint at is barely one. */
   .slotsaid {
-    margin: 9px 2px 0;
+    flex-basis: 100%;
+    margin: 10px 2px 0;
     font-size: 12.5px; letter-spacing: .07em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 700;
-    color: var(--cream);
+    color: var(--brown);
   }
   /* The failure is not the success in different words. It says what is true,
      what happens next, and the words are still in the field above it.
@@ -2047,6 +2051,11 @@
     display: flex; align-items: flex-end; gap: 10px;
     margin-top: 4px;
   }
+  /* An author rule with a display value beats the browser's own [hidden], so
+     this element stayed on screen after the photograph it showed had been kept
+     and let go. Every test of it asked whether the attribute was set, which it
+     was — the attribute was doing nothing. */
+  .gotphoto[hidden] { display: none; }
   .gotphoto img {
     display: block; width: 84px; height: 84px; object-fit: cover;
     border: var(--line) solid var(--outline); border-radius: 10px;
