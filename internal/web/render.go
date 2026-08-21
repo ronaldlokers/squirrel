@@ -60,9 +60,14 @@ type noteView struct {
 	// Photo is the note's own picture, or empty. The pile renders it above the
 	// words, because a photograph of a letter is the note and the words beside
 	// it are the caption.
-	Photo     string
-	When      string
-	State     string
+	Photo string
+	When  string
+	State string
+	// Task says this row was decided on rather than left in the pile. Search
+	// reads every state and every kind, so a result has to say which it is:
+	// without it an open task reported itself as IN THE PILE and was offered
+	// the pile's verbs, and pressing KEEP moved it off the tasks screen.
+	Task      bool
 	StateWord string
 }
 
@@ -418,8 +423,24 @@ func cursorFrom(q url.Values) int64 {
 // stateWords is the screen's half of the shared vocabulary. `open` is
 // deliberately present: a search result still in the pile says so, and it wears
 // Notebook Violet rather than one of the three exit colours.
+// stateWords is what a row says it is. `open` is deliberately present: a
+// search result still in the pile says so, and it wears Notebook Violet rather
+// than one of the three exit colours.
+//
+// A task is open too, and is not in the pile — see taskWords.
 var stateWords = map[squirrel.ItemState]string{
 	squirrel.ItemOpen:    "IN THE PILE",
+	squirrel.ItemDone:    "DONE",
+	squirrel.ItemDropped: "DROPPED",
+	squirrel.ItemKept:    "KEPT",
+}
+
+// taskWords is the same map for a row that was decided on. Only `open`
+// differs: a task you have not done is not in the pile, it is on the list of
+// things you decided to do, and the two are different places with different
+// verbs.
+var taskWords = map[squirrel.ItemState]string{
+	squirrel.ItemOpen:    "DECIDED",
 	squirrel.ItemDone:    "DONE",
 	squirrel.ItemDropped: "DROPPED",
 	squirrel.ItemKept:    "KEPT",
@@ -433,13 +454,18 @@ func toView(it squirrel.Item) noteView {
 		// type. The row is what says which file belongs to you.
 		photo = "/photo/" + strconv.FormatInt(it.ID, 10)
 	}
+	words := stateWords
+	if it.Kind == squirrel.ItemTask {
+		words = taskWords
+	}
 	return noteView{
 		ID:        it.ID,
 		Photo:     photo,
 		Text:      it.RawText,
 		When:      strings.ToUpper(it.ReceivedAt.Local().Format("2 January")),
 		State:     string(it.State),
-		StateWord: stateWords[it.State],
+		Task:      it.Kind == squirrel.ItemTask,
+		StateWord: words[it.State],
 	}
 }
 

@@ -18,6 +18,16 @@
        marking them as spent. */}}
   <article class="tcard acard">
     <p class="meta"><span class="did">DID IT {{.When}}</span></p>
+    {{/* The photograph goes where the note goes. It was drawn on the deck and
+         nowhere else, so keeping a note or deciding it was a task made the
+         picture vanish — and for a note with no words at all, which is a
+         perfectly good note here, that left a row saying nothing.
+
+         Smaller than on the card: this is a list you are scanning rather than
+         one thing you are deciding about. */}}
+    {{with .Photo}}
+    <p class="rphoto"><img src="{{.}}" alt="the photograph on this note" loading="lazy"></p>
+    {{end}}
     <p>{{.Text}}</p>
     <form class="tacts" method="post" action="/tasks/act">
       <input type="hidden" name="id" value="{{.ID}}">
@@ -28,7 +38,7 @@
   {{else}}
   <section class="empty">
     <img alt="" src="/static/logo.png?v={{.V}}" width="186" height="140">
-    <h1>nothing here yet</h1>
+    <p class="bigempty">nothing here yet</p>
     <p>what you finish comes here.</p>
   </section>
   {{end}}

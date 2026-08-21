@@ -1,8 +1,9 @@
 {{define "content"}}
 <section class="results">
-  {{if .Results}}
-  {{/* Named for what these are, not for how many. The same shoebox voice as
-       "the top card" on the deck. */}}
+  {{/* The title and the tabs sit above the branch, so an empty shelf is
+       still a screen with a name and a way back to the pile. They were
+       inside it: nothing kept meant no heading, no tabs and one sentence
+       on an empty field. */}}
   <h1 class="deckhead">the things you kept</h1>
   {{if .Views}}
   {{/* What this screen can show you, under its own title rather than in a
@@ -15,10 +16,24 @@
     {{end}}
   </nav>
   {{end}}
+
+  {{if .Results}}
+  {{/* Named for what these are, not for how many. The same shoebox voice as
+       "the top card" on the deck. */}}
   {{range .Results}}
   <article class="rcard state-kept">
     <span class="tab"></span>
     <div class="meta"><span>{{.When}}</span></div>
+    {{/* The photograph goes where the note goes. It was drawn on the deck and
+         nowhere else, so keeping a note or deciding it was a task made the
+         picture vanish — and for a note with no words at all, which is a
+         perfectly good note here, that left a row saying nothing.
+
+         Smaller than on the card: this is a list you are scanning rather than
+         one thing you are deciding about. */}}
+    {{with .Photo}}
+    <p class="rphoto"><img src="{{.}}" alt="the photograph on this note" loading="lazy"></p>
+    {{end}}
     <p>{{.Text}}</p>
     {{/* One way out, and it is the reversible one. A kept note is reference:
          it was never going to be done, so offering DONE here would be offering

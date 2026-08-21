@@ -10,6 +10,12 @@
        start, and nobody arrives there wondering. */}}
   {{/* The slot, first.
 
+       "Tell it" rather than "Keep it", and the word matters: KEEP is one of
+       the four things you can do to a note — shelve it for reference — and
+       KEEP THESE accepts a split. Three controls, three meanings, one word,
+       on a surface whose whole argument is that deciding is expensive.
+       "Tell it" finishes the sentence the box already starts.
+
        It was under the doors, on the argument that a composer at the top of a
        list is an inbox's shape and puts what you are adding directly over what
        you have not dealt with. That reasoning is kept because it was a real
@@ -51,7 +57,7 @@
 
          A label rather than a button, because a file input cannot be styled
          and a hidden input with a label is how everyone does this. */}}
-    <label class="camera" title="Add a photograph">
+    <label class="camera">
       <input type="file" name="photo" accept="image/*">
       <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
         <path d="M2 5.5h4.2L8 3h8l1.8 2.5H22v12H2z" fill="none" stroke="#1c110b" stroke-width="2.4" stroke-linejoin="round"/>
@@ -60,7 +66,7 @@
       <span class="offscreen">Add a photograph</span>
     </label>
     {{end}}
-    <button class="post" type="submit">Keep it</button>
+    <button class="post" type="submit">Tell it</button>
 
     {{/* What happened, inside the box it happened in.
 
@@ -95,9 +101,28 @@
        face. */}}
   <div class="checkin">
     {{if .Mood}}
-    {{/* Answered. The region becomes the one thing, when there is one — and
-         when there is not, it is one quiet line rather than an empty box or a
-         sentence encouraging you to find something. */}}
+    {{/* Answered, and it says so whether or not there is anything to offer.
+
+         It used to say so only when the picker came back empty: the mood, the
+         way to change it, and the one link to what you said before all lived
+         in the `{{"{{else}}"}}` of the offer. So on any ordinary day — checked in,
+         one thing to do — none of them existed, and `/moods` was reachable
+         from nowhere in the product. A mis-tapped "wiped" then quietly
+         changed two of the picker's rules for the rest of the day with no way
+         to see what it had been set to or to say otherwise.
+
+         Small, above the offer, and never a series: this reports what you
+         said and may never characterise you. */}}
+    {{/* The answer, as one chip: the face and the word are a single object,
+         and the two ways to change it trail behind. Room below it, which it
+         did not have — it sat flush against the offer, so the one thing you
+         said about yourself and the one thing you are handed touched. */}}
+    <p class="noted" role="status">
+      <span><img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">noted &mdash; {{.MoodWord}}</span>
+      {{if and (not .Offer) (not .Anyway)}}<a class="again" href="/?anyway=1">show me something anyway</a>{{end}}
+      <a class="again" href="/?ask=1">say something else</a>
+      <a class="view" href="/moods">what you said before</a>
+    </p>
     {{with .Offer}}
     <section class="offer" aria-label="Right now">
       <p class="lead">RIGHT NOW</p>
@@ -157,7 +182,7 @@
         <form class="slot small" method="post" action="/capture">
           <textarea name="text" rows="1" placeholder="the first thing to find out"
             aria-label="The first thing you would have to find out"></textarea>
-          <button class="post" type="submit">Keep it</button>
+          <button class="post" type="submit">Tell it</button>
         </form>
         {{else if .Minutes}}
         <form method="post" action="/now/act">
@@ -171,7 +196,7 @@
       </div>
       {{else}}
       <details class="cantstart">
-        <summary role="button"><span class="ifshut">i can't start</span><span class="ifopen">never mind</span></summary>
+        <summary><span class="ifshut">i can't start</span><span class="ifopen">never mind</span></summary>
         <form class="whys" method="post" action="/now/stuck">
           <input type="hidden" name="kind" value="{{.Kind}}">
           <input type="hidden" name="id" value="{{.RefID}}">
@@ -186,23 +211,6 @@
       {{end}}
       {{end}}
     </section>
-    {{else}}
-    <p class="noted" role="status">
-      <img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">
-      <span>noted &mdash; {{.MoodWord}}</span>
-      {{/* Saying you are wiped must not be a wall. It offers once, and
-           nothing about having asked is remembered. */}}
-      {{if not .Anyway}}<a class="again" href="/?anyway=1">show me something anyway</a>{{end}}
-      <a class="again" href="/?ask=1">say something else</a>
-      {{/* The one way in. A link is not a series: pressing it is asking, and
-           nothing here shows the readings until you do.
-
-           "what you said before" rather than "how you have been", and the
-           difference is the rule: this region may report what you said and may
-           never characterise you. The page behind it shows your own answers
-           back — it does not conclude anything from them. */}}
-      <a class="view" href="/moods">what you said before</a>
-    </p>
     {{end}}
     {{else}}
     <p class="lead">how do you feel?</p>

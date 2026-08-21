@@ -79,6 +79,20 @@
       said.textContent = s.said;
       card.classList.add("stamped");
       form.hidden = true;
+      // The repairs go with the answers.
+      //
+      // They are siblings of the form rather than children of it — correcting
+      // the words is not an answer, which is exactly why it sits outside the
+      // row — so hiding the form left them on a card that had just been
+      // dropped. For the length of the hold you were being offered "fix the
+      // words" and "i can't act on this" about a note that was already gone,
+      // and "this is more than one thing" about a note that was no longer any
+      // things at all.
+      //
+      // What a stamped card shows is the stamp and the way back. Nothing else
+      // on it means anything now.
+      card.querySelectorAll(".ways, .cantact, form:has(.askSplit)")
+        .forEach((el) => { el.hidden = true; });
       undoRow.hidden = false;
       undo.focus({ preventScroll: true });
       announce(s.said + ". Put it back is focused.");
@@ -98,11 +112,6 @@
     // showing; the class does the hiding, and neither exists without this file.
     function choosing(open) {
       if (open !== every.open) announce(open ? "how often should it come back?" : "never mind");
-      // The answers live behind the card's one question now, so asking for an
-      // interval from a shut card has to open that first — otherwise C opens a
-      // disclosure nobody can see. The four letters need no such thing: they
-      // act, and an acting card hides its whole tray.
-      if (open) { const gate = card.querySelector("details.answer"); if (gate) gate.open = true; }
       every.open = open;
       form.classList.toggle("choosing", open);
       neverMind.hidden = !open;
@@ -453,7 +462,17 @@
     const box = form.querySelector("textarea");
     if (!said || !post) return;
 
-    const words = { kept: "kept", held: "no network — I have it. it goes in when you are back.", nokeep: "not kept — Squirrel cannot reach its memory. your words are still here.", nophoto: "that photograph was not kept — too big, or a kind Squirrel does not take. your words are still here." };
+    // Word for word what the server renders, because the comment below has
+    // always claimed they were the same and they were not: this path dropped
+    // "try again in a moment" and "keep them without it, or try another
+    // picture" — the sentence that says what to do — from both failures, on
+    // the path nearly every session takes. A test pins them together now.
+    const words = {
+      kept: "kept",
+      held: "No network — I have it. It goes in when you are back.",
+      nokeep: "Not kept — Squirrel cannot reach its memory. Your words are still here; try again in a moment.",
+      nophoto: "That photograph was not kept — too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.",
+    };
     let telling = 0;
 
     function tell(which) {

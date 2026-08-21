@@ -20,9 +20,13 @@
        No count on any heading. A number beside stalled work is a reproach, and
        the point of setting it aside was to stop being asked about it. */}}
   {{range .SetAside}}
-  <h2 class="lead">{{.Word}}</h2>
+  <h2 class="heldgroup">{{.Word}}</h2>
   {{range .Rows}}
   <article class="aside">
+    {{/* The photograph follows the note here too. */}}
+    {{with .Photo}}
+    <p class="rphoto"><img src="{{.}}" alt="the photograph on this note" loading="lazy"></p>
+    {{end}}
     <p class="what">{{.Text}}</p>
     {{if .Because}}<p class="onwhat">{{.Because}}</p>{{end}}
     <form method="post" action="/held/act">

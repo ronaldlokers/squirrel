@@ -39,11 +39,14 @@
 
   <div class="talk">
     {{/* First paint, and it costs nothing: the picker chose this, not a
-         model. Opening has to be free or the acorn becomes a thing you think
+         model. It said ON SCREEN and showed the picker's answer whatever
+         screen the acorn was pressed on, so on the chores it announced a task
+         you were not looking at. RIGHT NOW is home's own word for the same
+         thing and is true wherever it is drawn. Opening has to be free or the acorn becomes a thing you think
          about before pressing. */}}
     {{with .Offer}}
     <div class="onscreen">
-      <p class="lead">ON SCREEN</p>
+      <p class="lead">RIGHT NOW</p>
       <p class="what">{{.Text}}</p>
       <p class="because">{{.Because}}</p>
     </div>
@@ -91,7 +94,7 @@
     <form class="slot small" method="post" action="/capture">
       <textarea name="text" rows="1" placeholder="the first thing to find out"
         aria-label="The first thing you would have to find out"></textarea>
-      <button class="post" type="submit">Keep it</button>
+      <button class="post" type="submit">Tell it</button>
     </form>
     {{else if .Minutes}}
     {{with $.Coach.Offer}}

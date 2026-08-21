@@ -113,8 +113,14 @@ func heldGroups(held []squirrel.HeldItem) []heldGroup {
 			if h.State != state {
 				continue
 			}
+			// By the row's id, never by the file's name: the name is the one
+			// string in this product that becomes a path.
+			photo := ""
+			if h.PhotoName != "" {
+				photo = "/photo/" + strconv.FormatInt(h.ID, 10)
+			}
 			rows = append(rows, heldView{
-				ID: h.ID, Text: h.Text, Because: h.Because,
+				ID: h.ID, Text: h.Text, Because: h.Because, Photo: photo,
 				Task: h.Kind == squirrel.ItemTask,
 			})
 		}
@@ -143,6 +149,9 @@ type heldView struct {
 	ID      int64
 	Text    string
 	Because string
+	// Photo is the picture this row carries, by the row's id — never by the
+	// file's name, which is the one string here that becomes a path.
+	Photo string
 	// Task says this was something you decided to do rather than a thought you
 	// parked. The two read differently and the row says which.
 	Task bool
