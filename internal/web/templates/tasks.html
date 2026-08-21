@@ -1,7 +1,18 @@
 {{define "content"}}
 <section class="shoebox">
   {{/* Named for what these are. Never how many. */}}
-  <p class="head">what you decided</p>
+  <h1 class="deckhead">what you decided</h1>
+  {{if .Views}}
+  {{/* What this screen can show you, under its own title rather than in a
+       footer. These belong to the place you are in: the shelf is the pile's,
+       the archive and the set-aside are the tasks'. */}}
+  <nav class="views" aria-label="Views of this">
+    {{range .Views}}
+    {{if .Here}}<span class="view here" aria-current="page">{{.Label}}</span>
+    {{else}}<a class="view" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{end}}
+  </nav>
+  {{end}}
   {{range .Results}}
   {{/* The result card's stock and depth, with no page tab: a tab says what a
        note ended up as, and a task has no outcome until it has one. */}}
@@ -35,6 +46,5 @@
   </form>
 
   {{if .More}}<p class="more">there is more &mdash; search finds any of it</p>{{end}}
-  <p class="ends"><a href="/tasks/done">what you have done</a> &middot; <a href="/held">what you cannot act on</a></p>
 </section>
 {{end}}

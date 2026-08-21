@@ -3,7 +3,18 @@
   {{if .Results}}
   {{/* Named for what these are, not for how many. The same shoebox voice as
        "the top card" on the deck. */}}
-  <p class="resultsHead">THINGS YOU KEPT</p>
+  <h1 class="deckhead">the things you kept</h1>
+  {{if .Views}}
+  {{/* What this screen can show you, under its own title rather than in a
+       footer. These belong to the place you are in: the shelf is the pile's,
+       the archive and the set-aside are the tasks'. */}}
+  <nav class="views" aria-label="Views of this">
+    {{range .Views}}
+    {{if .Here}}<span class="view here" aria-current="page">{{.Label}}</span>
+    {{else}}<a class="view" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{end}}
+  </nav>
+  {{end}}
   {{range .Results}}
   <article class="rcard state-kept">
     <span class="tab"></span>

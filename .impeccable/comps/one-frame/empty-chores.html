@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel</title>
+<link rel="stylesheet" href="../../../internal/web/static/pile.css">
+
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="../../../internal/web/static/apple-touch-icon.png">
+<meta name="theme-color" content="#3b2560">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
+</head>
+<body>
+<div class="lid">
+  
+  
+  <a class="brand" href="/">
+    <img alt="" src="../../../internal/web/static/logo.png" width="84" height="63">
+    <span class="wordmark">Squirrel</span>
+  </a>
+  
+  <span class="spacer"></span>
+  
+  
+  
+  
+
+  
+  
+  <a class="lidbtn tobuddy" href="/buddy?from=%2fchores" aria-label="Ask Buddy">
+    <svg width="19" height="23" viewBox="0 0 15 18" aria-hidden="true">
+      <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"></path>
+      <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"></path>
+    </svg>
+  </a>
+  
+
+  
+  <details class="findbox">
+    <summary aria-label="Search every note">
+      <svg width="19" height="19" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2.4"></circle>
+        <path d="M11 11 L15.5 15.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+      </svg>
+    </summary>
+    <form class="find" method="get" action="/pile" role="search">
+      <input type="search" name="q" value="" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+  </details>
+
+  
+  <details class="where">
+    <summary aria-label="Where to go">
+      <svg class="ifshut" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M3 5.5h14M3 10h14M3 14.5h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+      </svg>
+      <svg class="ifopen" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+      </svg>
+    </summary>
+    <nav class="wherelist" aria-label="Where to go">
+      
+      <a href="/pile">the pile</a>
+      
+      <a href="/tasks">the tasks</a>
+      
+      <span class="here" aria-current="page">the chores</span>
+      
+      
+    </nav>
+  </details>
+  <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"></path>
+    <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+  </svg>
+</div>
+
+<p id="say" class="offscreen" role="status" aria-live="polite"></p>
+<main id="stage" class="">
+
+
+
+<section class="chorebox" aria-label="What comes back">
+  
+  
+  <section class="empty">
+    <img alt="" src="../../../internal/web/static/logo.png" width="186" height="140">
+    <h1>nothing comes back on its own</h1>
+    <p>when a note becomes a chore, this is where it lives.</p>
+  </section>
+  
+  <details class="newchore">
+    <summary><span class="plus" aria-hidden="true">+</span> a new chore</summary>
+    <form method="post" action="/chores/new">
+      <p class="lead">WHAT IS IT</p>
+      <div class="namefield">
+        <input type="text" name="name" placeholder="descale the kettle" aria-label="What the chore is called" maxlength="200" required="">
+      </div>
+
+      <p class="lead">HOW OFTEN</p>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="every" value="every day">every day</label>
+        <label class="chip"><input type="radio" name="every" value="every week">every week</label>
+        <label class="chip"><input type="radio" name="every" value="every 2 weeks" checked="">every 2 weeks</label>
+        <label class="chip"><input type="radio" name="every" value="every month">every month</label>
+      </div>
+
+      
+      <p class="lead">WHEN IS IT WORTH ASKING</p>
+      <div class="chips">
+        <label class="chip"><input type="radio" name="part" value="" checked="">any time</label>
+        <label class="chip"><input type="radio" name="part" value="morning">mornings</label>
+        <label class="chip"><input type="radio" name="part" value="afternoon">afternoons</label>
+        <label class="chip"><input type="radio" name="part" value="evening">evenings</label>
+      </div>
+
+      <button class="make" type="submit">Make it a chore</button>
+    </form>
+  </details>
+
+  
+</section>
+
+</main>
+
+
+
+
+</body></html>

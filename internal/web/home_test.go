@@ -37,10 +37,19 @@ func TestHomeStandsUpWithoutTheDatabase(t *testing.T) {
 func TestHomeHasTwoDoorsAndNothingElseToPress(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	require.Equal(t, 1, strings.Count(body, `href="/pile"`), "one door to the pile")
-	require.Equal(t, 1, strings.Count(body, `href="/chores"`), "one door to the chores")
-	// The lid's cross-link would be a third copy of a door.
-	require.NotContains(t, body, `class="lidlink"`)
+	// One door each, counted as doors rather than as links to a place.
+	//
+	// It used to count hrefs, on the rule that the lid must not carry a third
+	// copy of a door. The rule holds and the counting no longer can: the lid's
+	// map names all three places, so /pile appears twice in this markup and
+	// only one of them is a door.
+	//
+	// What the rule was actually about is furniture — a second way in, sitting
+	// on the screen, competing with the first. The map is behind a press and
+	// is identical on every screen, so it is not that.
+	require.Equal(t, 3, strings.Count(body, `class="door"`), "three doors, no more")
+	require.Contains(t, body, `<details class="where">`,
+		"the map is on the screen rather than behind a press")
 }
 
 // Everywhere else the mark is the way back. Home is where it points, so on home
@@ -91,8 +100,8 @@ func TestHomeDoesNotAnswerForEverything(t *testing.T) {
 func TestHomeHasThreeDoors(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	for _, href := range []string{`href="/pile"`, `href="/tasks"`, `href="/chores"`} {
-		require.Equal(t, 1, strings.Count(body, href), href)
+	for _, label := range []string{"the pile", "the tasks", "the chores"} {
+		require.Contains(t, body, label)
 	}
 	require.Contains(t, body, "what you decided")
 	// The one statement the screen makes is that they are equals, so nothing

@@ -23,7 +23,7 @@ func openBuddy(t *testing.T, w, h int) *cdp {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": w, "height": h, "deviceScaleFactor": 0, "mobile": w < 620,
 	})
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet", `!!document.querySelector("dialog.coachsheet[open]")`)
 	return c
 }
@@ -147,20 +147,11 @@ func TestBrowserEveryWayOutLeavesItGone(t *testing.T) {
 	c.until(t, "the sheet to leave the screen", `!(`+isOpen+`)`)
 }
 
-// The acorn has nothing to offer while the conversation is open, and on a wide
-// screen it sat directly on top of the sheet's own send button.
-func TestBrowserTheAcornStandsAsideForTheSheet(t *testing.T) {
-	c := openBuddy(t, 1130, 744)
-
-	require.Equal(t, false, c.eval(t, `
-		const a = document.querySelector(".askacorn");
-		return !!a && a.checkVisibility({ checkVisibilityCSS: true });`),
-		"the acorn is still on screen over the sheet")
-
-	c.eval(t, shut+`.click()`)
-	c.until(t, "the sheet to leave the screen", `!(`+isOpen+`)`)
-	require.Equal(t, true, c.eval(t, `
-		const a = document.querySelector(".askacorn");
-		return !!a && a.checkVisibility({ checkVisibilityCSS: true });`),
-		"the acorn did not come back")
-}
+// There was a test here that required the acorn to stand aside while the
+// sheet was open, because as a floating button it sat directly on top of the
+// sheet's own send button on a wide screen.
+//
+// It has gone with the button. Buddy is in the lid now, behind the backdrop
+// like everything else on the page, and a rule that hides a thing which
+// cannot be reached anyway is a rule that will outlive its reason and confuse
+// somebody.

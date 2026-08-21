@@ -1,6 +1,17 @@
 {{define "content"}}
 <section class="every">
   <h1 class="deckhead">what you cannot act on</h1>
+  {{if .Views}}
+  {{/* What this screen can show you, under its own title rather than in a
+       footer. These belong to the place you are in: the shelf is the pile's,
+       the archive and the set-aside are the tasks'. */}}
+  <nav class="views" aria-label="Views of this">
+    {{range .Views}}
+    {{if .Here}}<span class="view here" aria-current="page">{{.Label}}</span>
+    {{else}}<a class="view" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{end}}
+  </nav>
+  {{end}}
 
   {{/* Grouped, because these are three different questions: the waiting ones
        have somebody to chase, the blocked ones have something to arrive, and
@@ -32,6 +43,5 @@
 
   {{/* That there is more, never how much more. */}}
   {{if .More}}<p class="ends">there is more.</p>{{end}}
-  <p class="ends"><a href="/tasks">what you decided</a> &middot; <a href="/pile">the pile</a></p>
 </section>
 {{end}}

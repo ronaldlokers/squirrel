@@ -1,6 +1,17 @@
 {{define "content"}}
 <section class="shoebox">
-  <p class="head">what you have done</p>
+  <h1 class="deckhead">what you have done</h1>
+  {{if .Views}}
+  {{/* What this screen can show you, under its own title rather than in a
+       footer. These belong to the place you are in: the shelf is the pile's,
+       the archive and the set-aside are the tasks'. */}}
+  <nav class="views" aria-label="Views of this">
+    {{range .Views}}
+    {{if .Here}}<span class="view here" aria-current="page">{{.Label}}</span>
+    {{else}}<a class="view" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{end}}
+  </nav>
+  {{end}}
   {{range .Results}}
   {{/* Quieter stock, because these are underneath the ones that matter now.
        Never crossed out: striking through your own words would be the product
@@ -22,6 +33,5 @@
   </section>
   {{end}}
   {{if .More}}<p class="more">there is more &mdash; search finds any of it</p>{{end}}
-  <p class="ends"><a href="/tasks">back to what you decided</a></p>
 </section>
 {{end}}

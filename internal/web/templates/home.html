@@ -1,5 +1,90 @@
 {{define "content"}}
 <div class="homebox">
+  {{/* No title here, and it is the one screen without one.
+       
+       It had "right now" for an afternoon. Seen on the screen it was a label
+       for a room you are already standing in: the lid says Squirrel, the slot
+       says what to do, the doors say where to go, and a heading between them
+       was a word you read past. The other twelve screens are places you have
+       navigated to and their titles answer "where am I"; home is where you
+       start, and nobody arrives there wondering. */}}
+  {{/* The slot, first.
+
+       It was under the doors, on the argument that a composer at the top of a
+       list is an inbox's shape and puts what you are adding directly over what
+       you have not dealt with. That reasoning is kept because it was a real
+       one: this product exists so that a pile is not an inbox.
+
+       The owner overruled it on 21 August 2026, and the case is simply what
+       the thing is for. Capture is the most frequent act in an external
+       memory and the one that must cost nothing — a thought you are holding is
+       a thought you are spending capacity on, and scrolling past a check-in
+       and three doors to find the box is a toll charged at exactly the wrong
+       moment. What is above it now is nothing. */}}
+  {{/* enctype only when there is a camera, and it was set either way until
+       the worker learned to leave multipart alone. Those two facts together
+       matter: the worker holds a capture that finds no network, everything it
+       can hold is the words, and so it now forwards anything multipart
+       untouched rather than dropping the photograph out of it. A form that
+       says multipart when it never carries a file would give up the offline
+       hold for nothing.
+
+       pile.js narrows it further, to the posts that actually carry a
+       photograph. With no script this stays multipart whenever a camera is
+       offered, which is correct and costs the offline hold on a screen that
+       has no stash to lose it from either. */}}
+  <form class="slot" method="post" action="/capture"{{if .Camera}} enctype="multipart/form-data"{{end}}>
+    <textarea name="text" rows="1" placeholder="tell me a thing"
+      aria-label="Tell Squirrel a thing">{{.Said}}</textarea>
+    {{if .Camera}}
+    {{/* No `capture` attribute, and that is the whole of the second bug here.
+         It reads like "prefer the camera" and it is not: on a phone it removes
+         every other source, so the letter you photographed this morning and
+         the screenshot somebody sent you become unreachable. Without it the
+         browser offers its own chooser with the camera in it, which is one tap
+         for the case the proposal was written around and the only tap there is
+         for the case it forgot.
+
+         It also stops the full camera app being launched over the top of an
+         installed app, which is what was losing the photograph — see the
+         stash in pile.js.
+
+         A label rather than a button, because a file input cannot be styled
+         and a hidden input with a label is how everyone does this. */}}
+    <label class="camera" title="Add a photograph">
+      <input type="file" name="photo" accept="image/*">
+      <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
+        <path d="M2 5.5h4.2L8 3h8l1.8 2.5H22v12H2z" fill="none" stroke="#1c110b" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="12" cy="11" r="3.6" fill="none" stroke="#1c110b" stroke-width="2.4"/>
+      </svg>
+      <span class="offscreen">Add a photograph</span>
+    </label>
+    {{end}}
+    <button class="post" type="submit">Keep it</button>
+
+    {{/* What happened, inside the box it happened in.
+
+         These were three paragraphs after the form, which put the answer to
+         "did that work?" somewhere other than the thing you had just used —
+         and because the whole capture was a page navigation, you also arrived
+         back at the top of the screen to read it. Two separate ways of losing
+         the connection between an action and its result.
+
+         In the form now, so both paths say it in the same place: pile.js
+         writes into this element without the page ever moving, and with no
+         script the server renders the same element in the same spot. */}}
+    <p class="slotsaid" id="slotsaid" role="status"{{if not .Kept}} hidden{{end}}>kept</p>
+    {{/* Held by the worker, because there was no network. Not an error: the
+         words are somewhere and they go in when there is one. */}}
+    {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
+    {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
+    {{/* The photograph was refused, which is a different thing from the machine
+         failing and has to say so: the message above sends you to press the
+         same button again, and pressing it again will not make the picture
+         smaller. */}}
+    {{if .NoPhoto}}<p class="slotsaid bad" role="status">That photograph was not kept &mdash; too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.</p>{{end}}
+  </form>
+
   {{/* One interactive thing above the doors, and it is either the question or
        the answer to it.
 
@@ -15,7 +100,7 @@
          sentence encouraging you to find something. */}}
     {{with .Offer}}
     <section class="offer" aria-label="Right now">
-      <p class="head">RIGHT NOW</p>
+      <p class="lead">RIGHT NOW</p>
       <p class="what">{{.Text}}</p>
       <p class="because">{{.Because}}</p>
       {{if .Running}}
@@ -116,7 +201,7 @@
            difference is the rule: this region may report what you said and may
            never characterise you. The page behind it shows your own answers
            back — it does not conclude anything from them. */}}
-      <a class="again" href="/moods">what you said before</a>
+      <a class="view" href="/moods">what you said before</a>
     </p>
     {{end}}
     {{else}}
@@ -159,77 +244,6 @@
       </span>
     </a>
   </nav>
-
-  {{/* The slot in the lid of the box: you post a thought in without opening
-       it. Under the doors rather than above them — a composer at the top of a
-       list is an inbox's shape, and it puts what you are adding directly over
-       what you have not dealt with. */}}
-  {{/* enctype only when there is a camera, and it was set either way until
-       the worker learned to leave multipart alone. Those two facts together
-       matter: the worker holds a capture that finds no network, everything it
-       can hold is the words, and so it now forwards anything multipart
-       untouched rather than dropping the photograph out of it. A form that
-       says multipart when it never carries a file would give up the offline
-       hold for nothing.
-
-       pile.js narrows it further, to the posts that actually carry a
-       photograph. With no script this stays multipart whenever a camera is
-       offered, which is correct and costs the offline hold on a screen that
-       has no stash to lose it from either. */}}
-  <form class="slot" method="post" action="/capture"{{if .Camera}} enctype="multipart/form-data"{{end}}>
-    <textarea name="text" rows="1" placeholder="tell me a thing"
-      aria-label="Tell Squirrel a thing">{{.Said}}</textarea>
-    {{if .Camera}}
-    {{/* No `capture` attribute, and that is the whole of the second bug here.
-         It reads like "prefer the camera" and it is not: on a phone it removes
-         every other source, so the letter you photographed this morning and
-         the screenshot somebody sent you become unreachable. Without it the
-         browser offers its own chooser with the camera in it, which is one tap
-         for the case the proposal was written around and the only tap there is
-         for the case it forgot.
-
-         It also stops the full camera app being launched over the top of an
-         installed app, which is what was losing the photograph — see the
-         stash in pile.js.
-
-         A label rather than a button, because a file input cannot be styled
-         and a hidden input with a label is how everyone does this. */}}
-    <label class="camera" title="Add a photograph">
-      <input type="file" name="photo" accept="image/*">
-      <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
-        <path d="M2 5.5h4.2L8 3h8l1.8 2.5H22v12H2z" fill="none" stroke="#1c110b" stroke-width="2.4" stroke-linejoin="round"/>
-        <circle cx="12" cy="11" r="3.6" fill="none" stroke="#1c110b" stroke-width="2.4"/>
-      </svg>
-      <span class="offscreen">Add a photograph</span>
-    </label>
-    {{end}}
-    <button class="post" type="submit">Keep it</button>
-
-    {{/* What happened, inside the box it happened in.
-
-         These were three paragraphs after the form, which put the answer to
-         "did that work?" somewhere other than the thing you had just used —
-         and because the whole capture was a page navigation, you also arrived
-         back at the top of the screen to read it. Two separate ways of losing
-         the connection between an action and its result.
-
-         In the form now, so both paths say it in the same place: pile.js
-         writes into this element without the page ever moving, and with no
-         script the server renders the same element in the same spot. */}}
-    <p class="slotsaid" id="slotsaid" role="status"{{if not .Kept}} hidden{{end}}>kept</p>
-    {{/* Held by the worker, because there was no network. Not an error: the
-         words are somewhere and they go in when there is one. */}}
-    {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
-    {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
-    {{/* The photograph was refused, which is a different thing from the machine
-         failing and has to say so: the message above sends you to press the
-         same button again, and pressing it again will not make the picture
-         smaller. */}}
-    {{if .NoPhoto}}<p class="slotsaid bad" role="status">That photograph was not kept &mdash; too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.</p>{{end}}
-  {{/* The photograph was refused, which is a different thing from the machine
-       failing and has to say so: the message above sends you to press the same
-       button again, and pressing it again will not make the picture smaller. */}}
-
 
   {{/* The one thing Squirrel will interrupt you for is having to leave, and
        it has to ask before it can. Hidden until the script has established

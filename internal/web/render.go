@@ -75,8 +75,16 @@ type view struct {
 	// centred card is the shoebox's own composition; a list that grows from
 	// the middle of the screen is just a list that is hard to read.
 	Scrolling bool
-	// Elsewhere is the two places you are not, filled by render.
+	// Elsewhere is everywhere you are not, filled by render. It sits behind the
+	// lid's one control rather than beside it.
 	Elsewhere []linkView
+	// Place is where you are, in the menu's own words, so the shut control can
+	// say it without the template knowing the mapping.
+	Place string
+	// Views are the places belonging to the screen you are on — the pile's
+	// shelf, the tasks' archive and set-aside. Under the title, because that is
+	// what they are about.
+	Views []linkView
 	// Home is the front door, where the lid carries no cross-link at all —
 	// both doors are already the body of the page — and where the mark is not
 	// a link, because it is a link to here.
@@ -181,49 +189,74 @@ type choreView struct {
 type linkView struct {
 	Href  string
 	Label string
+	// Here is the place you already are. It is still drawn, and it is not a
+	// link: a nav whose items move as you move is a nav you have to read every
+	// time, and the cheapest way to say where you are is to say it in the same
+	// row as everywhere else you could be.
+	Here bool
 }
 
-// elsewhere is the two places you are not.
+// placeName is where you are, in the words the menu uses for it.
 //
-// With two screens the lid could carry one link and be complete. With three it
-// cannot, and a single link that cycles would mean the chores are two presses
-// from the pile — so it carries both of the others. Still quiet, still two
-// words each; the mark remains the way home, where all three doors are.
-//
-// The archive belongs to the tasks and the shelf to the pile, because that is
-// where each is reached from and what you would be looking for the way back to.
-func elsewhere(here string) []linkView {
-	all := []linkView{
-		{Href: "/pile", Label: "the pile"},
-		{Href: "/tasks", Label: "the tasks"},
-		{Href: "/chores", Label: "the chores"},
+// A screen that hangs off another one answers with its parent: the shelf is
+// somewhere in the pile, the archive and the set-aside are somewhere in the
+// tasks. The menu says which room you are in, and `views` says which corner.
+func placeName(here string) string {
+	switch here {
+	case "pile", "kept", "bottom", "enough":
+		return "the pile"
+	case "tasks", "archive", "held":
+		return "the tasks"
+	case "chores":
+		return "the chores"
+	case "buddy", "coach":
+		return "buddy"
 	}
-	mine := map[string]string{
-		"pile": "/pile", "kept": "/pile",
-		"tasks": "/tasks", "archive": "/tasks", "held": "/tasks",
-		"chores": "/chores",
-		// The screens that belong to none of the three still get two links, not
-		// three. Before this they fell through the map and rendered all of
-		// them, which wrapped the lid onto a second row and broke the rule
-		// DESIGN.md states plainly: two, and they are the two places you are
-		// not. The moods page shipped that way and nothing caught it, because
-		// the miss is silent — a new screen inherits it by being new.
-		"moods": "/pile", "buddy": "/pile",
-	}[here]
-	if mine == "" {
-		// Nothing claimed it. Drop the first rather than showing three: a lid
-		// that grows a link for an unmapped route is a lid that breaks the next
-		// time someone adds a screen.
-		mine = all[0].Href
-	}
+	return "home"
+}
 
-	out := make([]linkView, 0, 2)
-	for _, l := range all {
-		if l.Href != mine {
-			out = append(out, l)
+// elsewhere is the map: the three places, with the one you are in marked.
+//
+// Behind a hamburger now rather than beside the mark. The lid was a row of
+// words that cost most of a phone screen before anything you came for, and
+// what it said — where you can go — is the thing you need least often and can
+// always ask for.
+//
+// The place you are in is in the list and not a link. A menu that drops it
+// has items that move as you move, so "the second one" means a different
+// screen on every screen.
+//
+// Home is not in it: the mark is the way home and has been since the screen
+// existed. Buddy is not in it either — it is one tap in the lid, because a
+// conversation about what is in front of you should not be two.
+func elsewhere(here string) []linkView {
+	mine := placeName(here)
+	return []linkView{
+		{Href: "/pile", Label: "the pile", Here: mine == "the pile"},
+		{Href: "/tasks", Label: "the tasks", Here: mine == "the tasks"},
+		{Href: "/chores", Label: "the chores", Here: mine == "the chores"},
+	}
+}
+
+// views are the places that belong to the screen you are on, and nothing else
+// reaches them. The pile keeps a shelf; the tasks keep what is finished and
+// what is stalled. They sit under the title because that is what they are
+// about — a link to the archive means nothing next to the chores.
+func views(here string) []linkView {
+	switch here {
+	case "pile", "kept", "bottom":
+		return []linkView{
+			{Href: "/pile", Label: "the pile", Here: here == "pile" || here == "bottom"},
+			{Href: "/kept", Label: "the things you kept", Here: here == "kept"},
+		}
+	case "tasks", "archive", "held":
+		return []linkView{
+			{Href: "/tasks", Label: "what you decided", Here: here == "tasks"},
+			{Href: "/tasks/done", Label: "what you have done", Here: here == "archive"},
+			{Href: "/held", Label: "what you cannot act on", Here: here == "held"},
 		}
 	}
-	return out
+	return nil
 }
 
 // moodDayView is one day's readings. No count on it and no judgement about
@@ -295,8 +328,6 @@ type coachPanel struct {
 	// whether or not a chip was just pressed: coming back to the sheet an hour
 	// later and finding the step you were on is the whole point of storing it.
 	Step *stepView
-	// Talking is whether there is a model behind the box.
-	Talking bool
 	// AskWhich puts the question back: which of the four is it. True when
 	// there is no coach, and when there was one that could not say anything
 	// usable.
@@ -429,8 +460,15 @@ func render(w http.ResponseWriter, name string, v view) {
 		panic("no such page: " + name)
 	}
 	v.V = assetVersion
+	// The menu is on every screen now, home included. It used to be left off
+	// there on the argument that the three doors are already the body of that
+	// page — which was true and is the wrong trade: a frame with a hole in it
+	// on the one screen you open most is not a frame. The doors stay what they
+	// are, a richer way in; the menu stays where it always is.
+	v.Elsewhere = elsewhere(v.Here)
+	v.Place = placeName(v.Here)
 	if !v.Home {
-		v.Elsewhere = elsewhere(v.Here)
+		v.Views = views(v.Here)
 	}
 	v.Scrolling = v.Scrolling || v.Query != "" || len(v.Chores) > 0 ||
 		v.Here == "tasks" || v.Here == "archive" || v.Here == "kept"

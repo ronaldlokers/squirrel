@@ -51,17 +51,66 @@
 
        Not on home: both doors are already the body of that page, and a third
        copy of a door is furniture. */}}
-  {{range .Elsewhere}}
-  <a class="lidlink" href="{{.Href}}">{{.Label}}</a>
-  {{end}}
-  {{/* Search posts to the deck, because that is where results live. */}}
-  <form class="find" method="get" action="/pile" role="search">
-    <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
-      <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"/>
-      <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"/>
+  {{/* Three icons and nothing else. The lid was a row of words that cost most
+       of a phone screen before anything you came for; it is the mark, the way
+       into a conversation, the way to look something up, and the map.
+
+       All three are disclosures or links that work with the script off, and
+       all three are 44px. The icons are drawn at the same 2.4 round-cap stroke
+       as the camera and the cross, because this product draws its icons and
+       does not borrow them from a font. */}}
+
+  {{/* Buddy, outside the menu: it is one tap from anywhere, which is what it
+       was as a floating acorn and what it must stay. What it is not any more
+       is a button sitting on top of whatever is underneath it — it sat over a
+       chore's timer row on a phone and over the sheet's own send button on a
+       tablet. In the lid it overlaps nothing.
+
+       The acorn at last, rather than the whole mascot at 46px where its face
+       is mush. This is the case DESIGN.md says the acorn exists for. */}}
+  {{if ne .Place "buddy"}}
+  <a class="lidbtn tobuddy" href="/buddy?from={{.Path}}" aria-label="Ask Buddy">
+    <svg width="19" height="23" viewBox="0 0 15 18" aria-hidden="true">
+      <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+      <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
     </svg>
-    <input type="search" name="q" value="{{.Query}}" placeholder="every note, any state" aria-label="Search every note">
-  </form>
+  </a>
+  {{end}}
+
+  {{/* Looking something up is a thing you decide to do, so it is behind the
+       press that decides it. Open when there is a query, so a search result
+       never shows you a field you cannot see the words in. */}}
+  <details class="findbox"{{if .Query}} open{{end}}>
+    <summary aria-label="Search every note">
+      <svg width="19" height="19" viewBox="0 0 17 17" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M11 11 L15.5 15.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </summary>
+    <form class="find" method="get" action="/pile" role="search">
+      <input type="search" name="q" value="{{.Query}}" placeholder="every note, any state" aria-label="Search every note">
+    </form>
+  </details>
+
+  {{/* The map. Everywhere you can go, with the one you are in marked — the
+       page's own title says it too, and a menu that drops the place you are
+       standing is a menu whose items move as you move. */}}
+  <details class="where">
+    <summary aria-label="Where to go">
+      <svg class="ifshut" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M3 5.5h14M3 10h14M3 14.5h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <svg class="ifopen" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </summary>
+    <nav class="wherelist" aria-label="Where to go">
+      {{range .Elsewhere}}
+      {{if .Here}}<span class="here" aria-current="page">{{.Label}}</span>
+      {{else}}<a href="{{.Href}}">{{.Label}}</a>{{end}}
+      {{end}}
+    </nav>
+  </details>
   <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
     <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
@@ -105,11 +154,12 @@
      stuck to the corner of the screen — and pile.js wired the badge instead of
      this, so the sheet never opened on the pile at all. Two bugs from one
      word. */}}
-{{if ne .Here "buddy"}}
-<a class="askacorn" href="/buddy?from={{.Path}}" aria-label="Ask Buddy">
-  <img alt="" src="/static/logo.png?v={{.V}}" width="46" height="35">
-</a>
-{{end}}
+{{/* The acorn was here: fixed, bottom right, on every screen. It has gone
+     into the lid's menu, where Buddy is a place like the others. What it cost
+     as a floating button was real — it sat on top of a chore's timer row on a
+     phone and on top of the sheet's own send button on a wide screen, and a
+     fixed control over live ones turns a mis-tap into the wrong thing
+     entirely. */}}
 <script src="/static/pile.js?v={{.V}}" defer></script>
 </body>
 </html>{{end}}
