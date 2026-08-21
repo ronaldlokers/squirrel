@@ -767,6 +767,16 @@
     function wireSheet() {
       restoreDraft();
 
+      // Bound to the control itself as well as to the form's submit. Two
+      // routes to the same call, because this is the only way out of a modal
+      // sheet and it has failed in the field three times without failing once
+      // in a test — belt and braces is the honest response to that.
+      const shut = sheet.querySelector(".shut");
+      shut?.addEventListener("click", e => {
+        e.preventDefault();
+        if (!close()) leave(shut.form);
+      });
+
       // Enter sends, Shift+Enter is the newline — the same rule the slot has,
       // because it is the same interaction and because it is how a message is
       // sent in the room this product lives in.
@@ -793,8 +803,9 @@
         if (action === "/buddy/close") {
           // Not posted here: the dialog's own close event does it, so every
           // route out — Escape, the backdrop, this button — forgets the
-          // conversation exactly once and in one place.
-          close();
+          // conversation exactly once and in one place. Unless it did not
+          // close, in which case the browser gets its form back.
+          if (!close()) leave(form);
           return;
         }
 
@@ -856,9 +867,36 @@
 
     let dialog = null;
 
+    // Closes, and says whether it actually did.
+    //
+    // That return value is the whole of this. The submit handler used to
+    // preventDefault and then call this, so if anything in here failed for any
+    // reason the native post was already dead and the press did nothing at all
+    // — a sheet you cannot get out of, on the one screen with no other way
+    // back. Reported three times, and never once reproducible here.
+    //
+    // So the fallback is real rather than assumed: the caller checks, and
+    // posts the form the browser's own way if the dialog is still standing.
     function close() {
-      keepDraft();
-      dialog?.close();
+      try {
+        keepDraft();
+        dialog?.close();
+      } catch {
+        // Whatever went wrong, the answer is the same one below.
+      }
+      return !dialog?.open;
+    }
+
+    // The last resort, and it must not go back through the submit handler that
+    // just failed to work: form.submit() posts without firing submit at all,
+    // so the server closes the conversation and redirects to where the acorn
+    // was pressed. Slower than the dialog closing, and it always happens.
+    function leave(form) {
+      try {
+        form?.submit();
+      } catch {
+        location.href = "/buddy/close";
+      }
     }
 
     acorn.addEventListener("click", async e => {
