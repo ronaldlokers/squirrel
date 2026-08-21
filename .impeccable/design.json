@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-18T17:02:26+02:00",
+  "generatedAt": "2026-08-21T00:00:00+02:00",
   "title": "Design System: Squirrel",
   "extensions": {
     "colorMeta": {
@@ -8,514 +8,301 @@
         "role": "primary",
         "displayName": "Cap Purple",
         "canonical": "oklch(49.8% 0.142 296.4)",
-        "tonalRamp": [
-          "#1d0047",
-          "#350c67",
-          "#51308a",
-          "#6f50ad",
-          "#8f71d1",
-          "#b193f6",
-          "#d4b6ff",
-          "#f4d7ff"
-        ]
+        "tonalRamp": ["#1d0047", "#350c67", "#51308a", "#6f50ad", "#8f71d1", "#b193f6", "#d4b6ff", "#f4d7ff"]
       },
       "purple-deep": {
         "role": "primary",
         "displayName": "Field Purple",
-        "canonical": "oklch(42.1% 0.132 298.6)",
-        "tonalRamp": [
-          "#1d0042",
-          "#361062",
-          "#523284",
-          "#7152a6",
-          "#9172ca",
-          "#b394ef",
-          "#d6b7ff",
-          "#f7d8ff"
-        ]
+        "canonical": "oklch(42.6% 0.145 297.1)",
+        "tonalRamp": ["#180038", "#2b0a55", "#432578", "#58388a", "#7657ab", "#9a7ecd", "#c0a8e8", "#e4d4f8"]
       },
       "purple-dark": {
         "role": "primary",
         "displayName": "Lid Purple",
-        "canonical": "oklch(32.5% 0.101 297.7)",
-        "tonalRamp": [
-          "#190037",
-          "#321c56",
-          "#4f3976",
-          "#6d5898",
-          "#8d78bb",
-          "#af9adf",
-          "#d2bdff",
-          "#f3ddff"
-        ]
+        "canonical": "oklch(31.4% 0.116 297.8)",
+        "tonalRamp": ["#12002b", "#20073f", "#2e1553", "#3b2560", "#523a7d", "#6f57a0", "#9280c4", "#bfb0e2"]
       },
       "violet": {
         "role": "tertiary",
         "displayName": "Notebook Violet",
-        "canonical": "oklch(43.2% 0.204 295.1)",
-        "tonalRamp": [
-          "#24005f",
-          "#3b0082",
-          "#5614a6",
-          "#733fcb",
-          "#9263f1",
-          "#b487ff",
-          "#d6abff",
-          "#f6ccff"
-        ]
+        "canonical": "oklch(39.7% 0.212 296.2)",
+        "tonalRamp": ["#160034", "#280052", "#3d0d76", "#5e23b1", "#7c48c8", "#9b70dc", "#bd9bee", "#ddc8f9"],
+        "note": "open, in the pile. Doubles as the product's own 'this one': the open lid icon, the place you are in the menu, the interval a chore has."
       },
       "orange": {
         "role": "secondary",
         "displayName": "Acorn Orange",
-        "canonical": "oklch(66.8% 0.174 49.6)",
-        "tonalRamp": [
-          "#410000",
-          "#650000",
-          "#8a0e00",
-          "#af3a00",
-          "#d55e00",
-          "#fc812f",
-          "#ffa458",
-          "#ffc57a"
-        ]
-      },
-      "orange-lit": {
-        "role": "secondary",
-        "displayName": "Lit Orange",
-        "canonical": "oklch(74.9% 0.173 53.8)",
-        "tonalRamp": [
-          "#3f0000",
-          "#630000",
-          "#881600",
-          "#ac3e00",
-          "#d26100",
-          "#f88422",
-          "#ffa84f",
-          "#ffc973"
-        ]
+        "canonical": "oklch(63.5% 0.176 48.6)",
+        "tonalRamp": ["#3a1600", "#5c2600", "#873900", "#b45000", "#e66d0d", "#ff8a2b", "#ffb173", "#ffd9bc"],
+        "note": "Reserved for the actions that create rather than end."
       },
       "outline": {
         "role": "neutral",
         "displayName": "Outline",
-        "canonical": "oklch(19.0% 0.022 49.6)",
-        "tonalRamp": [
-          "#1a0f09",
-          "#352822",
-          "#52443d",
-          "#71635b",
-          "#92837b",
-          "#b4a49c",
-          "#d7c7be",
-          "#f8e7df"
-        ]
-      },
-      "tail-cream": {
-        "role": "neutral",
-        "displayName": "Tail Cream",
-        "canonical": "oklch(89.9% 0.076 71.1)",
-        "tonalRamp": [
-          "#250800",
-          "#422300",
-          "#614011",
-          "#815e32",
-          "#a37f52",
-          "#c6a073",
-          "#eac394",
-          "#ffe4b4"
-        ]
+        "canonical": "oklch(19.4% 0.032 47.9)",
+        "tonalRamp": ["#0b0604", "#1c110b", "#2f1d13", "#45301f", "#5f4632", "#7d6148", "#a08464", "#c6ab8c"],
+        "note": "Every stroke in the system, and all body type on cream."
       },
       "card": {
         "role": "neutral",
         "displayName": "Card Stock",
-        "canonical": "oklch(95.0% 0.037 76.6)",
-        "tonalRamp": [
-          "#1b0f00",
-          "#362916",
-          "#534531",
-          "#72644f",
-          "#93846e",
-          "#b5a58f",
-          "#d8c8b1",
-          "#fae9d1"
-        ]
+        "canonical": "oklch(94.2% 0.037 76.4)",
+        "tonalRamp": ["#3d2c14", "#5c4623", "#7d6437", "#a2854f", "#c6aa74", "#e2c8a2", "#fdecd4", "#fff7ea"]
       },
       "card-deep": {
         "role": "neutral",
         "displayName": "Stock Shade",
-        "canonical": "oklch(89.1% 0.066 73.5)",
-        "tonalRamp": [
-          "#220a00",
-          "#3f2500",
-          "#5d421b",
-          "#7d603a",
-          "#9f8059",
-          "#c1a279",
-          "#e5c59b",
-          "#ffe5bb"
-        ]
+        "canonical": "oklch(88.2% 0.056 74.1)",
+        "tonalRamp": ["#382609", "#553d18", "#755a2b", "#977c46", "#bb9f68", "#dbc190", "#f6d5ab", "#fceeda"],
+        "note": "The cards underneath the top one, an archived card, and the fill of the one control that means 'not this'."
       },
       "paper": {
         "role": "neutral",
         "displayName": "Paper",
-        "canonical": "oklch(98.9% 0.011 84.6)",
-        "tonalRamp": [
-          "#14110c",
-          "#2e2b25",
-          "#4a4741",
-          "#69665f",
-          "#89867f",
-          "#aba7a0",
-          "#cecac2",
-          "#efebe3"
-        ]
+        "canonical": "oklch(98.6% 0.011 84.7)",
+        "tonalRamp": ["#43382b", "#615343", "#82715e", "#a4917c", "#c5b5a2", "#e2d8c9", "#fffbf3", "#fffdfa"]
       },
       "paper-deep": {
         "role": "neutral",
-        "displayName": "Paper Pressed",
-        "canonical": "oklch(94.0% 0.032 78.2)",
-        "tonalRamp": [
-          "#191002",
-          "#342919",
-          "#514634",
-          "#706452",
-          "#918471",
-          "#b3a692",
-          "#d6c8b4",
-          "#f7e9d4"
-        ]
+        "displayName": "Paper, pressed",
+        "canonical": "oklch(93.5% 0.026 79.2)",
+        "tonalRamp": ["#3c3325", "#5a4d3a", "#7b6c53", "#9d8d71", "#c0b094", "#ded1b9", "#f7e9d4", "#fdf6ea"]
+      },
+      "tail-cream": {
+        "role": "neutral",
+        "displayName": "Tail Cream",
+        "canonical": "oklch(89.3% 0.068 66.8)",
+        "tonalRamp": ["#3a2609", "#583c17", "#795829", "#9c7844", "#c09b64", "#e0be8b", "#fed6a7", "#ffeed6"],
+        "note": "Secondary type on purple, the lid's icons, and every quiet pill standing on the field."
       },
       "headphone-brown": {
         "role": "neutral",
         "displayName": "Headphone Brown",
-        "canonical": "oklch(39.9% 0.033 29.8)",
-        "tonalRamp": [
-          "#1e0c09",
-          "#3a2522",
-          "#58413d",
-          "#785f5b",
-          "#997f7b",
-          "#bca09c",
-          "#dfc3be",
-          "#ffe4de"
-        ]
+        "canonical": "oklch(37.8% 0.024 39.3)",
+        "tonalRamp": ["#1b1211", "#2d1f1d", "#42302c", "#58413d", "#755b55", "#95796f", "#b79b8f", "#d8c2b6"],
+        "note": "Meta type on cream. Never grey."
       },
       "state-done": {
         "role": "tertiary",
         "displayName": "Done Green",
-        "canonical": "oklch(59.9% 0.166 134.4)",
-        "tonalRamp": [
-          "#001b00",
-          "#003900",
-          "#165800",
-          "#387900",
-          "#589a1f",
-          "#79be49",
-          "#9be26d",
-          "#bbff8e"
-        ]
-      },
-      "state-done-ink": {
-        "role": "tertiary",
-        "displayName": "Done Green Ink",
-        "canonical": "oklch(48.1% 0.131 134.2)",
-        "tonalRamp": [
-          "#001a00",
-          "#053700",
-          "#255500",
-          "#44751b",
-          "#64973f",
-          "#84ba62",
-          "#a6dd84",
-          "#c6ffa4"
-        ]
+        "canonical": "oklch(55.4% 0.163 132.1)",
+        "tonalRamp": ["#12240a", "#1f3d0c", "#2f5c0d", "#3c6d0e", "#529414", "#71a73e", "#a0c87c", "#cee5b6"]
       },
       "state-kept": {
         "role": "tertiary",
         "displayName": "Kept Amber",
-        "canonical": "oklch(81.8% 0.171 77.9)",
-        "tonalRamp": [
-          "#340000",
-          "#550f00",
-          "#773200",
-          "#995300",
-          "#bd7400",
-          "#e19700",
-          "#ffba1b",
-          "#ffdb50"
-        ]
-      },
-      "state-kept-ink": {
-        "role": "tertiary",
-        "displayName": "Kept Amber Ink",
-        "canonical": "oklch(51.2% 0.108 75.1)",
-        "tonalRamp": [
-          "#2a0200",
-          "#491f00",
-          "#683c00",
-          "#895b00",
-          "#ac7c31",
-          "#cf9e55",
-          "#f4c178",
-          "#ffe198"
-        ]
+        "canonical": "oklch(79.1% 0.163 76.3)",
+        "tonalRamp": ["#2b1c00", "#4a3000", "#6b4600", "#8a5c00", "#c48200", "#ffb300", "#ffcd5c", "#ffe5aa"]
       },
       "state-dropped": {
         "role": "tertiary",
         "displayName": "Dropped Brown",
-        "canonical": "oklch(55.1% 0.052 54.7)",
-        "tonalRamp": [
-          "#220900",
-          "#3f2410",
-          "#5e402c",
-          "#7e5e4a",
-          "#9f7e69",
-          "#c2a089",
-          "#e6c2ab",
-          "#ffe3cb"
-        ]
+        "canonical": "oklch(54.9% 0.041 56.7)",
+        "tonalRamp": ["#1e1610", "#33251b", "#4b3729", "#6a4f3e", "#8a6a55", "#9f8574", "#bfab9c", "#ded1c6"],
+        "note": "Muted on purpose. Dropping is not a failure and must not be coloured like one."
       },
-      "state-dropped-ink": {
-        "role": "tertiary",
-        "displayName": "Dropped Brown Ink",
-        "canonical": "oklch(45.2% 0.045 53.5)",
-        "tonalRamp": [
-          "#200b00",
-          "#3d2515",
-          "#5b4130",
-          "#7b5f4e",
-          "#9d7f6d",
-          "#bfa18e",
-          "#e3c3b0",
-          "#ffe4d0"
-        ]
-      },
-      "state-chore-ink": {
-        "role": "tertiary",
-        "displayName": "Chore Orange Ink (stamp only, not a state)",
-        "canonical": "oklch(54.9% 0.141 50.0)",
-        "tonalRamp": [
-          "#390000",
-          "#5c0000",
-          "#7f2500",
-          "#a34700",
-          "#c8692b",
-          "#ed8b4f",
-          "#ffae73",
-          "#ffce93"
-        ]
+      "field-lift": {
+        "role": "neutral",
+        "displayName": "The room's light",
+        "canonical": "rgba(150, 110, 220, .35)",
+        "note": "Was .5. Cream on the lit centre measured 4.19:1 there, a fail; .35 gives 4.8:1. The number is a contrast result, not a taste one."
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Wordmark",
-        "purpose": "Inter Black, the product name in the lid. Nowhere else."
-      },
-      "headline": {
-        "displayName": "Headline",
-        "purpose": "Recursive casual axis at wght 800. The empty state, and anywhere the product speaks in its own voice."
-      },
-      "body": {
-        "displayName": "Note",
-        "purpose": "Recursive casual axis at wght 520, max 34ch. The owner's captured text, and only that."
-      },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Recursive linear axis at wght 830, uppercase, tracked 0.08em. Every button."
-      },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Recursive linear axis at wght 750, uppercase, tracked 0.09em. Card title bars, result meta, state names."
-      }
+      "display": { "displayName": "Wordmark", "purpose": "The product name in the lid. Inter Black with a 2px outline stroke via paint-order." },
+      "screentitle": { "displayName": "Screen title", "purpose": "Every screen's name, in the wordmark's face one size down. One element, one class, thirteen screens. Never carries a number." },
+      "headline": { "displayName": "Headline", "purpose": "An empty state, and any moment the product speaks in its own voice at full size." },
+      "body": { "displayName": "Note", "purpose": "The owner's captured text on the card. The only casual-axis element that is his words rather than the product's." },
+      "label": { "displayName": "Label", "purpose": "Every button." },
+      "title": { "displayName": "Title", "purpose": "The card's title bar, result meta lines, state names, and the quiet pills." },
+      "voice": { "displayName": "Voice", "purpose": "The product speaking in full sentences. The second of two places the casual axis is allowed." },
+      "result": { "displayName": "Result", "purpose": "A note's text in search results and a task's text on the tasks screen. Smaller than the deck's note because it is scanned rather than decided on." },
+      "meta": { "displayName": "Meta", "purpose": "The date and state line above a result, a chore's rhythm, an offer's head." },
+      "stamp": { "displayName": "Stamp", "purpose": "The state word on an actioned card." },
+      "keycap": { "displayName": "Keycap", "purpose": "The letter that performs each action, inside its button. One size wherever it appears." },
+      "slotfield": { "displayName": "Slot field", "purpose": "What you type into the slot, the reword box and the new-task line. His voice, because it is the same sentence before and after it is kept." },
+      "field": { "displayName": "Search field", "purpose": "What you type into the lid's search. Also his words, so also the casual axis. Should step to at least 16px on a phone and currently does not — .findbox .find input outranks the breakpoint's .find input rule, so iOS zooms the page on focus." },
+      "conversation": { "displayName": "Conversation", "purpose": "A sentence being said rather than labelled: both voices in Buddy's sheet, a piece of a split proposal, a thing the coach is asking permission for. The document's own base size, and the only role that sits at it. Not the Voice role — Voice is the product narrating on a screen; this is one turn of a conversation, which wants to look like the turn above it." },
+      "nav": { "displayName": "Nav", "purpose": "A place in the menu. Its sibling under a screen title runs one step quieter at 13.5px wght 600." }
     },
     "shadows": [
-      {
-        "name": "card",
-        "value": "0 6px 0 0 #1c110b, 0 26px 40px -18px rgba(0,0,0,.75)",
-        "purpose": "The note card in the deck. Sticker offset plus a real cast shadow."
-      },
-      {
-        "name": "result-card",
-        "value": "0 5px 0 0 #1c110b, 0 16px 26px -16px rgba(0,0,0,.7)",
-        "purpose": "Search result cards. Smaller object, shallower offset."
-      },
-      {
-        "name": "control",
-        "value": "0 4px 0 0 #1c110b",
-        "purpose": "Buttons, chips and the stamp. Offset only — a control is a sticker on the card, not floating above it."
-      },
-      {
-        "name": "control-small",
-        "value": "0 3px 0 0 #1c110b",
-        "purpose": "The search field and the compact result-card buttons."
-      },
-      {
-        "name": "pressed",
-        "value": "0 0 0 0 #1c110b",
-        "purpose": "Paired with translateY of the same distance as the offset it replaces. See The Press Rule."
-      }
+      { "name": "card", "value": "0 6px 0 0 #1c110b, 0 26px 40px -18px rgba(0,0,0,.75)", "purpose": "The note card in the deck. The sticker's own thickness, plus a real cast shadow that puts it in the room." },
+      { "name": "result-card", "value": "0 5px 0 0 #1c110b, 0 16px 26px -16px rgba(0,0,0,.7)", "purpose": "The door, the chore, the task, the offer, a search result, Buddy's sheet. Smaller object, shallower offset." },
+      { "name": "panel", "value": "0 5px 0 0 #1c110b, 0 18px 30px -18px rgba(0,0,0,.8)", "purpose": "The menu and the search field hanging under the lid. A deeper cast because it floats over the page rather than sitting on the field." },
+      { "name": "control", "value": "0 4px 0 0 #1c110b", "purpose": "Buttons, chips, the stamp. Offset only: a control is a sticker on the card, not floating above it." },
+      { "name": "control-small", "value": "0 3px 0 0 #1c110b", "purpose": "A control inside a card that is scanned rather than decided on. Paired with the 2px outline." },
+      { "name": "slot-inset", "value": "inset 0 4px 0 0 rgba(28,17,11,.16), 0 2px 0 0 rgba(28,17,11,.35)", "purpose": "The one object in the system with its shadow on the inside. The slot is the way into a surface, not a thing sitting on one." },
+      { "name": "sheet-panel", "value": "-16px 0 30px -20px rgba(0,0,0,.8)", "purpose": "Buddy as a right panel on a desktop." },
+      { "name": "sheet-bottom", "value": "0 -16px 30px -20px rgba(0,0,0,.8)", "purpose": "Buddy as a bottom sheet on a phone." },
+      { "name": "field-texture", "value": "radial-gradient(120% 90% at 15% -10%, rgba(150,110,220,.35) 0%, rgba(59,37,96,0) 62%), radial-gradient(circle at 2px 2px, rgba(254,214,167,.07) 2px, transparent 0)", "purpose": "The room's light and its 22px dot grid, fixed to the viewport. The one gradient in the system, and the field is not an object." }
     ],
     "motion": [
-      {
-        "name": "press",
-        "value": "90ms ease-out",
-        "purpose": "Control press and hover. Fast enough to feel mechanical."
-      },
-      {
-        "name": "stamp-slap",
-        "value": "240ms cubic-bezier(.16,.84,.28,1)",
-        "purpose": "The state stamp landing. Scales from 1.7 with no rebound — a stamp slams and stops."
-      },
-      {
-        "name": "card-leave",
-        "value": "470ms cubic-bezier(.16,.86,.26,1)",
-        "purpose": "The actioned card flipping away over the top edge."
-      },
-      {
-        "name": "undo-hold",
-        "value": "1150ms",
-        "purpose": "How long an actioned card holds still before it leaves, so undo has somewhere to be."
-      }
+      { "name": "press", "value": "90ms ease-out", "purpose": "Transform, shadow and background on anything pressable. The press must land within a frame or two of the finger." },
+      { "name": "chevron", "value": "140ms cubic-bezier(.16, .84, .28, 1)", "purpose": "A disclosure's chevron turning 180 degrees as it opens." },
+      { "name": "slap", "value": "240ms cubic-bezier(.16, .84, .28, 1)", "purpose": "The stamp landing: from rotate(-22deg) scale(1.7) to rotate(-7deg) scale(1). A stamp slams and stops; the weight is in the scale, not in a rebound." },
+      { "name": "hold", "value": "1150ms", "purpose": "How long an actioned card stays before it leaves, so the undo has somewhere to be." },
+      { "name": "leave", "value": "470ms cubic-bezier(.16, .86, .26, 1)", "purpose": "The card flipping away over the top edge." },
+      { "name": "reduced", "value": "1ms", "purpose": "Under prefers-reduced-motion every transition collapses and the stamp does not animate at all." }
     ],
     "breakpoints": [
-      {
-        "name": "phone",
-        "value": "620px"
-      }
+      { "name": "phone", "value": "620px", "purpose": "The one breakpoint. Roles step up below it; the lid steps down." },
+      { "name": "actions", "value": "560px", "purpose": "Where the interval disclosure takes the full width of the action grid." }
     ]
   },
   "components": [
     {
-      "name": "Action Button",
+      "name": "Action button",
       "kind": "button",
       "refersTo": "button-action",
-      "description": "One of the three ways a note leaves the pile. Carries the key that performs it.",
-      "html": "<button class=\"ds-btn-action\">DONE <span class=\"ds-key\">D</span></button>",
-      "css": ".ds-btn-action{display:inline-flex;align-items:center;gap:9px;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:13px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 830;letter-spacing:.08em;color:#1c110b;background:#fffbf3;border:3px solid #1c110b;border-radius:999px;padding:12px 18px;min-height:44px;cursor:pointer;box-shadow:0 4px 0 0 #1c110b;transition:transform 90ms ease-out,box-shadow 90ms ease-out,background-color 90ms ease-out}.ds-btn-action:hover{background:#f7e9d4}.ds-btn-action:active{transform:translateY(4px);box-shadow:0 0 0 0 #1c110b;background:#529414;color:#fffbf3}.ds-btn-action:focus-visible{outline:3px solid #5e23b1;outline-offset:3px}.ds-key{font-size:11px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 800;border:2px solid currentColor;border-radius:5px;padding:2px 6px 1px;opacity:.72}"
+      "description": "One of the four answers to a note. Paper, outlined, with its keycap.",
+      "html": "<button class=\"ds-btn\">DONE <span class=\"ds-key\">D</span></button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 12px 18px; background: #fffbf3; color: #1c110b; border: 3px solid #1c110b; border-radius: 999px; box-shadow: 0 4px 0 0 #1c110b; cursor: pointer; font: 700 13px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 830; letter-spacing: .08em; transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out; } .ds-btn:hover { background: #f7e9d4; } .ds-btn:focus-visible { outline: 3px solid #ff8a2b; outline-offset: 3px; } .ds-btn:active { transform: translateY(4px); box-shadow: 0 0 0 0 #1c110b; background: #529414; color: #fffbf3; } .ds-key { font-size: 11px; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 800; border: 2px solid currentColor; border-radius: 5px; padding: 2px 6px 1px; opacity: .72; }"
     },
     {
-      "name": "Make Button",
+      "name": "Make button",
       "kind": "button",
       "refersTo": "button-make",
-      "description": "The one action per note that creates something instead of ending it. The only orange control on a card.",
-      "html": "<button class=\"ds-btn-make\">MAKE A CHORE <span class=\"ds-key-lit\">C</span></button>",
-      "css": ".ds-btn-make{display:inline-flex;align-items:center;gap:9px;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:13px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 830;letter-spacing:.08em;color:#fffbf3;background:#e66d0d;border:3px solid #1c110b;border-radius:999px;padding:12px 20px;min-height:44px;cursor:pointer;box-shadow:0 4px 0 0 #1c110b;transition:transform 90ms ease-out,box-shadow 90ms ease-out,background-color 90ms ease-out}.ds-btn-make:hover{background:#ff8a2b}.ds-btn-make:active{transform:translateY(4px);box-shadow:0 0 0 0 #1c110b;background:#6c4da9}.ds-btn-make:focus-visible{outline:3px solid #ff8a2b;outline-offset:3px}.ds-key-lit{font-size:11px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 800;border:2px solid currentColor;border-radius:5px;padding:2px 6px 1px;opacity:.72}"
+      "description": "The one action per note that creates rather than ends. The only orange control on the card.",
+      "html": "<button class=\"ds-btn-make\">MAKE A CHORE <span class=\"ds-key-m\">M</span></button>",
+      "css": ".ds-btn-make { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 12px 20px; background: #e66d0d; color: #fffbf3; border: 3px solid #1c110b; border-radius: 999px; box-shadow: 0 4px 0 0 #1c110b; cursor: pointer; font: 700 13px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 830; letter-spacing: .08em; transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out; } .ds-btn-make:hover { background: #ff8a2b; } .ds-btn-make:focus-visible { outline: 3px solid #ff8a2b; outline-offset: 3px; } .ds-btn-make:active { transform: translateY(4px); box-shadow: 0 0 0 0 #1c110b; background: #6c4da9; } .ds-key-m { font-size: 11px; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 800; border: 2px solid currentColor; border-radius: 5px; padding: 2px 6px 1px; opacity: .72; }"
     },
     {
-      "name": "Interval Chip",
-      "kind": "chip",
-      "refersTo": "button-action",
-      "description": "How often a chore repeats. Replaces the action row in place on the card; never a modal.",
-      "html": "<button class=\"ds-chip\">every 2 weeks <span class=\"ds-chip-key\">3</span></button>",
-      "css": ".ds-chip{display:inline-flex;align-items:center;gap:8px;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:13.5px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 750;letter-spacing:.03em;color:#1c110b;background:#fffbf3;border:3px solid #1c110b;border-radius:999px;padding:11px 15px;min-height:44px;cursor:pointer;box-shadow:0 4px 0 0 #1c110b;transition:transform 90ms ease-out,box-shadow 90ms ease-out,background-color 90ms ease-out}.ds-chip:hover{background:#f7e9d4}.ds-chip:active{transform:translateY(4px);box-shadow:none;background:#e66d0d;color:#fffbf3}.ds-chip:focus-visible{outline:3px solid #5e23b1;outline-offset:3px}.ds-chip-key{font-size:10.5px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 800;border:2px solid currentColor;border-radius:5px;padding:2px 5px 1px;opacity:.7}"
+      "name": "Disclosure in a row",
+      "kind": "custom",
+      "refersTo": "disclosure-inrow",
+      "description": "Opens something here and changes nothing on the server. Keeps the row's shape, drops the fill, carries the chevron.",
+      "html": "<button class=\"ds-disclosure\">HOW OFTEN<span class=\"ds-chev\"></span></button>",
+      "css": ".ds-disclosure { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 16px; background: #fffbf3; color: #1c110b; border: 3px solid #1c110b; border-radius: 999px; box-shadow: 0 4px 0 0 #1c110b; cursor: pointer; font: 700 13px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 830; letter-spacing: .08em; transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out; } .ds-disclosure:hover { background: #f7e9d4; } .ds-disclosure:focus-visible { outline: 3px solid #ff8a2b; outline-offset: 3px; } .ds-disclosure:active { transform: translateY(4px); box-shadow: none; background: #56209f; color: #fffbf3; } .ds-chev { width: 12px; height: 12px; background: currentColor; mask: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\"><path d=\"M2.5 4.5L6 8l3.5-3.5\" fill=\"none\" stroke=\"black\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>') center / contain no-repeat; -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 12 12\"><path d=\"M2.5 4.5L6 8l3.5-3.5\" fill=\"none\" stroke=\"black\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>') center / contain no-repeat; transition: transform 140ms cubic-bezier(.16, .84, .28, 1); }"
     },
     {
-      "name": "Note Card",
+      "name": "Quiet pill",
+      "kind": "button",
+      "refersTo": "pill-quiet",
+      "description": "The answer you take when you are not doing the thing. Plainly pressable, plainly not the default. Shown here on the purple field.",
+      "html": "<div class=\"ds-field\"><a class=\"ds-quiet\" href=\"#\">LATER</a></div>",
+      "css": ".ds-field { padding: 20px; background: #58388a; border-radius: 8px; } .ds-quiet { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 2px solid currentColor; border-radius: 999px; background: none; color: #fed6a7; text-decoration: none; cursor: pointer; font: 600 12.5px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 700; letter-spacing: .07em; text-transform: uppercase; transition: background-color 90ms ease-out, color 90ms ease-out; } .ds-quiet:hover { background: rgba(254,214,167,.16); color: #fffbf3; } .ds-quiet:focus-visible { outline: 3px solid #ff8a2b; outline-offset: 3px; }"
+    },
+    {
+      "name": "The slot",
+      "kind": "input",
+      "refersTo": "slot",
+      "description": "The way into the pile, and the one inset object in the system. A card is a note; this is the opening a note goes through.",
+      "html": "<form class=\"ds-slot\"><textarea class=\"ds-slot-field\" rows=\"1\" placeholder=\"tell me a thing\"></textarea><label class=\"ds-camera\" aria-label=\"Take a photograph\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 22 22\" aria-hidden=\"true\"><path d=\"M3 7h3.5l1.5-2h6l1.5 2H19v10H3z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linejoin=\"round\"/><circle cx=\"11\" cy=\"12\" r=\"3.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\"/></svg><input type=\"file\" accept=\"image/*\"></label><button class=\"ds-post\" type=\"submit\">TELL IT</button></form>",
+      "css": ".ds-slot { display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 12px 18px; background: #fffbf3; border: 3px solid #1c110b; border-radius: 14px; box-shadow: inset 0 4px 0 0 rgba(28,17,11,.16), 0 2px 0 0 rgba(28,17,11,.35); transition: box-shadow 110ms ease-out, background-color 110ms ease-out; } .ds-slot:focus-within { background: #fefefe; box-shadow: inset 0 4px 0 0 rgba(28,17,11,.16), 0 2px 0 0 rgba(28,17,11,.35), 0 0 0 3px #ff8a2b; } .ds-slot-field { flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0; font: 400 18px/1.45 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 1, \"wght\" 480; color: #1c110b; caret-color: #e66d0d; } .ds-slot-field:focus { outline: none; } .ds-slot-field::placeholder { color: #8a7361; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 500; } .ds-camera { position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; color: #1c110b; cursor: pointer; transition: background-color 90ms ease-out; } .ds-camera:hover { background: #f7e9d4; } .ds-camera:focus-within { outline: 3px solid #ff8a2b; outline-offset: 1px; } .ds-camera input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; } .ds-post { flex: none; min-height: 44px; padding: 11px 18px; background: #e66d0d; color: #fffbf3; border: 3px solid #1c110b; border-radius: 999px; box-shadow: 0 4px 0 0 #1c110b; cursor: pointer; font: 600 13px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 750; letter-spacing: .08em; text-transform: uppercase; transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out; } .ds-post:hover { background: #ff8a2b; } .ds-post:active { transform: translateY(4px); box-shadow: 0 0 0 0 #1c110b; background: #5e23b1; }"
+    },
+    {
+      "name": "Lid icon",
+      "kind": "nav",
+      "refersTo": "lid-icon",
+      "description": "One of the three things you can do from anywhere. 44px, no fill, tail cream; open, it fills Notebook Violet.",
+      "html": "<div class=\"ds-lid\"><button class=\"ds-lidbtn\" aria-label=\"Where to go\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M3 5.5h14M3 10h14M3 14.5h14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"/></svg></button><button class=\"ds-lidbtn ds-lidbtn-open\" aria-label=\"Search every note\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 17 17\" aria-hidden=\"true\"><circle cx=\"7\" cy=\"7\" r=\"5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\"/><path d=\"M11 11 L15.5 15.5\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"/></svg></button></div>",
+      "css": ".ds-lid { display: flex; gap: 8px; padding: 11px 22px 13px; background: #3b2560; border-radius: 8px; } .ds-lidbtn { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; background: none; border: 0; color: #fed6a7; cursor: pointer; transition: background-color 90ms ease-out, color 90ms ease-out; } .ds-lidbtn:hover { background: rgba(254,214,167,.16); color: #fffbf3; } .ds-lidbtn:focus-visible { outline: 3px solid #ff8a2b; outline-offset: 3px; } .ds-lidbtn-open { background: #5e23b1; color: #fffbf3; }"
+    },
+    {
+      "name": "The map",
+      "kind": "nav",
+      "refersTo": "panel",
+      "description": "Everywhere you can go, with the one you are standing in marked and not a link.",
+      "html": "<nav class=\"ds-panel\" aria-label=\"Where to go\"><a href=\"#\">the pile</a><span class=\"ds-here\" aria-current=\"page\">the tasks</span><a href=\"#\">the chores</a></nav>",
+      "css": ".ds-panel { display: flex; flex-direction: column; min-width: 190px; padding: 6px; background: #fdecd4; border: 3px solid #1c110b; border-radius: 14px; box-shadow: 0 5px 0 0 #1c110b, 0 18px 30px -18px rgba(0,0,0,.8); } .ds-panel a, .ds-panel .ds-here { display: flex; align-items: center; min-height: 44px; padding: 10px 14px; border-radius: 999px; color: #1c110b; text-decoration: none; white-space: nowrap; font: 400 14.5px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 640; } .ds-panel a:hover { background: #f7e9d4; } .ds-panel a:focus-visible { outline: 3px solid #5e23b1; outline-offset: -2px; } .ds-panel .ds-here { background: #5e23b1; color: #fffbf3; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 780; cursor: default; }"
+    },
+    {
+      "name": "The Door",
       "kind": "card",
-      "refersTo": "card-note",
-      "description": "One captured thought. Cream stock, purple title bar with the acorn badge, sticker depth.",
-      "html": "<article class=\"ds-card\"><div class=\"ds-card-bar\"><svg width=\"16\" height=\"19\" viewBox=\"0 0 15 18\" aria-hidden=\"true\"><path d=\"M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z\" fill=\"#fdecd4\" stroke=\"#1c110b\" stroke-width=\"1.7\" stroke-linejoin=\"round\"/><path d=\"M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z\" fill=\"#fdecd4\" stroke=\"#1c110b\" stroke-width=\"1.7\" stroke-linejoin=\"round\"/></svg><span>14 AUGUST</span></div><div class=\"ds-card-note\"><p>the boiler makes a noise on tuesdays, ask someone who knows about boilers</p></div></article>",
-      "css": ".ds-card{background:#fdecd4;color:#1c110b;border:3px solid #1c110b;border-radius:14px;box-shadow:0 6px 0 0 #1c110b,0 26px 40px -18px rgba(0,0,0,.75);overflow:hidden}.ds-card-bar{display:flex;align-items:center;gap:10px;padding:11px 16px;background:#6c4da9;color:#fdecd4;border-bottom:3px solid #1c110b;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.5px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 750;letter-spacing:.09em}.ds-card-note{padding:30px 32px 26px}.ds-card-note p{margin:0;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;line-height:1.4;letter-spacing:-.008em;max-width:34ch;font-variation-settings:'MONO' 0, 'CASL' 1,'wght' 520;text-wrap:pretty}"
+      "refersTo": "door",
+      "description": "A card-stock link to one of the box's three halves. Three, side by side at every width, and equals.",
+      "html": "<a class=\"ds-door\" href=\"#\"><span class=\"ds-door-art\" aria-hidden=\"true\">🗃</span><span class=\"ds-door-label\"><span class=\"ds-door-name\">the pile</span><span class=\"ds-door-what\">WHAT YOU SAID</span></span></a>",
+      "css": ".ds-door { display: flex; flex-direction: column; justify-content: center; gap: 7px; min-height: 128px; padding: 22px 24px; background: #fdecd4; color: #1c110b; border: 3px solid #1c110b; border-radius: 14px; box-shadow: 0 5px 0 0 #1c110b, 0 16px 26px -16px rgba(0,0,0,.7); text-decoration: none; transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out; } .ds-door:hover { background: #fffbf3; } .ds-door:focus-visible { outline: 3px solid #ff8a2b; outline-offset: 3px; } .ds-door:active { transform: translateY(5px); box-shadow: 0 0 0 0 #1c110b, 0 10px 18px -14px rgba(0,0,0,.6); } .ds-door-art { height: 86px; display: flex; align-items: flex-end; justify-content: center; font-size: 64px; line-height: 1; transform: rotate(-1.6deg); } .ds-door-label { align-self: center; text-align: left; display: flex; flex-direction: column; gap: 7px; } .ds-door-name { font-size: 21px; line-height: 1.15; letter-spacing: -.01em; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 800; } .ds-door-what { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 750; color: #58413d; }"
     },
     {
-      "name": "State Stamp",
+      "name": "The stamp",
       "kind": "custom",
       "refersTo": "card-note",
-      "description": "Lands on a card the moment it is actioned, then the card holds still for 1150ms so the undo has somewhere to be.",
-      "html": "<span class=\"ds-stamp\"><span class=\"ds-stamp-dot\"></span>DONE</span>",
-      "css": ".ds-stamp{display:inline-flex;align-items:center;gap:9px;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 850;letter-spacing:.1em;color:#3c6d0e;background:#fffbf3;border:3px solid #529414;border-radius:10px;padding:9px 17px;transform:rotate(-7deg);box-shadow:0 4px 0 0 #529414;animation:ds-slap 240ms cubic-bezier(.16,.84,.28,1) both}.ds-stamp-dot{width:11px;height:11px;border-radius:3px;background:#529414;border:2px solid #1c110b}@keyframes ds-slap{0%{transform:rotate(-22deg) scale(1.7);opacity:0}100%{transform:rotate(-7deg) scale(1);opacity:1}}"
+      "description": "The signature component. Lands on an actioned card in that state's colour, then the card holds still so the undo has somewhere to be.",
+      "html": "<div class=\"ds-stamp\"><span class=\"ds-stamp-dot\"></span>DONE</div>",
+      "css": ".ds-stamp { display: inline-flex; align-items: center; gap: 9px; padding: 9px 17px; background: #fffbf3; color: #3c6d0e; border: 3px solid #529414; border-radius: 10px; box-shadow: 0 4px 0 0 #529414; transform: rotate(-7deg); font: 400 15px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 850; letter-spacing: .1em; animation: ds-slap 240ms cubic-bezier(.16,.84,.28,1) both; } .ds-stamp-dot { width: 11px; height: 11px; border-radius: 3px; background: #529414; border: 2px solid #1c110b; } @keyframes ds-slap { 0% { transform: rotate(-22deg) scale(1.7); opacity: 0; } 100% { transform: rotate(-7deg) scale(1); opacity: 1; } } @media (prefers-reduced-motion: reduce) { .ds-stamp { animation: none; } }"
     },
     {
-      "name": "Result Card",
-      "kind": "card",
+      "name": "Page tab",
+      "kind": "chip",
       "refersTo": "card-note",
-      "description": "A search hit across every state, with the notebook page tab that names its state and an orange underline on the match.",
-      "html": "<article class=\"ds-rcard\"><span class=\"ds-tab\"></span><div class=\"ds-rmeta\"><span>6 AUGUST</span><span class=\"ds-rsep\">·</span><span class=\"ds-rstate\">DONE</span></div><p><mark class=\"ds-mark\">boiler</mark> service is booked for the 3rd</p><div class=\"ds-racts\"><button class=\"ds-rbtn\">BACK IN THE PILE</button></div></article>",
-      "css": ".ds-rcard{position:relative;background:#fdecd4;color:#1c110b;border:3px solid #1c110b;border-radius:14px;padding:15px 20px 16px;box-shadow:0 5px 0 0 #1c110b,0 16px 26px -16px rgba(0,0,0,.7)}.ds-tab{position:absolute;right:-13px;top:20px;width:26px;height:34px;background:#529414;border:3px solid #1c110b;border-radius:0 8px 8px 0}.ds-rmeta{display:flex;align-items:center;gap:9px;margin-bottom:7px;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:11.5px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 750;letter-spacing:.1em;color:#58413d}.ds-rsep{opacity:.45}.ds-rstate{color:#3c6d0e}.ds-rcard p{margin:0;padding-right:22px;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;line-height:1.4;max-width:46ch;font-variation-settings:'MONO' 0, 'CASL' 1,'wght' 480;text-wrap:pretty}.ds-mark{background:none;color:#1c110b;text-decoration:underline;text-decoration-color:#e66d0d;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-skip-ink:none}.ds-racts{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.ds-rbtn{font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.5px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 750;letter-spacing:.05em;color:#1c110b;background:#fffbf3;border:2px solid #1c110b;border-radius:999px;padding:9px 13px;min-height:38px;cursor:pointer;box-shadow:0 3px 0 0 #1c110b;transition:transform 90ms ease-out,box-shadow 90ms ease-out,background-color 90ms ease-out}.ds-rbtn:hover{background:#f7e9d4}.ds-rbtn:active{transform:translateY(3px);box-shadow:none;background:#529414;color:#fffbf3}.ds-rbtn:focus-visible{outline:3px solid #5e23b1;outline-offset:3px}"
-    },
-    {
-      "name": "Search Field",
-      "kind": "input",
-      "refersTo": "input-search",
-      "description": "The only input in the product. This screen never accepts a new note, permanently.",
-      "html": "<label class=\"ds-find\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 17 17\" aria-hidden=\"true\"><circle cx=\"7\" cy=\"7\" r=\"5\" fill=\"none\" stroke=\"#1c110b\" stroke-width=\"2.6\"/><path d=\"M11 11 L15.5 15.5\" stroke=\"#1c110b\" stroke-width=\"2.6\" stroke-linecap=\"round\"/></svg><input type=\"search\" placeholder=\"every note, any state\" aria-label=\"Search every note\"></label>",
-      "css": ".ds-find{display:inline-flex;align-items:center;gap:8px;width:280px;padding:9px 14px;background:#fffbf3;border:3px solid #1c110b;border-radius:999px;box-shadow:0 3px 0 0 #1c110b}.ds-find:focus-within{box-shadow:0 3px 0 0 #1c110b,0 0 0 3px #ff8a2b}.ds-find input{flex:1;min-width:4ch;border:0;background:transparent;padding:0;font-family:Recursive, 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14.5px;font-variation-settings:'MONO' 0, 'CASL' 0,'wght' 600;color:#1c110b;caret-color:#e66d0d}.ds-find input::placeholder{color:#8a7361}.ds-find input:focus{outline:none}"
-    },
-    {
-      "name": "Lid",
-      "kind": "nav",
-      "refersTo": "titlebar",
-      "description": "The header is the lid of the box, and it carries the brim of the mascot's cap. The stroke is held at 3px at any width.",
-      "html": "<div class=\"ds-lid\"><span class=\"ds-word\">Squirrel</span><svg class=\"ds-brim\" viewBox=\"-1 0 102 30\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path d=\"M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z\" fill=\"#3b2560\"/><path d=\"M-1 5 Q 50 29 101 5\" fill=\"none\" stroke=\"#1c110b\" stroke-width=\"3\" vector-effect=\"non-scaling-stroke\"/></svg></div>",
-      "css": ".ds-lid{position:relative;display:flex;align-items:center;gap:18px;padding:11px 22px 13px;background:#3b2560;margin-bottom:30px}.ds-word{font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:900;font-size:26px;letter-spacing:-.028em;color:#fffbf3;-webkit-text-stroke:2px #1c110b;paint-order:stroke fill}.ds-brim{position:absolute;left:0;top:100%;width:100%;height:30px;display:block;pointer-events:none}"
+      "description": "Straight off the notebook the mascot is holding. It replaces the coloured left border a card UI would reach for. A task never wears one.",
+      "html": "<div class=\"ds-rcard\"><span class=\"ds-tab\"></span><p class=\"ds-rmeta\">21 AUG · <span class=\"ds-rstate\">KEPT</span></p><p class=\"ds-rtext\">boiler pressure is 1.4</p></div>",
+      "css": ".ds-rcard { position: relative; max-width: 420px; padding: 15px 20px 16px; background: #fdecd4; color: #1c110b; border: 3px solid #1c110b; border-radius: 14px; box-shadow: 0 5px 0 0 #1c110b, 0 16px 26px -16px rgba(0,0,0,.7); } .ds-tab { position: absolute; right: -13px; top: 20px; width: 26px; height: 34px; background: #ffb300; border: 3px solid #1c110b; border-radius: 0 8px 8px 0; } .ds-rmeta { margin: 0 0 7px; font: 400 11.5px/1 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 0, \"wght\" 750; letter-spacing: .1em; color: #58413d; } .ds-rstate { color: #8a5c00; } .ds-rtext { margin: 0; padding-right: 22px; max-width: 46ch; font: 400 18px/1.4 \"Recursive\", sans-serif; font-variation-settings: \"MONO\" 0, \"CASL\" 1, \"wght\" 480; text-wrap: pretty; }"
     }
   ],
   "narrative": {
     "northStar": "The Shoebox",
-    "overview": "A physical box of index cards kept somewhere you can reach it. You lift the lid, take the card off the top, decide what it is, and it leaves. The box never tells you how many are left, because a box can't count and neither can this product. Every structural decision follows from that image: the header is the lid, the notes are cards, the stack beneath the top card is the only thing that says there is more, and the whole surface has exactly one thing on it at a time.\n\nThe material is the mascot's own drawing language, taken directly off assets/logo.png rather than chosen: a 3px near-black outline around flat saturated fills, soft rounded geometry, no gradients on anything you can press. Cards are cream stock, not white — a white surface is not Squirrel. Purple is the room, orange is reserved for the single action that makes something instead of disposing of it.\n\nThe system holds two tempers at once and must not average them. The content is the owner's own words and is set warm, in a casual brush-drawn axis, close to handwriting. Every machine part — buttons, keycaps, dates, state names — is set in the linear axis of the same family: tight, uppercase, tracked out, precise. One family, two voices, no compromise between them.",
+    "overview": "A physical box of index cards kept somewhere you can reach it. You lift the lid, take the card off the top, decide what it is, and it leaves. The box never tells you how many are left, because a box can't count and neither can this product. Every structural decision follows from that image: the header is the lid, the notes are cards, the stack beneath the top card is the only thing that says there is more, and the surface has one thing on it at a time.\n\nThe material is the mascot's own drawing language, taken directly off assets/logo.png rather than chosen: a 3px near-black outline around flat saturated fills, soft rounded geometry, no gradients on anything you can press. Cards are cream stock, not white — a white surface is not Squirrel. Purple is the room, orange is reserved for the single action that makes something instead of disposing of it.\n\nThe system holds two tempers at once and must not average them. The content is the owner's own words and is set warm, in a casual brush-drawn axis, close to handwriting. Every machine part — buttons, keycaps, dates, state names — is set in the linear axis of the same family: tight, uppercase, tracked out, precise. One family, two voices, no compromise between them.\n\nThe box grew a lid you can open. For most of this surface's life there was no navigation at all, which was right when there was one screen and then two. There are thirteen now, and the shape that replaced \"no navigation\" is not a menu bar: it is one mark and three icons, and everything a screen can reach is either behind one press in the lid or written under that screen's own title. The shoebox still has one opening. You just no longer have to know where it is.",
     "keyCharacteristics": [
       "One card at a time; the stack is texture, never a number",
-      "3px #1c110b outline on every object, without exception",
+      "3px #1c110b outline on every object; 2px only on a small control inside a card, and never thinner than that",
       "Flat saturated fills; gradients only on the field, never on an object",
       "Cream card stock (#fdecd4), never white",
       "Orange means makes something; the three disposal actions never take it",
       "Four states, four colours, taken from the mascot's notebook tabs; orange is an action, never a state",
+      "Three kinds of control, three marks: a fill, an underline, a chevron",
+      "Every screen opens the same way — title, then what it is about, then the way onward",
       "Keyboard letters are actions; movement never takes a letter"
     ],
     "rules": [
-      {
-        "name": "The Orange Reserve Rule",
-        "section": "colors",
-        "body": "Orange marks creation, never disposal. Done, keep and drop are paper; make a chore is orange. If a second orange element appears on a screen, one of them is wrong."
-      },
-      {
-        "name": "The No Neutral Rule",
-        "section": "colors",
-        "body": "No surface in this system is white, grey or near-grey. Cards are cream, the field is purple, secondary type on purple is tinted from the tail cream and secondary type on cream is tinted from the headphones. A grey would be the first sign the design has drifted off the mark."
-      },
-      {
-        "name": "The Fill-and-Ink Rule",
-        "section": "colors",
-        "body": "Every state colour ships as a pair. The fill goes on shapes — tabs, dots, pressed buttons. The ink goes on type. Never set type in a fill value; three of the four fail contrast at label size."
-      },
-      {
-        "name": "The Two Voices Rule",
-        "section": "typography",
-        "body": "CASL 1 is his words. CASL 0 is the product's. Nothing is set in the casual axis unless the owner typed it, and no control is ever set in it."
-      },
-      {
-        "name": "The No Mono Rule",
-        "section": "typography",
-        "body": "MONO is pinned to 0 on both voices. Recursive ships a monospace axis and this is a warm tool, not a terminal."
-      },
-      {
-        "name": "The Press Rule",
-        "section": "elevation",
-        "body": "Pressing a control moves it down by exactly its offset and removes the offset, so it lands flush with the surface. translateY(4px) against 0 4px 0 0. The numbers must always match; a press that doesn't land is the most obvious tell in this world."
-      },
-      {
-        "name": "The Field Exception",
-        "section": "elevation",
-        "body": "The no-gradient rule governs objects. The field carries a radial lift and a dot grid because a full-screen flat purple reads as a dead swatch, and because habituation is a documented risk for this user. Nothing that can be pressed may take a gradient."
-      }
+      { "name": "The Orange Reserve Rule", "body": "Orange marks creation, never disposal. Done, keep and drop are paper; make a chore, tell it and decide it are orange. If a second orange element appears on a screen, one of them is wrong.", "section": "colors" },
+      { "name": "A chore at rest is not orange", "body": "The orange belongs to the moment a note becomes a chore, shown once, on the card where it happened. A chore living its life afterwards is cream stock like everything else the owner owns.", "section": "colors" },
+      { "name": "The No Neutral Rule", "body": "No surface in this system is white, grey or near-grey. Cards are cream, the field is purple, secondary type on purple is tinted from the tail cream and secondary type on cream is tinted from the headphones. A grey would be the first sign the design has drifted off the mark.", "section": "colors" },
+      { "name": "The Fill-and-Ink Rule", "body": "Every state colour ships as a pair. The fill goes on shapes; the ink goes on type. Never set type in a fill value; three of the four fail contrast at label size.", "section": "colors" },
+      { "name": "The Lifted Fill Rule", "body": "A control that acts on something wears that thing's colour at rest, lifted toward white until the card's dark ink reads on it. Lift until the ink reads, then measure; do not lift by a number because the number worked somewhere else.", "section": "colors" },
+      { "name": "Amber left the lifted set, and its leaving is the rule working", "body": "How often was a filled amber pill, which made the loudest control on a chore card the one that changes nothing on the server. It is a disclosure, so it is outlined paper now and the chevron says the rest. Amber is a state fill again and only a state fill.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "CASL 1 is his words. CASL 0 is the product's. Nothing is set in the casual axis unless the owner typed it, is typing it, or the product is speaking in full sentences. No control is ever set in it: a button is machinery, and machinery does not have a voice.", "section": "typography" },
+      { "name": "The One Title Rule", "body": "Every screen that is a screen opens with one h1 carrying one class, in Inter, sentence case, in the same place. A title never counts anything — this is the one place a count would look most reasonable, and '3 things you kept' is still a count.", "section": "typography" },
+      { "name": "The Soft Elapsed Rule", "body": "A chore reports when it was last done in words and never in numbers. There is no bucket for a long time, because that sentence is about the person rather than the chore. A chore that has never been done says nothing at all about it.", "section": "typography" },
+      { "name": "The No Mono Rule", "body": "MONO is pinned to 0 on both voices. Recursive ships a monospace axis and this is a warm tool, not a terminal.", "section": "typography" },
+      { "name": "Case is applied, never typed", "body": "A word is written in the vocabulary as a person would say it — 'this week' — and text-transform shouts it. What is read aloud stays a sentence.", "section": "typography" },
+      { "name": "The Top Edge Rule", "body": "Content starts at the top of the field, 40px down. The deck is the one exception and keeps the vertical centring, because one card floating in the middle of the room is the shoebox's composition rather than a layout default.", "section": "layout" },
+      { "name": "Every screen states its width", "body": "held and moods had no width rule at all, so as flex children of a centred main they shrank to their content: 440px and 227px against everyone else's 720px. Not merely narrow — not even the same width as each other.", "section": "layout" },
+      { "name": "The Step-Up Rule", "body": "A phone is read at arm's length in worse light, so roles step up below the breakpoint rather than down. These are the same roles at a second size, not new roles.", "section": "layout" },
+      { "name": "The Lid Step-Down Rule", "body": "The lid is the one thing that gets smaller on a phone, against the Step-Up Rule and for the reason that rule gives. Roles grow because a phone is read at arm's length — and the lid is not read. It is what you look past on the way to the card.", "section": "layout" },
+      { "name": "The Press Rule", "body": "Pressing a control moves it down by exactly its offset and removes the offset, so it lands flush with the surface. The numbers must always match; a press that doesn't land is the most obvious tell in this world.", "section": "elevation" },
+      { "name": "The Inset Exception", "body": "Everything in this system sits on a surface. The slot is the way into one, so it is the one object whose shadow is on the inside. A card is a note, and the slot is the opening a note goes through.", "section": "elevation" },
+      { "name": "The Field Exception", "body": "The no-gradient rule governs objects. The field carries a radial lift and a dot grid because a full-screen flat purple reads as a dead swatch, and because habituation is a documented risk for this user. Nothing that can be pressed may take a gradient.", "section": "elevation" },
+      { "name": "The lift is .35, and the number is a contrast result", "body": "Cream on the lit centre of the old .5 radial measured 4.19:1 — a fail — which quietly made every piece of secondary type illegible in the one corner where the field is brightest. The Field Exception buys atmosphere; it does not buy an unreadable corner.", "section": "elevation" },
+      { "name": "The outline scales with the object, and never goes thin", "body": "3px is the mark's own weight and the default everywhere. 2px is the one step down, reserved for a small control living inside a card. There is no third step. A 1px rule anywhere is a defect.", "section": "shapes" },
+      { "name": "Dashed means this does nothing", "body": "The escape chip out of the interval picker, the disclosure that has opened and become its own way back, the new-chore form when shut, the rule above a chore's timer: all dashed, and nothing else is.", "section": "shapes" },
+      { "name": "The Three Marks Rule", "body": "A button is a fill, an outline and the offset, and something changes on the server. A link is an underline, and you go to another screen. A disclosure is a chevron that turns, and something opens here. A disclosure in a row of buttons keeps the row's shape and drops its fill: weight says how loud a control is, the mark says what kind of thing it is. Underline now means one thing, everywhere: you are leaving.", "section": "components" },
+      { "name": "The same mark in two roles needs two names", "body": "The floating acorn was .askacorn and not .acorn because the card's title bar had that name first for the drawn badge, and taking it made every note's badge a 62px circle in the corner of the screen for a release.", "section": "components" },
+      { "name": "A shut dialog has to be told to go away", "body": "An author display value beats the browser's own dialog:not([open]) { display: none }, so for three releases Buddy's sheet closed correctly and stayed exactly where it was. From the outside that is a close button that does nothing.", "section": "components" }
     ],
     "dos": [
-      "Do put the 3px #1c110b outline on every object. No exceptions, no hairlines.",
+      "Do put the 3px #1c110b outline on every object. 2px is the one step down, for a small control inside a card; there is no third step and no hairline.",
       "Do pair the block offset with a real cast shadow on cards, and match the press translation to the offset exactly.",
-      "Do set the owner's captured text in CASL 1 and every control in CASL 0.",
-      "Do use a state's ink for type and its fill for shapes.",
+      "Do set the owner's captured text in CASL 1 and every control in CASL 0 — including the field he is typing it into.",
+      "Do give every screen one h1, one class, in the same place.",
+      "Do mark a disclosure with a chevron, a link with an underline, and a button with a fill — and let a disclosure in a row of buttons keep the row's shape while dropping its fill.",
+      "Do use a state's ink for type and its fill for shapes — and its lifted fill when a control wears that state at rest, with the outline ink on top.",
       "Do say that there is more — the stack, a line of copy — and let the scroll carry the rest.",
+      "Do let the lid shrink on a phone while everything else grows. It is chrome, and the card is what the screen is for.",
       "Do theme the browser's own surfaces: selection, caret, scrollbar track and thumb, focus ring, underline offset.",
-      "Do randomise the stack's rotation on every card change. Habituation is a documented risk for this user, and a surface identical every time stops being seen inside a week."
+      "Do randomise the stack's rotation on every card change. Habituation is a documented risk for this user, and a surface identical every time stops being seen inside a week.",
+      "Do measure a colour against the type that will sit on it, and change the number until it passes. Two lifted fills and the field's own light were all set by eye first and all three were wrong."
     ],
     "donts": [
-      "Don't emit a count, a total, a badge, a percentage or a page number, in any form, on any surface. This is the product's single hardest rule and the one most likely to be broken by accident.",
+      "Don't emit a count, a total, a badge, a percentage or a page number, in any form, on any surface — including a title, which is where one would look most reasonable. One exception exists: the coach's monthly cost, in Buddy's own lid.",
       "Don't use white or grey for any surface or any secondary type. Tint from the tail cream on purple, from the headphone brown on cream.",
+      "Don't draw a count either. A checklist, a progress bar, a row of ticks and a stack of cards are all counts in a costume.",
       "Don't put orange on a disposal action. Orange means something was made.",
+      "Don't dress a chore at rest in orange either, or in the page-tab grammar that says what a note ended up as. A chore has a rhythm, not an outcome.",
+      "Don't underline anything that is not a link to another screen.",
+      "Don't give a control with no server consequence the loudest fill on its card. A disclosure that outshouts the buttons beside it is telling you the wrong thing is the point of the screen.",
+      "Don't print how long it has been since a chore was done. Say it in words, softly, or say nothing.",
       "Don't put a gradient on anything that can be pressed.",
-      "Don't open a modal for the chore interval, or for anything else that needs neither interruption nor protected focus. The picker replaces the action row in place, on the card.",
+      "Don't open a modal for the chore interval, or for anything else that needs neither interruption nor protected focus. The one exception is Buddy's sheet, and it is admitted because the rule's own condition admits it.",
       "Don't take a letter key for navigation. Letters are actions; k is keep. Movement is space and the arrow keys.",
-      "Don't let a control leave the surface it belongs to — undo lives on the card it undoes, not in a corner of the screen.",
-      "Don't celebrate an empty pile. It is a normal ending, not an achievement, and a reward here is a counter wearing a different hat."
+      "Don't let a control leave the surface it belongs to — undo lives on the card it undoes, not in a corner of the screen, and nothing floats over the content on a fixed position.",
+      "Don't leave a screen reachable from one place, and never leave one reachable only from an empty state.",
+      "Don't celebrate an empty pile. It is a normal ending, not an achievement, and a reward here is a counter wearing a different hat.",
+      "Don't render an offer with nothing in it. The region is absent when there is nothing to hand over.",
+      "Don't give the offer more than one thing, at any width, in any state.",
+      "Don't put a second permission prompt anywhere. One notification exists in this product and it is about having to leave.",
+      "Don't write an author display value for a state that is meant to be gone. [hidden] is enforced globally with !important for exactly this reason, and the rule the three bugs behind it taught is the smaller one: when something is meant to disappear, assert that it is invisible, not that it is unmarked."
     ]
   }
 }
