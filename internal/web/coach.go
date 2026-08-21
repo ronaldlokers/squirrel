@@ -291,8 +291,10 @@ func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, 
 			// paid for. Never from a new call: opening costs nothing and has
 			// to keep costing nothing, or the acorn becomes a thing you think
 			// about before pressing.
-			Offer:    offerFor(s, opts, r, true, false),
-			Talking:  coachAvailable(opts),
+			Offer: offerFor(s, opts, r, true, false),
+			// Whether there is a model behind the box is not rendered anywhere
+			// and has not been: AskWhich below already carries the only thing
+			// the sheet does differently without one.
 			AskWhich: cv.AskWhich || !coachAvailable(opts),
 			Blockers: blockerChips(),
 			From:     backTolerant(r.URL.Query().Get("from")),

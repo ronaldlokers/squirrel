@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	htmlpkg "html"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -14,17 +15,21 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The acorn is on every screen, and it is a real link to a real page — which
-// is what makes the sheet an upgrade rather than a requirement.
+// Buddy is on every screen, and it is a real link to a real page — which is
+// what makes the sheet an upgrade rather than a requirement.
+//
+// It was a button floating over the content and it is an icon in the lid now,
+// so the class changed with it. What the test is about did not: one tap from
+// anywhere, and it knows where to come back to.
 func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
-	href := regexp.MustCompile(`<a class="askacorn" href="([^"]+)"`)
+	href := regexp.MustCompile(`<a class="lidbtn tobuddy" href="([^"]+)"`)
 	for _, path := range []string{"/", "/pile", "/tasks", "/chores"} {
 		body := m.call(t, "GET", path, nil).Body.String()
 		found := href.FindStringSubmatch(body)
-		require.Len(t, found, 2, "no acorn on %s", path)
+		require.Len(t, found, 2, "no way to Buddy on %s", path)
 
 		// Parsed rather than string-matched: the template escapes the path
 		// into the query, and a test that pins the escaping is a test about
@@ -33,14 +38,14 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "/buddy", u.Path)
 		require.Equal(t, path, u.Query().Get("from"),
-			"the acorn on %s does not know where to come back to", path)
+			"Buddy on %s does not know where to come back to", path)
 	}
 }
 
 // Not on the coach page itself. A link to the page you are on is furniture.
 func TestTheAcornIsNotOnTheCoachPage(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/buddy", nil).Body.String()
-	require.NotContains(t, body, `class="askacorn"`)
+	require.NotContains(t, body, `class="lidbtn tobuddy"`)
 }
 
 // The button and the card's drawn badge are two different things with two
@@ -53,7 +58,7 @@ func TestTheAcornButtonDoesNotTakeTheCardsBadgeName(t *testing.T) {
 	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
 
 	require.Contains(t, body, `<svg class="acorn"`, "the card lost its badge")
-	require.Contains(t, body, `<a class="askacorn"`, "the button lost its own name")
+	require.Contains(t, body, `class="lidbtn tobuddy"`, "the button lost its own name")
 	require.NotContains(t, body, `<a class="acorn"`)
 }
 
@@ -297,9 +302,39 @@ func TestTheCoachNeverEmitsACount(t *testing.T) {
 	}}
 	body := mountedWith(t, &fakeStore{}, c).call(t, "GET", "/buddy", nil).Body.String()
 
-	for _, n := range []string{">3<", "3 ", "three messages", "3 of"} {
-		require.NotContains(t, body, n)
+	// The words, not the markup. This grepped the raw response until the lid
+	// grew drawn icons and the hamburger's own path — "M3 5.5h14M3 10h14" —
+	// matched a search for "3 ". A count is a thing a person reads, so the
+	// test reads what a person would.
+	for _, n := range []string{"3", "three messages"} {
+		require.NotContains(t, onlyWords(body), n,
+			"a number reached the sheet")
 	}
+}
+
+// onlyWords is the response with every tag taken out and every entity turned
+// back into the character it stands for, so an assertion about what is on the
+// screen cannot be satisfied or broken by markup.
+//
+// Both halves earned their place. Stripping tags came first, because the
+// hamburger's own path — "M3 5.5h14M3 10h14" — answered a search for a "3".
+// Unescaping came second, because "don&#39;t know how" answered the next one.
+func onlyWords(markup string) string {
+	var out strings.Builder
+	depth := 0
+	for _, r := range markup {
+		switch {
+		case r == '<':
+			depth++
+		case r == '>':
+			if depth > 0 {
+				depth--
+			}
+		case depth == 0:
+			out.WriteRune(r)
+		}
+	}
+	return htmlpkg.UnescapeString(out.String())
 }
 
 // What the coach has cost, in the sheet's own lid and nowhere else.

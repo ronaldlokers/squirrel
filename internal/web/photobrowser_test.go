@@ -298,7 +298,7 @@ func TestBrowserClosingTheCoachWithACoachBehindIt(t *testing.T) {
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, coach)
 	c := browserAt(t, srv, "/pile")
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
@@ -333,7 +333,7 @@ func TestBrowserTheCloseButtonStaysReachableOnAPhone(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	// Read to the bottom, the way you do when the answer is down there.
@@ -369,7 +369,7 @@ func TestBrowserTheCloseButtonIsInsideTheSheet(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	inside := c.eval(t, `
@@ -404,7 +404,7 @@ func TestBrowserTheCloseButtonSurvivesAShortWindow(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 	c.eval(t, `
 		const s = document.querySelector("dialog.coachsheet .sheet");
@@ -436,7 +436,7 @@ func TestBrowserTheBackdropIsStillReachableOnAShortPhone(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	gap := c.eval(t, `

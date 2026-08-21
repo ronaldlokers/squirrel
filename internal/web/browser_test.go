@@ -428,7 +428,7 @@ func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
 func TestBrowserClosingTheCoach(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
@@ -441,7 +441,7 @@ func TestBrowserClosingTheCoach(t *testing.T) {
 func TestBrowserEscapeClosesTheCoach(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.key(t, "Escape")
@@ -454,20 +454,30 @@ func TestBrowserEscapeClosesTheCoach(t *testing.T) {
 func TestBrowserTheAcornDoesNotNavigate(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 	require.Equal(t, "/pile", c.eval(t, `return location.pathname`))
 }
 
 // The card's badge is a 16px drawing in a title bar, not a button stuck to the
-// corner of the screen. It was the latter for one release.
+// corner of the screen. It was the latter for one release, when the button
+// took `.acorn` for itself and every note's badge became a 62px circle.
+//
+// Nothing is stuck to the corner any more: the way to Buddy is in the lid.
+// That closes the same hole from the other side — a fixed button over the
+// content is a button that sits on top of whatever is underneath it, which is
+// what it did to a chore's timer row and to the sheet's own send button.
 func TestBrowserTheCardsBadgeIsStillInItsTitleBar(t *testing.T) {
 	c, _ := open(t, aPile())
 
 	require.Equal(t, "static", c.eval(t,
 		`return getComputedStyle(document.querySelector(".titlebar .acorn")).position`))
-	require.Equal(t, "fixed", c.eval(t,
-		`return getComputedStyle(document.querySelector(".askacorn")).position`))
+	require.NotEqual(t, "fixed", c.eval(t,
+		`return getComputedStyle(document.querySelector(".tobuddy")).position`),
+		"the way to Buddy is floating over the content again")
+	require.Equal(t, true, c.eval(t,
+		`return !!document.querySelector(".lid .tobuddy")`),
+		"the way to Buddy left the lid")
 }
 
 // Every letter here is an action — d is done, s is stop, c asks for an
@@ -502,7 +512,7 @@ func TestBrowserTypingAChoreNameIsNotAnAction(t *testing.T) {
 func TestBrowserTypingToTheCoachIsNotAnAction(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `document.querySelector('dialog.coachsheet textarea[name=said]').focus()`)
@@ -524,7 +534,7 @@ func TestBrowserTypingToTheCoachIsNotAnAction(t *testing.T) {
 func TestBrowserEnterSendsToTheCoach(t *testing.T) {
 	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `
@@ -542,7 +552,7 @@ func TestBrowserEnterSendsToTheCoach(t *testing.T) {
 func TestBrowserShiftEnterDoesNotSendToTheCoach(t *testing.T) {
 	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `
@@ -569,7 +579,7 @@ func TestBrowserAChipSendsToTheCoach(t *testing.T) {
 	f.items = aPile().items
 	c, _ := openWith(t, f, breaksInto(&fakeCoach{}, "open the letter", "ring the number"))
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `document.querySelector('dialog.coachsheet .why[value="big"]').click()`)
@@ -584,7 +594,7 @@ func TestBrowserAChipSendsToTheCoach(t *testing.T) {
 func TestBrowserTheSheetPostsTheWayAFormPosts(t *testing.T) {
 	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
 
-	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `

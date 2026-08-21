@@ -509,21 +509,6 @@
     clip-path: inset(50%); overflow: hidden; white-space: nowrap;
   }
 
-  /* The way across to the chores, and back. Quiet on purpose: it is a place
-     to go, not a thing to do. */
-  .lidlink {
-    color: var(--paper); text-decoration: none;
-    font-size: 13px; letter-spacing: .04em;
-    font-variation-settings: var(--precise), "wght" 650;
-    opacity: .8; padding: 10px 6px; min-height: 44px;
-    display: inline-flex; align-items: center;
-    /* "the pile" is four characters longer than "chores", which is enough to
-       break it across two lines in a phone's lid and squeeze the field beside
-       it. The link is two words and stays two words. */
-    white-space: nowrap;
-  }
-  .lidlink:hover, .lidlink:focus-visible { opacity: 1; text-decoration: underline; }
-
   /* ---------- the chores: what comes back ---------- */
 
   .chorebox { width: min(720px, 100%); }
@@ -1657,33 +1642,16 @@
      interval needs neither, and that reasoning is untouched.
    * ------------------------------------------------------------------ */
 
-  /* The button is the mark itself, which DESIGN.md already establishes as
-     available as a badge anywhere the full mascot is too much. Cream stock,
-     the outline weight, the sticker offset every raised thing here wears.
+  /* The floating acorn was here: fixed, bottom right, 62px, on every screen.
+     It is an icon in the lid now.
 
-     Bottom right and fixed: the live-chat convention, and thumb-reachable on
-     the phone this is primarily used on.
-
-     `.askacorn` and not `.acorn`, because the card's title bar had that name
-     first for the drawn badge. Taking it made every note's badge a 62px circle
-     in the corner of the screen. */
-  .askacorn {
-    position: fixed; z-index: 40;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: max(16px, env(safe-area-inset-bottom));
-    width: 62px; height: 62px;
-    display: grid; place-items: center;
-    background: var(--cream);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 5px 0 0 var(--outline), 0 14px 24px -14px rgba(0, 0, 0, .7);
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out;
-  }
-  .askacorn img { display: block; }
-  .askacorn:active { transform: translateY(4px); box-shadow: 0 1px 0 0 var(--outline); }
-  /* It never dims and it never carries a badge. Closing the sheet means the
-     conversation is over and nothing else; three opens with no engagement is
-     not a signal, and the product does not form opinions from how a button
-     gets used. */
+     Two of its rules are worth keeping as a record rather than as code. It was
+     `.askacorn` and not `.acorn` because the card's title bar had that name
+     first for the drawn badge, and taking it made every note's badge a 62px
+     circle in the corner of the screen for a release. And it never dimmed and
+     never carried a badge: closing the sheet means the conversation is over
+     and nothing else, and this product does not form opinions from how a
+     button gets used. Both still hold wherever Buddy lives. */
 
   .sheet {
     width: min(640px, 100%);
@@ -1796,7 +1764,6 @@
   dialog.coachsheet::backdrop { background: rgba(28, 17, 11, .55); }
   /* Nothing to ask while you are already asking, and on a wide screen the
      acorn sits directly on top of the sheet's own send button. */
-  body:has(dialog.coachsheet[open]) .askacorn { display: none; }
 
   /* A right panel where there is room for one. The page stays visible and in
      place: the conversation is about what is on the screen behind it. */
@@ -1870,8 +1837,6 @@
     }
     /* Both top corners here, because the bottom sheet is rounded on both. */
     dialog.coachsheet .sheetlid { border-radius: var(--r) var(--r) 0 0; }
-    .askacorn { width: 56px; height: 56px; }
-    .askacorn img { width: 42px; height: 32px; }
   }
 
   /* One step of a breakdown. Never the sequence, and there is deliberately no
@@ -2118,3 +2083,378 @@
     background: var(--card-deep);
     border: var(--line) solid var(--outline); border-radius: 10px;
   }
+/* One frame — the proposal, as a delta.
+ *
+ * This file is loaded *after* the real internal/web/static/pile.css, so the
+ * comp shows the actual product with exactly these changes on top and nothing
+ * else. Everything not written here is unchanged, which is most of it: the
+ * palette, both type axes, the sticker shadows, the four state colours, the
+ * mascot, the deck's whole composition.
+ *
+ * When this is approved it folds into pile.css and stops existing.
+ */
+
+/* ---------------------------------------------------------------- */
+/* 1. Three kinds of control, one mark each.                         */
+/* ---------------------------------------------------------------- */
+/*
+ * A button is a filled shape and it changes something.
+ * A link is underlined and it takes you somewhere else.
+ * A disclosure carries a chevron and it opens something here.
+ *
+ * Today the third one has four appearances — plain underlined text on the
+ * card, a filled yellow pill on the chores screen, a plus sign on the new
+ * chore form, a quiet line under a chore — and the first two are
+ * indistinguishable from each other wherever they sit side by side. On the
+ * card, LATER goes to another note, "fix the words" opens a box here, and
+ * they look the same.
+ *
+ * The chevron is the whole fix. It goes on every disclosure regardless of
+ * that disclosure's weight, because weight says how loud the control is and
+ * the mark says what kind of thing it is. A disclosure inside a row of
+ * buttons still has to look like the row or the row breaks; it just carries
+ * the chevron too.
+ */
+.reword > summary,
+.cantact > summary,
+.cantstart > summary,
+.gofor > summary,
+.newchore > summary,
+.often > summary,
+.answer > summary,
+.everyFallback > summary {
+  position: relative;
+}
+
+.reword > summary::after,
+.cantact > summary::after,
+.cantstart > summary::after,
+.gofor > summary::after,
+.newchore > summary::after,
+.often > summary::after,
+.answer > summary::after,
+.everyFallback > summary::after {
+  content: "";
+  flex: none;
+  width: 12px; height: 12px;
+  margin-left: 8px;
+  /* Drawn, and drawn the way the other two icons in this product are drawn:
+     a 2.4 stroke with round caps, the same as the camera and the cross. A
+     chevron built from two CSS borders would be the only icon here that was
+     not a path, and it would sit at a weight nothing else uses. Masked rather
+     than a background image so it takes currentColor and inherits whatever
+     the control it belongs to is doing on hover. */
+  background: currentColor;
+  --chev: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="black" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  mask: var(--chev) center / contain no-repeat;
+  -webkit-mask: var(--chev) center / contain no-repeat;
+  transition: transform 140ms cubic-bezier(.16, .84, .28, 1);
+}
+
+/* Open, it points at what it opened. */
+.reword[open] > summary::after,
+.cantact[open] > summary::after,
+.cantstart[open] > summary::after,
+.gofor[open] > summary::after,
+.newchore[open] > summary::after,
+.often[open] > summary::after,
+.answer[open] > summary::after,
+.everyFallback[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+/* The quiet ones are inline-flex so the chevron sits on the text's line. */
+.reword > summary,
+.cantact > summary,
+.cantstart > summary,
+.gofor > summary,
+.newchore > summary {
+  display: inline-flex; align-items: center;
+}
+
+/* Underline means you are leaving, and it now means only that. Every one of
+   these opens something on the screen you are already on. */
+.reword > summary,
+.cantact > summary,
+.cantstart > summary,
+.gofor > summary,
+.newchore > summary {
+  text-decoration: none;
+}
+.reword > summary:hover,
+.cantact > summary:hover,
+.cantstart > summary:hover,
+.gofor > summary:hover,
+.newchore > summary:hover {
+  text-decoration: none;
+  color: var(--outline);
+}
+
+/* ---------------------------------------------------------------- */
+/* 2. One frame: title, content, the way onward.                     */
+/* ---------------------------------------------------------------- */
+/*
+ * The title is already one element and one class as of this morning. What is
+ * still uneven is the foot: `.ends` is a footer under a list on some screens,
+ * a pair of links on others, and absent on three. It becomes the frame's
+ * third slot — the same distance below the content everywhere, the same size,
+ * the same place to look for the way on.
+ */
+.ends {
+  margin: 30px auto 0;
+  padding-top: 4px;
+  display: flex; justify-content: center; align-items: baseline;
+  gap: 6px 14px; flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------- */
+/* 3. The screens that could not be reached.                         */
+/* ---------------------------------------------------------------- */
+/*
+ * Nothing to style — the fix is a link in the pile's foot, in the markup.
+ * Recorded here so the delta is the whole proposal:
+ *
+ *   /kept was reachable from the bottom of the pile and from an empty pile,
+ *   and from nowhere else. The shelf of things deliberately kept for later
+ *   sat behind having nothing left to triage, which is the one state this
+ *   product exists to say you need not reach.
+ *
+ * The pile's foot carries it now, always. held and archive keep their place
+ * at the foot of the tasks, which is one screen away from the thing they are
+ * about. /moods stays behind the check-in on purpose: Principle 5 gave up a
+ * construction-level guarantee in exchange for "shown back on request, and
+ * never on its own", and a link in a footer is closer to "on its own" than
+ * that bargain allows.
+ */
+
+/* ---------------------------------------------------------------- */
+/* 4. Navigation is in one place, and the place is the top.          */
+/* ---------------------------------------------------------------- */
+/*
+ * "There are links in the bottom that should be navigation in the top."
+ *
+ * They were both. The lid carried two of the three main places, and every
+ * screen's footer carried the rest — the shelf, the archive, the set-aside,
+ * home. So where you could go next depended on which screen you were on, and
+ * half the answer was below the content.
+ *
+ * It is all in the lid now, behind the hamburger, and the footers that were
+ * navigation are not navigation any more. The lid's own shape went through a
+ * row of three words on the way here, which is why the rules below are the
+ * second set to be written for it and the first to survive.
+ */
+
+/*
+ * And what a screen can show you sits under that screen's title, because that
+ * is what it is about: a link to the archive means nothing beside the chores.
+ */
+.views {
+  display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap;
+  margin: -8px 0 20px;
+}
+.view {
+  font-size: 13.5px;
+  font-variation-settings: var(--precise), "wght" 600;
+  color: var(--cream);
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: rgba(254, 214, 167, .45);
+}
+.view:hover { color: var(--paper); text-decoration-color: currentColor; }
+.view.here {
+  color: var(--paper);
+  text-decoration: none;
+  font-variation-settings: var(--precise), "wght" 780;
+}
+
+/* On the deck the views sit above a vertically centred card, so they need to
+   not be dragged into the middle with it. */
+#deckView > .views { margin: 0 0 18px; }
+
+/* ---------------------------------------------------------------- */
+/* 5. A choice is drawn as a choice.                                 */
+/* ---------------------------------------------------------------- */
+/*
+ * "Links that should be a button/pill/chip should be that."
+ *
+ * The clearest evidence that this was wrong: `not now` on the offer is
+ * already a <button>, and `LATER` is an <a>, and they were styled by the same
+ * class and looked identical. One of them was a link wearing a control's job
+ * and the other was a control wearing a link's clothes, and from the outside
+ * you could not tell which was which — or that either was pressable.
+ *
+ * So every choice is a pill. Not every pill is loud: these are the quiet ones,
+ * outlined rather than filled, because they are the option you take when you
+ * are not doing the thing. But they are unmistakably pressable, which the
+ * underline never was.
+ *
+ * Underline now means one thing only, everywhere: you are going somewhere
+ * else to look at something.
+ */
+.later,
+.again,
+.quietpick {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 10px 16px;
+  border-radius: 999px;
+  background: none;
+  border: 2px solid currentColor;
+  text-decoration: none; cursor: pointer;
+  font: 600 12.5px/1 "Recursive", sans-serif;
+  font-variation-settings: var(--precise), "wght" 700;
+  letter-spacing: .07em; text-transform: uppercase;
+  transition: background-color 90ms ease-out, color 90ms ease-out;
+}
+
+/* On the purple field and on the card's purple title bar: cream, which is the
+   secondary voice on this ground everywhere else. */
+.later,
+.again,
+.quietpick {
+  color: var(--cream); opacity: 1;
+  margin: 0;
+}
+.later:hover,
+.again:hover,
+.quietpick:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
+
+/* Inside a cream card the same control takes the card's own ink. `not now`
+   and `never mind` both live there. */
+.card .later,
+.acard .later,
+.asking .later,
+.proposal .later,
+.obtn.later {
+  color: var(--brown);
+  /* Every one of these is spelled out because the rule this overrides zeroes
+     the border and adds an underline: `not now` is a <button> that has been
+     drawn as a link since the day it was written, which is the clearest single
+     example of the thing being fixed here. */
+  border: 2px solid currentColor;
+  background: none;
+  box-shadow: none;
+  padding: 10px 16px;
+  margin-left: auto;
+  text-decoration: none;
+  text-transform: uppercase; letter-spacing: .07em;
+  font-size: 12.5px; font-variation-settings: var(--precise), "wght" 700;
+}
+.card .later:hover,
+.acard .later:hover,
+.asking .later:hover,
+.proposal .later:hover,
+.obtn.later:hover { background: var(--paper-deep); color: var(--outline); }
+
+/* The card's title bar is purple, so LATER stays cream there. */
+.titlebar .later { color: var(--cream); }
+.titlebar .later:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
+
+/* The check-in's three were a row of identical underlined words with nothing
+   to say which was the main one. Two of them act; the third goes to look at
+   something and stays a link. */
+.noted .again { text-decoration: none; }
+
+/* ---------------------------------------------------------------- */
+/* 6. The lid: a mark and three icons.                               */
+/* ---------------------------------------------------------------- */
+/*
+ * It was a row of words and a search field that ran to three rows on a phone
+ * — about a hundred and eighty pixels of lid before anything you came for. It
+ * is one row now: the mark, and the three things you can do from anywhere.
+ *
+ * Buddy is one of them and is outside the menu, because a conversation about
+ * what is in front of you should be one tap. It is no longer a button floating
+ * over the content, which is what it was and what put it on top of a chore's
+ * timer row and of the sheet's own send button.
+ *
+ * All three work with the script off. Two are disclosures, which is the same
+ * grammar as the card's one question and the chore's interval.
+ */
+.lidbtn,
+.findbox > summary,
+.where > summary {
+  list-style: none; cursor: pointer;
+  flex: none;
+  display: grid; place-items: center;
+  width: 44px; height: 44px;
+  border-radius: 999px;
+  background: none; border: 0;
+  color: var(--cream);
+  transition: background-color 90ms ease-out, color 90ms ease-out;
+}
+.findbox > summary::-webkit-details-marker,
+.where > summary::-webkit-details-marker { display: none; }
+.lidbtn:hover,
+.findbox > summary:hover,
+.where > summary:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
+.findbox[open] > summary,
+.where[open] > summary { background: var(--violet); color: var(--paper); }
+
+/* Hamburger shut, cross open — the same cross the sheet closes with, so the
+   mark for "this is shut now" is one mark in this product rather than two. */
+.where .ifopen { display: none; }
+.where[open] .ifshut { display: none; }
+.where[open] .ifopen { display: block; }
+
+.findbox, .where { position: relative; flex: none; }
+
+/* Both panels hang from the right edge of their control, because both controls
+   sit at the right end of the lid: hung from the left they ran off the side of
+   a phone. Absolute, so opening one never moves the page underneath it. */
+.wherelist,
+.findbox .find {
+  position: absolute; z-index: 40;
+  top: calc(100% + 8px); right: 0; left: auto;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline), 0 18px 30px -18px rgba(0, 0, 0, .8);
+}
+
+.wherelist { display: flex; flex-direction: column; min-width: 190px; padding: 6px; }
+.wherelist a,
+.wherelist .here {
+  display: flex; align-items: center;
+  min-height: 44px; padding: 10px 14px;
+  border-radius: 999px;
+  color: var(--outline); text-decoration: none;
+  font-size: 14.5px;
+  font-variation-settings: var(--precise), "wght" 640;
+  white-space: nowrap;
+}
+.wherelist a:hover { background: var(--paper-deep); }
+/* Where you are is in the list and is not a link. Cap purple, which is already
+   how this product says "this one" — it marks the interval a chore has. */
+.wherelist .here {
+  background: var(--violet); color: var(--paper);
+  font-variation-settings: var(--precise), "wght" 780;
+  cursor: default;
+}
+
+/* The field, when you have asked for it. */
+.findbox .find {
+  display: flex; align-items: center;
+  padding: 6px; width: min(320px, calc(100vw - 40px));
+}
+.findbox .find input {
+  width: 100%; min-height: 44px; padding: 10px 14px;
+  border: 0; background: none; color: var(--outline);
+  font: 400 15px/1.3 "Recursive", sans-serif;
+  font-variation-settings: var(--casual), "wght" 450;
+}
+.findbox .find input:focus { outline: none; }
+.findbox .find input::placeholder { color: var(--brown); }
+
+/* ---------------------------------------------------------------- */
+/* 7. Home, once the slot moved to the top.                          */
+/* ---------------------------------------------------------------- */
+/*
+ * The doors used to be the first thing under the title and took their spacing
+ * from that. With the slot above them and the check-in between, they sat
+ * straight up against whatever came before with nothing between the two.
+ *
+ * The slot keeps its own space too: it is the first thing on the screen now,
+ * and the first thing on a screen does not start against the lid.
+ */
+.homebox > .slot { margin-top: 0; margin-bottom: 4px; }
+.doors { margin-top: 26px; }
+

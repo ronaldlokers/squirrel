@@ -730,7 +730,7 @@
   // posts and redirects.
   // ---------------------------------------------------------------- //
   (() => {
-    const acorn = document.querySelector(".askacorn");
+    const acorn = document.querySelector(".tobuddy");
     if (!acorn || typeof HTMLDialogElement === "undefined") return;
 
     let sheet = null;
@@ -923,8 +923,66 @@
       dialog.replaceChildren(fresh);
       sheet = fresh;
       wireSheet();
+      // Buddy is reached from the lid's menu now, so the menu has to shut
+      // behind you: a disclosure left standing open under a modal sheet is
+      // waiting there when the sheet closes.
+      acorn.closest("details.where")?.removeAttribute("open");
       dialog.showModal();
       box()?.focus();
+    });
+  })();
+
+  // ---------------------------------------------------------------- //
+  // The lid's two panels.
+  //
+  // A <details> is the right thing here — it opens with no script at all, and
+  // it is the same grammar as the card's one question — but on its own it has
+  // no idea it is a menu. Left alone it stays open until you press the summary
+  // again, so the way out of it is a target you have to go back and find.
+  //
+  // Everything below is the part that makes it behave like a menu, and none of
+  // it is load-bearing: with this file absent both panels still open, still
+  // close on their own summary, and still work.
+  // ---------------------------------------------------------------- //
+  (() => {
+    const panels = [...document.querySelectorAll("details.where, details.findbox")];
+    if (!panels.length) return;
+
+    function shut(except) {
+      for (const p of panels) {
+        if (p !== except && p.open) p.open = false;
+      }
+    }
+
+    for (const panel of panels) {
+      panel.addEventListener("toggle", () => {
+        if (!panel.open) return;
+        // One at a time. Two panels hanging off the same corner is two things
+        // to close and one of them covering the other.
+        shut(panel);
+        // Asking for the field is asking to type in it.
+        panel.querySelector('input[type="search"]')?.focus({ preventScroll: true });
+      });
+    }
+
+    // Anywhere else means anywhere else, including the page behind the panel.
+    // The summary is inside the details, so opening one never closes it.
+    document.addEventListener("click", e => {
+      for (const panel of panels) {
+        if (panel.open && !panel.contains(e.target)) panel.open = false;
+      }
+    });
+
+    // And the key that means "not this", which is what closes the sheet too.
+    // Focus goes back to the control that opened it rather than being dropped
+    // on the page, which is where a keyboard would otherwise have to start
+    // again from.
+    document.addEventListener("keydown", e => {
+      if (e.key !== "Escape") return;
+      const open = panels.find(p => p.open);
+      if (!open) return;
+      open.open = false;
+      open.querySelector("summary")?.focus({ preventScroll: true });
     });
   })();
 })();

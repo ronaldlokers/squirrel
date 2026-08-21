@@ -31,10 +31,12 @@ var notATitle = map[string]string{
 	"pile.html":    "the deck itself — the card carries the date",
 	"coach.html":   "the sheet, whose name is in its own lid",
 	"results.html": "has one, and two of them, one per branch",
-	// The front door, whose title is the mark in the lid. It is the one screen
-	// whose name is the product's name, and a heading under it would be the
-	// same word said twice.
-	"home.html": "the front door — the brand is the title",
+	// The front door, and the one screen without a title. Every other screen
+	// is a place you navigated to, and its title answers "where am I"; home is
+	// where you start, and nobody arrives there wondering. It carried "right
+	// now" for an afternoon and read as a label for a room you were already
+	// standing in.
+	"home.html": "the front door — you do not arrive there wondering",
 }
 
 func templates(t *testing.T) map[string]string {
