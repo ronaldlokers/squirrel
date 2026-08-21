@@ -204,17 +204,32 @@
     </label>
     {{end}}
     <button class="post" type="submit">Keep it</button>
-  </form>
-  {{/* One word, and never a place you are behind. */}}
-  {{if .Kept}}<p class="slotsaid" role="status">kept</p>{{end}}
-  {{/* Held by the worker, because there was no network. Not an error: the
-       words are somewhere and they go in when there is one. */}}
-  {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
-  {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
+
+    {{/* What happened, inside the box it happened in.
+
+         These were three paragraphs after the form, which put the answer to
+         "did that work?" somewhere other than the thing you had just used —
+         and because the whole capture was a page navigation, you also arrived
+         back at the top of the screen to read it. Two separate ways of losing
+         the connection between an action and its result.
+
+         In the form now, so both paths say it in the same place: pile.js
+         writes into this element without the page ever moving, and with no
+         script the server renders the same element in the same spot. */}}
+    <p class="slotsaid" id="slotsaid" role="status"{{if not .Kept}} hidden{{end}}>kept</p>
+    {{/* Held by the worker, because there was no network. Not an error: the
+         words are somewhere and they go in when there is one. */}}
+    {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
+    {{if .NoKeep}}<p class="slotsaid bad" role="status">Not kept &mdash; Squirrel cannot reach its memory. Your words are still here; try again in a moment.</p>{{end}}
+    {{/* The photograph was refused, which is a different thing from the machine
+         failing and has to say so: the message above sends you to press the
+         same button again, and pressing it again will not make the picture
+         smaller. */}}
+    {{if .NoPhoto}}<p class="slotsaid bad" role="status">That photograph was not kept &mdash; too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.</p>{{end}}
   {{/* The photograph was refused, which is a different thing from the machine
        failing and has to say so: the message above sends you to press the same
        button again, and pressing it again will not make the picture smaller. */}}
-  {{if .NoPhoto}}<p class="slotsaid bad" role="status">That photograph was not kept &mdash; too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.</p>{{end}}
+
 
   {{/* The one thing Squirrel will interrupt you for is having to leave, and
        it has to ask before it can. Hidden until the script has established

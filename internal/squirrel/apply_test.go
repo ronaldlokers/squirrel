@@ -69,6 +69,23 @@ func backdateChore(t *testing.T, store *squirrel.Store, choreID int64, ago time.
 	require.NoError(t, err)
 }
 
+// backdateChoreTo puts a chore's creation at an absolute moment, for the tests
+// that run the scheduler at a date they chose rather than at now.
+//
+// backdateChore measures from the database's clock, which is fine while the
+// test also works in relative time and wrong the moment it does not: a chore
+// twenty days before *today* and a scheduler run fixed to a date last August
+// drift towards each other by a day every day, until one morning the chore is
+// not yet due at the moment the test asserts it is. That is exactly how
+// TestClosePreviousCapsRebuiltActions came to fail on a Friday having passed
+// every day before it.
+func backdateChoreTo(t *testing.T, store *squirrel.Store, choreID int64, at time.Time) {
+	t.Helper()
+	_, err := store.Pool().Exec(context.Background(),
+		`update chores set created_at = $2 where id = $1`, choreID, at)
+	require.NoError(t, err)
+}
+
 func TestApplyCompletesByPosition(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
