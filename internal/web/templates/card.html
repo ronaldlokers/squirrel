@@ -31,6 +31,25 @@
     <span class="stamp" id="stamp"><span class="dot"></span><span id="stampText"></span></span>
   </div>
   <div class="tray">
+    {{/* One question, and the answers are behind it.
+
+         The card used to put eight decision points in front of a note. That is
+         the wrong question asked eight ways: what actually stalls is not which
+         of done, keep, drop, a task, a chore — it is whether you are deciding
+         about this thing at all, right now. So the card asks that, and the
+         answers are one press away for the times you already know.
+
+         Nothing is hidden that was reachable before. LATER is still in the
+         title bar, so skipping never costs an open; the letter keys still act
+         from a shut card, because a key is for the times you already knew; and
+         with no script at all this is a disclosure like every other one here.
+
+         What it costs, said plainly: two presses instead of one for someone
+         who is sure and is using a mouse. That is the trade — a slower expert
+         path for a cheaper stalled one, on a screen whose whole argument is
+         that the scarce resource is deciding. */}}
+    <details class="answer">
+      <summary role="button"><span class="ifshut">WHAT IS THIS?</span><span class="ifopen">never mind</span></summary>
     <form class="row actions" id="actions" method="post" action="/pile/act">
       <input type="hidden" name="id" value="{{.Note.ID}}">
       {{/* Where you were. A transition made three notes down comes back to
@@ -46,34 +65,8 @@
            The disclosure is the scriptless way to ask; pile.js opens it on C
            and gives the chips keys 1-4. */}}
       {{template "everyCard" .}}
-      {{/* Only on a note that looks like several things, and only when there
-           is something to ask. A press that is always there would be a press
-           that is usually wrong. */}}
     </form>
-    {{/* The two ways of not answering, on one line at the foot.
-
-         Both were somewhere else and neither belonged there. "fix the words"
-         was a flex sibling of the note itself, which put an edit control
-         inside the sentence it edits; "i can't act on this" sat alone under
-         the actions as if it were a sixth button. They are the same kind of
-         thing — a way out of the question rather than an answer to it — so
-         they read as one quiet row, and the card above them is four answers
-         and one creation.
-
-         Not a fifth and sixth button in the row above: DESIGN.md's step-down
-         rule exists because that row was getting crowded. Disclosures, in the
-         same grammar the interval question uses — quiet, and changing nothing
-         by being opened. */}}
-    <div class="ways">
-      <details class="reword">
-        <summary role="button"><span class="ifshut" aria-label="Fix the words">fix the words</span><span class="ifopen">never mind</span></summary>
-        <form method="post" action="/pile/fix">
-          <input type="hidden" name="id" value="{{.Note.ID}}">
-          <input type="hidden" name="after" value="{{.After}}">
-          <textarea name="text" rows="3" aria-label="What the note should say">{{.Note.Text}}</textarea>
-          <button class="rewordSave" type="submit">Say it this way</button>
-        </form>
-      </details>
+      {{/* Inside the question, because "I can't" is an answer to it. */}}
       {{if .HeldChips}}
       <details class="cantact">
         <summary role="button"><span class="ifshut">i can't act on this</span><span class="ifopen">never mind</span></summary>
@@ -87,6 +80,24 @@
         </form>
       </details>
       {{end}}
+    </details>
+    {{/* Correcting the words is not an answer to the question, so it sits
+         outside it: it is a repair to the thing being asked about, and it has
+         to be reachable without first saying you are deciding.
+
+         It was a flex sibling of the note itself before this, which put an
+         edit control inside the sentence it edits. Quiet, at the foot, in the
+         same disclosure grammar as everything else here. */}}
+    <div class="ways">
+      <details class="reword">
+        <summary role="button"><span class="ifshut" aria-label="Fix the words">fix the words</span><span class="ifopen">never mind</span></summary>
+        <form method="post" action="/pile/fix">
+          <input type="hidden" name="id" value="{{.Note.ID}}">
+          <input type="hidden" name="after" value="{{.After}}">
+          <textarea name="text" rows="3" aria-label="What the note should say">{{.Note.Text}}</textarea>
+          <button class="rewordSave" type="submit">Say it this way</button>
+        </form>
+      </details>
     </div>
 
     {{if and .Splittable (not .Split)}}

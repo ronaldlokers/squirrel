@@ -50,6 +50,7 @@ var pages = map[string]*template.Template{
 	"held":    page("templates/layout.html", "templates/held.html"),
 	"moods":   page("templates/layout.html", "templates/moods.html"),
 	"empty":   page("templates/layout.html", "templates/empty.html"),
+	"enough":  page("templates/layout.html", "templates/enough.html"),
 	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
 }
 

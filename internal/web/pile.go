@@ -101,6 +101,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
 	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
+	// Stopping. No store, on purpose: a route that cannot read cannot start
+	// keeping score of how much you did before you pressed it.
+	m.Get("/enough", guard(opts, enoughHandler(opts)))
 	m.Get("/tasks", guard(opts, tasksHandler(s, opts)))
 	m.Get("/tasks/done", guard(opts, archiveHandler(s, opts)))
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))

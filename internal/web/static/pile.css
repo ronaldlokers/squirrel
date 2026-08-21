@@ -343,6 +343,50 @@
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row[hidden] { display: none; }
 
+  /* ---------- the question, and the answers behind it ---------- */
+  /*
+   * The card's one control. It is not an answer, so it takes none of the four
+   * exit colours and none of the orange that means something was made — it is
+   * paper, the card's own stock, lifted off it.
+   */
+  .answer > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 52px; padding: 14px 18px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    font: 700 14px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em; text-transform: uppercase;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .answer > summary::-webkit-details-marker { display: none; }
+  .answer > summary:hover { background: var(--paper-deep); }
+  .answer > summary:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
+  /* Open, the question has been answered by being asked — it steps back to a
+     way out, in the same words every other disclosure here uses. */
+  .answer[open] > summary {
+    background: none; border: 0; box-shadow: none;
+    justify-content: flex-start; min-height: 44px; padding: 12px 2px;
+    font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    letter-spacing: 0; text-transform: none;
+    color: var(--brown); text-decoration: underline; text-underline-offset: 3px;
+  }
+  .answer[open] > summary:hover { color: var(--outline); background: none; }
+  .answer[open] > summary:active { transform: none; }
+  /* Direct children only. As a descendant selector this reached inside the
+     nested disclosures too, so opening the question relabelled "i can't act on
+     this" as a second "never mind" sitting under the answers. */
+  .answer > summary .ifopen { display: none; }
+  .answer[open] > summary .ifshut { display: none; }
+  .answer[open] > summary .ifopen { display: inline; }
+  /* Answered. The question and the repair both go, so what is left on the card
+     is the stamp and the way back. */
+  .card.stamped .answer,
+  .card.stamped .ways { display: none; }
+
   .btn {
     font: 700 13px/1 "Recursive", sans-serif;
     font-variation-settings: var(--precise), "wght" 830;
@@ -731,6 +775,12 @@
   /* ---------- the empty pile ---------- */
 
   .empty { width: min(560px, 100%); text-align: center; }
+
+  /* The ending gets a beat before its doors. Every other .ends here is a
+     footer under a list; this one is the last thing on a screen whose whole
+     job is to let you stop, and running it straight on from the sentence
+     hurries the one moment that should not be hurried. */
+  .enough .ends { margin-top: 30px; }
   .empty img {
     width: 186px; height: 140px; display: block; margin: 0 auto 22px;
     filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .3));

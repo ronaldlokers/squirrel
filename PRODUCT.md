@@ -73,10 +73,18 @@ category sells the counter as the feature.
 **Confirmed functionality for this surface:**
 
 - One screen, no navigation. Notes newest-first.
-- Four answers per note: **done · keep · drop · a task** — and one thing you can
-  make from it, **make it a chore**, which takes an interval. Two ways of not
-  answering sit apart from those at the card's foot: correcting the words, and
-  saying you cannot act on it.
+- **One question per note, and the answers behind it.** The card asks *what is
+  this?*; pressing it reveals four answers — **done · keep · drop · a task** —
+  and one thing you can make from it, **make it a chore**, which takes an
+  interval. What stalls is not which of the five, it is whether you are
+  deciding about this thing at all right now, so that is what the card asks.
+  Skipping and the letter keys both work from a shut card; correcting the words
+  sits outside the question, because it is a repair rather than an answer.
+- **Stopping is a place.** "stop whenever you like" is a link to a screen that
+  says this was a normal way to finish. Chosen, never triggered: a screen that
+  appeared after four cards would be a screen with an opinion about how many
+  cards are enough, and that number would be a count wearing a kind face. It
+  reads nothing and reports nothing about what you did.
 - Search across every state, on the same screen.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.

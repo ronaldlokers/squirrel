@@ -13,6 +13,10 @@
   {{/* space is back, and it is keyboard-only on purpose: skipping is the one
        thing here that does nothing to a note, the comp draws no control for
        it, and .keysonly is already hidden where there are no keys. */}}
-  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts &middot; </span>stop whenever you like</p>
+  {{/* "stop whenever you like" is a link now, and that is the whole of the
+       change: it was the sentence carrying the third principle and it was a
+       sentence, so the only way to act on it was to close the tab. Stopping
+       has a place to go now. */}}
+  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts &middot; </span><a href="/enough">stop whenever you like</a></p>
 </section>
 {{end}}
