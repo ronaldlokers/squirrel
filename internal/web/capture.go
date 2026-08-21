@@ -58,6 +58,23 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
+		// Every capture that arrives says so, and this is not debugging left in
+		// by accident.
+		//
+		// A capture that failed used to log one line and a capture that worked
+		// logged none, so "nothing happened" and "the request never got here"
+		// looked identical from the outside — and the difference between them
+		// is the entire diagnosis. Twice now the answer has come from noticing
+		// an absence rather than reading a message.
+		//
+		// Metadata only. The shape of the request, never a word of what was
+		// said: the whole product exists to be a place thoughts are safe, and a
+		// log that quotes them is a second copy nobody asked for.
+		slog.Info("a capture arrived",
+			"content_type", r.Header.Get("Content-Type"),
+			"bytes", r.ContentLength,
+			"transport", "screen")
+
 		// The photograph goes to disk before the capture that references it,
 		// and is fsynced there. So a spool entry never points at a file that
 		// is not on the volume; the other order would give a note that renders
@@ -81,6 +98,11 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// photograph on its own is a capture — that is most of the point of
 		// having one — so it is only the pair being empty that does nothing.
 		if text == "" && photo == "" {
+			// A real no-op — an empty box, pressed. It is also exactly what a
+			// photograph lost on the way in looks like, so it says which it
+			// was rather than redirecting in silence.
+			slog.Info("a capture had nothing in it",
+				"content_type", r.Header.Get("Content-Type"), "bytes", r.ContentLength)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -90,6 +112,9 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// and this one is no different for being typed on the screen. boot
 		// seeds the matching identity.
 		sender := opts.Identity
+
+		slog.Info("a capture is being kept",
+			"photograph", photo != "", "kind", kind, "words", len(text) > 0)
 
 		if _, err := opts.Spool.Write(squirrel.Capture{
 			Transport:  squirrel.ScreenTransport,

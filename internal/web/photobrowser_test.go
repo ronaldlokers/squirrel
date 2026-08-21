@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -357,3 +358,91 @@ func TestBrowserTheCloseButtonIsInsideTheSheet(t *testing.T) {
 		return shut.contains(hit);`)
 	require.Equal(t, true, onTop, "something else is drawn over the close button")
 }
+
+// The close button, in a short window.
+//
+// Read what this does not prove. An emulated viewport has no browser chrome,
+// so vh and dvh resolve to the same number here and this test passes against
+// the code that shipped the bug. It is a guard on the sticky lid, not evidence
+// about a phone; the unit is guarded separately, in the stylesheet, below.
+func TestBrowserTheCloseButtonSurvivesAShortWindow(t *testing.T) {
+	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
+	c := browserAt(t, srv, "/pile")
+
+	// 390 wide, and short: what is left of an iPhone once the address bar and
+	// the home indicator have taken their share.
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+	c.eval(t, `
+		const s = document.querySelector("dialog.coachsheet .sheet");
+		s.scrollTop = s.scrollHeight; return 1;`)
+
+	require.Equal(t, true, c.eval(t, `
+		const r = document.querySelector("dialog.coachsheet .shut").getBoundingClientRect();
+		return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth;`),
+		"the close button is off the visible window")
+
+	// And it is the thing at its own centre, not something drawn over it.
+	require.Equal(t, true, c.eval(t, `
+		const shut = document.querySelector("dialog.coachsheet .shut");
+		const r = shut.getBoundingClientRect();
+		return shut.contains(document.elementFromPoint(r.left + r.width/2, r.top + r.height/2));`),
+		"something covers the close button")
+
+	// Pressing it closes.
+	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
+	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
+}
+
+// The strip of backdrop above the sheet is the other way out, and it has to
+// stay a strip: a sheet that fills the window leaves nothing to press.
+func TestBrowserTheBackdropIsStillReachableOnAShortPhone(t *testing.T) {
+	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
+	c := browserAt(t, srv, "/pile")
+
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.eval(t, `document.querySelector(".askacorn").click()`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	gap := c.eval(t, `
+		const r = document.querySelector("dialog.coachsheet .sheet").getBoundingClientRect();
+		return Math.round(r.top);`)
+	require.GreaterOrEqual(t, gap, float64(44),
+		"no room above the sheet to press the backdrop")
+}
+
+// The sheet is measured in dvh, and this is the only check on it that means
+// anything.
+//
+// vh is the *large* viewport — the height the page would have if the browser's
+// own chrome were hidden. With an address bar on screen, which is most of the
+// time on a phone, a sheet anchored to the bottom at 88vh reaches higher than
+// the window actually shows, and the first thing over the top edge is the lid,
+// where the close button lives.
+//
+// It cannot be caught by driving a browser here: the emulator has no chrome to
+// retract, so both units agree and every geometric test passes either way.
+// That is exactly how this shipped twice. So the assertion is on the source —
+// blunt, and honest about being blunt.
+func TestTheSheetIsMeasuredInDynamicViewportHeight(t *testing.T) {
+	css, err := staticFS.ReadFile("static/pile.css")
+	require.NoError(t, err)
+
+	// Comments stripped first. The prose above this rule explains dvh at
+	// length, so a check on the raw bytes passes whatever the code does — which
+	// is what the first version of this test did.
+	naked := comments.ReplaceAllString(string(css), "")
+	require.Regexp(t, `max-height:\s*[0-9.]+dvh`, naked,
+		"the sheet went back to vh, which is not the height a phone shows")
+	require.NotRegexp(t, `dialog\.coachsheet[^}]*max-height:\s*[0-9.]+vh\s*;\s*}`, naked,
+		"a vh max-height is the last word on the sheet's height")
+}
+
+// CSS comments, for the check above. /* ... */ only; this stylesheet has no
+// other kind.
+var comments = regexp.MustCompile(`(?s)/\*.*?\*/`)

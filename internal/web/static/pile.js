@@ -340,6 +340,7 @@
 
     let drawn = "";
 
+
     function show(file) {
       if (drawn) URL.revokeObjectURL(drawn);
       drawn = URL.createObjectURL(file);
@@ -354,8 +355,22 @@
       shown.hidden = true;
     }
 
+    // Multipart only when there is actually a photograph in it.
+    //
+    // The worker forwards multipart captures straight to the network, because
+    // the only thing it can hold offline is the words and a photograph would
+    // be silently dropped out of one. A slot that always claimed multipart
+    // would therefore give up the offline hold on every words-only capture,
+    // which is the case the hold exists for.
+    function enctypeFor() {
+      form.enctype = input.files?.length
+        ? "multipart/form-data"
+        : "application/x-www-form-urlencoded";
+    }
+
     input.addEventListener("change", () => {
       const file = input.files?.[0];
+      enctypeFor();
       if (!file) { hide(); forget().catch(() => {}); return; }
       show(file);
       // Deliberately not awaited before the picture appears: the screen must
@@ -366,6 +381,7 @@
 
     off.addEventListener("click", () => {
       input.value = "";
+      enctypeFor();
       hide();
       forget().catch(() => {});
     });
@@ -386,6 +402,7 @@
         const carrier = new DataTransfer();
         carrier.items.add(file);
         input.files = carrier.files;
+        enctypeFor();
         if (input.files.length) show(file);
       } catch {
         // No IndexedDB, a private window, a browser that will not take files
@@ -393,6 +410,12 @@
         // this started.
       }
     })();
+
+    // A slot that starts empty starts urlencoded, whatever the markup said.
+    // Without this the first capture of a session — the words-only one, typed
+    // before any photograph has been chosen — would still go out as multipart
+    // and lose its offline hold.
+    enctypeFor();
   })();
 
   // ---- the chores screen -------------------------------------------------
