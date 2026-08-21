@@ -25,7 +25,7 @@
            A details disclosure does the revealing with no script at all; the
            stylesheet steps the other two actions aside. */}}
       <details class="often">
-        <summary role="button"><span class="ifshut">HOW OFTEN <span class="key" aria-hidden="true">O</span></span><span class="ifopen">never mind</span></summary>
+        <summary><span class="ifshut">HOW OFTEN <span class="key" aria-hidden="true">O</span></span><span class="ifopen">never mind</span></summary>
         <div class="chips">
           <span class="lead">COMES BACK</span>
           {{/* Cap purple marks where the interval currently sits. Purple is
@@ -49,7 +49,7 @@
          resource. A resting chore is two answers and a way out; how long you
          want to go for is a question you have already decided to be asked. */}}
     <details class="gofor">
-      <summary role="button"><span class="ifshut">go for a bit</span><span class="ifopen">never mind</span></summary>
+      <summary><span class="ifshut">go for a bit</span><span class="ifopen">never mind</span></summary>
       <form class="timerRow" method="post" action="/timer">
         <input type="hidden" name="label" value="{{.Name}}">
         <input type="hidden" name="from" value="chores">

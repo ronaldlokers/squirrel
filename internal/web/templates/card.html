@@ -49,7 +49,7 @@
          path for a cheaper stalled one, on a screen whose whole argument is
          that the scarce resource is deciding. */}}
     <details class="answer">
-      <summary role="button"><span class="ifshut">WHAT IS THIS?</span><span class="ifopen">never mind</span></summary>
+      <summary><span class="ifshut">WHAT IS THIS?</span><span class="ifopen">never mind</span></summary>
     <form class="row actions" id="actions" method="post" action="/pile/act">
       <input type="hidden" name="id" value="{{.Note.ID}}">
       {{/* Where you were. A transition made three notes down comes back to
@@ -69,7 +69,7 @@
       {{/* Inside the question, because "I can't" is an answer to it. */}}
       {{if .HeldChips}}
       <details class="cantact">
-        <summary role="button"><span class="ifshut">i can't act on this</span><span class="ifopen">never mind</span></summary>
+        <summary><span class="ifshut">i can't act on this</span><span class="ifopen">never mind</span></summary>
         <form class="whys" method="post" action="/held/act">
           <input type="hidden" name="id" value="{{.Note.ID}}">
           <input type="hidden" name="from" value="/pile">
@@ -90,7 +90,7 @@
          same disclosure grammar as everything else here. */}}
     <div class="ways">
       <details class="reword">
-        <summary role="button"><span class="ifshut" aria-label="Fix the words">fix the words</span><span class="ifopen">never mind</span></summary>
+        <summary><span class="ifshut" aria-label="Fix the words">fix the words</span><span class="ifopen">never mind</span></summary>
         <form method="post" action="/pile/fix">
           <input type="hidden" name="id" value="{{.Note.ID}}">
           <input type="hidden" name="after" value="{{.After}}">

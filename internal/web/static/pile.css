@@ -180,12 +180,21 @@
     flex: 1; display: flex; justify-content: center; align-items: center;
     padding: 58px 22px 48px;
   }
-  /* Centred until it does not fit, and then aligned to the top. A centred flex
-     child that overflows puts its own head above the scroll origin, where
-     nothing can scroll to it — a long enough note lost its first line that
-     way. `safe` is the one-word version of that rule; a browser without it
-     keeps the plain `center` above and the old behaviour with it. */
-  main { align-items: safe center; }
+  /* Top by default; centred only for the deck.
+   *
+   * Everything was centred, which was right when the pile was one card and the
+   * only screen. With thirteen screens that have titles it left 230px of empty
+   * field above the pile's own heading and spent a 900px desktop viewport on
+   * one 20px row of moods — the app read as unfinished in exactly the view you
+   * would show someone.
+   *
+   * The deck keeps it, because one card floating in the middle of the field is
+   * the shoebox's composition rather than a layout default. `safe` so that a
+   * card taller than the window is top-aligned instead: a centred flex child
+   * that overflows puts its own head above the scroll origin, where nothing
+   * can reach it, and a long enough note lost its first line that way. */
+  main { align-items: flex-start; padding-top: 40px; }
+  main:has(> .shoebox) { align-items: safe center; padding-top: 58px; }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
 
   .shoebox { width: min(720px, 100%); }
@@ -512,6 +521,12 @@
   /* ---------- the chores: what comes back ---------- */
 
   .chorebox { width: min(720px, 100%); }
+  /* held and moods. They had no width rule at all, so as flex children of a
+     centred main they shrank to their content: measured at 1280px, held
+     rendered 440px at x=420 and moods 227px at x=526, against everyone else's
+     720px at x=280. Not merely narrow — not even the same width as each
+     other, because the width was whatever the words happened to need. */
+  .every { width: min(720px, 100%); }
 
   /* ---------- a chore card ---------- */
 
@@ -627,10 +642,15 @@
     user-select: none;
   }
   .often > summary::-webkit-details-marker { display: none; }
+  /* A disclosure is not a button: it opens something here and changes
+     nothing on the server. It was filled amber, which is what this world uses
+     for a thing that has been done to a row — so the loudest control on a
+     chore card was the one with no consequence. Outlined, like every other
+     disclosure, and the chevron says the rest. */
   .often:not([open]) > summary {
-    background: var(--kept); color: var(--outline);
+    background: var(--paper); color: var(--outline);
   }
-  .often:not([open]) > summary:hover { background: #ffc12e; }
+  .often:not([open]) > summary:hover { background: var(--paper-deep); }
   .often:not([open]) > summary:active {
     transform: translateY(4px); box-shadow: none;
     background: var(--violet-ink); color: var(--paper);
@@ -2253,6 +2273,11 @@
   margin: -8px 0 20px;
 }
 .view {
+  /* 44px, like everything else that is pressed. It was a bare inline anchor
+     at 20.9px — 47% of the minimum — and it is the only way from a screen to
+     its own sub-views: the shelf, the archive, what you cannot act on. */
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 4px 0;
   font-size: 13.5px;
   font-variation-settings: var(--precise), "wght" 600;
   color: var(--cream);
@@ -2458,3 +2483,50 @@
 .homebox > .slot { margin-top: 0; margin-bottom: 4px; }
 .doors { margin-top: 26px; }
 
+
+  /* The way back in, on an ending. Underlined text below the door out, so the
+     screen has an opinion about which of the two it is for. */
+  .enough .onemore { margin-top: 14px; }
+  .enough .onemore a {
+    font-size: 13.5px;
+    font-variation-settings: var(--precise), "wght" 560;
+    color: var(--cream);
+    text-decoration: underline; text-underline-offset: 3px;
+    text-decoration-color: rgba(254, 214, 167, .45);
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .enough .onemore a:hover { color: var(--paper); }
+
+  /* The three kinds, under the screen's own title rather than over it.
+     `.lead` is the meta role and is set in cream at 11.5px everywhere it is
+     used — except here, where it was reaching a heading in large white caps
+     and out-shouting the <h1> above it. Semantic order and visual order
+     disagreeing is worse than either being wrong on its own. */
+  .every .heldgroup {
+    margin: 26px 0 12px;
+    font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 760;
+    color: var(--cream);
+  }
+  .every .heldgroup:first-of-type { margin-top: 4px; }
+
+  /* Each day is one row and its width is the frame's, not the words'. */
+  .aday .when { min-width: 8em; }
+
+  /* The door out of the ending, and it is the point of the room. Orange
+     because leaving is the thing this screen is for — the one place in the
+     product where going is what was made. */
+  .enough .leavehere {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 52px; padding: 14px 26px;
+    background: var(--orange); color: var(--white);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 5px 0 0 var(--outline);
+    font: 700 14px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 830;
+    letter-spacing: .08em; text-transform: uppercase;
+    text-decoration: none;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
+  }
+  .enough .leavehere:hover { background: var(--orange-lit); }
+  .enough .leavehere:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline); }

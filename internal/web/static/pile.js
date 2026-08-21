@@ -453,7 +453,17 @@
     const box = form.querySelector("textarea");
     if (!said || !post) return;
 
-    const words = { kept: "kept", held: "no network — I have it. it goes in when you are back.", nokeep: "not kept — Squirrel cannot reach its memory. your words are still here.", nophoto: "that photograph was not kept — too big, or a kind Squirrel does not take. your words are still here." };
+    // Word for word what the server renders, because the comment below has
+    // always claimed they were the same and they were not: this path dropped
+    // "try again in a moment" and "keep them without it, or try another
+    // picture" — the sentence that says what to do — from both failures, on
+    // the path nearly every session takes. A test pins them together now.
+    const words = {
+      kept: "kept",
+      held: "No network — I have it. It goes in when you are back.",
+      nokeep: "Not kept — Squirrel cannot reach its memory. Your words are still here; try again in a moment.",
+      nophoto: "That photograph was not kept — too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture.",
+    };
     let telling = 0;
 
     function tell(which) {
