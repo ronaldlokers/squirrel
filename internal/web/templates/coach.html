@@ -19,9 +19,21 @@
     {{/* Closing means the conversation is over. It does not mean anything
          else: nothing is counted, the acorn does not dim, and nothing goes
          quiet. */}}
+    {{/* A cross, not the word. It is the one control in the lid and it is the
+         way out of a sheet — the shape everybody already reads without being
+         told, in the top-right corner where they already look for it.
+
+         Drawn rather than a multiplication sign borrowed from a font: it
+         matches the camera's stroke, and a glyph would sit at whatever weight
+         and baseline the typeface felt like. */}}
     <form method="post" action="/buddy/close">
       <input type="hidden" name="from" value="{{.From}}">
-      <button class="shut" type="submit" aria-label="Close Buddy">close</button>
+      <button class="shut" type="submit">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+          <path d="M4 4l10 10M14 4L4 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        <span class="offscreen">Close Buddy</span>
+      </button>
     </form>
   </div>
 

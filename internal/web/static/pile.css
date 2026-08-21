@@ -1710,15 +1710,18 @@
     font-weight: 900; font-size: 17px; letter-spacing: -.01em;
   }
   .sheetlid .spacer { flex: 1; }
+  /* The way out, as a control rather than a sentence: a 44px target in the
+     corner people already reach for. */
   .shut {
-    min-height: 44px; padding: 8px 12px;
-    background: none; border: 0; cursor: pointer;
-    color: var(--brown);
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 620;
-    text-decoration: underline; text-underline-offset: 3px;
+    flex: none;
+    width: 44px; height: 44px; padding: 0;
+    display: grid; place-items: center;
+    background: none; border: 0; border-radius: 999px;
+    color: var(--brown); cursor: pointer;
+    transition: background-color 90ms ease-out, color 90ms ease-out;
   }
-  .shut:hover { color: var(--outline); }
+  .shut:hover { background: var(--paper-deep); color: var(--outline); }
+  .shut:active { background: var(--card-deep); }
 
   .talk { display: flex; flex-direction: column; gap: 12px; }
 
