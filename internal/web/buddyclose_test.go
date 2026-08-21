@@ -29,7 +29,23 @@ func openBuddy(t *testing.T, w, h int) *cdp {
 }
 
 const shut = `document.querySelector("dialog.coachsheet .shut")`
-const isOpen = `!!document.querySelector("dialog.coachsheet[open]")`
+
+// Whether the sheet is *on the screen*, which is not the same question as
+// whether it has the open attribute.
+//
+// It is the question every test of this asked wrongly for three releases. The
+// dialog closed correctly every time — the press landed, [open] came off, the
+// backdrop went — and the sheet stayed visible because the stylesheet said
+// display: flex and an author display value beats the browser's own
+// `dialog:not([open]) { display: none }`. Every assertion passed while the
+// thing they were about sat there in front of the owner.
+const isOpen = `(() => {
+	const d = document.querySelector("dialog.coachsheet");
+	return !!d && d.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+})()`
+
+// And the attribute, separately, so a failure says which of the two broke.
+const hasOpenAttribute = `!!document.querySelector("dialog.coachsheet[open]")`
 
 // The way out is a control with a name, not a word in a corner.
 func TestBrowserTheWayOutIsACrossWithALabel(t *testing.T) {
@@ -96,4 +112,55 @@ func TestBrowserEscapeStillClosesBuddy(t *testing.T) {
 	c := openBuddy(t, 1280, 900)
 	c.key(t, "Escape")
 	c.until(t, "the sheet to close", `!(`+isOpen+`)`)
+}
+
+// Shut means gone from the screen, not merely gone from the DOM's attributes.
+//
+// This is the test that was missing. It is deliberately two assertions: the
+// attribute and the render are different facts, and for three releases the
+// first was right while the second was wrong.
+func TestBrowserAClosedSheetIsActuallyGone(t *testing.T) {
+	for _, size := range []struct {
+		name string
+		w, h int
+	}{
+		// The panel and the bottom sheet are different layouts and only one of
+		// them was ever looked at. The report came from a tablet.
+		{"tablet", 1130, 744},
+		{"phone", 390, 700},
+	} {
+		t.Run(size.name, func(t *testing.T) {
+			c := openBuddy(t, size.w, size.h)
+			require.Equal(t, true, c.eval(t, `return `+isOpen))
+
+			c.eval(t, shut+`.click()`)
+			c.until(t, "the sheet to leave the screen", `!(`+isOpen+`)`)
+			require.Equal(t, false, c.eval(t, `return `+hasOpenAttribute))
+		})
+	}
+}
+
+// Escape and the backdrop have to leave it just as gone.
+func TestBrowserEveryWayOutLeavesItGone(t *testing.T) {
+	c := openBuddy(t, 1130, 744)
+	c.key(t, "Escape")
+	c.until(t, "the sheet to leave the screen", `!(`+isOpen+`)`)
+}
+
+// The acorn has nothing to offer while the conversation is open, and on a wide
+// screen it sat directly on top of the sheet's own send button.
+func TestBrowserTheAcornStandsAsideForTheSheet(t *testing.T) {
+	c := openBuddy(t, 1130, 744)
+
+	require.Equal(t, false, c.eval(t, `
+		const a = document.querySelector(".askacorn");
+		return !!a && a.checkVisibility({ checkVisibilityCSS: true });`),
+		"the acorn is still on screen over the sheet")
+
+	c.eval(t, shut+`.click()`)
+	c.until(t, "the sheet to leave the screen", `!(`+isOpen+`)`)
+	require.Equal(t, true, c.eval(t, `
+		const a = document.querySelector(".askacorn");
+		return !!a && a.checkVisibility({ checkVisibilityCSS: true });`),
+		"the acorn did not come back")
 }

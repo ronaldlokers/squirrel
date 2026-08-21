@@ -84,6 +84,21 @@
     background-attachment: fixed;
   }
 
+  /* Hidden means hidden, whatever else this file says.
+   *
+   * The browser hides `[hidden]` with a plain `display: none`, which any
+   * author rule that sets a display value silently beats. That has now cost
+   * three bugs in one week — a photograph preview that stayed after it was
+   * kept, a dialog that closed and remained on screen for three releases, and
+   * an action row that had already needed `.row[hidden]` written by hand to
+   * work around the same thing.
+   *
+   * !important is the point rather than a shortcut: this rule exists to win
+   * against a rule written later by someone who was thinking about layout and
+   * not about the moment the element goes away.
+   */
+  [hidden] { display: none !important; }
+
   /* The browser's own surfaces belong to the design too. */
   ::selection { background: var(--orange); color: var(--white); }
   ::-webkit-scrollbar { width: 14px; }
@@ -1782,7 +1797,26 @@
     max-width: none; max-height: none;
     color: var(--outline);
   }
+  /* Shut means gone, and it has to be said here because the rule below says
+     display: flex unconditionally — an author display value beats the
+     browser's own `dialog:not([open]) { display: none }`.
+     
+     This is what "closing Buddy does not work" was, through three releases
+     and two wrong diagnoses. The dialog *did* close every time: the press
+     landed, close() ran, [open] came off, the backdrop went. The sheet then
+     stayed exactly where it was, because this file was still telling it to
+     display. From the outside that is a close button that does nothing.
+     
+     Every test of it asked whether dialog[open] was gone. It was. The
+     attribute was never the thing that was wrong, and asking the DOM instead
+     of the render is the same mistake that hid .gotphoto[hidden] and the
+     bounding-rect check on the sticky lid. Three in one week: when a thing is
+     meant to disappear, ask whether it is *visible*. */
+  dialog.coachsheet:not([open]) { display: none; }
   dialog.coachsheet::backdrop { background: rgba(28, 17, 11, .55); }
+  /* Nothing to ask while you are already asking, and on a wide screen the
+     acorn sits directly on top of the sheet's own send button. */
+  body:has(dialog.coachsheet[open]) .askacorn { display: none; }
 
   /* A right panel where there is room for one. The page stays visible and in
      place: the conversation is about what is on the screen behind it. */
