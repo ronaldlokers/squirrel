@@ -41,15 +41,23 @@
     </form>
     {{/* A body double, on the thing you are about to do. It says go and then
          says nothing until the end — nothing is kept about it, and stopping
-         halfway is a normal ending. */}}
-    <form class="timerRow" method="post" action="/timer">
-      <input type="hidden" name="label" value="{{.Name}}">
-      <input type="hidden" name="from" value="chores">
-      <span class="lead">GO FOR</span>
-      <button class="tbtn" name="minutes" value="5">5 min</button>
-      <button class="tbtn" name="minutes" value="10">10 min</button>
-      <button class="tbtn" name="minutes" value="20">20 min</button>
-    </form>
+         halfway is a normal ending.
+
+         Behind the same disclosure the interval question uses, because three
+         chores each showing three lengths put eighteen controls on one screen
+         and the product's own note on this says decision load is the scarce
+         resource. A resting chore is two answers and a way out; how long you
+         want to go for is a question you have already decided to be asked. */}}
+    <details class="gofor">
+      <summary role="button"><span class="ifshut">go for a bit</span><span class="ifopen">never mind</span></summary>
+      <form class="timerRow" method="post" action="/timer">
+        <input type="hidden" name="label" value="{{.Name}}">
+        <input type="hidden" name="from" value="chores">
+        <button class="tbtn" name="minutes" value="5">5 min</button>
+        <button class="tbtn" name="minutes" value="10">10 min</button>
+        <button class="tbtn" name="minutes" value="20">20 min</button>
+      </form>
+    </details>
   </article>
   {{end}}
 

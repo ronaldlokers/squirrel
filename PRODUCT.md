@@ -51,10 +51,14 @@ category sells the counter as the feature.
 
 ## Operating Context
 
-- Capture happens **only** in Campfire. This screen never accepts a new note, and
-  that is permanent rather than a current limitation: two capture surfaces means
-  two places to look for a thought, which is the problem the product exists to
-  solve.
+- Capture happens in **both** places. It was Campfire only for the screen's whole
+  life, and the reasoning is worth keeping rather than deleting: two capture
+  surfaces means two places to look for a thought, which is the problem the
+  product exists to solve. The owner overruled it on 20 August 2026, choosing a
+  slot on this screen over a relay through Campfire. What makes that survivable
+  is that both surfaces write the same row to the same table through the same
+  fsynced spool — one pile with two doors into it. What it costs is that the
+  Campfire room stops being the complete record.
 - Reached at `squirrel.ronaldlokers.nl`, LAN-only via a Traefik ipAllowList,
   behind Authentik forward-auth. Runs in a homelab Kubernetes cluster.
 - The same notes are also reachable from chat: `!notes`, `!find <text>`,
@@ -69,8 +73,18 @@ category sells the counter as the feature.
 **Confirmed functionality for this surface:**
 
 - One screen, no navigation. Notes newest-first.
-- Four actions per note: **done · drop · keep · make it a chore.** The chore
-  action takes an interval.
+- **One question per note, and the answers behind it.** The card asks *what is
+  this?*; pressing it reveals four answers — **done · keep · drop · a task** —
+  and one thing you can make from it, **make it a chore**, which takes an
+  interval. What stalls is not which of the five, it is whether you are
+  deciding about this thing at all right now, so that is what the card asks.
+  Skipping and the letter keys both work from a shut card; correcting the words
+  sits outside the question, because it is a repair rather than an answer.
+- **Stopping is a place.** "stop whenever you like" is a link to a screen that
+  says this was a normal way to finish. Chosen, never triggered: a screen that
+  appeared after four cards would be a screen with an opinion about how many
+  cards are enough, and that number would be a count wearing a kind face. It
+  reads nothing and reports nothing about what you did.
 - Search across every state, on the same screen.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.

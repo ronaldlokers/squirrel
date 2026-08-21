@@ -98,6 +98,11 @@
     // showing; the class does the hiding, and neither exists without this file.
     function choosing(open) {
       if (open !== every.open) announce(open ? "how often should it come back?" : "never mind");
+      // The answers live behind the card's one question now, so asking for an
+      // interval from a shut card has to open that first — otherwise C opens a
+      // disclosure nobody can see. The four letters need no such thing: they
+      // act, and an acting card hides its whole tray.
+      if (open) { const gate = card.querySelector("details.answer"); if (gate) gate.open = true; }
       every.open = open;
       form.classList.toggle("choosing", open);
       neverMind.hidden = !open;
