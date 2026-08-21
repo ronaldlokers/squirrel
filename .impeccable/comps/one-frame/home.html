@@ -1,0 +1,162 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel</title>
+<link rel="stylesheet" href="../../../internal/web/static/pile.css">
+
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="../../../internal/web/static/apple-touch-icon.png">
+<meta name="theme-color" content="#3b2560">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
+  <link rel="stylesheet" href="../one-frame-delta.css">
+</head>
+<body>
+<div class="lid">
+  
+  <span class="brand">
+    <img alt="" src="../../../internal/web/static/logo.png" width="84" height="63">
+    <span class="wordmark">Squirrel</span>
+  </span>
+  
+  <span class="spacer"></span>
+  
+  
+  
+  
+  
+  <form class="find" method="get" action="/pile" role="search">
+    <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+      <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"></circle>
+      <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"></path>
+    </svg>
+    <input type="search" name="q" value="" placeholder="every note, any state" aria-label="Search every note">
+  </form>
+  <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"></path>
+    <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+  </svg>
+</div>
+
+<p id="say" class="offscreen" role="status" aria-live="polite"></p>
+<main id="stage" class="">
+
+
+
+<div class="homebox">
+  
+  <div class="checkin">
+    
+    
+    
+    <section class="offer" aria-label="Right now">
+      <p class="lead">RIGHT NOW</p>
+      <p class="what">ring the vet about the booster</p>
+      <p class="because">you decided this on tuesday</p>
+      
+      <form class="oacts" method="post" action="/now/act">
+        <input type="hidden" name="kind" value="task">
+        <input type="hidden" name="id" value="6">
+        <input type="hidden" name="label" value="ring the vet about the booster">
+        
+        <input type="hidden" name="minutes" value="10">
+        
+        
+        <button class="obtn did" name="act" value="did">DID IT</button>
+        <button class="obtn go" name="act" value="start">10 MIN</button>
+        <button class="obtn later" name="act" value="later">not now</button>
+        
+      </form>
+
+      
+      
+      
+      
+      <details class="cantstart">
+        <summary role="button"><span class="ifshut">i can't start</span><span class="ifopen">never mind</span></summary>
+        <form class="whys" method="post" action="/now/stuck">
+          <input type="hidden" name="kind" value="task">
+          <input type="hidden" name="id" value="6">
+          <p class="lead">WHAT IS IN THE WAY</p>
+          <button class="why" name="why" value="big">too big</button>
+          <button class="why" name="why" value="how">don’t know how</button>
+          <button class="why" name="why" value="boring">boring</button>
+          <button class="why" name="why" value="not today">not today</button>
+        </form>
+      </details>
+      
+      
+      
+    </section>
+    
+    
+  </div>
+
+  
+  <nav class="doors" aria-label="The three things the box holds">
+    <a class="door" href="/pile">
+      
+      <span class="art"><img alt="" src="../../../internal/web/static/door-pile.png" width="342" height="256"></span>
+      <span class="label">
+        <span class="name">the pile</span>
+        <span class="what">what you said</span>
+      </span>
+    </a>
+    <a class="door" href="/tasks">
+      <span class="art"><img alt="" src="../../../internal/web/static/door-tasks.png" width="302" height="256"></span>
+      <span class="label">
+        <span class="name">the tasks</span>
+        <span class="what">what you decided</span>
+      </span>
+    </a>
+    <a class="door" href="/chores">
+      <span class="art"><img alt="" src="../../../internal/web/static/door-chores.png" width="326" height="256"></span>
+      <span class="label">
+        <span class="name">the chores</span>
+        <span class="what">what comes back</span>
+      </span>
+    </a>
+  </nav>
+
+  
+  
+  <form class="slot" method="post" action="/capture" enctype="application/x-www-form-urlencoded">
+    <textarea name="text" rows="1" placeholder="tell me a thing" aria-label="Tell Squirrel a thing" style="height: 42px;"></textarea>
+    
+    
+    <label class="camera" title="Add a photograph">
+      <input type="file" name="photo" accept="image/*">
+      <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
+        <path d="M2 5.5h4.2L8 3h8l1.8 2.5H22v12H2z" fill="none" stroke="#1c110b" stroke-width="2.4" stroke-linejoin="round"></path>
+        <circle cx="12" cy="11" r="3.6" fill="none" stroke="#1c110b" stroke-width="2.4"></circle>
+      </svg>
+      <span class="offscreen">Add a photograph</span>
+    </label>
+    
+    <button class="post" type="submit">Keep it</button>
+
+    
+    <p class="slotsaid" id="slotsaid" role="status" hidden="">kept</p>
+    
+    
+    
+    
+    
+  
+
+
+  
+  
+
+<div class="gotphoto" hidden=""><img alt="the photograph you are about to keep"><button type="button" class="unphoto">take it off</button></div></form></div>
+
+</main>
+
+
+<a class="askacorn" href="/buddy?from=%2f" aria-label="Ask Buddy">
+  <img alt="" src="../../../internal/web/static/logo.png" width="46" height="35">
+</a>
+
+
+
+</body></html>

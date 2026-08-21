@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel</title>
+<link rel="stylesheet" href="../../../internal/web/static/pile.css">
+
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="../../../internal/web/static/apple-touch-icon.png">
+<meta name="theme-color" content="#3b2560">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
+  <link rel="stylesheet" href="../one-frame-delta.css">
+</head>
+<body>
+<div class="lid">
+  
+  
+  <a class="brand" href="/">
+    <img alt="" src="../../../internal/web/static/logo.png" width="84" height="63">
+    <span class="wordmark">Squirrel</span>
+  </a>
+  
+  <span class="spacer"></span>
+  
+  
+  
+  
+  <a class="lidlink" href="/tasks">the tasks</a>
+  
+  <a class="lidlink" href="/chores">the chores</a>
+  
+  
+  <form class="find" method="get" action="/pile" role="search">
+    <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+      <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"></circle>
+      <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"></path>
+    </svg>
+    <input type="search" name="q" value="" placeholder="every note, any state" aria-label="Search every note">
+  </form>
+  <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"></path>
+    <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+  </svg>
+</div>
+
+<p id="say" class="offscreen" role="status" aria-live="polite"></p>
+<main id="stage" class="">
+
+
+
+<section class="empty">
+  <img alt="" src="../../../internal/web/static/logo.png" width="186" height="140">
+  <h1>nothing in the pile</h1>
+  <p>it fills up again on its own. search still finds everything you have ever said.</p>
+  <p class="ends"><a href="/kept">the things you kept</a> · <a href="/chores">the chores</a></p>
+</section>
+
+</main>
+
+
+<a class="askacorn" href="/buddy?from=%2fpile" aria-label="Ask Buddy">
+  <img alt="" src="../../../internal/web/static/logo.png" width="46" height="35">
+</a>
+
+
+
+</body></html>

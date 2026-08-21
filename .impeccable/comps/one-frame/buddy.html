@@ -1,0 +1,128 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel</title>
+<link rel="stylesheet" href="../../../internal/web/static/pile.css">
+
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="../../../internal/web/static/apple-touch-icon.png">
+<meta name="theme-color" content="#3b2560">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
+  <link rel="stylesheet" href="../one-frame-delta.css">
+</head>
+<body>
+<div class="lid">
+  
+  
+  <a class="brand" href="/">
+    <img alt="" src="../../../internal/web/static/logo.png" width="84" height="63">
+    <span class="wordmark">Squirrel</span>
+  </a>
+  
+  <span class="spacer"></span>
+  
+  
+  
+  
+  <a class="lidlink" href="/tasks">the tasks</a>
+  
+  <a class="lidlink" href="/chores">the chores</a>
+  
+  
+  <form class="find" method="get" action="/pile" role="search">
+    <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true">
+      <circle cx="7" cy="7" r="5" fill="none" stroke="#1c110b" stroke-width="2.6"></circle>
+      <path d="M11 11 L15.5 15.5" stroke="#1c110b" stroke-width="2.6" stroke-linecap="round"></path>
+    </svg>
+    <input type="search" name="q" value="" placeholder="every note, any state" aria-label="Search every note">
+  </form>
+  <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"></path>
+    <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+  </svg>
+</div>
+
+<p id="say" class="offscreen" role="status" aria-live="polite"></p>
+<main id="stage" class="scrolling ">
+
+
+
+
+
+<section class="sheet" aria-label="Buddy">
+
+  <div class="sheetlid">
+    <img class="acornmark" alt="" src="../../../internal/web/static/logo.png" width="36" height="27">
+    <span class="sheetname">Buddy</span>
+    <span class="spacer"></span>
+    
+    <span class="spend" title="what Buddy has cost this month">€0.61 of €10</span>
+    
+    
+    <form method="post" action="/buddy/close">
+      <input type="hidden" name="from" value="/">
+      <button class="shut" type="submit">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+          <path d="M4 4l10 10M14 4L4 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+        </svg>
+        <span class="offscreen">Close Buddy</span>
+      </button>
+    </form>
+  </div>
+
+  <div class="talk">
+    
+    
+    <div class="onscreen">
+      <p class="lead">ON SCREEN</p>
+      <p class="what">ring the vet about the booster</p>
+      <p class="because">you decided this on tuesday</p>
+    </div>
+    
+
+    
+    
+    <p class="mine">I cannot start the tax thing</p>
+    <p class="his">Open the envelope and read the first line.</p>
+    
+
+    
+    
+
+    
+    
+
+    
+    
+  </div>
+
+  
+  <form class="whys" method="post" action="/buddy/say">
+    
+    
+    <button class="why" name="why" value="big">too big</button>
+    
+    <button class="why" name="why" value="how">don't know how</button>
+    
+    <button class="why" name="why" value="boring">boring</button>
+    
+    <button class="why" name="why" value="not today">not today</button>
+    
+  </form>
+
+  
+  <form class="slot say" method="post" action="/buddy/say">
+    <textarea name="said" rows="2" placeholder="what is going on" aria-label="Tell Buddy what is going on" style="height: 42px;"></textarea>
+    <button class="post" type="submit">Say it</button>
+  </form>
+
+</section>
+
+
+</main>
+
+
+
+
+</body></html>
