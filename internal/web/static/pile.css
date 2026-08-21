@@ -1819,12 +1819,29 @@
 
   @media (max-width: 620px) {
     /* A bottom sheet on a phone, because that is where the thumb is. */
+    /* dvh, not vh, and that is the whole of "I still can't close Buddy".
+     *
+     * vh is the large viewport: the height the page would have if the
+     * browser's own chrome were hidden. With an address bar on screen — which
+     * is most of the time on a phone — an 88vh sheet anchored to the bottom
+     * reaches higher than the window actually shows, and the first thing to go
+     * over the top edge is the lid, which is where the close button lives. It
+     * looked pinned in a headless window at exactly 390x844 because there is
+     * no browser chrome there at all.
+     *
+     * dvh is the height that is really visible right now, so the sheet ends
+     * where the screen does.
+     */
     dialog.coachsheet {
       inset: auto 0 0 0;
-      width: 100%; height: auto; max-height: 88vh;
+      width: 100%; height: auto;
+      max-height: 88vh;
+      max-height: 85dvh;
     }
     dialog.coachsheet .sheet {
-      height: auto; max-height: 88vh;
+      height: auto;
+      max-height: 88vh;
+      max-height: 85dvh;
       border-radius: var(--r) var(--r) 0 0;
       border-right: var(--line) solid var(--outline);
       border-bottom: 0;

@@ -117,7 +117,25 @@ self.addEventListener("fetch", event => {
   // A capture with no network is held rather than lost. The page is told by
   // the redirect it gets back, which is the same shape the server's own
   // answers take — one path through the page's code, whoever answered.
-  if (request.method === "POST" && new URL(request.url).pathname === "/capture") {
+  //
+  // Words only. A capture carrying a photograph goes straight past this and
+  // out to the network like any other request, and that is a correctness rule
+  // rather than an optimisation: everything below can hold is `text`, so the
+  // one thing this could do with a photograph is drop it. It did exactly that.
+  // A photograph on its own has no text at all, so the branch that decides
+  // there was nothing to keep fired and answered a 303 to "/" — which is a
+  // page that jumps to the top and shows no note, from a capture that never
+  // reached the server.
+  //
+  // The photograph's durability is not lost by staying out of here. pile.js
+  // holds a chosen photograph in IndexedDB from the moment it is picked and
+  // puts it back on the input when the page comes back, so a failed post
+  // leaves both the words and the picture on the screen to try again.
+  //
+  // Multipart is the test rather than "has a file part", because reading the
+  // body to find out would consume the very request being forwarded.
+  if (request.method === "POST" && new URL(request.url).pathname === "/capture" &&
+      !(request.headers.get("Content-Type") || "").startsWith("multipart/")) {
     event.respondWith((async () => {
       const copy = request.clone();
       try {
