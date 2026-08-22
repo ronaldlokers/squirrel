@@ -12,7 +12,9 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// `!stuck` is the ladder's chat half. Feature parity is a standing rule.
+// `!stuck` is the ladder's chat half. Parity relaxed in one direction on 22
+// August — the screen may exceed chat — but this one is on the floor chat
+// keeps: answering a nudge is one of the five.
 
 func TestStuckAsksOnceAndOffersTheFour(t *testing.T) {
 	store := withStore(t)

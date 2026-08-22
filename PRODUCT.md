@@ -61,6 +61,16 @@ category sells the counter as the feature.
   Campfire room stops being the complete record.
 - Reached at `squirrel.ronaldlokers.nl`, LAN-only via a Traefik ipAllowList,
   behind Authentik forward-auth. Runs in a homelab Kubernetes cluster.
+- **The phone is on an always-on VPN into the homelab**, which is what makes
+  LAN-only compatible with the second usage scene. Recorded 22 August 2026
+  because it had never been written down and the two halves of this document
+  contradicted each other without it: the screen is reachable only from the
+  LAN, and one of the two confirmed scenes is a phone in a queue. It is a
+  precondition of "phone primary" rather than an incidental fact about the
+  network, and if it ever stops being true the answer is an architecture
+  decision, not a paragraph. Without it: capture still survives, held in the
+  service worker until the phone is home; the pile is unreadable; and a push
+  notification tapped in that queue opens a page that refuses to load.
 - The same notes are also reachable from chat: `!notes`, `!find <text>`,
   `done <n>`, `keep <n>`, `drop <n>`, `!chore <n> every <interval>`. The screen
   and the chat commands are two views of one pile and must agree.
@@ -186,10 +196,40 @@ deleted, and every step of that reverses.
 load-bearing — a serial number or a link is not a task and will never be done, so
 without it every reference note sits in triage forever.
 
-**Feature parity is a standing rule.** Anything you can do in chat you can do
-on the screen, and the reverse. It is Principle 4 generalised: two views of one
-pile that can do different things are two views that will eventually disagree
-about what the pile is.
+**Feature parity relaxes in one direction, and only one.** Amended 22 August
+2026, because the rule as written and the roadmap had been contradicting each
+other since 20 August: the roadmap recorded that parity relaxes to best-effort
+in one direction, this file said it was absolute, and by this project's own
+precedence this file wins — so the relaxation was not actually in force, and
+the screen-only brain-dump split had been a live breach of the record the whole
+time.
+
+What the original rule was protecting is kept, and it is Principle 4: two views
+of one pile that *disagree about what a note is* are a bug in the product.
+Nothing in this amendment touches that. What is retired is the stronger reading
+— that the two views must be able to *do* the same things — which was never
+what Principle 4 said and had begun forcing chat twins nobody asked for.
+
+So:
+
+- **The screen may do things chat cannot.** A brain-dump split, a photograph
+  chosen from the camera, a picker chip: these are gestures, and a gesture is
+  not a sentence you can type into a room.
+- **Chat may not do things the screen cannot.** That direction stays closed.
+  The screen is the surface being made primary, and a command with no home on
+  it would be a feature you have to remember a room for.
+- **Whatever either does, both must read the same.** State is not a feature.
+  A note set aside from the card is set aside in chat's eyes the moment it
+  lands, and the reverse.
+
+**The floor chat keeps forever**, whatever else moves to the screen — because
+this is the surface that works when the other one cannot be reached at all:
+
+  1. Capture. Typing a thought into the room keeps it, and always will.
+  2. Answering a nudge — `did`, `later`, and the leave-by chain.
+  3. The four dispositions: `done <n>`, `keep <n>`, `drop <n>`, `!fix <n>`.
+  4. Setting one aside: `!waiting`, `!blocked`, `!someday`.
+  5. Reading the pile back: `!notes`, `!find <text>`.
 
 **Decided on 20 August 2026:** a note's text can be corrected — `!fix <n>` in
 chat, "fix the words" on the card. Only the words change; the arrival time, the
