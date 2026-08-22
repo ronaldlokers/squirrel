@@ -577,6 +577,33 @@ in the casual axis, with the mascot above it. A screen that is an absence is a
 different composition, not a different size of the same one. Two headings with a
 reason, rather than five without one.
 
+**Stopping is not an empty state, and it has its own drawing to say so.** The
+empty pile, the empty chores, the empty tasks and the empty archive share the
+mark. `/enough` does not: it has a resting pose — leaning on a closed lid, cap
+forward, tail settled — at `resting.png`, drawn at 300×207 rather than the
+shared 186×140.
+
+Both halves of that are load-bearing. For its whole life this screen used the
+same drawing at the same size as the four true empty states, so **choosing to
+stop looked exactly like having nothing left**, which is the one equivalence
+this product exists to break. And the size is not decoration: the pose is a
+whole figure where the mark is a head, so at 186px the face — which is the
+character — landed at about a third of the width it has on every other screen,
+and the screen read as the same drawing shrunk rather than as a different one.
+
+*Resting*, and the reject list is the brief: not asleep, not relieved, not
+pleased. Stopping is a normal ending, so a drawing that looked rescued would
+make it something you needed rescuing from, and one that looked proud would
+make it an achievement.
+
+**It carries soft shading, and the mark does not.** Recorded rather than
+smoothed over: the fur has modelled light and the box has a shaded face, where
+`logo.png` is flat fill throughout. The no-gradient rule governs *objects you
+can press* — see The Field Exception, which the mood tiles' gloss already sits
+under — and a drawing is not one. It is still the only illustration in the
+system that is modelled rather than flat, and a second one is a decision rather
+than a precedent.
+
 **The Soft Elapsed Rule.** A chore reports when it was last done in words and
 never in numbers: *today*, *yesterday*, *this week*, *last week*, *this month*,
 *a while back*. The buckets stop there — there is no bucket for a long time,

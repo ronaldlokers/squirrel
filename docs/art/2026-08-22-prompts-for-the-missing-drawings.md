@@ -2,7 +2,8 @@
 
 Prompts to paste into an image model, plus what to reject when it answers.
 
-Two things need art and neither can be written in CSS:
+One thing needs art and cannot be written in CSS. The other arrived on
+23 August and is marked below.
 
 1. **A resting pose for `/enough`** (#98). The stopping screen currently uses
    the same `logo.png` as the empty pile, the empty chores, the empty tasks and
@@ -51,7 +52,14 @@ the prompt:
 
 ---
 
-## 1. The resting pose, for `/enough`
+## 1. The resting pose, for `/enough` — **done, 23 August 2026**
+
+*Shipped as `internal/web/static/resting.png`, 600×413, drawn at 300×207. The
+prompt below is what produced it, kept for the companion pose and for whenever
+it needs redrawing. What came back needed no cutting out — the model honoured
+the transparent background — and one thing it did not honour: the fur is
+modelled rather than flat, which was accepted and is recorded in DESIGN.md
+rather than smoothed over.*
 
 **Canvas:** 744 × 560 px, transparent PNG. It is drawn into a fixed 186 × 140
 slot, so the aspect matters more than the size — anything at 4:3-ish will do,

@@ -536,6 +536,22 @@
       "text-transform": "none",
       "width": "560px"
     },
+    ".empty img": {
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border-radius": "0px",
+      "border-width": "0px",
+      "color": "rgb(255, 251, 243)",
+      "display": "block",
+      "font-size": "16px",
+      "font-variation-settings": "\"CASL\" 0, \"MONO\" 0",
+      "letter-spacing": "normal",
+      "margin": "0px 130px 22px",
+      "min-height": "0px",
+      "outline-color": "rgb(255, 251, 243)",
+      "padding": "0px",
+      "text-transform": "none",
+      "width": "300px"
+    },
     ".empty p": {
       "background-color": "rgba(0, 0, 0, 0)",
       "border-radius": "0px",
