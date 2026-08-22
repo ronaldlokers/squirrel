@@ -103,6 +103,12 @@ type Config struct {
 	// state and the default: with nowhere to put them the screen never offers
 	// a camera, exactly as it never offers to subscribe without a push key.
 	PhotoDir string
+	// PhotoCeilingBytes is where "the volume is filling" starts, in bytes, or
+	// zero for no ceiling — which is the default. Nothing is ever deleted on
+	// the strength of it: it exists so the volume stops filling in silence
+	// until a write fails, which is what it did before. The number is the
+	// volume's size, and only the person who provisioned it knows that.
+	PhotoCeilingBytes int
 	// Coach is what the model layer needs, or empty. Empty is the default and a
 	// supported state: with no key the coach is never built, and the picker and
 	// the ladder answer instead — the deterministic floor they were kept as.
@@ -223,6 +229,10 @@ func LoadConfig(env map[string]string) (Config, error) {
 		return Config{}, err
 	}
 
+	photoCeiling, err := number(env, "PHOTO_CEILING_BYTES", 0)
+	if err != nil {
+		return Config{}, err
+	}
 	port, err := number(env, "PORT", 8080)
 	if err != nil {
 		return Config{}, err
@@ -293,12 +303,13 @@ func LoadConfig(env map[string]string) (Config, error) {
 			Host: pgHost, Port: pgPort, Database: pgDatabase,
 			User: pgUser, Password: pgPassword,
 		},
-		EveningAt:      eveningAt,
-		DigestLocation: location,
-		PhotoDir:       env["PHOTO_DIR"],
-		PresenceSecret: env["PRESENCE_SECRET"],
-		PresencePath:   optional(env, "PRESENCE_PATH", "/hooks/home"),
-		PresenceDelay:  presenceDelay,
+		EveningAt:         eveningAt,
+		DigestLocation:    location,
+		PhotoDir:          env["PHOTO_DIR"],
+		PhotoCeilingBytes: photoCeiling,
+		PresenceSecret:    env["PRESENCE_SECRET"],
+		PresencePath:      optional(env, "PRESENCE_PATH", "/hooks/home"),
+		PresenceDelay:     presenceDelay,
 
 		Coach: CoachConfig{
 			APIKey:  env["OPENAI_API_KEY"],
