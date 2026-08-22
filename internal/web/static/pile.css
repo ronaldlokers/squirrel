@@ -1769,6 +1769,26 @@
 
   .talk { display: flex; flex-direction: column; gap: 12px; }
 
+  /* "That landed badly", under the last thing said. Quiet on purpose: it is
+     there when it is wanted and is not a thing the sheet is asking for. */
+  .badly { align-self: flex-start; margin-top: -4px; }
+  .badly .quietpick {
+    min-height: 44px; padding: 8px 2px;
+    background: none; border: 0;
+    color: var(--brown);
+    font-size: 13px;
+    font-variation-settings: var(--casual), "wght" 450;
+    text-decoration: underline; text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .badly .quietpick:hover { color: var(--outline); }
+  /* Heard, and nothing else. */
+  .heard {
+    margin: 0;
+    font-size: 13px; color: var(--brown);
+    font-variation-settings: var(--casual), "wght" 450;
+  }
+
   /* What the picker would hand you, painted on open. Quieter than home's own
      offer card, because here it is context for a conversation rather than the
      thing being offered — it carries no buttons at all. */

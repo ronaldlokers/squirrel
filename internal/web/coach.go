@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -229,6 +230,43 @@ func coachCloseHandler(opts Options) http.HandlerFunc {
 // Only a path this screen serves, and only ever a path: the value arrives from
 // a form field and a form field is a place a stranger can type. An open
 // redirect from a page behind forward-auth is still an open redirect.
+// coachBadlyHandler records that the last thing Buddy said did not land.
+//
+// Principle 5 was opened on 20 August so the coach could be useful at the only
+// thing a coach is for, and the cost was written down at the time: it can now
+// say something that lands badly on a bad day. Every exchange has been kept
+// since, for exactly that reason — and nothing has ever read one back.
+//
+// This is one press, and it is deliberately the smallest thing that could
+// work. The moment it exists to serve is the moment there is least to spend on
+// it: a bad reply, late, on a night that is already going badly. A comment box
+// would be a form to fill in at the worst possible time.
+//
+// Nothing is rendered back except that it was heard. No count, no list, no
+// history — what it feeds is the next prompt, where the model is shown the
+// words that did not land rather than told about them.
+func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		// Fails soft on purpose. Saying "that landed badly" and being handed an
+		// error page is the worst possible answer to it, and the thing being
+		// recorded is not load-bearing for anything on the screen.
+		heard, err := s.LandedBadlyLatest(r.Context(), personID, now())
+		if err != nil {
+			slog.Error("recording that a reply landed badly", "error", err)
+		}
+		to := "/buddy"
+		if heard {
+			to += "?heard=1"
+		}
+		http.Redirect(w, r, to, http.StatusSeeOther)
+	}
+}
+
 func backTolerant(from string) string {
 	if !strings.HasPrefix(from, "/") || strings.HasPrefix(from, "//") {
 		return "/"
@@ -287,6 +325,7 @@ func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, 
 		Scrolling: true,
 		Said:      cv.Said,
 		Coach: &coachPanel{
+			Heard: r.URL.Query().Get("heard") != "",
 			// Painted from the picker, or from a decision that was already
 			// paid for. Never from a new call: opening costs nothing and has
 			// to keep costing nothing, or the acorn becomes a thing you think

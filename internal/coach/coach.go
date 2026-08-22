@@ -92,6 +92,14 @@ type Now struct {
 	// FreeUntil is minutes until the next fixed point, or nil when nothing is
 	// coming. Nil is not "plenty of time" — it is "nothing was typed".
 	FreeUntil *int
+	// LandedBadly is the last few answers this person said did not land, in
+	// the model's own words, so it can be shown what does not work here rather
+	// than told in an instruction nobody can check.
+	//
+	// Examples, never a count: how often is a fact about the person, and rule
+	// 2 forbids one on any surface — including this one, which the person
+	// never reads.
+	LandedBadly []string
 }
 
 // Turn is one thing said to the coach.

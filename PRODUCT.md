@@ -390,6 +390,14 @@ which pull toward a precision tool — the design has to be both, not average th
    to say something that lands badly on a bad day. `coach_answers` keeps every
    exchange for exactly that reason — so "it was tactless" can be told apart
    from "I remember it as tactless".
+
+   **And as of 22 August the record is read back.** One press on the sheet says
+   the last thing Buddy said did not land, and the last few of those are shown
+   to the model as examples of what does not work here. Examples rather than an
+   instruction, because an instruction nobody can check is a wish. Never a
+   count: how often something lands badly is a fact about the person, and rule
+   2 forbids one on every surface — including the prompt, which is a surface
+   the person never reads.
 6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
    are fixed, readable and the same every time. An offer nobody can account for
    is a demand.

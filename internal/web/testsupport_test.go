@@ -50,6 +50,12 @@ type fakeStore struct {
 	// Fixed points created by a proposal that was pressed.
 	moments []squirrel.Moment
 
+	// Every press of "that landed badly", so a test can assert on the record
+	// rather than on a rendering of it. noReplyToMark stands for a sheet with
+	// nothing behind it to mark.
+	landedBadly   []time.Time
+	noReplyToMark bool
+
 	// What was set aside, and what was picked back up.
 	aside  []squirrel.HeldItem
 	unheld []int64
@@ -430,6 +436,23 @@ func (f *fakeStore) MoveItemState(_ context.Context, id int64, from, to squirrel
 		return true, nil
 	}
 	return false, nil
+}
+
+// LandedBadlyLatest records that the last thing Buddy said did not land. The
+// fake keeps the real one's shape: it answers whether there was anything to
+// mark, so a press with nothing behind it is not reported as heard.
+func (f *fakeStore) LandedBadlyLatest(_ context.Context, _ int64, at time.Time) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	if f.landedBadly == nil {
+		f.landedBadly = []time.Time{}
+	}
+	if f.noReplyToMark {
+		return false, nil
+	}
+	f.landedBadly = append(f.landedBadly, at)
+	return true, nil
 }
 
 func (f *fakeStore) SetItemState(_ context.Context, id int64, state squirrel.ItemState, _ time.Time) error {

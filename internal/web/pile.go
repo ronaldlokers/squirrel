@@ -76,6 +76,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Closing is a write because it forgets the conversation, and a write here
 	// carries the origin check like every other one.
 	m.Post("/buddy/close", guard(opts, sameOrigin(coachCloseHandler(opts))))
+	// "That landed badly." One press, about the thing you just read.
+	m.Post("/buddy/badly", guard(opts, sameOrigin(coachBadlyHandler(s, opts))))
 	// A proposal, applied because it was pressed. Four things and no more —
 	// see coachDoHandler for why it is a switch rather than a dispatcher.
 	m.Post("/buddy/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))

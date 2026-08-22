@@ -53,6 +53,37 @@ func System(n Now, kind string) string {
 	if n.Capacity == "low" {
 		b.WriteString(lowVoice)
 	}
+	b.WriteString(badlyLanded(n.LandedBadly))
+	return b.String()
+}
+
+// badlyLanded shows the model what has not landed here, in its own words.
+//
+// Principle 5 lets the coach evaluate and compare, and the cost recorded when
+// it was opened is that it can say something that lands badly on a bad day.
+// The answer to that is not another instruction — an instruction nobody can
+// check is a wish — but the actual sentences, handed back.
+//
+// Three rules hold this to what it is for:
+//
+//   - **Examples, never a count.** "You have been told this four times" is a
+//     fact about the person and rule 2 forbids it on any surface, including
+//     this one, which the person never sees.
+//   - **What, not who.** The lines are shown as things that did not land, not
+//     as a record of somebody's bad nights.
+//   - **Silence when there is nothing.** An empty list adds no sentence at
+//     all, rather than "nothing has landed badly", which would invite the
+//     model to congratulate itself.
+func badlyLanded(said []string) string {
+	if len(said) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\nThese answers of yours did not land well with this person. " +
+		"Do not repeat their shape or their tone:\n")
+	for _, one := range said {
+		b.WriteString("- " + strings.TrimSpace(one) + "\n")
+	}
 	return b.String()
 }
 

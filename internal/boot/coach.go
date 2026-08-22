@@ -191,6 +191,17 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 		Capacity: string(store.Capacity(ctx, personID, now)),
 	}
 
+	// What has not landed here, in the model's own words. Fails soft like
+	// everything else in this function: a reply that cannot be read back costs
+	// the model a hint, and never costs the person an answer.
+	//
+	// Three, because it is examples rather than a record. The model is being
+	// shown what does not work here; it is not being handed a history, and a
+	// longer list would start to read as one.
+	if said, err := store.BadlyLanded(ctx, personID, 3); err == nil {
+		n.LandedBadly = said
+	}
+
 	if m, found, err := store.NextMoment(ctx, personID, now); err == nil && found {
 		// Minutes to the thing itself rather than to when to leave for it.
 		// Leave-by arithmetic is the product's own job and it is already done

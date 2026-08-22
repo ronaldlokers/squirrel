@@ -24,6 +24,9 @@ var templateFS embed.FS
 // cannot do. Only "step" needs it, and only because a step is drawn on two
 // screens that disagree about where its buttons should come back to.
 var helpers = template.FuncMap{
+	// add exists for one thing: telling the last item in a range from the
+	// rest, so a control can sit on the newest reply and nowhere else.
+	"add": func(a, b int) int { return a + b },
 	"dict": func(pairs ...any) map[string]any {
 		out := make(map[string]any, len(pairs)/2)
 		for i := 0; i+1 < len(pairs); i += 2 {
@@ -353,6 +356,10 @@ type coachPanel struct {
 	Blockers []chipView
 	// From is the page the acorn was pressed on, so closing returns there.
 	From string
+	// Heard says the last "that landed badly" was recorded, on this render
+	// only. It says nothing else — no count and no list, because how often a
+	// thing lands badly is a fact about the person.
+	Heard bool
 	// Spent and Ceiling are what the coach has cost this month and what it may
 	// cost, as money. Empty when there is no coach or the sum cannot be read —
 	// a figure that cannot be trusted is a figure not drawn.
