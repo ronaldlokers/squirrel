@@ -28,7 +28,6 @@ var notATitle = map[string]string{
 	"every.html":   "the interval picker, drawn inside a card",
 	"split.html":   "a proposal, drawn inside a card",
 	"step.html":    "one step, drawn inside whatever raised it",
-	"coach.html":   "the sheet, whose name is in its own lid",
 	"results.html": "has one, and two of them, one per branch",
 	// The front door, and the one screen without a title. Every other screen
 	// is a place you navigated to, and its title answers "where am I"; home is

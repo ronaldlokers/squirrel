@@ -522,6 +522,13 @@ func fail(w http.ResponseWriter, err error) {
 	_, _ = w.Write([]byte(`<!doctype html><html lang="en"><head><meta charset="utf-8">` +
 		`<title>Squirrel</title></head><body style="background:#58388a;color:#fffbf3;font:16px system-ui;padding:3rem">` +
 		`<p>Squirrel cannot reach its memory right now. Nothing has been lost — everything you said is still there.</p>` +
+		// The way on. The screen is down and chat is not: the room writes
+		// through the same spool this does, so capture still works while this
+		// page is what the screen can offer. The service worker's offline page
+		// has said so since it was written; this one, which fires on the same
+		// failure from the other side, said nothing and left you on a page
+		// with no way forward.
+		`<p style="opacity:.75">Notes are still kept by talking to Squirrel in Campfire.</p>` +
 		`</body></html>`))
 }
 
