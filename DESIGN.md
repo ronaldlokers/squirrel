@@ -1241,6 +1241,26 @@ is untouched and still governs everything else.
 - **It is a real page** (`/buddy`) that the script upgrades into a `<dialog>`,
   so Escape closes it and focus stays inside without either file implementing
   either.
+- **A screen when you go to it, an object when it comes to you.** Same markup,
+  two treatments, and which one you get is the only thing that differs. Inside
+  the dialog it is a card: cream stock, a 3px outline, its own little lid at
+  17px, dark ink. Reached as a page it has no card at all — the conversation
+  stands directly on the field the way `/enough` and every other screen's
+  content does, and its name is that screen's title, in the wordmark's face at
+  21px on paper, under The One Title Rule.
+
+  For its whole life it was the object in both, which meant a 640px bordered
+  card with a close cross floating in the top sixth of an empty field. A card
+  is a note in this system, and a card in a room with nothing else in it reads
+  as an overlay that failed to overlay. That page is where a notification tap
+  lands, so as push becomes the way in it stops being a fallback and becomes a
+  front door.
+
+  **The two inks are tokens, set once per treatment.** `--sheet-ink` and
+  `--sheet-quiet` mean dark-on-cream inside the dialog and paper-and-cream on
+  the field, and the eight children that say "quiet" read them rather than
+  naming a colour. The alternative was eight duplicated rules, which is eight
+  chances for one of them to be left dark on a purple ground.
 - **Bottom sheet on a phone, right panel on desktop.** The page behind stays
   visible and in place: the conversation is about what is on that screen.
 - **`dvh`, not `vh`, and that distinction is a bug that shipped three times.**

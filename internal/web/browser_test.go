@@ -742,3 +742,91 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 	require.Contains(t, image, fmt.Sprintf("at %v", light),
 		"the field's highlight is not where the day put it")
 }
+
+// Buddy, as a screen, is legible on the field.
+//
+// The page route and the overlay are the same markup, and until this the same
+// stylesheet gave both the card's dark-on-cream inks. That is right inside the
+// overlay and wrong on the page, where there is no cream — the sheet now
+// stands directly on the field like every other screen's content.
+//
+// The failure mode is not subtle and it is not visible to Go: a `--brown`
+// label on a purple field is dark ink on a dark ground. So this walks every
+// piece of text that ends up standing on the field itself — anything inside an
+// object with its own fill is that object's problem, and already tested — and
+// checks it is light enough to read.
+func TestBrowserBuddyAsAPageIsLegibleOnTheField(t *testing.T) {
+	f := aPile()
+	f.offer = &squirrel.Offer{
+		Kind: squirrel.OfferChore, RefID: 1,
+		Text: "put the bins out", Because: "it is bin day tomorrow",
+	}
+	srv := screenWith(t, f, &fakeCoach{reply: "start with the bins."})
+	c := browserAt(t, srv, "/buddy?from=/pile")
+
+	// Nothing between the conversation and the field: no card behind it.
+	require.Equal(t, "rgba(0, 0, 0, 0)",
+		c.eval(t, `return getComputedStyle(document.querySelector(".sheet")).backgroundColor`),
+		"the page still draws a card behind Buddy")
+
+	// The title is set like every other screen's: the wordmark's face on paper.
+	// Without this only its legibility is pinned, and it would inherit the
+	// sheet's quiet cream — readable, and the wrong one of the two inks.
+	require.Equal(t, "rgb(255, 251, 243)",
+		c.eval(t, `return getComputedStyle(document.querySelector(".sheetname")).color`),
+		"Buddy's title is not written in the ink every other screen title uses")
+	require.Equal(t, "21px",
+		c.eval(t, `return getComputedStyle(document.querySelector(".sheetname")).fontSize`))
+
+	dark := c.eval(t, `
+		const lum = c => {
+			const [r, g, b] = c.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number).map(v => {
+				v /= 255;
+				return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+			});
+			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+		};
+		// Does anything between this and the body paint its own ground?
+		const onTheField = el => {
+			for (let n = el; n && n !== document.body; n = n.parentElement) {
+				const bg = getComputedStyle(n).backgroundColor;
+				if (bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return false;
+			}
+			return true;
+		};
+		const bad = [];
+		for (const el of document.querySelectorAll(".sheet, .sheet *")) {
+			// Its own words, not its children's.
+			const own = [...el.childNodes]
+				.filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join("");
+			if (!own || !onTheField(el)) continue;
+			if (lum(getComputedStyle(el).color) < 0.5) {
+				bad.push(el.className + ": " + own.slice(0, 24) + " " + getComputedStyle(el).color);
+			}
+		}
+		return bad.join(" | ");
+	`)
+	require.Equal(t, "", dark, "dark ink standing on the purple field")
+}
+
+// And the overlay keeps the card it is supposed to be.
+//
+// The same markup, so this is the half that a fix to the page could quietly
+// take away. It has taken three releases to notice a sheet regression before.
+func TestBrowserBuddyAsAnOverlayIsStillACard(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	c.eval(t, `document.querySelector(".tobuddy").click(); return 1`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+
+	style := func(sel, prop string) any {
+		return c.eval(t, fmt.Sprintf(
+			`return getComputedStyle(document.querySelector("dialog.coachsheet %s")).%s`, sel, prop))
+	}
+	require.Equal(t, "rgb(253, 236, 212)", style(".sheet", "backgroundColor"),
+		"the overlay lost its card stock")
+	require.Equal(t, "rgb(28, 17, 11)", style(".sheet", "color"),
+		"the overlay is no longer written in the card's ink")
+	// Its own small lid, not a screen title: the overlay is an object.
+	require.Equal(t, "17px", style(".sheetname", "fontSize"))
+}
