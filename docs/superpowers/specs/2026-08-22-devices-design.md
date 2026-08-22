@@ -1,6 +1,8 @@
 # Devices: phone primary, desktop first-class
 
-**Status:** draft, 2026-08-22. Written for review, not approved.
+**Status:** settled, 2026-08-22. The one question this spec could not answer
+has been answered — see *The lid is closed* — and the acceptance criteria below
+are the definition of done for the roadmap's Devices item.
 
 The roadmap has carried one line for this since 20 August — *"Phone primary and
 better; desktop first-class"* — and nothing else. It is the only
@@ -79,15 +81,12 @@ The spec is met when all of these are true and have tests:
    use. Not tested today at all.
 3. **Every screen's primary action is reachable in the thumb band** without
    scrolling, from a cold open.
-4. **The lid fits, with room for one more control.** It does not today: four
-   44px icons plus the wordmark need 392px on a 390px screen, which is what
-   stopped the lid-capture work on 22 August. Either the wordmark goes on
-   phones or the lid stops being where new controls land — and that decision
-   is the first thing this spec needs and does not have.
+4. **The lid holds three icons and does not grow.** Not "fits with room for one
+   more": three is the number, and a fourth is a design change rather than an
+   addition. See *The lid is closed* below.
 5. **The known-open phone items are closed or re-affirmed in writing**: the
    wrapping views nav, iOS's uncancellable search field, and the zoom
-   trade-off. The third is already written down as accepted; the other two are
-   not.
+   trade-off. The third is written down as accepted; the other two are not.
 
 ## What this does not do
 
@@ -95,29 +94,52 @@ The spec is met when all of these are true and have tests:
   exists only on a phone is a third place a thought can be.
 - **It does not touch the zoom decision.** That is recorded, argued and
   accepted, with its cost stated. Revisiting it is a separate question.
+- **It does not add a fourth lid control.** That is now a decision rather than
+  an open question, and reversing it is a redesign of the lid.
 - **It does not make the desktop a second-class citizen.** The keyboard path is
   first-class *by rule*, and the desktop is where it lives.
 
-## The open question this spec cannot answer
+## The lid is closed
 
-**What gives, so the lid can hold a fourth control?** Measured at 390px:
+**Three icons, and the wordmark stays.** A fourth was tried on 22 August and
+reverted, and the measurement is why. At 390px:
 
 ```
 brand      14 → 152   (138px)
 tobuddy   224 → 268
 findbox   278 → 322
 tellbox   332 → 376
-where      14 →  58   ← wrapped
+where      14 →  58   ← wrapped to a second row
 ```
 
-28px padding + 138px brand + five 10px gaps + four 44px icons = 392px.
+28px padding + 138px brand + five 10px gaps + four 44px icons = 392px on a
+390px screen. Two pixels, and the menu fell to a second row — which does not
+merely look wrong, it doubles the height of the one band the reach zone above
+gives the least room to.
 
-The options are dropping the wordmark on phones, putting new controls behind
-the menu instead of beside it, shaving the gaps to zero slack, or accepting
-that the lid is closed. Each is a design decision with a different cost, and
-the answer determines whether capture-from-the-lid (#99) is buildable at all.
+The four options were dropping the wordmark on phones, moving new controls
+behind the menu, shaving the gaps, or stopping at three. **Stopping at three.**
 
-**This spec is not ready for approval until that is decided.**
+The reasoning, so it does not have to be had again:
+
+- **The wordmark is not decoration.** The shoebox has one opening and the acorn
+  is it — pressing it is how you get home from all thirteen screens. Removing it
+  on phones removes the way back on the surface this spec calls primary.
+- **Shaving the gaps buys two pixels and spends the slack.** It would fit at
+  390px and wrap at 375px, which is a phone people still hold.
+- **Behind the menu is not the lid.** A control one press deeper is a different
+  control. If something belongs there, it belongs in the menu on its own terms
+  rather than as an overflow.
+
+**What this decides.** Capture-from-the-lid (#99) is not buildable and is
+closed. The lid grants search its ambient treatment and cannot grant capture
+the same, and the honest answer is that capture stays on home rather than that
+it gets a worse version of the same idea somewhere tighter. The four-step route
+from `/pile` to the slot is a real cost and it is now a known one.
+
+**When this reopens.** If the lid ever needs a fourth control, the question is
+not where to squeeze it — it is whether the lid is still the right shape, which
+is a redesign and gets its own spec.
 
 ## Testing
 
