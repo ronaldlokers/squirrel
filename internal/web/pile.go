@@ -139,8 +139,9 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		undo := undoFrom(r.URL.Query())
+		clash := clashFrom(r.URL.Query())
 		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
-			searchInto(w, r, s, opts, personID, q, undo)
+			searchInto(w, r, s, opts, personID, q, undo, clash)
 			return
 		}
 		// The cursor is skipping, and it lives here rather than in the store's
@@ -152,7 +153,7 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		v := view{Here: "pile", More: more, Undo: undo, After: after}
+		v := view{Here: "pile", More: more, Undo: undo, After: after, Clash: clash}
 		if len(items) == 0 {
 			// Nothing older is not an empty pile. Everything skipped past is
 			// still open, and a page that said "nothing in the pile" here
@@ -213,7 +214,7 @@ const searchLimit = 6
 // read.
 const choreHits = 3
 
-func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string, undo *undoView) {
+func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string, undo *undoView, clash bool) {
 	items, more, err := s.SearchItems(r.Context(), personID, q, searchLimit)
 	if err != nil {
 		fail(w, err)
@@ -227,7 +228,7 @@ func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, p
 		fail(w, err)
 		return
 	}
-	v := view{Here: "pile", Query: q, More: more, Undo: undo}
+	v := view{Here: "pile", Query: q, More: more, Undo: undo, Clash: clash}
 	for _, c := range chores {
 		v.Chores = append(v.Chores, toChoreView(c))
 	}

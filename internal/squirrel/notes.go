@@ -121,6 +121,32 @@ func (s *Store) SetItemState(ctx context.Context, itemID int64, state ItemState,
 	return nil
 }
 
+// MoveItemState is SetItemState for a caller that knows what the note was when
+// it decided, and answers whether the note was still there to move.
+//
+// The screen holds a tapped action for a beat so the undo has a card to sit
+// on, which means its write leaves about a second and a half after the
+// decision — and for that whole window the row is untouched. A `!drop` typed
+// in the room inside it wrote the truth, and the screen's unconditional
+// overwrite then put its own stale intent on top with nothing said to anybody.
+// Two views, one pile: they may not disagree about what a note is.
+//
+// `state in (from, to)` rather than `state = from`, and that is the whole
+// care here: a second identical tap, or a redelivered webhook, finds the note
+// already at `to` and must still be a success. Saying a thing twice is saying
+// it. Only a note that has moved somewhere *else* is a note this refuses,
+// which is the one case where the caller genuinely has something to say.
+func (s *Store) MoveItemState(ctx context.Context, itemID int64, from, to ItemState, at time.Time) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		update items set state = $3, state_at = $4
+		where id = $1 and state in ($2, $3)`,
+		itemID, string(from), string(to), at)
+	if err != nil {
+		return false, fmt.Errorf("moving item state: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
 // Reword changes what a note says, keeping everything else about it.
 //
 // PRODUCT.md listed this as explicitly undecided for a long time, and the

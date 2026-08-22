@@ -20,6 +20,17 @@ var actions = map[string]squirrel.ItemState{
 	"open": squirrel.ItemOpen,
 }
 
+// actionStates is the state a card says it is showing, read the way every
+// other query and form value here is read: as though a stranger typed it. A
+// value that is not one of the four is no claim rather than a bad one, and the
+// write falls back to the unconditional one.
+var actionStates = map[string]squirrel.ItemState{
+	string(squirrel.ItemOpen):    squirrel.ItemOpen,
+	string(squirrel.ItemDone):    squirrel.ItemDone,
+	string(squirrel.ItemKept):    squirrel.ItemKept,
+	string(squirrel.ItemDropped): squirrel.ItemDropped,
+}
+
 // intervalSentinel stands in for a chore name while an interval is parsed.
 //
 // The literal is copied from apply.go rather than exported from it: it is an
@@ -93,10 +104,31 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		// What the card said the note was when the press happened, if it said.
+		// The deck sends it; a form written before this did not, and chat has
+		// no stale window to protect, so an absent one means the old
+		// unconditional write.
+		//
 		// Writing the state a note already holds is a no-op rather than an
 		// error; SetItemState says so itself, and this handler must not add a
-		// check that turns a retry into a failure.
-		if err := s.SetItemState(r.Context(), it.ID, state, time.Now()); err != nil {
+		// check that turns a retry into a failure. MoveItemState keeps that
+		// property on purpose — it refuses only a note that went somewhere
+		// else.
+		from, decided := actionStates[r.FormValue("was")]
+		if decided {
+			moved, err := s.MoveItemState(r.Context(), it.ID, from, state, time.Now())
+			if err != nil {
+				fail(w, err)
+				return
+			}
+			if !moved {
+				// It moved under you, from the room, while the card was still
+				// on the screen. Saying nothing would be the two views
+				// disagreeing and neither of them mentioning it.
+				back(w, r, opts, url.Values{"clash": {strconv.FormatInt(it.ID, 10)}})
+				return
+			}
+		} else if err := s.SetItemState(r.Context(), it.ID, state, time.Now()); err != nil {
 			fail(w, err)
 			return
 		}
