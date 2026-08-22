@@ -666,8 +666,28 @@ point: a rule can be present, correct, and outvoted.
 (`user-scalable=no, maximum-scale=1`) and `touch-action: manipulation` drops
 double-tap magnification. This is a screen you glance at with one thumb, and a
 stray pinch that leaves it magnified is a screen you have to repair before you
-can use it. Panning and a deliberate pinch survive; only the double-tap gesture
-is taken.
+can use it. Panning survives.
+
+**A deliberate pinch does not survive, and this document said it did.**
+Corrected 22 August 2026. `user-scalable=no` with `maximum-scale=1` takes
+enlarging-to-read along with the accidental magnification it was aimed at —
+wherever it takes effect at all, which is the installed app, which is the
+scenario this product is built for. `touch-action: manipulation` is the part
+that only drops double-tap; the viewport line is broader than that and the two
+were described as though they were one.
+
+So this fails WCAG 1.4.4 (Resize Text) in the installed app, and nothing here
+substitutes for what it takes: every size in this system is a fixed pixel
+value, so the OS text-size setting does not reach them either.
+
+Accepted on one ground, and it is worth stating rather than implying: the only
+user has no vision need this takes away from, and a screen that has to be
+repaired before it can be used is a cost he does have. It is not accepted on
+the ground that the criterion does not apply — it does, and this is a screen
+that would fail an audit. If the ground ever changes, the answer is not to
+restore pinch-zoom, which breaks the one-thumb layout this protects. It is a
+text-scale the person sets, persisted per device, multiplying a type scale that
+would first have to stop being fixed pixels.
 
 **Neither of those retires the 16px floor, and the floor is the load-bearing
 one.** iOS ignores `user-scalable=no` in a browser tab and has since iOS 10, so

@@ -77,3 +77,33 @@ func TestTheCardAndThePageSayTheSameThingAboutSettingAside(t *testing.T) {
 		require.Contains(t, string(js), said, "the card's word for %s", state)
 	}
 }
+
+// Stopping is offered wherever work happens, not only where triage does.
+//
+// /enough was linked from the deck's foot and nowhere else, so leaving was
+// normal if you were triaging and unmentioned if you were marking tasks done
+// or answering chores. An evening spent on the tasks is just as much a
+// session, and Principle 3 says leaving one must never look like failure —
+// which it does when the only screen with an exit is the one you were not on.
+func TestEverySessionScreenOffersAWayToStop(t *testing.T) {
+	f := &fakeStore{
+		items: []squirrel.Item{
+			note(1, "ring the vet", squirrel.ItemOpen),
+			task(2, "send the form back", squirrel.ItemOpen),
+			task(3, "collect the parcel", squirrel.ItemDone),
+			note(4, "the bike rack", squirrel.ItemKept),
+		},
+		chores: []squirrel.Chore{{ID: 1, Name: "bins out", EveryDays: 7, SinceDays: 6, Active: true}},
+		aside: []squirrel.HeldItem{{
+			ID: 5, Text: "chase the landlord", State: squirrel.ItemWaiting, Kind: squirrel.ItemNote,
+		}},
+	}
+	m := mounted(t, f)
+
+	for _, screen := range []string{"/pile", "/tasks", "/tasks/done", "/chores", "/kept", "/held"} {
+		body := m.call(t, "GET", screen, nil).Body.String()
+		require.Contains(t, body, "stop whenever you like",
+			"%s is a screen you can spend an evening on with no way to stop", screen)
+		require.Contains(t, body, `href="/enough"`, "%s", screen)
+	}
+}
