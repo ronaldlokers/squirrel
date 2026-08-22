@@ -77,6 +77,9 @@ func (p *Provider) ShouldInterrupt(ctx context.Context, personID int64, about st
 	if err != nil {
 		return "", true
 	}
+	// The gate is given back whichever way this returns. `defer` rather
+	// than a release at the end, because the end is not the only exit.
+	defer permit.Release()
 
 	said := "Due now: " + about
 	if line := Context(n); line != "" {
