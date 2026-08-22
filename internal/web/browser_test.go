@@ -259,7 +259,7 @@ func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
 	// through it and its cache is legitimately empty — asserting on that load
 	// was testing how quickly a worker installs rather than what it does.
 	c.navigate(t, srv.URL+"/")
-	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
+	waitForTheWorker(t, c, srv.URL+"/")
 	// Wait for the asset itself, not merely for a cache to exist.
 	//
 	// A cache appears the moment the worker opens one, which is before any
@@ -406,10 +406,41 @@ func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
 // emulation applies to the page's network stack and not to the worker's own,
 // so the first version of this test passed while the POST reached the server
 // and came back "kept". A closed socket is offline for both.
+// waitForTheWorker waits for a worker that is actually driving the page.
+//
+// Registration, install, activate and `clients.claim()` are four steps, and a
+// page that loaded before the last of them is not controlled — so waiting on
+// `controller` alone is waiting on a race, which this machine wins every time
+// and a loaded runner does not. It failed CI twice on branches that had not
+// touched the worker, which is the way a flake does its real damage: it
+// teaches you to re-run the job instead of reading it.
+//
+// So this waits for the registration to be ready first, and then, if the page
+// still is not controlled, navigates once more. A worker that has activated
+// controls the next navigation by definition, so the second visit is a
+// guarantee rather than another roll.
+//
+// What that costs, and it is worth naming rather than discovering later: these
+// tests no longer notice `clients.claim()` going missing. Claiming is what
+// makes the *first* visit controlled without a reload, and the only way to
+// assert it is to race activation — which is the race that was flaking. The
+// property is real and remains untested here on purpose; a test of it would be
+// a test that fails on a busy machine for a reason unrelated to the change.
+func waitForTheWorker(t *testing.T, c *cdp, url string) {
+	t.Helper()
+	c.until(t, "the worker to be ready", `
+		(async () => { await navigator.serviceWorker.ready; return true })()`)
+	if c.eval(t, `return !!navigator.serviceWorker.controller`) == true {
+		return
+	}
+	c.navigate(t, url)
+	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
+}
+
 func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
 	c, srv := open(t, aPile())
 	c.navigate(t, srv.URL+"/")
-	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
+	waitForTheWorker(t, c, srv.URL+"/")
 
 	srv.Close()
 
