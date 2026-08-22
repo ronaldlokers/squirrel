@@ -349,6 +349,32 @@ The shoebox still has one opening. You just no longer have to know where it is.
   onward
 - Keyboard letters are actions; movement never takes a letter
 
+## How this document stays true
+
+This file has drifted from the code twice. On 20 August 2026 an outside review
+found seven places where it described a system the stylesheet no longer had; on
+22 August it was still claiming the product resisted zoom in ways the shipped
+CSS does not. Both times the drift was found by a person reading the markup line
+by line, because nothing else could find it.
+
+Two things now hold it:
+
+- **The appearance snapshot** (`internal/web/appearance_test.go`) records the
+  computed shape of 74 selectors across every screen. It catches the *code*
+  moving. It cannot catch this document going stale, because it does not read
+  this document.
+- **A blocking CI check** (`.github/scripts/design-follows-the-code.sh`). A pull
+  request that changes `internal/web/static/pile.css` or any template does not
+  merge unless `DESIGN.md` changed with it.
+
+The second one will sometimes be wrong: plenty of stylesheet changes document
+nothing here. **Put `no-design-change` in the pull request title or a commit
+message** and it stands down, saying in the log that it did. That marker is the
+honest way past it. If it starts appearing on most pull requests, the check is
+measuring the wrong thing and should be changed rather than routinely overridden
+— which is the failure mode a hard gate has, and the reason the override is
+named here rather than left to be discovered.
+
 ## Colors
 
 The palette is the mark's, not a preference: purple and orange are the product's
