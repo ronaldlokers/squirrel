@@ -215,12 +215,37 @@ self.addEventListener("push", event => {
 // Pressing it goes to the front door rather than to a deep link. The offer is
 // there, and a link to something that has since been done is worse than a page
 // that says what is true now.
+//
+// It only went there when there was nothing open. `focus()` raises a window
+// exactly as it was left, so a screen already open landed you on whatever was
+// last on it — a Buddy sheet from this morning, a half-triaged card, a search
+// you had forgotten typing. The rule above was right and the code kept it only
+// in the case where it cost nothing.
+//
+// The front door is a navigation, not a focus. Two carve-outs, both to avoid
+// taking something away:
+//
+//   - A window already at the front door is left alone. Navigating would
+//     reload it, and a reload of home throws away whatever is half-typed in
+//     the slot, which principle 1 does not allow a notification to do.
+//   - `navigate()` is only permitted on a client this worker controls, and
+//     rejects otherwise. A raise is still better than nothing, so the failure
+//     falls through to what this did before.
 self.addEventListener("notificationclick", event => {
   event.notification.close();
   event.waitUntil((async () => {
     const open = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of open) {
-      if (new URL(client.url).origin === self.location.origin) return client.focus();
+      const at = new URL(client.url);
+      if (at.origin !== self.location.origin) continue;
+      if (at.pathname !== "/" || at.search) {
+        try {
+          await client.navigate("/");
+        } catch {
+          // Not ours to steer. Raise it and let the person navigate.
+        }
+      }
+      return client.focus();
     }
     return self.clients.openWindow("/");
   })());
