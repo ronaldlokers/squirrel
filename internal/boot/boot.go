@@ -227,7 +227,10 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			slog.Warn("no photo directory; the camera is not offered", "error", err)
 			photos = nil
 		} else {
-			slog.Info("photographs are kept", "at", config.PhotoDir)
+			photos.Ceiling(int64(config.PhotoCeilingBytes))
+			used, count := photos.Used()
+			slog.Info("photographs are kept", "at", config.PhotoDir,
+				"using", used, "photographs", count, "ceiling", config.PhotoCeilingBytes)
 		}
 	} else {
 		slog.Info("no photo directory configured; the camera is not offered")

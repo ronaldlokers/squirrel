@@ -2,6 +2,7 @@ package web
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -66,6 +67,14 @@ func photoHandler(s Store, opts Options) http.HandlerFunc {
 			// The row says there is a photograph and the disk disagrees. That
 			// is worth a log and a 404 rather than a 500: the pile still
 			// works, and the note is still a note.
+			//
+			// The log is the half that was missing. On a single node with the
+			// photographs on a volume beside the pod, a remount, a restore
+			// that did not line up, or a deletion turns every affected
+			// photograph into a quiet 404 — and without this line there is
+			// nothing afterwards to tell you it happened, or how many.
+			slog.Warn("a photograph the row expects is not on disk",
+				"item", it.ID, "name", it.PhotoName, "error", err)
 			http.NotFound(w, r)
 			return
 		}

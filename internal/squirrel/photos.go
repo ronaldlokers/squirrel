@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +27,12 @@ import (
 
 // Photos is a directory of them. The zero value is unusable; New returns one
 // that has checked it can write.
-type Photos struct{ dir string }
+type Photos struct {
+	dir string
+	// ceiling is where "this volume is filling" starts, in bytes. Zero is no
+	// ceiling and the default.
+	ceiling int64
+}
 
 // biggest is the ceiling on one photograph, and a guard rather than a rule
 // about what you may keep.
@@ -108,6 +114,58 @@ func (p *Photos) Writable() bool {
 	return true
 }
 
+// Used is what the store is holding: total bytes and how many photographs.
+//
+// A flat directory read rather than a walk, because it is flat, and cheap
+// enough to do on the path that makes it grow. Errors are swallowed on
+// purpose — this exists to warn, and a warning that can fail a capture would
+// be worse than the thing it warns about.
+func (p *Photos) Used() (bytes int64, count int) {
+	entries, err := os.ReadDir(p.dir)
+	if err != nil {
+		return 0, 0
+	}
+	for _, e := range entries {
+		if e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		bytes += info.Size()
+		count++
+	}
+	return bytes, count
+}
+
+// Ceiling is the point at which this starts saying the volume is filling, in
+// bytes. Zero means no ceiling, which is a supported choice and the default —
+// the same shape the coach's monthly budget uses.
+//
+// Nothing here ever deletes a photograph. A photograph attached to a note is
+// part of what was captured, and capture is sacred; what was missing was not
+// pruning but a signal, because the volume simply filled in silence until a
+// write failed. This is that signal, and it is for the person who runs the
+// thing rather than the person using it.
+func (p *Photos) Ceiling(bytes int64) { p.ceiling = bytes }
+
+// warnIfFilling says so once the store passes the configured share of its
+// ceiling. Called after a successful write, which is the only moment the
+// answer can have changed.
+func (p *Photos) warnIfFilling() {
+	if p.ceiling <= 0 {
+		return
+	}
+	used, count := p.Used()
+	if used*10 < p.ceiling*8 {
+		return
+	}
+	slog.Warn("the photographs are filling their volume",
+		"used", used, "ceiling", p.ceiling, "photographs", count,
+		"note", "nothing is deleted; this is the point to grow the volume")
+}
+
 // Keep stores one photograph and hands back the name to remember it by.
 //
 // Durable when it returns: written, fsynced, then renamed into place. The same
@@ -159,7 +217,14 @@ func (p *Photos) Keep(r io.Reader, contentType string) (string, error) {
 	if err := os.Rename(temporary, filepath.Join(p.dir, name)); err != nil {
 		return "", fmt.Errorf("keeping a photo: %w", err)
 	}
-	return name, syncDir(p.dir)
+	if err := syncDir(p.dir); err != nil {
+		return "", err
+	}
+	// After the write, because that is the only moment the answer can have
+	// changed, and after it has succeeded, because a warning must never be
+	// what stops a photograph being kept.
+	p.warnIfFilling()
+	return name, nil
 }
 
 // Open reads one back, by the name Keep returned.
