@@ -150,7 +150,7 @@ func (p *Provider) completionWithTools(ctx context.Context, _ Permit, model stri
 
 	res, err := p.Client.Do(req)
 	if err != nil {
-		return "", nil, 0, 0, fmt.Errorf("%w: %w", ErrUnavailable, err)
+		return "", nil, 0, 0, fmt.Errorf("%w: %w: %w", ErrUnavailable, ErrProviderUnreachable, err)
 	}
 	defer res.Body.Close()
 
@@ -158,7 +158,7 @@ func (p *Provider) completionWithTools(ctx context.Context, _ Permit, model stri
 	// memory in full to be discarded.
 	raw, err := io.ReadAll(io.LimitReader(res.Body, 64<<10))
 	if err != nil {
-		return "", nil, 0, 0, fmt.Errorf("%w: reading the reply: %w", ErrUnavailable, err)
+		return "", nil, 0, 0, fmt.Errorf("%w: %w: reading the reply: %w", ErrUnavailable, ErrProviderUnreachable, err)
 	}
 
 	var parsed chatResponse
@@ -167,7 +167,7 @@ func (p *Provider) completionWithTools(ctx context.Context, _ Permit, model stri
 		// always a proxy or an auth failure rather than the model, and the
 		// status says which. The body itself is not logged: it may carry back
 		// whatever was sent, and what was sent is the person's own words.
-		return "", nil, 0, 0, fmt.Errorf("%w: unreadable reply (status %d)", ErrUnavailable, res.StatusCode)
+		return "", nil, 0, 0, fmt.Errorf("%w: %w: unreadable reply (status %d)", ErrUnavailable, ErrProviderNonsense, res.StatusCode)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -175,10 +175,10 @@ func (p *Provider) completionWithTools(ctx context.Context, _ Permit, model stri
 		if parsed.Error != nil {
 			detail = ": " + parsed.Error.Message
 		}
-		return "", nil, 0, 0, fmt.Errorf("%w: status %d%s", ErrUnavailable, res.StatusCode, detail)
+		return "", nil, 0, 0, fmt.Errorf("%w: %w: status %d%s", ErrUnavailable, ErrProviderRefused, res.StatusCode, detail)
 	}
 	if len(parsed.Choices) == 0 {
-		return "", nil, 0, 0, fmt.Errorf("%w: no reply in the response", ErrUnavailable)
+		return "", nil, 0, 0, fmt.Errorf("%w: %w: no reply in the response", ErrUnavailable, ErrProviderNonsense)
 	}
 
 	// Tokens are returned even on the paths that then fail the guard, because

@@ -123,7 +123,8 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 		inTotal += in
 		outTotal += out
 		if err != nil {
-			slog.Error("the coach", "kind", t.Kind, "model", model, "error", err)
+			slog.Error("the coach", "kind", t.Kind, "model", model,
+				"why", Why(err), "error", err)
 			return Reply{}, err
 		}
 
