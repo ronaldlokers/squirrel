@@ -36,6 +36,51 @@
   // of listeners bound once at load.
   let deck = null;
 
+  // A tapped action is written ~1150ms after the press, so the undo has a card
+  // to sit on. Three things can take the page away inside that window — the
+  // way out of the deck, a live search replacing the stage, and the phone
+  // being locked or the app backgrounded — and in all three the write was
+  // simply lost, on a screen that had already shown you the stamp.
+  //
+  // `owed` is that write, held where anything that takes the page can settle
+  // it first. It clears itself, so settling twice is not a second write.
+  let owed = null;
+
+  // The ordinary way: hand the submission back to the browser, which navigates
+  // and gets the 303. Only works while the form is still in the document.
+  function settle() {
+    const o = owed;
+    owed = null;
+    if (!o) return;
+    o.stop();
+    o.form.requestSubmit(o.button);
+  }
+
+  // The last-moment way, for a page that is going whether or not the write is
+  // done: the same bytes, sent with `keepalive` so the browser finishes it
+  // after the document is gone. No navigation to wait for and none wanted —
+  // the answer is a 303 nobody will read.
+  function flush() {
+    const o = owed;
+    owed = null;
+    if (!o) return;
+    o.stop();
+    fetch(o.form.action, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: o.body,
+      keepalive: true,
+      credentials: "same-origin",
+    }).catch(() => {});
+  }
+
+  // Locked, switched away from, or closed. `pagehide` is the one iOS actually
+  // fires when an installed app is backgrounded; `visibilitychange` covers the
+  // tab going to the background without unloading. Both settle the same debt,
+  // and settling twice is not a second write.
+  addEventListener("pagehide", flush);
+  addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+
   function wire() {
     const card = document.getElementById("card");
     deck = card ? bindCard(card) : null;
@@ -63,6 +108,9 @@
     const chips = [...form.querySelectorAll("button[name=every]")];
     const neverMind = form.querySelector("[data-close=chore]");
     let going = false;
+    // The hold's own timer, and the write it still owes. Both live out here
+    // because two other things can take the page away before the hold is up.
+    let waiting = 0;
 
     // Act, then hold, then submit. The delay is not decoration: it is the
     // moment the spec asks for, and the undo has to be reachable while the
@@ -97,13 +145,28 @@
       undo.focus({ preventScroll: true });
       announce(s.said + ". Put it back is focused.");
 
-      setTimeout(() => {
+      // The way out stops being a way out. LATER is a link, so it navigates
+      // the moment it is pressed — and it sat live and visible through the
+      // whole hold, next to a card that had already been stamped. Pressing it
+      // took the page away before the write left, and the decision you had
+      // watched happen was simply gone.
+      card.querySelector("#later")?.setAttribute("hidden", "");
+
+      // What is owed to the server, if anything takes the page first. The body
+      // is built now, while the form is certainly still attached and certainly
+      // still says what was pressed.
+      const data = new FormData(button.form);
+      if (button.name) data.append(button.name, button.value);
+      owed = {
+        form: button.form,
+        button,
+        body: new URLSearchParams([...data].filter(([, v]) => typeof v === "string")),
+        stop() { clearTimeout(waiting); },
+      };
+
+      waiting = setTimeout(() => {
         card.classList.add("leaving");
-        setTimeout(() => {
-          // Hand the real submission back to the browser. The server does the
-          // write and answers 303, so a reload never repeats it.
-          button.form.requestSubmit(button);
-        }, leave());
+        waiting = setTimeout(settle, leave());
       }, hold());
     }
 
@@ -194,6 +257,11 @@
 
     const fresh = new DOMParser().parseFromString(html, "text/html").getElementById("stage");
     if (!fresh) return;
+    // Anything owed goes now, while the form that owes it is still in the
+    // document. Replacing the stage detaches that form, and a detached form
+    // does not submit — the browser refuses silently, so the press was kept,
+    // stamped, announced, and then dropped with nothing said.
+    settle();
     stage.innerHTML = fresh.innerHTML;
     stage.className = fresh.className;
     shown = query;
@@ -587,6 +655,22 @@
   }
 
   addEventListener("keydown", e => {
+    // A modal is modal for the keyboard too. Buddy's sheet is a <dialog>, and
+    // every letter below acts on the screen behind it — so with the sheet open
+    // and focus on any control that is not a text box, pressing `d` stamped
+    // the card underneath, invisibly, because a modal was over it. On the
+    // chores that same press could fire DID IT or STOP ASKING on whichever
+    // chore held the roving focus.
+    //
+    // `typing()` cannot cover this: it exempts text boxes, and the sheet's
+    // cross, its chips and its send button are none of those.
+    //
+    // The whole handler stands down rather than only the letters, and it does
+    // so wherever the focus is. A key pressed *inside* the sheet is the
+    // reported case — the sheet has no letter actions of its own, so there is
+    // nothing here for it to want, and "/" jumping you into a search field
+    // behind a modal is the same bug wearing a different key.
+    if (document.querySelector("dialog[open]")) return;
     if (e.target === find) {
       if (e.key === "Escape") { find.value = ""; clearTimeout(timer); swap(""); }
       return;
@@ -830,11 +914,35 @@
 
         const data = formDataFor(form, e.submitter);
         keepDraft();
-        await post(action, data);
-        // Whatever was said is now in the window on the server, so the sheet
-        // is re-read rather than patched. One source for what the conversation
-        // is, and no chance of the two disagreeing.
-        const fresh = await fetchSheet();
+
+        // The network can go while the question is in the air, and this is the
+        // screen you are on when you cannot start anything else — so it says
+        // so, in the slot's own words and with the slot's own shape.
+        //
+        // It said nothing at all before. `post` and `fetchSheet` were awaited
+        // bare, so a failure was an uncaught rejection: the button never
+        // moved, the box never cleared, nothing appeared, and because there is
+        // no spinner either, a slow answer and a dead one looked identical.
+        const pressed = form.querySelector(".post");
+        if (pressed) pressed.disabled = true;
+        let fresh;
+        try {
+          const res = await post(action, data);
+          // A 5xx is the same event as a dropped connection from here: the
+          // words did not land. `fetch` only rejects on the network, so this
+          // is the half that would otherwise pass for success.
+          if (!res.ok) throw new Error(res.status);
+          // Whatever was said is now in the window on the server, so the sheet
+          // is re-read rather than patched. One source for what the
+          // conversation is, and no chance of the two disagreeing.
+          fresh = await fetchSheet();
+        } catch {
+          // The words are still in the box, which is why the box is never
+          // cleared until the server has said something back.
+          saidInSheet(form, "Not sent — Squirrel cannot reach Buddy. Your words are still here; try again in a moment.");
+          if (pressed) pressed.disabled = false;
+          return;
+        }
         if (!fresh) { location.href = "/buddy"; return; }
         // The box empties when something was actually said, and keeps its
         // words when the server sent them back.
@@ -846,6 +954,20 @@
         sheet.querySelector(".talk")?.lastElementChild?.scrollIntoView({ block: "nearest" });
         box()?.focus();
       });
+    }
+
+    // What happened, on the sheet, in the slot's own voice. The element is in
+    // the markup rather than made here so the scriptless path renders the same
+    // shape and the stylesheet needs no second rule.
+    function saidInSheet(form, words) {
+      const said = form.querySelector("#saysaid");
+      if (!said) return;
+      said.textContent = words;
+      said.className = "slotsaid bad";
+      said.hidden = false;
+      // No timeout. A failure you have to be quick to read is a failure you
+      // will meet again without knowing why — the same reason the slot's own
+      // bad news stays until something else happens.
     }
 
     // Posted the way a form posts, and that is not a detail.

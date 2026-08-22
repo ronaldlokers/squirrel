@@ -6,7 +6,12 @@
 
   <div class="sheetlid">
     <img class="acornmark" alt="" src="/static/logo.png?v={{$.V}}" width="36" height="27">
-    <span class="sheetname">Buddy</span>
+    {{/* A heading, not a span. /buddy is a mounted route you can open
+         directly — and push will open it by default — so as a page it had no
+         heading element anywhere in it, which is the exact hole the one-frame
+         rule was written to close. As an overlay it is still the sheet's own
+         lid and looks identical. */}}
+    <h1 class="sheetname">Buddy</h1>
     <span class="spacer"></span>
     {{/* What this has cost, this month. The only accruing number on any screen
          in this product, and it is here because it is money rather than a
@@ -125,6 +130,13 @@
     <textarea name="said" rows="2" placeholder="what is going on"
       aria-label="Tell Buddy what is going on">{{$.Said}}</textarea>
     <button class="post" type="submit">Say it</button>
+    {{/* Where a failure goes, and the reason there is one at all: this form
+         posts through fetch, and until now a network that went while the
+         question was in the air did nothing whatsoever — no message, no button
+         state, nothing. The slot on home has said what happened since the day
+         it was written. This is the surface you reach for when you cannot
+         start anything, so it is the worst one to fail quietly on. */}}
+    <p class="slotsaid" id="saysaid" role="status" hidden></p>
   </form>
 
 </section>

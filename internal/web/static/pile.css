@@ -121,7 +121,16 @@
   }
   * { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
   :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
-  .card :focus-visible, .rcard :focus-visible { outline-color: var(--violet); }
+  /* Violet on card stock, wherever card stock is.
+     .chore and .sheet take the same --card fill and were left out, so the ring
+     on the chores list and inside Buddy stayed orange-lit: measured 2.03:1
+     against the 3:1 that WCAG 1.4.11 asks of a focus indicator, on the two
+     most keyboard-dense surfaces outside the deck. Violet on the same stock
+     measures about 7.7:1. */
+  .card :focus-visible,
+  .rcard :focus-visible,
+  .chore :focus-visible,
+  .sheet :focus-visible { outline-color: var(--violet); }
 
   /* ---------- the lid: the mascot's cap ---------- */
 
