@@ -30,11 +30,16 @@
           <span class="lead">COMES BACK</span>
           {{/* Cap purple marks where the interval currently sits. Purple is
                the product's own colour rather than a state or a reward: it can
-               say how things are without grading anyone. */}}
-          <button class="chip{{if eq .Chip "every day"}} current{{end}}" name="every" value="every day">every day</button>
-          <button class="chip{{if eq .Chip "every week"}} current{{end}}" name="every" value="every week">every week</button>
-          <button class="chip{{if eq .Chip "every 2 weeks"}} current{{end}}" name="every" value="every 2 weeks">every 2 weeks</button>
-          <button class="chip{{if eq .Chip "every month"}} current{{end}}" name="every" value="every month">every month</button>
+               say how things are without grading anyone.
+
+               And `aria-pressed` says the same thing in the other language.
+               Four buttons with identical text and identical roles, separated
+               only by a fill, is a state a screen reader cannot reach and a
+               forced-colours mode paints away. */}}
+          <button class="chip{{if eq .Chip "every day"}} current{{end}}" aria-pressed="{{if eq .Chip "every day"}}true{{else}}false{{end}}" name="every" value="every day">every day</button>
+          <button class="chip{{if eq .Chip "every week"}} current{{end}}" aria-pressed="{{if eq .Chip "every week"}}true{{else}}false{{end}}" name="every" value="every week">every week</button>
+          <button class="chip{{if eq .Chip "every 2 weeks"}} current{{end}}" aria-pressed="{{if eq .Chip "every 2 weeks"}}true{{else}}false{{end}}" name="every" value="every 2 weeks">every 2 weeks</button>
+          <button class="chip{{if eq .Chip "every month"}} current{{end}}" aria-pressed="{{if eq .Chip "every month"}}true{{else}}false{{end}}" name="every" value="every month">every month</button>
         </div>
       </details>
       <button class="abtn stop" name="act" value="retire">STOP ASKING <span class="key" aria-hidden="true">S</span></button>

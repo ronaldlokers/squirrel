@@ -685,6 +685,26 @@
     // The chores screen. Its own keys, because it is a list and the deck is
     // not — and its own branch, because there is no card here to act on.
     if (chores.length) {
+      // A question in progress owns the keys, exactly as it does on the deck:
+      // 1-4 answer it, and moving between chores is not what an arrow means
+      // while it is open.
+      //
+      // The deck earned those digits precisely so a picker could not be
+      // interrupted by movement keys. This screen has the same picker and
+      // never got the carve-out, so an arrow aimed at the four chips threw the
+      // focus onto a different chore's buttons — and the next letter then
+      // acted on that one.
+      const asking = focusedChore()?.querySelector("details.often[open]")
+        || document.querySelector("details.often[open]");
+      if (asking) {
+        const n = "1234".indexOf(e.key);
+        if (n >= 0) {
+          e.preventDefault();
+          asking.querySelectorAll(".chips .chip")[n]?.click();
+          return;
+        }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); return; }
+      }
       if (e.key === "ArrowDown") { e.preventDefault(); moveChore(1); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); moveChore(-1); return; }
       // Withdrawing the interval question is Escape here as it is on the deck.
