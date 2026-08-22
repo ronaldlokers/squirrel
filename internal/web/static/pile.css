@@ -95,9 +95,15 @@
        measured 4.19:1 at .5 — a fail — which quietly made every piece of
        secondary type on the field illegible in the one corner of the screen
        where the field is brightest. At .35 the lit centre carries cream at
-       4.8:1 and the room is still a room. */
+       4.8:1 and the room is still a room.
+
+       Where the light falls is the day's, between 8% and 26% across; 15% is
+       what it shipped as and what it stays if nothing says otherwise. Across
+       only — the height and the alpha are both fixed, because .35 is that
+       measurement and sliding a highlight sideways moves the same light
+       without ever making it brighter. */
     background-image:
-      radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
+      radial-gradient(120% 90% at var(--light, 15%) -10%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
       radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
     background-size: 100% 100%, 22px 22px;
     background-attachment: fixed;
@@ -379,13 +385,22 @@
     font-variation-settings: var(--precise), "wght" 850;
     letter-spacing: .1em;
     box-shadow: 0 4px 0 0 var(--sc, var(--outline));
-    transform: rotate(-7deg);
+    /* The lean is the day's, not the file's. It was pinned at -7deg for the
+       stamp's whole life; the server now hands down an angle between -11 and
+       -3 on the body, and this is what it shipped as when nothing does.
+
+       Novelty in art, which is what the roadmap sanctions, on the one object
+       here you read *after* acting rather than aim at. Never a control: a
+       button that moved a few degrees a day would be a different button. */
+    transform: rotate(var(--tilt, -7deg));
   }
   /* A stamp slams and stops. The weight is in the scale, not in a rebound. */
   .card.stamped .stamp { display: inline-flex; animation: slap 240ms cubic-bezier(.16, .84, .28, 1) both; }
   @keyframes slap {
     0%   { transform: rotate(-22deg) scale(1.7); opacity: 0; }
-    100% { transform: rotate(-7deg) scale(1); opacity: 1; }
+    /* Lands where the stamp rests, or the slap ends by snapping to a
+       different angle than it animated to. */
+    100% { transform: rotate(var(--tilt, -7deg)) scale(1); opacity: 1; }
   }
   .stamp .dot { width: 11px; height: 11px; border-radius: 3px; background: var(--sc); border: 2px solid var(--outline); }
 

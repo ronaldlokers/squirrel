@@ -58,7 +58,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Squirrel">
 </head>
-<body{{if .PushKey}} data-push-key="{{.PushKey}}"{{end}}>
+{{/* Today's two moving parts, handed to the stylesheet.
+     
+     On the body rather than in pile.css because pile.css is a static file
+     served with a long cache and cannot know what day it is, and rather than
+     in a <style> block because two custom properties are not a stylesheet.
+     Both have defaults in pile.css, so a page rendered without them is the
+     product exactly as it shipped. See squirrel.Tilt and squirrel.Light. */}}
+<body style="--tilt: {{.Tilt}}deg; --light: {{.Light}}%"{{if .PushKey}} data-push-key="{{.PushKey}}"{{end}}>
 <div class="lid">
   {{if .Home}}
   <span class="brand">
