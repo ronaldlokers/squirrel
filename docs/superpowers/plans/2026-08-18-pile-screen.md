@@ -1,5 +1,9 @@
 # Phase 5b — The Pile Screen Implementation Plan
 
+> **Executed.** A record of how the work was done, on the date in its name —
+> not a description of what the product is now. Nothing here has to stay true;
+> read `DESIGN.md`, `PRODUCT.md` and `docs/roadmap.md` for that.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the web screen for the pile — read, triage and search notes at `squirrel.ronaldlokers.nl`, behind Authentik forward-auth, rendering the approved comp.
