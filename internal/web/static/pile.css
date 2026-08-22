@@ -38,6 +38,12 @@
     --kept: #ffb300;      --kept-ink: #8a5c00;
     --dropped: #8a6a55;   --dropped-ink: #6a4f3e;
     --chore: var(--orange); --chore-ink: #b0530a;
+    /* Set aside is not a fifth page tab. The four state colours are the
+       notebook's tabs and stay four; a note you cannot act on is a thing at
+       rest, and it wears the brown the held capture message already wears for
+       exactly that reason. One pair for all three, because which of the three
+       is a fact about why, not about what happened. */
+    --held: var(--brown); --held-ink: var(--brown);
 
     --o: 8px;                  /* stack offset */
     /* Lifted fills: a state colour raised toward white until the card's dark

@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -113,7 +114,15 @@ func TestSettingAsideFromTheCardTakesItOutOfThePile(t *testing.T) {
 
 	w := m.call(t, "POST", "/held/act", strings.NewReader("aside=waiting&id=1&from=%2Fpile"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/pile", w.Header().Get("Location"))
+
+	// Back where you were, and carrying the way out — this used to be a bare
+	// "/pile", which is what made setting one aside the only disposition with
+	// no undo. The path is still the one you came from.
+	to, err := url.Parse(w.Header().Get("Location"))
+	require.NoError(t, err)
+	require.Equal(t, "/pile", to.Path)
+	require.Equal(t, "1", to.Query().Get("undo"))
+	require.Equal(t, "waiting", to.Query().Get("was"))
 
 	require.Len(t, f.aside, 1)
 	require.Equal(t, squirrel.ItemWaiting, f.aside[0].State)

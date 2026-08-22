@@ -371,6 +371,13 @@ type undoView struct {
 	State string
 	// Said is what happened, in the same words the card's own stamp uses.
 	Said string
+	// Action is where the way back is posted, because the three set-aside
+	// states do not come back the way the other four do: `open` is a state a
+	// note can be moved to, while a note that was set aside is *picked back
+	// up*, which is its own verb on its own route.
+	Action string
+	// From is where the way back returns you to, for the route that asks.
+	From string
 }
 
 // saidWords is the other half of pile.js's STATES table: what the screen says
@@ -383,6 +390,11 @@ var saidWords = map[string]string{
 	"dropped": "dropped",
 	"chore":   "now a chore",
 	"open":    "back in the pile",
+	// Setting one aside is a transition like any other, and until now it was
+	// the only one that said nothing afterwards and offered nothing back.
+	"waiting": "waiting on someone",
+	"blocked": "blocked on a thing",
+	"someday": "someday",
 }
 
 // backTo turns the state a note was in into the action word that returns it
@@ -407,11 +419,21 @@ func undoFrom(q url.Values) *undoView {
 	if err != nil || id == 0 {
 		return nil
 	}
+	said := saidWords[q.Get("state")]
+	// Set aside, which comes back by being picked back up rather than by being
+	// moved to a state. Checked first: the two vocabularies do not overlap, and
+	// this one is not in `backTo` on purpose.
+	if _, held := squirrel.ParseHeld(q.Get("was")); held {
+		return &undoView{
+			ID: id, State: "back", Said: said,
+			Action: "/held/act", From: backTolerant(q.Get("from")),
+		}
+	}
 	act, ok := backTo[squirrel.ItemState(q.Get("was"))]
 	if !ok {
 		return nil
 	}
-	return &undoView{ID: id, State: act, Said: saidWords[q.Get("state")]}
+	return &undoView{ID: id, State: act, Said: said, Action: "/pile/act"}
 }
 
 // clashFrom says whether this render is answering a decision the pile had

@@ -157,9 +157,10 @@
 {{with .Undo}}
 <div class="landed" role="status">
   <span class="said">{{.Said}}</span>
-  <form method="post" action="/pile/act">
+  <form method="post" action="{{.Action}}">
     <input type="hidden" name="id" value="{{.ID}}">
     <input type="hidden" name="q" value="{{$.Query}}">
+    {{with .From}}<input type="hidden" name="from" value="{{.}}">{{end}}
     <button class="undo" name="act" value="{{.State}}">PUT IT BACK</button>
   </form>
 </div>
