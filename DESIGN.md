@@ -506,6 +506,11 @@ label on the side of the box, played against the drawn mascot beside it.
   deck's note because it is being scanned rather than decided on.
 - **Meta** (`CASL` 0, `wght` 750, 11.5px, `0.1em`, uppercase): the date and
   state line above a result, a chore's rhythm, an offer's head.
+- **Group** (`CASL` 0, `wght` 760, 12.5px, `0.1em`, uppercase, cream): the
+  label over a run of cards saying what the run is — *WAITING ON* on the
+  set-aside, *CHORES* and *EVERYTHING ELSE* in search. A step above Meta
+  because it stands on the field rather than inside a card, and it is read on
+  the way past rather than once you have stopped.
 - **Voice** (`CASL` 1, `wght` 450, 17px): the product speaking in full
   sentences — an empty search, the answer to *I can't start*.
 - **Slot field** (`CASL` 1, `wght` 480, 18px, `1.45`): what you type into the

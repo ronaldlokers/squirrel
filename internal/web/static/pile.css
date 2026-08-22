@@ -1715,7 +1715,10 @@
     padding: 2px 0 2px 12px;
     display: flex; flex-direction: column; gap: 4px;
   }
-  .onscreen .head {
+  /* `.lead`, not `.head`: the markup has said `lead` since this block was
+     written, so this rule matched nothing and RIGHT NOW rendered as a
+     paragraph of body text above the thing it labels. */
+  .onscreen .lead {
     margin: 0;
     font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 750;
@@ -1994,13 +1997,19 @@
   .cantact[open] .ifopen { display: inline; }
 
   /* One day's readings. The faces are the same five drawings the check-in
-     offers, small: what you said, in the language you said it in. */
+     offers, small: what you said, in the language you said it in.
+
+     A grid rather than a row, because the day names are not the same length
+     and a row let each one set where its own reading started: "thursday 20
+     august" pushed its face 47px further right than "today" did, and readings
+     that should read as a column read as a stagger. */
   .aday {
-    display: flex; align-items: center; gap: 14px;
+    display: grid; grid-template-columns: 13.5em minmax(0, 1fr);
+    align-items: center; gap: 14px;
     width: min(720px, 100%); margin-bottom: 10px;
   }
   .aday .when {
-    margin: 0; min-width: 9.5em;
+    margin: 0;
     font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 680;
     color: var(--cream);
@@ -2520,16 +2529,24 @@
      used — except here, where it was reaching a heading in large white caps
      and out-shouting the <h1> above it. Semantic order and visual order
      disagreeing is worse than either being wrong on its own. */
-  .every .heldgroup {
+  /* Search groups its hits the same way, and was not styled at all: CHORES and
+     EVERYTHING ELSE rendered as 16px sentence-case paragraphs, larger and
+     lighter than the two labels doing the identical job one screen away. One
+     job, one treatment. */
+  .every .heldgroup,
+  .results .lead {
     margin: 26px 0 12px;
     font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 760;
     color: var(--cream);
   }
-  .every .heldgroup:first-of-type { margin-top: 4px; }
+  .every .heldgroup:first-of-type,
+  .results .lead:first-of-type { margin-top: 4px; }
 
-  /* Each day is one row and its width is the frame's, not the words'. */
-  .aday .when { min-width: 8em; }
+  /* Each day is one row and its width is the frame's, not the words'. The
+     `min-width` that used to live here said 8em and silently outranked the
+     9.5em stated where the row is built, which is how a floor became a floor
+     nothing reached. The column is stated once now, where the row is. */
 
   /* The door out of the ending, and it is the point of the room. Orange
      because leaving is the thing this screen is for — the one place in the
@@ -2558,4 +2575,57 @@
     object-fit: cover;
     background: var(--card-deep);
     border: var(--line) solid var(--outline); border-radius: 10px;
+  }
+
+/* ---------------------------------------------------------------- */
+/* 8. The meta label, and three things measured against it.          */
+/* ---------------------------------------------------------------- */
+/*
+ * `.lead` is this product's name for the small line that says what the thing
+ * under it is: HOW OFTEN?, WHICH OF THESE IS IT, WHAT IS IT. The stylesheet
+ * already claimed, in section 2, that it "is the meta role and is set in cream
+ * at 11.5px everywhere it is used". It was not. It was set in six scoped
+ * rules, and the three sites none of those reached — CHORES and EVERYTHING
+ * ELSE on the search results, COMES BACK inside a chore's interval row, and
+ * RIGHT NOW above Buddy's context — rendered as ordinary 16px body text,
+ * larger and lighter than the thing they label.
+ *
+ * The role has a definition of its own now, so the claim is true by
+ * construction rather than by six selectors happening to cover the ground. The
+ * scoped rules all outrank it and keep their sizes. Brown rather than cream,
+ * because most of these labels stand on a card; the two that stand on the
+ * field say cream themselves.
+ */
+  .lead {
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+
+  /* Quieter than a card in the deck was the point; narrower was not. Every
+     other list card on the frame's 720px insets its words by 20px and this one
+     by 16, so two lists of the same rows started their text four pixels apart
+     on two screens that are one tab from each other. */
+  .aside { padding: 15px 20px 16px; }
+
+  @media (max-width: 620px) {
+    .aside { padding: 16px 20px 17px; }
+
+    /* The panel ends where the page ends.
+     *
+     * It hangs from the right edge of its own control, and this control is not
+     * the last one in the lid — the menu is. So a 320px panel on a 390px phone
+     * started two pixels from the side of the screen: eleven pixels outside
+     * the margin every other thing on the page keeps, and 54px short of the
+     * right edge the menu's own panel uses. The pull is that 54px, and it is
+     * the two things between this icon and the page's edge: the menu button's
+     * 44px and the lid's 10px gap. */
+    .findbox .find { right: calc(-44px - 10px); }
+
+    /* Eight pixels under DID IT, in the same thumb column, sat the one press
+       on this screen that ends something. The two-column grid put it there;
+       nothing chose it. It keeps its column — full width would make the
+       destructive press the largest thing on the card — and stops being the
+       next thing down. */
+    .chore .abtn.stop { margin-top: 12px; }
   }
