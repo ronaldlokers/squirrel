@@ -131,11 +131,6 @@ func TestBrowserTheSlotsKeyDoesNotTakeTheDecksTask(t *testing.T) {
 	require.Equal(t, false, c.eval(t, `return !!document.activeElement.closest(".slot")`),
 		"t reached a slot on a screen that also has a deck, where it means A TASK")
 
-	// What the stamp *says* for this one is wrong on main and is not this
-	// branch's business — see the issue this test's failure produced. What
-	// matters here is that the press still reached the card rather than a slot.
-	require.Equal(t, "task",
-		c.eval(t, `return document.querySelector("#actions [data-act=task]").dataset.act`))
-	require.Equal(t, true, c.eval(t, `return document.getElementById("card").classList.contains("stamped")`),
-		"t on the deck no longer acts on the card")
+	require.Equal(t, "A TASK", c.eval(t, `return document.getElementById("stampText").textContent`),
+		"t on the deck stopped meaning A TASK")
 }

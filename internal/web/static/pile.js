@@ -32,6 +32,10 @@
     keep:  { word: "KEPT",    said: "kept as reference" },
     drop:  { word: "DROPPED", said: "dropped" },
     chore: { word: "CHORE",   said: "now a chore" },
+    // Deciding is not disposing, and this was the one answer with no entry
+    // here — so it fell through to `STATES.done` and a note promoted to a task
+    // stamped itself DONE.
+    task:  { word: "A TASK",  said: "now a task" },
     // Set aside. The same three the server knows, so the stamp on the card and
     // the line on the next page say the same thing for the same press — which
     // is the rule saidWords exists to keep.
@@ -134,6 +138,7 @@
       const kind = button.dataset.act || button.value || "done";
       const s = STATES[kind] || STATES.done;
       const token = kind === "keep" ? "kept" : kind === "drop" ? "dropped"
+        : kind === "task" ? "violet"
         : STATES[kind] && kind in HELD ? "held" : kind;
       stamp.style.setProperty("--sc", `var(--${token})`);
       stamp.style.setProperty("--sct", `var(--${token}-ink)`);
