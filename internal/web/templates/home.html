@@ -104,7 +104,7 @@
     {{/* Answered, and it says so whether or not there is anything to offer.
 
          It used to say so only when the picker came back empty: the mood, the
-         way to change it, and the one link to what you said before all lived
+         way to change it, and the one link to how you felt before all lived
          in the `{{"{{else}}"}}` of the offer. So on any ordinary day — checked in,
          one thing to do — none of them existed, and `/moods` was reachable
          from nowhere in the product. A mis-tapped "wiped" then quietly
@@ -121,7 +121,11 @@
       <span><img alt="" src="/static/mood-{{.Mood}}.png?v={{.V}}" width="260" height="209">noted &mdash; {{.MoodWord}}</span>
       {{if and (not .Offer) (not .Anyway)}}<a class="again" href="/?anyway=1">show me something anyway</a>{{end}}
       <a class="again" href="/?ask=1">say something else</a>
-      <a class="view" href="/moods">what you said before</a>
+      {{/* Not "what you said before". The pile's own door, one viewport below
+           this, is labelled "what you said" — so the same words named two
+           different things on one screen, notes and readings, and Principle 7
+           wants this page reached by a name that says which. */}}
+      <a class="view" href="/moods">how you felt before</a>
     </p>
     {{with .Offer}}
     <section class="offer" aria-label="Right now">
