@@ -203,11 +203,28 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	require.GreaterOrEqual(t, onChore, 3.0,
 		"the ring on a chore measures %.2f:1 against the card it sits on", onChore)
 
-	c.navigate(t, srv.URL+"/buddy")
-	tabTo(t, c, ".sheet .post")
-	inSheet := contrast(t, c, ".sheet .post", "outline-color", ".sheet")
+	// In the overlay, where the sheet really is cream stock. It is measured
+	// there rather than on `/buddy` because the page route has no card behind
+	// it any more — the conversation stands on the field — so `.sheet` is not
+	// the ground there and measuring against it would be measuring against
+	// nothing.
+	c.navigate(t, srv.URL+"/pile")
+	c.eval(t, `document.querySelector(".tobuddy").click(); return 1`)
+	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
+	tabTo(t, c, "dialog.coachsheet .sheet .post")
+	inSheet := contrast(t, c, "dialog.coachsheet .sheet .post", "outline-color", "dialog.coachsheet .sheet")
 	require.GreaterOrEqual(t, inSheet, 3.0,
 		"the ring in Buddy's sheet measures %.2f:1 against the card it sits on", inSheet)
+
+	// And on the page, where the ground under that same button is the slot.
+	// The override keys off `.sheet` as an ancestor, so it still applies —
+	// this is what proves it, rather than the treatment change quietly having
+	// taken the ring back to orange-lit on a cream slot.
+	c.navigate(t, srv.URL+"/buddy")
+	tabTo(t, c, ".sheet .post")
+	onSlot := contrast(t, c, ".sheet .post", "outline-color", ".sheet .slot")
+	require.GreaterOrEqual(t, onSlot, 3.0,
+		"the ring on Buddy's page measures %.2f:1 against the slot it sits in", onSlot)
 }
 
 // The rarest of five answers was the widest, loudest object on the card.

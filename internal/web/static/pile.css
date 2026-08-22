@@ -1338,11 +1338,13 @@
   .cantstart[open] .ifopen { display: inline; }
 
   .whys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0 2px; }
+  /* The fallback is for anywhere this ever stands outside the sheet; inside
+     it, the sheet's own quiet ink is what makes it legible on either ground. */
   .whys .lead {
     width: 100%; margin: 0 0 2px;
     font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 750;
-    color: var(--brown);
+    color: var(--sheet-quiet, var(--brown));
   }
   /* Four answers, all the same weight. One of them being louder would be the
      product guessing which it is, and it does not know. */
@@ -1749,13 +1751,32 @@
      and nothing else, and this product does not form opinions from how a
      button gets used. Both still hold wherever Buddy lives. */
 
+  /* Buddy is a screen when you go to it and an object when it comes to you,
+     and it is the same markup either way.
+     
+     It used to be the object in both. Reached as a page — which is where a
+     notification tap lands, and push is becoming the way in — it was a 640px
+     bordered card with a close cross, sitting in the top sixth of an otherwise
+     empty field. Nothing else in this product does that: `/enough` is just as
+     sparse and its content stands directly on the field, because a card is a
+     note and a screen is not one. A card floating in a room reads as an
+     overlay that failed to overlay.
+     
+     So the card chrome belongs to the overlay, which is the only place it is
+     true, and the page gets what every other screen gets.
+     
+     The two inks are tokens rather than repeated colours, because eight
+     children of this thing say "quiet" and each of them means dark-on-cream in
+     one context and cream-on-purple in the other. One pair of tokens, set
+     twice, is the difference between this and eight duplicated rules that
+     drift apart. */
   .sheet {
+    --sheet-ink: var(--paper);
+    --sheet-quiet: var(--cream);
+    --sheet-wash: var(--cream-wash);
     width: min(640px, 100%);
     display: flex; flex-direction: column; gap: 14px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-    padding: 16px 18px 18px;
+    color: var(--sheet-quiet);
   }
 
   /* Its own little lid, so the sheet is recognisably the same product without
@@ -1764,10 +1785,15 @@
     display: flex; align-items: center; gap: 10px;
     margin: -4px -4px 0;
   }
+  /* On the page this is the screen's title and is set like every other one —
+     the wordmark's own face at 21px on paper, which is The One Title Rule.
+     Inside the overlay it is the sheet's own small lid and stays 17px. */
   .sheetname {
     font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 900; font-size: 17px; letter-spacing: -.01em;
+    font-weight: 900; font-size: 21px; letter-spacing: -.01em;
+    color: var(--sheet-ink);
   }
+  dialog.coachsheet .sheetname { font-size: 17px; }
   .sheetlid .spacer { flex: 1; }
   /* The way out, as a control rather than a sentence: a 44px target in the
      corner people already reach for. */
@@ -1776,11 +1802,11 @@
     width: 44px; height: 44px; padding: 0;
     display: grid; place-items: center;
     background: none; border: 0; border-radius: 999px;
-    color: var(--brown); cursor: pointer;
+    color: var(--sheet-quiet); cursor: pointer;
     transition: background-color 90ms ease-out, color 90ms ease-out;
   }
-  .shut:hover { background: var(--paper-deep); color: var(--outline); }
-  .shut:active { background: var(--card-deep); }
+  .shut:hover { background: var(--sheet-wash); color: var(--sheet-ink); }
+  .shut:active { background: var(--sheet-wash); }
 
   .talk { display: flex; flex-direction: column; gap: 12px; }
 
@@ -1790,17 +1816,17 @@
   .badly .quietpick {
     min-height: 44px; padding: 8px 2px;
     background: none; border: 0;
-    color: var(--brown);
+    color: var(--sheet-quiet);
     font-size: 13px;
     font-variation-settings: var(--casual), "wght" 450;
     text-decoration: underline; text-underline-offset: 3px;
     cursor: pointer;
   }
-  .badly .quietpick:hover { color: var(--outline); }
+  .badly .quietpick:hover { color: var(--sheet-ink); }
   /* Heard, and nothing else. */
   .heard {
     margin: 0;
-    font-size: 13px; color: var(--brown);
+    font-size: 13px; color: var(--sheet-quiet);
     font-variation-settings: var(--casual), "wght" 450;
   }
 
@@ -1819,16 +1845,17 @@
     margin: 0;
     font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 750;
-    color: var(--brown);
+    color: var(--sheet-quiet);
   }
   .onscreen .what {
     margin: 0; font-size: 18px; line-height: 1.3;
     font-variation-settings: var(--casual), "wght" 560;
+    color: var(--sheet-ink);
   }
   .onscreen .because {
     margin: 0; font-size: 14px; line-height: 1.35;
     font-variation-settings: var(--casual), "wght" 450;
-    color: var(--brown);
+    color: var(--sheet-quiet);
   }
 
   /* Two voices, the same two as everywhere else: your words on cream, his on
@@ -1892,7 +1919,14 @@
     display: flex; align-items: stretch; justify-content: flex-end;
     margin: 0;
   }
+  /* The card, and only here. Everything the page version does without. */
   dialog.coachsheet .sheet {
+    --sheet-ink: var(--outline);
+    --sheet-quiet: var(--brown);
+    --sheet-wash: var(--paper-deep);
+    background: var(--card); color: var(--sheet-ink);
+    border: var(--line) solid var(--outline);
+    padding: 16px 18px 18px;
     width: 100%; height: 100%;
     border-radius: var(--r) 0 0 var(--r);
     border-right: 0;
@@ -2047,7 +2081,7 @@
     font-size: 12px;
     font-variation-settings: var(--precise), "wght" 550;
     font-variant-numeric: tabular-nums;
-    color: var(--brown);
+    color: var(--sheet-quiet, var(--brown));
   }
 
   /* Something you cannot act on. Quieter than a card in the deck: these are
