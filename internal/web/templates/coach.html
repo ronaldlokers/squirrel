@@ -60,10 +60,34 @@
     {{/* The conversation, oldest first. Your words on cream in the casual
          axis, Squirrel's on paper in the Voice role — the same two voices as
          everywhere else. */}}
-    {{range .Said}}
-    <p class="mine">{{.Said}}</p>
-    <p class="his">{{.Replied}}</p>
+    {{$talk := .Said}}
+    {{range $i, $turn := $talk}}
+    <p class="mine">{{$turn.Said}}</p>
+    <p class="his">{{$turn.Replied}}</p>
+    {{/* "That landed badly", on the last thing said and nowhere else.
+
+         Principle 5 was opened knowing the coach could say something that
+         lands badly on a bad day, and every exchange has been kept since for
+         exactly that reason — and never read back. This is the press that
+         makes it matter.
+
+         One press rather than a box, because the moment it exists to serve is
+         the moment there is least to spend on it: a bad reply, late, on a
+         night already going badly. A form to fill in then is a form nobody
+         fills in.
+
+         On the last reply only: an exchange is two strings and carries no row
+         id, so this can only sensibly mean "the one I just read". */}}
+    {{if eq (len $talk) (add $i 1)}}
+    <form class="badly" method="post" action="/buddy/badly">
+      <button class="quietpick" type="submit">that landed badly</button>
+    </form>
     {{end}}
+    {{end}}
+    {{/* Heard, and nothing else. No count, no list, no thanks — what it feeds
+         is the next prompt, where the model is shown the words rather than
+         told about them. */}}
+    {{if .Heard}}<p class="heard" role="status">noted — Buddy will be shown that one</p>{{end}}
 
     {{/* A thing the coach wants permission for. It is not stored anywhere:
          everything it needs travels in this form, so it cannot be applied by
