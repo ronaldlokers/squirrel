@@ -55,3 +55,24 @@ func TestTheMoodHistoryIsNamedForFeelingRatherThanForSaying(t *testing.T) {
 	// The link and the page it opens agree, or the rename made it worse.
 	require.Contains(t, m.call(t, "GET", "/moods", nil).Body.String(), "how you felt before")
 }
+
+// Control labels never vary, whatever the day.
+//
+// This is the boundary the whole experiment lives inside. Muscle memory is
+// what Principle 6's "the same every time" protects: a sentence you read is
+// worth varying, and a button you have learned to press without reading is
+// not. A control that renames itself is a control you have to read again.
+func TestNoControlRenamesItself(t *testing.T) {
+	f := &fakeStore{
+		items:   []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)},
+		checkin: &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()},
+	}
+	m := mounted(t, f)
+
+	// The deck's five answers and the slot's button: the words a hand learns.
+	deck := m.call(t, "GET", "/pile", nil).Body.String()
+	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "MAKE A CHORE", "PUT IT BACK"} {
+		require.Contains(t, deck, label, "the deck stopped saying %q", label)
+	}
+	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), ">Tell it<")
+}

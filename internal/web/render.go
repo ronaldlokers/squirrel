@@ -83,6 +83,14 @@ type view struct {
 	// Elsewhere is everywhere you are not, filled by render. It sits behind the
 	// lid's one control rather than beside it.
 	Elsewhere []linkView
+	// The four sentences met most often, in today's wording. Habituation is
+	// the documented enemy and the card stack was the only thing that moved;
+	// these are art-and-phrasing novelty, which is what the roadmap sanctions.
+	// Every control label is deliberately absent from this list.
+	SaySlot   string
+	SayOffer  string
+	SayStop   string
+	SayEnough string
 	// Place is where you are, in the menu's own words, so the shut control can
 	// say it without the template knowing the mapping.
 	Place string
@@ -536,6 +544,12 @@ func render(w http.ResponseWriter, name string, v view) {
 	// page — which was true and is the wrong trade: a frame with a hole in it
 	// on the one screen you open most is not a frame. The doors stay what they
 	// are, a richer way in; the menu stays where it always is.
+	// What the sentences say today. Chosen from the day, so both viewports
+	// agree and a reload is not a slot machine — see squirrel.Say.
+	v.SaySlot = squirrel.Say(squirrel.SayingSlot, now())
+	v.SayOffer = squirrel.Say(squirrel.SayingOffer, now())
+	v.SayStop = squirrel.Say(squirrel.SayingStop, now())
+	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
 	v.Elsewhere = elsewhere(v.Here)
 	v.Place = placeName(v.Here)
 	if !v.Home {
