@@ -250,6 +250,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	split, splittable := splitter(s.coach)
 	hold := interrupter(s.coach, store)
 	spent := spentFor(s.coach, s.budget)
+	over := overFor(s.coach, s.budget)
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
@@ -307,7 +308,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	go func() {
 		defer close(s.drained)
 		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
-			coachChat(asker(s.coach, store, s.talk)), decide, makeSmaller, hold)
+			coachChat(asker(s.coach, store, s.talk)), decide, makeSmaller, hold, over)
 	}()
 
 	return s, nil
@@ -322,7 +323,7 @@ type Asker func(ctx context.Context, personID int64, kind, said, subject string)
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
 func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64, ask Asker, decide squirrel.Decider, makeSmaller squirrel.Breaker,
-	hold squirrel.Interrupter) {
+	hold squirrel.Interrupter, over func(context.Context, int64) bool) {
 	var personID int64
 	for {
 		var err error
@@ -396,6 +397,7 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		applier.SetCoach(ask)
 		applier.SetDecider(decide)
 		applier.SetBreaker(makeSmaller)
+		applier.SetSpent(over)
 		squirrel.SetCoachHere(ask != nil)
 
 		if config.Campfire != nil {

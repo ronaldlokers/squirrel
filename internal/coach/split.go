@@ -87,6 +87,9 @@ func (p *Provider) Split(ctx context.Context, personID int64, text string) ([]st
 	if err != nil {
 		return nil, ErrUnavailable
 	}
+	// The gate is given back whichever way this returns. `defer` rather
+	// than a release at the end, because the end is not the only exit.
+	defer permit.Release()
 
 	_, calls, in, out, err := p.completionWithTools(ctx, permit, p.Fast, []chatMessage{
 		{Role: "system", Content: splitPreamble},

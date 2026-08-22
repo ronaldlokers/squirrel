@@ -131,6 +131,9 @@ func (p *Provider) Decide(ctx context.Context, personID int64) (Decision, error)
 	if err != nil {
 		return Decision{}, ErrUnavailable
 	}
+	// The gate is given back whichever way this returns. `defer` rather
+	// than a release at the end, because the end is not the only exit.
+	defer permit.Release()
 
 	// Everything a tool handed back, so that choose() can be checked against
 	// it. This is the reason the model cannot invent a task.

@@ -67,6 +67,9 @@ type Applier struct {
 	// and the ladder's fixed line is the whole answer then, which is what
 	// shipped before any of this existed.
 	breaker Breaker
+	// spent answers "is this month's coach budget gone", or is nil. See
+	// SetSpent for why it is a function rather than a number.
+	spent func(context.Context, int64) bool
 }
 
 // SetCoach supplies the callback that asks a model, or nil for no coach.
@@ -84,6 +87,18 @@ func (a *Applier) SetDecider(d Decider) { a.decider = d }
 
 // SetBreaker supplies the callback that breaks a thing into steps, or nil.
 func (a *Applier) SetBreaker(b Breaker) { a.breaker = b }
+
+// SetSpent supplies "is this month's coach budget gone".
+//
+// A function rather than a number, and injected rather than read, for the same
+// reason the coach itself is: this package does not import internal/coach and
+// never will, because the core must not depend on a model being reachable.
+// Boot adapts, which is what boot is for.
+//
+// Nil is the ordinary state — no coach configured, or nobody wired it — and
+// means the same as "not spent": the message says only what it can stand
+// behind.
+func (a *Applier) SetSpent(f func(context.Context, int64) bool) { a.spent = f }
 
 // SetNudger supplies the callback that may attach a nudge to a capture. It is
 // set after construction because the Applier and the Scheduler each need the
@@ -808,7 +823,26 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 		// product can choose one without a model — that is what PickNow is.
 		// Pointing at !stuck instead would be answering a pile with a
 		// question about a thing nobody has named yet.
-		if subject != "" {
+		// Why, when the why is worth knowing.
+		//
+		// Every reason Buddy goes quiet gives the same behaviour on purpose —
+		// the picker chooses, the ladder answers, Rule 10 holds. But one of
+		// them is not "try again in a minute": a spent month is spent until
+		// the first, and typing the same thing four more times at eleven at
+		// night is the one outcome this can spare you. The screen has shown
+		// the figure in the sheet's lid all along; a session that lives in the
+		// room never sees it.
+		//
+		// No number here, and that is deliberate. What it costs is on a
+		// surface you go to on purpose; what belongs in the room is only that
+		// asking again tonight will not help.
+		done := a.spent != nil && a.spent(ctx, personID)
+		switch {
+		case done && subject != "":
+			return Message{Text: "Buddy is done for this month. Start with " + subject + "."}, nil
+		case done:
+			return Message{Text: "Buddy is done for this month. Try !stuck."}, nil
+		case subject != "":
 			return Message{Text: "Nothing useful to say to that. Start with " + subject + "."}, nil
 		}
 		return Message{Text: "Nothing useful to say to that. Try !stuck."}, nil

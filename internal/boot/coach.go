@@ -287,6 +287,30 @@ func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
 //
 // Nil when there is no coach: a line saying "€0.00 of €10" under a sheet that
 // cannot call anything would be reporting on a thing that is not there.
+// overFor answers "is this month's coach budget gone", for the room.
+//
+// The screen has shown the figure in the sheet's lid since it was written, and
+// a session that lives in Campfire never sees it — so someone typing `!buddy`
+// at eleven at night could not tell "try again in a minute" from "not until
+// the first" and would try again four more times.
+//
+// A boolean rather than the figure. What it costs is on a surface you go to on
+// purpose; what belongs in the room is only that asking again tonight will not
+// help. Nil when there is no coach or no ceiling, and nil means "do not say
+// so", because a month with no ceiling is never spent.
+func overFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) bool {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return func(ctx context.Context, personID int64) bool {
+		spent, ceiling, ok := budget.Spent(ctx, personID, time.Now())
+		if !ok || ceiling <= 0 {
+			return false
+		}
+		return spent >= ceiling
+	}
+}
+
 func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (string, string, bool) {
 	if _, none := c.(coach.NoCoach); none {
 		return nil

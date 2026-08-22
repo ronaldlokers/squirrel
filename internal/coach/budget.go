@@ -106,14 +106,80 @@ func (b Budget) Allows(ctx context.Context, personID int64, now time.Time) (bool
 // So the check is not remembered any more. `completionWithTools` will not
 // compile without one of these, which means the floor is a property of the
 // type system rather than of anyone's memory.
-type Permit struct{ _ struct{} }
+type Permit struct {
+	// held says this permit is holding the gate, so releasing it means
+	// something. A permit issued after the wait expired holds nothing and
+	// releasing it must not free somebody else's turn.
+	held bool
+}
+
+// Release gives the gate back. Safe to call twice and safe to call on a permit
+// that never held it, because the call sites use `defer` and a rule that only
+// works when six people remember it is the rule this file exists to stop
+// needing.
+func (p *Permit) Release() {
+	if p == nil || !p.held {
+		return
+	}
+	p.held = false
+	select {
+	case <-spending:
+	default:
+	}
+}
 
 // Ask answers with a Permit, or with ErrUnavailable and the reason already
 // logged. `instead` names what takes over when it does — the picker, the
 // ladder, the rules — because crossing the ceiling is the system working and
 // the log should read like it.
+// One paid call at a time.
+//
+// The ceiling is checked before a call and the spend is recorded after it, so
+// two requests arriving together could both read "under ceiling" and both
+// spend — a webhook redelivery landing while the sheet is mid-answer is the
+// realistic version. The docstring at the top of this file names a retry loop
+// as the thing it guards against, and a plain check-then-act does not guard
+// against that at all.
+//
+// A channel rather than a mutex, because this one has to be able to give up.
+// The alternative designs each put a second obligation on six call sites —
+// reserve here, settle there — and a reservation that is never settled hangs
+// every future call, which is worse than the overshoot it prevents. This
+// cannot hang: if the holder takes longer than any real call could, the next
+// caller says so and goes anyway. The bad case degrades to the behaviour that
+// exists today rather than to a product that has stopped.
+//
+// Single replica, one person. Two pods would need this in the database, and
+// the day there are two pods this comment is where to start.
+var spending = make(chan struct{}, 1)
+
+// spendWait is longer than a model call and shorter than a person's patience.
+// A wait this long means something is genuinely wrong, and the log says so.
+// A var rather than a const so a test can make it short. The escape hatch is
+// the part of this design that stops a forgotten release becoming a hang, and
+// a ninety-second escape hatch is one no test would ever wait for — which
+// would leave the safety net itself unproven.
+var spendWait = 90 * time.Second
+
 func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead string) (Permit, error) {
+	held := false
+	select {
+	case spending <- struct{}{}:
+		held = true
+	case <-ctx.Done():
+		return Permit{}, ctx.Err()
+	case <-time.After(spendWait):
+		// Going anyway. The ceiling is still checked below — what is given up
+		// is only the guarantee that nobody checks it at the same moment, and
+		// the cost of that is one call's overshoot rather than a hang.
+		slog.Warn("a coach call held the budget gate too long; checking the ceiling without it",
+			"waited", spendWait)
+	}
+
 	if ok, spent := b.Allows(ctx, personID, now); !ok {
+		if held {
+			<-spending
+		}
 		// Info, not error. Crossing the ceiling is the system working: the
 		// deterministic answers take over for the rest of the month and
 		// nothing about the product stops.
@@ -121,7 +187,7 @@ func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead 
 			"spent_micros", spent, "ceiling_micros", b.CeilingMicros)
 		return Permit{}, ErrUnavailable
 	}
-	return Permit{}, nil
+	return Permit{held: held}, nil
 }
 
 // Spent is what this month has cost so far and what the ceiling is, both in
