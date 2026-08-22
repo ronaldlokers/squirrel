@@ -39,6 +39,7 @@ down here because no test covers it.
 | `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
 | `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |
 | `/pile/chores` | **301 to `/chores`** | LAN or tailnet, then Authentik |
+| `/enough` | stopping, as a place rather than as closing the tab | LAN or tailnet, then Authentik |
 | `/coach`, `/coach/…` | **301 to `/buddy`** — it was called the coach in v0.14 | LAN or tailnet, then Authentik |
 | `/static/…` | stylesheet, script, fonts, mark, icons, door art | LAN or tailnet, no identity |
 | `/manifest.webmanifest` | the manifest | LAN or tailnet, no identity |

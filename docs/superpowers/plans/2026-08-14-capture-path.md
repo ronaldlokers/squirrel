@@ -1,5 +1,9 @@
 # Phase 1 Capture Path Implementation Plan
 
+> **Executed.** A record of how the work was done, on the date in its name —
+> not a description of what the product is now. Nothing here has to stay true;
+> read `DESIGN.md`, `PRODUCT.md` and `docs/roadmap.md` for that.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A Campfire direct message arrives, its raw text is stored durably, and the room gets a 🐿️ back.
