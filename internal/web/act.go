@@ -80,12 +80,34 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 		// joining a map of states and pretending to be one. The three
 		// disposals end a note; this moves it, and it stays open because
 		// deciding to do a thing is not doing it.
-		if r.FormValue("act") == "task" {
-			if _, err := s.SetItemKind(r.Context(), personID, id, squirrel.ItemTask); err != nil {
+		if act := r.FormValue("act"); act == "task" || act == "note" {
+			// Deciding is not disposing, so it takes its own branch rather
+			// than joining a map of states and pretending to be one — and the
+			// way back out of it is its own verb for the same reason. The
+			// note's state never moved, so `act=open` would undo nothing;
+			// what changed was its kind, and putting it back means making it
+			// a note again.
+			kind := squirrel.ItemTask
+			if act == "note" {
+				kind = squirrel.ItemNote
+			}
+			if _, err := s.SetItemKind(r.Context(), personID, id, kind); err != nil {
 				fail(w, err)
 				return
 			}
-			back(w, r, opts, url.Values{})
+			if act == "note" {
+				// Undoing is not a thing to be offered an undo for.
+				back(w, r, opts, url.Values{})
+				return
+			}
+			// The same way back the four dispositions have. This carried
+			// nothing at all, so the one answer on the card that moves a note
+			// between two screens was the one with no way to change your mind.
+			back(w, r, opts, url.Values{
+				"undo":  {strconv.FormatInt(id, 10)},
+				"was":   {"task"},
+				"state": {"task"},
+			})
 			return
 		}
 

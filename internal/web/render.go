@@ -389,7 +389,11 @@ var saidWords = map[string]string{
 	"kept":    "kept as reference",
 	"dropped": "dropped",
 	"chore":   "now a chore",
-	"open":    "back in the pile",
+	// Deciding is not disposing, and it was the one answer on the card with no
+	// word here at all — so the stamp fell through to the default and a note
+	// promoted to a task announced itself as "marked done".
+	"task": "now a task",
+	"open": "back in the pile",
 	// Setting one aside is a transition like any other, and until now it was
 	// the only one that said nothing afterwards and offered nothing back.
 	"waiting": "waiting on someone",
@@ -420,6 +424,12 @@ func undoFrom(q url.Values) *undoView {
 		return nil
 	}
 	said := saidWords[q.Get("state")]
+	// A promotion, which comes back by being made a note again rather than by
+	// being moved to a state: what changed was the note's kind, and its state
+	// never moved, so `act=open` would undo nothing at all.
+	if q.Get("was") == "task" {
+		return &undoView{ID: id, State: "note", Said: said, Action: "/pile/act"}
+	}
 	// Set aside, which comes back by being picked back up rather than by being
 	// moved to a state. Checked first: the two vocabularies do not overlap, and
 	// this one is not in `backTo` on purpose.
