@@ -40,7 +40,7 @@
        offered, which is correct and costs the offline hold on a screen that
        has no stash to lose it from either. */}}
   <form class="slot" method="post" action="/capture"{{if .Camera}} enctype="multipart/form-data"{{end}}>
-    <textarea name="text" rows="1" placeholder="tell me a thing"
+    <textarea name="text" rows="1" placeholder="{{.SaySlot}}"
       aria-label="Tell Squirrel a thing">{{.Said}}</textarea>
     {{if .Camera}}
     {{/* No `capture` attribute, and that is the whole of the second bug here.
@@ -129,7 +129,7 @@
     </p>
     {{with .Offer}}
     <section class="offer" aria-label="Right now">
-      <p class="lead">RIGHT NOW</p>
+      <p class="lead">{{$.SayOffer}}</p>
       <p class="what">{{.Text}}</p>
       <p class="because">{{.Because}}</p>
       {{if .Running}}

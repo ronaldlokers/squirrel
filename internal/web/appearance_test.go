@@ -105,6 +105,15 @@ func TestTheScreensLookLikeThemselves(t *testing.T) {
 		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
 	}
 
+	// The clock is frozen, and that is load-bearing rather than tidy: four of
+	// the sentences on these screens are chosen from the date, so a snapshot
+	// taken on a Tuesday would fail on a Wednesday for a reason that has
+	// nothing to do with anybody's change. A record that expires is a record
+	// that teaches you to regenerate it without reading it.
+	was := now
+	now = func() time.Time { return time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { now = was })
+
 	srv := screenWith(t, f, &fakeCoach{reply: "one thing at a time."})
 	c := browserAt(t, srv, "/")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{

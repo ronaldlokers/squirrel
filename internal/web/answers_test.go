@@ -22,8 +22,11 @@ package web
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 // visible is whether an element is actually shown, rather than merely present.
@@ -112,5 +115,8 @@ func TestBrowserStoppingIsOnePress(t *testing.T) {
 
 	c.eval(t, `document.querySelector('.hint a[href="/enough"]').click()`)
 	c.until(t, "the stopping screen", `location.pathname === "/enough"`)
-	require.Contains(t, c.eval(t, `return document.body.textContent`), "that will do")
+	// Today's wording of it. The line varies by the day now; what this presses
+	// is the way there, and what it checks is that the screen says the thing.
+	require.Contains(t, c.eval(t, `return document.body.textContent`),
+		squirrel.Say(squirrel.SayingEnough, time.Now()))
 }

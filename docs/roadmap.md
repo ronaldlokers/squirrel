@@ -193,7 +193,22 @@ use before they have anything to say:
 ### Experiments, kept on the list
 
 Hyperfocus exit ramp (opt-in at timer start) · body-double follow-along
-micro-steps for two or three chores · novelty in **art and phrasing only**.
+micro-steps for two or three chores · ~~novelty in **art and phrasing
+only**~~ **— phrasing shipped 22 August.**
+
+The four sentences met most often — the empty slot, the offer's label, the way
+out of the deck, and the stopping screen's own line — have several wordings
+each, chosen from the date. Deterministic rather than random, so both viewports
+agree all day and a reload is not a slot machine; and produced by rules rather
+than by a model, so it is Squirrel's voice under Principle 8 and the
+deterministic floor never needs a key to speak.
+
+**Every control label is untouched and stays that way.** Muscle memory is what
+Principle 6's "the same every time" protects: a sentence you read is worth
+varying, a button you press without reading is not.
+
+The art half is still open — the alternate mood faces and the stopping
+screen's own pose need drawings.
 
 ---
 

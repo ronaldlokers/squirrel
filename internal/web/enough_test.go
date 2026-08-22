@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -19,7 +20,10 @@ import (
 func TestStoppingIsAPlaceYouCanGet(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String()
 
-	require.Contains(t, body, "that will do")
+	// The wording varies by the day, so this asks for today's rather than for
+	// the one that shipped. What it is checking is that the screen says the
+	// thing at all, which is the whole of Principle 3 on a page.
+	require.Contains(t, body, squirrel.Say(squirrel.SayingEnough, time.Now()))
 	require.Contains(t, body, "the pile keeps")
 }
 
@@ -32,7 +36,7 @@ func TestThePileOffersTheWayToStop(t *testing.T) {
 	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
 
 	require.Contains(t, body, `href="/enough"`)
-	require.Contains(t, body, "stop whenever you like")
+	require.Contains(t, body, squirrel.Say(squirrel.SayingStop, time.Now()))
 }
 
 // Nothing about how much you did. Not a count, not a word for one, not a
@@ -68,7 +72,7 @@ func TestStoppingNeedsNothingFromTheStore(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, res.Code,
 		"the stopping screen asked the store for something")
-	require.Contains(t, res.Body.String(), "that will do")
+	require.Contains(t, res.Body.String(), squirrel.Say(squirrel.SayingEnough, time.Now()))
 }
 
 // And a way back in, because pressing it and then finding you have another one

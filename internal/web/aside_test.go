@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -100,10 +101,15 @@ func TestEverySessionScreenOffersAWayToStop(t *testing.T) {
 	}
 	m := mounted(t, f)
 
+	// The wording varies by the day now, so this asks for the offer rather
+	// than for one phrasing of it: the door, and today's words on it.
+	said := squirrel.Say(squirrel.SayingStop, time.Now())
+	require.NotEmpty(t, said)
+
 	for _, screen := range []string{"/pile", "/tasks", "/tasks/done", "/chores", "/kept", "/held"} {
 		body := m.call(t, "GET", screen, nil).Body.String()
-		require.Contains(t, body, "stop whenever you like",
+		require.Contains(t, body, `href="/enough"`,
 			"%s is a screen you can spend an evening on with no way to stop", screen)
-		require.Contains(t, body, `href="/enough"`, "%s", screen)
+		require.Contains(t, body, said, "%s does not say the way out in today's words", screen)
 	}
 }
