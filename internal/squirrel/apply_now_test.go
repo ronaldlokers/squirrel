@@ -12,7 +12,8 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// `!now` is the picker's chat half. Feature parity is a standing rule, so it
+// `!now` is the picker's chat half. Parity relaxed in one direction on 22
+// August, and this stays: reading the pile back is on the floor chat keeps, so it
 // has to be able to do what the screen's offer does — and its number has to
 // resolve, or the buttons and the typed form mean different things.
 

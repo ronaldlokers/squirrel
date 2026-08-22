@@ -164,8 +164,18 @@ is free:
    capture with no conversation, which is what keeps the slot a slot rather
    than turning it into a command line.
 2. **Push becomes the primary channel**, not an improvement on Campfire.
-3. **Feature parity relaxes** to best-effort in one direction. Chat keeps
-   capture and answering a nudge; it does not need every screen feature.
+   Unblocked 22 August: the off-LAN question is settled — the phone is on an
+   always-on VPN, now recorded in `PRODUCT.md` — and the buzz's vocabulary was
+   renegotiated deliberately. The nudge and the evening message may both push,
+   with distinct tags and silent delivery for the nudge, so an audible buzz
+   still means *leave now*. The notification's destination was the first brick
+   and landed in #112.
+3. ~~**Feature parity relaxes** to best-effort in one direction.~~ **Written
+   into the record 22 August.** It had been decided here and contradicted in
+   `PRODUCT.md`, which said parity was absolute — and that file wins, so the
+   relaxation was not in force and the screen-only split was a live breach of
+   it. `PRODUCT.md` now carries the one-directional rule and enumerates the
+   five things chat keeps forever.
 
 **Principle 5 is open.** The coach may evaluate, compare, and mention counts and
 streaks. Shape guards — two sentences, no lists, no headings — are separate and
