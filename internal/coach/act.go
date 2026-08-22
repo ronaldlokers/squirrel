@@ -89,9 +89,8 @@ const actRounds = 2
 // deterministic floor: no hands, no tools; no tool call, no action.
 func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 	now := p.now()
-	if ok, spent := p.Budget.Allows(ctx, t.PersonID, now); !ok {
-		slog.Info("the coach is over its budget for the month; the deterministic answers take over",
-			"spent_micros", spent, "ceiling_micros", p.Budget.CeilingMicros)
+	permit, err := p.Budget.Ask(ctx, t.PersonID, now, "the deterministic answers take over")
+	if err != nil {
 		return Reply{}, ErrUnavailable
 	}
 
@@ -120,7 +119,7 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 	}()
 
 	for round := 0; round < actRounds; round++ {
-		text, calls, in, out, err := p.completionWithTools(ctx, model, msgs, tools)
+		text, calls, in, out, err := p.completionWithTools(ctx, permit, model, msgs, tools)
 		inTotal += in
 		outTotal += out
 		if err != nil {

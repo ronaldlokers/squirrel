@@ -107,8 +107,8 @@ type chatResponse struct {
 // The detail is kept in the wrapped message all the same, for the log. "No
 // coach available" in a log line at three in the morning is not an answer to
 // anything.
-func (p *Provider) completion(ctx context.Context, model string, messages []chatMessage) (string, int, int, error) {
-	text, _, in, out, err := p.completionWithTools(ctx, model, messages, nil)
+func (p *Provider) completion(ctx context.Context, permit Permit, model string, messages []chatMessage) (string, int, int, error) {
+	text, _, in, out, err := p.completionWithTools(ctx, permit, model, messages, nil)
 	return text, in, out, err
 }
 
@@ -118,7 +118,10 @@ func (p *Provider) completion(ctx context.Context, model string, messages []chat
 // are output tokens too and a cap sized for two sentences of prose truncates
 // them into unparseable JSON. It is still bounded — the round trips are capped
 // above, which is the ceiling that actually protects the budget.
-func (p *Provider) completionWithTools(ctx context.Context, model string, messages []chatMessage, tools []map[string]any) (string, []toolCall, int, int, error) {
+// The permit is unused and that is the point: it cannot be produced without
+// asking the month's budget first, so no paid call can be made without the
+// question having been put. See Budget.Ask.
+func (p *Provider) completionWithTools(ctx context.Context, _ Permit, model string, messages []chatMessage, tools []map[string]any) (string, []toolCall, int, int, error) {
 	cap := maxOutput
 	if len(tools) > 0 {
 		cap = maxToolOutput

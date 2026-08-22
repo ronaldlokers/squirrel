@@ -83,13 +83,12 @@ func (p *Provider) Split(ctx context.Context, personID int64, text string) ([]st
 		return nil, ErrUnavailable
 	}
 	now := p.now()
-	if ok, spent := p.Budget.Allows(ctx, personID, now); !ok {
-		slog.Info("the coach is over its budget for the month; the note stays as it is",
-			"spent_micros", spent, "ceiling_micros", p.Budget.CeilingMicros)
+	permit, err := p.Budget.Ask(ctx, personID, now, "the note stays as it is")
+	if err != nil {
 		return nil, ErrUnavailable
 	}
 
-	_, calls, in, out, err := p.completionWithTools(ctx, p.Fast, []chatMessage{
+	_, calls, in, out, err := p.completionWithTools(ctx, permit, p.Fast, []chatMessage{
 		{Role: "system", Content: splitPreamble},
 		{Role: "user", Content: text},
 	}, splitTool)

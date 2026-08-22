@@ -3,6 +3,7 @@ package coach
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
@@ -89,6 +90,38 @@ func (b Budget) Allows(ctx context.Context, personID int64, now time.Time) (bool
 		return true, spent
 	}
 	return spent < b.CeilingMicros, spent
+}
+
+// Permit is proof that the month's ceiling was checked before a paid call was
+// made. It carries nothing and does nothing; its whole job is to be impossible
+// to produce without asking.
+//
+// Rule 10 says the deterministic answer is never deleted and becomes the floor:
+// no key, no network, or a month's budget spent must leave a product that works
+// exactly as it did before the model existed. That was true, and it was true
+// because six methods each remembered an identical four-line check — correct in
+// all six, and enforced in none. The seventh was one plausible feature away,
+// and the roadmap has two of those planned.
+//
+// So the check is not remembered any more. `completionWithTools` will not
+// compile without one of these, which means the floor is a property of the
+// type system rather than of anyone's memory.
+type Permit struct{ _ struct{} }
+
+// Ask answers with a Permit, or with ErrUnavailable and the reason already
+// logged. `instead` names what takes over when it does — the picker, the
+// ladder, the rules — because crossing the ceiling is the system working and
+// the log should read like it.
+func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead string) (Permit, error) {
+	if ok, spent := b.Allows(ctx, personID, now); !ok {
+		// Info, not error. Crossing the ceiling is the system working: the
+		// deterministic answers take over for the rest of the month and
+		// nothing about the product stops.
+		slog.Info("the coach is over its budget for the month; "+instead,
+			"spent_micros", spent, "ceiling_micros", b.CeilingMicros)
+		return Permit{}, ErrUnavailable
+	}
+	return Permit{}, nil
 }
 
 // Spent is what this month has cost so far and what the ceiling is, both in

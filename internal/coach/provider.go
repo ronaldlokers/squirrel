@@ -96,19 +96,15 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 
 	now := p.now()
 
-	if ok, spent := p.Budget.Allows(ctx, t.PersonID, now); !ok {
-		// Info, not error. Crossing the ceiling is the system working: the
-		// picker chooses and the ladder answers for the rest of the month, and
-		// nothing about the product stops.
-		slog.Info("the coach is over its budget for the month; the deterministic answers take over",
-			"spent_micros", spent, "ceiling_micros", p.Budget.CeilingMicros)
+	permit, err := p.Budget.Ask(ctx, t.PersonID, now, "the deterministic answers take over")
+	if err != nil {
 		return Reply{}, ErrUnavailable
 	}
 
 	model := p.modelFor(t)
 	messages := p.messages(t)
 
-	text, in, out, err := p.completion(ctx, model, messages)
+	text, in, out, err := p.completion(ctx, permit, model, messages)
 	if err != nil {
 		slog.Error("the coach", "kind", t.Kind, "model", model, "error", err)
 		return Reply{}, err
