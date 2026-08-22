@@ -144,6 +144,16 @@
      page is drawn the card it undoes has gone. pile.js shows the card's own
      row during the hold; this is the same offer once the write has landed,
      and it is what the scriptless path has instead. */}}
+{{/* The pile moved while this card was on the screen. Not an error and not a
+     failure: the note is where the room put it, and this says so rather than
+     letting the two views disagree in silence. There is nothing to undo —
+     undoing would be deciding again, and the screen no longer knows what it
+     would be deciding about. */}}
+{{if .Clash}}
+<div class="landed clash" role="status">
+  <span class="said">that note had already moved &mdash; it is where you left it in the room</span>
+</div>
+{{end}}
 {{with .Undo}}
 <div class="landed" role="status">
   <span class="said">{{.Said}}</span>

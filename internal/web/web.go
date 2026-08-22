@@ -173,6 +173,10 @@ type Store interface {
 	StopTimer(ctx context.Context, personID int64) error
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
+	// MoveItemState is the same write for a caller that knows what the note
+	// was when the decision was made. The deck's is deferred by the length of
+	// the undo hold, so it is the one write here that can be stale.
+	MoveItemState(ctx context.Context, itemID int64, from, to squirrel.ItemState, at time.Time) (bool, error)
 	Reword(ctx context.Context, personID, itemID int64, text string) (bool, error)
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)
 

@@ -1658,6 +1658,13 @@
     font-variation-settings: var(--precise), "wght" 600;
     color: var(--cream);
   }
+  /* The pile disagreeing with the screen is the product speaking rather than a
+     status label, so it takes the Voice's axis instead of the meta role's. */
+  .landed.clash .said {
+    font-size: 15px; max-width: 46ch;
+    font-variation-settings: var(--casual), "wght" 470;
+    color: var(--paper);
+  }
 
   /* The one permission this product asks for, and it asks quietly. Not a
      banner and not a dialog: a line under the slot that is gone the moment it

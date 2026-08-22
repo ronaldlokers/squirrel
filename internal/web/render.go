@@ -173,6 +173,11 @@ type view struct {
 	Results []noteView
 	Chores  []choreView
 	Undo    *undoView
+	// Clash says a decision arrived for a note that had already moved
+	// somewhere else — from the room, while the card was still on the screen.
+	// It is not an error and there is nothing to undo: what it says is that
+	// the pile is not what this screen was showing.
+	Clash bool
 }
 
 // choreView is a chore as the screen says it: what it is, how often it comes
@@ -407,6 +412,14 @@ func undoFrom(q url.Values) *undoView {
 		return nil
 	}
 	return &undoView{ID: id, State: act, Said: saidWords[q.Get("state")]}
+}
+
+// clashFrom says whether this render is answering a decision the pile had
+// already overtaken. Read like every other parameter here: from an address
+// bar, so anything that is not a number is no clash rather than a bad one.
+func clashFrom(q url.Values) bool {
+	id, err := strconv.ParseInt(q.Get("clash"), 10, 64)
+	return err == nil && id > 0
 }
 
 // cursorFrom reads the skip position out of the query string. Nonsense is no
