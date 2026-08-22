@@ -260,7 +260,23 @@ func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
 	// was testing how quickly a worker installs rather than what it does.
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
-	c.until(t, "an asset to be cached", `(await caches.keys()).length > 0`)
+	// Wait for the asset itself, not merely for a cache to exist.
+	//
+	// A cache appears the moment the worker opens one, which is before any
+	// response has been put in it — so waiting on `caches.keys()` and then
+	// asserting on the contents was a race the fast machine always won and a
+	// loaded CI runner sometimes lost. It failed once on a green branch, which
+	// is the worst way for a test to be wrong: it says the change broke
+	// something it never touched.
+	// `until` wraps what it is given in `await (...)`, so this is an expression
+	// rather than a body.
+	c.until(t, "an asset to be cached", `(async () => {
+		for (const name of await caches.keys()) {
+			const held = await (await caches.open(name)).keys();
+			if (held.some(r => r.url.includes("/static/"))) return true;
+		}
+		return false;
+	})()`)
 
 	require.Equal(t, true, c.eval(t, `
 		const cache = await caches.open((await caches.keys())[0]);
