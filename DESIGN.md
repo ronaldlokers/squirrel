@@ -654,11 +654,28 @@ last of those because **anything under 16px makes iOS zoom the page on focus**,
 which is a hard floor for every field and not a preference. These are the same
 roles at a second size, not new roles.
 
-**The lid's search field does not currently clear that floor.** It renders at
-15px on a phone: the `.find input` rule inside the breakpoint that sets 16px is
-outranked by `.findbox .find input`, which has no phone step of its own. This
-is recorded as a defect rather than as a design, because the floor is the rule
-and 15px is a bug against it.
+**The lid's search field spent a release under that floor**, at 15px: the rule
+inside the breakpoint that set 16px was written for `.find input`, and when
+search moved behind an icon the field became `.findbox .find input`, which
+outranks it. Fixed in v0.19.0, and the fix had to be placed *after* the rule it
+corrects — an override at equal specificity earlier in the file loses the same
+way the original did. The episode is kept because the failure mode is the
+point: a rule can be present, correct, and outvoted.
+
+**Nothing on a phone zooms.** The viewport refuses to scale
+(`user-scalable=no, maximum-scale=1`) and `touch-action: manipulation` drops
+double-tap magnification. This is a screen you glance at with one thumb, and a
+stray pinch that leaves it magnified is a screen you have to repair before you
+can use it. Panning and a deliberate pinch survive; only the double-tap gesture
+is taken.
+
+**Neither of those retires the 16px floor, and the floor is the load-bearing
+one.** iOS ignores `user-scalable=no` in a browser tab and has since iOS 10, so
+the no-zoom rules hold in the installed app and not there — while the zoom that
+happens when a *field takes focus* is a different mechanism from the one that
+meta tag governs, and no viewport setting prevents it. Every field clears 16px
+on a phone whatever the viewport says. A test asserts this against the
+stylesheet so the floor cannot be deleted on the strength of the meta tag.
 
 **The Lid Step-Down Rule.** The lid is the one thing that gets *smaller* on a
 phone: the mark to 56×42 and the wordmark to 20px, against the Step-Up Rule

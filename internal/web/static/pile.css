@@ -58,6 +58,19 @@
 
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  /* Double-tap does not magnify.
+   *
+   * The other half of "no zooming", and the half that works where the viewport
+   * meta does not: iOS ignores `user-scalable=no` in a browser tab, but it
+   * honours this. Every screen here is a row of things you tap in sequence —
+   * four answers, five faces, a row of chips — and two taps landing close
+   * together on that is not rare, it is the normal gesture arriving slightly
+   * fast. Left alone it magnifies the page and the next tap misses.
+   *
+   * `manipulation` rather than `none`: panning and pinching stay. This turns
+   * off the double-tap gesture, not the ability to scroll or to magnify
+   * deliberately. */
+  html { touch-action: manipulation; }
   /* The brim reaches past both edges of the lid on purpose; nothing about it
      should be scrollable. */
   html, body { overflow-x: clip; }

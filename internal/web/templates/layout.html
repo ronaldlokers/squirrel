@@ -2,7 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{{/* No zooming. This is a screen you glance at with one thumb, and a pinch or
+     a stray double-tap that leaves it magnified is a screen you then have to
+     repair before you can use it.
+
+     Where this actually applies is narrower than it looks, and the difference
+     matters because the wrong half of it is load-bearing:
+
+       - Installed on the home screen, which is how this is used, it holds.
+       - In Safari as a browser tab, iOS ignores `user-scalable=no` on purpose
+         and has since iOS 10. Pinch-to-zoom still works there, and so does
+         the zoom-on-focus this cannot prevent.
+
+     So the 16px floor on every field is NOT made redundant by this line and
+     must not be removed on the strength of it. That floor is what stops the
+     page lurching when a field takes focus, and it is the only thing that
+     does in a browser tab. See The Step-Up Rule in DESIGN.md.
+
+     `maximum-scale=1` as well as `user-scalable=no`, because some Android
+     browsers honour the first where they ignore the second. */}}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
 <link rel="stylesheet" href="/static/pile.css?v={{.V}}">
 {{/* crossorigin="use-credentials" is load-bearing and looks like noise.
