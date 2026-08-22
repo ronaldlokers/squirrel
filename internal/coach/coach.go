@@ -40,6 +40,43 @@ import (
 // why it is one error rather than a taxonomy nobody would branch on.
 var ErrUnavailable = errors.New("no coach available")
 
+// And these say which, for the log and for nobody else.
+//
+// The single sentinel above is right and stays: a caller's question is "did I
+// get something usable", and a taxonomy nobody branches on is a taxonomy
+// nobody should carry. But the person who runs this does branch on it, at
+// three in the morning, and every reason collapsing to one line is how Buddy
+// stays broken for a fortnight while its replies quietly get blander.
+//
+// A model id that has been retired reads exactly like a network blip
+// otherwise, and the two want opposite things done about them.
+var (
+	// ErrProviderRefused is the provider answering, and saying no: a status
+	// that is not 200. A retired model, a revoked key, a rate limit.
+	ErrProviderRefused = errors.New("the provider refused")
+	// ErrProviderUnreachable is the provider not answering at all.
+	ErrProviderUnreachable = errors.New("the provider could not be reached")
+	// ErrProviderNonsense is the provider answering with something that is not
+	// a completion — nearly always a proxy or an auth page in front of it.
+	ErrProviderNonsense = errors.New("the provider answered with something else")
+)
+
+// Why names the reason for a log line, or "" when the error is not one of
+// these. It is deliberately not exported as a type: this is a string for a
+// human to read in a log, not a thing to switch on.
+func Why(err error) string {
+	switch {
+	case errors.Is(err, ErrProviderRefused):
+		return "refused"
+	case errors.Is(err, ErrProviderUnreachable):
+		return "unreachable"
+	case errors.Is(err, ErrProviderNonsense):
+		return "nonsense"
+	default:
+		return ""
+	}
+}
+
 // Now is the only context sent on every call, and it is small on purpose.
 //
 // Capacity is derived rather than raw: the model is told "ok" or "low", never

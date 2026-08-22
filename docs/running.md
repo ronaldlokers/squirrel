@@ -136,11 +136,14 @@ ladder answers, and the product works exactly as it did before the model
 existed. That is Rule 10 and it is tested. But the reasons are different and
 the logs tell them apart:
 
-| Log | What happened |
-| --- | --- |
-| `the coach is over its budget for the month; …` | The ceiling did its job. Nothing to do — it resets on the first of the month. |
-| `the coach` with a status or a network error | The provider. Check the key and `COACH_BASE_URL`. |
-| nothing at all | No key is configured, so no coach was ever built. |
+| Log | What happened | What to do |
+| --- | --- | --- |
+| `the coach is over its budget for the month; …` | The ceiling did its job. | Nothing. It resets on the first. |
+| `the coach … why=refused` | The provider answered and said no: a retired model id, a revoked key, a rate limit. | Check the model ids in `internal/coach/prices.go` against what the provider still serves, then the key. **This is the one that stays broken for weeks if nobody looks** — every call fails identically and the replies just get blander. |
+| `the coach … why=unreachable` | The provider did not answer. | Wait. If it persists, check `COACH_BASE_URL` and the network. |
+| `the coach … why=nonsense` | Something answered that was not a completion — nearly always a proxy or an auth page in front of the provider. | Check `COACH_BASE_URL` points at the API and not at a login. |
+| `the coach said something the wrong shape` | The guard rejected a reply. The fixed answer went instead. | Nothing, unless it is every reply. |
+| nothing at all | No key is configured, so no coach was ever built. | Nothing, if that is deliberate. |
 
 The spend against the ceiling is on `/buddy`, in the sheet's lid, and nowhere
 else.

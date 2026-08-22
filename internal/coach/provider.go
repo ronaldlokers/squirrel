@@ -106,7 +106,11 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 
 	text, in, out, err := p.completion(ctx, permit, model, messages)
 	if err != nil {
-		slog.Error("the coach", "kind", t.Kind, "model", model, "error", err)
+		// `why` is the difference between "wait" and "the model id in
+		// prices.go has been retired and every call has failed since the
+		// morning it was". Both used to be this one line.
+		slog.Error("the coach", "kind", t.Kind, "model", model,
+			"why", Why(err), "error", err)
 		return Reply{}, err
 	}
 
