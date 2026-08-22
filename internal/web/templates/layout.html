@@ -116,6 +116,19 @@
       <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
     </svg>
   </a>
+  {{else}}
+  {{/* The place you are standing, marked the way the menu marks it:
+       kept in view, filled, and not a link. It used to be removed
+       outright — so Buddy was the one screen that said where you were
+       by absence, and taking the icon out shifted the other two left,
+       which moved the one piece of chrome meant to be identical on
+       every screen. */}}
+  <span class="lidbtn tobuddy here" aria-current="page" aria-label="Buddy, and you are in it">
+    <svg width="19" height="23" viewBox="0 0 15 18" aria-hidden="true">
+      <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+      <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+    </svg>
+  </span>
   {{end}}
 
   {{/* Looking something up is a thing you decide to do, so it is behind the

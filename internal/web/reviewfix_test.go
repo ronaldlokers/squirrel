@@ -209,3 +209,28 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	require.GreaterOrEqual(t, inSheet, 3.0,
 		"the ring in Buddy's sheet measures %.2f:1 against the card it sits on", inSheet)
 }
+
+// The rarest of five answers was the widest, loudest object on the card.
+//
+// Below 620px `.btn.make` took the full grid width, directly under the thumb,
+// filled in the one colour the product keeps for the primary go-verb.
+// Eighteen lines further down the same stylesheet refuses exactly this for
+// STOP ASKING, and writes out why: spanning the card makes it the largest
+// thing on it, a control wearing the emphasis of a primary one.
+func TestBrowserMakeAChoreDoesNotSpanThePhoneCard(t *testing.T) {
+	c, _ := open(t, aPile())
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": true,
+	})
+	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": true, "maxTouchPoints": 5})
+	c.navigate(t, c.eval(t, `return location.href`).(string))
+
+	make := box(t, c, ".btn.make")
+	done := box(t, c, ".btn[data-act=done]")
+	keep := box(t, c, ".btn[data-act=keep]")
+
+	require.Less(t, make["right"]-make["left"], keep["right"]-done["left"],
+		"MAKE A CHORE is still as wide as the whole row of answers above it")
+	require.Equal(t, keep["right"], make["right"],
+		"and it no longer lines up with the row it belongs to")
+}

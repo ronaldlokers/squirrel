@@ -1353,9 +1353,13 @@
     font-variation-settings: var(--casual), "wght" 500;
   }
   .unstuck .slot.small { margin: 0; }
+  /* Group, at 12.5px, which is what it actually is: a label over a run,
+     standing on the field, read on the way past. It was 12px — a seventh stop
+     in an uppercase ladder that already had five inside four pixels, and one
+     the design system never named. */
   .checkin .lead {
     margin: 0 0 10px; text-align: center;
-    font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+    font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 720;
     color: var(--cream);
   }
@@ -1368,9 +1372,14 @@
     padding: 6px 8px 8px; min-height: 44px;
     background: none; border: 0; border-radius: var(--r);
     color: var(--cream); cursor: pointer;
-    font: 600 10.5px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 700;
-    letter-spacing: .07em; text-transform: uppercase;
+    /* Meta, at 11.5px. It was 10.5 — the smallest type in the product, cream
+       on the field, on the control the capacity gate depends on, and *smaller
+       on the desktop than on the phone*, which is backwards under the Step-Up
+       Rule. A sixth stop in an uppercase ladder that already had five inside
+       four pixels, and one the system never named. */
+    font: 600 11.5px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 750;
+    letter-spacing: .1em; text-transform: uppercase;
     transition: transform 90ms ease-out, background-color 90ms ease-out;
   }
   /* Sized by height, and every drawing is the same size on the sheet they
@@ -1401,10 +1410,17 @@
     font-variation-settings: var(--precise), "wght" 700;
     color: var(--cream);
   }
+  /* The one object in the world with no outline.
+     DESIGN.md's Shapes rule is that there are no borderless objects, and this
+     is the persistent thing reporting the owner's own reading — so of
+     everything on the field, it was the one that read as pasted in from
+     another app. A quiet pill in the tail's cream, which is what the two
+     controls trailing it already are. */
   .noted > span {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 7px 13px 7px 7px;
-    background: rgba(0, 0, 0, .18); border-radius: 999px;
+    background: rgba(28, 17, 11, .22);
+    border: 2px solid var(--cream); border-radius: 999px;
   }
   .noted img { height: 26px; width: auto; display: block; }
   /* The tap target stays 44px and stops setting the row's height: as a box it
@@ -1539,7 +1555,11 @@
     .running { order: 6; flex: 1 1 100%; justify-content: center; }
     .checkin { margin-top: 20px; }
     .faces { gap: 0; flex-wrap: nowrap; }
-    .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 12px; letter-spacing: .08em; }
+    /* Meta's own phone size, so the Step-Up Rule reads the way it says it
+       does: 11.5 on the desktop, 12 here. It used to be 10.5 and 12, which
+       stepped up by a pixel and a half and left the desktop the smaller of
+       the two by more than the rule intends. */
+    .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 12px; letter-spacing: .1em; }
     .face img { width: 100%; height: auto; }
 
     /* Three cells are narrower than two, so the art steps down and the name
@@ -1574,7 +1594,14 @@
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
     }
     .btn { padding: 14px 8px; min-height: 48px; justify-content: center; gap: 6px; font-size: 13.5px; }
-    .btn.make { grid-column: 1 / -1; margin-left: 0; width: 100%; }
+    /* Its own row, and not the whole of it.
+       Eighteen lines below, `.abtn.stop` is refused exactly this, with the
+       reason written out: spanning the card made it the largest thing on it,
+       a control wearing the emphasis of a primary one. Promotion to a chore is
+       the rarest of the five answers here and it was the widest, loudest
+       object on the card, under the thumb. Orange already says "this one
+       creates"; the stretch only added a primacy it has not earned. */
+    .btn.make { grid-column: 1 / -1; justify-self: end; margin-left: 0; width: auto; }
 
     .results { padding-right: 14px; }
     .rcard { padding: 16px 20px 17px; }
@@ -2460,6 +2487,15 @@
 .where > summary:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
 .findbox[open] > summary,
 .where[open] > summary { background: var(--violet); color: var(--paper); }
+
+/* Buddy, when Buddy is where you are. The same mark the menu puts on the place
+   you are standing: filled in the product's own violet, paper on top of it, and
+   not a link. */
+.lidbtn.here {
+  background: var(--violet);
+  color: var(--paper);
+  cursor: default;
+}
 
 /* Hamburger shut, cross open — the same cross the sheet closes with, so the
    mark for "this is shut now" is one mark in this product rather than two. */

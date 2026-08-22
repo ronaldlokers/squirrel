@@ -32,7 +32,7 @@ down here because no test covers it.
 | `/steps` | a step finished, or a breakdown thrown away | LAN or tailnet, then Authentik |
 | `/pile/split` | asks for a note's separate things, and keeps them when pressed | LAN or tailnet, then Authentik |
 | `/photo/{id}` | the photograph on a note, by the note's id — **only mounted when a volume is configured** | LAN or tailnet, then Authentik |
-| `/moods` | what you said before — a fortnight of readings, grouped by day, with nothing concluded from them | LAN or tailnet, then Authentik |
+| `/moods` | how you felt before — a fortnight of readings, grouped by day, with nothing concluded from them | LAN or tailnet, then Authentik |
 | `/held` | what you cannot act on: waiting, blocked, someday — grouped, never counted | LAN or tailnet, then Authentik |
 | `/held/act` | setting one aside, and picking it back up | LAN or tailnet, then Authentik |
 | `/chores` | what comes back | LAN or tailnet, then Authentik |
