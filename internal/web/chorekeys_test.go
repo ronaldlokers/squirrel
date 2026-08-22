@@ -69,3 +69,24 @@ func TestBrowserTheChoresPickerTakesTheSameDigitsTheDeckDoes(t *testing.T) {
 	require.Equal(t, "every week", c.eval(t, `return window.__chose`),
 		"the second digit chose nothing")
 }
+
+// And on the card the three chips behave like the other four: a stamp, the
+// hold, and the way back focused.
+//
+// They live in their own form outside `.actions`, because "i can't act on
+// this" is not an answer to what the note is — so nothing ever wired them to
+// any of it, and a note set aside left the screen with no stamp, no hold and
+// nothing offering it back.
+func TestBrowserSettingAsideStampsTheCardLikeEveryOtherAnswer(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	c.eval(t, `document.querySelector(".cantact").open = true`)
+	c.eval(t, `document.querySelector('.whys button[value="waiting"]').click()`)
+	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
+
+	require.Equal(t, "WAITING", c.eval(t, `return document.getElementById("stampText").textContent`))
+	require.Equal(t, "waiting on someone", c.eval(t, `return document.getElementById("said").textContent`))
+	require.Equal(t, false, c.eval(t, `return document.getElementById("undoRow").hidden`),
+		"the way back is not reachable while the card it undoes is still there")
+	require.Equal(t, "undo", c.eval(t, `return document.activeElement.id`))
+}

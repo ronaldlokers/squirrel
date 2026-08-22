@@ -23,11 +23,21 @@
   const hold = () => (calm.matches ? 400 : 1150);
   const leave = () => (calm.matches ? 0 : 440);
 
+  // The three ways of not being able to act on something. They share one
+  // stamp colour: which of the three it is says why, not what happened.
+  const HELD = { waiting: 1, blocked: 1, someday: 1 };
+
   const STATES = {
     done:  { word: "DONE",    said: "marked done" },
     keep:  { word: "KEPT",    said: "kept as reference" },
     drop:  { word: "DROPPED", said: "dropped" },
-    chore: { word: "CHORE",   said: "now a chore" }
+    chore: { word: "CHORE",   said: "now a chore" },
+    // Set aside. The same three the server knows, so the stamp on the card and
+    // the line on the next page say the same thing for the same press — which
+    // is the rule saidWords exists to keep.
+    waiting: { word: "WAITING", said: "waiting on someone" },
+    blocked: { word: "BLOCKED", said: "blocked on a thing" },
+    someday: { word: "SOMEDAY", said: "someday" }
   };
 
   // Everything below hangs off whatever is currently in #stage. Live search
@@ -118,9 +128,13 @@
     function go(button) {
       if (going) return;
       going = true;
-      const kind = button.dataset.act || "done";
+      // `aside` for the three chips, `data-act` for everything else. The
+      // stamp's colour follows the same name, and the three take the state
+      // colours their own screen already uses.
+      const kind = button.dataset.act || button.value || "done";
       const s = STATES[kind] || STATES.done;
-      const token = kind === "keep" ? "kept" : kind === "drop" ? "dropped" : kind;
+      const token = kind === "keep" ? "kept" : kind === "drop" ? "dropped"
+        : STATES[kind] && kind in HELD ? "held" : kind;
       stamp.style.setProperty("--sc", `var(--${token})`);
       stamp.style.setProperty("--sct", `var(--${token}-ink)`);
       stampText.textContent = s.word;
@@ -187,6 +201,18 @@
 
     form.addEventListener("click", e => {
       const b = e.target.closest("button[name=act], button[name=every]");
+      if (!b || going) return;
+      e.preventDefault();
+      go(b);
+    });
+
+    // Setting one aside is a disposition like the other four and now leaves
+    // like one. Its three chips live in their own form, outside `.actions`,
+    // because "i can't act on this" is not an answer to what the note is — so
+    // they were never wired to any of this, and a note set aside vanished with
+    // no stamp, no hold and nothing offering it back.
+    card.querySelector(".whys")?.addEventListener("click", e => {
+      const b = e.target.closest("button[name=aside]");
       if (!b || going) return;
       e.preventDefault();
       go(b);
