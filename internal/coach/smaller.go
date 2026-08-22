@@ -88,9 +88,8 @@ func (p *Provider) Smaller(ctx context.Context, personID int64, task, blocker st
 		return nil, ErrUnavailable
 	}
 	now := p.now()
-	if ok, spent := p.Budget.Allows(ctx, personID, now); !ok {
-		slog.Info("the coach is over its budget for the month; the ladder answers",
-			"spent_micros", spent, "ceiling_micros", p.Budget.CeilingMicros)
+	permit, err := p.Budget.Ask(ctx, personID, now, "the ladder answers")
+	if err != nil {
 		return nil, ErrUnavailable
 	}
 
@@ -103,7 +102,7 @@ func (p *Provider) Smaller(ctx context.Context, personID int64, task, blocker st
 		said += "\nWhat is in the way: " + blocker
 	}
 
-	_, calls, in, out, err := p.completionWithTools(ctx, p.Deep, []chatMessage{
+	_, calls, in, out, err := p.completionWithTools(ctx, permit, p.Deep, []chatMessage{
 		{Role: "system", Content: smallerPreamble},
 		{Role: "user", Content: said},
 	}, stepsTool)

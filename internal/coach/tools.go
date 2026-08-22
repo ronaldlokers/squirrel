@@ -127,9 +127,8 @@ func (p *Provider) Decide(ctx context.Context, personID int64) (Decision, error)
 		return Decision{}, ErrUnavailable
 	}
 	now := p.now()
-	if ok, spent := p.Budget.Allows(ctx, personID, now); !ok {
-		slog.Info("the coach is over its budget for the month; the picker chooses",
-			"spent_micros", spent, "ceiling_micros", p.Budget.CeilingMicros)
+	permit, err := p.Budget.Ask(ctx, personID, now, "the picker chooses")
+	if err != nil {
 		return Decision{}, ErrUnavailable
 	}
 
@@ -162,7 +161,7 @@ func (p *Provider) Decide(ctx context.Context, personID int64) (Decision, error)
 	}()
 
 	for round := 0; round < maxRounds; round++ {
-		reply, calls, in, out, err := p.completionWithTools(ctx, p.Deep, msgs, toolSpecs)
+		reply, calls, in, out, err := p.completionWithTools(ctx, permit, p.Deep, msgs, toolSpecs)
 		inTotal += in
 		outTotal += out
 		if err != nil {
