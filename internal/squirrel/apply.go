@@ -360,7 +360,17 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		return a.command(ctx, in, personID, conversationID)
 	}
 
-	// IntentCapture: the squirrel already went out in the HTTP response.
+	// IntentCapture: the squirrel already went out in the HTTP response, so
+	// there is normally nothing to say here.
+	//
+	// The exception is a photograph, which arrives from the room as its own
+	// filename and nothing else. The note is kept either way — that is not in
+	// question and this must never read as a refusal — but "IMG_5991.jpeg" is
+	// a note whose text hides its own content, and a degradation nobody can
+	// see is worse than the degradation itself.
+	if in.Kind == IntentCapture && LooksLikeAPhotographsName(in.Text) {
+		return PhotographKeptByNameMessage(strings.TrimSpace(in.Text)), nil
+	}
 	return Message{}, nil
 }
 
