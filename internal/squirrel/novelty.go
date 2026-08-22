@@ -16,10 +16,17 @@ import (
 // The roadmap sanctions this as an experiment, in four words that are the
 // whole of its scope: novelty in **art and phrasing only**.
 //
-// So: the sentences you meet most often have more than one wording. Nothing
-// else moves. Every control keeps its label, because muscle memory is what
-// Principle 6's "the same every time" protects, and a button that renames
-// itself is a button you have to read again.
+// So: the sentences you meet most often have more than one wording, the stamp
+// lands at a different angle, and the room's light falls from a different
+// place. Nothing else moves. Every control keeps its label, because muscle
+// memory is what Principle 6's "the same every time" protects, and a button
+// that renames itself is a button you have to read again.
+//
+// The two that are not sentences are both *art* rather than layout, which is
+// the other half of the roadmap's four words. Neither moves anything you aim
+// at: the stamp is a result you read after the fact, and the light is the
+// room. A control that shifted by a few degrees would be a different thing
+// entirely, and is not on the table.
 
 // Saying is one of the places a sentence varies.
 type Saying string
@@ -109,3 +116,47 @@ func Say(what Saying, on time.Time) string {
 // Sayings is every wording of one thing, for a test that has to check them all
 // against the rules they are held to.
 func Sayings(what Saying) []string { return sayings[what] }
+
+// pick is the same day-seeded choice Say makes, over a range of numbers.
+//
+// Same hash, same unit, same reasons — one implementation so the stamp and the
+// sentences cannot drift into disagreeing about what day it is.
+func pick(salt string, on time.Time, from, to int) int {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(salt))
+	_, _ = h.Write([]byte(on.Format("2006-01-02")))
+	return from + int(h.Sum32()%uint32(to-from+1))
+}
+
+// TiltRange is how far the stamp can lean, in degrees. Exported so the test
+// that holds this to "a few degrees" reads the number rather than repeating it.
+const (
+	TiltFrom = -11
+	TiltTo   = -3
+)
+
+// Tilt is the angle the stamp lands at today, in degrees.
+//
+// It shipped pinned at -7, and the band is eight degrees wide around it. The
+// ceiling is not arbitrary: past about a dozen degrees a stamp stops reading
+// as slapped on and starts reading as crooked, and the word inside it gets
+// harder to read at a glance — which is the one job it has.
+//
+// Negative throughout, so it always leans the same way. A stamp that tipped
+// left on Tuesday and right on Wednesday would be two different objects.
+func Tilt(on time.Time) int { return pick("tilt", on, TiltFrom, TiltTo) }
+
+// LightFrom and LightTo bound where the room's light falls, across the field.
+const (
+	LightFrom = 8
+	LightTo   = 26
+)
+
+// Light is where the field's highlight sits today, as a percentage across.
+//
+// Across only. The vertical stays where it is and so does the alpha, because
+// .35 is a measured contrast result rather than a taste one — cream on the lit
+// centre reads 4.8:1 there and failed at .5. Sliding the centre sideways moves
+// the same light without changing how bright it ever gets, which is the only
+// version of this that cannot quietly undo that measurement.
+func Light(on time.Time) int { return pick("light", on, LightFrom, LightTo) }

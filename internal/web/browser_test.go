@@ -663,3 +663,82 @@ func TestBrowserTheSheetPostsTheWayAFormPosts(t *testing.T) {
 	require.Contains(t, c.eval(t, `return JSON.stringify(window.__sent)`),
 		"/buddy/say application/x-www-form-urlencoded")
 }
+
+// The stylesheet actually reads the day.
+//
+// The Go tests prove the numbers reach the body as custom properties. Nothing
+// there proves anything *uses* them: a typo in a variable name leaves the
+// stamp at the fallback angle forever, looking exactly like it did before, and
+// no test in this repository would notice. Only a browser resolves a `var()`.
+func TestBrowserTheStampLeansAtTheDaysAngle(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	// The body's own property, whatever the server sent today.
+	tilt := c.eval(t, `return getComputedStyle(document.body).getPropertyValue("--tilt").trim()`)
+	require.NotEmpty(t, tilt, "the body carries no angle")
+
+	// The angle it rests at, read before anything animates.
+	//
+	// This is the assertion that catches a mistyped variable name, and it has
+	// to come first: the slap fills forwards, so once it has run its own
+	// keyframe supplies the transform and a broken base rule is invisible
+	// underneath it. Checked in the first version of this test, which a
+	// deliberately misspelt `--tiltt` walked straight through.
+	//
+	// Shown for the measurement, because a `display: none` element reports no
+	// transform at all rather than the one it would have.
+	require.Equal(t, degreesOf(t, c, tilt), c.eval(t, `
+		const el = document.querySelector(".stamp");
+		el.style.display = "inline-flex";
+		const m = new DOMMatrix(getComputedStyle(el).transform);
+		el.style.display = "";
+		return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
+	`), "the stamp rests at a different angle than the day's")
+
+	c.key(t, "d")
+	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
+	// The slap has to land before the angle means anything — measured mid-flight
+	// it reads whatever degree the animation was passing through, which is how
+	// this first read -4 for a -3 day.
+	c.until(t, "the slap to land", `
+		document.querySelector(".stamp").getAnimations().every(a => a.playState === "finished")`)
+
+	// A resolved matrix rather than the rotate() that was written, so this
+	// compares angles rather than strings. It also pins the keyframe: the slap
+	// ends at the same angle the stamp rests at, or it snaps on landing.
+	got := c.eval(t, `
+		const m = new DOMMatrix(getComputedStyle(document.querySelector(".stamp")).transform);
+		return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
+	`)
+	require.Equal(t, degreesOf(t, c, tilt), got,
+		"the slap landed at %v rather than at the day's %v", got, tilt)
+}
+
+// degreesOf resolves an angle the way the browser will, so the test compares
+// degrees rather than the strings they were written as.
+func degreesOf(t *testing.T, c *cdp, angle any) any {
+	t.Helper()
+	return c.eval(t, fmt.Sprintf(`
+		const el = document.createElement("div");
+		el.style.transform = "rotate(%v)";
+		document.body.appendChild(el);
+		const m = new DOMMatrix(getComputedStyle(el).transform);
+		el.remove();
+		return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
+	`, angle))
+}
+
+// And the field is lit from where the day says.
+//
+// Same reason, other property. This one is behind every screen, so a var()
+// that silently fell back would be the whole product missing the change.
+func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	light := c.eval(t, `return getComputedStyle(document.body).getPropertyValue("--light").trim()`)
+	require.NotEmpty(t, light, "the body carries no light")
+
+	image := c.eval(t, `return getComputedStyle(document.body).backgroundImage`)
+	require.Contains(t, image, fmt.Sprintf("at %v", light),
+		"the field's highlight is not where the day put it")
+}

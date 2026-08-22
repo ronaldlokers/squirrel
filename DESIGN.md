@@ -799,6 +799,34 @@ the screen where the field is brightest. At `.35` the lit centre carries cream
 at 4.8:1 and the room is still a room. The Field Exception buys atmosphere; it
 does not buy an unreadable corner.
 
+**The Day Rule.** Three things in this system are chosen from the date rather
+than fixed: the sentences you meet most often, the angle the stamp lands at
+(between -11° and -3°, from -7° fixed), and where the field's light falls
+(between 8% and 26% across, from 15% fixed). The card stack was randomised from
+the day it was drawn because PRODUCT.md's own premise is that a surface which
+looks identical every time stops being seen within about a week, and "one
+frame" — which made every screen deliberately more uniform — started a clock on
+the rest.
+
+Four constraints hold it to art and phrasing, which is all the roadmap
+sanctions:
+
+- **Chosen from the day, never random.** A phone and a desktop are one product,
+  so a line or an angle that differs between them is a bug rather than a
+  variation, and a reload is not a slot machine. The server hands the two
+  numbers down as `--tilt` and `--light` on the body; `pile.css` carries what
+  shipped as the fallback, so a page rendered without them is the original.
+- **Never a control.** Every label, every position, every target stays exactly
+  where it was. Muscle memory is what "the same every time" protects, and a
+  button that renamed or moved itself is a button you have to read again.
+- **Never brighter.** The light slides sideways only. Its height and its `.35`
+  are fixed, because that number is the contrast measurement above and a
+  highlight that wandered vertically would quietly undo it.
+- **Never far.** The stamp leans one way, always negative, inside eight
+  degrees. Past about a dozen it stops reading as slapped on and starts reading
+  as crooked, and the word inside it gets harder to read at a glance — which is
+  the one job it has.
+
 ## Shapes
 
 Soft rounded geometry, matching the mascot's own construction. Cards take a 14px

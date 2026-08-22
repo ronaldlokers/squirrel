@@ -94,6 +94,12 @@ type view struct {
 	SayOffer  string
 	SayStop   string
 	SayEnough string
+	// The two things that move without being read. The stamp's lean and where
+	// the room's light falls, both chosen from the day like the sentences are,
+	// and both handed to the stylesheet as custom properties because a static
+	// file cannot know what day it is. See squirrel.Tilt and squirrel.Light.
+	Tilt  int
+	Light int
 	// Place is where you are, in the menu's own words, so the shut control can
 	// say it without the template knowing the mapping.
 	Place string
@@ -557,6 +563,8 @@ func render(w http.ResponseWriter, name string, v view) {
 	v.SayOffer = squirrel.Say(squirrel.SayingOffer, now())
 	v.SayStop = squirrel.Say(squirrel.SayingStop, now())
 	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
+	v.Tilt = squirrel.Tilt(now())
+	v.Light = squirrel.Light(now())
 	v.Elsewhere = elsewhere(v.Here)
 	v.Place = placeName(v.Here)
 	if !v.Home {
