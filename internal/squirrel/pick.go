@@ -202,6 +202,29 @@ func (s *Store) pickAgain(ctx context.Context, personID int64, now time.Time) (O
 	if err != nil || !found {
 		return Offer{}, false, err
 	}
+	// Turned down, like anything else here can be.
+	//
+	// This rule used to be the one that could not be: it sits above the
+	// refusal set the rules below share, so "not now" on a breadcrumb wrote
+	// the refusal, redirected, and got handed the identical thing straight
+	// back. Reported live on 23 August 2026 as "the button does nothing",
+	// which is exactly what it was.
+	//
+	// Asked as a time rather than through that set, and the difference is the
+	// whole of the fix. A breadcrumb names a label rather than a row, so its
+	// key is `again:0` however many different things you were on today —
+	// suppressing on the key would have cost you the way back into everything
+	// you touched for the rest of the day, which is worse than the bug it
+	// fixes. A refusal recorded after this breadcrumb appeared was about this
+	// breadcrumb; the next thing you get up from ends later than it, and is
+	// offered.
+	refused, err := s.RefusedSince(ctx, personID, OfferAgain, t.Ended)
+	if err != nil {
+		return Offer{}, false, err
+	}
+	if refused {
+		return Offer{}, false, nil
+	}
 	return Offer{
 		Kind:    OfferAgain,
 		Text:    t.Label,
