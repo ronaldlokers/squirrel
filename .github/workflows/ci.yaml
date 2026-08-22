@@ -12,6 +12,32 @@ permissions:
   contents: read
 
 jobs:
+  # DESIGN.md follows the code. The reasoning, the override and the failure
+  # message all live in the script, which is testable and readable in a way
+  # inline YAML is not.
+  design:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The gate before it gates. A blocking check that is itself wrong costs
+      # either work or credibility, and this is the cheapest place to find out.
+      - name: The gate does what it says
+        run: .github/scripts/design-follows-the-code_test.sh
+
+      - name: DESIGN.md follows the code
+        env:
+          # Through the environment rather than into the command line: a pull
+          # request title is somebody's typing, and interpolating it into a
+          # shell is how that becomes an instruction.
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: .github/scripts/design-follows-the-code.sh "$BASE" "$HEAD" "$TITLE"
+
   test:
     runs-on: ubuntu-latest
 
