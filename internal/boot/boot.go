@@ -5,6 +5,7 @@ package boot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -326,7 +327,23 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 	for {
 		var err error
 		if err = store.Migrate(ctx); err != nil {
-			slog.Warn("database unavailable", "error", err, "retry_in", config.DrainInterval)
+			// Two very different failures used to share this line, and the
+			// wrong one of them was the default reading: "database
+			// unavailable" sends you to look at Postgres, and a migration that
+			// will not apply is a bug in the migration with Postgres answering
+			// perfectly well. They retry identically and for the same reason —
+			// nothing here may block a capture being accepted — but they do
+			// not get diagnosed identically, so they no longer read the same.
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
+			if squirrel.IsMigrationFailure(err) {
+				slog.Error("a migration will not apply; the schema is at the last one that did and the drain is not running",
+					"error", err, "retry_in", config.DrainInterval,
+					"what_to_do", "docs/running.md — a migration that will not apply")
+			} else {
+				slog.Warn("database unavailable", "error", err, "retry_in", config.DrainInterval)
+			}
 		} else if personID, err = store.SeedOwner(ctx, config.OwnerHandle, seedsFrom(config)); err != nil {
 			slog.Warn("seeding owner failed", "error", err, "retry_in", config.DrainInterval)
 		} else {
