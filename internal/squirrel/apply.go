@@ -1750,10 +1750,12 @@ func (a *Applier) applyItemAction(ctx context.Context, in ActionIntent, personID
 		if !in.Selected {
 			return a.store.SetItemState(ctx, it.ID, ItemOpen, time.Now())
 		}
-		if err := a.store.SetItemState(ctx, it.ID, ItemDone, time.Now()); err != nil {
-			return err
-		}
-		if err := a.store.RecordAnswer(ctx, personID, OfferTask, it.ID, AnswerDid, time.Now()); err != nil {
+		// Did is what completing an offer means, and this is completing one:
+		// the row was offered, it was tapped, and both halves of that — the
+		// state and the answer — belong together or they drift apart. They
+		// were written out here as well, which is two places that had to agree
+		// about one transition and no reason for the second to keep agreeing.
+		if err := a.store.Did(ctx, personID, Offer{Kind: OfferTask, RefID: it.ID}, time.Now()); err != nil {
 			return err
 		}
 		a.react(ctx, prompt)
