@@ -1,0 +1,177 @@
+# What to ask for: the two drawings this product is missing
+
+Prompts to paste into an image model, plus what to reject when it answers.
+
+Two things need art and neither can be written in CSS:
+
+1. **A resting pose for `/enough`** (#98). The stopping screen currently uses
+   the same `logo.png` as the empty pile, the empty chores, the empty tasks and
+   the empty archive. Rendered side by side they are the same composition, the
+   same drawing, the same sizes — only the sentence differs. **Choosing to stop
+   looks exactly like having nothing left**, which is the one equivalence this
+   product exists to break.
+2. **One alternate per mood face** (#108). The five faces exist in one moment
+   each, on the surface that most needs to be seen honestly every day.
+
+---
+
+## The style contract
+
+Paste this at the top of every prompt below. It is what the existing art
+actually is, read off the files rather than remembered.
+
+```
+Sticker illustration. Thick uniform near-black outline (#1c110b) around every
+shape, roughly 3px at 260px wide. Flat saturated fills. Soft rounded geometry,
+no sharp corners. No text, no letters, no numbers anywhere in the image. No
+drop shadow on the ground, no background scene — transparent background,
+subject only. Centred, with a little air around it. Friendly and plain rather
+than detailed; this is a mark, not an illustration.
+```
+
+**Two things the models get wrong every time**, so say them again at the end of
+the prompt:
+
+- **Transparent background.** If it will not do it, ask for a flat magenta
+  (`#ff00ff`) ground and cut it out afterwards — never white, because the
+  drawings contain white.
+- **No text.** Image models add labels unprompted, and there is not one word
+  anywhere in this product's art.
+
+### The palette
+
+| | hex | what it is |
+| --- | --- | --- |
+| outline | `#1c110b` | every outline in the system, and never pure black |
+| orange | `#e66d0d` | the fur, and the one action colour |
+| cream | `#fed6a7` | the tail's tip |
+| purple | `#6c4da9` | the cap, and the room |
+| brown | `#58413d` | the headphones and the acorn |
+| paper | `#fffbf3` | the face and the raised things |
+
+---
+
+## 1. The resting pose, for `/enough`
+
+**Canvas:** 744 × 560 px, transparent PNG. It is drawn into a fixed 186 × 140
+slot, so the aspect matters more than the size — anything at 4:3-ish will do,
+anything squarer will letterbox.
+
+**The moment it has to carry:** *that will do.* Not tired, not finished, not
+pleased with itself. Stopping is a normal ending here, and a drawing that looks
+relieved makes stopping into something you needed rescuing from, while one that
+looks proud makes it an achievement. It wants to look like somebody who has put
+a thing down and is fine.
+
+```
+[paste the style contract]
+
+Draw a cartoon squirrel mascot at rest, seen from the front, head and
+shoulders.
+
+The character: bright orange fur; a big bushy orange tail with a pale cream tip
+curling up behind one shoulder; two pointed orange ears; a flat purple
+newsboy-style cap sitting low, with a small brown acorn badge on the front and
+a short brown sprout with a round tip standing up from the crown; round brown
+over-ear headphones. Its face is a white rounded speech-bubble shape — a
+speech balloon used as a face — with two small oval black eyes and a small
+simple smile.
+
+The pose: leaning one elbow on the closed lid of a plain cardboard shoebox that
+sits beside it, cap tipped slightly forward over the eyes, tail curled around
+and settled rather than raised. Eyes soft and half-closed, mouth a small even
+line, not a grin. Calm and unhurried — someone who has put something down, not
+someone who has collapsed.
+
+Transparent background. No text of any kind.
+```
+
+**Reject it if:** the eyes are closed all the way (that is asleep, and asleep is
+a different screen), it is smiling broadly (that is congratulation, which this
+screen must never do), the shoebox is open, there is a check mark or a tick
+anywhere, or the tail is doing something energetic.
+
+**Optional companion — the listening pose, for the true empty states.** Worth
+having so the two screens stop being interchangeable from both directions, but
+`/enough` is the one that matters.
+
+```
+[paste the style contract]
+
+[paste the character paragraph above]
+
+The pose: sitting upright and alert beside an open, completely empty cardboard
+shoebox, looking slightly off to one side as if waiting for something to be
+said. Ears up, one hand resting on the box's rim, tail up behind. Attentive and
+patient. Not sad, not searching — the box being empty is fine.
+
+Transparent background. No text of any kind.
+```
+
+---
+
+## 2. One alternate per mood face
+
+**Canvas:** 260 × 209 px each, transparent PNG, matching the five that exist.
+
+The faces are **not** the squirrel. They are rounded-square tiles — think a
+chunky app icon — one colour each, with a thick near-black outline, a soft
+vertical gloss and a small white specular highlight in the top-left corner, and
+one accent motif floating outside the tile at the top right.
+
+The alternate is **the same feeling drawn a second way**, not a different
+feeling and not the same drawing rotated. Same colour, same tile, same motif
+family; a different face inside it.
+
+```
+[paste the style contract]
+
+Draw a single rounded-square face tile, like a chunky app icon: a squircle in
+flat {COLOUR}, with a soft vertical gloss so the top is slightly lighter, a
+small white specular highlight in the top-left corner, and a thick near-black
+outline all the way round. Simple cartoon features drawn in the same near-black
+line: {FEATURES}. {MOTIF}
+
+Centred, transparent background, nothing else in the frame. No text.
+```
+
+Fill in the two braces per face:
+
+| file | `{COLOUR}` | `{FEATURES}` — the alternate | `{MOTIF}` |
+| --- | --- | --- | --- |
+| `mood-good-2.png` | warm yellow `#ffd23f` | eyes as upward curves, wide open smile showing a pink tongue, both cheeks lightly flushed | Three short thick strokes radiating from the top-right corner, outside the tile. |
+| `mood-calm-2.png` | fresh green `#5cc93f` | eyes closed as two gentle downward arcs, a small even closed smile | Two rounded leaves on a short stem growing out of the top-right corner, outside the tile. |
+| `mood-frazzled-2.png` | red `#f0362f` | wide round eyes with visible whites looking in slightly different directions, a flat wavy mouth | A tangled scribble ball above the tile and a small jagged lightning bolt to its right, both outside the tile. |
+| `mood-low-2.png` | blue `#3a8ef6` | eyes as two downward-sloping half-lids, a small downturned mouth | A single teardrop resting on the lower right of the tile. |
+| `mood-wiped-2.png` | violet `#a06ce0` | eyes closed as two flat lines, mouth a small open oval | Three rounded Z shapes rising diagonally from the top-left corner, outside the tile — the one place a letter shape is allowed, because it is the existing motif. |
+
+**Do them in one conversation**, feeding the five existing PNGs in first and
+saying "match these". Five separate chats produce five slightly different
+outline weights, and the whole point is that they are one set.
+
+**Reject any of them if:** the outline is thinner than the existing five, the
+gloss became a full gradient or a 3D bevel, the motif ended up inside the tile,
+the corner radius is noticeably different, or a face reads as a different mood
+than the one it is replacing.
+
+### The one that costs no art
+
+If the alternates do not happen, the free version is a per-render couple of
+degrees of tilt on each face — real novelty, no drawing. It is a smaller thing
+rather than the same thing, and it is worth saying which one shipped.
+
+---
+
+## When the files arrive
+
+Drop them in `internal/web/static/` under the names above and say so. The
+wiring is small and is not written yet, deliberately: a template pointing at a
+file that does not exist is a broken build, and a placeholder drawing is worse
+than the repetition it replaces.
+
+- `/enough` swaps its `src` and keeps `class="empty"`, so the layout does not
+  move. Same decorative `alt`, because the drawing says which moment this is
+  and a screen reader gets that from the sentence.
+- The faces pick between the two per render, the way the card stack picks its
+  angle and the sentences pick their wording — from the date, so both viewports
+  agree and a reload is not a slot machine. See The Day Rule in `DESIGN.md`.
