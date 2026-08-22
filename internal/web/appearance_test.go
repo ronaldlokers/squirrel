@@ -69,7 +69,11 @@ var appearanceScreens = map[string][]string{
 	"/kept":   {".deckhead", ".rcard", ".rcard .tab", ".rcard p", ".rbtn", ".ends"},
 	"/held":   {".deckhead", ".heldgroup", ".aside", ".aside .what", ".aside .onwhat", ".ends"},
 	"/moods":  {".deckhead", ".aday", ".aday .when", ".areading", ".ends"},
-	"/enough": {".empty h1", ".empty p", ".leavehere", ".onemore a"},
+	// `.empty img` is here and nowhere else because /enough is the one screen
+	// that overrides it. The size is the difference between a different drawing
+	// and the same one shrunk, and the HTML attribute cannot hold it — the
+	// shared rule would win.
+	"/enough": {".empty h1", ".empty p", ".empty img", ".leavehere", ".onemore a"},
 	"/buddy":  {".sheet", ".sheetname", ".onscreen .lead", ".onscreen .what", ".why", ".slot.say textarea"},
 }
 

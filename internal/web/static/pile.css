@@ -788,6 +788,16 @@
     width: 186px; height: 140px; display: block; margin: 0 auto 22px;
     filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .3));
   }
+  /* The stopping screen's own pose, and the one drawing here that is not the
+     shared mark. It is a whole figure rather than a head, so at 186px the face
+     — which is the character — landed at a third of the width it has on every
+     other screen. Sized to put the face back at roughly the size the mark
+     gives it, which is what makes the two screens read as different rather
+     than as the same drawing at two scales.
+     
+     300px fits a 390px phone inside the field's own 22px padding with room to
+     spare, so there is no second size to keep in step. */
+  .empty img.resting { width: 300px; height: 207px; }
   .empty h1 {
     margin: 0 0 10px;
     font-size: clamp(27px, 3.4vw, 36px); line-height: 1.15;

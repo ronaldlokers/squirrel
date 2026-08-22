@@ -83,3 +83,61 @@ func TestStoppingLetsYouChangeYourMind(t *testing.T) {
 	require.Contains(t, body, "actually, one more")
 	require.Contains(t, body, `href="/pile"`)
 }
+
+// drawing pulls the mascot out of a screen's empty-state block, so a test can
+// ask what a screen is drawn with rather than what its whole HTML contains —
+// the lid carries the mark on every page and would answer for all of them.
+func drawing(t *testing.T, body string) string {
+	t.Helper()
+	at := strings.Index(body, `<section class="empty`)
+	require.GreaterOrEqual(t, at, 0, "no empty-state block on this screen")
+	block := body[at:]
+	if end := strings.Index(block, "</section>"); end >= 0 {
+		block = block[:end]
+	}
+	src := strings.Index(block, `src="/static/`)
+	require.GreaterOrEqual(t, src, 0, "the empty-state block has no drawing")
+	rest := block[src+len(`src="/static/`):]
+	if q := strings.IndexAny(rest, `?"`); q >= 0 {
+		rest = rest[:q]
+	}
+	return rest
+}
+
+// Stopping does not look like having nothing left.
+//
+// This screen shipped with the same drawing the empty pile, the empty chores,
+// the empty tasks and the empty archive all use. Side by side they were the
+// same composition at the same size and only the sentence differed — so
+// choosing to stop looked exactly like running out, which is the one
+// equivalence the product exists to break. Principle 3 is structural here and
+// a shared drawing quietly unsaid it.
+//
+// Asserted as a difference rather than as a filename, because what matters is
+// that the two screens are not the same picture. The filename is checked too,
+// so a change that made every empty state resting would fail rather than pass
+// by accident.
+func TestStoppingDoesNotLookLikeHavingNothingLeft(t *testing.T) {
+	stopping := drawing(t, mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String())
+	nothingLeft := drawing(t, mounted(t, &fakeStore{}).call(t, "GET", "/pile", nil).Body.String())
+
+	require.NotEqual(t, nothingLeft, stopping,
+		"the stopping screen and the empty pile are the same drawing")
+	require.Equal(t, "resting.png", stopping)
+	require.Equal(t, "logo.png", nothingLeft,
+		"the empty pile stopped using the shared mark")
+}
+
+// The pose is drawn larger than the shared mark, and that is not decoration.
+//
+// It is a whole figure rather than a head, so at the mark's 186px the face —
+// which is the character — came out at about a third of the width it has on
+// every other screen, and the screen read as the same drawing shrunk rather
+// than as a different one.
+func TestTheRestingPoseIsDrawnAtItsOwnSize(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String()
+
+	require.Contains(t, body, `class="resting"`,
+		"the pose is not marked, so the stylesheet draws it at the shared mark's size")
+	require.Contains(t, body, `width="300" height="207"`)
+}
