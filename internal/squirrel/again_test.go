@@ -168,3 +168,61 @@ func agedTimer(t *testing.T, store *squirrel.Store, personID int64, by time.Dura
 		personID, by.String())
 	require.NoError(t, err)
 }
+
+// "Not now" turns the breadcrumb down, like it turns everything else down.
+//
+// Reported live on 23 August: the button on home does nothing. It renders for
+// this offer, it posts, the refusal is written, and the picker hands the same
+// breadcrumb straight back — because rule 3 was the one rule that never read
+// the refusal set. Two views, one pile, so the chat's `later:` tap had it too.
+func TestNotNowTurnsDownTheBreadcrumb(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	_, err := store.StartTimer(ctx, p, "the kitchen", 20*time.Minute, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, store.StopTimer(ctx, p))
+
+	o, found, err := store.PickNow(ctx, p, time.Now(), false)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, squirrel.OfferAgain, o.Kind)
+
+	require.NoError(t, store.Refuse(ctx, p, o.Kind, o.RefID, time.Now()))
+
+	_, found, err = store.PickNow(ctx, p, time.Now(), false)
+	require.NoError(t, err)
+	require.False(t, found, "the breadcrumb came back after being turned down")
+}
+
+// And a refusal is about the breadcrumb it was pressed on, not about
+// breadcrumbs.
+//
+// The naive fix — suppress the kind for the rest of the day — would cost you
+// the way back into everything you touch afterwards, which is worse than the
+// bug: the whole feature is that the reconstruction is expensive.
+func TestTurningOneBreadcrumbDownDoesNotCostTheNextOne(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	_, err := store.StartTimer(ctx, p, "the kitchen", 20*time.Minute, time.Now().Add(-30*time.Minute))
+	require.NoError(t, err)
+	require.NoError(t, store.StopTimer(ctx, p))
+
+	o, _, err := store.PickNow(ctx, p, time.Now(), false)
+	require.NoError(t, err)
+	require.NoError(t, store.Refuse(ctx, p, o.Kind, o.RefID, time.Now()))
+
+	// Later you were on something else, and got up from that too.
+	_, err = store.StartTimer(ctx, p, "the shed", 20*time.Minute, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, store.StopTimer(ctx, p))
+
+	o, found, err := store.PickNow(ctx, p, time.Now(), false)
+	require.NoError(t, err)
+	require.True(t, found, "the way back into the shed went with the kitchen")
+	require.Equal(t, squirrel.OfferAgain, o.Kind)
+	require.Equal(t, "the shed", o.Text)
+}

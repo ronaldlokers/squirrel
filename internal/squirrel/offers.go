@@ -44,6 +44,33 @@ func (s *Store) RecordAnswer(ctx context.Context, personID int64, kind OfferKind
 	return nil
 }
 
+// RefusedSince reports whether this kind of offer was turned down after a
+// moment.
+//
+// It exists for the breadcrumb, which is the one offer with no row of its own:
+// "what you were on" names a label rather than a chore or a task, so its
+// suppression key is the same string every time and the set below cannot tell
+// this morning's breadcrumb from this afternoon's. Asking "was this kind
+// turned down since the moment this one appeared" can, because a later focus
+// ends later than the refusal that was about the earlier one.
+//
+// A boolean, and deliberately not a count. The constraint on Suppressed
+// applies here for the same reason: the picker asks "may I offer this", and
+// there is no question here that could be answered with a number about
+// somebody's day.
+func (s *Store) RefusedSince(ctx context.Context, personID int64, kind OfferKind, since time.Time) (bool, error) {
+	var refused bool
+	if err := s.pool.QueryRow(ctx, `
+		select exists (
+			select 1 from offers
+			 where person_id = $1 and kind = $2
+			   and answer = 'later' and answered_at > $3)`,
+		personID, string(kind), since).Scan(&refused); err != nil {
+		return false, fmt.Errorf("reading whether this was turned down: %w", err)
+	}
+	return refused, nil
+}
+
 // Suppressed is the set of things turned down since a moment, as
 // "kind:ref_id" keys.
 //
