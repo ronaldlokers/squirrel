@@ -705,6 +705,23 @@
     // search field.
     if (typing(e.target)) return;
     if (e.key === "/") { e.preventDefault(); find?.focus(); return; }
+    // Capture, on the key beside the one that finds. Looking something up had
+    // a keyboard path and keeping a thought did not, so on the deliberate
+    // desktop the first thing home asked of a keyboard was to reach for the
+    // mouse — for the one act this product calls sacred.
+    //
+    // `t` because it is the verb the button already uses: Tell it. It reaches
+    // the slot wherever the slot is, which is home and the ladder's own
+    // capture box, and does nothing on a screen that has neither.
+    // `t` is A TASK on the deck, and per-screen meanings are how the letters
+    // already work here — `d` is DONE on the deck and DID IT on the chores. So
+    // this is only ever the slot's key on a screen with a slot and no deck,
+    // which is checked rather than assumed: a screen that ever had both would
+    // otherwise have one letter meaning two things.
+    if ((e.key === "t" || e.key === "T") && !deck) {
+      const box = document.querySelector(".slot textarea");
+      if (box) { e.preventDefault(); box.focus(); return; }
+    }
     // A focused control owns space and enter; that is the platform's contract.
     if ((e.key === " " || e.key === "Enter") && e.target.closest("button, summary, a")) return;
 

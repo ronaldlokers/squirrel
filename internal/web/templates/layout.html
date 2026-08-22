@@ -20,7 +20,29 @@
      does in a browser tab. See The Step-Up Rule in DESIGN.md.
 
      `maximum-scale=1` as well as `user-scalable=no`, because some Android
-     browsers honour the first where they ignore the second. */}}
+     browsers honour the first where they ignore the second.
+
+     What it costs, recorded 22 August 2026 because it was implicit and an
+     accessibility review asked for it in writing rather than left to be
+     rediscovered:
+
+     This fails WCAG 1.4.4 (Resize Text) in the one place it actually takes
+     effect. The reasoning above is about the *installed* app, and that is
+     exactly where the block holds — so in the scenario this product is built
+     for, deliberately enlarging the text to read it is gone along with the
+     accidental magnification this exists to prevent. Nothing substitutes for
+     it: every size in pile.css is a fixed pixel value, so the OS text-size
+     setting does not reach them either.
+
+     Accepted, with the eyes open, on one ground: the only user has no vision
+     need that this takes away from, and a screen that has to be repaired
+     before it can be used is a cost he does have. It is not accepted on the
+     ground that the criterion does not apply.
+
+     If that ever stops being true, the answer is not to restore pinch-zoom —
+     that breaks the one-thumb layout this was written to protect. It is a
+     text-scale the person sets, persisted per device, multiplying a type scale
+     that would first have to stop being fixed pixels. */}}
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
 <link rel="stylesheet" href="/static/pile.css?v={{.V}}">

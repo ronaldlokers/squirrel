@@ -23,12 +23,13 @@ import (
 // notATitle are the templates that legitimately have no title of their own:
 // the layout every page is poured into, and the fragments poured in with it.
 var notATitle = map[string]string{
-	"layout.html":  "the frame, not a screen",
-	"card.html":    "a note in the deck, titled by the deck",
-	"every.html":   "the interval picker, drawn inside a card",
-	"split.html":   "a proposal, drawn inside a card",
-	"step.html":    "one step, drawn inside whatever raised it",
-	"results.html": "has one, and two of them, one per branch",
+	"layout.html":   "the frame, not a screen",
+	"card.html":     "a note in the deck, titled by the deck",
+	"every.html":    "the interval picker, drawn inside a card",
+	"split.html":    "a proposal, drawn inside a card",
+	"step.html":     "one step, drawn inside whatever raised it",
+	"stopping.html": "the way out, drawn into the foot of whatever offers it",
+	"results.html":  "has one, and two of them, one per branch",
 	// The front door, and the one screen without a title. Every other screen
 	// is a place you navigated to, and its title answers "where am I"; home is
 	// where you start, and nobody arrives there wondering. It carried "right

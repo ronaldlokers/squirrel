@@ -90,3 +90,52 @@ func TestBrowserSettingAsideStampsTheCardLikeEveryOtherAnswer(t *testing.T) {
 		"the way back is not reachable while the card it undoes is still there")
 	require.Equal(t, "undo", c.eval(t, `return document.activeElement.id`))
 }
+
+// Looking something up had a keyboard path and keeping a thought did not.
+//
+// `/` has focused the lid's search since it was written. Nothing focused the
+// slot, so on the deliberate-desktop scene the first thing home asked of a
+// keyboard user was to reach for the mouse — for the one act this product
+// calls sacred.
+func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
+	f := aPile()
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/")
+
+	c.key(t, "t")
+
+	require.Equal(t, "TEXTAREA", c.eval(t, `return document.activeElement.tagName`))
+	require.Equal(t, true, c.eval(t, `return !!document.activeElement.closest(".slot")`),
+		"t on home did not reach the slot")
+}
+
+// And it never shadows the deck's own `t`, which is A TASK.
+func TestBrowserTheSlotsKeyDoesNotTakeTheDecksTask(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	// A slot put on the deck on purpose. No screen has both today, which is
+	// why the guard is otherwise unreachable — and an unreachable guard that
+	// no test can tell from its absence is exactly the kind this project does
+	// not keep. This makes the condition real so the guard has something to be
+	// checked against.
+	c.eval(t, `
+		const box = document.createElement("textarea");
+		const slot = document.createElement("form");
+		slot.className = "slot";
+		slot.appendChild(box);
+		document.getElementById("stage").appendChild(slot);`)
+
+	c.key(t, "t")
+	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
+
+	require.Equal(t, false, c.eval(t, `return !!document.activeElement.closest(".slot")`),
+		"t reached a slot on a screen that also has a deck, where it means A TASK")
+
+	// What the stamp *says* for this one is wrong on main and is not this
+	// branch's business — see the issue this test's failure produced. What
+	// matters here is that the press still reached the card rather than a slot.
+	require.Equal(t, "task",
+		c.eval(t, `return document.querySelector("#actions [data-act=task]").dataset.act`))
+	require.Equal(t, true, c.eval(t, `return document.getElementById("card").classList.contains("stamped")`),
+		"t on the deck no longer acts on the card")
+}
