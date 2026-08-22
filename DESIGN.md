@@ -1181,6 +1181,14 @@ own, because each face already carries the system's 3px line and a card under it
 would be a second border around a thing that has one. Sized by height, because
 every drawing is the same size on the sheet they were cut from.
 
+**The faces do not vary, and that is a decision.** Three things in this system
+are chosen from the date — see The Day Rule — and the drawn faces were the
+obvious fourth: they are the thing met most often on the surface habituation
+would cost the most. They were left fixed on 23 August 2026 because the owner
+likes them as they are. If the check-in ever starts going unseen, a second
+drawing per face is the first thing to try, and the brief for it is in
+`docs/art/2026-08-22-prompts-for-the-missing-drawings.md`.
+
 Answered, the whole region becomes one chip: the face and the word inside a
 single dark-wash pill, with the two ways to change your mind trailing behind it.
 So home has exactly one interactive thing above the doors, and it is either the

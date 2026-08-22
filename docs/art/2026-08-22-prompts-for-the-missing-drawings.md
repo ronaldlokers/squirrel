@@ -2,8 +2,8 @@
 
 Prompts to paste into an image model, plus what to reject when it answers.
 
-One thing needs art and cannot be written in CSS. The other arrived on
-23 August and is marked below.
+Both items are now settled and neither is outstanding — one shipped, one
+declined. This is kept as the record of what was asked for and what came back.
 
 1. **A resting pose for `/enough`** (#98). The stopping screen currently uses
    the same `logo.png` as the empty pile, the empty chores, the empty tasks and
@@ -118,57 +118,33 @@ Transparent background. No text of any kind.
 
 ---
 
-## 2. One alternate per mood face
+## 2. One alternate per mood face — **not doing it, 23 August 2026**
 
-**Canvas:** 260 × 209 px each, transparent PNG, matching the five that exist.
+Declined by the owner, who likes the five as they are. Recorded here rather
+than deleted, because the reasoning that asked for it is still true and
+somebody will ask again.
 
-The faces are **not** the squirrel. They are rounded-square tiles — think a
-chunky app icon — one colour each, with a thick near-black outline, a soft
-vertical gloss and a small white specular highlight in the top-left corner, and
-one accent motif floating outside the tile at the top right.
+**What was asked for and why.** The five faces exist in one moment each, on the
+surface that most needs to be seen honestly every day, and `PRODUCT.md`'s own
+premise is that a surface which looks identical every time stops being seen
+within about a week. #139 answered that everywhere else — the stamp's angle,
+the field's light and the sentences met most often all come from the date now.
+The faces are what is left fixed.
 
-The alternate is **the same feeling drawn a second way**, not a different
-feeling and not the same drawing rotated. Same colour, same tile, same motif
-family; a different face inside it.
+**The cost of the decision, stated so it is not a surprise later.** If the
+check-in does start going unseen, this is the first thing to try, and the
+absence of variation here is now a choice rather than an oversight. The free
+version — a per-render couple of degrees of tilt, no art at all — was also
+declined by the same answer; it is a smaller thing than a second drawing rather
+than a cheaper version of it.
 
-```
-[paste the style contract]
-
-Draw a single rounded-square face tile, like a chunky app icon: a squircle in
-flat {COLOUR}, with a soft vertical gloss so the top is slightly lighter, a
-small white specular highlight in the top-left corner, and a thick near-black
-outline all the way round. Simple cartoon features drawn in the same near-black
-line: {FEATURES}. {MOTIF}
-
-Centred, transparent background, nothing else in the frame. No text.
-```
-
-Fill in the two braces per face:
-
-| file | `{COLOUR}` | `{FEATURES}` — the alternate | `{MOTIF}` |
-| --- | --- | --- | --- |
-| `mood-good-2.png` | warm yellow `#ffd23f` | eyes as upward curves, wide open smile showing a pink tongue, both cheeks lightly flushed | Three short thick strokes radiating from the top-right corner, outside the tile. |
-| `mood-calm-2.png` | fresh green `#5cc93f` | eyes closed as two gentle downward arcs, a small even closed smile | Two rounded leaves on a short stem growing out of the top-right corner, outside the tile. |
-| `mood-frazzled-2.png` | red `#f0362f` | wide round eyes with visible whites looking in slightly different directions, a flat wavy mouth | A tangled scribble ball above the tile and a small jagged lightning bolt to its right, both outside the tile. |
-| `mood-low-2.png` | blue `#3a8ef6` | eyes as two downward-sloping half-lids, a small downturned mouth | A single teardrop resting on the lower right of the tile. |
-| `mood-wiped-2.png` | violet `#a06ce0` | eyes closed as two flat lines, mouth a small open oval | Three rounded Z shapes rising diagonally from the top-left corner, outside the tile — the one place a letter shape is allowed, because it is the existing motif. |
-
-**Do them in one conversation**, feeding the five existing PNGs in first and
-saying "match these". Five separate chats produce five slightly different
-outline weights, and the whole point is that they are one set.
-
-**Reject any of them if:** the outline is thinner than the existing five, the
-gloss became a full gradient or a 3D bevel, the motif ended up inside the tile,
-the corner radius is noticeably different, or a face reads as a different mood
-than the one it is replacing.
-
-### The one that costs no art
-
-If the alternates do not happen, the free version is a per-render couple of
-degrees of tilt on each face — real novelty, no drawing. It is a smaller thing
-rather than the same thing, and it is worth saying which one shipped.
-
----
+**If it is ever revisited**, the brief is harder than it looks and the first
+attempt at it got this wrong: an alternate has to keep the mood exactly — `low`
+must never read as `wiped`, since those are different states wanting different
+answers, which is why the five are not a one-to-five scale — while being
+visibly a different drawing met one at a time. Same colour, same tile, same
+outline weight, same motif family; only the expression moves. A prompt written
+by describing the faces produces five near-copies, which is what happened here.
 
 ## When the files arrive
 
