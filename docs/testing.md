@@ -69,3 +69,22 @@ Then **read the diff before committing it.** A snapshot that rewrites itself on
 failure records whatever happened, which is the opposite of a fence — which is
 why nothing regenerates it automatically and why the environment variable is
 spelled out rather than being a flag you might pass by habit.
+
+## Whether the words can be read
+
+`TestEveryWordCanBeRead` walks every visible run of text and every placeholder
+on eleven screens, at 1280px and at 390px, works out what each one actually
+composites onto, and fails anything under 4.5:1 — 3:1 where the text is large
+enough to be allowed it. It runs with the browser tests.
+
+It exists because a review by eye found six contrast failures in one pass and
+two of them were text that could not be seen at all: a label written for the
+purple field, caught by a scoped rule and painted cream on cream card stock at
+1.18:1. Nothing in the appearance snapshot could have said so — the colour it
+records is correct, it is the *pairing* that is wrong — and nothing in a diff
+looks like it.
+
+The failure names the screen, the width, the element, the words, and both
+colours:
+
+    /pile at 1280px: summary.btn.make "MAKE A CHORE" is 3.10:1, needs 4.5:1

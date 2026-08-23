@@ -16,7 +16,11 @@ colors:
   paper: "#fffbf3"
   paper-deep: "#f7e9d4"
   headphone-brown: "#58413d"
-  placeholder-ink: "#8a7361"
+  # What a field says before you have typed in it. It was `#8a7361`, which
+  # measured 4.32:1 on paper and 3.85:1 on card stock — a placeholder is text
+  # and both of those fail. Two shades down clears 5:1 on paper and 4.5:1 on
+  # stock, and is still plainly quieter than the words it makes room for.
+  placeholder-ink: "#7e6857"
   # The room's light. It was `.5` until 21 August 2026; the number is a
   # contrast result, not a taste one. See The Field Exception.
   field-lift: "rgba(150, 110, 220, .35)"
@@ -27,16 +31,22 @@ colors:
   # Behind Buddy's sheet. The outline colour, not black.
   backdrop: "rgba(28, 17, 11, .55)"
   state-done: "#529414"
-  state-done-ink: "#3c6d0e"
+  # `#3c6d0e` until 24 August 2026, when it measured 4.44:1 against card-deep
+  # — which is the archive's stock, and the one place this ink lands on it.
+  state-done-ink: "#37640d"
   state-kept: "#ffb300"
   state-kept-ink: "#8a5c00"
   state-dropped: "#8a6a55"
   state-dropped-ink: "#6a4f3e"
   state-chore-ink: "#b0530a"
-  # Type on the orange selection band, and the only white in the system. The
-  # No Neutral Rule governs surfaces; this is ink, on a surface that is
-  # already orange.
-  selection-ink: "#fefefe"
+  # Retired on 24 August 2026, and with it the last white in the system. It
+  # was the ink on the orange selection band, and white on Acorn Orange
+  # measures 3.1:1 — a selected sentence you could not read. The band takes
+  # the outline like every other orange surface now. See The Orange Ink Rule.
+  # The token stays recorded rather than deleted because `#fefefe` is still
+  # written in the mark's own palette, and the reason it left the interface is
+  # the useful part.
+  selection-ink: "#1c110b"
   # Lifted fills: a state colour raised toward white until dark ink reads on
   # it. See The Lifted Fill Rule. Base and hover for each.
   state-done-lifted: "#71a73e"
@@ -170,9 +180,10 @@ components:
     padding: "12px 18px"
   button-action-hover:
     backgroundColor: "{colors.paper-deep}"
+  # The ink on orange is the outline, not paper. See The Orange Ink Rule.
   button-make:
     backgroundColor: "{colors.orange}"
-    textColor: "{colors.paper}"
+    textColor: "{colors.outline}"
     typography: "{typography.label}"
     rounded: "{rounded.chip}"
     padding: "12px 20px"
@@ -252,9 +263,10 @@ components:
     typography: "{typography.slotfield}"
     rounded: "{rounded.card}"
     padding: "12px 12px 12px 18px"
+  # Same ink as button-make, and for the same measurement.
   button-post:
     backgroundColor: "{colors.orange}"
-    textColor: "{colors.paper}"
+    textColor: "{colors.outline}"
     typography: "{typography.label}"
     rounded: "{rounded.chip}"
     padding: "11px 18px"
@@ -360,9 +372,25 @@ by line, because nothing else could find it.
 Two things now hold it:
 
 - **The appearance snapshot** (`internal/web/appearance_test.go`) records the
-  computed shape of 74 selectors across every screen. It catches the *code*
-  moving. It cannot catch this document going stale, because it does not read
-  this document.
+  computed shape of every selector that has a shape of its own, across every
+  screen. It catches the *code* moving. It cannot catch this document going
+  stale, because it does not read this document.
+- **The contrast walk** (`internal/web/contrast_test.go`) measures every
+  visible run of text and every placeholder on eleven screens, at 1280px and
+  390px, against the background it actually composites onto, and fails below
+  4.5:1 — 3:1 for large text. Added 24 August 2026, when a review by eye found
+  six failures at once and two of them were text nobody could see at all.
+  
+  It is here rather than in the snapshot because the two ways a colour goes
+  wrong are both invisible in a diff. A scoped rule reaches further than its
+  author meant — `.checkin .lead` was written for a question standing on the
+  field and also caught every label inside the offer card, so the head of the
+  one thing home hands you rendered cream on cream stock at 1.18:1, and
+  `.results .lead` did the same to *HOW OFTEN?* on a search result. Or a fill
+  and a type colour are each chosen well and never measured together, which is
+  the whole of The Orange Ink Rule. This document already said *measure a
+  colour against the type that will sit on it*; a person doing that by eye is
+  the thing that failed.
 - **A blocking CI check** (`.github/scripts/design-follows-the-code.sh`). A pull
   request that changes `internal/web/static/pile.css` or any template does not
   merge unless `DESIGN.md` changed with it.
@@ -397,6 +425,10 @@ own colours, and any screen that reads as neutral has failed to be Squirrel.
   highlight, the scrollbar thumb and Buddy's context rule.
 - **Lit Orange** (`#ff8a2b`): the hover of anything already orange, and the
   focus ring on purple.
+
+**Everything that stands on the orange is the outline ink.** See The Orange
+Ink Rule below; it is the one thing about this colour that changed on
+24 August 2026, and the fill did not move.
 
 ### Tertiary
 
@@ -444,17 +476,48 @@ stopped — is cream stock like everything else the owner owns. A column of
 orange tabs would put a dozen creations on one screen and cost the one that
 means something.
 
+**The Orange Ink Rule.** Type on Acorn Orange is the outline `#1c110b`, never
+paper and never white. Added 24 August 2026, and it is the Fill-and-Ink Rule
+arriving at the one fill that had been exempt from it by habit.
+
+Paper on `#e66d0d` measures **3.1:1**. Every orange control in the product is a
+13px uppercase label, so every one of them failed, on five screens, for the
+whole life of the screen: *tell it*, *make a chore* on the deck and again on
+each search result, *make it a chore*, *decide it*, *say it*, and the door out
+of `/enough`. The keycap inside *make a chore* was worse at **2.28:1**, because
+the keycap sits at 72% of its label's ink — so it stands at full strength on
+this one button and nowhere else. The selection band went the same way; white
+on that orange was a selected sentence you could not read.
+
+The outline on the same orange measures **5.78:1**, and **7.87:1** on the lit
+orange it hovers to. So the fill did not move. That matters more than the
+number: `#e66d0d` is the mark's own colour and darkening it to carry white
+would have taken the brand off the one control that most carries it.
+
+**The press is the exception, and it is stated at every site.** *tell it*,
+*decide it* and *make it a chore* swap their fill for a violet while they are
+held, and *make a chore* for a purple; the outline on those measures 2.07:1 and
+2.88:1. Paper goes back on for those 90ms. Written out at each of the four
+rather than inherited, because a press state that reads correctly is invisible
+and a press state that does not is invisible too.
+
 **The No Neutral Rule.** No surface in this system is white, grey or
-near-grey. (`#fefefe` exists for exactly one thing: type inside the orange
-selection band, and for the focused slot, which lifts a shade to say the caret
-is in it. The rule is about the palette, and neither of those introduces a
-grey.) Cards are cream, the field is purple, secondary type on purple is tinted
-from the tail cream and secondary type on cream is tinted from the headphones.
-A grey would be the first sign the design has drifted off the mark.
+near-grey. (`#fefefe` was type inside the orange selection band and is not
+used any more — see The Orange Ink Rule. The one survivor is the focused slot,
+which lifts a shade to say the caret is in it. The rule is about the palette
+and that does not introduce a grey.) Cards are cream, the field is purple,
+secondary type on purple is tinted from the tail cream and secondary type on
+cream is tinted from the headphones. A grey would be the first sign the design
+has drifted off the mark.
 
 **The Fill-and-Ink Rule.** Every state colour ships as a pair. The fill goes on
 shapes — tabs, dots, pressed buttons. The ink goes on type. Never set type in a
 fill value; three of the four fail contrast at label size.
+
+`state-done-ink` moved from `#3c6d0e` to `#37640d` on 24 August 2026. It reads
+on card stock either way; on `card-deep`, which is the archive's own stock and
+the one place it lands there, the old value measured 4.44:1. An ink that passes
+on one of the two stocks in the system is an ink that is right by accident.
 
 **The Lifted Fill Rule.** A control that acts on something wears that thing's
 colour at rest, not only under the thumb — but the state fills are chosen to be
@@ -531,7 +594,13 @@ label on the side of the box, played against the drawn mascot beside it.
   search results, and a task's text on the tasks screen. Smaller than the
   deck's note because it is being scanned rather than decided on.
 - **Meta** (`CASL` 0, `wght` 750, 11.5px, `0.1em`, uppercase): the date and
-  state line above a result, a chore's rhythm, an offer's head.
+  state line above a result, a chore's rhythm, an offer's head. It sits 6px
+  above what it labels and takes no margin over it — a label belongs to the
+  thing under it, and unstated it took the browser's own 1em on both sides and
+  floated equidistant between the card's edge and the words it names. The
+  `·` between two halves of a meta line stands at 80% of the ink, not 45%:
+  at 45% it measured 2.19:1, which is not a quiet character, it is an absent
+  one.
 - **Group** (`CASL` 0, `wght` 760, 12.5px, `0.1em`, uppercase, cream): the
   label over a run of cards saying what the run is — *WAITING ON* on the
   set-aside, *CHORES* and *EVERYTHING ELSE* in search. A step above Meta
@@ -631,6 +700,21 @@ The third slot is `.ends`: the same distance below the content everywhere
 some screens, a pair of links on others, and absent on three, which is what
 made thirteen screens read as thirteen things.
 
+**The column does not move between screens.** `html` carries
+`overflow-y: scroll`, so the scrollbar is reserved on every screen rather than
+appearing only on the ones long enough to need it. Without it the 720px column
+— every title, every card, every button — sat five pixels further right on
+`/moods` and `/kept` than on `/chores` and the deck, and walking between two
+screens slid the whole page sideways.
+
+`overflow-y: scroll` rather than `scrollbar-gutter: stable`, and the difference
+is what stands in the reserved strip. A stable gutter reserves the space and
+paints nothing in it, so ten pixels of field showed beside the lid — which is
+the one full-bleed object in the product — and the lid stopped short of the
+edge. Kept as a scrollbar, the strip is the track this system already themes,
+and that track is the lid's own Lid Purple. There is no seam because there is
+nothing there that was not already there on every screen long enough to scroll.
+
 **The Top Edge Rule.** Content starts at the top of the field, 40px down. The
 deck is the one exception and keeps the vertical centring, because one card
 floating in the middle of the room is the shoebox's composition rather than a
@@ -692,12 +776,21 @@ count is a total in disguise.
 
 ### Breakpoint: 620px
 
-Below it the four answers become a two-by-two grid with *make a chore*
-full-width beneath them; the chore's three actions become a two-column grid; the
+Below it the four answers become a two-by-two grid with *make a chore* on its
+own row beneath them; the chore's three actions become a two-column grid; the
 interval chips become two columns with the lead and *never mind* spanning both;
 the five faces share one row exactly rather than each taking its own width. The
 mark drops to 56×42. Touch targets are 48px in the action row, 44px everywhere
 else.
+
+***Make a chore* has its own row and not the whole of it.** This document said
+full-width until 24 August 2026 and the stylesheet has never done it: the
+summary spans the grid and then sits at the end of its own row, with the reason
+written beside the rule. It is the rarest of the five answers on the card and
+spanning made it the widest, loudest object under the thumb — the same argument
+that refuses *stop asking* the full width eighteen lines further down in the
+same file. The code was right and the record was stale, which is the third time
+that has been true here and the reason the two checks below exist.
 
 **The Step-Up Rule.** A phone is read at arm's length in worse light, so roles
 step *up* below the breakpoint rather than down: the note goes to a flat 23px
@@ -915,12 +1008,15 @@ of thing it is.
 - **Shape:** full pill (`999px`), 3px outline, `0 4px 0 0` offset.
 - **Action** (*done*, *keep*, *drop*, *a task*): paper fill, outline type,
   12px/18px padding, 44px minimum height. Each carries its keycap.
-- **Make** (*make a chore*): orange fill, paper type, pushed to the far end of
-  the row with `margin-left: auto`. The only orange control on the card.
+- **Make** (*make a chore*): orange fill, **outline type**, pushed to the far
+  end of the row with `margin-left: auto`. The only orange control on the card,
+  and its keycap stands at full strength rather than 72% — see The Orange Ink
+  Rule.
 - **Hover:** action buttons deepen to `#f7e9d4`; make brightens to `#ff8a2b`.
 - **Press:** translate down 4px, offset removed, fill swaps to the button's own
   state colour (`done` green, `keep` amber, `drop` brown, `a task` violet,
-  `make` purple).
+  `make` purple). Make's type returns to paper for the press, because the
+  outline does not read on the purple it lands on.
 - **Focus:** 3px `#ff8a2b` ring at 3px offset on purple; `#5e23b1` on cream.
 
 **A task presses violet, not green.** Deciding sends a note to the tasks; the
@@ -956,6 +1052,16 @@ The answer you take when you are *not* doing the thing: `LATER` on the card,
   `rgba(254,214,167,.16)` wash and paper type.
 - **Inside a cream card:** headphone brown, hovering to paper-deep and outline
   type.
+
+**A quiet pill inside `.ends` keeps its own mark and takes no underline.**
+*that is enough whenever you say* is one link, written once, rendered in two
+places: bare on the deck's hint line and inside `.ends` on nine other screens.
+`.ends a` outranks `.quietpick`, so the same words were a plain pill on the
+deck and an underlined pill everywhere else — one control with two
+appearances, which is the exact fault the Three Marks Rule exists to prevent,
+committed by the rule that was enforcing it. The pill carries its own mark; the
+underline belongs to the bare links beside it. `text-decoration-line` is
+recorded in the appearance snapshot now, because nothing there could see this.
 
 **Why it exists, which is the clearest evidence the old vocabulary was wrong.**
 *not now* on the offer is a `<button>`. `LATER` on the card is an `<a>`. They
@@ -1355,8 +1461,14 @@ copies of the same sentence on one card is a question about which one is real.
 ### Inputs / Fields
 
 Three, and they share one grammar: paper, 3px outline, an orange caret, a
-placeholder in `#8a7361`, and focus that *adds* a ring rather than replacing
+placeholder in `#7e6857`, and focus that *adds* a ring rather than replacing
 what is there.
+
+**The placeholder is text and is measured as text.** It was `#8a7361` — 4.32:1
+on paper, 3.85:1 on the card stock the search field is made of — and it was
+written out by hand at four sites rather than named once, which is how the
+search field came to be the only one of the three using a different colour
+altogether. One token now, and it clears 5:1 on paper and 4.5:1 on stock.
 
 - **The slot** and the new-task line are inset. See The Slot.
 - **The new-chore name** is a full pill with a 3px offset, inside the dashed

@@ -30,11 +30,17 @@
     --paper-deep: #f7e9d4;     /* those things, pressed */
     --brown: #58413d;          /* the headphones */
     --white: #fefefe;
+    /* What a field says before you have typed in it. It was #8a7361, written
+       out by hand in four places, and it measured 4.32:1 on paper and 3.85:1
+       on stock — a placeholder is text and both of those fail. Two shades
+       down clears 5:1 on both and is still plainly quieter than the words it
+       makes room for. */
+    --placeholder: #7e6857;
 
     /* The notebook's page tabs, one per state. Each has a fill for the tab and
        a darker sibling for type, because the tab colours are chosen to be seen
        at a glance and type has to be read. */
-    --done: #529414;      --done-ink: #3c6d0e;
+    --done: #529414;      --done-ink: #37640d;
     --kept: #ffb300;      --kept-ink: #8a5c00;
     --dropped: #8a6a55;   --dropped-ink: #6a4f3e;
     --chore: var(--orange); --chore-ink: #b0530a;
@@ -80,6 +86,24 @@
   /* The brim reaches past both edges of the lid on purpose; nothing about it
      should be scrollable. */
   html, body { overflow-x: clip; }
+  /* The scrollbar is there whether or not the screen scrolls.
+   *
+   * Without this a classic scrollbar appears on the long screens and not on
+   * the short ones, so the 720px column — every title, every card, every
+   * button — sat five pixels further right on `/moods` and `/kept` than on
+   * `/chores` and the deck. Walking between two screens moved the whole page
+   * sideways, which on a surface built for someone who loses their place is
+   * not a subtlety.
+   *
+   * `overflow-y: scroll` rather than `scrollbar-gutter: stable`, and the
+   * difference is what stands in the reserved strip. A stable gutter reserves
+   * the space and paints nothing in it, so beside the lid — which is the only
+   * full-bleed object in the product — ten pixels of field showed through and
+   * the lid stopped short of the edge. Kept as a scrollbar, the strip is the
+   * track this file already themes, and the track is the lid's own
+   * `--purple-dark`. The seam disappears because there is nothing there that
+   * was not there on every screen long enough to scroll. */
+  html { overflow-y: scroll; }
 
   body {
     margin: 0;
@@ -125,7 +149,10 @@
   [hidden] { display: none !important; }
 
   /* The browser's own surfaces belong to the design too. */
-  ::selection { background: var(--orange); color: var(--white); }
+  /* The outline rather than white: white on this orange measures 3.1:1, which
+     is a selection you cannot read. The mark's own near-black measures 5.78:1
+     on the same fill and is the ink every other orange control now takes. */
+  ::selection { background: var(--orange); color: var(--outline); }
   ::-webkit-scrollbar { width: 14px; }
   ::-webkit-scrollbar-track { background: var(--purple-dark); }
   ::-webkit-scrollbar-thumb {
@@ -205,7 +232,7 @@
     font-variation-settings: var(--precise), "wght" 600;
     color: var(--outline); caret-color: var(--orange); padding: 0;
   }
-  .find input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .find input::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
   .find input:focus { outline: none; }
 
   /* ---------- the field ---------- */
@@ -445,12 +472,29 @@
   .btn[data-act="task"] { --bc: var(--violet); }
 
   /* The one action that makes something instead of disposing of it. */
+  /* Dark ink on the orange, not paper.
+     
+     Paper on this fill measures 3.1:1 and the label is 13px, so it failed
+     everywhere the orange appeared — six controls across five screens. The
+     outline reads at 5.78:1 on the same orange and 7.87:1 on the lit orange
+     it hovers to, so the fill is untouched and only the ink moved. It is the
+     Fill-and-Ink Rule holding rather than bending: a saturated fill carries
+     the dark ink, which is already how every lifted state control works.
+     
+     The press is the exception, because the press swaps the fill for a purple
+     and dark ink on that measures 2.88:1. Paper goes back on for those 90ms,
+     stated at every site rather than inherited. */
   .btn.make {
     margin-left: auto; --bc: var(--purple);
-    background: var(--orange); color: var(--paper);
+    background: var(--orange); color: var(--outline);
     padding: 12px 20px;
   }
   .btn.make:hover { background: var(--orange-lit); }
+  .btn.make:active, .btn.make.hit { color: var(--paper); }
+  /* The keycap is quieter than its label at 72% — which on cream is a shade
+     and on the orange is a fail, at 3.79:1. On this one button it stands at
+     full strength; it is still the smaller, boxed thing beside the word. */
+  .btn.make .key { opacity: 1; }
 
   /* Choosing an interval happens on the card, in the footprint the actions
      just left. A modal would take the note off the screen to ask about it. */
@@ -505,8 +549,14 @@
     color: var(--brown);
   }
 
+  /* A row rather than a run of inline text, so the pill at the end of it is
+     set apart by a gap instead of by a separator it does not belong to. It
+     wraps on a narrow card, and with no keyboard the hints are gone and the
+     pill is the whole row — centred either way. */
   .hint {
     margin: 34px 0 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px 14px; flex-wrap: wrap;
     text-align: center;
     font-size: 13px;
     font-variation-settings: var(--precise), "wght" 550;
@@ -572,7 +622,10 @@
     font-variation-settings: var(--precise), "wght" 750;
     color: var(--brown);
   }
-  .chore .meta .sep { opacity: .45; }
+  /* .45 put the brown at 2.19:1 on the stock, which is a character you cannot
+     see rather than a character that is quiet. .8 measures 4.82:1 and is
+     still plainly lighter than the words either side of it. */
+  .chore .meta .sep { opacity: .8; }
 
   /* ---------- the three things you can do to one ---------- */
 
@@ -715,7 +768,7 @@
     margin-bottom: 7px;
   }
   .rcard .meta .state { color: var(--sct, var(--brown)); }
-  .rcard .meta .sep { opacity: .45; }
+  .rcard .meta .sep { opacity: .8; }
   .rcard p {
     margin: 0; padding-right: 22px;
     font-size: 18px; line-height: 1.4; max-width: 46ch;
@@ -755,8 +808,9 @@
   .rbtn:hover { background: var(--paper-deep); }
   .rbtn:active { transform: translateY(3px); box-shadow: none; background: var(--sc); color: var(--paper); }
   .rbtn.back { background: var(--paper); }
-  .rbtn.make { background: var(--orange); color: var(--paper); }
+  .rbtn.make { background: var(--orange); color: var(--outline); }
   .rbtn.make:hover { background: var(--orange-lit); }
+  .rbtn.make:active { color: var(--paper); }
 
   /* Says that there is more. Never how much more. */
   .more {
@@ -849,14 +903,14 @@
     field-sizing: content;
   }
   .slot textarea:focus { outline: none; }
-  .slot textarea::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .slot textarea::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
 
   /* Says what happens, in the product's own word. Not "add", which is a word
      about a list, and not "save", which is a word about a document. */
   .post {
     flex: none;
     padding: 11px 18px; min-height: 44px;
-    background: var(--orange); color: var(--paper);
+    background: var(--orange); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 4px 0 0 var(--outline);
     font: 600 13px/1 "Recursive", sans-serif;
@@ -866,7 +920,8 @@
   }
   .post:hover { background: var(--orange-lit); }
   .post:active {
-    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet);
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+    background: var(--violet); color: var(--paper);
   }
 
   /* One line, and it never names a total. "kept" is the whole confirmation:
@@ -1028,7 +1083,7 @@
     color: var(--outline); caret-color: var(--orange);
   }
   .newchore .namefield input:focus { outline: none; }
-  .newchore .namefield input::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .newchore .namefield input::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
   .newchore .chips { display: flex; gap: 8px; flex-wrap: wrap; }
   /* A chip is a label wrapping its radio, so the whole chip is the target and
      the choice survives with no script at all. The radio itself is not drawn:
@@ -1046,7 +1101,7 @@
   .newchore .make {
     margin-top: 18px;
     padding: 12px 20px; min-height: 46px;
-    background: var(--orange); color: var(--paper);
+    background: var(--orange); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 4px 0 0 var(--outline);
     font: 600 13px/1 "Recursive", sans-serif;
@@ -1054,7 +1109,10 @@
     letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   }
   .newchore .make:hover { background: var(--orange-lit); }
-  .newchore .make:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); }
+  .newchore .make:active {
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+    background: var(--violet); color: var(--paper);
+  }
 
   /* ---------- fixing the words ---------- */
 
@@ -1196,11 +1254,11 @@
     min-height: 1.45em; max-height: 8.7em;
   }
   .newtask textarea:focus { outline: none; }
-  .newtask textarea::placeholder { color: #8a7361; font-variation-settings: var(--precise), "wght" 500; }
+  .newtask textarea::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
   .decide {
     flex: none;
     padding: 11px 18px; min-height: 44px;
-    background: var(--orange); color: var(--paper);
+    background: var(--orange); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 4px 0 0 var(--outline);
     font: 600 13px/1 "Recursive", sans-serif;
@@ -1208,13 +1266,24 @@
     letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   }
   .decide:hover { background: var(--orange-lit); }
-  .decide:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); }
+  .decide:active {
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+    background: var(--violet); color: var(--paper);
+  }
 
   /* The way to what you have done. A line rather than a section: the archive
      is somewhere you go, not something this screen reports on. */
   .ends { margin: 22px 0 0; text-align: center; font-size: 13.5px; font-variation-settings: var(--precise), "wght" 560; }
   .ends a { color: var(--cream); text-decoration: underline; text-underline-offset: 4px; }
   .ends a:hover { color: var(--paper); }
+  /* Except a quiet pill, which is already drawn as a choice.
+     
+     `that is enough whenever you say` is one link written once and rendered in
+     two places: bare on the deck's hint line, and inside `.ends` on nine other
+     screens. `.ends a` outranks `.quietpick`, so the same words were a plain
+     pill on the deck and an underlined pill everywhere else. A pill carries
+     its own mark; the underline belongs to the bare links beside it. */
+  .ends .quietpick { text-decoration: none; }
 
   /* ---------- the archive ---------- */
 
@@ -1384,7 +1453,16 @@
      standing on the field, read on the way past. It was 12px — a seventh stop
      in an uppercase ladder that already had five inside four pixels, and one
      the design system never named. */
-  .checkin .lead {
+  /* The question's own label, and only that.
+     
+     It was `.checkin .lead`, which is every label inside the region — so the
+     offer's head, and WHAT IS IN THE WAY inside it, took the cream written
+     for a line standing on the field and wore it on cream card stock at
+     1.18:1. The head of the one thing this screen hands you was the least
+     readable text in the product. The child combinator keeps the cream on the
+     question, which does stand on the field, and lets everything inside the
+     offer fall back to the brown `.lead` already says. */
+  .checkin > .lead {
     margin: 0 0 10px; text-align: center;
     font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 720;
@@ -2628,7 +2706,7 @@
   font-variation-settings: var(--casual), "wght" 450;
 }
 .findbox .find input:focus { outline: none; }
-.findbox .find input::placeholder { color: var(--brown); }
+.findbox .find input::placeholder { color: var(--placeholder); }
 
 /* The 16px floor, on the selector that actually wins.
  *
@@ -2683,15 +2761,21 @@
      EVERYTHING ELSE rendered as 16px sentence-case paragraphs, larger and
      lighter than the two labels doing the identical job one screen away. One
      job, one treatment. */
+  /* `> .lead`, because the group labels are the section's own children.
+     
+     Written as a descendant it also caught HOW OFTEN? inside the interval
+     picker on a result card — a label on cream stock wearing the cream meant
+     for a label standing on the field, at 1.18:1. The same shape of mistake
+     as `.checkin .lead` above, found the same way, and fixed the same way. */
   .every .heldgroup,
-  .results .lead {
+  .results > .lead {
     margin: 26px 0 12px;
     font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 760;
     color: var(--cream);
   }
   .every .heldgroup:first-of-type,
-  .results .lead:first-of-type { margin-top: 4px; }
+  .results > .lead:first-of-type { margin-top: 4px; }
 
   /* Each day is one row and its width is the frame's, not the words'. The
      `min-width` that used to live here said 8em and silently outranked the
@@ -2704,7 +2788,7 @@
   .enough .leavehere {
     display: inline-flex; align-items: center; justify-content: center;
     min-height: 52px; padding: 14px 26px;
-    background: var(--orange); color: var(--white);
+    background: var(--orange); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 5px 0 0 var(--outline);
     font: 700 14px/1 "Recursive", sans-serif;
@@ -2747,6 +2831,12 @@
  * field say cream themselves.
  */
   .lead {
+    /* A label belongs to the thing under it, so it sits close to that and
+       apart from what is above. Unstated, a <p> took the browser's 1em on
+       both sides and the offer's head floated equidistant between the card's
+       top edge and the words it names. Every scoped `.lead` already states a
+       margin; this is the role saying what it means when nobody scopes it. */
+    margin: 0 0 6px;
     font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 750;
     color: var(--brown);
