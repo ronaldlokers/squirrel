@@ -5,7 +5,11 @@
        link to the chores rather than a set of controls: the chore's own
        screen owns what can be done to it, and two places to do it is two
        views that can disagree. */}}
-  <h1 class="deckhead">everything that says <b>{{.Query}}</b></h1>
+  {{/* No space before the <b>. The title is a flex row with a 10px gap, so a
+       space in the markup is added to that gap rather than replaced by it,
+       and the query sat about fifteen pixels off a heading that reads as one
+       sentence. The gap is the spacing; the markup does not repeat it. */}}
+  <h1 class="deckhead">everything that says<b>{{.Query}}</b></h1>
 
   {{if .Chores}}
   <p class="lead">CHORES</p>

@@ -43,6 +43,12 @@ var appearanceProps = []string{
 	"font-size", "font-variation-settings", "letter-spacing", "text-transform",
 	"color", "background-color", "border-width", "border-radius", "outline-color",
 	"padding", "margin", "display", "width", "min-height",
+	// The mark that says what pressing something does. Underline means you are
+	// leaving and means nothing else, and the rule was broken by a rule that
+	// never mentioned it: `.ends a` outranks `.quietpick`, so one link written
+	// once rendered as a plain pill on the deck and an underlined pill on nine
+	// other screens. Nothing recorded here could see that.
+	"text-decoration-line",
 }
 
 // One selector per thing that has a shape of its own. Where a screen has many
@@ -53,6 +59,11 @@ var appearanceScreens = map[string][]string{
 		".lid", ".brand img", ".wordmark", ".lidbtn",
 		".slot", ".slot textarea", ".slot .post",
 		".noted > span", ".noted .again", ".noted .view",
+		// The offer's own head, because it is the label that spent this
+		// screen's whole life the wrong colour: `.checkin .lead` reached into
+		// the card and painted it cream on cream stock. Nothing here recorded
+		// it, so nothing here could have said.
+		".offer .lead", ".offer .what", ".offer .because",
 		".door", ".door .name", ".door .what",
 	},
 	// The check-in as a question rather than as an answer. Home shows one or
@@ -64,7 +75,9 @@ var appearanceScreens = map[string][]string{
 		".btn", ".btn .key", ".btn.make", ".later", ".hint", ".quietpick",
 		".cantact > summary", ".why", ".reword > summary",
 	},
-	"/tasks":  {".deckhead", ".tcard", ".tcard p", ".tbtn", ".newtask", ".decide", ".ends"},
+	// `.ends .quietpick` as well as `.ends`: the underline is on the link, and
+	// the paragraph around it cannot report what the link is wearing.
+	"/tasks":  {".deckhead", ".tcard", ".tcard p", ".tbtn", ".newtask", ".decide", ".ends", ".ends .quietpick"},
 	"/chores": {".deckhead", ".chore", ".chore .name", ".chore .meta", ".abtn", ".abtn.stop", ".often > summary", ".ends"},
 	"/kept":   {".deckhead", ".rcard", ".rcard .tab", ".rcard p", ".rbtn", ".ends"},
 	"/held":   {".deckhead", ".heldgroup", ".aside", ".aside .what", ".aside .onwhat", ".ends"},

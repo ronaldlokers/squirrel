@@ -31,6 +31,11 @@
        change: it was the sentence carrying the third principle and it was a
        sentence, so the only way to act on it was to close the tab. Stopping
        has a place to go now. */}}
-  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts &middot; </span><a class="quietpick" href="/enough">{{.SayStop}}</a></p>
+  {{/* The separator sits between the two key hints and nowhere else. It used
+       to trail the second one as well, so with a keyboard the line read
+       "space skips · one key acts ·" and then a pill — a list separator
+       introducing a button, which is a dangling mark rather than a third
+       item. The pill is set apart by the row's own gap now. */}}
+  <p class="hint"><span class="keysonly"><kbd>space</kbd> skips &middot; one key acts</span><a class="quietpick" href="/enough">{{.SayStop}}</a></p>
 </section>
 {{end}}
