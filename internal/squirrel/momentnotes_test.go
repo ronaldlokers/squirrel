@@ -109,3 +109,69 @@ func TestPointingAtAFixedPointIsOnlyEverYourOwn(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, ok)
 }
+
+// A note with somewhere to be is not waiting to be decided about.
+func TestThePileHidesANoteThatIsOnAFixedPoint(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	m := aFixedPoint(t, store, p, "dentist", 3*time.Hour)
+	id := noteOf(t, store, p, "the referral letter")
+
+	before, _, err := store.OpenItems(ctx, p, 20)
+	require.NoError(t, err)
+	require.Len(t, before, 1)
+
+	_, err = store.AttachNote(ctx, p, id, m.ID)
+	require.NoError(t, err)
+
+	after, _, err := store.OpenItems(ctx, p, 20)
+	require.NoError(t, err)
+	require.Empty(t, after, "it has somewhere to be")
+}
+
+// And it is waiting again the moment the appointment is over, with no write and
+// nothing running on a schedule. This is the half that is a read rule, so it is
+// the half most worth a test.
+func TestThePileShowsItAgainOnceTheFixedPointIsPast(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	past := aFixedPoint(t, store, p, "dentist", -2*time.Hour)
+	id := noteOf(t, store, p, "the referral letter")
+	_, err := store.AttachNote(ctx, p, id, past.ID)
+	require.NoError(t, err)
+
+	items, _, err := store.OpenItems(ctx, p, 20)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "the occasion happened; it is a thought again")
+}
+
+// The same rule on the pile's own paging query. Two queries that disagree about
+// what the pile holds is the bug this package's comments warn about most.
+func TestPagingThroughThePileObeysTheSameRule(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	m := aFixedPoint(t, store, p, "dentist", 3*time.Hour)
+	// The attached one is the OLDER of the two, because this query returns what
+	// is older than the cursor. With it the other way round the query returns
+	// nothing whatever the clause says, and the test passes having exercised
+	// none of it — which is what the first draft of this did.
+	attached := noteOf(t, store, p, "the referral letter")
+	cursor := noteOf(t, store, p, "buy milk")
+
+	reached, _, err := store.OpenItemsAfter(ctx, p, cursor, 20)
+	require.NoError(t, err)
+	require.Len(t, reached, 1, "the fixture only means something if the cursor reaches it")
+
+	_, err = store.AttachNote(ctx, p, attached, m.ID)
+	require.NoError(t, err)
+
+	items, _, err := store.OpenItemsAfter(ctx, p, cursor, 20)
+	require.NoError(t, err)
+	require.Empty(t, items)
+}

@@ -185,8 +185,28 @@ func (s *Store) Reword(ctx context.Context, personID, itemID int64, text string)
 // bans — and because the caller is handed a bool, it cannot render a total even
 // if a later author wanted one. The rule is enforced by the signature rather
 // than by a comment someone has to read.
+// stillMine is the pile's clause about fixed points, written once because two
+// queries read the pile and a pile that disagrees with itself is the bug this
+// package's comments warn about most.
+//
+// A note pointing at an appointment that is still ahead has somewhere to be, so
+// it is not waiting to be decided about. Once the appointment is over it is a
+// thought again — and that is a read rule rather than a write, so nothing runs
+// on a schedule, nothing needs a migration to catch up, and an appointment
+// deleted outright leaves its notes here by the same sentence.
+const stillMine = `(
+	moment_id is null
+	or not exists (
+		select 1 from moments
+		 where moments.id = items.moment_id
+		   and moments.done_at is null
+		   and moments.starts_at > now()
+	)
+)`
+
 func (s *Store) OpenItems(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {
-	return s.itemsWhere(ctx, `person_id = $1 and kind = 'note' and state = 'open'`, limit, personID)
+	return s.itemsWhere(ctx,
+		`person_id = $1 and kind = 'note' and state = 'open' and `+stillMine, limit, personID)
 }
 
 // Tasks is what you decided and have not done. Newest first, like the pile: a
@@ -263,7 +283,8 @@ func (s *Store) OpenItemsAfter(ctx context.Context, personID, afterID int64, lim
 		 and (
 		   not exists (select 1 from items where id = $2)
 		   or (received_at, id) < (select received_at, id from items where id = $2)
-		 )`, limit, personID, afterID)
+		 )
+		 and `+stillMine, limit, personID, afterID)
 }
 
 // SearchItems matches raw text across every state, newest first.
