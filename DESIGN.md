@@ -1150,18 +1150,27 @@ screen's body.
 - **Hover:** brightens to paper. A button hovers by deepening; a card you can
   walk into wants a "pick it up" affordance instead, and that difference is the
   point rather than an inconsistency.
-- **Four, side by side above 620px; two by two below it.** Their equality is
-  the screen's one statement, and a stacked one would read as first. The cells
-  are narrow, so on a phone the art steps down to 50px and the name takes the
-  Note floor rather than the phone's step-up — the words have to fit the cell,
-  and the cell is what keeps them equal.
+- **Four, two by two, at every width.** Their equality is the screen's one
+  statement, and a stacked column would read as first, second, third, fourth. A
+  square says none of that. On a phone the art steps down to 50px and the name
+  takes the Note floor rather than the phone's step-up — the words have to fit
+  the cell, and the cell is what keeps them equal.
 
-  **The phone breaks the row rather than the cells, and the number is why.** At
-  390px the frame is 364px: three cells with a 7px gap measure about 115px and
-  four measure about 84px, where *what you decided* already wraps to two lines
-  at 115px. Two by two holds them near 178px. That trades *side by side at every
-  width* for rearranging instead of shrinking, which keeps the four equal to
-  each other — and their equality is what the rule was protecting.
+  **Four across was tried first and is why this is written down.** At 390px the
+  frame is 364px: four cells measure about 84px, where *what you decided*
+  already wraps to two lines at 115px. Breaking the row only on a phone fixed
+  that and left the doors two different shapes depending on where you opened
+  them — so the square is the shape everywhere. At 720px it gives 353px cells,
+  which is roomy rather than merely adequate, and equality no longer depends on
+  which device is reading it.
+
+  **The cost is the fold, and it is accepted rather than unnoticed.** The block
+  is about 270px tall and starts around 568px down, so on a 1280×800 laptop the
+  second row is below the fold: you see two doors and scroll for the other two.
+  Making them fit would need both rows inside 232px — about 109px each against
+  192px now — which even the phone's 50px art does not reach. So it is a choice,
+  not a tuning problem. Scrolling home is ordinary; four doors in two shapes was
+  the worse trade.
 
   **A door's name has to fit one line.** All four names are ten characters or
   fewer in a shared grammar; at four across the cell gives about 117px of inner

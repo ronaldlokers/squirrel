@@ -271,7 +271,19 @@
      everything else in this world. */
   /* Three now, and still equals: one grid, identical cells, identical stock
      and depth, no ordering that implies importance. */
-  .doors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  /* Two by two, at every width.
+   *
+   * Four across was tried first and is the reason this comment exists: at 390px
+   * the frame is 364px, so four cells measure about 84px where "what you
+   * decided" already wraps to two lines at 115px. Breaking the row only on a
+   * phone fixed that and left the doors two different shapes depending on where
+   * you opened them.
+   *
+   * A square is the same shape everywhere, and it is the better one on both:
+   * the cells are roomy at 720px rather than merely adequate, and their
+   * equality — the screen's one statement — no longer depends on which device
+   * is reading it. */
+  .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
   .door {
     display: flex; flex-direction: column; justify-content: center; gap: 7px;
@@ -1671,16 +1683,8 @@
        takes the Note floor rather than the phone's step-up. They still sit in
        one row: their equality is the screen's statement, and a stacked one
        would read as first. */
-    /* Two by two, because four across is not four equals.
-     *
-     * At 390px the frame is 364px: three cells with a 7px gap measure about
-     * 115px and four measure about 84px — and "what you decided" already wraps
-     * to two lines at 115px while the art has already stepped down to 50px. So
-     * the row breaks rather than the cells cramping. It trades "side by side at
-     * every width" for rearranging instead of shrinking, which keeps the four
-     * equal to each other, and their equality is what that rule was protecting.
-     */
-    .doors { gap: 7px; grid-template-columns: 1fr 1fr; }
+    /* The columns are the same two everywhere; only the gap tightens. */
+    .doors { gap: 7px; }
     .door { min-height: 104px; padding: 13px 9px; gap: 5px; }
     .door .label { align-self: stretch; }
     /* The art steps down where the doors are ~177px wide; at 66px tall both
