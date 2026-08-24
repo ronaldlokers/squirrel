@@ -70,8 +70,12 @@ type turnView struct {
 }
 
 type cardView struct {
-	Title string    `json:"title"`
-	Meta  string    `json:"meta,omitempty"`
+	Title string `json:"title"`
+	Meta  string `json:"meta,omitempty"`
+	// Photo is the note's own picture, or empty. A note with no words at all
+	// is a perfectly good note, and a task made from one would otherwise be a
+	// card saying nothing.
+	Photo string    `json:"photo,omitempty"`
 	Acts  []actView `json:"acts,omitempty"`
 }
 
@@ -689,6 +693,8 @@ func placeTurn(ctx context.Context, s Store, personID int64, where string) []squ
 	switch where {
 	case "chores":
 		reply = choresTurn(ctx, s, personID, name)
+	case "tasks":
+		reply = tasksTurn(ctx, s, personID, name)
 	default:
 		// The pile and the agenda are phase 3. Until then the doors that are
 		// not built say so rather than answering with silence, which reads as
@@ -934,4 +940,81 @@ func oneOf(list []string, v string) bool {
 		}
 	}
 	return false
+}
+
+// tasksTurn is what you decided and have not done, as cards.
+//
+// Newest first, like the pile: a task decided this morning is the one you still
+// remember deciding.
+func tasksTurn(ctx context.Context, s Store, personID int64, name string) squirrel.Turn {
+	items, more, err := s.Tasks(ctx, personID, listLimit)
+	if err != nil {
+		slog.Error("reading what you decided", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the tasks just now."}
+	}
+	if len(items) == 0 {
+		return squirrel.Turn{
+			Who:   squirrel.SpeakerBuddy,
+			Words: "Nothing decided yet. A task is a note you said yes to.",
+		}
+	}
+
+	sh := drawn{Place: name}
+	for _, it := range items {
+		v := toView(it)
+		row := map[string]string{"id": strconv.FormatInt(v.ID, 10)}
+		sh.Cards = append(sh.Cards, cardView{
+			Title: v.Text, Meta: "decided " + v.When, Photo: v.Photo,
+			Acts: []actView{
+				{Label: "did it", Action: "/tasks/act", Style: "did", Fields: with(row, "act", "done")},
+				{Label: "not a task", Action: "/tasks/act", Style: "later", Fields: with(row, "act", "untask")},
+			},
+		})
+	}
+	if more {
+		sh.Chips = []turnChip{{Label: "the rest", Href: "/?open=tasks"}}
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing the tasks", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw the tasks just now."}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: taskLead(len(sh.Cards)), Shown: body}
+}
+
+func taskLead(n int) string {
+	if n == 1 {
+		return "One thing you decided."
+	}
+	return fmt.Sprintf("%d things you decided.", n)
+}
+
+// saidAboutATask is what the two of you said about one.
+//
+// "Not a task" is not a failure and must not read like one: it is a note that
+// went back to being a note, which is a decision reversed rather than a thing
+// given up on.
+func saidAboutATask(act, text string) []squirrel.Turn {
+	if text == "" {
+		text = "that"
+	}
+	switch act {
+	case "done":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "did it — " + text},
+			{Who: squirrel.SpeakerBuddy, Words: "Done."},
+		}
+	case "open":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "not done after all — " + text},
+			{Who: squirrel.SpeakerBuddy, Words: "Back on the list."},
+		}
+	case "untask":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "not a task — " + text},
+			{Who: squirrel.SpeakerBuddy, Words: "Back in the pile."},
+		}
+	}
+	return nil
 }

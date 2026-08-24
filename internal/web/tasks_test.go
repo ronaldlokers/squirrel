@@ -75,12 +75,14 @@ func TestUntaskingReturnsItToThePile(t *testing.T) {
 func TestSomethingCanBeNotDoneAfterAll(t *testing.T) {
 	f := aDeciding()
 
-	w := post(t, mounted(t, f), "/tasks/act",
-		url.Values{"id": {"3"}, "act": {"open"}, "from": {"archive"}})
+	// No "back where you pressed it" any more: there is one place, and it is
+	// the conversation the press was made in.
+	post(t, mounted(t, f), "/tasks/act", url.Values{"id": {"3"}, "act": {"open"}})
 
-	require.Equal(t, "/tasks/done", w.Header().Get("Location"), "back where you pressed it")
 	require.Equal(t, squirrel.ItemOpen, f.items[2].State)
 	require.Equal(t, squirrel.ItemTask, f.items[2].Kind)
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "Back on the list")
 }
 
 func TestDecidingSomethingOutright(t *testing.T) {
@@ -146,4 +148,73 @@ func TestTheDeckCanDecideANote(t *testing.T) {
 	require.Equal(t, 303, w.Code)
 	require.Equal(t, squirrel.ItemTask, f.items[0].Kind)
 	require.Equal(t, squirrel.ItemOpen, f.items[0].State, "deciding is not finishing")
+}
+
+// The tasks arrive as cards, with what you decided in them.
+func TestOpeningTheTasksDrawsThem(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		{ID: 3, RawText: "ring the bank", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
+	}}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, string(f.appended[1].Shown), "ring the bank")
+	require.Contains(t, string(f.appended[1].Shown), `"place":"the tasks"`)
+}
+
+// A task made from a photograph is a card with the photograph on it. Without
+// it that is a card saying nothing, which is what a note with no words is.
+func TestATaskWithNoWordsKeepsItsPhotograph(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		{ID: 3, RawText: "", Kind: squirrel.ItemTask, State: squirrel.ItemOpen,
+			PhotoName: "letter.jpg", PhotoType: "image/jpeg"},
+	}}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks"))
+
+	require.Contains(t, string(f.appended[1].Shown), "photo")
+}
+
+// Doing one says so, in the words the note actually holds.
+func TestDoingATaskIsSaid(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		{ID: 3, RawText: "ring the bank", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
+	}}
+	routed(t, f).call(t, "POST", "/tasks/act", strings.NewReader("id=3&act=done"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[0].Words, "ring the bank")
+}
+
+// And putting one back is a different sentence: it is not finishing it.
+func TestUntaskingSaysSomethingElse(t *testing.T) {
+	items := func() []squirrel.Item {
+		return []squirrel.Item{{ID: 3, RawText: "ring the bank",
+			Kind: squirrel.ItemTask, State: squirrel.ItemOpen}}
+	}
+	did, back := &fakeStore{items: items()}, &fakeStore{items: items()}
+	routed(t, did).call(t, "POST", "/tasks/act", strings.NewReader("id=3&act=done"))
+	routed(t, back).call(t, "POST", "/tasks/act", strings.NewReader("id=3&act=untask"))
+
+	require.Len(t, did.appended, 2)
+	require.Len(t, back.appended, 2)
+	require.NotEqual(t, did.appended[1].Words, back.appended[1].Words)
+}
+
+// A row that is not yours is not yours to act on. The handler used to write
+// against a bare id; reading the row for its words scopes the write too.
+func TestATaskThatIsNotYoursDoesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/tasks/act", strings.NewReader("id=99&act=done"))
+
+	require.Empty(t, f.appended)
+	require.Empty(t, f.states)
+}
+
+// Nothing decided yet is a sentence rather than an empty list.
+func TestNoTasksSaysSo(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "Nothing decided yet")
 }

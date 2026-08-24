@@ -82,7 +82,22 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		switch r.FormValue("act") {
+		// The row is read before it is written to, which the words need anyway
+		// and which scopes the write: ItemByID is the person's, and
+		// SetItemState takes a bare id. A row that is not yours is not yours
+		// to act on.
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		act := r.FormValue("act")
+		switch act {
 		case "done":
 			err = s.SetItemState(r.Context(), id, squirrel.ItemDone, now())
 		case "open":
@@ -94,23 +109,16 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			// require finishing it.
 			_, err = s.SetItemKind(r.Context(), personID, id, squirrel.ItemNote)
 		default:
-			http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		if err != nil {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, backToTasks(r), http.StatusSeeOther)
+		answerWith(w, r, keepSaid(r.Context(), s, personID,
+			saidAboutATask(act, it.RawText)), "/")
 	}
-}
-
-// backToTasks returns to the screen the button was on.
-func backToTasks(r *http.Request) string {
-	if r.FormValue("from") == "archive" {
-		return "/tasks/done"
-	}
-	return "/tasks"
 }
 
 // Decided outright, in the slot's own shape rather than the new-chore form's:
