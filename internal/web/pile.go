@@ -41,6 +41,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// The slot. Behind the origin check like every other write here: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
+	// The dock. One line in, two turns out, and the words go to the same spool
+	// /capture writes to — see threadSayHandler.
+	m.Post("/say", guard(opts, sameOrigin(threadSayHandler(s, opts))))
 	// A photograph, behind the same guard as everything else: a picture of a
 	// letter is at least as private as the note beside it.
 	if opts.Photos != nil {

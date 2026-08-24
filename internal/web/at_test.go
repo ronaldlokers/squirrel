@@ -26,10 +26,18 @@ func (m *realMux) Post(pattern string, h http.HandlerFunc) { m.mux.HandleFunc("P
 
 func routed(t *testing.T, f *fakeStore) *realMux {
 	t.Helper()
+	return routedSpooling(t, f, &fakeSpool{})
+}
+
+// routedSpooling is the same mount with a spool the test can look inside. The
+// dock writes there rather than straight to the pile, exactly as /capture
+// does, so a test about the dock is a test about what reached the spool.
+func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
+	t.Helper()
 	m := &realMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		Owner: func() int64 { return 1 }, Spool: sp,
 	}))
 	return m
 }

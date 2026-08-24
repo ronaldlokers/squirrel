@@ -133,3 +133,61 @@ func TestTheDoorsSurviveACountThatFails(t *testing.T) {
 	require.Equal(t, 4, strings.Count(body, `class="rdoor`))
 	require.NotContains(t, body, "doorcount")
 }
+
+// Two turns for one press: what you said, and what Buddy said back. A test that
+// only checked the words were kept would pass with the conversation missing.
+func TestSayingSomethingWritesBothTurns(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/say", strings.NewReader("words=milk"))
+
+	require.Len(t, f.appended, 2)
+	require.Equal(t, squirrel.SpeakerYou, f.appended[0].Who)
+	require.Equal(t, "milk", f.appended[0].Words)
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
+	require.NotEmpty(t, f.appended[1].Words)
+}
+
+// The words still reach the spool. The thread is a record of the conversation,
+// not a replacement for capture — the spool is what survives the database being
+// unreachable, and losing a thought is the one failure this product exists to
+// prevent.
+func TestSayingSomethingSpoolsTheWords(t *testing.T) {
+	sp := &fakeSpool{}
+	routedSpooling(t, &fakeStore{}, sp).call(t, "POST", "/say", strings.NewReader("words=milk"))
+
+	require.Len(t, sp.written, 1)
+	require.Equal(t, "milk", sp.written[0].Text)
+}
+
+// An empty slot is not a turn. Pressing the button by accident must not put a
+// blank bubble into a record that is never rewritten.
+func TestSayingNothingWritesNothing(t *testing.T) {
+	f := &fakeStore{}
+	sp := &fakeSpool{}
+	routedSpooling(t, f, sp).call(t, "POST", "/say", strings.NewReader("words=%20%20"))
+
+	require.Empty(t, f.appended)
+	require.Empty(t, sp.written)
+}
+
+// Words that could not be kept must not be acknowledged as kept. Buddy saying
+// "kept" over a failed write is the two views disagreeing about the pile.
+func TestSayingSomethingThatCannotBeKeptSaysSo(t *testing.T) {
+	f := &fakeStore{}
+	sp := &fakeSpool{err: errTest}
+	routedSpooling(t, f, sp).call(t, "POST", "/say", strings.NewReader("words=milk"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "cannot reach")
+}
+
+// And the words are still in the record, so a failed keep does not eat the
+// thought — the same promise the slot has always made, kept by the turn rather
+// than by putting the text back in the box.
+func TestAFailedKeepStillLeavesTheWordsInTheThread(t *testing.T) {
+	f := &fakeStore{}
+	routedSpooling(t, f, &fakeSpool{err: errTest}).
+		call(t, "POST", "/say", strings.NewReader("words=milk"))
+
+	require.Equal(t, "milk", f.appended[0].Words)
+}

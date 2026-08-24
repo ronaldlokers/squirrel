@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
@@ -194,4 +195,72 @@ func railFor(ctx context.Context, s Store, personID int64, here string) []doorVi
 	rail[2].Count = waiting.Chores
 	rail[3].Count = waiting.Agenda
 	return rail
+}
+
+// threadSayHandler is the dock: one line in, two turns out.
+//
+// The words go to the spool and not to the pile directly, exactly as /capture
+// does. The spool is the durability promise — it is what survives the database
+// being unreachable — and a dock that wrote straight to Postgres would be a
+// second capture path with weaker guarantees than the first.
+//
+// The spool is written first and the turns after. If the process dies between
+// them the thought is safe and the conversation is missing a line, which is
+// recoverable; the other order loses the thought, and losing thoughts is the
+// one failure this product exists to prevent.
+func threadSayHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		ctx := r.Context()
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		text := strings.TrimSpace(r.FormValue("words"))
+		if text == "" {
+			// An empty slot is not a turn. A blank bubble in a record that is
+			// never rewritten is a blank bubble forever.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		if len(text) > captureLimit {
+			text = text[:captureLimit]
+		}
+
+		// Whose it is, said in the transport's own vocabulary rather than as a
+		// person id: the drain resolves every capture's owner from its sender,
+		// and this one is no different for having been typed in the dock.
+		sender := opts.Identity
+		_, kept := opts.Spool.Write(squirrel.Capture{
+			Transport:  squirrel.ScreenTransport,
+			SenderID:   &sender,
+			Text:       text,
+			Payload:    []byte(squirrel.ScreenCapture),
+			ReceivedAt: now(),
+		})
+
+		// Your words go into the record either way. The slot's old promise was
+		// that a failed keep hands the text back to the box; the thread keeps
+		// the same promise by keeping the turn.
+		said := []squirrel.Turn{{Who: squirrel.SpeakerYou, Words: text}}
+
+		// What Buddy says back, and it must never claim more than happened.
+		reply := "Kept."
+		if kept != nil {
+			slog.Warn("a capture from the dock could not be spooled", "error", kept)
+			reply = "Not kept — Squirrel cannot reach its memory. Your words are still here; try again in a moment."
+		}
+		said = append(said, squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: reply})
+
+		for _, t := range said {
+			if _, err := s.AppendTurn(ctx, personID, t); err != nil {
+				slog.Error("keeping what was said", "error", err)
+			}
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 }
