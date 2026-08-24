@@ -119,6 +119,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
 	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	// How often, as a number and a unit. See askHowOften.
+	m.Post("/chores/often", guard(opts, sameOrigin(oftenHandler(s, opts))))
 	m.Post("/chores/new", guard(opts, sameOrigin(newChoreHandler(s, opts))))
 	m.Post("/timer", guard(opts, sameOrigin(timerHandler(s, opts))))
 	// The chores screen lived here for its whole life. A bookmark that dies
