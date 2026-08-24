@@ -34,42 +34,51 @@ All on 24 August 2026, in answer to four objections raised against the mockup:
 | the transcript's lifetime | **forever, in Postgres** |
 | the thirteen existing screens | **absorbed into the thread; the standalone pages are deleted** |
 
-## The rule that turns out not to need retiring
+## The two rules this retires
 
-The mockup's counts looked like the end of `PRODUCT.md:113` — *never a count* —
-which the record itself calls the single rule most likely to be broken by
-accident. It is not.
+**Principle 2 — *nothing accrues that can be destroyed*.** Retired by the owner
+on 24 August 2026, deliberately, having been shown the rule and told what it
+was holding up. It banned every counter, streak and percentage on every
+surface, and `PRODUCT.md`'s Positioning named it as the one thing a competitor
+could not copy without abandoning its own metrics.
 
-**Principle 5 was opened on 20 August 2026:** the coach may evaluate, compare,
-and mention counts in *what it says*. Every count in this design is Buddy
-speaking. *"Three come back. Two are due."* is a sentence in a bubble, and the
-permission for it is fourteen days old.
+Counts are now permitted everywhere: in what Buddy says, on the doors, in the
+thread. Principle 5's opening on 20 August had already permitted them in
+*speech*; this permits them on *surfaces*, which is the half that was left.
 
-What rule 2 bans is the number that accrues on a surface — a badge sitting
-beside an implied target of zero, that grows while nobody is looking, and that
-can be lost. So:
+What the rule protected is real and is now unprotected, and that is worth
+writing down in the form it will actually arrive in: a number beside a door,
+with an implied target of zero, that grows while nobody is looking and that a
+bad week makes worse. The counter-argument the owner is acting on is that not
+knowing how much is waiting is its own weight. If the doors ever start reading
+as a scoreboard, this decision is what to reverse, and it reverses cleanly —
+the numbers are computed at render time and stored nowhere.
 
-> **The doors carry no numbers.** Not in the rail, not on the art, not in a
-> corner. Buddy may say how many chores are due; the chores door may not wear
-> it. If that line is ever crossed, rule 2 has been retired and the retirement
-> is written down first.
+**Progressive enhancement.** `DESIGN.md` requires that every upgrade `pile.js`
+makes works with scripting off — the chore picker's `<details>`, the coach
+sheet over a real `/buddy` route. Retired the same day: the thread requires
+JavaScript, and without it the page is the lid, the rail and nothing else.
 
-This design therefore costs **one** overturned rule (home's structure), not two.
+What is *not* retired is the single rendering path. Handlers return HTML from
+the same Go templates whether the browser asked for a page or a fragment.
+There is no JSON API and no client-side templating, so there is no second
+description of what a chore card looks like that can drift from the first.
 
 ## The shape
 
-**One URL. One page. No JavaScript required.**
+**One URL. One page. JavaScript required.**
 
-Every action is a form POST that redirects back to `/` and re-renders the whole
-thread — the same post-redirect-get the pile has used since the port. This is
-possible only because the transcript is persisted: with turns in the database
-there is nothing to hold in a session, nothing to rebuild on load, and nothing
-that breaks when scripting is off. The decision to persist and the decision to
-avoid a client-side app are the same decision.
+A press posts, the handler does the write, and the response is the HTML for the
+turns that changed. The client appends it to the thread and scrolls the live
+edge into view. No full-page paint, no scroll jump, no flash — which is the
+whole reason for the JavaScript.
 
-`pile.js` may still upgrade it — scrolling to the live edge without a fragment
-jump, submitting a chip without a full paint — on the existing progressive-
-enhancement terms: it works without.
+Persistence is what makes a reload cheap rather than what makes the app work:
+the thread comes back because it is in Postgres, not because anything was held
+in a session.
+
+One new module under `internal/web/static/`, and `pile.js`'s existing upgrades
+fold into it as the screens they upgraded are deleted.
 
 ### The live edge
 
@@ -87,9 +96,24 @@ a record. The bottom of the page is the app.
 A sticky rail directly under the lid, above the thread, at every width. Four
 equal pills; the current one takes orange fill.
 
-- Above 620px: art and name side by side in a pill.
-- At 620px and below: art over name, still four across. At 390px the frame
-  gives each door about 81px, which holds a 24px drawing and an 11px label.
+- Above 620px: art, name and number side by side in a pill.
+- At 620px and below: art over name, number in the corner, still four across.
+  At 390px the frame gives each door about 81px, which holds a 24px drawing,
+  an 11px label and two digits.
+
+**What each door counts** — *what is waiting for you*, so an empty door reads
+as finished rather than as absent:
+
+| door | number |
+| --- | --- |
+| the pile | notes not yet decided about |
+| the tasks | tasks not done |
+| the chores | chores due right now |
+| the agenda | fixed points still ahead today |
+
+Computed at render time, stored nowhere, and never held in the `turns` table —
+a number frozen into scrollback would be a count that lies, which is worse than
+a count that accrues. Zero renders as no number rather than as `0`.
 
 This replaces `DESIGN.md:760`'s fourth item and `DESIGN.md:748`'s fixed order
 for home, both of which describe a screen that stops existing. The equality of
@@ -267,12 +291,14 @@ been asserted-but-not-proven in this project before:
 - **A card in scrollback does not change when its row changes.** Write a turn
   showing a chore, rename the chore, re-render, assert the old turn still says
   the old name. This fails if `shown` ever becomes a join.
-- **The whole app works with scripting off.** The browser suite drives a page
-  with JavaScript disabled through: door → list → button → picker → kept.
+- **A fragment and a full page render the same card.** Request the chores turn
+  both ways and assert the markup matches. This is the only thing holding the
+  single rendering path in place, and it fails the moment somebody adds a
+  client-side template.
 - **`every 3 months` composed by the picker and typed as a sentence produce the
   same interval**, asserted on the duration, not on the string.
-- **The doors carry no digits.** A test that greps the rendered rail for `\d`
-  is crude and correct, and it is the only guard rule 2 gets here.
+- **A door with nothing waiting shows no number, not a zero.** Both directions,
+  because the empty case is the one nobody renders by hand.
 - **Four doors render at 390px without the label wrapping**, in the appearance
   snapshot.
 - **Every element clears 4.5:1** by the existing contrast walk, which stops
@@ -291,16 +317,19 @@ proof.
   latency.
 - **No editing a turn, no deleting a turn.** History is not rewritten. A mistake
   is answered by the next turn, which is how conversations work.
-- **No badge on any door.** See above.
 - **No second transcript in Campfire.**
 - **No recurrence in the day picker.** That is a chore, and the record is
   explicit.
 
 ## Records to amend
 
-- `PRODUCT.md` — rule 4 restated for two chats; the count clarification recorded
-  as a *reading* of Principle 5 rather than a new permission, so nobody retires
-  rule 2 by accident later.
+- `PRODUCT.md` — **Principle 2 struck through and dated**, the way the
+  no-list-screen rule was, with what it protected and what reverses it; the
+  Positioning paragraph that rests on it rewritten rather than quietly left
+  standing; rule 4 restated for two chats.
+- `DESIGN.md` — the progressive-enhancement requirement struck through and
+  dated, and the door art guard rail that forbids depicting a count relaxed to
+  cover only the drawing, since the pill now carries a number beside it.
 - `DESIGN.md` — home's fixed order and the four-doors item replaced by the rail
   and the thread; The One Title Rule amended for `<h2>` per place; the live edge
   added as a named rule.
