@@ -332,8 +332,14 @@ The deck still stands. Deleting it is 137 references to `/pile` across 39 test
 files plus 54 to its sub-screens, and a triage loop nobody has used yet is not
 a reason to take away the one that works.
 
-Still only on the deck, and not yet in the conversation: making a chore out of
-a note, rewording one, setting one aside, and the split proposal.
+The three questions a note can be asked came with it: making a chore out of it
+reuses the interval picker, rewording it opens a box of its own — not the dock,
+which keeps everything you type, where these words replace something — and "i
+can't act on this" offers the same three whys.
+
+Still only on the deck: **the split proposal**, which is model-backed and its
+own flow. It is the last thing standing between the conversation and deleting
+the deck.
 
 **The rest of phase 3b, not started: the deck comes out.** It is the deck — one-card triage with
 split, undo, paging, search and seven states — and it is the hardest surface in

@@ -216,6 +216,18 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		if fromThread(r) {
+			it, _, _ := s.ItemByID(r.Context(), personID, id)
+			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+				[]squirrel.Turn{
+					{Who: squirrel.SpeakerYou, Words: r.FormValue("count") + " " + r.FormValue("unit")},
+					{Who: squirrel.SpeakerBuddy, Words: "It comes back now."},
+				},
+				pileTurn(r.Context(), s, personID, 0, ""),
+			)), "/")
+			_ = it
+			return
+		}
 		back(w, r, opts, url.Values{
 			"undo":  {strconv.FormatInt(id, 10)},
 			"was":   {string(squirrel.ItemOpen)},
@@ -251,6 +263,20 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		if len(text) > captureLimit {
 			text = text[:captureLimit]
+		}
+		if fromThread(r) {
+			if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
+				fail(w, err)
+				return
+			}
+			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+				[]squirrel.Turn{
+					{Who: squirrel.SpeakerYou, Words: text},
+					{Who: squirrel.SpeakerBuddy, Words: "That is what it says now."},
+				},
+				pileTurn(r.Context(), s, personID, 0, ""),
+			)), "/")
+			return
 		}
 		if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
 			fail(w, err)
@@ -319,5 +345,41 @@ func undoHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		r.Form.Set("from", "thread")
 		act(w, r)
+	}
+}
+
+// askAbout is the three questions a note can be asked, in the conversation.
+//
+// Each reads the note first, which the words need anyway and which scopes the
+// press: a row that is not yours is not yours to ask about.
+func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: it.RawText},
+			ask(it),
+		}), "/")
 	}
 }

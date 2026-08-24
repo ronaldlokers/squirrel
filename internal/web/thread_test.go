@@ -579,3 +579,53 @@ func TestTheDeckStillStands(t *testing.T) {
 	require.Contains(t, body, "the boiler")
 	require.Contains(t, body, `value="done"`)
 }
+
+// The three questions a note can be asked, rather than the three verbs that end
+// it. Without them the deck can never be deleted, because they would be
+// reachable nowhere else.
+func TestANoteCanBeAskedTheThreeQuestions(t *testing.T) {
+	for _, c := range []struct{ route, wants string }{
+		{"/pile/often", `"pick"`},
+		{"/pile/reword", `"say"`},
+		{"/pile/why", `"chips"`},
+	} {
+		f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+		routed(t, f).call(t, "POST", c.route, strings.NewReader("id=9"))
+
+		require.Len(t, f.appended, 2, c.route)
+		require.Contains(t, string(f.appended[1].Shown), c.wants, c.route)
+	}
+}
+
+// A note that is not yours cannot be asked about either.
+func TestANoteThatIsNotYoursIsNotAskedAbout(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/pile/reword", strings.NewReader("id=99"))
+
+	require.Empty(t, f.appended)
+}
+
+// Rewording says what it says now, and hands you the note again.
+func TestRewordingSaysItAndCarriesOn(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	routed(t, f).call(t, "POST", "/pile/fix",
+		strings.NewReader("id=9&from=thread&text=the+boiler+is+loud"))
+
+	require.Len(t, f.appended, 3)
+	require.Contains(t, f.appended[0].Words, "the boiler is loud")
+	require.Contains(t, f.appended[1].Words, "what it says now")
+}
+
+// Setting one aside says so, and hands you the next.
+func TestSettingOneAsideSaysSoAndCarriesOn(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(9, "the boiler", squirrel.ItemOpen),
+		note(8, "meter reading", squirrel.ItemOpen),
+	}}
+	routed(t, f).call(t, "POST", "/held/act",
+		strings.NewReader("id=9&aside=waiting&from=thread"))
+
+	require.Len(t, f.appended, 3)
+	require.Contains(t, f.appended[1].Words, "Set aside")
+	require.Contains(t, string(f.appended[2].Shown), "meter reading")
+}

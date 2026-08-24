@@ -1,7 +1,10 @@
 package web
 
 import (
+	"strconv"
+
 	"fmt"
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 	"net/http"
 	"strings"
 )
@@ -67,6 +70,20 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Triage, in the conversation: skipping one, and changing your mind.
 	m.Post("/pile/later", guard(opts, sameOrigin(laterHandler(s, opts))))
 	m.Post("/pile/undo", guard(opts, sameOrigin(undoHandler(s, opts))))
+	// The three questions a note can be asked, rather than the three verbs
+	// that end it. Each reuses the shape the chores already have.
+	m.Post("/pile/often", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
+		return askHowOften("/pile/chore",
+			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"}, "", "")
+	}))))
+	m.Post("/pile/reword", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
+		return askForWords("/pile/fix",
+			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"},
+			it.RawText, "say it this way")
+	}))))
+	m.Post("/pile/why", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
+		return askWhyNot(it.ID)
+	}))))
 	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Post("/pile/fix", guard(opts, sameOrigin(fixHandler(s, opts))))
 	// Four thoughts captured as one note, offered as four. Both halves —
