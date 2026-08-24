@@ -782,6 +782,47 @@ than what it holds. Zero renders no number at all: a door reading `0` is a
 scoreboard, and that is what Principle 2 was protecting against when it was
 retired.
 
+### Triage, in the conversation
+
+One note at a time, exactly as the deck does it: the pile is a thing you decide
+about, and a list of things to decide about is a list you are behind on. What
+changes is that the next one arrives underneath the last rather than replacing
+it, and that having decided is still the moment you are most able to decide
+again.
+
+**The card carries two rows, and the second is quieter.** DONE, KEEP, DROP and
+A TASK end the note or move it; *make a chore*, *say it another way*, *i can't
+act on this* and *this is more than one thing* ask a question instead. The
+second row wears `.abtn.why` — transparent, brown type, no fill and no
+uppercase — because a way out should not look like a way on. The split press is
+drawn only on a note that looks like several things, which is a free check and
+what keeps the model off every note in the pile.
+
+**The next note is its own turn**, not part of the answer, so pressing DONE on
+it cannot read as pressing DONE on what was just decided.
+
+### The four shapes a question takes
+
+Each is a card of the same stock, and what makes it a question rather than a
+thing is what is inside it.
+
+- **A row of choices** (`.pick`) — the interval question. Two radio rows and one
+  submit; see Chips.
+- **A month** (`.calbox`) — the day question; see Chips.
+- **A box of words** (`.wordbox`) — rewording. Its own box and deliberately not
+  the dock: the dock keeps everything you type, and these words replace
+  something. A dock that sometimes captured and sometimes edited would be a dock
+  you could not trust with a thought. `.wordbox` and not `.say`, because the
+  coach sheet's slot already wears that word.
+- **A proposal** (`.cut`) — the split. The pieces are drawn as they would be
+  kept, on paper stock inside the card, so what you are agreeing to is the thing
+  in front of you rather than a description of it. Nothing is written until the
+  press.
+
+**A chip that acts is a form, not a link.** Chips in a turn carry either an href
+or an action, never both: a GET that writes writes again on every reload, which
+is the same reason a door is a press.
+
 **The live edge.** Only the newest turn Buddy has spoken carries controls. Older
 turns keep their words and lose their buttons — a card from a conversation three
 days old acts on a state nobody is looking at, and history is not rewritten.
