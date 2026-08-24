@@ -9,34 +9,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The chores screen exists because a chore was invisible: it only ever
-// appeared when it nudged you, and the nudge is the one moment you are least
-// able to say "actually, not this one, ever". Seeing them is what makes
-// retiring a real option rather than a command you have to remember.
-//
-// It shows what a chore is and when it was last done. It does not show how
-// many there are, how many are due, or how late anything is — the rule the
-// pile lives by does not stop at the pile.
-func choresHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		chores, err := s.ActiveChores(r.Context(), personID)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		v := view{Here: "chores"}
-		for _, c := range chores {
-			v.Chores = append(v.Chores, toChoreView(c))
-		}
-		renderWith(w, r, s, opts, "chores", v)
-	}
-}
-
 // choreActHandler is the three things you can do to a chore, and they are all
 // the same shape as the pile's: a form POST answered with a 303.
 //
@@ -82,6 +54,28 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
+		// The picker's answer: a number and a unit, composed into the same
+		// sentence the four fixed chips post. The two lanes cannot disagree,
+		// because they produce the same string for the same rhythm.
+		if count, unit := r.FormValue("count"), r.FormValue("unit"); count != "" || unit != "" {
+			d, ok := composeEvery(count, unit)
+			if !ok {
+				// Neither was offered. Nothing is done and nothing is said.
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			if _, err := s.UpsertChore(r.Context(), personID, c.Name, d, squirrel.DefaultTolerance(d)); err != nil {
+				fail(w, err)
+				return
+			}
+			said := "every " + count + " " + unit
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: said},
+				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + said + " now."},
+			}), "/")
+			return
+		}
+
 		if every := strings.TrimSpace(r.FormValue("every")); every != "" {
 			// The four this screen offers, like everywhere else it asks.
 			d, ok := offered(every)
@@ -96,11 +90,15 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
-			backToChores(w, r, opts)
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: every},
+				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + every + " now."},
+			}), "/")
 			return
 		}
 
-		switch r.FormValue("act") {
+		act := r.FormValue("act")
+		switch act {
 		case "done":
 			// The same write a tap on a nudge makes, and the source says which
 			// surface said so — the events table is the only place that
@@ -118,12 +116,10 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		backToChores(w, r, opts)
+		// What the two of you said about it, after the write, because a
+		// conversation must not claim something happened that did not.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, saidAboutAChore(act, c.Name)), "/")
 	}
-}
-
-func backToChores(w http.ResponseWriter, r *http.Request, opts Options) {
-	http.Redirect(w, r, "/chores", http.StatusSeeOther)
 }
 
 func toChoreView(c squirrel.Chore) choreView {
@@ -216,7 +212,7 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 
 		every, ok := offered(r.FormValue("every"))
 		if !ok {
-			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		part, ok := squirrel.ParseDayPart(r.FormValue("part"))
@@ -224,12 +220,18 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 			part = squirrel.AnyPart
 		}
 
-		if _, err := s.UpsertChoreAsking(r.Context(), personID, name, every,
-			squirrel.DefaultTolerance(every), squirrel.Asking{Part: part}); err != nil {
+		c, err := s.UpsertChoreAsking(r.Context(), personID, name, every,
+			squirrel.DefaultTolerance(every), squirrel.Asking{Part: part})
+		if err != nil {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/chores", http.StatusSeeOther)
+		// The chore you just made, as a card, so it is on the screen rather
+		// than somewhere you have to go and look at.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: name + " — " + r.FormValue("every")},
+			madeAChore(c),
+		}), "/")
 	}
 }
 
@@ -258,4 +260,53 @@ func offered(every string) (time.Duration, bool) {
 		return 30 * 24 * time.Hour, true
 	}
 	return 0, false
+}
+
+// oftenHandler puts the question on the table.
+//
+// It writes rather than renders, like everything else here: a question that is
+// not in the record is a question the record cannot show you answering.
+func oftenHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		// The id arrives from a form, so it is checked against what this person
+		// actually has rather than trusted — the same check the act handler
+		// makes, and for the same reason.
+		chores, err := s.ActiveChores(r.Context(), personID)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		var c squirrel.Chore
+		for _, candidate := range chores {
+			if candidate.ID == id {
+				c = candidate
+				break
+			}
+		}
+		if c.ID == 0 {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		count, unit := rhythmOf(c.Every)
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "how often — " + c.Name},
+			askHowOften(c.ID, count, unit),
+		}), "/")
+	}
 }

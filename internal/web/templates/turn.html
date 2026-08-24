@@ -3,21 +3,31 @@
      is the only thing keeping the server and the browser from growing two
      descriptions of a card. */}}
 {{define "turn"}}
-<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if .Faces}} wide{{end}}" id="turn-{{.ID}}">
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick}} wide{{end}}" id="turn-{{.ID}}">
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
   <p class="bub">{{.Words}}</p>
 
   {{range .Cards}}
-  <div class="turncard">
-    <p class="turnname">{{.Title}}</p>
-    {{if .Meta}}<p class="turnmeta">{{.Meta}}</p>{{end}}
+  {{/* A chore renders as the element the chores screen used, so the keys
+       pile.js binds and the rules the stylesheet already carries keep working
+       on it. The screen went; the thing on it did not. */}}
+  {{/* Always an article, and the chore-ness is a class: html/template cannot
+       put an action in a tag name, and the version that tried rendered nothing
+       at all. `article.chore` is what pile.js binds the chore keys to, so a
+       chore keeps them without the screen it used to be on. */}}
+  <article class="turncard{{if eq .Kind "chore"}} chore{{end}}">
+    {{/* The photograph is the note, and the words beside it are the caption —
+         the same order the pile's card draws them in. */}}
+    {{if .Photo}}<p class="cardphoto"><img src="{{.Photo}}" alt="the photograph on this note" loading="lazy"></p>{{end}}
+    <p class="{{if eq .Kind "chore"}}name{{else}}turnname{{end}}">{{.Title}}</p>
+    {{if .Meta}}<p class="{{if eq .Kind "chore"}}meta{{else}}turnmeta{{end}}">{{.Meta}}</p>{{end}}
     {{/* Controls only on the live edge. A card in scrollback keeps its words
          and loses its buttons: pressing DID IT on a card from a conversation
          three days old acts on a state nobody is looking at. */}}
     {{if and $.Live .Acts}}
-    <div class="turnacts">
+    <div class="{{if eq .Kind "chore"}}acts{{else}}turnacts{{end}}">
       {{range .Acts}}
       <form method="post" action="{{.Action}}">
         {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
@@ -26,7 +36,29 @@
       {{end}}
     </div>
     {{end}}
-  </div>
+  </article>
+  {{end}}
+
+  {{/* The question, as one form with two rows and one submit. Radios rather
+       than buttons: pressing a number is not an answer, it is half of one, and
+       a picker that posted on every press would write a turn per fiddle into a
+       record that is never rewritten. */}}
+  {{if and .Live .Pick}}
+  <form class="pick" method="post" action="{{.Pick.Action}}">
+    {{range $name, $value := .Pick.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+    {{range .Pick.Rows}}
+    {{$row := .}}
+    <p class="lead">{{.Lead}}</p>
+    <div class="pickrow">
+      {{range .Options}}
+      <label class="chip{{if eq . $row.Chosen}} current{{end}}">
+        <input type="radio" name="{{$row.Name}}" value="{{.}}"{{if eq . $row.Chosen}} checked{{end}}>{{.}}
+      </label>
+      {{end}}
+    </div>
+    {{end}}
+    <button class="make" type="submit">{{.Pick.Do}}</button>
+  </form>
   {{end}}
 
   {{/* The five drawings. Only on the live edge, like every other control: a

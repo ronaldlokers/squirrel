@@ -66,18 +66,19 @@ func TestANewChoreNeedsAnIntervalItWasOffered(t *testing.T) {
 
 // The form is last on the screen, after what you already have — the opposite
 // of an app that opens on an empty form.
-func TestTheNewChoreFormIsOfferedOnBothStates(t *testing.T) {
-	full := mounted(t, &fakeStore{chores: []squirrel.Chore{
+func TestAnEmptyListSaysHowToMakeOne(t *testing.T) {
+	full := opened(t, &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "bins out", Active: true, Every: 14 * 24 * time.Hour, EveryDays: 14},
-	}}).call(t, "GET", "/chores", nil).Body.String()
-	empty := mounted(t, &fakeStore{}).call(t, "GET", "/chores", nil).Body.String()
+	}}, "chores")
+	empty := opened(t, &fakeStore{}, "chores")
 
-	for _, body := range []string{full, empty} {
-		require.Contains(t, body, `action="/chores/new"`)
-		require.Contains(t, body, "a new chore")
-	}
-	require.Less(t, indexOf(full, "bins out"), indexOf(full, "a new chore"),
-		"what you have comes before what you might add")
+	// The form went with the screen. What replaced it is the sentence — the
+	// dock already understands "every 2 weeks: descale the kettle" — and it is
+	// said when there is nothing there, which is when it is worth knowing.
+	// Saying it over a list you already keep is nagging.
+	require.Contains(t, empty, "every 2 weeks: descale the kettle")
+	require.NotContains(t, full, "descale the kettle")
+	require.Contains(t, full, "bins out")
 }
 
 func indexOf(body, sub string) int {

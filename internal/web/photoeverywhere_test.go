@@ -36,10 +36,6 @@ func TestAPhotographIsShownWhereverTheNoteIs(t *testing.T) {
 			withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemNote)}}},
 		{"the shelf", "/kept", &fakeStore{items: []squirrel.Item{
 			withPhoto(1, "the tax letter", squirrel.ItemKept, squirrel.ItemNote)}}},
-		{"the tasks", "/tasks", &fakeStore{items: []squirrel.Item{
-			withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemTask)}}},
-		{"the archive", "/tasks/done", &fakeStore{items: []squirrel.Item{
-			withPhoto(1, "the tax letter", squirrel.ItemDone, squirrel.ItemTask)}}},
 		{"search", "/pile?q=tax", &fakeStore{items: []squirrel.Item{
 			withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemNote)}}},
 	} {
@@ -50,6 +46,15 @@ func TestAPhotographIsShownWhereverTheNoteIs(t *testing.T) {
 				"%s drops the photograph", screen.name)
 		})
 	}
+}
+
+// The tasks are a message rather than a screen since 24 August 2026, so their
+// photograph is checked where the message is drawn.
+func TestATaskInTheThreadKeepsItsPhotograph(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemTask)}}
+
+	require.Contains(t, opened(t, f, "tasks"), `src="/photo/1"`)
 }
 
 // And on the screen for things you cannot act on, which needed the store to

@@ -196,7 +196,7 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	}}
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
 	srv := screenWith(t, f, &fakeCoach{reply: "one thing at a time."})
-	c := browserAt(t, srv, "/chores")
+	c := atChores(t, srv)
 
 	tabTo(t, c, ".chore .abtn")
 	onChore := contrast(t, c, ".chore .abtn", "outline-color", ".chore")

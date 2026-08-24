@@ -12,54 +12,6 @@ import (
 // the same device the deck and the shelf use.
 const taskLimit = 30
 
-// What you decided: things you chose to do once, which left the pile when you
-// chose them and are archived when you have done them.
-//
-// The pile holds what you have not decided about — that is what triage is for,
-// and why stopping partway is fine. This holds what you have. Keeping both in
-// one list would mean triage stopped meaning anything.
-func tasksHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		items, more, err := s.Tasks(r.Context(), personID, taskLimit)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		v := view{Here: "tasks", More: more}
-		for _, it := range items {
-			v.Results = append(v.Results, toView(it))
-		}
-		renderWith(w, r, s, opts, "tasks", v)
-	}
-}
-
-// What you have done. Never how many, and never crossed out — striking through
-// your own words would be the product marking them as spent.
-func archiveHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		items, more, err := s.ArchivedTasks(r.Context(), personID, taskLimit)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		v := view{Here: "archive", More: more}
-		for _, it := range items {
-			v.Results = append(v.Results, toView(it))
-		}
-		renderWith(w, r, s, opts, "archive", v)
-	}
-}
-
 // Two ways out of a task, and only two.
 //
 // Dropping is deliberately absent: a task you no longer want is a note you no
@@ -82,7 +34,22 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		switch r.FormValue("act") {
+		// The row is read before it is written to, which the words need anyway
+		// and which scopes the write: ItemByID is the person's, and
+		// SetItemState takes a bare id. A row that is not yours is not yours
+		// to act on.
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		act := r.FormValue("act")
+		switch act {
 		case "done":
 			err = s.SetItemState(r.Context(), id, squirrel.ItemDone, now())
 		case "open":
@@ -94,23 +61,16 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			// require finishing it.
 			_, err = s.SetItemKind(r.Context(), personID, id, squirrel.ItemNote)
 		default:
-			http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		if err != nil {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, backToTasks(r), http.StatusSeeOther)
+		answerWith(w, r, keepSaid(r.Context(), s, personID,
+			saidAboutATask(act, it.RawText)), "/")
 	}
-}
-
-// backToTasks returns to the screen the button was on.
-func backToTasks(r *http.Request) string {
-	if r.FormValue("from") == "archive" {
-		return "/tasks/done"
-	}
-	return "/tasks"
 }
 
 // Decided outright, in the slot's own shape rather than the new-chore form's:

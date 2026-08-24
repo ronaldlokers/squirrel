@@ -670,13 +670,19 @@
   //
   // With this file absent every button is still a button and Tab still
   // reaches it. Nothing below is load-bearing.
-  const chores = [...document.querySelectorAll("article.chore")];
+  // Asked for each time rather than collected once at load.
+  //
+  // The chores arrive in the conversation now, after the page has painted, so a
+  // list taken at load is empty for exactly the cards these keys are for. The
+  // query costs nothing at the moment a letter is pressed.
+  const allChores = () => [...document.querySelectorAll("article.chore")];
 
   function focusedChore() {
     return document.activeElement?.closest?.("article.chore") || null;
   }
 
   function moveChore(step) {
+    const chores = allChores();
     if (!chores.length) return;
     const here = focusedChore();
     const at = here ? chores.indexOf(here) : -1;
@@ -684,7 +690,9 @@
     next?.querySelector("button, summary")?.focus();
   }
 
-  const CHORE_KEYS = { d: ".abtn.did", s: ".abtn.stop", o: "details.often > summary" };
+  // `o` was a disclosure inside the card; the interval question is a turn of
+  // its own now, and HOW OFTEN is the button that asks for it.
+  const CHORE_KEYS = { d: ".abtn.did", s: ".abtn.stop", o: ".abtn.go" };
 
   function choreKey(key) {
     const card = focusedChore();
@@ -763,9 +771,13 @@
     // A focused control owns space and enter; that is the platform's contract.
     if ((e.key === " " || e.key === "Enter") && e.target.closest("button, summary, a")) return;
 
-    // The chores screen. Its own keys, because it is a list and the deck is
-    // not — and its own branch, because there is no card here to act on.
-    if (chores.length) {
+    // The chores. Their own keys, because they are a list and the deck is
+    // not — and their own branch, because there is no card here to act on.
+    //
+    // Asked for rather than captured at load: the chores arrive in the
+    // conversation after the page has painted, and a list taken at load is
+    // empty for exactly the cards these keys are for.
+    if (allChores().length) {
       // A question in progress owns the keys, exactly as it does on the deck:
       // 1-4 answer it, and moving between chores is not what an arrow means
       // while it is open.
@@ -775,32 +787,17 @@
       // never got the carve-out, so an arrow aimed at the four chips threw the
       // focus onto a different chore's buttons — and the next letter then
       // acted on that one.
-      const asking = focusedChore()?.querySelector("details.often[open]")
-        || document.querySelector("details.often[open]");
-      if (asking) {
-        const n = "1234".indexOf(e.key);
-        if (n >= 0) {
-          e.preventDefault();
-          asking.querySelectorAll(".chips .chip")[n]?.click();
-          return;
-        }
+      // The interval question is a turn of its own now rather than a
+      // disclosure inside the card, so the carve-out is about the picker
+      // wherever it is on the page: while one is open the arrows belong to it,
+      // not to the movement between chores.
+      const asking = document.querySelector(".pick");
+      if (asking && asking.contains(document.activeElement)) {
         if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); return; }
       }
       if (e.key === "ArrowDown") { e.preventDefault(); moveChore(1); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); moveChore(-1); return; }
-      // Withdrawing the interval question is Escape here as it is on the deck.
-      if (e.key === "Escape") {
-        // The focused chore's question, or whichever is open if focus has
-        // wandered off — Escape means "withdraw the question" either way.
-        const open = focusedChore()?.querySelector("details.often[open]")
-          || document.querySelector("details.often[open]");
-        if (open) {
-          e.preventDefault();
-          open.open = false;
-          open.querySelector("summary")?.focus();
-        }
-        return;
-      }
+
       const key = e.key.toLowerCase();
       if (key in CHORE_KEYS) {
         e.preventDefault();

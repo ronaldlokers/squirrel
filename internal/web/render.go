@@ -43,10 +43,7 @@ func page(files ...string) *template.Template {
 
 var pages = map[string]*template.Template{
 	"thread":  page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
-	"chores":  page("templates/layout.html", "templates/stopping.html", "templates/chores.html"),
 	"kept":    page("templates/layout.html", "templates/stopping.html", "templates/kept.html"),
-	"tasks":   page("templates/layout.html", "templates/stopping.html", "templates/tasks.html"),
-	"archive": page("templates/layout.html", "templates/stopping.html", "templates/archive.html"),
 	"bottom":  page("templates/layout.html", "templates/bottom.html"),
 	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
 	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
@@ -294,11 +291,15 @@ func placeName(here string) string {
 // existed. Buddy is not in it either — it is one tap in the lid, because a
 // conversation about what is in front of you should not be two.
 func elsewhere(here string) []linkView {
+	// Two, since 24 August 2026. The tasks and the chores stopped being pages
+	// and became messages, and a menu that offered them would be offering a
+	// link to somewhere that no longer exists — see internal/web/thread.go.
+	// The way to them is the rail, which is on the one screen you reach them
+	// from.
 	mine := placeName(here)
 	return []linkView{
 		{Href: "/pile", Label: "the pile", Here: mine == "the pile"},
-		{Href: "/tasks", Label: "the tasks", Here: mine == "the tasks"},
-		{Href: "/chores", Label: "the chores", Here: mine == "the chores"},
+		{Href: "/at", Label: "the agenda", Here: mine == "the agenda"},
 	}
 }
 

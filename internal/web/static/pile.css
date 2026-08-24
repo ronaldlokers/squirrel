@@ -2981,13 +2981,20 @@
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px;
     padding: 10px 22px;
   }
+  /* The door is the button; the form around it is not a box. */
+  .doorpress { display: contents; }
   .rdoor {
     display: flex; align-items: center; justify-content: center; gap: 9px;
     min-height: 52px; padding: 8px 12px;
     background: var(--card); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 4px 0 0 var(--outline);
-    text-decoration: none;
+    text-decoration: none; cursor: pointer;
+    /* Said outright because the door is a button now, and a button does not
+       inherit the page's face: it was left at the browser's own 13.33px, which
+       the appearance snapshot caught. */
+    font: 400 16px/1.55 "Recursive", sans-serif;
+    font-variation-settings: var(--precise);
     transition: transform 90ms ease-out, box-shadow 90ms ease-out;
   }
   .rdoor:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
@@ -3101,6 +3108,10 @@
   .abtn.later:hover { background: var(--paper-deep); color: var(--outline); }
   .abtn.later:active { background: var(--dropped); color: var(--paper); }
   .abtn.go { background: var(--paper); color: var(--outline); }
+  /* The way back out of a decision. Quiet, and not the deferral's brown: this
+     is a thing returning to where it came from rather than being put off. */
+  .abtn.back { background: var(--paper); color: var(--brown); }
+  .abtn.back:hover { background: var(--paper-deep); color: var(--outline); }
   .abtn.go:hover { background: var(--paper-deep); }
   /* The four ways of not being able to start. Quieter than the three above
      them — they are a way out rather than a way on — and quiet here means the
@@ -3113,6 +3124,27 @@
   }
   .abtn.why:hover { background: var(--card-deep); color: var(--outline); }
 
+  /* The question, as a card of choices. Same stock as any other card in the
+     thread, because it is one — what makes it a question is that it has a
+     submit rather than three verbs. */
+  .pick {
+    display: flex; flex-direction: column; gap: 8px; width: 100%;
+    padding: 13px 15px 15px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+  /* The shared Meta role, not a class of its own: a label above a row of
+     choices is the same thing the rest of the product calls a lead, and
+     TestBrowserNoMetaLabelIsAsLargeAsBodyText fences that role by name. */
+  .pick .lead {
+    margin: 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--brown); font-variation-settings: var(--precise), "wght" 750;
+  }
+  .pickrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pick .make { align-self: flex-start; margin-top: 4px; }
+  .turn.wide { max-width: 100%; width: 100%; }
+
   /* A turn holding the faces takes the full column. They are five drawings in
      a row and a bubble's 92% leaves the labels too narrow to fit their own
      cells at 390px.
@@ -3120,5 +3152,4 @@
      A class the template writes rather than `:has(.faces)`, which reads better
      and does not match in the browser the tests drive — the measurement said
      212px of an available 362px, which is the turn still shrinking to fit. */
-  .turn.wide { max-width: 100%; width: 100%; }
   .turn .faces { width: 100%; }
