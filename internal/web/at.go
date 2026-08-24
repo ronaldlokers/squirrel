@@ -29,24 +29,6 @@ import (
 // number.
 const upcomingLimit = 30
 
-func atHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		coming, err := s.Upcoming(r.Context(), personID, now(), upcomingLimit)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		renderWith(w, r, s, opts, "at", view{
-			Here: "at", Scrolling: true, Upcoming: upcomingViews(coming),
-		})
-	}
-}
-
 func atOneHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := opts.person()

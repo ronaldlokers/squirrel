@@ -153,14 +153,12 @@ func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
 // The contrast walk cannot tell a clean screen from an empty one, so this says
 // the two new paths render something. Both were added to that walk's list, and
 // a page with nothing on it would have passed it silently.
-func TestBothNewScreensRenderSomething(t *testing.T) {
+// The one screen the agenda still has. The list became a turn on 24 August
+// 2026; this is the page a notification lands on, and it stays until phase 4.
+func TestTheFixedPointPageStillRenders(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
 	f.upcoming = []squirrel.Moment{*f.moment}
 	m := routed(t, f)
-
-	list := m.call(t, "GET", "/at", nil).Body.String()
-	require.Contains(t, list, "the agenda")
-	require.Contains(t, list, "dentist")
 
 	one := m.call(t, "GET", "/at/4", nil).Body.String()
 	require.Contains(t, one, "dentist")
@@ -172,31 +170,40 @@ func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	body := routed(t, f).call(t, "GET", "/at", nil).Body.String()
+	// Soonest first, in the turn the door draws now.
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	body := string(f.appended[1].Shown)
 
 	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
-	require.Contains(t, body, `href="/at/4"`)
 }
 
 // Never a count, and never a word about being behind. Everything here is still
 // ahead of you, which is the only reason this list is allowed to exist.
-func TestWhatIsComingCountsNothingAndScoldsNobody(t *testing.T) {
+func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 	f := &fakeStore{upcoming: []squirrel.Moment{
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	body := strings.ToLower(routed(t, f).call(t, "GET", "/at", nil).Body.String())
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	said := strings.ToLower(f.appended[1].Words)
+	drawn := strings.ToLower(string(f.appended[1].Shown))
 
-	for _, banned := range []string{"late", "overdue", "2 coming", "you have"} {
-		require.NotContains(t, body, banned)
+	// Buddy counts what is ahead — permitted since 24 August 2026 — and the
+	// counting is the only number here.
+	require.Contains(t, said, "2 things have a time")
+	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
+		require.NotContains(t, said, banned)
+		require.NotContains(t, drawn, banned)
 	}
 }
 
 func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
-	body := routed(t, &fakeStore{}).call(t, "GET", "/at", nil).Body.String()
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	body := strings.ToLower(f.appended[1].Words)
 
 	require.Contains(t, body, "when something has a time you can be late for")
-	require.NotContains(t, strings.ToLower(body), "plan")
+	require.NotContains(t, body, "plan")
 }
 
 // The agenda arrives as cards, and each says when to leave in the core's own

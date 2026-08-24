@@ -198,7 +198,7 @@ func TestEveryWordCanBeRead(t *testing.T) {
 		// card, a task card and the interval picker on it, and the dock.
 		"/", "/pile", "/pile?q=the",
 		"/kept", "/held", "/moods", "/enough", "/buddy",
-		"/at", "/at/4",
+		"/at/4",
 	}
 
 	srv := screen(t, everyScreen())

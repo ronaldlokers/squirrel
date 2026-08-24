@@ -110,7 +110,7 @@ func TestChoresRefusesAnUnknownAction(t *testing.T) {
 // Two places since 24 August 2026, not three: the tasks and the chores stopped
 // being pages and became messages, and the way to them is the rail on the one
 // screen you reach them from.
-func TestTheLidOffersTheOtherPlaceYouAreNot(t *testing.T) {
+func TestTheLidOffersTheOnePlaceLeftToGo(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
@@ -119,11 +119,11 @@ func TestTheLidOffersTheOtherPlaceYouAreNot(t *testing.T) {
 		wants []string
 		not   string
 	}{
-		{"/pile", []string{`href="/at"`}, `class="lidlink" href="/pile"`},
-		{"/at", []string{`href="/pile"`}, `class="lidlink" href="/at"`},
-		// The shelf belongs to the pile: it is reached from there, and that is
-		// what you would be looking for the way back to.
-		{"/kept", []string{`href="/at"`}, `class="lidlink" href="/pile"`},
+		// One place left in the menu: the pile is the last screen that is a
+		// screen. Everything else is the conversation, and the way back to it
+		// is the mark.
+		{"/kept", []string{`href="/pile"`}, `class="lidlink" href="/kept"`},
+		{"/held", []string{`href="/pile"`}, `class="lidlink" href="/held"`},
 	} {
 		body := m.call(t, "GET", c.on, nil).Body.String()
 		for _, want := range c.wants {

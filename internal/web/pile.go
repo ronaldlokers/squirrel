@@ -100,7 +100,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	// held.go for why home does not carry it.
 	// What is coming, and one of them. The notification lands on the second:
 	// see sw.js, and DESIGN.md for what that replaced.
-	m.Get("/at", guard(opts, atHandler(s, opts)))
 	m.Get("/at/{id}", guard(opts, atOneHandler(s, opts)))
 	// One fixed point, drawn into the conversation. See atOpenHandler.
 	m.Post("/at/open", guard(opts, sameOrigin(atOpenHandler(s, opts))))

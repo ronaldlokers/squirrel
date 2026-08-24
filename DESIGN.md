@@ -1078,6 +1078,18 @@ whole chip is the target and the choice survives with no script at all — the
 radio itself is never drawn, because the press that stayed down is what says
 which one is chosen.
 
+**Which day is a month, since 24 August 2026.** The day picker is seven columns
+with Monday first, cells 44px tall and about 43 wide at 390px — one pixel under
+the touch floor, accepted deliberately: seven columns cannot do better without
+cropping the month to weekdays or scrolling it sideways, and both are worse than
+the pixel. A day already gone is drawn and not offered, because a month with
+holes in it is harder to read than one where some days cannot be pressed. There
+is no way back past this month.
+
+Turning to another month is the one control in either picker that posts on its
+own. It is not an answer, it is turning a page, so it re-asks rather than
+writing your half of a question into a record that is never rewritten.
+
 **How often is a number and a unit, since 24 August 2026.** ~~Four fixed chips —
 every day, every week, every 2 weeks, every month.~~ Two rows now: `every`
 1/2/3/4/6/8, and `of these` days/weeks/months, in one form with one submit.

@@ -1101,16 +1101,21 @@
      the choice survives with no script at all. The radio itself is not drawn:
      the press that stayed down is what says which one is chosen, the same
      gesture as every other press here. */
-  .newchore .chip { position: relative; cursor: pointer; }
-  .newchore .chip input {
+  /* The same chip wherever one wraps a radio: the new-chore form, the interval
+     question and the day picker's times. It was scoped to .newchore, and the
+     pickers inherited a chip with its radio drawn in the middle of it. */
+  .newchore .chip, .pickrow .chip { position: relative; cursor: pointer; }
+  .newchore .chip input, .pickrow .chip input {
     position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0;
   }
-  .newchore .chip:has(input:checked) {
+  .newchore .chip:has(input:checked), .pickrow .chip:has(input:checked) {
     background: var(--violet); color: var(--paper);
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
   }
-  .newchore .chip:has(input:focus-visible) { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
-  .newchore .make {
+  .newchore .chip:has(input:focus-visible), .pickrow .chip:has(input:focus-visible) {
+    outline: var(--line) solid var(--orange-lit); outline-offset: 3px;
+  }
+  .newchore .make, .pick .make, .cal .make {
     margin-top: 18px;
     padding: 12px 20px; min-height: 46px;
     background: var(--orange); color: var(--outline);
@@ -1120,8 +1125,8 @@
     font-variation-settings: var(--precise), "wght" 750;
     letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   }
-  .newchore .make:hover { background: var(--orange-lit); }
-  .newchore .make:active {
+  .newchore .make:hover, .pick .make:hover, .cal .make:hover { background: var(--orange-lit); }
+  .newchore .make:active, .pick .make:active, .cal .make:active {
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
     background: var(--violet); color: var(--paper);
   }
@@ -3143,6 +3148,7 @@
   }
   .pickrow { display: flex; flex-wrap: wrap; gap: 8px; }
   .pick .make { align-self: flex-start; margin-top: 4px; }
+  .cal .make { align-self: flex-start; margin-top: 2px; }
   .turn.wide { max-width: 100%; width: 100%; }
 
   /* A turn holding the faces takes the full column. They are five drawings in
@@ -3194,7 +3200,6 @@
     font-size: 10.5px; letter-spacing: .06em; color: var(--brown);
     font-variation-settings: var(--precise), "wght" 750;
   }
-  .cal .make { align-self: flex-start; margin-top: 2px; }
 
   @media (max-width: 620px) {
     .calbox { padding: 13px 10px 15px; }
