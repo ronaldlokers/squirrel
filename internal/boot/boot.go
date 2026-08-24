@@ -200,6 +200,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		cancel()
 		return nil, err
 	}
+	// Where the person is, for every question this store answers about which
+	// day it is. The same location the scheduler already takes — see #148.
+	store.In(config.DigestLocation)
 	s.store = store
 
 	// After the store, because the budget reads through it; before the screen,
@@ -257,6 +260,10 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
 			Identity:       config.WebIdentity,
+			// The same location the scheduler's quiet hours and evening
+			// message already take. Threaded rather than read off the process
+			// clock — see issue #148.
+			Location: config.DigestLocation,
 			// Empty unless the *whole* pair plus the contact is configured,
 			// not merely the public half. A public key alone would mount the
 			// subscribe route and let a browser sign up to a channel nothing
@@ -392,6 +399,10 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		applier = squirrel.NewApplier(store, send, chat, func(err error) {
 			slog.Error("applying intent", "error", err)
 		})
+		// Where the person is. The same location the scheduler's quiet hours
+		// and evening message take, threaded rather than read off the process
+		// clock — see issue #148.
+		applier.In(config.DigestLocation)
 
 		// Nil when there is no coach, and the nil carries meaning: chat does
 		// not advertise `!coach` in help when there is nothing behind it. A

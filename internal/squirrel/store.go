@@ -14,7 +14,21 @@ import (
 
 type Store struct {
 	pool *pgxpool.Pool
+	// where the person is, or nil for the process's own zone.
+	//
+	// The day a refusal belongs to is theirs: "not now means today, because
+	// tomorrow is a fresh question", and on a container running UTC that today
+	// ended at 02:00 local in summer. Set once at boot from the configured
+	// location — see issue #148.
+	where *time.Location
 }
+
+// In sets where the person is, for every question this store answers about
+// which day it is.
+func (s *Store) In(loc *time.Location) { s.where = loc }
+
+// today is the person's day, not the process's.
+func (s *Store) today(now time.Time) time.Time { return StartOfDayIn(s.where, now) }
 
 func URLFor(c PostgresConfig) string {
 	u := url.URL{

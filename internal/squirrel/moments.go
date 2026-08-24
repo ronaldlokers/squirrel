@@ -84,7 +84,24 @@ var travelSuffix = regexp.MustCompile(`(?i)^(.*?)[,\s]+(\d{1,3})\s*(?:m|min|mins
 // calendar is a thing you are behind on; the two answers this takes are today
 // and tomorrow, and a time that has already passed today means tomorrow —
 // which is what a person means when they type it.
-func ParseMoment(s string, now time.Time) (Moment, bool) { return MomentOn(now, s, now) }
+// ParseMoment reads one out of a sentence, in the process's own zone.
+//
+// Kept for callers that only ask whether a message *has the shape* of a fixed
+// point — Match does, on stored rows, where the date it would resolve to is
+// never read. Anything that books one calls ParseMomentIn: a container's zone
+// is an accident of its deployment, and a fixed point is the one thing this
+// product holds that you can be late for. See issue #148.
+func ParseMoment(s string, now time.Time) (Moment, bool) {
+	return ParseMomentIn(now.Location(), s, now)
+}
+
+// ParseMomentIn reads one where the person is.
+func ParseMomentIn(loc *time.Location, s string, now time.Time) (Moment, bool) {
+	if loc == nil {
+		loc = now.Location()
+	}
+	return MomentOn(loc, now.In(loc), s, now)
+}
 
 // MomentOn is the same sentence, anchored to a day you chose.
 //
@@ -94,7 +111,10 @@ func ParseMoment(s string, now time.Time) (Moment, bool) { return MomentOn(now, 
 // turned into something that will interrupt you — or a second place in the web
 // package that built a time of its own, which is what composeEvery exists not
 // to be.
-func MomentOn(day time.Time, s string, now time.Time) (Moment, bool) {
+func MomentOn(loc *time.Location, day time.Time, s string, now time.Time) (Moment, bool) {
+	if loc == nil {
+		loc = now.Location()
+	}
 	text := strings.TrimSpace(s)
 
 	m := momentPattern.FindStringSubmatch(text)
@@ -145,7 +165,7 @@ func MomentOn(day time.Time, s string, now time.Time) (Moment, bool) {
 		travel = defaultTravel
 	}
 
-	starts := time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, now.Location())
+	starts := time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, loc)
 	// Tomorrow if it was said, and tomorrow if the time has already gone —
 	// which is what someone means when they type a time that has passed.
 	//

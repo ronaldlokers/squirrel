@@ -317,7 +317,7 @@ func atMakeHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		m, ok := squirrel.MomentOn(day, "at "+at+" "+label, now())
+		m, ok := squirrel.MomentOn(opts.Location, day, "at "+at+" "+label, now())
 		if !ok {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return

@@ -98,7 +98,7 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 	// today, locally — "not now" means today, because tomorrow is a fresh
 	// question and a refusal that outlived the day would quietly become a
 	// second kind of retiring.
-	skip, err := s.Suppressed(ctx, personID, startOfDay(now))
+	skip, err := s.Suppressed(ctx, personID, s.today(now))
 	if err != nil {
 		return Offer{}, false, err
 	}
@@ -341,6 +341,18 @@ func JudgementHelps(kind OfferKind) bool {
 // picker's own window for today's refusals, and two definitions of "today"
 // would put them out of step across a DST boundary.
 func StartOfDay(t time.Time) time.Time { return startOfDay(t) }
+
+// StartOfDayIn is the same, where the person is.
+//
+// The day a refusal belongs to is theirs, not the process's: "not now means
+// today, because tomorrow is a fresh question", and on a container running UTC
+// that today ended at 02:00 local in summer. See issue #148.
+func StartOfDayIn(loc *time.Location, t time.Time) time.Time {
+	if loc == nil {
+		return startOfDay(t)
+	}
+	return startOfDay(t.In(loc))
+}
 
 // Refuse records a "not now" and is the only thing that suppresses an offer.
 //

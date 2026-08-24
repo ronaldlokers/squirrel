@@ -346,6 +346,29 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.28.0 — 25 August 2026
+
+**Time is where you are, not where the process is.** Issue #148, fixed durably.
+
+`TZ` on the clusters corrected the symptom in August and was never the fix:
+nothing in this repository asked for it, no test failed without it, and the
+staging manifest replaces its env list wholesale. The location is threaded now,
+the way the scheduler's quiet hours and evening message always were —
+`ParseMomentIn` and `StartOfDayIn` take it, the Applier and the Store are given
+it at boot, and the web's Options carry it to the picker and the coach.
+
+Three tests, and the third is the one that matters:
+
+- a fixed point parsed on a UTC process lands at the right instant;
+- "today", for a refusal, is the person's day and not the container's;
+- **and the whole chat path books it correctly.** Reverting the wiring — one
+  setter — fails that one while both parser tests stay green, which is exactly
+  how the fault survived the first time.
+
+`ParseMoment` and `StartOfDay` remain for callers that only ask whether
+something *has the shape* of a fixed point, which is what `Match` does on stored
+rows where the resolved date is never read.
+
 ### v0.27.0 — 25 August 2026
 
 **The notification lands in the conversation, and a refusal has a way back.**

@@ -405,7 +405,7 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 		var err error
 		switch r.FormValue("do") {
 		case "moment":
-			err = keepMoment(r, s, personID)
+			err = keepMoment(r, s, opts, personID)
 		case "chore":
 			err = keepChore(r, s, personID)
 		case "retire":
@@ -423,9 +423,9 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 
 // keepMoment creates a fixed point, and the time is parsed by the core rather
 // than trusted from the form. A guessed time is a missed appointment.
-func keepMoment(r *http.Request, s Store, personID int64) error {
+func keepMoment(r *http.Request, s Store, opts Options, personID int64) error {
 	said := strings.TrimSpace(r.FormValue("at") + " " + r.FormValue("text"))
-	m, ok := squirrel.ParseMoment("at "+said, now())
+	m, ok := squirrel.ParseMomentIn(opts.Location, "at "+said, now())
 	if !ok {
 		// It did not parse, so nothing is created. The bar exists so a note is
 		// never silently turned into something that interrupts you, and it is
