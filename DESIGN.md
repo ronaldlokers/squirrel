@@ -1225,7 +1225,31 @@ drawing that reads instantly as chores did not need a checklist to do it, and
 the version that avoided one is also the version that stopped colliding with
 the tasks door.
 
-**The tasks door carries what is left of one.** It was a clipboard with two
+**The tasks door went back to the clipboard on 24 August 2026, and it is an
+exception rather than a reversal of the reasoning.**
+
+It is a clipboard with two ticked boxes beside one empty, a pencil, a sticky
+note, and the acorn on the clip. Two of three is a progress reading drawn as a
+picture, and the Don't list names checklists by name: the rule does not care
+whether the total is a numeral. This is the same composition the owner removed
+from this door — and from the chores door — on 20 August, for that reason.
+
+Chosen anyway, knowingly, with the record put in front of him first. What it
+buys: the errands drawing shared a calendar, a set of keys and an envelope with
+the agenda door, and in a two-by-two grid those two sit one above the other in
+the same column. Two doors that read alike is a legibility cost paid every time
+the screen is opened; a checklist is a rule broken in a picture nobody counts.
+
+Three things make it narrower than the drawing it replaces. The ticks are Acorn
+Orange rather than `done` green, so no state colour is being used as a claim.
+There is no grey. And the acorn on the clip is the product's second mark used
+exactly as this document says it is available to be used — on a badge where the
+full mascot would be too much.
+
+**An exception, not a precedent.** The next drawing that depicts a count gets
+refused on the same grounds this one was.
+
+**What the tasks door carried before.** It was a clipboard with two
 ticked rows and one empty — a progress reading drawn as a picture. The owner
 replaced it the same day with errands: a calendar, a phone, an envelope, a set
 of keys. **The count is gone**, which was the larger of the two faults and the
