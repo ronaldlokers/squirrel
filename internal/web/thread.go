@@ -111,7 +111,12 @@ type actView struct {
 // wrong one.
 type turnChip struct {
 	Label string `json:"label"`
-	Href  string `json:"href"`
+	// Href for somewhere to go; Action and Fields for something to do. A chip
+	// that acts is a form, because a GET that writes writes again on every
+	// reload — the same reason a door is a press.
+	Href   string            `json:"href,omitempty"`
+	Action string            `json:"action,omitempty"`
+	Fields map[string]string `json:"fields,omitempty"`
 }
 
 type doorView struct {
@@ -709,6 +714,8 @@ func placeTurn(ctx context.Context, s Store, personID int64, where string) []squ
 		reply = tasksTurn(ctx, s, personID, name)
 	case "at":
 		reply = agendaTurn(ctx, s, personID, name)
+	case "pile":
+		reply = pileTurn(ctx, s, personID, 0, name)
 	default:
 		// The pile and the agenda are phase 3. Until then the doors that are
 		// not built say so rather than answering with silence, which reads as
@@ -1241,4 +1248,104 @@ func askForADay(label string, month time.Time) squirrel.Turn {
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Tell me when, like at 14:30 dentist."}
 	}
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Which day?", Shown: body}
+}
+
+// pileTurn is one note, with the four ways out of it.
+//
+// One at a time, exactly as the deck does it: the pile is a thing you decide
+// about, and a list of things to decide about is a list you are behind on.
+// What changes in a conversation is only that the next one arrives underneath
+// the last rather than replacing it.
+func pileTurn(ctx context.Context, s Store, personID, after int64, name string) squirrel.Turn {
+	items, _, err := s.OpenItemsAfter(ctx, personID, after, 1)
+	if err != nil {
+		slog.Error("reading the pile", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the pile just now."}
+	}
+	if len(items) == 0 {
+		if after != 0 {
+			// The bottom, reached by skipping. Not the same as an empty pile:
+			// what is above you is still there.
+			return squirrel.Turn{
+				Who:   squirrel.SpeakerBuddy,
+				Words: "That is the end of them. The ones you skipped are still there.",
+			}
+		}
+		return squirrel.Turn{
+			Who:   squirrel.SpeakerBuddy,
+			Words: "Nothing to decide about. Anything you tell me lands here.",
+		}
+	}
+
+	v := toView(items[0])
+	row := map[string]string{
+		"id": strconv.FormatInt(v.ID, 10), "was": v.State, "from": "thread",
+	}
+	sh := drawn{
+		Place: name,
+		Cards: []cardView{{
+			Title: v.Text, Photo: v.Photo, Meta: v.When,
+			Acts: []actView{
+				{Label: "DONE", Action: "/pile/act", Style: "did", Fields: with(row, "act", "done")},
+				{Label: "KEEP", Action: "/pile/act", Style: "go", Fields: with(row, "act", "keep")},
+				{Label: "DROP", Action: "/pile/act", Style: "stop", Fields: with(row, "act", "drop")},
+				{Label: "A TASK", Action: "/pile/act", Style: "go", Fields: with(row, "act", "task")},
+			},
+		}},
+		// Later is not a decision. It leaves the note where it was and hands
+		// you the next, which is the deck's own LATER.
+		Chips: []turnChip{{
+			Label: "later", Action: "/pile/later",
+			Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
+		}},
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing the pile", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: v.Text}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "This one.", Shown: body}
+}
+
+// saidAboutANote is what the two of you said, and the way to change your mind.
+//
+// The way back travels with the answer because the card is about to be
+// scrollback, and scrollback carries no controls: an undo you can only reach by
+// pressing something that has already gone is an undo nobody reaches.
+func saidAboutANote(act, text string, id int64, was string) []squirrel.Turn {
+	words, reply := "", ""
+	switch act {
+	case "done":
+		words, reply = "done — "+text, "Good."
+	case "keep":
+		words, reply = "keep — "+text, "On the shelf."
+	case "drop":
+		words, reply = "drop — "+text, "Gone."
+	case "task":
+		words, reply = "a task — "+text, "It is a task now."
+	default:
+		return nil
+	}
+
+	// Back to where it was. "note" rather than "open" for a decision, because
+	// what changed was the note's kind and not its state — the same distinction
+	// actHandler makes, said the same way.
+	backAct := "open"
+	if act == "task" {
+		backAct = "note"
+	}
+	body, err := json.Marshal(drawn{Chips: []turnChip{{
+		Label: "put it back", Action: "/pile/undo",
+		Fields: map[string]string{
+			"id": strconv.FormatInt(id, 10), "act": backAct, "was": was,
+		},
+	}}})
+	if err != nil {
+		slog.Error("drawing the way back", "error", err)
+	}
+	return []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: words},
+		{Who: squirrel.SpeakerBuddy, Words: reply, Shown: body},
+	}
 }

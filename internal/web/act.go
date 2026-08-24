@@ -44,6 +44,13 @@ const intervalSentinel = "chore-name-placeholder"
 //
 // The undo hint travels in the query string rather than a session, because
 // this binary has no sessions and the screen is stateless by construction.
+// fromThread says the press was made in the conversation rather than on the
+// deck. The write is the same either way; what differs is the answer.
+//
+// One route and one write, with two answers, rather than a second route that
+// could drift from the first. The branch dies with the deck.
+func fromThread(r *http.Request) bool { return r.FormValue("from") == "thread" }
+
 func back(w http.ResponseWriter, r *http.Request, opts Options, undo url.Values) {
 	target := "/pile"
 	if q := strings.TrimSpace(r.FormValue("q")); q != "" {
@@ -100,6 +107,11 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 				back(w, r, opts, url.Values{})
 				return
 			}
+			if fromThread(r) {
+				it, _, _ := s.ItemByID(r.Context(), personID, id)
+				answerInThread(w, r, s, opts, personID, "task", it.RawText, id, string(it.State))
+				return
+			}
 			// The same way back the four dispositions have. This carried
 			// nothing at all, so the one answer on the card that moves a note
 			// between two screens was the one with no way to change your mind.
@@ -152,6 +164,10 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		} else if err := s.SetItemState(r.Context(), it.ID, state, time.Now()); err != nil {
 			fail(w, err)
+			return
+		}
+		if fromThread(r) {
+			answerInThread(w, r, s, opts, personID, r.FormValue("act"), it.RawText, it.ID, string(it.State))
 			return
 		}
 		back(w, r, opts, url.Values{
@@ -241,5 +257,67 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		back(w, r, opts, url.Values{})
+	}
+}
+
+// answerInThread says what happened and hands you the next note.
+//
+// Triage is a loop: the whole reason the deck replaces one card with another is
+// that having decided is the moment you are most able to decide again. The
+// conversation keeps that and stops throwing the last one away.
+func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Options,
+	personID int64, act, text string, id int64, was string) {
+	said := saidAboutANote(act, text, id, was)
+	if len(said) == 0 {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	said = append(said, pileTurn(r.Context(), s, personID, 0, ""))
+	answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+}
+
+// laterHandler is skipping one, which is not a decision.
+//
+// It leaves the note where it was and hands you the next, which is the deck's
+// own LATER. Your half is said too — skipping is a thing you did, and a record
+// that only kept the decisions would be a record of a different afternoon.
+func laterHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "later"},
+			pileTurn(r.Context(), s, personID, after, ""),
+		}), "/")
+	}
+}
+
+// undoHandler is changing your mind, from the chip that travelled with the
+// answer.
+//
+// It is the same write as any other act — putting a note back is `act=open`,
+// and undoing a decision is making it a note again — so it goes through the
+// same handler rather than growing a second way to move a note.
+func undoHandler(s Store, opts Options) http.HandlerFunc {
+	act := actHandler(s, opts)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		r.Form.Set("from", "thread")
+		act(w, r)
 	}
 }

@@ -64,6 +64,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
+	// Triage, in the conversation: skipping one, and changing your mind.
+	m.Post("/pile/later", guard(opts, sameOrigin(laterHandler(s, opts))))
+	m.Post("/pile/undo", guard(opts, sameOrigin(undoHandler(s, opts))))
 	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
 	m.Post("/pile/fix", guard(opts, sameOrigin(fixHandler(s, opts))))
 	// Four thoughts captured as one note, offered as four. Both halves —

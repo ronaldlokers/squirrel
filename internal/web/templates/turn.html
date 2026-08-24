@@ -124,7 +124,14 @@
 
   {{if and .Live .Chips}}
   <div class="turnchips">
-    {{range .Chips}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{range .Chips}}
+    {{if .Action}}
+    <form method="post" action="{{.Action}}">
+      {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+      <button class="chip" type="submit">{{.Label}}</button>
+    </form>
+    {{else}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{end}}
   </div>
   {{end}}
 </div>

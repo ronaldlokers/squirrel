@@ -497,3 +497,85 @@ func TestNothingIsOfferedOverAnUnansweredQuestion(t *testing.T) {
 	require.Empty(t, f.appended)
 	require.Contains(t, body, `class="pick"`, "the question keeps its answers")
 }
+
+// The pile hands you one note, with the four ways out of it.
+func TestOpeningThePileHandsYouOneNote(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(9, "the boiler makes a noise", squirrel.ItemOpen),
+		note(8, "meter reading 48213", squirrel.ItemOpen),
+	}}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "the boiler makes a noise")
+	require.NotContains(t, shown, "meter reading", "one at a time, like the deck")
+	for _, act := range []string{"done", "keep", "drop", "task"} {
+		require.Contains(t, shown, `"act":"`+act+`"`)
+	}
+}
+
+// Acting on it says what happened and hands you the next one, so triage is a
+// loop rather than a place you have to go back to.
+func TestActingOnANoteHandsYouTheNext(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(9, "the boiler makes a noise", squirrel.ItemOpen),
+		note(8, "meter reading 48213", squirrel.ItemOpen),
+	}}
+	routed(t, f).call(t, "POST", "/pile/act",
+		strings.NewReader("id=9&act=keep&was=open&from=thread"))
+
+	require.Equal(t, squirrel.ItemKept, f.states[9])
+	// Three turns: what you did, what Buddy said, and the next one. The next
+	// one is its own turn rather than part of the answer, so pressing DONE on
+	// it does not read as pressing DONE on what you just decided.
+	require.Len(t, f.appended, 3)
+	require.Contains(t, f.appended[0].Words, "the boiler")
+	require.Contains(t, string(f.appended[2].Shown), "meter reading 48213")
+}
+
+// The way to change your mind travels with what Buddy said, because the card
+// is about to be scrollback and scrollback carries no controls.
+func TestTheAnswerCarriesTheWayBack(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	routed(t, f).call(t, "POST", "/pile/act",
+		strings.NewReader("id=9&act=keep&was=open&from=thread"))
+
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, `"act":"open"`)
+	require.Contains(t, shown, "put it back")
+}
+
+// Later is not a decision: it hands you the next one and leaves this where it
+// was, which is the deck's own LATER.
+func TestLaterHandsYouTheNextAndDecidesNothing(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(9, "the boiler", squirrel.ItemOpen),
+		note(8, "meter reading 48213", squirrel.ItemOpen),
+	}}
+	routed(t, f).call(t, "POST", "/pile/later", strings.NewReader("after=9"))
+
+	require.Empty(t, f.states, "later decided something")
+	require.Contains(t, string(f.appended[1].Shown), "meter reading 48213")
+}
+
+// Nothing left says so rather than handing you an empty card.
+func TestAnEmptyPileSaysSo(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+
+	require.Len(t, f.appended, 2)
+	require.NotContains(t, string(f.appended[1].Shown), `"cards"`)
+	require.NotEmpty(t, f.appended[1].Words)
+}
+
+// The deck still answers. It is deleted in its own piece of work, not in this
+// one — a triage loop nobody has used yet is not a reason to take away the one
+// that works.
+func TestTheDeckStillStands(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+
+	require.Contains(t, body, "the boiler")
+	require.Contains(t, body, `value="done"`)
+}
