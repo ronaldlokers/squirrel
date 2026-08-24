@@ -2172,6 +2172,37 @@
     color: var(--sheet-quiet, var(--brown));
   }
 
+  /* A fixed point, on its own screen.
+   *
+   * The card is the result card's material — cream stock, the 3px outline, the
+   * shallower offset — because it is a thing you read rather than a card in a
+   * deck you decide about.
+   */
+  .atcard { margin-bottom: 18px; }
+  .atcard .when {
+    margin: 0;
+    font-size: 17px; line-height: 1.4;
+    font-variation-settings: var(--casual), "wght" 450;
+    color: var(--outline);
+  }
+
+  /* What to take, on its own line rather than as a clause after a middot.
+     It is the thing you are standing in the hall without, so it is an element
+     rather than a tail. The label is the meta role; the words are his, so they
+     take his axis. */
+  .takeline {
+    margin: 10px 0 0;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+    color: var(--brown);
+  }
+  .takeline b {
+    margin-left: 6px;
+    font-size: 15px; letter-spacing: 0; text-transform: none;
+    font-variation-settings: var(--casual), "wght" 520;
+    color: var(--outline);
+  }
+
   /* Something you cannot act on. Quieter than a card in the deck: these are
      things you have deliberately stopped looking at, and the page exists to be
      checked rather than worked through. */

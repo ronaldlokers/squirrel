@@ -56,6 +56,15 @@ type fakeStore struct {
 	landedBadly   []time.Time
 	noReplyToMark bool
 
+	// One fixed point, what is coming, and the notes pointing at one.
+	moment   *squirrel.Moment
+	upcoming []squirrel.Moment
+	attached []squirrel.Item
+	// What was pointed where, and what was put back.
+	attachedTo    []int64
+	attachedItems []int64
+	detached      []int64
+
 	// What was set aside, and what was picked back up.
 	aside  []squirrel.HeldItem
 	unheld []int64
@@ -848,4 +857,44 @@ func mountedWith(t *testing.T, f *fakeStore, c *fakeCoach) *testMux {
 	}
 	require.NoError(t, Mount(m, f, opts))
 	return m
+}
+
+// One fixed point and what is pointing at it. The fields are per-write like
+// every other fake here, so a test asserts on what was written rather than on
+// a rendering of it.
+func withMoment(m *squirrel.Moment) *fakeStore { return &fakeStore{moment: m} }
+
+func (f *fakeStore) MomentByID(_ context.Context, _, id int64) (squirrel.Moment, bool, error) {
+	if f.err != nil {
+		return squirrel.Moment{}, false, f.err
+	}
+	if f.moment == nil || f.moment.ID != id {
+		return squirrel.Moment{}, false, nil
+	}
+	return *f.moment, true, nil
+}
+
+func (f *fakeStore) Upcoming(_ context.Context, _ int64, _ time.Time, _ int) ([]squirrel.Moment, error) {
+	return f.upcoming, f.err
+}
+
+func (f *fakeStore) NotesFor(_ context.Context, _, _ int64) ([]squirrel.Item, error) {
+	return f.attached, f.err
+}
+
+func (f *fakeStore) AttachNote(_ context.Context, _, itemID, momentID int64) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	f.attachedTo = append(f.attachedTo, momentID)
+	f.attachedItems = append(f.attachedItems, itemID)
+	return true, nil
+}
+
+func (f *fakeStore) DetachNote(_ context.Context, _, itemID int64) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	f.detached = append(f.detached, itemID)
+	return true, nil
 }

@@ -212,6 +212,16 @@ type Store interface {
 	// A fixed point the coach proposed and you kept. The same function `!at`
 	// and the screen already call.
 	CreateMoment(ctx context.Context, personID int64, m squirrel.Moment) (squirrel.Moment, error)
+	// One fixed point, what is still coming, and the notes pointing at one.
+	// The list was refused for this product's whole life; see at.go for what
+	// the owner overturned on 24 August 2026 and what replaced it.
+	MomentByID(ctx context.Context, personID, id int64) (squirrel.Moment, bool, error)
+	Upcoming(ctx context.Context, personID int64, now time.Time, limit int) ([]squirrel.Moment, error)
+	NotesFor(ctx context.Context, personID, momentID int64) ([]squirrel.Item, error)
+	// Pointing a note at a fixed point, and putting it back. The pointer is the
+	// disposition, so there is no state to move and the reversal is a null.
+	AttachNote(ctx context.Context, personID, itemID, momentID int64) (bool, error)
+	DetachNote(ctx context.Context, personID, itemID int64) (bool, error)
 
 	SaveSteps(ctx context.Context, personID int64, itemID *int64, label string, steps []string) error
 	NextStep(ctx context.Context, personID int64) (squirrel.Step, bool, error)

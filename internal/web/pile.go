@@ -96,6 +96,12 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))
 	// What you cannot act on. Its own page rather than a fourth door: see
 	// held.go for why home does not carry it.
+	// What is coming, and one of them. The notification lands on the second:
+	// see sw.js, and DESIGN.md for what that replaced.
+	m.Get("/at", guard(opts, atHandler(s, opts)))
+	m.Get("/at/{id}", guard(opts, atOneHandler(s, opts)))
+	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
+	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
 	m.Get("/held", guard(opts, heldHandler(s, opts)))
 	m.Post("/held/act", guard(opts, sameOrigin(heldActHandler(s, opts))))
 	// How you have been, and only when asked for by name. Nothing links here

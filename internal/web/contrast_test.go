@@ -156,6 +156,17 @@ func everyScreen() *fakeStore {
 			Kind: squirrel.OfferChore, RefID: 1, Text: "water the plants",
 			Because: "it is due and you are about",
 		},
+		moment: &squirrel.Moment{
+			ID: 4, Label: "dentist", Starts: now.Add(3 * time.Hour),
+			Travel: 15 * time.Minute, Ready: 10 * time.Minute, Bring: "keys, wallet",
+		},
+		upcoming: []squirrel.Moment{{
+			ID: 4, Label: "dentist", Starts: now.Add(3 * time.Hour),
+			Travel: 15 * time.Minute, Ready: 10 * time.Minute,
+		}},
+		attached: []squirrel.Item{
+			{ID: 30, RawText: "the referral letter", ReceivedAt: now.Add(-time.Hour)},
+		},
 		aside: []squirrel.HeldItem{
 			{ID: 20, Text: "chase the vet", State: squirrel.ItemWaiting, Because: "the vet to ring back", Kind: squirrel.ItemTask},
 			{ID: 21, Text: "learn to solder", State: squirrel.ItemSomeday, Kind: squirrel.ItemNote},
@@ -170,6 +181,7 @@ func TestEveryWordCanBeRead(t *testing.T) {
 	screens := []string{
 		"/", "/pile", "/pile?q=the", "/chores", "/tasks", "/tasks/done",
 		"/kept", "/held", "/moods", "/enough", "/buddy",
+		"/at", "/at/4",
 	}
 
 	srv := screen(t, everyScreen())

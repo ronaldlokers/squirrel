@@ -270,6 +270,21 @@ func (s *Store) scanMoment(ctx context.Context, q string, args ...any) (Moment, 
 	return m, true, nil
 }
 
+// MomentByID is one fixed point, yours or nobody's.
+//
+// The person is in the where clause rather than checked after, so a stranger's
+// id and a missing id are the same answer and neither leaks that the row
+// exists.
+func (s *Store) MomentByID(ctx context.Context, personID, id int64) (Moment, bool, error) {
+	const q = `
+		select id, person_id, label, starts_at, travel_secs, ready_secs,
+		       coalesce(bring, ''), said_at is not null
+		  from moments
+		 where id = $2 and person_id = $1`
+
+	return s.scanMoment(ctx, q, personID, id)
+}
+
 // MarkMomentSaid records that the leave-by warning went out, so a second tick
 // does not repeat it.
 func (s *Store) MarkMomentSaid(ctx context.Context, id int64, at time.Time) error {

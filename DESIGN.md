@@ -1478,6 +1478,45 @@ altogether. One token now, and it clears 5:1 on paper and 4.5:1 on stock.
   step to at least 16px on a phone and does not; see the note under the
   Step-Up Rule.
 
+### A fixed point, and what is on it
+
+Two screens, added 24 August 2026, and they cost a rule: `PRODUCT.md` said
+there is no list screen, *"because a browsable set of your appointments is a
+calendar and a calendar is a thing you are behind on."* The owner overturned it
+deliberately. What the rule protected is kept rather than argued away — the list
+holds **only what is still ahead**, so there is nothing in it to be behind on.
+
+**`/at` — what is coming.** Upcoming fixed points, soonest first, each one a
+row in the Door's grammar at one line high, the way a chore in search results
+already borrows it. Nothing past, nothing done, and never a count. Empty is the
+empty-state drawing with a line in the Voice role and **no second heading** —
+the screen already has its title, and the four true empty states carry their own
+`h1` because they are the whole of their page, where this is not.
+
+**`/at/{id}` — one fixed point.** The label is the screen's title. Then the one
+sentence a fixed point says, which is the core's `LeaveWords` and is shared with
+chat and with the notification so the three cannot drift about when to leave.
+
+- **The take-line** is what to bring, on its own line rather than as a clause
+  after a middot. The label is the Meta role in headphone brown; the words are
+  his, so they take the casual axis at 15px. It is the thing you are standing in
+  the hall without, and that earns an element rather than a tail.
+- **`LEAVING` only inside the window.** Outside it the card carries no control
+  at all, because the appointment is not yet something you can act on and a
+  button that closes a thing three days early is a button pressed by accident.
+- **The slot**, exactly as home has it, so anything typed becomes an ordinary
+  note in the pile that happens to point at this appointment. There is no
+  picker: a picker needs a browsable list of appointments to choose from, and
+  here the appointment is the page you are already on.
+- **The notes pointing at it** are ordinary result cards, each with *back in the
+  pile* — which is the whole reversal, because the pointer was the whole of the
+  change.
+
+A note pointing at an appointment leaves the pile and comes back when the
+appointment is over. That is a read rule rather than a state: nothing accrues,
+nothing runs on a schedule, and there is no fifth disposition for any screen to
+learn.
+
 ### The Stamp
 
 The signature component. When a note is actioned the card does not leave
