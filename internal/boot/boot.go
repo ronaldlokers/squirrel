@@ -404,16 +404,14 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		squirrel.SetCoachHere(ask != nil)
 
 		if config.Campfire != nil {
-			scheduler := squirrel.NewScheduler(squirrel.SchedulerOptions{
-				Store: store, Send: send, Chat: chat, PersonID: personID,
-				ConversationID: config.Campfire.ConversationID,
-				At:             config.EveningAt,
-				Location:       config.DigestLocation,
-				OnError:        func(err error) { slog.Error("digest", "error", err) },
+			scheduler := squirrel.NewScheduler(schedulerOptionsFor(schedulerWiring{
+				config: config, store: store, send: send, chat: chat,
+				personID:       personID,
+				conversationID: config.Campfire.ConversationID,
 				// A veto, never a trigger: it is only ever asked about a
 				// chore the rules already chose to raise.
-				Interrupt: hold,
-			})
+				interrupt: hold,
+			}))
 
 			// A capture can carry a nudge back on the same message, and an
 			// arrival can trigger one through the presence route mounted
@@ -513,6 +511,51 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// schedulerWiring is everything the scheduler is given, named so the giving can
+// be tested.
+type schedulerWiring struct {
+	// config whole, rather than the four values picked out of it, and that is
+	// the point rather than brevity. Every field this function needs from
+	// configuration it now reads itself, so there is no argument a caller can
+	// pass the wrong thing for and none it can forget. Handing it `config.Push`
+	// separately compiled just as well when it was handed an empty one.
+	config   squirrel.Config
+	store    *squirrel.Store
+	send     squirrel.Sender
+	chat     squirrel.Chat
+	personID int64
+	// conversationID stays an argument: Boot has already established that
+	// config.Campfire is non-nil by the time it gets here, and re-deriving it
+	// would mean this function handling a case its only caller cannot produce.
+	conversationID string
+	interrupt      squirrel.Interrupter
+}
+
+// schedulerOptionsFor is the struct literal boot used to write inline, lifted
+// out so that what it carries can be asserted.
+//
+// It exists because one field was missing from that literal and nothing could
+// see it. `Push` was never set, so `MomentTick`'s own `if s.opts.Push != nil`
+// was false on every tick since the feature shipped, and `pusher` — written,
+// commented and unit-tested — was never called by anything but its test. Go
+// does not warn about an unused package-level function, and the symptom is a
+// notification that does not arrive, which is indistinguishable from every
+// other reason a notification might not arrive.
+//
+// A field set in an inline literal cannot be checked by a test. A field set
+// here can, and pushwired_test.go does.
+func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
+	return squirrel.SchedulerOptions{
+		Store: w.store, Send: w.send, Chat: w.chat, PersonID: w.personID,
+		ConversationID: w.conversationID,
+		At:             w.config.EveningAt,
+		Location:       w.config.DigestLocation,
+		OnError:        func(err error) { slog.Error("digest", "error", err) },
+		Interrupt:      w.interrupt,
+		Push:           pusher(w.config.Push, w.store),
+	}
 }
 
 // pusher builds the fast channel, or nil.
