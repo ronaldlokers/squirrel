@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -1309,12 +1311,18 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
 			},
 		}},
-		// Later is not a decision. It leaves the note where it was and hands
-		// you the next, which is the deck's own LATER.
-		Chips: []turnChip{{
-			Label: "later", Action: "/pile/later",
-			Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
-		}},
+		Chips: []turnChip{
+			// Later is not a decision. It leaves the note where it was and
+			// hands you the next, which is the deck's own LATER.
+			{
+				Label: "later", Action: "/pile/later",
+				Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
+			},
+			// The shelf hung off the foot of the deck. Without a way to it
+			// here it is reachable from nowhere, which is the bug the mood
+			// history had for an afternoon.
+			{Label: "the things you kept", Href: "/kept"},
+		},
 	}
 
 	// Only when the note looks like several things. A free check, and it is
@@ -1457,5 +1465,99 @@ func proposeInThread(id int64, pieces []string) squirrel.Turn {
 		Who:   squirrel.SpeakerBuddy,
 		Words: "Is this what you meant? The note itself is kept either way.",
 		Shown: body,
+	}
+}
+
+// searchTurn is what a word found, as cards.
+//
+// One search and both kinds of thing: the lid carries one field, and a person
+// typing a word has not first decided whether it belongs to a note or to a
+// chore. Every state is searched — a result says which one it is in, because
+// without that an open task reported itself as being in the pile and was
+// offered the pile's verbs.
+//
+// A result carries no verbs at all. It is a thing you went looking for rather
+// than a thing you are deciding about, and the deck's own results screen made
+// the same distinction: a chore found by searching is a link, not a control.
+func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel.Turn {
+	items, more, err := s.SearchItems(ctx, personID, q, searchLimit)
+	if err != nil {
+		slog.Error("searching", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot look just now."}
+	}
+	chores, err := s.SearchChores(ctx, personID, q, choreHits)
+	if err != nil {
+		slog.Error("searching the chores", "error", err)
+	}
+	if len(items) == 0 && len(chores) == 0 {
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Nothing with that word in it."}
+	}
+
+	sh := drawn{}
+	for _, c := range chores {
+		v := toChoreView(c)
+		sh.Cards = append(sh.Cards, cardView{Kind: "chore", Title: v.Name, Meta: choreMeta(v)})
+	}
+	for _, it := range items {
+		v := toView(it)
+		sh.Cards = append(sh.Cards, cardView{Title: v.Text, Photo: v.Photo, Meta: whereItIs(v)})
+	}
+	if more {
+		// That there is more, and not how much: what is further down a list of
+		// results is not a thing you can act on.
+		sh.Chips = []turnChip{{Label: "there is more than this", Href: "/pile?q=" + url.QueryEscape(q)}}
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing the results", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw what I found."}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: foundLead(len(sh.Cards)), Shown: body}
+}
+
+// whereItIs says which of the seven a result is in, because a result read
+// without it is a note whose verbs would be wrong.
+func whereItIs(v noteView) string {
+	where := v.State
+	if v.Task {
+		where = "a task"
+	}
+	return v.When + " · " + where
+}
+
+func foundLead(n int) string {
+	if n == 1 {
+		return "One thing with that word in it."
+	}
+	return fmt.Sprintf("%d things with that word in it.", n)
+}
+
+// findHandler is the lid's one field, answered in the conversation.
+//
+// A POST, like every other thing you say: a search is a thing you asked, and it
+// goes into the record. The result of it is regenerated on no schedule at all —
+// what is in the turn is what was found when you asked, which is the same rule
+// every other turn follows.
+func findHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		q := strings.TrimSpace(r.FormValue("q"))
+		if q == "" {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: q},
+			searchTurn(r.Context(), s, personID, q),
+		}), "/")
 	}
 }

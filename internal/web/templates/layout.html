@@ -148,7 +148,9 @@
         <path d="M11 11 L15.5 15.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
       </svg>
     </summary>
-    <form class="find" method="get" action="/pile" role="search">
+    {{/* A POST to the conversation: a search is a thing you asked, and it goes
+         into the record like anything else you say. */}}
+    <form class="find" method="post" action="/find" role="search">
       <input type="search" name="q" value="{{.Query}}" placeholder="every note, any state" aria-label="Search every note">
     </form>
   </details>

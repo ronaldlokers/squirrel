@@ -819,6 +819,18 @@ thing is what is inside it.
   in front of you rather than a description of it. Nothing is written until the
   press.
 
+**A search is a turn, and a result carries no verbs.** One field in the lid,
+both kinds of thing, and every state — a result says which of the seven it is
+in, because without that an open task reported itself as being in the pile and
+was offered the pile's verbs. It is a thing you went looking for rather than a
+thing you are deciding about, which is the distinction the deck's results screen
+already made when it drew a found chore as a link.
+
+Search-as-you-type belongs to the deck, where a query swaps the stage for
+results in place. On the thread the form posts and the answer arrives as a turn,
+so that enhancement stands aside rather than fetching a page nobody asked for
+and pasting it over the conversation.
+
 **A chip that acts is a form, not a link.** Chips in a turn carry either an href
 or an action, never both: a GET that writes writes again on every reload, which
 is the same reason a door is a press.

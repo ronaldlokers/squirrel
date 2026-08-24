@@ -793,3 +793,22 @@ func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 // TestBrowserTypingAChoreNameIsNotAnAction was retired on 24 August 2026 with
 // the new-chore form it covered: making a chore from nothing is a sentence in
 // the dock now, and the dock's own keys are covered by the slot's tests.
+
+// The lid's field, on the thread. It posts and the answer arrives as a turn —
+// the deck's search-as-you-type would fetch a page and paste it over the
+// conversation, so it stands aside here.
+func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
+	f := aPile()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
+	c, srv := open(t, f)
+	c.navigate(t, srv.URL+"/")
+
+	c.eval(t, `document.querySelector(".findbox").open = true`)
+	c.eval(t, `const f = document.querySelector(".find input");
+		f.value = "boiler"; f.form.requestSubmit(); return 1`)
+	c.until(t, "the answer to arrive",
+		`!!document.querySelector("#thread .turn:last-child .turncard")`)
+
+	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
+		"searching navigated")
+}

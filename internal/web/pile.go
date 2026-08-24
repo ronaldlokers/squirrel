@@ -81,6 +81,7 @@ func Mount(m Mux, s Store, opts Options) error {
 			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"},
 			it.RawText, "say it this way")
 	}))))
+	m.Post("/find", guard(opts, sameOrigin(findHandler(s, opts))))
 	m.Post("/pile/why", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askWhyNot(it.ID)
 	}))))

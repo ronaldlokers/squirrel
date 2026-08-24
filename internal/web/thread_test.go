@@ -629,3 +629,48 @@ func TestSettingOneAsideSaysSoAndCarriesOn(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "Set aside")
 	require.Contains(t, string(f.appended[2].Shown), "meter reading")
 }
+
+// The lid's one field, answered in the conversation. Both kinds of thing, and
+// a result carries no verbs: it is a thing you went looking for rather than a
+// thing you are deciding about.
+func TestSearchingAnswersInTheConversation(t *testing.T) {
+	f := &fakeStore{
+		items:  []squirrel.Item{note(9, "the boiler makes a noise", squirrel.ItemKept)},
+		chores: []squirrel.Chore{{ID: 1, Name: "bleed the boiler", Active: true, EveryDays: 30}},
+	}
+	routed(t, f).call(t, "POST", "/find", strings.NewReader("q=boiler"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "the boiler makes a noise")
+	require.Contains(t, shown, "bleed the boiler")
+	require.NotContains(t, shown, `"acts"`, "a result is not a control")
+}
+
+// A result says which of the seven it is in. Without it an open task reports
+// itself as being in the pile.
+func TestAResultSaysWhereItIs(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		{ID: 9, RawText: "ring the bank", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
+	}}
+	routed(t, f).call(t, "POST", "/find", strings.NewReader("q=bank"))
+
+	require.Contains(t, string(f.appended[1].Shown), "a task")
+}
+
+// Nothing found says so rather than drawing an empty answer.
+func TestFindingNothingSaysSo(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/find", strings.NewReader("q=nothing"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "Nothing with that word")
+}
+
+// An empty field is not a question, and does not go into the record.
+func TestSearchingForNothingAsksNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/find", strings.NewReader("q=+++"))
+
+	require.Empty(t, f.appended)
+}
