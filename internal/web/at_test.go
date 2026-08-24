@@ -144,3 +144,35 @@ func TestBothNewScreensRenderSomething(t *testing.T) {
 	require.Contains(t, one, "dentist")
 	require.Contains(t, one, "keys, wallet")
 }
+
+func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
+	f := &fakeStore{upcoming: []squirrel.Moment{
+		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
+		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
+	}}
+	body := routed(t, f).call(t, "GET", "/at", nil).Body.String()
+
+	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
+	require.Contains(t, body, `href="/at/4"`)
+}
+
+// Never a count, and never a word about being behind. Everything here is still
+// ahead of you, which is the only reason this list is allowed to exist.
+func TestWhatIsComingCountsNothingAndScoldsNobody(t *testing.T) {
+	f := &fakeStore{upcoming: []squirrel.Moment{
+		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
+		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
+	}}
+	body := strings.ToLower(routed(t, f).call(t, "GET", "/at", nil).Body.String())
+
+	for _, banned := range []string{"late", "overdue", "2 coming", "you have"} {
+		require.NotContains(t, body, banned)
+	}
+}
+
+func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
+	body := routed(t, &fakeStore{}).call(t, "GET", "/at", nil).Body.String()
+
+	require.Contains(t, body, "when something has a time you can be late for")
+	require.NotContains(t, strings.ToLower(body), "plan")
+}
