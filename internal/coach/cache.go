@@ -51,6 +51,17 @@ type held struct {
 
 func NewOffers() *Offers { return &Offers{by: make(map[int64]held)} }
 
+// Forget is the answer to that: one call, from the one handler that answers an
+// offer, and the entry is gone whether or not the picker noticed.
+func (o *Offers) Forget(personID int64) {
+	if o == nil {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	delete(o.by, personID)
+}
+
 // Get is the cached decision, when the day has not moved under it.
 func (o *Offers) Get(personID int64, basis string, now time.Time) (Decision, bool) {
 	if o == nil {
@@ -76,7 +87,33 @@ func (o *Offers) Put(personID int64, basis string, d Decision, now time.Time) {
 	o.by[personID] = held{basis: basis, d: d, at: now}
 }
 
-// There is no Forget, and the absence is deliberate. Answering an offer — done,
-// not now, started — changes what the picker says next, so the basis stops
-// matching and the entry is dead the moment it is looked at. A second way to
-// invalidate would be a second thing to keep in step with the first.
+// Forget throws a person's decision away, whatever the picker says next.
+//
+// This used to be absent, and the absence was argued for: answering an offer —
+// done, not now, started — changes what the picker says next, so the basis
+// stops matching and the entry is dead the moment it is looked at. A second way
+// to invalidate would be a second thing to keep in step with the first.
+//
+// The argument holds only while the model agreed with the picker, and it is
+// wrong whenever the model did not. `judged` in internal/web/now.go lets the
+// model replace the picker's answer with a different row, and the card then
+// carries the model's row in its own hidden fields — so "not now" records a
+// refusal against *that* row, while the picker's suppression set is keyed on
+// the row the picker chose. The picker goes on saying exactly what it said
+// before, the basis is unchanged, and the same card is served back for up to
+// StaleAfter. From the outside that is a button that reloads the page.
+//
+// "Did it" had it worse: the row really is marked done, and the card for it
+// comes back anyway.
+//
+// So the invalidator that was supposed to cover all five events covers them
+// only through the picker, and answering an offer is the one event that can
+// happen to something the picker was not pointing at. This is that event, said
+// once, at the one handler that answers offers.
+//
+// What it does not cover, and it is worth writing down rather than discovering:
+// marking the same row done from the tasks or chores screen instead of from the
+// card. The basis does not move there either. It is a narrower case — you are
+// looking at the row rather than at the offer — and closing it means the cache
+// checking whether what it showed is still offerable, which is a bigger change
+// than this bug earns.

@@ -73,6 +73,17 @@ type Options struct {
 	// screen never calls it when the picker found nothing: absent rather than
 	// empty is a rule about this region, not about who chose.
 	Decide squirrel.Decider
+	// ForgetOffer drops the decision Decide made, or is nil where there is no
+	// coach to have made one.
+	//
+	// It exists because Decide may answer with a *different row* than the
+	// picker chose, and the card then carries that row rather than the
+	// picker's. So answering the card writes against a row the picker was
+	// never pointing at, the picker's answer does not move, and the cache
+	// behind Decide — which invalidates by watching for exactly that movement
+	// — serves the same decision back. The handler that answers an offer is
+	// the one place that knows an answer happened at all.
+	ForgetOffer func(personID int64)
 	// Smaller breaks the thing being offered into steps, or is nil. Nil means
 	// the ladder's own fixed line is the whole answer, which is what it was
 	// before this existed.

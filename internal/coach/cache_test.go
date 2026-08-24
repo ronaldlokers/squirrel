@@ -61,3 +61,38 @@ func TestNilOffersAreSafe(t *testing.T) {
 		require.False(t, ok)
 	})
 }
+
+// Answering an offer throws the decision away, whatever the picker says next.
+//
+// The basis was the only invalidator, and it invalidates by the picker's
+// answer moving. That holds when the model agreed with the picker, and fails
+// when it did not: the card then carries the model's row, the answer is
+// recorded against that row, and the picker — which was pointing at a
+// different one — goes on saying exactly what it said before. Basis unchanged,
+// entry alive, same card. See the comment in cache.go.
+func TestAnsweringAnOfferThrowsTheAnswerAway(t *testing.T) {
+	o := coach.NewOffers()
+	o.Put(1, "chore:3", vet, august)
+
+	o.Forget(1)
+
+	_, ok := o.Get(1, "chore:3", august.Add(time.Minute))
+	require.False(t, ok, "the picker still says chore:3, and that must no longer be enough")
+}
+
+func TestForgettingIsPerPerson(t *testing.T) {
+	o := coach.NewOffers()
+	o.Put(1, "task:7", vet, august)
+	o.Put(2, "task:7", vet, august)
+
+	o.Forget(1)
+
+	_, ok := o.Get(2, "task:7", august.Add(time.Minute))
+	require.True(t, ok)
+}
+
+func TestForgettingNothingIsSafe(t *testing.T) {
+	var nilOffers *coach.Offers
+	require.NotPanics(t, func() { nilOffers.Forget(1) })
+	require.NotPanics(t, func() { coach.NewOffers().Forget(99) })
+}
