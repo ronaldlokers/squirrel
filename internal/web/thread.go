@@ -140,12 +140,28 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		//
 		// Never while walking back: a page of the past is being read, and
 		// reading it must not add to it.
+		asked := false
 		if !walkingBack {
 			if t, ask := checkinTurn(ctx, s, personID); ask {
+				asked = true
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
 					turns = append(turns, saved)
 				} else {
 					slog.Error("asking how you are", "error", err)
+				}
+			}
+		}
+
+		// Only once the question has been answered. Asking how you are and
+		// then handing you a job in the same breath is the interruption this
+		// product exists to reduce — and the answer is what shapes the offer
+		// anyway.
+		if !walkingBack && !asked {
+			if t, has := offerTurn(s, opts, r); has {
+				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
+					turns = append(turns, saved)
+				} else {
+					slog.Error("offering it", "error", err)
 				}
 			}
 		}
@@ -372,4 +388,102 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+}
+
+// offerTurn is the one thing Squirrel picked, or nothing.
+//
+// Nothing renders nothing: being handed nothing is a normal state, and a
+// reassuring sentence in its place would be the product deciding you ought to
+// be busy. That was home's rule and it is unchanged by the move.
+func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
+	o := offerFor(s, opts, r, false, true)
+	if o == nil {
+		return squirrel.Turn{}, false
+	}
+
+	card := cardView{Title: o.Text, Meta: o.Because}
+	// A running timer carries no buttons of its own: it is a thing you are
+	// doing rather than a row that was picked, and the lid already has the one
+	// control it needs, which is the way to stop.
+	if !o.Running {
+		row := map[string]string{"kind": o.Kind, "id": strconv.FormatInt(o.RefID, 10), "label": o.Text}
+		did := "DID IT"
+		if o.Kind == string(squirrel.OfferMoment) {
+			// A fixed point is not done, it is left for. The word the card has
+			// always used, kept.
+			did = "LEAVING"
+		}
+		card.Acts = []actView{
+			{Label: did, Action: "/now/act", Style: "did", Fields: with(row, "act", "did")},
+			{Label: "10 MIN", Action: "/now/act", Style: "go", Fields: with(with(row, "act", "start"), "minutes", "10")},
+			{Label: "not now", Action: "/now/act", Style: "later", Fields: with(row, "act", "later")},
+		}
+	}
+
+	body, err := json.Marshal(shown{Cards: []cardView{card}})
+	if err != nil {
+		slog.Error("drawing the offer", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{
+		Who: squirrel.SpeakerBuddy, Words: squirrel.Say(squirrel.SayingOffer, now()), Shown: body,
+	}, true
+}
+
+// with is one field added to a row's own fields, copied rather than mutated —
+// three buttons share the row and each needs a different act.
+func with(fields map[string]string, name, value string) map[string]string {
+	out := make(map[string]string, len(fields)+1)
+	for k, v := range fields {
+		out[k] = v
+	}
+	out[name] = value
+	return out
+}
+
+// saidAboutTheOffer is what the two of you said when a press landed.
+//
+// Turning it down is in the record beside doing it, and they do not read the
+// same: which answer you gave is the whole of what happened, and stopping
+// partway is a normal ending rather than an absence.
+func saidAboutTheOffer(act, label string) []squirrel.Turn {
+	if label == "" {
+		label = "that"
+	}
+	switch act {
+	case "did":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "did it — " + label},
+			{Who: squirrel.SpeakerBuddy, Words: "Good."},
+		}
+	case "later":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "not now — " + label},
+			{Who: squirrel.SpeakerBuddy, Words: "Fine. It will come back."},
+		}
+	case "start":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "picked it up — " + label},
+			{Who: squirrel.SpeakerBuddy, Words: "Ten minutes. Stop whenever."},
+		}
+	}
+	return nil
+}
+
+// keepSaid writes what was said, and says so in the log when it cannot.
+//
+// A press that changed the pile and failed to reach the conversation is a
+// conversation with a hole in it, which is recoverable; refusing the press
+// because the record could not be written would not be.
+func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn) []squirrel.Turn {
+	out := make([]squirrel.Turn, 0, len(said))
+	for _, t := range said {
+		saved, err := s.AppendTurn(ctx, personID, t)
+		if err != nil {
+			slog.Error("keeping what was said", "error", err)
+			continue
+		}
+		out = append(out, saved)
+	}
+	return out
 }

@@ -250,3 +250,90 @@ func TestAnAnswerThatIsNotOneOfTheFiveWritesNothing(t *testing.T) {
 
 	require.Empty(t, f.appended)
 }
+
+func fresh() *squirrel.Checkin {
+	return &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
+}
+
+// The one thing Squirrel picked, offered as a turn with something to press.
+func TestTheOfferArrivesAsATurn(t *testing.T) {
+	body := thread(t, &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"},
+	})
+
+	require.Contains(t, body, "water the plants")
+	require.Contains(t, body, `action="/now/act"`)
+	require.Contains(t, body, "DID IT")
+	require.Contains(t, body, "not now")
+}
+
+// Nothing to hand you is a normal state and renders nothing at all — not an
+// empty region, and not a reassuring sentence in its place.
+func TestNoOfferIsNoTurn(t *testing.T) {
+	f := &fakeStore{checkin: fresh()}
+	thread(t, f)
+
+	require.Empty(t, f.appended)
+}
+
+// Buddy does not hand you a job in the same breath as asking how you are. That
+// was home's rule and it survives the move.
+func TestNoOfferUntilTheQuestionIsAnswered(t *testing.T) {
+	body := thread(t, &fakeStore{
+		offer: &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"},
+	})
+
+	require.NotContains(t, body, "water the plants")
+}
+
+// The card carries every field the press needs. One hidden input is not
+// enough — /now/act wants the kind and the row as well as the act.
+func TestTheOfferCarriesTheKindAndTheRow(t *testing.T) {
+	body := thread(t, &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"},
+	})
+
+	require.Contains(t, body, `name="kind" value="chore"`)
+	require.Contains(t, body, `name="id" value="4"`)
+}
+
+// A running timer is a thing you are doing rather than a row that was picked,
+// so it carries no buttons: the lid already has the one control it needs.
+func TestARunningTimerOffersNothingToPress(t *testing.T) {
+	body := thread(t, &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferTimer, Text: "water the plants"},
+	})
+
+	require.Contains(t, body, "water the plants")
+	require.NotContains(t, body, "DID IT")
+}
+
+// Turning it down stays in the record. Stopping partway is a normal ending,
+// and a record that keeps it is what that looks like when it is structural
+// rather than a reassuring sentence.
+func TestTurningTheOfferDownStaysInTheThread(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/now/act",
+		strings.NewReader("kind=chore&id=4&act=later&label=water+the+plants"))
+
+	require.Len(t, f.appended, 2)
+	require.Equal(t, squirrel.SpeakerYou, f.appended[0].Who)
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
+}
+
+// And doing it says so, in different words: the two answers must not read the
+// same, because which one you gave is the whole of what happened.
+func TestDoingItAndTurningItDownSayDifferentThings(t *testing.T) {
+	did := &fakeStore{}
+	routed(t, did).call(t, "POST", "/now/act",
+		strings.NewReader("kind=chore&id=4&act=did&label=water+the+plants"))
+
+	later := &fakeStore{}
+	routed(t, later).call(t, "POST", "/now/act",
+		strings.NewReader("kind=chore&id=4&act=later&label=water+the+plants"))
+
+	require.NotEqual(t, did.appended[0].Words, later.appended[0].Words)
+}

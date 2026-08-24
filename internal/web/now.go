@@ -126,6 +126,9 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		forgetOffer(opts, personID)
+		// What the two of you said about it. After the write, because a
+		// conversation must not claim something happened that did not.
+		keepSaid(r.Context(), s, personID, saidAboutTheOffer(r.FormValue("act"), r.FormValue("label")))
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
