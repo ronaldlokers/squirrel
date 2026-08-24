@@ -2,7 +2,6 @@ package web
 
 import (
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -96,33 +95,19 @@ func TestPickingItBackUpReturnsIt(t *testing.T) {
 	require.Equal(t, []int64{1}, f.unheld)
 }
 
-// The card offers the three, in a disclosure rather than three more buttons in
-// a row that is already four answers and a picker.
-func TestTheCardOffersTheThreeInADisclosure(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "ring the vet", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
-
-	require.Contains(t, body, "i can't act on this")
-	require.Contains(t, body, `name="aside" value="waiting"`)
-	require.Contains(t, body, `name="aside" value="blocked"`)
-	require.Contains(t, body, `name="aside" value="someday"`)
-}
-
 func TestSettingAsideFromTheCardTakesItOutOfThePile(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "ring the vet", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/held/act", strings.NewReader("aside=waiting&id=1&from=%2Fpile"))
+	w := m.call(t, "POST", "/held/act", strings.NewReader("aside=waiting&id=1"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
 
-	// Back where you were, and carrying the way out — this used to be a bare
-	// "/pile", which is what made setting one aside the only disposition with
-	// no undo. The path is still the one you came from.
-	to, err := url.Parse(w.Header().Get("Location"))
-	require.NoError(t, err)
-	require.Equal(t, "/pile", to.Path)
-	require.Equal(t, "1", to.Query().Get("undo"))
-	require.Equal(t, "waiting", to.Query().Get("was"))
+	// Back to the conversation, where Buddy says so — the way out used to
+	// travel in this redirect, which is what made setting one aside the only
+	// disposition with no undo. It travels with what was said now.
+	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Len(t, f.appended, 3)
+	require.Contains(t, f.appended[1].Words, "Set aside")
 
 	require.Len(t, f.aside, 1)
 	require.Equal(t, squirrel.ItemWaiting, f.aside[0].State)
@@ -134,7 +119,7 @@ func TestAnUnknownWayToSetSomethingAsideDoesNothing(t *testing.T) {
 	m := mounted(t, f)
 
 	for _, bad := range []string{"dropped", "done", "parked", ""} {
-		m.call(t, "POST", "/held/act", strings.NewReader("aside="+bad+"&id=1&from=%2Fpile"))
+		m.call(t, "POST", "/held/act", strings.NewReader("aside="+bad+"&id=1&from=%2F"))
 	}
 	require.Empty(t, f.aside)
 }
@@ -161,3 +146,7 @@ func TestTheTasksScreenReachesIt(t *testing.T) {
 	require.Contains(t, body, `href="/held"`)
 	require.Contains(t, body, "what you cannot act on")
 }
+
+// The three are a question Buddy asks now rather than a disclosure on a card —
+// see TestANoteCanBeAskedTheThreeQuestions and TestSettingOneAsideSaysSoAnd
+// CarriesOn in thread_test.go.

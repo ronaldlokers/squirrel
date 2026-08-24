@@ -30,12 +30,12 @@ func splitHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/pile", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
-			http.Redirect(w, r, "/pile", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 
@@ -58,11 +58,11 @@ func splitHandler(s Store, opts Options) http.HandlerFunc {
 func proposeSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID, id int64) {
 	it, found, err := s.ItemByID(r.Context(), personID, id)
 	if err != nil || !found {
-		http.Redirect(w, r, "/pile", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 	if opts.Split == nil {
-		http.Redirect(w, r, "/pile", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
@@ -70,24 +70,16 @@ func proposeSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options,
 	if !ok {
 		// It could not, or it decided the note is really one thought. Either
 		// way the note is exactly as it was.
-		if fromThread(r) {
-			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
-				{Who: squirrel.SpeakerYou, Words: "is this more than one thing?"},
-				{Who: squirrel.SpeakerBuddy, Words: "It reads as one thing to me."},
-			}), "/")
-			return
-		}
-		http.Redirect(w, r, "/pile", http.StatusSeeOther)
-		return
-	}
-	if fromThread(r) {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "is this more than one thing?"},
-			proposeInThread(id, pieces),
+			{Who: squirrel.SpeakerBuddy, Words: "It reads as one thing to me."},
 		}), "/")
 		return
 	}
-	pileInto(w, r, s, opts, personID, &splitView{ID: id, Said: it.RawText, Pieces: pieces})
+	answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: "is this more than one thing?"},
+		proposeInThread(id, pieces),
+	}), "/")
 }
 
 // keepSplit writes the pieces and files the original.
@@ -102,7 +94,7 @@ func proposeSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options,
 func keepSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID, id int64) {
 	pieces := r.Form["piece"]
 	if len(pieces) < 2 {
-		http.Redirect(w, r, "/pile", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
@@ -129,18 +121,13 @@ func keepSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options, pe
 		fail(w, err)
 		return
 	}
-	if fromThread(r) {
-		answerWith(w, r, keepSaid(r.Context(), s, personID, append(
-			[]squirrel.Turn{
-				{Who: squirrel.SpeakerYou, Words: "use these"},
-				{Who: squirrel.SpeakerBuddy, Words: "Kept, and the note itself is on the shelf."},
-			},
-			pileTurn(r.Context(), s, opts, personID, 0, ""),
-		)), "/")
-		return
-	}
-	http.Redirect(w, r, "/pile?undo="+strconv.FormatInt(id, 10)+"&was=open&state=kept",
-		http.StatusSeeOther)
+	answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+		[]squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "use these"},
+			{Who: squirrel.SpeakerBuddy, Words: "Kept, and the note itself is on the shelf."},
+		},
+		pileTurn(r.Context(), s, opts, personID, 0, ""),
+	)), "/")
 }
 
 // splitView is a proposal, on the card it came from.

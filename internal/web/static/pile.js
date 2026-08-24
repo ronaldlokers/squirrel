@@ -307,7 +307,12 @@
     announce(query ? `showing everything that says ${query}` : "the pile");
   }
 
-  if (find) {
+  // Search-as-you-type belongs to the deck, where a query swaps the stage for
+  // results in place. On the thread a search is a thing you asked: the form
+  // posts, and the answer arrives as a turn like everything else — so this
+  // enhancement stands aside rather than fetching a page nobody asked for and
+  // pasting it over the conversation.
+  if (find && !document.getElementById("thread")) {
     find.form.addEventListener("submit", e => {
       // Enter is already what the field does; intercepting it keeps the page
       // from reloading under a search that is already on screen.

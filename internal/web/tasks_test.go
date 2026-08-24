@@ -29,8 +29,12 @@ func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
 	require.NotContains(t, body, "buy milk", "a thought is not a decision")
 	require.NotContains(t, body, "cancel the old insurance", "done is not still to do")
 
-	// And the reverse: the pile does not show a task.
-	pile := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	// And the reverse: the pile does not hand you a task. Asserted on the turn
+	// the door drew rather than on the page, which by now also holds the tasks
+	// this test just asked for.
+	f.appended = nil
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+	pile := string(f.appended[1].Shown)
 	require.Contains(t, pile, "buy milk")
 	require.NotContains(t, pile, "ring the vet")
 }

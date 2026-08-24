@@ -91,6 +91,9 @@ type fakeStore struct {
 	// A failure that belongs to reading the chores alone, so a test about the
 	// door can fail that read while the conversation itself still renders.
 	choresErr error
+	// A failure that belongs to reading the notes alone, so a test about the
+	// pile can fail that read while the conversation itself still renders.
+	itemsErr error
 
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
@@ -193,6 +196,9 @@ func (f *fakeStore) StopTimer(_ context.Context, _ int64) error {
 }
 
 func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	if f.itemsErr != nil {
+		return nil, false, f.itemsErr
+	}
 	if f.err != nil {
 		return nil, false, f.err
 	}

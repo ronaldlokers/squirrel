@@ -24,7 +24,7 @@ func TestBuddyIsMarkedInTheLidRatherThanRemovedFromIt(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	elsewhere := m.call(t, "GET", "/pile", nil).Body.String()
+	elsewhere := m.call(t, "GET", "/kept", nil).Body.String()
 	require.Contains(t, elsewhere, `class="lidbtn tobuddy"`)
 	require.NotContains(t, elsewhere, "lidbtn tobuddy here")
 
@@ -75,9 +75,9 @@ func TestNoControlRenamesItself(t *testing.T) {
 	m := mounted(t, f)
 
 	// The deck's five answers and the slot's button: the words a hand learns.
-	deck := m.call(t, "GET", "/pile", nil).Body.String()
-	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "MAKE A CHORE", "PUT IT BACK"} {
-		require.Contains(t, deck, label, "the deck stopped saying %q", label)
+	deck := opened(t, f, "pile")
+	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "make a chore"} {
+		require.Contains(t, deck, label, "the pile stopped saying %q", label)
 	}
 	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), ">Tell it<")
 }

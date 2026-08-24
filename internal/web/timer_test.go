@@ -34,7 +34,7 @@ func TestARunningTimerShowsOnEveryScreen(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	for _, url := range []string{"/", "/pile", "/kept"} {
+	for _, url := range []string{"/", "/kept"} {
 		body := m.call(t, "GET", url, nil).Body.String()
 		require.Contains(t, body, "the kitchen", url)
 		require.Contains(t, body, `class="running"`, url)
@@ -58,10 +58,13 @@ func TestStoppingATimerLeavesNothing(t *testing.T) {
 		Label: "the kitchen", Started: time.Now(), Ends: time.Now().Add(time.Minute),
 	}}
 
-	w := post(t, mounted(t, f), "/timer", url.Values{"stop": {"1"}, "from": {"pile"}})
+	// "from" still names the screen you pressed it on, and the pile is not one
+	// any more: it answers with the conversation, which is where the press was
+	// made. The screens that are still screens keep their own way back.
+	w := post(t, mounted(t, f), "/timer", url.Values{"stop": {"1"}, "from": {"kept"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/pile", w.Header().Get("Location"), "back where you pressed it")
+	require.Equal(t, "/kept", w.Header().Get("Location"), "back where you pressed it")
 	require.Nil(t, f.timer)
 }
 

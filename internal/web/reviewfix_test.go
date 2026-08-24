@@ -105,60 +105,6 @@ func TestBrowserTheSheetSaysSoWhenItCannotReachBuddy(t *testing.T) {
 		"the way to try again is still disabled")
 }
 
-// The decision survives the page being taken away.
-//
-// The write waits ~1150ms so the undo has a card to sit on, and for that whole
-// window LATER was a live link on a card that had already been stamped. Press
-// it and the page went; the write never left. What you had watched happen had
-// not happened.
-func TestBrowserTheWayOutIsShutWhileACardIsStamped(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	require.Equal(t, false, c.eval(t, `return document.getElementById("later").hidden`),
-		"this test is about LATER being reachable before the press")
-
-	c.key(t, "d")
-	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
-
-	require.Equal(t, true, c.eval(t, `return document.getElementById("later").hidden`),
-		"LATER is still live on a stamped card, and taking it loses the decision")
-}
-
-// And when something takes the page anyway, the write goes with it.
-//
-// A live search replaces the whole stage, which detaches the form the pending
-// write belongs to — and a detached form does not submit. The browser refuses
-// silently, so the press was taken, stamped, announced, and dropped.
-func TestBrowserAPendingDecisionIsSettledBeforeSearchReplacesTheDeck(t *testing.T) {
-	f := aPile()
-	c, _ := open(t, f)
-
-	c.eval(t, `
-		window.__posted = [];
-		const real = HTMLFormElement.prototype.requestSubmit;
-		HTMLFormElement.prototype.requestSubmit = function (btn) {
-			window.__posted.push({ connected: this.isConnected, act: btn && btn.value });
-			// Not called on: the navigation would end the test. What is under
-			// test is whether the submission is made while the form is still
-			// in the document, which is the whole difference between a write
-			// that lands and one the browser silently drops.
-		};`)
-
-	c.key(t, "d")
-	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
-
-	// Search, immediately — inside the hold, the way a hand does it.
-	c.eval(t, `
-		const find = document.querySelector('.findbox input[type="search"]');
-		find.value = "bins";
-		find.dispatchEvent(new Event("input", { bubbles: true }));`)
-	c.until(t, "the write to be settled", `window.__posted.length > 0`)
-
-	require.Equal(t, true, c.eval(t, `return window.__posted[0].connected`),
-		"the write was handed over after the stage had been replaced, so the browser dropped it")
-	require.Equal(t, "done", c.eval(t, `return window.__posted[0].act`))
-}
-
 // A modal is modal for the keyboard too.
 //
 // Every letter on the deck is an action, and the keydown handler had no idea a
@@ -208,7 +154,7 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	// it any more — the conversation stands on the field — so `.sheet` is not
 	// the ground there and measuring against it would be measuring against
 	// nothing.
-	c.navigate(t, srv.URL+"/pile")
+	c.navigate(t, srv.URL+"/")
 	c.eval(t, `document.querySelector(".tobuddy").click(); return 1`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 	tabTo(t, c, "dialog.coachsheet .sheet .post")
@@ -227,27 +173,7 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 		"the ring on Buddy's page measures %.2f:1 against the slot it sits in", onSlot)
 }
 
-// The rarest of five answers was the widest, loudest object on the card.
-//
-// Below 620px `.btn.make` took the full grid width, directly under the thumb,
-// filled in the one colour the product keeps for the primary go-verb.
-// Eighteen lines further down the same stylesheet refuses exactly this for
-// STOP ASKING, and writes out why: spanning the card makes it the largest
-// thing on it, a control wearing the emphasis of a primary one.
-func TestBrowserMakeAChoreDoesNotSpanThePhoneCard(t *testing.T) {
-	c, _ := open(t, aPile())
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": true,
-	})
-	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": true, "maxTouchPoints": 5})
-	c.navigate(t, c.eval(t, `return location.href`).(string))
-
-	make := box(t, c, ".btn.make")
-	done := box(t, c, ".btn[data-act=done]")
-	keep := box(t, c, ".btn[data-act=keep]")
-
-	require.Less(t, make["right"]-make["left"], keep["right"]-done["left"],
-		"MAKE A CHORE is still as wide as the whole row of answers above it")
-	require.Equal(t, keep["right"], make["right"],
-		"and it no longer lines up with the row it belongs to")
-}
+// Three about the deck's card: a decision pending inside its hold, the chore
+// disclosure's width on a phone, and the way out being shut while a stamp ran.
+// The conversation has no hold and no disclosure, so none of the three has
+// anything left to be true of.

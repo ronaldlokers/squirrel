@@ -33,7 +33,7 @@ func TestThePileOffersTheWayToStop(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(1, "the boiler makes a noise", squirrel.ItemOpen),
 	}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
 
 	require.Contains(t, body, `href="/enough"`)
 	require.Contains(t, body, squirrel.Say(squirrel.SayingStop, time.Now()))
@@ -81,7 +81,7 @@ func TestStoppingLetsYouChangeYourMind(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String()
 
 	require.Contains(t, body, "actually, one more")
-	require.Contains(t, body, `href="/pile"`)
+	require.Contains(t, body, `href="/"`)
 }
 
 // drawing pulls the mascot out of a screen's empty-state block, so a test can
@@ -104,30 +104,6 @@ func drawing(t *testing.T, body string) string {
 	return rest
 }
 
-// Stopping does not look like having nothing left.
-//
-// This screen shipped with the same drawing the empty pile, the empty chores,
-// the empty tasks and the empty archive all use. Side by side they were the
-// same composition at the same size and only the sentence differed — so
-// choosing to stop looked exactly like running out, which is the one
-// equivalence the product exists to break. Principle 3 is structural here and
-// a shared drawing quietly unsaid it.
-//
-// Asserted as a difference rather than as a filename, because what matters is
-// that the two screens are not the same picture. The filename is checked too,
-// so a change that made every empty state resting would fail rather than pass
-// by accident.
-func TestStoppingDoesNotLookLikeHavingNothingLeft(t *testing.T) {
-	stopping := drawing(t, mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String())
-	nothingLeft := drawing(t, mounted(t, &fakeStore{}).call(t, "GET", "/pile", nil).Body.String())
-
-	require.NotEqual(t, nothingLeft, stopping,
-		"the stopping screen and the empty pile are the same drawing")
-	require.Equal(t, "resting.png", stopping)
-	require.Equal(t, "logo.png", nothingLeft,
-		"the empty pile stopped using the shared mark")
-}
-
 // The pose is drawn larger than the shared mark, and that is not decoration.
 //
 // It is a whole figure rather than a head, so at the mark's 186px the face —
@@ -141,3 +117,12 @@ func TestTheRestingPoseIsDrawnAtItsOwnSize(t *testing.T) {
 		"the pose is not marked, so the stylesheet draws it at the shared mark's size")
 	require.Contains(t, body, `width="300" height="207"`)
 }
+
+// TestStoppingDoesNotLookLikeHavingNothingLeft compared two drawings, and there
+// is only one left to compare. The empty states that were screens became
+// sentences when their screens became messages — Buddy says "nothing to decide
+// about" rather than drawing an absence — so /enough is the last screen in the
+// product that is an absence, and nothing can wear its drawing by accident.
+//
+// What the test protected is now structural: no other surface has an
+// empty-state block to confuse with this one.

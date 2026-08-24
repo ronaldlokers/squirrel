@@ -186,11 +186,10 @@ func TestThePileShowsAPhotographByTheNotesID(t *testing.T) {
 		ID: 7, RawText: "", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
 		PhotoName: "photo-1.jpg", PhotoType: "image/jpeg",
 	}}}
-	body := mountedWithCamera(t, f, &fakeSpool{}, &fakePhotos{}).
-		call(t, "GET", "/pile", nil).Body.String()
-
-	require.Contains(t, body, `src="/photo/7"`)
-	require.NotContains(t, body, "photo-1.jpg")
+	// A photograph is fetched by the note's id and never by the file's name:
+	// the name is on a volume this process can see and the browser cannot.
+	require.Contains(t, opened(t, f, "pile"), `src="/photo/7"`)
+	require.NotContains(t, opened(t, f, "pile"), "photo-1.jpg")
 }
 
 // The one that only production could tell us about, until now.

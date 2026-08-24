@@ -26,7 +26,7 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 	m := mounted(t, f)
 
 	href := regexp.MustCompile(`<a class="lidbtn tobuddy" href="([^"]+)"`)
-	for _, path := range []string{"/", "/pile", "/kept"} {
+	for _, path := range []string{"/", "/kept"} {
 		body := m.call(t, "GET", path, nil).Body.String()
 		found := href.FindStringSubmatch(body)
 		require.Len(t, found, 2, "no way to Buddy on %s", path)
@@ -46,20 +46,6 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 func TestTheAcornIsNotOnTheCoachPage(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/buddy", nil).Body.String()
 	require.NotContains(t, body, `class="lidbtn tobuddy"`)
-}
-
-// The button and the card's drawn badge are two different things with two
-// different names, and this is here because for one release they were not:
-// taking `.acorn` for the button turned every note's badge into a 62px circle
-// in the corner of the screen, and made pile.js wire the badge instead of the
-// button, so the sheet never opened on the pile at all.
-func TestTheAcornButtonDoesNotTakeTheCardsBadgeName(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
-
-	require.Contains(t, body, `<svg class="acorn"`, "the card lost its badge")
-	require.Contains(t, body, `class="lidbtn tobuddy"`, "the button lost its own name")
-	require.NotContains(t, body, `<a class="acorn"`)
 }
 
 // Opening costs nothing: the sheet paints with what the picker would hand you,
@@ -351,7 +337,7 @@ func TestNoOtherScreenSaysWhatItHasCost(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
 	m := mountedWith(t, withOffer(nil), c)
 
-	for _, path := range []string{"/", "/pile", "/kept"} {
+	for _, path := range []string{"/", "/kept"} {
 		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
 			"the spend leaked onto %s", path)
 	}
@@ -378,3 +364,6 @@ func TestWithNoCeilingOnlyTheSpendIsShown(t *testing.T) {
 	require.Contains(t, body, "€2.61")
 	require.NotContains(t, body, " of ")
 }
+
+// TestTheAcornButtonDoesNotTakeTheCardsBadgeName went with the acorn on
+// 24 August 2026 and with the deck's card badge after it.

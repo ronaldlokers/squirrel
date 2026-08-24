@@ -28,7 +28,7 @@ func get(t *testing.T, url, identity string) *http.Response {
 func TestTheScreenIsBehindTheIdentityHeader(t *testing.T) {
 	withStore(t)
 	s := boots(t, envFor(t, map[string]string{"WEB_IDENTITY": "ronald"}))
-	url := pileURL(s)
+	url := screenURL(s)
 
 	require.Equal(t, http.StatusForbidden, get(t, url, "").StatusCode)
 	require.Equal(t, http.StatusForbidden, get(t, url, "someone").StatusCode)
@@ -45,6 +45,6 @@ func TestTheScreenIsNotMountedWithoutAnIdentity(t *testing.T) {
 	withStore(t)
 	s := boots(t, envFor(t, nil))
 
-	require.Equal(t, http.StatusNotFound, get(t, pileURL(s), "ronald").StatusCode,
+	require.Equal(t, http.StatusNotFound, get(t, screenURL(s), "ronald").StatusCode,
 		"no identity, no route — not an open route that warns")
 }

@@ -103,7 +103,7 @@ func openWith(t *testing.T, f *fakeStore, coach *fakeCoach) (*cdp, *httptest.Ser
 	t.Helper()
 
 	srv := screenWith(t, f, coach)
-	return browserAt(t, srv, "/pile"), srv
+	return browserAt(t, srv, "/"), srv
 }
 
 // browserAt is the browser half on its own, for the tests that stand a screen
@@ -159,87 +159,6 @@ func aPile() *fakeStore {
 		note(2, "meter reading 48213", squirrel.ItemOpen),
 		note(1, "ask about the bins", squirrel.ItemOpen),
 	}}
-}
-
-func TestBrowserAKeyStampsTheCardAndHoldsIt(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.key(t, "d")
-	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
-
-	require.Equal(t, "marked done", c.eval(t, `return document.getElementById("said").textContent`))
-	require.Equal(t, false, c.eval(t, `return document.getElementById("undoRow").hidden`),
-		"the undo is reachable while the card it undoes is still there")
-	require.Equal(t, "undo", c.eval(t, `return document.activeElement.id`))
-	require.Contains(t, c.eval(t, `return document.getElementById("say").textContent`), "marked done")
-}
-
-func TestBrowserTheIntervalQuestionTakesTheRowAndGivesItBack(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.key(t, "c")
-	c.until(t, "the question to open", `document.querySelector("details.everyFallback").open`)
-
-	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".btn[data-act=done]")).display`),
-		"choosing replaces the ways out rather than growing a second row")
-	require.Equal(t, false, c.eval(t, `return document.querySelector("[data-close=chore]").hidden`))
-
-	c.key(t, "Escape")
-	c.until(t, "the question to close", `!document.querySelector("details.everyFallback").open`)
-	require.Equal(t, "flex", c.eval(t, `return getComputedStyle(document.querySelector(".btn[data-act=done]")).display`))
-}
-
-func TestBrowserSearchAnswersAsYouType(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `
-		const find = document.querySelector(".find input");
-		find.value = "boiler";
-		find.dispatchEvent(new Event("input", { bubbles: true }));
-		return true;`)
-	c.until(t, "results to arrive", `!!document.querySelector(".rcard")`)
-
-	require.Equal(t, []any{"the boiler makes a noise"},
-		c.eval(t, `return [...document.querySelectorAll(".rcard p")].map(p => p.textContent.trim())`))
-	require.Equal(t, "?q=boiler", c.eval(t, `return location.search`))
-	require.Equal(t, float64(1), c.eval(t, `return performance.getEntriesByType("navigation").length`),
-		"the page never reloaded")
-	require.Contains(t, c.eval(t, `return document.getElementById("say").textContent`), "boiler")
-
-	c.eval(t, `
-		const find = document.querySelector(".find input");
-		find.value = "";
-		find.dispatchEvent(new Event("input", { bubbles: true }));
-		return true;`)
-	c.until(t, "the deck to come back", `!!document.getElementById("card")`)
-
-	// The keys have to work on markup that arrived by fetch, which is the
-	// whole reason the script's wiring is a function rather than a set of
-	// listeners bound once at load.
-	c.key(t, "d")
-	c.until(t, "the key to work on fetched markup",
-		`document.getElementById("card").classList.contains("stamped")`)
-}
-
-// Skipping is a link, which is what makes it work on a phone and with this
-// file absent. The key presses that link rather than knowing where it points,
-// so the two can never disagree about which note is next.
-func TestBrowserSkipIsALinkTheKeyPresses(t *testing.T) {
-	c, srv := open(t, aPile())
-
-	require.Equal(t, "?after=3", c.eval(t, `return new URL(document.querySelector("a.later").href).search`))
-	require.GreaterOrEqual(t,
-		c.eval(t, `return Math.round(document.querySelector("a.later").getBoundingClientRect().height)`),
-		float64(44), "a tap target on a phone")
-
-	c.key(t, " ")
-	deadline := time.Now().Add(10 * time.Second)
-	for c.eval(t, `return location.search`) != "?after=3" {
-		require.False(t, time.Now().After(deadline), "space never moved past the note")
-		time.Sleep(50 * time.Millisecond)
-	}
-	require.Equal(t, "meter reading 48213", c.eval(t, `return document.getElementById("noteText").textContent`))
-	require.Equal(t, srv.URL+"/pile?after=3", c.eval(t, `return location.href`))
 }
 
 func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
@@ -443,7 +362,7 @@ func TestBrowserClosingTheCoach(t *testing.T) {
 
 	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
 	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
-	require.Equal(t, "/pile", c.eval(t, `return location.pathname`),
+	require.Equal(t, "/", c.eval(t, `return location.pathname`),
 		"closing the sheet navigated instead of closing")
 }
 
@@ -466,28 +385,7 @@ func TestBrowserTheAcornDoesNotNavigate(t *testing.T) {
 
 	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-	require.Equal(t, "/pile", c.eval(t, `return location.pathname`))
-}
-
-// The card's badge is a 16px drawing in a title bar, not a button stuck to the
-// corner of the screen. It was the latter for one release, when the button
-// took `.acorn` for itself and every note's badge became a 62px circle.
-//
-// Nothing is stuck to the corner any more: the way to Buddy is in the lid.
-// That closes the same hole from the other side — a fixed button over the
-// content is a button that sits on top of whatever is underneath it, which is
-// what it did to a chore's timer row and to the sheet's own send button.
-func TestBrowserTheCardsBadgeIsStillInItsTitleBar(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	require.Equal(t, "static", c.eval(t,
-		`return getComputedStyle(document.querySelector(".titlebar .acorn")).position`))
-	require.NotEqual(t, "fixed", c.eval(t,
-		`return getComputedStyle(document.querySelector(".tobuddy")).position`),
-		"the way to Buddy is floating over the content again")
-	require.Equal(t, true, c.eval(t,
-		`return !!document.querySelector(".lid .tobuddy")`),
-		"the way to Buddy left the lid")
+	require.Equal(t, "/", c.eval(t, `return location.pathname`))
 }
 
 // The same rule in the coach's own box, which is reachable from every screen
@@ -499,13 +397,18 @@ func TestBrowserTypingToTheCoachIsNotAnAction(t *testing.T) {
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `document.querySelector('dialog.coachsheet textarea[name=said]').focus()`)
+	before := c.eval(t, `return document.querySelectorAll("#thread .turn").length`)
 	for _, k := range []string{"d", "k", "x"} {
 		c.key(t, k)
 	}
 
 	require.Equal(t, "dkx", c.eval(t,
 		`return document.querySelector('dialog.coachsheet textarea[name=said]').value`))
-	require.Equal(t, false, c.eval(t, `return document.getElementById("card").classList.contains("stamped")`),
+	// The conversation behind the sheet is untouched. Counted before and after,
+	// because it is not empty to begin with — Buddy opens by asking how you
+	// are, and a turn arriving would be a letter having triaged something.
+	require.Equal(t, before, c.eval(t,
+		`return document.querySelectorAll("#thread .turn").length`),
 		"typing to the coach triaged the note behind it")
 }
 
@@ -600,56 +503,6 @@ func TestBrowserTheSheetPostsTheWayAFormPosts(t *testing.T) {
 		"/buddy/say application/x-www-form-urlencoded")
 }
 
-// The stylesheet actually reads the day.
-//
-// The Go tests prove the numbers reach the body as custom properties. Nothing
-// there proves anything *uses* them: a typo in a variable name leaves the
-// stamp at the fallback angle forever, looking exactly like it did before, and
-// no test in this repository would notice. Only a browser resolves a `var()`.
-func TestBrowserTheStampLeansAtTheDaysAngle(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	// The body's own property, whatever the server sent today.
-	tilt := c.eval(t, `return getComputedStyle(document.body).getPropertyValue("--tilt").trim()`)
-	require.NotEmpty(t, tilt, "the body carries no angle")
-
-	// The angle it rests at, read before anything animates.
-	//
-	// This is the assertion that catches a mistyped variable name, and it has
-	// to come first: the slap fills forwards, so once it has run its own
-	// keyframe supplies the transform and a broken base rule is invisible
-	// underneath it. Checked in the first version of this test, which a
-	// deliberately misspelt `--tiltt` walked straight through.
-	//
-	// Shown for the measurement, because a `display: none` element reports no
-	// transform at all rather than the one it would have.
-	require.Equal(t, degreesOf(t, c, tilt), c.eval(t, `
-		const el = document.querySelector(".stamp");
-		el.style.display = "inline-flex";
-		const m = new DOMMatrix(getComputedStyle(el).transform);
-		el.style.display = "";
-		return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
-	`), "the stamp rests at a different angle than the day's")
-
-	c.key(t, "d")
-	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
-	// The slap has to land before the angle means anything — measured mid-flight
-	// it reads whatever degree the animation was passing through, which is how
-	// this first read -4 for a -3 day.
-	c.until(t, "the slap to land", `
-		document.querySelector(".stamp").getAnimations().every(a => a.playState === "finished")`)
-
-	// A resolved matrix rather than the rotate() that was written, so this
-	// compares angles rather than strings. It also pins the keyframe: the slap
-	// ends at the same angle the stamp rests at, or it snaps on landing.
-	got := c.eval(t, `
-		const m = new DOMMatrix(getComputedStyle(document.querySelector(".stamp")).transform);
-		return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
-	`)
-	require.Equal(t, degreesOf(t, c, tilt), got,
-		"the slap landed at %v rather than at the day's %v", got, tilt)
-}
-
 // degreesOf resolves an angle the way the browser will, so the test compares
 // degrees rather than the strings they were written as.
 func degreesOf(t *testing.T, c *cdp, angle any) any {
@@ -698,7 +551,7 @@ func TestBrowserBuddyAsAPageIsLegibleOnTheField(t *testing.T) {
 		Text: "put the bins out", Because: "it is bin day tomorrow",
 	}
 	srv := screenWith(t, f, &fakeCoach{reply: "start with the bins."})
-	c := browserAt(t, srv, "/buddy?from=/pile")
+	c := browserAt(t, srv, "/buddy?from=/")
 
 	// Nothing between the conversation and the field: no card behind it.
 	require.Equal(t, "rgba(0, 0, 0, 0)",
@@ -793,3 +646,89 @@ func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 // TestBrowserTypingAChoreNameIsNotAnAction was retired on 24 August 2026 with
 // the new-chore form it covered: making a chore from nothing is a sentence in
 // the dock now, and the dock's own keys are covered by the slot's tests.
+
+// The lid's field, on the thread. It posts and the answer arrives as a turn —
+// the deck's search-as-you-type would fetch a page and paste it over the
+// conversation, so it stands aside here.
+func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
+	f := aPile()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
+	c, srv := open(t, f)
+	c.navigate(t, srv.URL+"/")
+
+	c.eval(t, `document.querySelector(".findbox").open = true`)
+	c.eval(t, `const f = document.querySelector(".find input");
+		f.value = "boiler"; f.form.requestSubmit(); return 1`)
+	c.until(t, "the answer to arrive",
+		`!!document.querySelector("#thread .turn:last-child .turncard")`)
+
+	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
+		"searching navigated")
+}
+
+// Letters are actions, on the note Buddy is holding out.
+//
+// The deck's keys came with a machine for stamping a card and holding it still;
+// none of that crosses, because the answer here is a new turn. The letters do.
+func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
+	f := &fakeStore{
+		items:   []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)},
+		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
+	}
+	c, srv := open(t, f)
+	c.navigate(t, srv.URL+"/")
+	c.eval(t, `document.querySelector('.doorpress input[value="pile"]').form
+		.querySelector("button").click()`)
+	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
+
+	c.key(t, "k")
+	c.until(t, "it to be kept", `document.querySelectorAll("#thread .turn").length >= 4`)
+
+	require.Equal(t, squirrel.ItemKept, f.states[9], "the letter did not act")
+}
+
+// And a letter typed into a field is a letter, not an action.
+func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
+	f := &fakeStore{
+		items:   []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)},
+		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
+	}
+	c, srv := open(t, f)
+	c.navigate(t, srv.URL+"/")
+	c.eval(t, `document.querySelector('.doorpress input[value="pile"]').form
+		.querySelector("button").click()`)
+	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
+
+	c.eval(t, `document.querySelector(".dock textarea").focus()`)
+	c.key(t, "k")
+	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
+
+	require.Empty(t, f.states, "a letter typed in the dock decided something")
+}
+
+// Retired with the deck on 25 August 2026.
+//
+// These pinned the card's own machinery: the tray of answers that opened
+// without a press, the stamp that leaned at the day's angle, the hold that gave
+// an undo somewhere to be, and the skip link a key pressed. None of it crosses
+// to a conversation, where the answer is a new turn and the way back travels
+// with it.
+//
+// What did cross is pinned elsewhere: the letters, by
+// TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
+// TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
+// TestLaterHandsYouTheNextAndDecidesNothing.
+//
+// TestBrowserSearchAnswersAsYouType went with search-as-you-type, which stands
+// aside on the thread: a search is a thing you asked, and the answer is a turn.
+
+// visible is whether an element is actually shown, rather than merely present.
+//
+// It lived in answers_test.go, which was the deck's card and went with it. The
+// helper outlived the file: the lid's panels and the sheet still ask this.
+const visible = `(sel) => {
+	const el = document.querySelector(sel);
+	return !!el && el.checkVisibility({
+		checkOpacity: true, checkVisibilityCSS: true, contentVisibilityAuto: true,
+	});
+}`

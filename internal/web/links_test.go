@@ -28,11 +28,13 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 		chores: []squirrel.Chore{{ID: 1, PersonID: 1, Name: "bins out", Active: true}},
 	})
 
+	// The deck, its results and its bottom were three pages; they are one
+	// conversation now, and the pages left are the ones still reached by name.
 	pages := map[string]string{
-		"home":    "/",
-		"deck":    "/pile",
-		"results": "/pile?q=boiler",
-		"bottom":  "/pile?after=1",
+		"the conversation": "/",
+		"the shelf":        "/kept",
+		"the set-aside":    "/held",
+		"the readings":     "/moods",
 	}
 	// The empty pile is its own page, and it is the one with the way back on it.
 	empty := mounted(t, &fakeStore{})

@@ -299,14 +299,14 @@ func TestBrowserClosingTheCoachWithACoachBehindIt(t *testing.T) {
 		talk: []Exchange{{Said: "I am stuck", Replied: "Start with the envelope."}},
 	}
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, coach)
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 
 	c.eval(t, `document.querySelector(".tobuddy").click()`)
 	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
 
 	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
 	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
-	require.Equal(t, "/pile", c.eval(t, `return location.pathname`),
+	require.Equal(t, "/", c.eval(t, `return location.pathname`),
 		"closing the sheet navigated instead of closing")
 }
 
@@ -331,7 +331,7 @@ func aLongConversation() *fakeCoach {
 // the backdrop is a strip above an 88vh sheet, which leaves nothing to press.
 func TestBrowserTheCloseButtonStaysReachableOnAPhone(t *testing.T) {
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
@@ -367,7 +367,7 @@ func TestBrowserTheCloseButtonIsInsideTheSheet(t *testing.T) {
 		talk: []Exchange{{Said: "I am stuck", Replied: "Start with the envelope."}},
 	}
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, coach)
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
@@ -400,7 +400,7 @@ func TestBrowserTheCloseButtonIsInsideTheSheet(t *testing.T) {
 // about a phone; the unit is guarded separately, in the stylesheet, below.
 func TestBrowserTheCloseButtonSurvivesAShortWindow(t *testing.T) {
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 
 	// 390 wide, and short: what is left of an iPhone once the address bar and
 	// the home indicator have taken their share.
@@ -434,7 +434,7 @@ func TestBrowserTheCloseButtonSurvivesAShortWindow(t *testing.T) {
 // stay a strip: a sheet that fills the window leaves nothing to press.
 func TestBrowserTheBackdropIsStillReachableOnAShortPhone(t *testing.T) {
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,

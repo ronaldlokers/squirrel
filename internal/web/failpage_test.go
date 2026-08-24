@@ -19,7 +19,7 @@ import (
 func TestTheFailurePageSaysWhereNotesStillGo(t *testing.T) {
 	f := &fakeStore{err: errTest}
 
-	res := mounted(t, f).call(t, "GET", "/pile", nil)
+	res := mounted(t, f).call(t, "GET", "/kept", nil)
 
 	require.Equal(t, http.StatusServiceUnavailable, res.Code)
 	require.Contains(t, res.Body.String(), "Campfire",
@@ -33,7 +33,7 @@ func TestTheFailurePageSaysWhereNotesStillGo(t *testing.T) {
 func TestTheFailurePageAndTheOfflinePageAgree(t *testing.T) {
 	f := &fakeStore{err: errTest}
 
-	page := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	page := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
 
 	worker, err := staticFS.ReadFile("static/sw.js")
 	require.NoError(t, err)

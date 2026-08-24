@@ -124,7 +124,7 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 
 	// The thread is first and is not navigated to: its meta labels are the
 	// picker's, and the picker arrives by pressing HOW OFTEN.
-	for _, path := range []string{"", "/buddy", "/pile?q=bins"} {
+	for _, path := range []string{"", "/buddy"} {
 		if path == "" {
 			openChores(t, c, srv)
 			c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
@@ -175,9 +175,9 @@ func TestBrowserBothLidPanelsEndWhereThePageEnds(t *testing.T) {
 	require.Equal(t, menu["right"], find["right"],
 		"the field's panel ends at %vpx and the menu's at %vpx", find["right"], menu["right"])
 
-	// The card is the page's own left margin, and the panel must not sit
-	// outside it.
-	card := box(t, c, "#card")
+	// The thread is the page's own left margin now that the card is gone, and
+	// the panel must not sit outside it.
+	card := box(t, c, "#thread")
 	require.GreaterOrEqual(t, find["left"], card["left"],
 		"the field's panel starts at %vpx, outside the %vpx margin the page keeps",
 		find["left"], card["left"])
@@ -206,36 +206,16 @@ func TestBrowserTheSetAsideInsetsItsWordsLikeEveryOtherList(t *testing.T) {
 		"the shelf insets its words by %s and the set-aside by %s", shelf, setAside)
 }
 
-// A group of hits and a group of set-aside rows are the same idea — a label
-// over a run of cards saying what the run is — and they are one tab apart.
-// Search's two were not styled at all, so the same job was done in 12.5px
-// amber caps on one screen and 16px sentence case on the other.
-func TestBrowserSearchGroupsItsHitsTheWayTheSetAsideGroupsIts(t *testing.T) {
-	f := aPile()
-	f.chores = []squirrel.Chore{{
-		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
-		EveryDays: 7, SinceDays: 6, Active: true, EverDone: true,
-	}}
-	f.aside = []squirrel.HeldItem{{
-		ID: 10, Text: "chase the landlord about the window",
-		State: squirrel.ItemWaiting, Because: "waiting on him", Kind: squirrel.ItemTask,
-	}}
-	srv := screen(t, f)
-	c := browserAt(t, srv, "/held")
-
-	for _, prop := range []string{"font-size", "letter-spacing", "text-transform", "color"} {
-		c.navigate(t, srv.URL+"/held")
-		aside := style(t, c, ".every .heldgroup", prop)
-
-		c.navigate(t, srv.URL+"/pile?q=bins")
-		hits := style(t, c, ".results .lead", prop)
-
-		require.Equal(t, aside, hits,
-			"the set-aside's group label has %s %s and search's has %s", prop, aside, hits)
-	}
-}
-
 // TestBrowserTheEndingIsNotTheNextThingUnderTheDoing was retired on 24 August
 // 2026. It measured STOP ASKING against the disclosure that used to sit beside
 // it in the chore card; the disclosure is a turn now, and the three buttons sit
 // in one row whose spacing the appearance snapshot records.
+
+// This compared two group labels — search's and the set-aside's — because they
+// were the same role in two places and had drifted apart. The conversation has
+// no group labels: results are cards, and a card's line is the card's own Meta
+// at 11.5px rather than a heading over a group at 12.5px.
+//
+// Retired rather than repointed. Forcing a card's line to match a group's
+// heading would be making two different roles the same size to keep a test,
+// which is the opposite of what it was for.

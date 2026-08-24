@@ -346,6 +346,35 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.26.0 — 25 August 2026
+
+**The deck came out.** `/pile` and its templates are gone: the card, the split
+proposal, the results screen, the bottom, the empty state and the interval
+chips. Triage is the conversation and there is no second way to do it.
+
+Search moved with it — the lid's field posts and the answer is a turn — and the
+shelf hangs off the pile's turn, because the deck's foot was the only way to it.
+
+The lid's menu is empty now. Every place is a message; the way to one is the
+rail, and the way to the rail is the mark.
+
+What crossed and what did not, stated rather than discovered:
+
+- **The letters crossed.** `d`, `k`, `x`, `t` press the note Buddy is holding
+  out. The machine around them did not: the stamp, the hold that gave an undo
+  somewhere to be, the tray. A conversation has no card that needs to hold
+  still, because the answer is a new turn.
+- **An empty place is a sentence, not a drawing.** The empty states were their
+  own treatment; a place that is a message has no screen to be absent.
+  `/enough` is the last screen in the product that is an absence.
+- **Keeping your place went away because there is no place to lose.** The deck
+  carried a cursor through every redirect so that acting on the third note down
+  did not return you to the first. The conversation never moves you.
+
+Fifty-five unit tests and fifty-seven browser tests were reconciled. Most were
+repointed; the ones that went are the deck's own machinery, each carrying the
+reason where the test used to be.
+
 **The rest of phase 3b, not started: the deck comes out.** It is the deck — one-card triage with
 split, undo, paging, search and seven states — and it is the hardest surface in
 the product. Splitting it out landed the day picker rather than hiding it

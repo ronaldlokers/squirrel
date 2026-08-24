@@ -21,27 +21,6 @@ func twoChores() *fakeStore {
 	return f
 }
 
-// And on the card the three chips behave like the other four: a stamp, the
-// hold, and the way back focused.
-//
-// They live in their own form outside `.actions`, because "i can't act on
-// this" is not an answer to what the note is — so nothing ever wired them to
-// any of it, and a note set aside left the screen with no stamp, no hold and
-// nothing offering it back.
-func TestBrowserSettingAsideStampsTheCardLikeEveryOtherAnswer(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `document.querySelector(".cantact").open = true`)
-	c.eval(t, `document.querySelector('.whys button[value="waiting"]').click()`)
-	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
-
-	require.Equal(t, "WAITING", c.eval(t, `return document.getElementById("stampText").textContent`))
-	require.Equal(t, "waiting on someone", c.eval(t, `return document.getElementById("said").textContent`))
-	require.Equal(t, false, c.eval(t, `return document.getElementById("undoRow").hidden`),
-		"the way back is not reachable while the card it undoes is still there")
-	require.Equal(t, "undo", c.eval(t, `return document.activeElement.id`))
-}
-
 // Looking something up had a keyboard path and keeping a thought did not.
 //
 // `/` has focused the lid's search since it was written. Nothing focused the
@@ -60,32 +39,6 @@ func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 		"t on home did not reach the slot")
 }
 
-// And it never shadows the deck's own `t`, which is A TASK.
-func TestBrowserTheSlotsKeyDoesNotTakeTheDecksTask(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	// A slot put on the deck on purpose. No screen has both today, which is
-	// why the guard is otherwise unreachable — and an unreachable guard that
-	// no test can tell from its absence is exactly the kind this project does
-	// not keep. This makes the condition real so the guard has something to be
-	// checked against.
-	c.eval(t, `
-		const box = document.createElement("textarea");
-		const slot = document.createElement("form");
-		slot.className = "slot";
-		slot.appendChild(box);
-		document.getElementById("stage").appendChild(slot);`)
-
-	c.key(t, "t")
-	c.until(t, "the card to be stamped", `document.getElementById("card").classList.contains("stamped")`)
-
-	require.Equal(t, false, c.eval(t, `return !!document.activeElement.closest(".slot")`),
-		"t reached a slot on a screen that also has a deck, where it means A TASK")
-
-	require.Equal(t, "A TASK", c.eval(t, `return document.getElementById("stampText").textContent`),
-		"t on the deck stopped meaning A TASK")
-}
-
 // Retired on 24 August 2026, with the control they covered.
 //
 // The interval question was a `details.often` disclosure inside the chore card,
@@ -98,3 +51,8 @@ func TestBrowserTheSlotsKeyDoesNotTakeTheDecksTask(t *testing.T) {
 // What went with it and is not replaced: the digit keys that answered the
 // question without reaching for the mouse. Recorded in docs/roadmap.md rather
 // than quietly dropped.
+
+// Both were about the deck: a stamp on a card that is gone, and `t` meaning
+// two things on a screen that had both a slot and a deck. There is one dock and
+// no deck, so the collision cannot happen — TestBrowserAKeyInTheDockIsJustA
+// Letter is what pins the remaining half.

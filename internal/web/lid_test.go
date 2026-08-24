@@ -26,11 +26,11 @@ const shown = `(sel) => {
 func lid(t *testing.T) *cdp {
 	t.Helper()
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, nil)
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 780, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.navigate(t, srv.URL+"/pile")
+	c.navigate(t, srv.URL+"/")
 	return c
 }
 
@@ -41,7 +41,7 @@ func TestBrowserTheMenuClosesWhenYouPressElsewhere(t *testing.T) {
 	c.until(t, "the map", `(`+shown+`)(".wherelist")`)
 
 	// The card, which is the thing most likely to be under your thumb next.
-	c.eval(t, `document.querySelector("#noteText").click()`)
+	c.eval(t, `document.querySelector("#thread .turncard, .bub").click()`)
 	c.until(t, "the map to go", `!(`+shown+`)(".wherelist")`)
 }
 
@@ -51,7 +51,7 @@ func TestBrowserTheSearchFieldClosesWhenYouPressElsewhere(t *testing.T) {
 	c.eval(t, `document.querySelector("details.findbox > summary").click()`)
 	c.until(t, "the field", `(`+shown+`)(".findbox .find")`)
 
-	c.eval(t, `document.querySelector("#noteText").click()`)
+	c.eval(t, `document.querySelector("#thread .turncard, .bub").click()`)
 	c.until(t, "the field to go", `!(`+shown+`)(".findbox .find")`)
 }
 

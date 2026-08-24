@@ -67,8 +67,6 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 // the pile does not land you on the chores.
 func backFrom(r *http.Request) string {
 	switch r.FormValue("from") {
-	case "pile":
-		return "/pile"
 	case "home":
 		return "/"
 	case "kept":

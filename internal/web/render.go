@@ -42,17 +42,13 @@ func page(files ...string) *template.Template {
 }
 
 var pages = map[string]*template.Template{
-	"thread":  page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
-	"kept":    page("templates/layout.html", "templates/stopping.html", "templates/kept.html"),
-	"bottom":  page("templates/layout.html", "templates/bottom.html"),
-	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
-	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
-	"held":    page("templates/layout.html", "templates/stopping.html", "templates/held.html"),
-	"moods":   page("templates/layout.html", "templates/moods.html"),
-	"empty":   page("templates/layout.html", "templates/empty.html"),
-	"enough":  page("templates/layout.html", "templates/enough.html"),
-	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
-	"atone":   page("templates/layout.html", "templates/stopping.html", "templates/atone.html"),
+	"thread": page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
+	"kept":   page("templates/layout.html", "templates/stopping.html", "templates/kept.html"),
+	"coach":  page("templates/layout.html", "templates/step.html", "templates/coach.html"),
+	"held":   page("templates/layout.html", "templates/stopping.html", "templates/held.html"),
+	"moods":  page("templates/layout.html", "templates/moods.html"),
+	"enough": page("templates/layout.html", "templates/enough.html"),
+	"atone":  page("templates/layout.html", "templates/stopping.html", "templates/atone.html"),
 }
 
 type noteView struct {
@@ -296,12 +292,11 @@ func elsewhere(here string) []linkView {
 	// the rail, on the one screen you reach them from; the way back to that
 	// screen is the mark, as it always was.
 	//
-	// The pile is still a page — it is the deck, and absorbing it is its own
-	// piece of work — so the menu is the one place there is still to go.
-	mine := placeName(here)
-	return []linkView{
-		{Href: "/pile", Label: "the pile", Here: mine == "the pile"},
-	}
+	// None, since the deck came out. Every place is a message; the way to one
+	// is the rail, and the way to the rail is the mark. A menu of one item
+	// that is always where you are is furniture, and the lid has no room for
+	// furniture.
+	return nil
 }
 
 // views are the places that belong to the screen you are on, and nothing else
@@ -310,17 +305,10 @@ func elsewhere(here string) []linkView {
 // about — a link to the archive means nothing next to the chores.
 func views(here string) []linkView {
 	switch here {
-	case "pile", "kept", "bottom":
-		return []linkView{
-			{Href: "/pile", Label: "the pile", Here: here == "pile" || here == "bottom"},
-			{Href: "/kept", Label: "the things you kept", Here: here == "kept"},
-		}
-	case "tasks", "archive", "held":
-		return []linkView{
-			{Href: "/tasks", Label: "what you decided", Here: here == "tasks"},
-			{Href: "/tasks/done", Label: "what you have done", Here: here == "archive"},
-			{Href: "/held", Label: "what you cannot act on", Here: here == "held"},
-		}
+	case "kept":
+		return []linkView{{Href: "/kept", Label: "the things you kept", Here: true}}
+	case "held":
+		return []linkView{{Href: "/held", Label: "what you cannot act on", Here: true}}
 	}
 	return nil
 }

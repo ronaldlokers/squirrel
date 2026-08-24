@@ -19,7 +19,7 @@ func openBuddy(t *testing.T, w, h int) *cdp {
 	t.Helper()
 	coach := &fakeCoach{spent: "€0.61", ceiling: "€10", reply: "Start with the envelope."}
 	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, coach)
-	c := browserAt(t, srv, "/pile")
+	c := browserAt(t, srv, "/")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": w, "height": h, "deviceScaleFactor": 0, "mobile": w < 620,
 	})
@@ -75,7 +75,7 @@ func TestBrowserBuddyClosesAfterSayingSomething(t *testing.T) {
 
 	c.eval(t, shut+`.click()`)
 	c.until(t, "the sheet to close", `!(`+isOpen+`)`)
-	require.Equal(t, "/pile", c.eval(t, `return location.pathname`))
+	require.Equal(t, "/", c.eval(t, `return location.pathname`))
 }
 
 // The fallback, which is the point of the whole change: if the dialog will not
@@ -101,7 +101,7 @@ func TestBrowserTheWayOutSurvivesTheDialogRefusingToClose(t *testing.T) {
 	c.until(t, "the browser to post the form itself",
 		`window.__thisDocument === undefined`)
 
-	require.Equal(t, "/pile", c.eval(t, `return location.pathname`),
+	require.Equal(t, "/", c.eval(t, `return location.pathname`),
 		"the fallback did not come back to the screen the acorn was pressed on")
 	require.Equal(t, false, c.eval(t, `return `+isOpen),
 		"the sheet is still open after the fallback")

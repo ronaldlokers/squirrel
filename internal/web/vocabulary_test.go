@@ -72,8 +72,8 @@ func TestKeepMeansOneThing(t *testing.T) {
 		require.NotContains(t, string(body), ">Keep it<",
 			"%s captures with a word that already means shelve", name)
 	}
-	split, err := templateFS.ReadFile("templates/split.html")
-	require.NoError(t, err)
-	require.NotContains(t, string(split), "KEEP THESE",
-		"accepting a split uses the shelve verb")
+	// The split's own words live in Go now rather than in a template of its
+	// own — the proposal is a turn. `keep` is the shelve verb and the button
+	// that accepts a split must not borrow it.
+	require.NotContains(t, proposeInThread(1, []string{"a", "b"}).Words, "Keep these")
 }

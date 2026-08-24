@@ -60,23 +60,12 @@ func TestTheEmptyShelfDoesNotInstruct(t *testing.T) {
 	}
 }
 
-// The ends of the pile are where the shelf is reachable from, because they are
-// the two moments with nothing to triage.
-func TestTheEndsOfThePileOfferTheShelfAndTheWayBack(t *testing.T) {
-	m := mounted(t, aShelf())
-
-	for _, url := range []string{"/pile?after=1", "/pile"} {
-		body := m.call(t, "GET", url, nil).Body.String()
-		if !strings.Contains(body, `class="ends"`) {
-			continue
-		}
-		require.Contains(t, body, `href="/kept"`)
-		// The chores stopped being a page; what the foot offers instead is the
-		// way back to the conversation they live in now.
-		require.Contains(t, body, `href="/"`)
-	}
-
-	empty := mounted(t, &fakeStore{}).call(t, "GET", "/pile", nil).Body.String()
-	require.Contains(t, empty, `href="/kept"`)
-	require.Contains(t, empty, `href="/"`)
+// The shelf is reachable from the pile, which is where you would look for it.
+//
+// It hung off the deck's foot, at the two moments with nothing left to triage.
+// The deck went, so it hangs off the pile's turn instead — and without a way
+// here it would be reachable from nowhere at all, which is the bug the mood
+// history had for an afternoon.
+func TestThePileOffersTheShelf(t *testing.T) {
+	require.Contains(t, opened(t, aShelf(), "pile"), `href="/kept"`)
 }

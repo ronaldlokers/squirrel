@@ -126,6 +126,32 @@
     }
   });
 
+  // Letters are actions, on the note Buddy is holding out.
+  //
+  // The deck's own keys came with a machine for stamping a card and holding it
+  // still so an undo had somewhere to be. None of that crosses: the answer here
+  // is a new turn, and the way back travels with it. What crosses is the letters
+  // — d, k, x, t — because typing them is how triage is done at a desk.
+  const PILE_KEYS = { d: "done", k: "keep", x: "drop", t: "task" };
+
+  document.addEventListener("keydown", event => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    // A field owns its own letters.
+    const on = event.target;
+    if (on && (on.tagName === "TEXTAREA" || on.tagName === "INPUT" || on.isContentEditable)) return;
+
+    const act = PILE_KEYS[event.key.toLowerCase()];
+    if (!act) return;
+    // The live edge only, and only when it is holding a note out: the same
+    // rule the server renders by.
+    const card = thread.querySelector(".turn:last-child .turncard");
+    const press = card?.querySelector(`input[name="act"][value="${act}"]`)?.form
+      ?.querySelector("button");
+    if (!press) return;
+    event.preventDefault();
+    press.click();
+  });
+
   // Open at the end of the conversation. Without this the page opens at the
   // top, which is the beginning of everything you have ever said.
   toTheEnd();

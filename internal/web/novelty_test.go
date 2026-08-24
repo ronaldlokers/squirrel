@@ -46,7 +46,7 @@ func TestEveryScreenGetsTheSameDay(t *testing.T) {
 	t.Cleanup(func() { now = was })
 
 	want := fmt.Sprintf("--light: %d%%", squirrel.Light(day))
-	for _, path := range []string{"/", "/pile", "/enough", "/moods"} {
+	for _, path := range []string{"/", "/kept", "/enough", "/moods"} {
 		body := mounted(t, &fakeStore{}).call(t, "GET", path, nil).Body.String()
 		require.Contains(t, body, want, "%s is lit from somewhere else", path)
 	}

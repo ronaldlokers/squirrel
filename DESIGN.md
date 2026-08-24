@@ -819,6 +819,29 @@ thing is what is inside it.
   in front of you rather than a description of it. Nothing is written until the
   press.
 
+**An empty place is a sentence, not a drawing.** The empty states were their
+own treatment — the mascot, a headline in the casual axis, a screen that is an
+absence. A place that is a message has no screen to be absent: Buddy says
+*nothing to decide about* and the conversation carries on. `/enough` is the last
+screen in the product that is an absence, and it keeps the treatment.
+
+What that costs, stated rather than discovered: the drawing was doing work a
+sentence does not, which is to make an empty pile feel like a place rather than
+a failure. If the sentence ever starts reading as a shrug, the drawing is what
+to put back — inside the turn, not around it.
+
+**A search is a turn, and a result carries no verbs.** One field in the lid,
+both kinds of thing, and every state — a result says which of the seven it is
+in, because without that an open task reported itself as being in the pile and
+was offered the pile's verbs. It is a thing you went looking for rather than a
+thing you are deciding about, which is the distinction the deck's results screen
+already made when it drew a found chore as a link.
+
+Search-as-you-type belongs to the deck, where a query swaps the stage for
+results in place. On the thread the form posts and the answer arrives as a turn,
+so that enhancement stands aside rather than fetching a page nobody asked for
+and pasting it over the conversation.
+
 **A chip that acts is a form, not a link.** Chips in a turn carry either an href
 or an action, never both: a GET that writes writes again on every reload, which
 is the same reason a door is a press.

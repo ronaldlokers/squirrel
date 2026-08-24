@@ -35,18 +35,12 @@ func TestADecisionThePileHasOvertakenDoesNotOverwriteIt(t *testing.T) {
 
 	require.Equal(t, squirrel.ItemDropped, f.items[0].State,
 		"the screen's stale decision overwrote the one made in the room")
-	require.Contains(t, res.Header().Get("Location"), "clash=3",
+	// And it said so. The clash used to travel in the redirect; it is a thing
+	// Buddy says now, which is the same guarantee in the place the answer
+	// lives — see TestAClashIsSaidInTheConversation.
+	require.Equal(t, "/", res.Header().Get("Location"))
+	require.Contains(t, f.appended[0].Words, "moved while you were looking at it",
 		"and it went back saying nothing about it")
-}
-
-// And the screen says so, rather than quietly showing a different pile than
-// the one you were deciding about.
-func TestThePileSaysWhenItHasMovedUnderYou(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(3, "the boiler", squirrel.ItemOpen)}}
-
-	body := mounted(t, f).call(t, "GET", "/pile?clash=3", nil).Body.String()
-
-	require.Contains(t, body, "that note had already moved")
 }
 
 // Saying a thing twice is saying it. A second identical press — or a
@@ -86,11 +80,20 @@ func TestAPressThatClaimsNothingWritesUnconditionally(t *testing.T) {
 	require.Equal(t, squirrel.ItemDone, f.states[3])
 }
 
-// The card has to say what it is showing, or none of the above can happen.
-func TestTheCardSaysWhatItIsShowing(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(3, "the boiler", squirrel.ItemOpen)}}
+// It moved under you, in the conversation. Saying nothing would be the two
+// views disagreeing and neither of them mentioning it — and before this it
+// redirected to a deck that no longer exists.
+func TestAClashIsSaidInTheConversation(t *testing.T) {
+	// The note is already kept, so a press that claims it was open finds it
+	// somewhere else — which is what the room having moved it looks like.
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemKept)}}
+	routed(t, f).call(t, "POST", "/pile/act",
+		strings.NewReader("id=9&act=drop&was=open&from=thread"))
 
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
-
-	require.Contains(t, body, `name="was" value="open"`)
+	require.NotEmpty(t, f.appended)
+	require.Contains(t, f.appended[0].Words, "moved while you were looking at it")
 }
+
+// Both went with the deck. A clash is said in the conversation now — see
+// TestAClashIsSaidInTheConversation — and what the card was showing travels in
+// the press rather than on the card, which is what `was` has always been.

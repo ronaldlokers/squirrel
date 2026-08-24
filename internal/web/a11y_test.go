@@ -15,7 +15,7 @@ import (
 // in the layout and the script writes to it.
 func TestThereIsALiveRegionOutsideTheStage(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
 
 	require.Contains(t, body, `id="say"`)
 	require.Contains(t, body, `aria-live="polite"`)
@@ -28,7 +28,7 @@ func TestThereIsALiveRegionOutsideTheStage(t *testing.T) {
 // screen reader saying "DONE D" is reading the poster on the wall.
 func TestTheKeyBadgesAreNotReadOut(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
 
 	require.Equal(t, strings.Count(body, `class="key"`),
 		strings.Count(body, `class="key" aria-hidden="true"`),
@@ -42,15 +42,13 @@ func TestTheStackIsDecorative(t *testing.T) {
 	for i := int64(1); i <= 3; i++ {
 		items = append(items, note(i, "note", squirrel.ItemOpen))
 	}
-	body := mounted(t, &fakeStore{items: items}).call(t, "GET", "/pile", nil).Body.String()
+	body := mounted(t, &fakeStore{items: items}).call(t, "GET", "/kept", nil).Body.String()
 
 	require.Equal(t, strings.Count(body, `class="behind"`),
 		strings.Count(body, `class="behind" aria-hidden="true"`))
 }
 
-func TestTheCardSaysWhatItIs(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
-
-	require.Contains(t, body, `aria-label="a note from`, "the card names itself and when it arrived")
-}
+// TestTheCardSaysWhatItIs went with the deck's card, whose region label named
+// the screen it was the whole of. A card in a turn is one thing among many in
+// a conversation, and what names it is the <h2> the turn carries — pinned by
+// TestATurnThatOpensAPlaceCarriesAHeading.
