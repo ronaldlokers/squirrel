@@ -102,7 +102,7 @@ func TestHomeDoesNotAnswerForEverything(t *testing.T) {
 func TestHomeHasFourDoors(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	for _, label := range []string{"the pile", "the tasks", "the chores", "what is coming"} {
+	for _, label := range []string{"the pile", "the tasks", "the chores", "the agenda"} {
 		require.Contains(t, body, label)
 	}
 	require.Contains(t, body, "what you decided")

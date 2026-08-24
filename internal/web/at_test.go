@@ -137,7 +137,7 @@ func TestBothNewScreensRenderSomething(t *testing.T) {
 	m := routed(t, f)
 
 	list := m.call(t, "GET", "/at", nil).Body.String()
-	require.Contains(t, list, "what is coming")
+	require.Contains(t, list, "the agenda")
 	require.Contains(t, list, "dentist")
 
 	one := m.call(t, "GET", "/at/4", nil).Body.String()

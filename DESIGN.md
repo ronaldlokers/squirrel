@@ -1163,12 +1163,21 @@ screen's body.
   width* for rearranging instead of shrinking, which keeps the four equal to
   each other — and their equality is what the rule was protecting.
 
-  **A door's name has to fit one line.** The three original names are ten
-  characters or fewer in a shared grammar; at four across the cell gives about
-  117px of inner width, which is roughly eleven characters at the Note floor. A
-  longer name wraps, and a wrapped name drops its own sub-line below its
-  neighbours' — four equal boxes with unequal type, which is the equality rule
-  failing quietly rather than loudly.
+  **A door's name has to fit one line.** All four names are ten characters or
+  fewer in a shared grammar; at four across the cell gives about 117px of inner
+  width, which is roughly eleven characters at the Note floor. A longer name
+  wraps, and a wrapped name drops its own sub-line below its neighbours' — four
+  equal boxes with unequal type, which is the equality rule failing quietly
+  rather than loudly. The fourth door was called *what is coming* for an
+  afternoon and did exactly that.
+
+  **The agenda is named after the thing it holds, and the name was argued
+  about.** *Agenda* is the calendar word, and a calendar is what `PRODUCT.md`
+  refused. The owner chose it knowing that. What makes it a description rather
+  than a slide back are the guard rails on the screen itself: only what is still
+  ahead, never a count, and nothing anywhere about being late. If the name ever
+  starts pulling the screen toward the thing that was refused, the rails are
+  what failed.
 
 A chore found by a search takes the Door's grammar at one line high, for the
 same reason: it is a place to go, not a thing to do. What can be done to a chore
