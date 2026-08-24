@@ -878,6 +878,17 @@
         Notification.permission !== "default") {
       askPush.hidden = true;
     } else {
+      // Taking `hidden` off is the whole of this control working, and it was
+      // missing. The template ships the button hidden — which is right, because
+      // a control that flashes on and then decides it should not be there is
+      // worse than one that arrives a moment late — and this branch attached a
+      // listener to something nobody could press. Permission was therefore
+      // never requested on any device, `push_subscriptions` held zero rows, and
+      // every leave-by warning fanned out over an empty list in silence.
+      //
+      // The test that covered this asserted the button was in the markup. It
+      // was. See askpush_test.go.
+      askPush.hidden = false;
       askPush.addEventListener("click", async () => {
         askPush.hidden = true;
         if (await Notification.requestPermission() !== "granted") return;
