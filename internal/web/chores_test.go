@@ -262,3 +262,89 @@ func TestANewChoreComesBackAsACard(t *testing.T) {
 	require.Contains(t, string(f.appended[1].Shown), "descale the kettle")
 	require.Contains(t, string(f.appended[1].Shown), "/chores/act")
 }
+
+// Asking how often puts the question on the table with both rows on it.
+func TestAskingHowOftenOffersNumbersAndUnits(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/often", strings.NewReader("id=1"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	for _, want := range []string{`"1"`, `"2"`, `"3"`, `"4"`, "days", "weeks", "months"} {
+		require.Contains(t, shown, want)
+	}
+}
+
+// The rhythm it has now is marked, so the question is answerable rather than a
+// blank form: you are changing something, not inventing it.
+func TestTheQuestionMarksTheRhythmItHasNow(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{{
+		ID: 1, Name: "water the plants", Every: 14 * 24 * time.Hour,
+		EveryDays: 14, Active: true,
+	}}}
+	routed(t, f).call(t, "POST", "/chores/often", strings.NewReader("id=1"))
+
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, `"chosen":"2"`)
+	require.Contains(t, shown, `"chosen":"weeks"`)
+}
+
+// A rhythm the picker cannot say leaves both rows unmarked rather than rounding
+// to the nearest offered thing. Marking the wrong one would say the chore is
+// something it is not.
+func TestARhythmThePickerCannotSayIsLeftUnmarked(t *testing.T) {
+	// Ten days: not an offered number, not a whole number of weeks, not a
+	// whole number of months. A quarter would not do — that is three months,
+	// which the picker can say perfectly well.
+	f := &fakeStore{chores: []squirrel.Chore{{
+		ID: 1, Name: "the gutters", Every: 10 * 24 * time.Hour,
+		EveryDays: 10, Active: true,
+	}}}
+	routed(t, f).call(t, "POST", "/chores/often", strings.NewReader("id=1"))
+
+	require.NotContains(t, string(f.appended[1].Shown), `"chosen"`)
+}
+
+// Answering composes the same sentence the fixed chips used to post, so the
+// chore path underneath is untouched.
+func TestAnsweringHowOftenComposesTheSentence(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act",
+		strings.NewReader("id=1&count=3&unit=weeks"))
+
+	require.Equal(t, 21*24*time.Hour, f.reinterval.every)
+}
+
+// And says it back in the same words a person would use.
+func TestAnsweringHowOftenIsSaid(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act",
+		strings.NewReader("id=1&count=3&unit=weeks"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[0].Words, "every 3 weeks")
+}
+
+// A number and a unit nobody offered do nothing. They arrive from a form.
+func TestARhythmThatWasNeverOfferedDoesNothing(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act",
+		strings.NewReader("id=1&count=99&unit=fortnights"))
+
+	require.Empty(t, f.appended)
+	require.Zero(t, f.reinterval.every)
+}
+
+// The picker and a typed sentence produce the same interval for the same
+// rhythm. Asserted on the duration, not on the string — this is what stops a
+// later author replacing ParseEvery with arithmetic and redefining a month.
+func TestThePickerAndTheSentenceAgree(t *testing.T) {
+	_, typed, ok := squirrel.ParseEvery("every 3 months: water the plants")
+	require.True(t, ok)
+
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act",
+		strings.NewReader("id=1&count=3&unit=months"))
+
+	require.Equal(t, typed, f.reinterval.every)
+}

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
@@ -37,6 +38,9 @@ type drawn struct {
 	Place string     `json:"place,omitempty"`
 	Cards []cardView `json:"cards,omitempty"`
 	Chips []turnChip `json:"chips,omitempty"`
+	// Pick is a question with its answers on it: rows of choices in one form
+	// with one submit. See askHowOften for why it is one form.
+	Pick *pickView `json:"pick,omitempty"`
 	// Faces is the check-in's five drawings. A flag rather than five chips
 	// because they are the product's own faces and the markup for them
 	// already exists; rendering them as words would be a different control
@@ -56,6 +60,7 @@ type turnView struct {
 	Cards []cardView
 	Chips []turnChip
 	Faces []faceView
+	Pick  *pickView
 	// V stamps the asset URLs a turn draws. Filled here rather than by render,
 	// because a turn is also rendered on its own as a fragment, where there is
 	// no page around it to carry it.
@@ -245,7 +250,7 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				// better than losing the turn.
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
-				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
+				v.Place, v.Cards, v.Chips, v.Pick = sh.Place, sh.Cards, sh.Chips, sh.Pick
 				if sh.Faces {
 					v.Faces = theFaces()
 				}
@@ -812,4 +817,121 @@ func madeAChore(c squirrel.Chore) squirrel.Turn {
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Kept. It comes back " + v.Every + "."}
 	}
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Kept.", Shown: body}
+}
+
+// pickView is a question with its answers on it.
+//
+// One form and one submit, deliberately: a picker that wrote a turn every time
+// you pressed a number would fill a record that is never rewritten with the
+// sound of somebody deciding. You are asked once and you answer once.
+type pickView struct {
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields,omitempty"`
+	Rows   []pickRow         `json:"rows"`
+	Do     string            `json:"do"`
+}
+
+type pickRow struct {
+	Lead    string   `json:"lead"`
+	Name    string   `json:"name"`
+	Options []string `json:"options"`
+	// Chosen is what is true now, or empty. Empty rather than a nearest guess:
+	// marking the wrong one would say the thing is something it is not.
+	Chosen string `json:"chosen,omitempty"`
+}
+
+// pickNumbers and pickUnits are what the interval picker offers.
+//
+// Six numbers and three units, and no way to type one: six covers what anyone
+// reaches for, and `every 9 weeks` is a sentence rather than a control.
+// ParseEvery accepts fortnights, quarters and years too, and those stay
+// available through the sentence at no cost in buttons.
+var (
+	pickNumbers = []string{"1", "2", "3", "4", "6", "8"}
+	pickUnits   = []string{"days", "weeks", "months"}
+)
+
+// askHowOften is the question, as one form with two rows.
+func askHowOften(id int64, count, unit string) squirrel.Turn {
+	body, err := json.Marshal(drawn{Pick: &pickView{
+		Action: "/chores/act",
+		Fields: map[string]string{"id": strconv.FormatInt(id, 10)},
+		Do:     "that's it",
+		Rows: []pickRow{
+			{Lead: "every", Name: "count", Options: pickNumbers, Chosen: count},
+			{Lead: "of these", Name: "unit", Options: pickUnits, Chosen: unit},
+		},
+	}})
+	if err != nil {
+		slog.Error("drawing the question", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Tell me how often, in words."}
+	}
+	return squirrel.Turn{
+		Who: squirrel.SpeakerBuddy, Words: "How often should it come back?", Shown: body,
+	}
+}
+
+// rhythmOf is the interval a chore has now, as the picker's own two answers, so
+// the question opens on what is true rather than on a blank form.
+//
+// Anything that does not land on an offered pair — a fortnight, a quarter —
+// leaves both empty rather than rounding to the nearest offered thing.
+//
+// Units are tried largest first. Days last, deliberately: 14 days is two weeks
+// to a person, and trying days first would answer "14", which is not an offered
+// number and would then fall through to nothing at all.
+func rhythmOf(every time.Duration) (count, unit string) {
+	for i := len(pickUnits) - 1; i >= 0; i-- {
+		u := pickUnits[i]
+		step := unitStep(u)
+		if step == 0 || every == 0 || every%step != 0 {
+			continue
+		}
+		n := strconv.FormatInt(int64(every/step), 10)
+		if oneOf(pickNumbers, n) {
+			return n, u
+		}
+	}
+	return "", ""
+}
+
+// unitStep is how long each offered unit is.
+//
+// Thirty days for a month, exactly as the core reads it — this is a nudge, not
+// a calendar. See unitDurations in internal/squirrel/intent.go, and do not let
+// the two drift: TestThePickerAndTheSentenceAgree is what notices if they do.
+func unitStep(unit string) time.Duration {
+	switch unit {
+	case "days":
+		return 24 * time.Hour
+	case "weeks":
+		return 7 * 24 * time.Hour
+	case "months":
+		return 30 * 24 * time.Hour
+	}
+	return 0
+}
+
+// composeEvery turns the picker's two answers into an interval, through the
+// same parser a typed sentence goes through.
+//
+// Not arithmetic here: ParseEvery is where "every 3 weeks" means something, and
+// a second place deciding what a week was would be a second place to be wrong.
+// Both answers are checked against what was offered first, because they arrive
+// from a form.
+func composeEvery(count, unit string) (time.Duration, bool) {
+	if !oneOf(pickNumbers, count) || !oneOf(pickUnits, unit) {
+		return 0, false
+	}
+	_, every, ok := squirrel.ParseEvery("every " + count + " " + unit + ": x")
+	return every, ok
+}
+
+func oneOf(list []string, v string) bool {
+	for _, o := range list {
+		if o == v {
+			return true
+		}
+	}
+	return false
 }

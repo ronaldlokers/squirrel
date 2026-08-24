@@ -82,6 +82,28 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
+		// The picker's answer: a number and a unit, composed into the same
+		// sentence the four fixed chips post. The two lanes cannot disagree,
+		// because they produce the same string for the same rhythm.
+		if count, unit := r.FormValue("count"), r.FormValue("unit"); count != "" || unit != "" {
+			d, ok := composeEvery(count, unit)
+			if !ok {
+				// Neither was offered. Nothing is done and nothing is said.
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			if _, err := s.UpsertChore(r.Context(), personID, c.Name, d, squirrel.DefaultTolerance(d)); err != nil {
+				fail(w, err)
+				return
+			}
+			said := "every " + count + " " + unit
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: said},
+				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + said + " now."},
+			}), "/")
+			return
+		}
+
 		if every := strings.TrimSpace(r.FormValue("every")); every != "" {
 			// The four this screen offers, like everywhere else it asks.
 			d, ok := offered(every)
@@ -266,4 +288,53 @@ func offered(every string) (time.Duration, bool) {
 		return 30 * 24 * time.Hour, true
 	}
 	return 0, false
+}
+
+// oftenHandler puts the question on the table.
+//
+// It writes rather than renders, like everything else here: a question that is
+// not in the record is a question the record cannot show you answering.
+func oftenHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		// The id arrives from a form, so it is checked against what this person
+		// actually has rather than trusted — the same check the act handler
+		// makes, and for the same reason.
+		chores, err := s.ActiveChores(r.Context(), personID)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		var c squirrel.Chore
+		for _, candidate := range chores {
+			if candidate.ID == id {
+				c = candidate
+				break
+			}
+		}
+		if c.ID == 0 {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		count, unit := rhythmOf(c.Every)
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "how often — " + c.Name},
+			askHowOften(c.ID, count, unit),
+		}), "/")
+	}
 }

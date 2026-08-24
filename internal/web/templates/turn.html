@@ -3,7 +3,7 @@
      is the only thing keeping the server and the browser from growing two
      descriptions of a card. */}}
 {{define "turn"}}
-<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if .Faces}} wide{{end}}" id="turn-{{.ID}}">
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick}} wide{{end}}" id="turn-{{.ID}}">
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
@@ -27,6 +27,28 @@
     </div>
     {{end}}
   </div>
+  {{end}}
+
+  {{/* The question, as one form with two rows and one submit. Radios rather
+       than buttons: pressing a number is not an answer, it is half of one, and
+       a picker that posted on every press would write a turn per fiddle into a
+       record that is never rewritten. */}}
+  {{if and .Live .Pick}}
+  <form class="pick" method="post" action="{{.Pick.Action}}">
+    {{range $name, $value := .Pick.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+    {{range .Pick.Rows}}
+    {{$row := .}}
+    <p class="picklead">{{.Lead}}</p>
+    <div class="pickrow">
+      {{range .Options}}
+      <label class="chip{{if eq . $row.Chosen}} current{{end}}">
+        <input type="radio" name="{{$row.Name}}" value="{{.}}"{{if eq . $row.Chosen}} checked{{end}}>{{.}}
+      </label>
+      {{end}}
+    </div>
+    {{end}}
+    <button class="make" type="submit">{{.Pick.Do}}</button>
+  </form>
   {{end}}
 
   {{/* The five drawings. Only on the live edge, like every other control: a
