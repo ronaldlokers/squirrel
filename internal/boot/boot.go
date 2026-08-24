@@ -524,7 +524,14 @@ func deref(s *string) string {
 // Every failure here is swallowed by the caller. A push service being slow, a
 // browser having revoked its subscription, a laptop that is closed — none of
 // those may turn a message that has already arrived somewhere into an error.
-func pusher(cfg squirrel.PushConfig, store *squirrel.Store) squirrel.Pusher {
+// subscriptions is the half of the store this needs, named so the fan-out can
+// be exercised without a database. The concrete store satisfies it.
+type subscriptions interface {
+	LiveSubscriptions(ctx context.Context, personID int64) ([]squirrel.Subscription, error)
+	SubscriptionGone(ctx context.Context, id int64, at time.Time) error
+}
+
+func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 	if !cfg.Enabled() {
 		slog.Warn("no push keys configured; only the room is told about leaving")
 		return nil
@@ -540,6 +547,22 @@ func pusher(cfg squirrel.PushConfig, store *squirrel.Store) squirrel.Pusher {
 		if err != nil {
 			return err
 		}
+		// Saying there is nobody is the whole point of this line.
+		//
+		// This path used to say nothing at all: no line when it sent, none for
+		// how many browsers it found, none on success. Only a failure spoke. So
+		// a send to an empty list and a send that worked produced identical
+		// logs — which is how this feature ran in production for weeks with
+		// zero subscribers and no way to notice, and why finding that out took
+		// four rounds of guessing.
+		//
+		// A channel that cannot report having no listeners cannot be trusted to
+		// report anything.
+		if len(subs) == 0 {
+			slog.Warn("nobody to push to; only the room was told", "person_id", personID)
+			return nil
+		}
+		slog.Info("pushing", "subscriptions", len(subs))
 		for _, sub := range subs {
 			gone, err := squirrel.SendPush(ctx, client, cfg, sub, p)
 			if err != nil {
@@ -549,10 +572,17 @@ func pusher(cfg squirrel.PushConfig, store *squirrel.Store) squirrel.Pusher {
 			if gone {
 				// The browser is gone for good. Retrying it forever makes every
 				// later send slower for nothing.
+				slog.Warn("a browser is gone; retiring its subscription",
+					"endpoint", host(sub.Endpoint))
 				if err := store.SubscriptionGone(ctx, sub.ID, time.Now()); err != nil {
 					slog.Error("retiring a push subscription", "error", err)
 				}
+				continue
 			}
+			// The push service took it. That is as far as this side can see:
+			// what the phone then does with it is not observable from here, and
+			// saying so is better than a line that implies otherwise.
+			slog.Info("pushed", "endpoint", host(sub.Endpoint))
 		}
 		return nil
 	}
