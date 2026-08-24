@@ -120,10 +120,18 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/chores")
+	c := browserAt(t, srv, "/")
 
-	for _, path := range []string{"/chores", "/buddy", "/pile?q=bins"} {
-		c.navigate(t, srv.URL+path)
+	// The thread is first and is not navigated to: its meta labels are the
+	// picker's, and the picker arrives by pressing HOW OFTEN.
+	for _, path := range []string{"", "/buddy", "/pile?q=bins"} {
+		if path == "" {
+			openChores(t, c, srv)
+			c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
+			c.until(t, "the question", `!!document.querySelector(".pick")`)
+		} else {
+			c.navigate(t, srv.URL+path)
+		}
 
 		found := c.eval(t, `
 			const body = parseFloat(getComputedStyle(document.body).fontSize);
@@ -135,7 +143,7 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 
 		labels, ok := found.([]any)
 		require.True(t, ok, "%s did not answer with a list of labels", path)
-		require.NotEmpty(t, labels, "%s drew no meta label at all", path)
+		require.NotEmpty(t, labels, "%q drew no meta label at all", path)
 
 		for _, l := range labels {
 			label := l.(map[string]any)
@@ -173,39 +181,6 @@ func TestBrowserBothLidPanelsEndWhereThePageEnds(t *testing.T) {
 	require.GreaterOrEqual(t, find["left"], card["left"],
 		"the field's panel starts at %vpx, outside the %vpx margin the page keeps",
 		find["left"], card["left"])
-}
-
-// STOP ASKING is the one press on the chores that ends something, and on a
-// phone the two-column grid put it directly under DID IT — same column, eight
-// pixels down, which is the gap between any two cells. Nothing chose that
-// distance for it.
-//
-// Against the grid's own gap rather than against a number: the point is that
-// it is deliberately further away than the next cell would be.
-func TestBrowserTheEndingIsNotTheNextThingUnderTheDoing(t *testing.T) {
-	f := aPile()
-	f.chores = []squirrel.Chore{{
-		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
-		EveryDays: 7, SinceDays: 6, Active: true, EverDone: true,
-	}}
-	srv := screen(t, f)
-	c := browserAt(t, srv, "/chores")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 780, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.navigate(t, srv.URL+"/chores")
-
-	did := box(t, c, ".chore .abtn")
-	often := box(t, c, ".chore .often > summary")
-	stop := box(t, c, ".chore .abtn.stop")
-
-	require.Equal(t, did["left"], stop["left"],
-		"this test is about the column under DID IT and STOP ASKING is no longer in it")
-
-	cell := often["left"] - did["right"]
-	require.Greater(t, stop["top"]-did["bottom"], cell,
-		"STOP ASKING sits %vpx under DID IT, which is the %vpx the grid puts between any two cells",
-		stop["top"]-did["bottom"], cell)
 }
 
 // Two lists of the same rows, one tab apart, inset their words by the same
@@ -259,3 +234,8 @@ func TestBrowserSearchGroupsItsHitsTheWayTheSetAsideGroupsIts(t *testing.T) {
 			"the set-aside's group label has %s %s and search's has %s", prop, aside, hits)
 	}
 }
+
+// TestBrowserTheEndingIsNotTheNextThingUnderTheDoing was retired on 24 August
+// 2026. It measured STOP ASKING against the disclosure that used to sit beside
+// it in the chore card; the disclosure is a turn now, and the three buttons sit
+// in one row whose spacing the appearance snapshot records.

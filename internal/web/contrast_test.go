@@ -148,6 +148,21 @@ func everyScreen() *fakeStore {
 			{ID: 3, Name: "change the filter", Every: 90 * 24 * time.Hour, Active: true, SinceDays: 4, EveryDays: 90},
 		},
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: now.Add(-time.Hour)},
+		// The conversation, carrying every shape a turn can hold. The chores
+		// and the tasks stopped being pages on 24 August 2026, so the walk
+		// reaches them by rendering the turns that draw them rather than by
+		// navigating to a URL that no longer exists.
+		turns: []squirrel.Turn{
+			{ID: 1, Who: squirrel.SpeakerYou, Words: "the chores"},
+			{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back.",
+				Shown: []byte(`{"place":"the chores","cards":[{"title":"water the plants","meta":"EVERY WEEK · LAST DONE a while back","acts":[{"label":"DID IT","action":"/chores/act","style":"did","fields":{"id":"1","act":"done"}},{"label":"HOW OFTEN","action":"/chores/often","style":"go","fields":{"id":"1"}},{"label":"STOP ASKING","action":"/chores/act","style":"stop","fields":{"id":"1","act":"retire"}}]}]}`)},
+			{ID: 3, Who: squirrel.SpeakerYou, Words: "the tasks"},
+			{ID: 4, Who: squirrel.SpeakerBuddy, Words: "One thing you decided.",
+				Shown: []byte(`{"place":"the tasks","cards":[{"title":"book the car in for its service","meta":"decided this morning","acts":[{"label":"did it","action":"/tasks/act","style":"did","fields":{"id":"4","act":"done"}},{"label":"not a task","action":"/tasks/act","style":"back","fields":{"id":"4","act":"untask"}}]}],"chips":[{"label":"what you cannot act on","href":"/held"}]}`)},
+			{ID: 5, Who: squirrel.SpeakerYou, Words: "how often — water the plants"},
+			{ID: 6, Who: squirrel.SpeakerBuddy, Words: "How often should it come back?",
+				Shown: []byte(`{"pick":{"action":"/chores/act","fields":{"id":"1"},"do":"that's it","rows":[{"lead":"every","name":"count","options":["1","2","3","4","6","8"],"chosen":"1"},{"lead":"of these","name":"unit","options":["days","weeks","months"],"chosen":"weeks"}]}}`)},
+		},
 		readings: []squirrel.Checkin{
 			{Mood: squirrel.MoodCalm, SaidAt: now.Add(-time.Hour)},
 			{Mood: squirrel.MoodLow, SaidAt: now.Add(-26 * time.Hour)},
@@ -179,7 +194,9 @@ func everyScreen() *fakeStore {
 // size change moves what counts as large text.
 func TestEveryWordCanBeRead(t *testing.T) {
 	screens := []string{
-		"/", "/pile", "/pile?q=the", "/chores", "/tasks", "/tasks/done",
+		// "/" is several screens now: the rail, the transcript with a chore
+		// card, a task card and the interval picker on it, and the dock.
+		"/", "/pile", "/pile?q=the",
 		"/kept", "/held", "/moods", "/enough", "/buddy",
 		"/at", "/at/4",
 	}

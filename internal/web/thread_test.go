@@ -479,3 +479,21 @@ func TestTheRailPostsRatherThanLinks(t *testing.T) {
 	require.Contains(t, body, `action="/open"`)
 	require.NotContains(t, body, `<a class="rdoor`)
 }
+
+// A question is something on the table too.
+//
+// Without this the offer was appended over an unanswered picker and took the
+// live edge from it, so "how often" arrived with no way to answer it. Found in
+// a screenshot, which is the only place it was visible.
+func TestNothingIsOfferedOverAnUnansweredQuestion(t *testing.T) {
+	f := &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"},
+		turns: []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "How often should it come back?",
+			Shown: []byte(`{"pick":{"action":"/chores/act","do":"that's it","rows":[{"lead":"every","name":"count","options":["1","2"]}]}}`)}},
+	}
+	body := thread(t, f)
+
+	require.Empty(t, f.appended)
+	require.Contains(t, body, `class="pick"`, "the question keeps its answers")
+}

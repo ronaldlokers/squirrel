@@ -26,7 +26,7 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 	m := mounted(t, f)
 
 	href := regexp.MustCompile(`<a class="lidbtn tobuddy" href="([^"]+)"`)
-	for _, path := range []string{"/", "/pile", "/tasks", "/chores"} {
+	for _, path := range []string{"/", "/pile", "/kept"} {
 		body := m.call(t, "GET", path, nil).Body.String()
 		found := href.FindStringSubmatch(body)
 		require.Len(t, found, 2, "no way to Buddy on %s", path)
@@ -289,9 +289,8 @@ func TestTheCoachDidNotBecomeAFourthDoor(t *testing.T) {
 	home := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 	require.NotContains(t, home, `href="/coach"`,
 		"the acorn carries a from parameter; a bare link would be a fourth door")
-	require.Contains(t, home, "/pile")
-	require.Contains(t, home, "/tasks")
-	require.Contains(t, home, "/chores")
+	// Four doors on the rail, and the sheet is not one of them.
+	require.Equal(t, 4, strings.Count(home, `class="rdoor`))
 }
 
 // Nothing here renders a total, in either direction. The conversation is a
@@ -352,7 +351,7 @@ func TestNoOtherScreenSaysWhatItHasCost(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
 	m := mountedWith(t, withOffer(nil), c)
 
-	for _, path := range []string{"/", "/pile", "/tasks", "/chores"} {
+	for _, path := range []string{"/", "/pile", "/kept"} {
 		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
 			"the spend leaked onto %s", path)
 	}

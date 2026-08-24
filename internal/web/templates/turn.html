@@ -10,17 +10,24 @@
   <p class="bub">{{.Words}}</p>
 
   {{range .Cards}}
-  <div class="turncard">
+  {{/* A chore renders as the element the chores screen used, so the keys
+       pile.js binds and the rules the stylesheet already carries keep working
+       on it. The screen went; the thing on it did not. */}}
+  {{/* Always an article, and the chore-ness is a class: html/template cannot
+       put an action in a tag name, and the version that tried rendered nothing
+       at all. `article.chore` is what pile.js binds the chore keys to, so a
+       chore keeps them without the screen it used to be on. */}}
+  <article class="turncard{{if eq .Kind "chore"}} chore{{end}}">
     {{/* The photograph is the note, and the words beside it are the caption —
          the same order the pile's card draws them in. */}}
     {{if .Photo}}<p class="cardphoto"><img src="{{.Photo}}" alt="the photograph on this note" loading="lazy"></p>{{end}}
-    <p class="turnname">{{.Title}}</p>
-    {{if .Meta}}<p class="turnmeta">{{.Meta}}</p>{{end}}
+    <p class="{{if eq .Kind "chore"}}name{{else}}turnname{{end}}">{{.Title}}</p>
+    {{if .Meta}}<p class="{{if eq .Kind "chore"}}meta{{else}}turnmeta{{end}}">{{.Meta}}</p>{{end}}
     {{/* Controls only on the live edge. A card in scrollback keeps its words
          and loses its buttons: pressing DID IT on a card from a conversation
          three days old acts on a state nobody is looking at. */}}
     {{if and $.Live .Acts}}
-    <div class="turnacts">
+    <div class="{{if eq .Kind "chore"}}acts{{else}}turnacts{{end}}">
       {{range .Acts}}
       <form method="post" action="{{.Action}}">
         {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
@@ -29,7 +36,7 @@
       {{end}}
     </div>
     {{end}}
-  </div>
+  </article>
   {{end}}
 
   {{/* The question, as one form with two rows and one submit. Radios rather
@@ -41,7 +48,7 @@
     {{range $name, $value := .Pick.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
     {{range .Pick.Rows}}
     {{$row := .}}
-    <p class="picklead">{{.Lead}}</p>
+    <p class="lead">{{.Lead}}</p>
     <div class="pickrow">
       {{range .Options}}
       <label class="chip{{if eq . $row.Chosen}} current{{end}}">

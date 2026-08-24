@@ -12,54 +12,6 @@ import (
 // the same device the deck and the shelf use.
 const taskLimit = 30
 
-// What you decided: things you chose to do once, which left the pile when you
-// chose them and are archived when you have done them.
-//
-// The pile holds what you have not decided about — that is what triage is for,
-// and why stopping partway is fine. This holds what you have. Keeping both in
-// one list would mean triage stopped meaning anything.
-func tasksHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		items, more, err := s.Tasks(r.Context(), personID, taskLimit)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		v := view{Here: "tasks", More: more}
-		for _, it := range items {
-			v.Results = append(v.Results, toView(it))
-		}
-		renderWith(w, r, s, opts, "tasks", v)
-	}
-}
-
-// What you have done. Never how many, and never crossed out — striking through
-// your own words would be the product marking them as spent.
-func archiveHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		items, more, err := s.ArchivedTasks(r.Context(), personID, taskLimit)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		v := view{Here: "archive", More: more}
-		for _, it := range items {
-			v.Results = append(v.Results, toView(it))
-		}
-		renderWith(w, r, s, opts, "archive", v)
-	}
-}
-
 // Two ways out of a task, and only two.
 //
 // Dropping is deliberately absent: a task you no longer want is a note you no

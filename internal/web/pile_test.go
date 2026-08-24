@@ -39,11 +39,8 @@ func TestTheRouteTable(t *testing.T) {
 		"GET /held",
 		"GET /moods",
 		"POST /held/act",
-		"GET /chores",
 		"GET /kept",
 		"GET /enough",
-		"GET /tasks",
-		"GET /tasks/done",
 		"POST /tasks/act",
 		"POST /tasks/new",
 		"POST /chores/act",
@@ -61,7 +58,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 40, "a route was added without being pinned here")
+	require.Len(t, m.routes, 37, "a route was added without being pinned here")
 }
 
 // Buddy was /coach for the release it shipped in, and the same rule applies:
@@ -84,7 +81,9 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/chores", nil)
 
 	require.Equal(t, http.StatusMovedPermanently, w.Code)
-	require.Equal(t, "/chores", w.Header().Get("Location"))
+	// Home, since the chores stopped being a page on 24 August 2026. The
+	// redirect stays because the URL is in somebody's history.
+	require.Equal(t, "/", w.Header().Get("Location"))
 }
 
 func TestPileShowsTheNewestOpenNote(t *testing.T) {

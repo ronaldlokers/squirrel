@@ -2989,7 +2989,12 @@
     background: var(--card); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 4px 0 0 var(--outline);
-    text-decoration: none;
+    text-decoration: none; cursor: pointer;
+    /* Said outright because the door is a button now, and a button does not
+       inherit the page's face: it was left at the browser's own 13.33px, which
+       the appearance snapshot caught. */
+    font: 400 16px/1.55 "Recursive", sans-serif;
+    font-variation-settings: var(--precise);
     transition: transform 90ms ease-out, box-shadow 90ms ease-out;
   }
   .rdoor:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
@@ -3103,6 +3108,10 @@
   .abtn.later:hover { background: var(--paper-deep); color: var(--outline); }
   .abtn.later:active { background: var(--dropped); color: var(--paper); }
   .abtn.go { background: var(--paper); color: var(--outline); }
+  /* The way back out of a decision. Quiet, and not the deferral's brown: this
+     is a thing returning to where it came from rather than being put off. */
+  .abtn.back { background: var(--paper); color: var(--brown); }
+  .abtn.back:hover { background: var(--paper-deep); color: var(--outline); }
   .abtn.go:hover { background: var(--paper-deep); }
   /* The four ways of not being able to start. Quieter than the three above
      them — they are a way out rather than a way on — and quiet here means the
@@ -3125,7 +3134,10 @@
     border: var(--line) solid var(--outline); border-radius: var(--r);
     box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
   }
-  .picklead {
+  /* The shared Meta role, not a class of its own: a label above a row of
+     choices is the same thing the rest of the product calls a lead, and
+     TestBrowserNoMetaLabelIsAsLargeAsBodyText fences that role by name. */
+  .pick .lead {
     margin: 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     color: var(--brown); font-variation-settings: var(--precise), "wght" 750;
   }

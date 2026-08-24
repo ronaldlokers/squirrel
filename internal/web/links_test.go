@@ -31,7 +31,6 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 	pages := map[string]string{
 		"home":    "/",
 		"deck":    "/pile",
-		"chores":  "/chores",
 		"results": "/pile?q=boiler",
 		"bottom":  "/pile?after=1",
 	}

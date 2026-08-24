@@ -61,7 +61,8 @@ var appearanceScreens = map[string][]string{
 		".lid", ".brand img", ".wordmark", ".lidbtn",
 		".railwrap", ".rail", ".rdoor", ".rname",
 		".thread", ".turn", ".frombuddy .bub", ".fromyou .bub",
-		".turncard", ".turnname", ".turnmeta", ".abtn",
+		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
+		".pick", ".pick .lead", ".pickrow", ".pick .make",
 		".dock", ".slot", ".slot textarea", ".slot .post",
 	},
 	// The check-in as a question. It is a turn like any other, and the faces
@@ -75,11 +76,9 @@ var appearanceScreens = map[string][]string{
 	},
 	// `.ends .quietpick` as well as `.ends`: the underline is on the link, and
 	// the paragraph around it cannot report what the link is wearing.
-	"/tasks":  {".deckhead", ".tcard", ".tcard p", ".tbtn", ".newtask", ".decide", ".ends", ".ends .quietpick"},
-	"/chores": {".deckhead", ".chore", ".chore .name", ".chore .meta", ".abtn", ".abtn.stop", ".often > summary", ".ends"},
-	"/kept":   {".deckhead", ".rcard", ".rcard .tab", ".rcard p", ".rbtn", ".ends"},
-	"/held":   {".deckhead", ".heldgroup", ".aside", ".aside .what", ".aside .onwhat", ".ends"},
-	"/moods":  {".deckhead", ".aday", ".aday .when", ".areading", ".ends"},
+	"/kept":  {".deckhead", ".rcard", ".rcard .tab", ".rcard p", ".rbtn", ".ends"},
+	"/held":  {".deckhead", ".heldgroup", ".aside", ".aside .what", ".aside .onwhat", ".ends"},
+	"/moods": {".deckhead", ".aday", ".aday .when", ".areading", ".ends"},
 	// `.empty img` is here and nowhere else because /enough is the one screen
 	// that overrides it. The size is the difference between a different drawing
 	// and the same one shrunk, and the HTML attribute cannot hold it — the

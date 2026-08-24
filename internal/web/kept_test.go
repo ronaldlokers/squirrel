@@ -62,7 +62,7 @@ func TestTheEmptyShelfDoesNotInstruct(t *testing.T) {
 
 // The ends of the pile are where the shelf is reachable from, because they are
 // the two moments with nothing to triage.
-func TestTheEndsOfThePileOfferTheShelfAndTheChores(t *testing.T) {
+func TestTheEndsOfThePileOfferTheShelfAndTheWayBack(t *testing.T) {
 	m := mounted(t, aShelf())
 
 	for _, url := range []string{"/pile?after=1", "/pile"} {
@@ -71,10 +71,12 @@ func TestTheEndsOfThePileOfferTheShelfAndTheChores(t *testing.T) {
 			continue
 		}
 		require.Contains(t, body, `href="/kept"`)
-		require.Contains(t, body, `href="/chores"`)
+		// The chores stopped being a page; what the foot offers instead is the
+		// way back to the conversation they live in now.
+		require.Contains(t, body, `href="/"`)
 	}
 
 	empty := mounted(t, &fakeStore{}).call(t, "GET", "/pile", nil).Body.String()
 	require.Contains(t, empty, `href="/kept"`)
-	require.Contains(t, empty, `href="/chores"`)
+	require.Contains(t, empty, `href="/"`)
 }

@@ -156,7 +156,7 @@ func TestSettingThingsAsideDidNotBecomeAFourthDoor(t *testing.T) {
 // archive — which is where you look when you wonder what happened to something.
 func TestTheTasksScreenReachesIt(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{task(1, "ring the vet", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/tasks", nil).Body.String()
+	body := opened(t, f, "tasks")
 
 	require.Contains(t, body, `href="/held"`)
 	require.Contains(t, body, "what you cannot act on")

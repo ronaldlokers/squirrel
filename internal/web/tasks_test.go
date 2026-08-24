@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"testing"
@@ -21,30 +22,39 @@ func aDeciding() *fakeStore {
 // The pile holds what you have not decided about; this holds what you have.
 // Keeping both in one list would mean triage stopped meaning anything.
 func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
-	m := mounted(t, aDeciding())
-	body := m.call(t, "GET", "/tasks", nil).Body.String()
+	f := aDeciding()
+	body := opened(t, f, "tasks")
 
 	require.Contains(t, body, "ring the vet")
 	require.NotContains(t, body, "buy milk", "a thought is not a decision")
 	require.NotContains(t, body, "cancel the old insurance", "done is not still to do")
 
 	// And the reverse: the pile does not show a task.
-	pile := m.call(t, "GET", "/pile", nil).Body.String()
+	pile := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
 	require.Contains(t, pile, "buy milk")
 	require.NotContains(t, pile, "ring the vet")
 }
 
-func TestTheArchiveHoldsWhatYouDid(t *testing.T) {
-	body := mounted(t, aDeciding()).call(t, "GET", "/tasks/done", nil).Body.String()
+// The archive was a screen; it is not one any more, and nothing has replaced
+// it yet. What you did is still in the store and `!find` still reaches it — the
+// thread will draw it when the pile joins the conversation in phase 3.
+//
+// This is left as a test of the store's own boundary rather than deleted, so
+// the day somebody wires the archive back in there is something that already
+// says what it should hold.
+func TestWhatYouDidIsStillThereToDrawLater(t *testing.T) {
+	f := aDeciding()
+	done, _, err := f.ArchivedTasks(context.Background(), 1, 10)
 
-	require.Contains(t, body, "cancel the old insurance")
-	require.NotContains(t, body, "ring the vet")
+	require.NoError(t, err)
+	require.Len(t, done, 1)
+	require.Equal(t, "cancel the old insurance", done[0].RawText)
 }
 
 // Two actions and only two. Dropping is absent: a task you no longer want is a
 // note you no longer want, and it gets there by ceasing to be a task first.
 func TestATaskOffersTwoWaysOut(t *testing.T) {
-	body := mounted(t, aDeciding()).call(t, "GET", "/tasks", nil).Body.String()
+	body := opened(t, aDeciding(), "tasks")
 
 	require.Contains(t, body, `value="done"`)
 	require.Contains(t, body, `value="untask"`)
@@ -104,23 +114,31 @@ func TestAnEmptyDecisionDoesNothing(t *testing.T) {
 	require.Empty(t, f.items)
 }
 
-// A list of things to do is where a counter most wants to appear.
-func TestTheTasksScreenNeverCounts(t *testing.T) {
+// Buddy counts them, and nothing else does.
+//
+// This forbade every shape of counter here, on the argument that a list of
+// things to do is where one most wants to appear. Principle 2 was retired on
+// 24 August 2026 and Buddy says how many. What is still refused is the shape
+// that reads as a position in a queue or as an amount outstanding: "1 of 7"
+// tells you where you are in a list you are behind on, and "7 left" is the same
+// sentence with the target said out loud.
+func TestTheTasksAreCountedAndNeverRanked(t *testing.T) {
 	items := []squirrel.Item{}
 	for i := int64(1); i <= 7; i++ {
 		items = append(items, task(i, "a decided thing", squirrel.ItemOpen))
 	}
-	body := strings.ToLower(mounted(t, &fakeStore{items: items}).call(t, "GET", "/tasks", nil).Body.String())
+	body := strings.ToLower(opened(t, &fakeStore{items: items}, "tasks"))
 
-	for _, total := range []string{"7 tasks", "7 things", "of 7", "(7)", "1 of ", "7 left"} {
-		require.NotContains(t, body, total)
+	require.Contains(t, body, "7 things you decided")
+	for _, ranked := range []string{"of 7", "(7)", "1 of ", "7 left", "7 remaining"} {
+		require.NotContains(t, body, ranked)
 	}
 }
 
 // No deadline, nothing red, no urgency — a task is a thing to do, not a thing
 // to be late for.
 func TestATaskIsNeverLate(t *testing.T) {
-	body := strings.ToLower(mounted(t, aDeciding()).call(t, "GET", "/tasks", nil).Body.String())
+	body := strings.ToLower(opened(t, aDeciding(), "tasks"))
 
 	for _, word := range []string{"overdue", "due", "late", "deadline", "urgent", "priority"} {
 		require.NotContains(t, body, word)
@@ -130,9 +148,9 @@ func TestATaskIsNeverLate(t *testing.T) {
 // Absence, not encouragement: an empty task list is a normal state and not a
 // failure to set up.
 func TestNothingDecidedDoesNotNag(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/tasks", nil).Body.String()
+	body := opened(t, &fakeStore{}, "tasks")
 
-	require.Contains(t, body, "nothing decided")
+	require.Contains(t, strings.ToLower(body), "nothing decided")
 	for _, nag := range []string{"get started", "add your first", "you should", "why not"} {
 		require.NotContains(t, strings.ToLower(body), nag)
 	}

@@ -109,13 +109,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	// How you have been, and only when asked for by name. Nothing links here
 	// except the check-in you just answered.
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
-	m.Get("/chores", guard(opts, choresHandler(s, opts)))
 	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	// Stopping. No store, on purpose: a route that cannot read cannot start
 	// keeping score of how much you did before you pressed it.
 	m.Get("/enough", guard(opts, enoughHandler(opts)))
-	m.Get("/tasks", guard(opts, tasksHandler(s, opts)))
-	m.Get("/tasks/done", guard(opts, archiveHandler(s, opts)))
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
 	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
@@ -126,7 +123,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// The chores screen lived here for its whole life. A bookmark that dies
 	// quietly is worse than a redirect nobody notices.
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/chores", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 	}))
 	// Outside the guard, like the worker below and for the same reason: a
 	// browser fetches a manifest without the cookies that carry the identity,
