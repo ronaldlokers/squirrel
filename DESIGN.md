@@ -819,6 +819,22 @@ thing is what is inside it.
   in front of you rather than a description of it. Nothing is written until the
   press.
 
+**A notification lands in the conversation.** `/at/{id}` is the URL a leave-by
+warning carries and it keeps working forever — one sent last week is still on a
+lock screen, and a link that 404s is worse than one that lands somewhere true.
+It writes the appointment as a turn and sends you to the thread, so tapping a
+warning puts the thing you are about to leave for at the live edge, with what to
+take on it.
+
+It is the one GET in the product that writes. That is deliberate: the tap *was*
+the press, and the redirect means reloading where you land does not write again.
+
+**A refusal is answered with where the switch is.** A browser told no will not
+ask again and this site cannot make it, so there is no button to draw — one
+would be a control that cannot work. What is shown instead, once and only to
+somebody who has actually refused, is the sentence that says where to turn them
+back on.
+
 **An empty place is a sentence, not a drawing.** The empty states were their
 own treatment — the mascot, a headline in the casual axis, a screen that is an
 absence. A place that is a message has no screen to be absent: Buddy says

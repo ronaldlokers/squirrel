@@ -41,7 +41,20 @@
      browser can, and that the question has not already been answered — a
      control that cannot change anything is furniture, and one that asks again
      after a no is a nag. */}}
-{{if .PushKey}}<button id="askPush" class="askpush" type="button" hidden>tell me when to leave</button>{{end}}
+{{if .PushKey}}
+<button id="askPush" class="askpush" type="button" hidden>tell me when to leave</button>
+{{/* And the way back, for issue #147. Once a browser has been told no it will
+     not ask again, and the site cannot re-ask — so a button here would be a
+     control that cannot work. What is offered instead is the one thing that
+     can change it: where the switch is.
+
+     Shown only when the answer was no, and it says nothing on any other
+     visit. */}}
+<p id="pushRefused" class="pushrefused" hidden>
+  Your browser is blocking these. Turn notifications on for this site in its
+  own settings and I can tell you when to leave.
+</p>
+{{end}}
 
 {{/* The dock: home's slot, pinned. Same route, same field, same camera — one
      capture path, because a second one would have weaker guarantees than the

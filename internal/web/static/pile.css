@@ -3246,3 +3246,13 @@
     font-size: 16px; font-variation-settings: var(--casual), "wght" 500;
   }
   .cut .make { align-self: flex-start; margin-top: 4px; }
+
+  /* The way back once notifications have been refused. Not a control — the
+     browser will not ask again and this site cannot make it — so it is a
+     sentence saying where the switch is, in the quiet the rest of the foot
+     wears. Issue #147. */
+  .pushrefused {
+    width: min(676px, 100%); margin: 10px auto 0;
+    font-size: 13.5px; line-height: 1.45; color: var(--cream);
+    font-variation-settings: var(--precise), "wght" 500;
+  }

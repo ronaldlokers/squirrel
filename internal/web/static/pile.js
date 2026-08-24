@@ -908,7 +908,16 @@
   // that cannot change anything is furniture, and one that asks again after a
   // no is a nag.
   const askPush = document.getElementById("askPush");
+  const refused = document.getElementById("pushRefused");
   if (askPush) {
+    // Once a browser has been told no it will not ask again, and this site
+    // cannot re-ask. A button would be a control that cannot work, so what is
+    // shown instead is the only thing that can change it: where the switch is.
+    // Issue #147 — before this, a no was the end of it with nothing said.
+    if (refused && document.body.dataset.pushKey && "Notification" in window &&
+        Notification.permission === "denied") {
+      refused.hidden = false;
+    }
     if (!document.body.dataset.pushKey || !("Notification" in window) ||
         Notification.permission !== "default") {
       askPush.hidden = true;
@@ -926,7 +935,12 @@
       askPush.hidden = false;
       askPush.addEventListener("click", async () => {
         askPush.hidden = true;
-        if (await Notification.requestPermission() !== "granted") return;
+        if (await Notification.requestPermission() !== "granted") {
+          // Said now rather than on the next visit: the moment you refused is
+          // the moment the sentence is about something you just did.
+          if (refused) refused.hidden = false;
+          return;
+        }
         const registration = await navigator.serviceWorker.ready;
         await subscribe(registration);
       });

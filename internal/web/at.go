@@ -52,14 +52,26 @@ func atOneHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		notes, err := s.NotesFor(r.Context(), personID, id)
 		if err != nil {
-			fail(w, err)
-			return
+			slog.Error("reading what points at it", "error", err)
 		}
-		renderWith(w, r, s, opts, "atone", view{
-			Here: "at", Scrolling: true,
-			Moment:   momentViewOf(m),
-			Attached: attachedViews(notes),
+
+		// The notification's own URL, and it keeps working forever: one sent
+		// last week is still on a lock screen, and a link that 404s is worse
+		// than one that lands somewhere true.
+		//
+		// It writes the turn and sends you to the conversation, so tapping a
+		// warning puts the appointment at the live edge — the thing you are
+		// about to leave for, with what to take on it, under everything else
+		// that was said today.
+		//
+		// A GET that writes, which nothing else here does. It is a press: the
+		// notification was the thing you tapped, and the redirect means a
+		// reload of where you land does not write again.
+		keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: m.Label},
+			fixedPointTurn(m, notes),
 		})
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
