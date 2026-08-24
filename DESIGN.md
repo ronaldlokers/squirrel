@@ -1512,6 +1512,22 @@ chat and with the notification so the three cannot drift about when to leave.
   pile* — which is the whole reversal, because the pointer was the whole of the
   change.
 
+**Where a notification lands.** Pressing a leave-by warning goes to that fixed
+point's own screen. It went to the front door for the product's whole life, on
+the argument that *a link to something that has since been done is worse than a
+page that says what is true now* — and that reasoning is kept rather than
+dropped, because a fixed point inside its leave-by window is the one thing here
+that cannot be stale: the notification and the window are the same fact.
+
+Two carve-outs survive the change unaltered. A window already on the
+destination is left alone, because navigating would reload it and throw away
+whatever is half-typed in the slot. And a push carrying no destination still
+opens the front door, which is what every notification did before.
+
+*(This rule lived only in `sw.js`'s own comment until now. It is written here
+because it is a design decision, and a decision recorded in one file's comment
+is a decision the next person changes without knowing they are changing it.)*
+
 A note pointing at an appointment leaves the pile and comes back when the
 appointment is over. That is a read rule rather than a state: nothing accrues,
 nothing runs on a schedule, and there is no fifth disposition for any screen to

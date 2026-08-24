@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -720,6 +721,10 @@ func (s *Scheduler) MomentTick(ctx context.Context, now time.Time) error {
 		if pushErr := s.opts.Push(ctx, s.opts.PersonID, Push{
 			Title: m.Label,
 			Body:  body,
+			// The fixed point's own screen, which is where what to take and
+			// anything pointing at it lives. The front door was right while
+			// there was nowhere better to land.
+			URL: "/at/" + strconv.FormatInt(m.ID, 10),
 		}); pushErr != nil {
 			s.opts.OnError(fmt.Errorf("pushing a leave-by warning: %w", pushErr))
 		}

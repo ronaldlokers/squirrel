@@ -43,7 +43,7 @@ const runNotificationClick = `
 	eval(src.slice(from));
 
 	const event = new Event("notificationclick");
-	event.notification = { close() {} };
+	event.notification = { close() {}, data: DATA };
 	let settled;
 	event.waitUntil = (p) => { settled = p; };
 	self.dispatchEvent(event);
@@ -53,7 +53,7 @@ const runNotificationClick = `
 
 func notificationClick(t *testing.T, c *cdp, at string, open bool) map[string]any {
 	t.Helper()
-	setup := "const AT = " + `"` + at + `"; const OPEN = `
+	setup := "const DATA = undefined; const AT = " + `"` + at + `"; const OPEN = `
 	if open {
 		setup += "true;"
 	} else {
@@ -99,4 +99,37 @@ func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.
 	got := notificationClick(t, c, "/pile", false)
 
 	require.Equal(t, []any{"opened /"}, got["went"])
+}
+
+// A leave-by notification lands on the fixed point it is about, not on the
+// front door.
+//
+// The front door was right while there was nowhere better to go, and its
+// reasoning is kept: a link to something already done is worse than a page
+// saying what is true now. A fixed point inside its leave-by window is the one
+// thing here that cannot be stale — the notification and the window are the
+// same fact.
+func TestBrowserTappingALeaveByNotificationLandsOnTheFixedPoint(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	setup := `const DATA = { url: "/at/4" }; const AT = "/pile"; const OPEN = true;`
+	got, ok := c.eval(t, setup+runNotificationClick).(map[string]any)
+	require.True(t, ok)
+
+	require.Equal(t, "/at/4", got["ended"],
+		"the tap raised a window still sitting on %v", got["ended"])
+	require.Equal(t, float64(1), got["focused"])
+}
+
+// And a window already on that fixed point is left alone, exactly as the front
+// door is: navigating would reload it, and the slot on it may be half-typed.
+func TestBrowserTappingItAgainDoesNotReloadTheFixedPoint(t *testing.T) {
+	c, _ := open(t, aPile())
+
+	setup := `const DATA = { url: "/at/4" }; const AT = "/at/4"; const OPEN = true;`
+	got, ok := c.eval(t, setup+runNotificationClick).(map[string]any)
+	require.True(t, ok)
+
+	require.Empty(t, got["went"], "it was navigated over itself, discarding the slot")
+	require.Equal(t, float64(1), got["focused"])
 }
