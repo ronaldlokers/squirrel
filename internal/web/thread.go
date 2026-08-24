@@ -81,8 +81,11 @@ type cardView struct {
 	// Photo is the note's own picture, or empty. A note with no words at all
 	// is a perfectly good note, and a task made from one would otherwise be a
 	// card saying nothing.
-	Photo string    `json:"photo,omitempty"`
-	Acts  []actView `json:"acts,omitempty"`
+	Photo string `json:"photo,omitempty"`
+	// Take is what to bring, on its own line: it is the thing you are standing
+	// in the hall without, so it is a line rather than a tail on the meta.
+	Take string    `json:"take,omitempty"`
+	Acts []actView `json:"acts,omitempty"`
 }
 
 // actView is one button on a card.
@@ -1107,4 +1110,48 @@ func comingLead(n int) string {
 		return "One thing has a time."
 	}
 	return fmt.Sprintf("%d things have a time.", n)
+}
+
+// fixedPointTurn is one appointment and what is pointing at it.
+//
+// What to take is its own line rather than a clause after a middot: it is the
+// thing you are standing in the hall without, so it gets to be a line rather
+// than a tail. Absent when there is nothing to take — an empty label is a row
+// that says nothing.
+func fixedPointTurn(m squirrel.Moment, notes []squirrel.Item) squirrel.Turn {
+	card := cardView{Title: m.Label, Meta: squirrel.LeaveWords(m)}
+	if m.Bring != "" {
+		card.Take = "take " + m.Bring
+	}
+	if m.Open(now()) {
+		card.Acts = []actView{{
+			Label: "LEAVING", Action: "/now/act", Style: "did",
+			Fields: map[string]string{
+				"kind": string(squirrel.OfferMoment),
+				"id":   strconv.FormatInt(m.ID, 10),
+				"act":  "did", "label": m.Label,
+			},
+		}}
+	}
+	sh := drawn{Cards: []cardView{card}}
+
+	// The notes pointing at it, each with the way back. Every transition in
+	// this product reverses, and the pointer was the whole of the change.
+	for _, it := range notes {
+		v := toView(it)
+		sh.Cards = append(sh.Cards, cardView{
+			Title: v.Text, Photo: v.Photo, Meta: v.When,
+			Acts: []actView{{
+				Label: "BACK IN THE PILE", Action: "/at/" + strconv.FormatInt(m.ID, 10) + "/detach",
+				Style: "back", Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)},
+			}},
+		})
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing a fixed point", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.LeaveWords(m)}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.LeaveWords(m), Shown: body}
 }

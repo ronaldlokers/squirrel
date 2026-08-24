@@ -23,6 +23,7 @@
     {{if .Photo}}<p class="cardphoto"><img src="{{.Photo}}" alt="the photograph on this note" loading="lazy"></p>{{end}}
     <p class="{{if eq .Kind "chore"}}name{{else}}turnname{{end}}">{{.Title}}</p>
     {{if .Meta}}<p class="{{if eq .Kind "chore"}}meta{{else}}turnmeta{{end}}">{{.Meta}}</p>{{end}}
+    {{if .Take}}<p class="takeline">{{.Take}}</p>{{end}}
     {{/* Controls only on the live edge. A card in scrollback keeps its words
          and loses its buttons: pressing DID IT on a card from a conversation
          three days old acts on a state nobody is looking at. */}}

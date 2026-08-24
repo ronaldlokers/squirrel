@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -148,14 +149,26 @@ func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/at/"+strconv.FormatInt(id, 10), http.StatusSeeOther)
 			return
 		}
-		itemID, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
-		if err == nil {
-			if _, err := s.DetachNote(r.Context(), personID, itemID); err != nil {
-				fail(w, err)
-				return
-			}
+		itemID, perr := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if perr != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
 		}
-		http.Redirect(w, r, "/at/"+strconv.FormatInt(id, 10), http.StatusSeeOther)
+		moved, err := s.DetachNote(r.Context(), personID, itemID)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !moved {
+			// Not yours, or not pointing anywhere. Nothing happened, so
+			// nothing is said about it.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "back in the pile"},
+			{Who: squirrel.SpeakerBuddy, Words: "It is in the pile again."},
+		}), "/")
 	}
 }
 
@@ -191,4 +204,47 @@ func upcomingViews(ms []squirrel.Moment) []momentView {
 		out = append(out, *momentViewOf(m))
 	}
 	return out
+}
+
+// atOpenHandler draws one fixed point into the conversation.
+//
+// The same three things the page shows — when to leave, what to take, and the
+// notes pointing at it — said rather than navigated to. `/at/{id}` stays a real
+// page until phase 4: a notification sent yesterday is still on a lock screen.
+func atOpenHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		m, found, err := s.MomentByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			// Not yours, or gone. Nothing is drawn and nothing is said.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		notes, err := s.NotesFor(r.Context(), personID, id)
+		if err != nil {
+			slog.Error("reading what points at it", "error", err)
+		}
+
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: m.Label},
+			fixedPointTurn(m, notes),
+		}), "/")
+	}
 }

@@ -242,3 +242,37 @@ func TestAnEmptyAgendaSaysSoWithoutEncouraging(t *testing.T) {
 func withUpcoming(ms ...squirrel.Moment) *fakeStore {
 	return &fakeStore{upcoming: ms}
 }
+
+// Opening one draws it with what to take and the notes pointing at it.
+func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
+	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
+	f.attached = []squirrel.Item{
+		{ID: 7, RawText: "the referral letter", State: squirrel.ItemOpen},
+	}
+	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=4"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "dentist")
+	require.Contains(t, shown, "take keys, wallet")
+	require.Contains(t, shown, "the referral letter")
+}
+
+// A fixed point that is not yours draws nothing and says nothing.
+func TestAFixedPointThatIsNotYoursDrawsNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=99"))
+
+	require.Empty(t, f.appended)
+}
+
+// A note goes back to the pile, and the going back is said.
+func TestDetachingANoteIsSaid(t *testing.T) {
+	f := withMoment(aMoment(3*time.Hour, ""))
+	f.attached = []squirrel.Item{{ID: 7, RawText: "the referral letter", State: squirrel.ItemOpen}}
+	routed(t, f).call(t, "POST", "/at/4/detach", strings.NewReader("id=7"))
+
+	require.Equal(t, []int64{7}, f.detached)
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "pile")
+}

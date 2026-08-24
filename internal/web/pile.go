@@ -102,6 +102,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// see sw.js, and DESIGN.md for what that replaced.
 	m.Get("/at", guard(opts, atHandler(s, opts)))
 	m.Get("/at/{id}", guard(opts, atOneHandler(s, opts)))
+	// One fixed point, drawn into the conversation. See atOpenHandler.
+	m.Post("/at/open", guard(opts, sameOrigin(atOpenHandler(s, opts))))
 	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
 	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
 	m.Get("/held", guard(opts, heldHandler(s, opts)))
