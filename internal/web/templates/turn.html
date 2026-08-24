@@ -11,6 +11,9 @@
 
   {{range .Cards}}
   <div class="turncard">
+    {{/* The photograph is the note, and the words beside it are the caption —
+         the same order the pile's card draws them in. */}}
+    {{if .Photo}}<p class="cardphoto"><img src="{{.Photo}}" alt="the photograph on this note" loading="lazy"></p>{{end}}
     <p class="turnname">{{.Title}}</p>
     {{if .Meta}}<p class="turnmeta">{{.Meta}}</p>{{end}}
     {{/* Controls only on the live edge. A card in scrollback keeps its words
