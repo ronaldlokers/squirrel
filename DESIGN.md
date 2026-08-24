@@ -858,6 +858,15 @@ results in place. On the thread the form posts and the answer arrives as a turn,
 so that enhancement stands aside rather than fetching a page nobody asked for
 and pasting it over the conversation.
 
+**A question in progress owns the keys.** While the interval question is on the
+table a digit is a count, a letter is a unit by the word's own first letter, and
+Enter answers — so `d` means *days* rather than DONE, and a letter aimed at the
+question cannot act on the note behind it. The deck earned this carve-out and
+then lost the digits when its disclosure went; they are back.
+
+Only that question. A digit inside the day picker would be a day of the month,
+and guessing which of the two was meant would book the wrong one.
+
 **A chip that acts is a form, not a link.** Chips in a turn carry either an href
 or an action, never both: a GET that writes writes again on every reload, which
 is the same reason a door is a press.
