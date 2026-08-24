@@ -26,6 +26,13 @@ type Options struct {
 	// Identity is the one value that may read this pile. Mount refuses to
 	// register a single route when it is empty.
 	Identity string
+	// Location is where the person is, and it is not where the process is.
+	//
+	// Threaded rather than read off the clock, the way the scheduler's quiet
+	// hours and evening message already take one: a container's zone is an
+	// accident of its deployment, and a fixed point booked in the wrong one
+	// reads back exactly as typed. See issue #148.
+	Location *time.Location
 	// PushKey is the VAPID public key the browser needs to subscribe, or empty.
 	// Empty means the screen never offers: a subscribe button with no key
 	// behind it is a button that fails silently, which is worse than one that

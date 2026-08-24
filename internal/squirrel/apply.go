@@ -32,6 +32,11 @@ const undoWindow = 10 * time.Minute
 
 type Applier struct {
 	store *Store
+	// where the person is. Zero means the process's own zone, which is what
+	// the tests that do not care get; boot sets it from the configured
+	// location. A container's zone is an accident of its deployment and a
+	// fixed point is the one thing here you can be late for — see #148.
+	where *time.Location
 	// send is the phase 2 plain-text surface. apply() no longer calls it —
 	// every reply is a Message now, sent through chat — but the field and
 	// NewApplier's parameter stay so boot.go (rewired in a later task) and
@@ -874,7 +879,7 @@ func (a *Applier) at(ctx context.Context, arg string, personID int64) (Message, 
 		said = "at " + said
 	}
 
-	m, ok := ParseMoment(said, time.Now())
+	m, ok := ParseMomentIn(a.where, said, time.Now())
 	if !ok {
 		return Message{Text: "When, and what? Try !at 14:30 dentist."}, nil
 	}
@@ -1639,3 +1644,10 @@ func (a *Applier) undo(ctx context.Context, personID int64) (Message, error) {
 	}
 	return Message{Text: "Dropped " + name + ". It's still in your captures."}, nil
 }
+
+// In sets where the person is, for everything this Applier books.
+//
+// A setter rather than a constructor argument for the same reason SetNudger is
+// one: the Applier and the Scheduler each need the other, and boot builds them
+// in an order that cannot pass both.
+func (a *Applier) In(loc *time.Location) { a.where = loc }

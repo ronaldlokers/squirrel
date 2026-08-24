@@ -131,7 +131,7 @@ func TestMomentOnPutsItOnTheChosenDay(t *testing.T) {
 	now := time.Date(2026, 8, 24, 9, 0, 0, 0, time.Local)
 	day := time.Date(2026, 8, 27, 0, 0, 0, 0, time.Local)
 
-	m, ok := squirrel.MomentOn(day, "at 14:30 dentist", now)
+	m, ok := squirrel.MomentOn(nil, day, "at 14:30 dentist", now)
 	require.True(t, ok)
 	require.Equal(t, 2026, m.Starts.Year())
 	require.Equal(t, time.August, m.Starts.Month())
@@ -146,7 +146,7 @@ func TestAChosenDayIsNotRolledForward(t *testing.T) {
 	now := time.Date(2026, 8, 24, 18, 0, 0, 0, time.Local)
 	day := time.Date(2026, 8, 27, 0, 0, 0, 0, time.Local)
 
-	m, ok := squirrel.MomentOn(day, "at 09:00 dentist", now)
+	m, ok := squirrel.MomentOn(nil, day, "at 09:00 dentist", now)
 	require.True(t, ok)
 	require.Equal(t, 27, m.Starts.Day())
 }
@@ -172,6 +172,49 @@ func TestParseMomentStillRollsForwardAndOnlyThen(t *testing.T) {
 func TestAChosenDayDoesNotLowerTheBar(t *testing.T) {
 	now := time.Now()
 
-	_, ok := squirrel.MomentOn(now.AddDate(0, 0, 3), "14:30 dentist", now)
+	_, ok := squirrel.MomentOn(nil, now.AddDate(0, 0, 3), "14:30 dentist", now)
 	require.False(t, ok)
+}
+
+// The clock a container happens to run on is not where the person is.
+//
+// This is the test issue #148 asked for, and it is the point of the fix: the
+// fault was invisible because a confirmation restates your own time in the
+// wrong zone, so a booking two hours late reads byte-for-byte like a correct
+// one. TZ is forced to UTC here, which is what production had.
+func TestAFixedPointIsBookedWhereThePersonIs(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+	utc := time.FixedZone("UTC", 0)
+	here, err := time.LoadLocation("Europe/Amsterdam")
+	require.NoError(t, err)
+
+	// 04:00 on a summer morning, on a process that thinks it is in UTC.
+	now := time.Date(2026, 8, 24, 4, 0, 0, 0, utc)
+
+	m, ok := squirrel.ParseMomentIn(here, "at 04:42 test", now)
+	require.True(t, ok)
+
+	// The instant is 04:42 where the person is, not where the process is.
+	require.Equal(t, here.String(), m.Starts.Location().String())
+	require.Equal(t, 4, m.Starts.Hour())
+	require.Equal(t, 42, m.Starts.Minute())
+	require.Equal(t, 2, m.Starts.UTC().Hour(),
+		"04:42 in Amsterdam is 02:42 UTC; a process clock would have booked 04:42 UTC")
+}
+
+// And the day a refusal belongs to is the person's day, not the process's.
+//
+// "Not now means today, because tomorrow is a fresh question." On a UTC process
+// in summer, today ended at 02:00 local — so after 02:00 it meant about an hour.
+func TestTodayIsThePersonsDay(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+	here, err := time.LoadLocation("Europe/Amsterdam")
+	require.NoError(t, err)
+
+	// 00:30 local on the 25th is 22:30 UTC on the 24th: the two disagree about
+	// which day it is, which is the whole of the bug.
+	now := time.Date(2026, 8, 24, 22, 30, 0, 0, time.UTC)
+
+	require.Equal(t, 25, squirrel.StartOfDayIn(here, now).Day(),
+		"the refusal window followed the process rather than the person")
 }

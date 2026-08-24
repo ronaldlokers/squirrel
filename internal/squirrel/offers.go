@@ -125,7 +125,7 @@ func (s *Store) UnrefuseToday(ctx context.Context, personID int64, kind OfferKin
 		delete from offers
 		 where person_id = $1 and kind = $2 and ref_id is not distinct from $3
 		   and answer = 'later' and answered_at >= $4`,
-		personID, string(kind), ref, startOfDay(now)); err != nil {
+		personID, string(kind), ref, s.today(now)); err != nil {
 		return fmt.Errorf("taking back a refusal: %w", err)
 	}
 	return nil
