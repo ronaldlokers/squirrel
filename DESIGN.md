@@ -757,7 +757,7 @@ Its order is fixed and each step is 26px from the last:
 2. **The check-in, or its answer** — one interactive thing, and it is either the
    question or the chip that replaced it.
 3. **The offer**, when there is one, and absent when there is not.
-4. **The three doors**, side by side at every width.
+4. **The four doors**, side by side above 620px and two by two below it.
 
 **The three doors are equals**: three cells of one grid, the same stock, the
 same depth, and they must render identically in every state. Nothing on that
@@ -1150,11 +1150,25 @@ screen's body.
 - **Hover:** brightens to paper. A button hovers by deepening; a card you can
   walk into wants a "pick it up" affordance instead, and that difference is the
   point rather than an inconsistency.
-- **Three, side by side at every width.** Their equality is the screen's one
-  statement, and a stacked one would read as first. Three cells are narrower
-  than two, so on a phone the art steps down to 50px and the name takes the
+- **Four, side by side above 620px; two by two below it.** Their equality is
+  the screen's one statement, and a stacked one would read as first. The cells
+  are narrow, so on a phone the art steps down to 50px and the name takes the
   Note floor rather than the phone's step-up — the words have to fit the cell,
   and the cell is what keeps them equal.
+
+  **The phone breaks the row rather than the cells, and the number is why.** At
+  390px the frame is 364px: three cells with a 7px gap measure about 115px and
+  four measure about 84px, where *what you decided* already wraps to two lines
+  at 115px. Two by two holds them near 178px. That trades *side by side at every
+  width* for rearranging instead of shrinking, which keeps the four equal to
+  each other — and their equality is what the rule was protecting.
+
+  **A door's name has to fit one line.** The three original names are ten
+  characters or fewer in a shared grammar; at four across the cell gives about
+  117px of inner width, which is roughly eleven characters at the Note floor. A
+  longer name wraps, and a wrapped name drops its own sub-line below its
+  neighbours' — four equal boxes with unequal type, which is the equality rule
+  failing quietly rather than loudly.
 
 A chore found by a search takes the Door's grammar at one line high, for the
 same reason: it is a place to go, not a thing to do. What can be done to a chore
