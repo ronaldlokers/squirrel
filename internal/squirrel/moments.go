@@ -193,9 +193,35 @@ func (s *Store) NextMoment(ctx context.Context, personID int64, now time.Time) (
 
 // DueMoment is the next one whose warning has not been given and is due to be.
 // The scheduler reads it once a minute.
+//
+// Its own query rather than NextMoment's, and the difference is the whole point.
+// NextMoment answers "what is the next fixed point" — which six callers want,
+// said or not, because that is the one you are being told about. This asks a
+// different question: "is there anything I still owe a warning for". Answering
+// the second with the first meant a fixed point that had already been warned
+// about sat at the head of the queue until it started, and every later one was
+// invisible for those twenty-five minutes.
+//
+// The cost was not a missed test. A moment blocked past its own warn point is
+// never warned about at all, because the scheduler deliberately refuses to send
+// one late — so two appointments less than half an hour apart meant the second
+// arrived in silence, on the one feature whose job is getting somebody out of
+// the door.
+//
+// `said_at is null` is what makes it a queue rather than a peek. The upper
+// bound stays `starts_at > $2`: once a thing has started, its warning is over
+// rather than overdue.
 func (s *Store) DueMoment(ctx context.Context, personID int64, now time.Time) (Moment, bool, error) {
-	m, found, err := s.NextMoment(ctx, personID, now)
-	if err != nil || !found || m.Said || now.Before(m.WarnAt()) {
+	const q = `
+		select id, person_id, label, starts_at, travel_secs, ready_secs,
+		       coalesce(bring, ''), said_at is not null
+		  from moments
+		 where person_id = $1 and done_at is null and starts_at > $2
+		   and said_at is null
+		 order by starts_at limit 1`
+
+	m, found, err := s.scanMoment(ctx, q, personID, now)
+	if err != nil || !found || now.Before(m.WarnAt()) {
 		return Moment{}, false, err
 	}
 	return m, true, nil
