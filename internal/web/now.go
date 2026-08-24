@@ -125,8 +125,23 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
+		forgetOffer(opts, personID)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+}
+
+// forgetOffer drops the decision a model made, and does nothing where no model
+// made one.
+//
+// Called after an answer rather than before it, and after the error check
+// rather than beside it: an answer that did not land is not an answer, and
+// throwing the decision away for it would swap the card underneath a press
+// that failed.
+func forgetOffer(opts Options, personID int64) {
+	if opts.ForgetOffer == nil {
+		return
+	}
+	opts.ForgetOffer(personID)
 }
 
 // nowStuckHandler is "I can't start", and it is the one branch of the offer
@@ -167,6 +182,11 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 					return
 				}
 			}
+			// The same no as "not now", so the same decision has to go. The
+			// three blockers below are not refusals and leave it alone: the
+			// ladder answers underneath the card, and swapping the card there
+			// would replace the thing you have just said you cannot start.
+			forgetOffer(opts, personID)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}

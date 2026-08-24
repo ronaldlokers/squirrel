@@ -245,7 +245,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	webAsk, webRecent, webRemember, webForget := coachWeb(s.coach, store, s.talk)
 	// One decider, shared by the screen and the chat, so both see the same
 	// cached answer and asking twice costs once.
-	decide := decider(s.coach, s.offers)
+	// The decision, and the way to drop it. One call, because they are only
+	// correct against the same cache — see deciding.
+	decide, forgetOffer := deciding(s.coach, s.offers)
 	makeSmaller := breaker(s.coach)
 	split, splittable := splitter(s.coach)
 	hold := interrupter(s.coach, store)
@@ -274,10 +276,11 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			Ask:    webAsk,
 			Recent: webRecent,
 
-			Remember: webRemember,
-			Forget:   webForget,
-			Decide:   decide,
-			Smaller:  makeSmaller,
+			Remember:    webRemember,
+			Forget:      webForget,
+			Decide:      decide,
+			ForgetOffer: forgetOffer,
+			Smaller:     makeSmaller,
 
 			Split:      split,
 			Splittable: splittable,

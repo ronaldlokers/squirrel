@@ -101,12 +101,21 @@ func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Sto
 // comparing its answer catches all of them without a hook at a single write
 // site. Hooks are the version of this that gets forgotten when a seventh write
 // path is added.
-func decider(c coach.Coach, offers *coach.Offers) squirrel.Decider {
+// Both halves come back together, and that is the point rather than tidiness:
+// they are only correct against the same cache. Two adjacent lines reading
+// `decider(c, s.offers)` and `s.offers.Forget` are two chances to name a
+// different one, and a decider that caches into one place while the forget
+// clears another compiles, runs, and reproduces the exact bug this pair exists
+// to fix — silently, because nothing downstream can tell.
+func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(personID int64)) {
 	if _, none := c.(coach.NoCoach); none {
-		return nil
+		// No coach, no decision, and nothing to forget. Both nil, so the
+		// screen's own nil checks take the path that shipped before either
+		// existed.
+		return nil, nil
 	}
 
-	return func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
+	decide := func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
 		mayAsk bool) (string, int64, string, string, bool) {
 
 		now := time.Now()
@@ -135,6 +144,8 @@ func decider(c coach.Coach, offers *coach.Offers) squirrel.Decider {
 		offers.Put(personID, basis, d, now)
 		return d.Kind, d.RefID, d.Text, d.Because, true
 	}
+
+	return decide, offers.Forget
 }
 
 // asker is the seam the core reaches a model through.
