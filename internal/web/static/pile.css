@@ -2862,6 +2862,37 @@
     border: var(--line) solid var(--outline); border-radius: 10px;
   }
 
+  /* Buddy, said out loud.
+   *
+   * It was an unlabelled acorn between two other unlabelled icons in the lid,
+   * so nothing on any screen said a conversation was available or what it would
+   * be about. This says both, on the screen it is about.
+   *
+   * Under the views row where there is one, and above the doors on home, which
+   * has no title. Never fixed and never floating: the floating acorn was tried
+   * and removed for sitting on top of live controls, and the rule that outlived
+   * it is that nothing floats over the content.
+   *
+   * A step quieter than a view — 13px against 13.5px, and the same tail cream —
+   * because the row above it is places you can go and this is not a place. The
+   * acorn is what actually distinguishes it, which is the second mark doing the
+   * job this document says it is available for.
+   */
+  .askline { margin: 0 0 18px; }
+  .askbuddy {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: 44px; padding: 4px 0;
+    font-size: 13px;
+    font-variation-settings: var(--precise), "wght" 600;
+    color: var(--cream);
+    text-decoration: underline; text-underline-offset: 3px;
+    text-decoration-color: rgba(254, 214, 167, .45);
+  }
+  .askbuddy:hover { color: var(--paper); text-decoration-color: currentColor; }
+  /* On home it is the last thing before the doors, so it keeps their rhythm
+     rather than the title's. */
+  .homebox .askline { margin: 26px 0 0; }
+
 /* ---------------------------------------------------------------- */
 /* 8. The meta label, and three things measured against it.          */
 /* ---------------------------------------------------------------- */

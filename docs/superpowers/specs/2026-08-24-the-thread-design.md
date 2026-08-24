@@ -236,16 +236,50 @@ nobody arrives at the place they started wondering where they are.
 The live edge is an `aria-live="polite"` region, so a turn that appears after a
 press is announced.
 
+## What home was carrying
+
+Home dies in phase 1, and it holds four things besides the doors and the slot.
+Each becomes a turn, because a turn is what this app has instead of a region.
+
+**The check-in** is Buddy's opening turn on a day it has not asked yet: the
+question in the bubble, the mood faces as the card beneath it. Answering it
+posts and Buddy's next turn is the acknowledgement, so the answered check-in
+sits in scrollback as *what you said this morning* rather than as a chip that
+replaced a question. This is a straight improvement on the existing shape,
+where the answer overwrites the question and the morning is gone.
+
+**The offer** — `pickMoment`'s one suggestion — is a Buddy turn with `DID IT`,
+`NOT NOW` and the timer. `NOT NOW` turns the offer down and Buddy says so; both
+the offer and the turning-down stay in the thread, which is what
+*stopping partway is a normal ending* looks like when the record keeps it.
+
+**The offer's own slot** — the small capture line inside an offer — folds into
+the dock. There was only ever one reason for a second slot on the page, and it
+was that the dock did not exist.
+
+**Search** stays a URL (`/?q=`) and renders as a turn: your query on the right,
+the results as cards on the left. It is the one place where a turn is allowed
+to be regenerated rather than recorded — a search is a question about now, not
+an utterance — and so it is written to `turns` with `shown` null and re-run on
+render. Phase 3, with the pile.
+
+**`askbuddy`, the acorn, and `/buddy`** all disappear in phase 1. The line that
+said *ask Buddy about this* on every screen was a workaround for Buddy being
+somewhere else.
+
 ## Staging
 
 "Absorbed" is the largest change in this project's life: 22 templates and about
 40 routes. It lands in four shippable phases, each of which leaves the app
 working.
 
-1. **The thread exists.** `/` becomes the conversation: pinned rail, greeting,
-   dock, the `turns` table, paging backwards. The doors still link to the
-   existing screens. Nothing is deleted. Shippable, and the riskiest piece —
-   persistence and PRG — is proven before anything is torn out.
+1. **The thread exists.** `/` becomes the conversation: pinned rail with its
+   counts, the check-in, the offer, the dock, the `turns` table, paging
+   backwards, and the fragment-swap module. The doors still link to the
+   existing screens; `/buddy` and the acorn go. Home, `askbuddy` and the deck's
+   offer region are deleted, because the thread now carries what they carried.
+   Shippable, and the two risky pieces — persistence and the swap — are proven
+   before anything else is torn out.
 2. **The chores and the tasks are absorbed**, with the number × unit picker
    arriving alongside them because it is a chore control. `/chores`, `/tasks`,
    `/tasks/done` and their templates are deleted.

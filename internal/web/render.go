@@ -42,21 +42,21 @@ func page(files ...string) *template.Template {
 }
 
 var pages = map[string]*template.Template{
-	"home":    page("templates/layout.html", "templates/step.html", "templates/home.html"),
-	"chores":  page("templates/layout.html", "templates/stopping.html", "templates/chores.html"),
-	"kept":    page("templates/layout.html", "templates/stopping.html", "templates/kept.html"),
-	"tasks":   page("templates/layout.html", "templates/stopping.html", "templates/tasks.html"),
-	"archive": page("templates/layout.html", "templates/stopping.html", "templates/archive.html"),
-	"bottom":  page("templates/layout.html", "templates/bottom.html"),
-	"pile":    page("templates/layout.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
+	"home":    page("templates/layout.html", "templates/askbuddy.html", "templates/step.html", "templates/home.html"),
+	"chores":  page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/chores.html"),
+	"kept":    page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/kept.html"),
+	"tasks":   page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/tasks.html"),
+	"archive": page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/archive.html"),
+	"bottom":  page("templates/layout.html", "templates/askbuddy.html", "templates/bottom.html"),
+	"pile":    page("templates/layout.html", "templates/askbuddy.html", "templates/every.html", "templates/card.html", "templates/split.html", "templates/pile.html"),
 	"coach":   page("templates/layout.html", "templates/step.html", "templates/coach.html"),
-	"held":    page("templates/layout.html", "templates/stopping.html", "templates/held.html"),
-	"moods":   page("templates/layout.html", "templates/moods.html"),
+	"held":    page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/held.html"),
+	"moods":   page("templates/layout.html", "templates/askbuddy.html", "templates/moods.html"),
 	"empty":   page("templates/layout.html", "templates/empty.html"),
 	"enough":  page("templates/layout.html", "templates/enough.html"),
-	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
-	"at":      page("templates/layout.html", "templates/stopping.html", "templates/at.html"),
-	"atone":   page("templates/layout.html", "templates/stopping.html", "templates/atone.html"),
+	"results": page("templates/layout.html", "templates/askbuddy.html", "templates/every.html", "templates/results.html"),
+	"at":      page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/at.html"),
+	"atone":   page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/atone.html"),
 }
 
 type noteView struct {
@@ -121,6 +121,9 @@ type view struct {
 	// Place is where you are, in the menu's own words, so the shut control can
 	// say it without the template knowing the mapping.
 	Place string
+	// AskBuddy is the line under the screen's title, or empty where there
+	// should be none. Filled by render, so no template decides it.
+	AskBuddy string
 	// Views are the places belonging to the screen you are on — the pile's
 	// shelf, the tasks' archive and set-aside. Under the title, because that is
 	// what they are about.
@@ -261,10 +264,34 @@ func placeName(here string) string {
 		return "the tasks"
 	case "chores":
 		return "the chores"
+	case "at":
+		return "the agenda"
 	case "buddy", "coach":
 		return "buddy"
 	}
 	return "home"
+}
+
+// askBuddyAbout is what the line under a screen's title says, or empty where
+// there should be no line at all.
+//
+// The words name the room rather than the screen, the way the map does: the
+// shelf is somewhere in the pile, and a conversation about it is a conversation
+// about the pile. Home says nothing after "Buddy" because home is not a room
+// about a thing — it is where you start.
+//
+// Empty on two screens, and both are deliberate. `/buddy` is the page itself,
+// and a link to where you already are is furniture. `/enough` is the screen for
+// stopping, and offering a conversation there is the product arguing with a
+// decision it exists to make ordinary.
+func askBuddyAbout(here string) string {
+	switch here {
+	case "buddy", "coach", "enough":
+		return ""
+	case "home", "moods", "":
+		return "ask Buddy"
+	}
+	return "ask Buddy about " + placeName(here)
 }
 
 // elsewhere is the map: the three places, with the one you are in marked.
@@ -592,6 +619,7 @@ func render(w http.ResponseWriter, name string, v view) {
 	v.Light = squirrel.Light(now())
 	v.Elsewhere = elsewhere(v.Here)
 	v.Place = placeName(v.Here)
+	v.AskBuddy = askBuddyAbout(v.Here)
 	if !v.Home {
 		v.Views = views(v.Here)
 	}
