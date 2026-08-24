@@ -701,6 +701,8 @@ func placeTurn(ctx context.Context, s Store, personID int64, where string) []squ
 		reply = choresTurn(ctx, s, personID, name)
 	case "tasks":
 		reply = tasksTurn(ctx, s, personID, name)
+	case "at":
+		reply = agendaTurn(ctx, s, personID, name)
 	default:
 		// The pile and the agenda are phase 3. Until then the doors that are
 		// not built say so rather than answering with silence, which reads as
@@ -1046,4 +1048,63 @@ func saidAboutATask(act, text string) []squirrel.Turn {
 		}
 	}
 	return nil
+}
+
+// agendaTurn is what is still ahead, as cards.
+//
+// The list this product spent its whole life refusing, and what makes it
+// allowed is unchanged by its moving into a turn: it holds only what is still
+// coming. Nothing past, nothing done, and nothing here has been missed —
+// because a thing you have not reached yet is not a thing you are late for.
+func agendaTurn(ctx context.Context, s Store, personID int64, name string) squirrel.Turn {
+	coming, err := s.Upcoming(ctx, personID, now(), listLimit)
+	if err != nil {
+		slog.Error("reading what is coming", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the agenda just now."}
+	}
+	if len(coming) == 0 {
+		return squirrel.Turn{
+			Who:   squirrel.SpeakerBuddy,
+			Words: "When something has a time you can be late for, it will be here.",
+		}
+	}
+
+	sh := drawn{Place: name}
+	for _, m := range coming {
+		row := map[string]string{"id": strconv.FormatInt(m.ID, 10)}
+		// The core's own sentence, shared with chat and with the notification,
+		// so the three cannot drift apart about when to leave.
+		card := cardView{Title: m.Label, Meta: squirrel.LeaveWords(m)}
+		card.Acts = []actView{{Label: "OPEN", Action: "/at/open", Style: "go", Fields: row}}
+		if m.Open(now()) {
+			// Only inside the window. Outside it the appointment is not yet
+			// something you can act on, and a button that closes a thing three
+			// hours early is one that gets pressed by accident.
+			card.Acts = append(card.Acts, actView{
+				Label: "LEAVING", Action: "/now/act", Style: "did",
+				Fields: map[string]string{
+					"kind": string(squirrel.OfferMoment),
+					"id":   strconv.FormatInt(m.ID, 10),
+					"act":  "did", "label": m.Label,
+				},
+			})
+		}
+		sh.Cards = append(sh.Cards, card)
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing the agenda", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw the agenda just now."}
+	}
+	// Buddy counts what is ahead, and says nothing about what is behind: there
+	// is no count of what was missed because nothing here can be.
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: comingLead(len(sh.Cards)), Shown: body}
+}
+
+func comingLead(n int) string {
+	if n == 1 {
+		return "One thing has a time."
+	}
+	return fmt.Sprintf("%d things have a time.", n)
 }
