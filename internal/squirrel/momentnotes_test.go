@@ -226,3 +226,40 @@ func TestUpcomingGuessesTravelTheSameWay(t *testing.T) {
 	require.Equal(t, one.Guessed, got[0].Guessed)
 	require.Equal(t, m.ID, got[0].ID)
 }
+
+// Two views, one pile. `!notes` and the screen run the same query, so a note
+// with somewhere to be is in neither.
+func TestChatsPileAgreesWithTheScreen(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	m := aFixedPoint(t, store, p, "dentist", 3*time.Hour)
+	id := noteOf(t, store, p, "the referral letter")
+	_, err := store.AttachNote(ctx, p, id, m.ID)
+	require.NoError(t, err)
+
+	items, _, err := store.OpenItems(ctx, p, 20)
+	require.NoError(t, err)
+	require.Empty(t, items)
+}
+
+// And the whole justification for pointers over new columns: nothing becomes
+// unfindable. A test is what makes that true rather than intended.
+//
+// If this ever fails, the shape was wrong and the design needs revisiting —
+// not the test.
+func TestFindStillReachesANoteOnAFixedPoint(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	m := aFixedPoint(t, store, p, "dentist", 3*time.Hour)
+	id := noteOf(t, store, p, "the referral letter")
+	_, err := store.AttachNote(ctx, p, id, m.ID)
+	require.NoError(t, err)
+
+	hits, _, err := store.SearchItems(ctx, p, "referral", 20)
+	require.NoError(t, err)
+	require.Len(t, hits, 1, "a note with somewhere to be is still a note you can find")
+}
