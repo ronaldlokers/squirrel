@@ -68,6 +68,12 @@
       "text-transform": "none",
       "width": "84px"
     },
+    ".cut": {
+      "missing": "yes"
+    },
+    ".cut .piece": {
+      "missing": "yes"
+    },
     ".dock": {
       "background-color": "rgba(0, 0, 0, 0)",
       "border-radius": "0px",
@@ -354,6 +360,12 @@
       "text-decoration-line": "none",
       "text-transform": "none",
       "width": "583.906px"
+    },
+    ".wordbox": {
+      "missing": "yes"
+    },
+    ".wordbox textarea": {
+      "missing": "yes"
     },
     ".wordmark": {
       "background-color": "rgba(0, 0, 0, 0)",

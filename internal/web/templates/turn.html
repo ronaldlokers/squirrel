@@ -3,7 +3,7 @@
      is the only thing keeping the server and the browser from growing two
      descriptions of a card. */}}
 {{define "turn"}}
-<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal}} wide{{end}}" id="turn-{{.ID}}">
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal .Say .Cut}} wide{{end}}" id="turn-{{.ID}}">
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
@@ -59,6 +59,34 @@
     </div>
     {{end}}
     <button class="make" type="submit">{{.Pick.Do}}</button>
+  </form>
+  {{end}}
+
+  {{/* A proposal. Nothing has been written: the pieces travel in this form, so
+       one cannot be applied without the press — and a proposal in scrollback
+       has lost its button, so a stale one cannot be applied at all. */}}
+  {{if and .Live .Cut}}
+  <form class="cut" method="post" action="{{.Cut.Action}}">
+    <input type="hidden" name="id" value="{{.Cut.ID}}">
+    <input type="hidden" name="act" value="keep">
+    <input type="hidden" name="from" value="thread">
+    {{range .Cut.Pieces}}
+    <p class="piece">{{.}}</p>
+    <input type="hidden" name="piece" value="{{.}}">
+    {{end}}
+    <button class="make" type="submit">{{.Cut.Do}}</button>
+  </form>
+  {{end}}
+
+  {{/* A question whose answer is words. Its own box rather than the dock: the
+       dock keeps everything you type, and these words replace something. A
+       dock that sometimes captured and sometimes edited would be a dock you
+       could not trust with a thought. */}}
+  {{if and .Live .Say}}
+  <form class="wordbox" method="post" action="{{.Say.Action}}">
+    {{range $name, $value := .Say.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+    <textarea name="text" rows="2" aria-label="How it should read">{{.Say.Was}}</textarea>
+    <button class="make" type="submit">{{.Say.Do}}</button>
   </form>
   {{end}}
 
@@ -124,7 +152,14 @@
 
   {{if and .Live .Chips}}
   <div class="turnchips">
-    {{range .Chips}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{range .Chips}}
+    {{if .Action}}
+    <form method="post" action="{{.Action}}">
+      {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+      <button class="chip" type="submit">{{.Label}}</button>
+    </form>
+    {{else}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}
+    {{end}}
   </div>
   {{end}}
 </div>

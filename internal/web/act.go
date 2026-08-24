@@ -44,6 +44,13 @@ const intervalSentinel = "chore-name-placeholder"
 //
 // The undo hint travels in the query string rather than a session, because
 // this binary has no sessions and the screen is stateless by construction.
+// fromThread says the press was made in the conversation rather than on the
+// deck. The write is the same either way; what differs is the answer.
+//
+// One route and one write, with two answers, rather than a second route that
+// could drift from the first. The branch dies with the deck.
+func fromThread(r *http.Request) bool { return r.FormValue("from") == "thread" }
+
 func back(w http.ResponseWriter, r *http.Request, opts Options, undo url.Values) {
 	target := "/pile"
 	if q := strings.TrimSpace(r.FormValue("q")); q != "" {
@@ -100,6 +107,11 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 				back(w, r, opts, url.Values{})
 				return
 			}
+			if fromThread(r) {
+				it, _, _ := s.ItemByID(r.Context(), personID, id)
+				answerInThread(w, r, s, opts, personID, "task", it.RawText, id, string(it.State))
+				return
+			}
 			// The same way back the four dispositions have. This carried
 			// nothing at all, so the one answer on the card that moves a note
 			// between two screens was the one with no way to change your mind.
@@ -154,6 +166,10 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
+		if fromThread(r) {
+			answerInThread(w, r, s, opts, personID, r.FormValue("act"), it.RawText, it.ID, string(it.State))
+			return
+		}
 		back(w, r, opts, url.Values{
 			"undo":  {strconv.FormatInt(it.ID, 10)},
 			"was":   {string(it.State)},
@@ -200,6 +216,18 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		if fromThread(r) {
+			it, _, _ := s.ItemByID(r.Context(), personID, id)
+			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+				[]squirrel.Turn{
+					{Who: squirrel.SpeakerYou, Words: r.FormValue("count") + " " + r.FormValue("unit")},
+					{Who: squirrel.SpeakerBuddy, Words: "It comes back now."},
+				},
+				pileTurn(r.Context(), s, opts, personID, 0, ""),
+			)), "/")
+			_ = it
+			return
+		}
 		back(w, r, opts, url.Values{
 			"undo":  {strconv.FormatInt(id, 10)},
 			"was":   {string(squirrel.ItemOpen)},
@@ -236,10 +264,122 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 		if len(text) > captureLimit {
 			text = text[:captureLimit]
 		}
+		if fromThread(r) {
+			if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
+				fail(w, err)
+				return
+			}
+			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+				[]squirrel.Turn{
+					{Who: squirrel.SpeakerYou, Words: text},
+					{Who: squirrel.SpeakerBuddy, Words: "That is what it says now."},
+				},
+				pileTurn(r.Context(), s, opts, personID, 0, ""),
+			)), "/")
+			return
+		}
 		if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
 			fail(w, err)
 			return
 		}
 		back(w, r, opts, url.Values{})
+	}
+}
+
+// answerInThread says what happened and hands you the next note.
+//
+// Triage is a loop: the whole reason the deck replaces one card with another is
+// that having decided is the moment you are most able to decide again. The
+// conversation keeps that and stops throwing the last one away.
+func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Options,
+	personID int64, act, text string, id int64, was string) {
+	said := saidAboutANote(act, text, id, was)
+	if len(said) == 0 {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	said = append(said, pileTurn(r.Context(), s, opts, personID, 0, ""))
+	answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+}
+
+// laterHandler is skipping one, which is not a decision.
+//
+// It leaves the note where it was and hands you the next, which is the deck's
+// own LATER. Your half is said too — skipping is a thing you did, and a record
+// that only kept the decisions would be a record of a different afternoon.
+func laterHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "later"},
+			pileTurn(r.Context(), s, opts, personID, after, ""),
+		}), "/")
+	}
+}
+
+// undoHandler is changing your mind, from the chip that travelled with the
+// answer.
+//
+// It is the same write as any other act — putting a note back is `act=open`,
+// and undoing a decision is making it a note again — so it goes through the
+// same handler rather than growing a second way to move a note.
+func undoHandler(s Store, opts Options) http.HandlerFunc {
+	act := actHandler(s, opts)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		r.Form.Set("from", "thread")
+		act(w, r)
+	}
+}
+
+// askAbout is the three questions a note can be asked, in the conversation.
+//
+// Each reads the note first, which the words need anyway and which scopes the
+// press: a row that is not yours is not yours to ask about.
+func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: it.RawText},
+			ask(it),
+		}), "/")
 	}
 }

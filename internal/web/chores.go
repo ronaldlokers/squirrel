@@ -306,7 +306,8 @@ func oftenHandler(s Store, opts Options) http.HandlerFunc {
 		count, unit := rhythmOf(c.Every)
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "how often — " + c.Name},
-			askHowOften(c.ID, count, unit),
+			askHowOften("/chores/act",
+				map[string]string{"id": strconv.FormatInt(c.ID, 10)}, count, unit),
 		}), "/")
 	}
 }

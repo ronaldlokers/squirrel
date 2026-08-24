@@ -323,7 +323,30 @@ yesterday is still on a lock screen.
 The lid's menu is down to one entry: the pile is the last screen that is a
 screen, and the way back to the conversation is the mark.
 
-**Phase 3b, not started: the pile.** It is the deck — one-card triage with
+**Phase 3b, half done: triage in the conversation.** The pile door hands you
+one note with DONE, KEEP, DROP and A TASK; acting says what happened and hands
+you the next; *later* skips one without deciding; and the way to change your
+mind travels with the answer, because the card is about to be scrollback.
+
+The deck still stands. Deleting it is 137 references to `/pile` across 39 test
+files plus 54 to its sub-screens, and a triage loop nobody has used yet is not
+a reason to take away the one that works.
+
+The three questions a note can be asked came with it: making a chore out of it
+reuses the interval picker, rewording it opens a box of its own — not the dock,
+which keeps everything you type, where these words replace something — and "i
+can't act on this" offers the same three whys.
+
+The split proposal came too. Nothing is written when it is drawn: the pieces
+are words in a turn until the press, and a proposal in scrollback has lost its
+button by the live edge rule — which is what the deck got from keeping it only
+as long as the page it was on.
+
+**Everything the deck can do, the conversation can do.** What is left is the
+deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
+sub-screens.
+
+**The rest of phase 3b, not started: the deck comes out.** It is the deck — one-card triage with
 split, undo, paging, search and seven states — and it is the hardest surface in
 the product. Splitting it out landed the day picker rather than hiding it
 inside a larger change.

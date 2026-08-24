@@ -45,7 +45,7 @@ func splitHandler(s Store, opts Options) http.HandlerFunc {
 		case "keep":
 			keepSplit(w, r, s, opts, personID, id)
 		default:
-			http.Redirect(w, r, "/pile", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}
 }
@@ -69,8 +69,22 @@ func proposeSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options,
 	pieces, ok := opts.Split(r.Context(), personID, it.RawText)
 	if !ok {
 		// It could not, or it decided the note is really one thought. Either
-		// way the note is exactly as it was and the pile is what to show.
+		// way the note is exactly as it was.
+		if fromThread(r) {
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: "is this more than one thing?"},
+				{Who: squirrel.SpeakerBuddy, Words: "It reads as one thing to me."},
+			}), "/")
+			return
+		}
 		http.Redirect(w, r, "/pile", http.StatusSeeOther)
+		return
+	}
+	if fromThread(r) {
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "is this more than one thing?"},
+			proposeInThread(id, pieces),
+		}), "/")
 		return
 	}
 	pileInto(w, r, s, opts, personID, &splitView{ID: id, Said: it.RawText, Pieces: pieces})
@@ -113,6 +127,16 @@ func keepSplit(w http.ResponseWriter, r *http.Request, s Store, opts Options, pe
 	// exit uses — so undo works on it exactly as it works on anything else.
 	if err := s.SetItemState(r.Context(), id, squirrel.ItemKept, now()); err != nil {
 		fail(w, err)
+		return
+	}
+	if fromThread(r) {
+		answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+			[]squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: "use these"},
+				{Who: squirrel.SpeakerBuddy, Words: "Kept, and the note itself is on the shelf."},
+			},
+			pileTurn(r.Context(), s, opts, personID, 0, ""),
+		)), "/")
 		return
 	}
 	http.Redirect(w, r, "/pile?undo="+strconv.FormatInt(id, 10)+"&was=open&state=kept",
