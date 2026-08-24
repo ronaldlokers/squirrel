@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -93,7 +94,10 @@ type turnChip struct {
 }
 
 type doorView struct {
-	Href  string
+	// Where is the door's own word, posted to /open. Not an href: a door is
+	// pressed rather than followed, and a field that could be used as one
+	// would invite exactly that.
+	Where string
 	Label string
 	Art   string
 	// Count is what is waiting behind the door. Zero renders no number at
@@ -265,10 +269,10 @@ func turnViews(turns []squirrel.Turn) []turnView {
 // reason to take the navigation away.
 func railFor(ctx context.Context, s Store, personID int64, here string) []doorView {
 	rail := []doorView{
-		{Href: "/pile", Label: "the pile", Art: "door-pile.png"},
-		{Href: "/tasks", Label: "the tasks", Art: "door-tasks.png"},
-		{Href: "/chores", Label: "the chores", Art: "door-chores.png"},
-		{Href: "/at", Label: "the agenda", Art: "door-at.png"},
+		{Where: "pile", Label: "the pile", Art: "door-pile.png"},
+		{Where: "tasks", Label: "the tasks", Art: "door-tasks.png"},
+		{Where: "chores", Label: "the chores", Art: "door-chores.png"},
+		{Where: "at", Label: "the agenda", Art: "door-at.png"},
 	}
 	for i := range rail {
 		rail[i].Here = rail[i].Label == here
@@ -625,4 +629,150 @@ func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, ba
 			return
 		}
 	}
+}
+
+// listLimit is how many cards one turn draws.
+//
+// A bound rather than a page, and it matters more here than anywhere else: a
+// turn is frozen the moment it is written, so a turn holding forty cards is
+// forty cards in the record forever.
+const listLimit = 12
+
+// doorNames is the vocabulary, as a map rather than a switch so an unknown door
+// is a lookup miss instead of a default branch someone later fills in with
+// something destructive. The same device the offer's kinds use.
+var doorNames = map[string]string{
+	"pile": "the pile", "tasks": "the tasks", "chores": "the chores", "at": "the agenda",
+}
+
+// openHandler is a door being pressed.
+//
+// A POST, and not a link, because opening a place is an utterance: it goes into
+// the record like anything else you say. A GET that wrote to the record would
+// write again on every reload and on every walk back through the past.
+//
+// What it costs, stated rather than discovered: a door cannot be opened in a
+// new tab, and the back button does not step through doors. That is the
+// ordinary trade for one page, and it is the only thing the rail gave up.
+func openHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		said := placeTurn(r.Context(), s, personID, r.FormValue("where"))
+		if len(said) == 0 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+	}
+}
+
+// placeTurn is what you said and what Buddy answered, or nothing at all.
+func placeTurn(ctx context.Context, s Store, personID int64, where string) []squirrel.Turn {
+	name, ok := doorNames[where]
+	if !ok {
+		return nil
+	}
+	var reply squirrel.Turn
+	switch where {
+	case "chores":
+		reply = choresTurn(ctx, s, personID, name)
+	default:
+		// The pile and the agenda are phase 3. Until then the doors that are
+		// not built say so rather than answering with silence, which reads as
+		// a press that did not land.
+		reply = squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Not yet — that one is still a page."}
+	}
+	return []squirrel.Turn{{Who: squirrel.SpeakerYou, Words: name}, reply}
+}
+
+// choresTurn is what comes back, as cards.
+func choresTurn(ctx context.Context, s Store, personID int64, name string) squirrel.Turn {
+	chores, err := s.ActiveChores(ctx, personID)
+	if err != nil {
+		slog.Error("reading what comes back", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the chores just now."}
+	}
+	if len(chores) == 0 {
+		// A fact, not a nudge. It says where chores come from and offers the
+		// other way of making one — the same words the empty state used.
+		body, err := json.Marshal(drawn{Place: name})
+		if err != nil {
+			slog.Error("drawing the chores", "error", err)
+		}
+		return squirrel.Turn{
+			Who:   squirrel.SpeakerBuddy,
+			Words: "Nothing comes back on its own. When a note becomes a chore, it lives here.",
+			Shown: body,
+		}
+	}
+
+	more := false
+	if len(chores) > listLimit {
+		chores, more = chores[:listLimit], true
+	}
+	sh := drawn{Place: name}
+	for _, c := range chores {
+		sh.Cards = append(sh.Cards, choreCard(toChoreView(c)))
+	}
+	if more {
+		sh.Chips = []turnChip{{Label: "the rest", Href: "/?open=chores"}}
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing the chores", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw the chores just now."}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: choreLead(len(sh.Cards)), Shown: body}
+}
+
+// choreCard is one chore, drawn the one way.
+//
+// Written once and used by both the list and the reply to making a new one: a
+// chore read back out of the store and a chore made from nothing must not look
+// different, which is the sort of difference nobody notices until one of them
+// grows a button the other has not.
+func choreCard(v choreView) cardView {
+	row := map[string]string{"id": strconv.FormatInt(v.ID, 10), "label": v.Name}
+	return cardView{
+		Title: v.Name, Meta: choreMeta(v),
+		Acts: []actView{
+			{Label: "DID IT", Action: "/chores/act", Style: "did", Fields: with(row, "act", "done")},
+			{Label: "HOW OFTEN", Action: "/chores/often", Style: "go", Fields: row},
+			{Label: "STOP ASKING", Action: "/chores/act", Style: "stop", Fields: with(row, "act", "retire")},
+		},
+	}
+}
+
+// choreMeta is the rhythm, and what has happened, on the card's own line.
+//
+// What has not happened is not reported: a chore nobody has ever done shows its
+// rhythm and stops there.
+func choreMeta(v choreView) string {
+	out := v.Every
+	if v.Last != "" {
+		out += " · last done " + v.Last
+	}
+	if v.When != "" {
+		out += " · " + v.When
+	}
+	return out
+}
+
+// choreLead is Buddy counting, which he is allowed to do: Principle 5 permitted
+// it in speech on 20 August 2026 and Principle 2's retirement permitted it
+// everywhere else on the 24th.
+func choreLead(n int) string {
+	if n == 1 {
+		return "One comes back."
+	}
+	return fmt.Sprintf("%d come back.", n)
 }

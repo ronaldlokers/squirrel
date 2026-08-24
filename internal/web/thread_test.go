@@ -3,6 +3,7 @@ package web
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -418,4 +419,63 @@ func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
 	body := routed(t, f).callFragment(t, "/mood", "mood=good").Body.String()
 
 	require.Contains(t, body, `href="/moods"`, "the newest turn keeps its chips")
+}
+
+// Pressing a door says its name, and Buddy answers with what is behind it.
+func TestOpeningADoorSaysItsName(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour,
+			EveryDays: 7, SinceDays: 8, Active: true, EverDone: true},
+	}}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=chores"))
+
+	require.Len(t, f.appended, 2)
+	require.Equal(t, squirrel.SpeakerYou, f.appended[0].Who)
+	require.Equal(t, "the chores", f.appended[0].Words)
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
+	require.Contains(t, string(f.appended[1].Shown), "water the plants")
+}
+
+// And the turn carries the place's name as a heading, so heading navigation
+// still walks the app.
+func TestTheReplyToADoorCarriesItsHeading(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=chores"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, string(f.appended[1].Shown), `"place":"the chores"`)
+}
+
+// A door nobody offered does nothing and says nothing. It arrives from a form,
+// so it is read the way a stranger's typing is read.
+func TestADoorThatDoesNotExistDoesNothing(t *testing.T) {
+	f := &fakeStore{}
+	w := routed(t, f).call(t, "POST", "/open", strings.NewReader("where=cellar"))
+
+	require.Equal(t, 303, w.Code)
+	require.Empty(t, f.appended)
+}
+
+// Nothing behind it says where chores come from, rather than counting to zero
+// or saying nothing at all.
+//
+// Asserting on the words rather than on the absence of cards: `omitempty` makes
+// an empty card list structurally impossible, so a test about that would pass
+// with the empty branch deleted.
+func TestAnEmptyPlaceSaysWhereChoresComeFrom(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=chores"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "Nothing comes back on its own")
+	require.NotContains(t, f.appended[1].Words, "0")
+}
+
+// The rail posts rather than links, because opening a place is something you
+// said and a GET that writes would write again on every reload.
+func TestTheRailPostsRatherThanLinks(t *testing.T) {
+	body := thread(t, &fakeStore{})
+
+	require.Contains(t, body, `action="/open"`)
+	require.NotContains(t, body, `<a class="rdoor`)
 }
