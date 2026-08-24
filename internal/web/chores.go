@@ -96,11 +96,15 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
-			backToChores(w, r, opts)
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: every},
+				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + every + " now."},
+			}), "/")
 			return
 		}
 
-		switch r.FormValue("act") {
+		act := r.FormValue("act")
+		switch act {
 		case "done":
 			// The same write a tap on a nudge makes, and the source says which
 			// surface said so — the events table is the only place that
@@ -118,12 +122,10 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		backToChores(w, r, opts)
+		// What the two of you said about it, after the write, because a
+		// conversation must not claim something happened that did not.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, saidAboutAChore(act, c.Name)), "/")
 	}
-}
-
-func backToChores(w http.ResponseWriter, r *http.Request, opts Options) {
-	http.Redirect(w, r, "/chores", http.StatusSeeOther)
 }
 
 func toChoreView(c squirrel.Chore) choreView {
@@ -216,7 +218,7 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 
 		every, ok := offered(r.FormValue("every"))
 		if !ok {
-			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		part, ok := squirrel.ParseDayPart(r.FormValue("part"))
@@ -224,12 +226,18 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 			part = squirrel.AnyPart
 		}
 
-		if _, err := s.UpsertChoreAsking(r.Context(), personID, name, every,
-			squirrel.DefaultTolerance(every), squirrel.Asking{Part: part}); err != nil {
+		c, err := s.UpsertChoreAsking(r.Context(), personID, name, every,
+			squirrel.DefaultTolerance(every), squirrel.Asking{Part: part})
+		if err != nil {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/chores", http.StatusSeeOther)
+		// The chore you just made, as a card, so it is on the screen rather
+		// than somewhere you have to go and look at.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: name + " — " + r.FormValue("every")},
+			madeAChore(c),
+		}), "/")
 	}
 }
 
