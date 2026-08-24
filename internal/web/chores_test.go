@@ -198,3 +198,67 @@ func TestTheChoresScreenNeverPrintsADayCount(t *testing.T) {
 	require.NotContains(t, body, "3 days ago")
 	require.NotContains(t, body, "45 days")
 }
+
+// aChore is one that exists, so the handler's own id check passes.
+func aChore() []squirrel.Chore {
+	return []squirrel.Chore{{
+		ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour,
+		EveryDays: 7, SinceDays: 8, Active: true, EverDone: true,
+	}}
+}
+
+// Doing a chore says so, and the saying is in the record beside the doing.
+func TestDoingAChoreIsSaid(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act", strings.NewReader("id=1&act=done"))
+
+	require.Equal(t, []int64{1}, f.completed)
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[0].Words, "water the plants")
+}
+
+// The words come from the stored chore rather than from the form, so what the
+// record says happened cannot be something the press claimed.
+func TestWhatIsSaidComesFromTheStoredChore(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act",
+		strings.NewReader("id=1&act=done&label=something+else+entirely"))
+
+	require.Contains(t, f.appended[0].Words, "water the plants")
+	require.NotContains(t, f.appended[0].Words, "something else entirely")
+}
+
+// Stopping one is not the same sentence as doing it — which answer you gave is
+// the whole of what happened.
+func TestRetiringAChoreSaysSomethingElse(t *testing.T) {
+	did, stopped := &fakeStore{chores: aChore()}, &fakeStore{chores: aChore()}
+	routed(t, did).call(t, "POST", "/chores/act", strings.NewReader("id=1&act=done"))
+	routed(t, stopped).call(t, "POST", "/chores/act", strings.NewReader("id=1&act=retire"))
+
+	require.Equal(t, []int64{1}, stopped.retired)
+	require.NotEqual(t, did.appended[1].Words, stopped.appended[1].Words)
+}
+
+// An act nobody offered does nothing and says nothing.
+func TestAChoreActThatWasNeverOfferedDoesNothing(t *testing.T) {
+	f := &fakeStore{chores: aChore()}
+	routed(t, f).call(t, "POST", "/chores/act", strings.NewReader("id=1&act=burn"))
+
+	require.Empty(t, f.appended)
+	require.Empty(t, f.completed)
+	require.Empty(t, f.retired)
+}
+
+// A new chore comes back as a card, so the thing you just made is on the screen
+// rather than somewhere you have to go and look.
+func TestANewChoreComesBackAsACard(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/chores/new",
+		strings.NewReader("name=descale+the+kettle&every=every+2+weeks"))
+
+	require.Len(t, f.chores, 1)
+	require.Equal(t, "descale the kettle", f.chores[0].Name)
+	require.Len(t, f.appended, 2)
+	require.Contains(t, string(f.appended[1].Shown), "descale the kettle")
+	require.Contains(t, string(f.appended[1].Shown), "/chores/act")
+}

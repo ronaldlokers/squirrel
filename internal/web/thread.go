@@ -776,3 +776,40 @@ func choreLead(n int) string {
 	}
 	return fmt.Sprintf("%d come back.", n)
 }
+
+// saidAboutAChore is what the two of you said about one.
+//
+// Its own function rather than the offer's, because the answers are different
+// facts: an offer is a thing you were handed, and a chore is a thing that comes
+// back whatever you do about it. "Stop asking" especially — it is the one press
+// here that ends something, and it must not read like finishing it.
+//
+// The name comes from the stored chore rather than from the form, so what the
+// record says happened cannot be something the press claimed.
+func saidAboutAChore(act, name string) []squirrel.Turn {
+	switch act {
+	case "done":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "did it — " + name},
+			{Who: squirrel.SpeakerBuddy, Words: "Good. It will come back."},
+		}
+	case "retire":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "stop asking — " + name},
+			{Who: squirrel.SpeakerBuddy, Words: "It will not come back. Tell me if you want it again."},
+		}
+	}
+	return nil
+}
+
+// madeAChore is a chore you made from nothing, drawn the way the list draws
+// one — the same choreCard, so the two cannot look different.
+func madeAChore(c squirrel.Chore) squirrel.Turn {
+	v := toChoreView(c)
+	body, err := json.Marshal(drawn{Cards: []cardView{choreCard(v)}})
+	if err != nil {
+		slog.Error("drawing a new chore", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Kept. It comes back " + v.Every + "."}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Kept.", Shown: body}
+}
