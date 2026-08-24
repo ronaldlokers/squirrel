@@ -201,6 +201,11 @@ self.addEventListener("push", event => {
     }
     await self.registration.showNotification(said.title, {
       body: said.body,
+      // Where pressing it goes, carried on the notification because the click
+      // is a separate event with no memory of the push. Empty falls back to the
+      // front door, which is what every notification did before fixed points
+      // had a screen of their own.
+      data: { url: said.url || "/" },
       icon: "/static/icon-192.png",
       badge: "/static/icon-192.png",
       // One at a time. A stack of these is a list of things you are late for,
@@ -234,19 +239,30 @@ self.addEventListener("push", event => {
 self.addEventListener("notificationclick", event => {
   event.notification.close();
   event.waitUntil((async () => {
+    // Where the payload said, which is the fixed point this is about.
+    //
+    // This used to be the front door on every notification, on the argument
+    // that a link to something already done is worse than a page saying what is
+    // true now. That reasoning is kept rather than dropped: a fixed point inside
+    // its leave-by window is the one thing here that cannot be stale, because
+    // the notification and the window are the same fact. See DESIGN.md.
+    const target = (event.notification.data && event.notification.data.url) || "/";
+
     const open = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of open) {
       const at = new URL(client.url);
       if (at.origin !== self.location.origin) continue;
-      if (at.pathname !== "/" || at.search) {
+      // A window already there is left alone. Navigating would reload it, and a
+      // reload throws away whatever is half-typed in the slot.
+      if (at.pathname + at.search !== target) {
         try {
-          await client.navigate("/");
+          await client.navigate(target);
         } catch {
           // Not ours to steer. Raise it and let the person navigate.
         }
       }
       return client.focus();
     }
-    return self.clients.openWindow("/");
+    return self.clients.openWindow(target);
   })());
 });

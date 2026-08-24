@@ -1,8 +1,10 @@
 package web
 
 import (
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -34,7 +36,7 @@ func TestHomeStandsUpWithoutTheDatabase(t *testing.T) {
 	require.Contains(t, w.Body.String(), "the chores")
 }
 
-func TestHomeHasTwoDoorsAndNothingElseToPress(t *testing.T) {
+func TestHomeHasItsDoorsAndNothingElseToPress(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
 	// One door each, counted as doors rather than as links to a place.
@@ -47,7 +49,7 @@ func TestHomeHasTwoDoorsAndNothingElseToPress(t *testing.T) {
 	// What the rule was actually about is furniture — a second way in, sitting
 	// on the screen, competing with the first. The map is behind a press and
 	// is identical on every screen, so it is not that.
-	require.Equal(t, 3, strings.Count(body, `class="door"`), "three doors, no more")
+	require.Equal(t, 4, strings.Count(body, `class="door"`), "four doors, no more")
 	require.Contains(t, body, `<details class="where">`,
 		"the map is on the screen rather than behind a press")
 }
@@ -97,14 +99,46 @@ func TestHomeDoesNotAnswerForEverything(t *testing.T) {
 
 // Three doors now, and they are still equals: one grid, identical cells, and
 // nothing on any of them that depends on what is behind it.
-func TestHomeHasThreeDoors(t *testing.T) {
+func TestHomeHasFourDoors(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	for _, label := range []string{"the pile", "the tasks", "the chores"} {
+	for _, label := range []string{"the pile", "the tasks", "the chores", "the agenda"} {
 		require.Contains(t, body, label)
 	}
 	require.Contains(t, body, "what you decided")
 	// The one statement the screen makes is that they are equals, so nothing
 	// may mark one of them out.
-	require.Equal(t, 3, strings.Count(body, `class="door"`))
+	//
+	// Four since 24 August 2026. The fourth is what is coming, and it cost a
+	// rule: PRODUCT.md refused a browsable list of appointments for this
+	// product's whole life. What replaced the rule is that the list holds only
+	// what is still ahead.
+	require.Equal(t, 4, strings.Count(body, `class="door"`))
+}
+
+func TestHomeHasAWayToWhatIsComing(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `href="/at"`)
+}
+
+// The doors are equals, and a door is the most tempting place in the product to
+// put a number on.
+func TestTheDoorsStillCountNothing(t *testing.T) {
+	f := &fakeStore{upcoming: []squirrel.Moment{
+		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour)},
+	}}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	doors := body[strings.Index(body, `class="doors"`):]
+	doors = doors[:strings.Index(doors, "</nav>")]
+
+	// The words a person reads, not the markup around them: every door has
+	// carried an image width since there were two of them, and a rule about
+	// counting is a rule about what is shown.
+	label := regexp.MustCompile(`<span class="(?:name|what)">([^<]*)</span>`)
+	for _, m := range label.FindAllStringSubmatch(doors, -1) {
+		require.NotRegexp(t, `\d`, m[1], "a door counted something: %q", m[1])
+	}
+	require.Len(t, label.FindAllStringSubmatch(doors, -1), 8, "four doors, a name and a line each")
 }

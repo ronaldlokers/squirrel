@@ -1,0 +1,29 @@
+{{define "content"}}
+<section class="every">
+  <h1 class="deckhead">the agenda</h1>
+
+  {{/* Only what is still ahead. The list this product spent its whole life
+       refusing, and what makes it allowed is that there is nothing in it to be
+       behind on: nothing past, nothing done, and never a count. */}}
+  {{range .Upcoming}}
+  <a class="choreHit" href="/at/{{.ID}}">
+    <span class="name">{{.Label}}</span>
+    <span class="meta">{{.Words}}</span>
+  </a>
+  {{end}}
+
+  {{if not .Upcoming}}
+  {{/* An absence, not an encouragement. Nothing here says you ought to be
+       making plans. */}}
+  {{/* No second heading. The screen already has its title, and The One Title
+       Rule is one <h1> per screen — the four true empty states carry theirs
+       because they are the whole of their page, and this is not. */}}
+  <section class="empty">
+    <img alt="" src="/static/logo.png?v={{.V}}" width="186" height="140">
+    <p class="nothing">when something has a time you can be late for, it will be here.</p>
+  </section>
+  {{end}}
+
+  {{template "stopping" .}}
+</section>
+{{end}}

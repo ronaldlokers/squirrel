@@ -757,7 +757,7 @@ Its order is fixed and each step is 26px from the last:
 2. **The check-in, or its answer** — one interactive thing, and it is either the
    question or the chip that replaced it.
 3. **The offer**, when there is one, and absent when there is not.
-4. **The three doors**, side by side at every width.
+4. **The four doors**, side by side above 620px and two by two below it.
 
 **The three doors are equals**: three cells of one grid, the same stock, the
 same depth, and they must render identically in every state. Nothing on that
@@ -1150,11 +1150,43 @@ screen's body.
 - **Hover:** brightens to paper. A button hovers by deepening; a card you can
   walk into wants a "pick it up" affordance instead, and that difference is the
   point rather than an inconsistency.
-- **Three, side by side at every width.** Their equality is the screen's one
-  statement, and a stacked one would read as first. Three cells are narrower
-  than two, so on a phone the art steps down to 50px and the name takes the
-  Note floor rather than the phone's step-up — the words have to fit the cell,
-  and the cell is what keeps them equal.
+- **Four, two by two, at every width.** Their equality is the screen's one
+  statement, and a stacked column would read as first, second, third, fourth. A
+  square says none of that. On a phone the art steps down to 50px and the name
+  takes the Note floor rather than the phone's step-up — the words have to fit
+  the cell, and the cell is what keeps them equal.
+
+  **Four across was tried first and is why this is written down.** At 390px the
+  frame is 364px: four cells measure about 84px, where *what you decided*
+  already wraps to two lines at 115px. Breaking the row only on a phone fixed
+  that and left the doors two different shapes depending on where you opened
+  them — so the square is the shape everywhere. At 720px it gives 353px cells,
+  which is roomy rather than merely adequate, and equality no longer depends on
+  which device is reading it.
+
+  **The cost is the fold, and it is accepted rather than unnoticed.** The block
+  is about 270px tall and starts around 568px down, so on a 1280×800 laptop the
+  second row is below the fold: you see two doors and scroll for the other two.
+  Making them fit would need both rows inside 232px — about 109px each against
+  192px now — which even the phone's 50px art does not reach. So it is a choice,
+  not a tuning problem. Scrolling home is ordinary; four doors in two shapes was
+  the worse trade.
+
+  **A door's name has to fit one line.** All four names are ten characters or
+  fewer in a shared grammar; at four across the cell gives about 117px of inner
+  width, which is roughly eleven characters at the Note floor. A longer name
+  wraps, and a wrapped name drops its own sub-line below its neighbours' — four
+  equal boxes with unequal type, which is the equality rule failing quietly
+  rather than loudly. The fourth door was called *what is coming* for an
+  afternoon and did exactly that.
+
+  **The agenda is named after the thing it holds, and the name was argued
+  about.** *Agenda* is the calendar word, and a calendar is what `PRODUCT.md`
+  refused. The owner chose it knowing that. What makes it a description rather
+  than a slide back are the guard rails on the screen itself: only what is still
+  ahead, never a count, and nothing anywhere about being late. If the name ever
+  starts pulling the screen toward the thing that was refused, the rails are
+  what failed.
 
 A chore found by a search takes the Door's grammar at one line high, for the
 same reason: it is a place to go, not a thing to do. What can be done to a chore
@@ -1193,7 +1225,31 @@ drawing that reads instantly as chores did not need a checklist to do it, and
 the version that avoided one is also the version that stopped colliding with
 the tasks door.
 
-**The tasks door carries what is left of one.** It was a clipboard with two
+**The tasks door went back to the clipboard on 24 August 2026, and it is an
+exception rather than a reversal of the reasoning.**
+
+It is a clipboard with two ticked boxes beside one empty, a pencil, a sticky
+note, and the acorn on the clip. Two of three is a progress reading drawn as a
+picture, and the Don't list names checklists by name: the rule does not care
+whether the total is a numeral. This is the same composition the owner removed
+from this door — and from the chores door — on 20 August, for that reason.
+
+Chosen anyway, knowingly, with the record put in front of him first. What it
+buys: the errands drawing shared a calendar, a set of keys and an envelope with
+the agenda door, and in a two-by-two grid those two sit one above the other in
+the same column. Two doors that read alike is a legibility cost paid every time
+the screen is opened; a checklist is a rule broken in a picture nobody counts.
+
+Three things make it narrower than the drawing it replaces. The ticks are Acorn
+Orange rather than `done` green, so no state colour is being used as a claim.
+There is no grey. And the acorn on the clip is the product's second mark used
+exactly as this document says it is available to be used — on a badge where the
+full mascot would be too much.
+
+**An exception, not a precedent.** The next drawing that depicts a count gets
+refused on the same grounds this one was.
+
+**What the tasks door carried before.** It was a clipboard with two
 ticked rows and one empty — a progress reading drawn as a picture. The owner
 replaced it the same day with errands: a calendar, a phone, an envelope, a set
 of keys. **The count is gone**, which was the larger of the two faults and the
@@ -1477,6 +1533,61 @@ altogether. One token now, and it clears 5:1 on paper and 4.5:1 on stock.
   15px — what you type is your words, so it is set in your voice. It should
   step to at least 16px on a phone and does not; see the note under the
   Step-Up Rule.
+
+### A fixed point, and what is on it
+
+Two screens, added 24 August 2026, and they cost a rule: `PRODUCT.md` said
+there is no list screen, *"because a browsable set of your appointments is a
+calendar and a calendar is a thing you are behind on."* The owner overturned it
+deliberately. What the rule protected is kept rather than argued away — the list
+holds **only what is still ahead**, so there is nothing in it to be behind on.
+
+**`/at` — what is coming.** Upcoming fixed points, soonest first, each one a
+row in the Door's grammar at one line high, the way a chore in search results
+already borrows it. Nothing past, nothing done, and never a count. Empty is the
+empty-state drawing with a line in the Voice role and **no second heading** —
+the screen already has its title, and the four true empty states carry their own
+`h1` because they are the whole of their page, where this is not.
+
+**`/at/{id}` — one fixed point.** The label is the screen's title. Then the one
+sentence a fixed point says, which is the core's `LeaveWords` and is shared with
+chat and with the notification so the three cannot drift about when to leave.
+
+- **The take-line** is what to bring, on its own line rather than as a clause
+  after a middot. The label is the Meta role in headphone brown; the words are
+  his, so they take the casual axis at 15px. It is the thing you are standing in
+  the hall without, and that earns an element rather than a tail.
+- **`LEAVING` only inside the window.** Outside it the card carries no control
+  at all, because the appointment is not yet something you can act on and a
+  button that closes a thing three days early is a button pressed by accident.
+- **The slot**, exactly as home has it, so anything typed becomes an ordinary
+  note in the pile that happens to point at this appointment. There is no
+  picker: a picker needs a browsable list of appointments to choose from, and
+  here the appointment is the page you are already on.
+- **The notes pointing at it** are ordinary result cards, each with *back in the
+  pile* — which is the whole reversal, because the pointer was the whole of the
+  change.
+
+**Where a notification lands.** Pressing a leave-by warning goes to that fixed
+point's own screen. It went to the front door for the product's whole life, on
+the argument that *a link to something that has since been done is worse than a
+page that says what is true now* — and that reasoning is kept rather than
+dropped, because a fixed point inside its leave-by window is the one thing here
+that cannot be stale: the notification and the window are the same fact.
+
+Two carve-outs survive the change unaltered. A window already on the
+destination is left alone, because navigating would reload it and throw away
+whatever is half-typed in the slot. And a push carrying no destination still
+opens the front door, which is what every notification did before.
+
+*(This rule lived only in `sw.js`'s own comment until now. It is written here
+because it is a design decision, and a decision recorded in one file's comment
+is a decision the next person changes without knowing they are changing it.)*
+
+A note pointing at an appointment leaves the pile and comes back when the
+appointment is over. That is a read rule rather than a state: nothing accrues,
+nothing runs on a schedule, and there is no fifth disposition for any screen to
+learn.
 
 ### The Stamp
 

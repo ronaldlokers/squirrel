@@ -232,7 +232,7 @@
   {{/* The two halves of what the box holds, and they are equals: one grid, two
        identical cells, the same stock, the same depth, side by side at every
        width. A stacked pair would read as first and second. */}}
-  <nav class="doors" aria-label="The three things the box holds">
+  <nav class="doors" aria-label="The four things the box holds">
     <a class="door" href="/pile">
       {{/* Decorative — the door's name is directly beneath it. */}}
       <span class="art"><img alt="" src="/static/door-pile.png?v={{.V}}" width="342" height="256"></span>
@@ -242,7 +242,7 @@
       </span>
     </a>
     <a class="door" href="/tasks">
-      <span class="art"><img alt="" src="/static/door-tasks.png?v={{.V}}" width="302" height="256"></span>
+      <span class="art"><img alt="" src="/static/door-tasks.png?v={{.V}}" width="254" height="256"></span>
       <span class="label">
         <span class="name">the tasks</span>
         <span class="what">what you decided</span>
@@ -253,6 +253,13 @@
       <span class="label">
         <span class="name">the chores</span>
         <span class="what">what comes back</span>
+      </span>
+    </a>
+    <a class="door" href="/at">
+      <span class="art"><img alt="" src="/static/door-at.png?v={{.V}}" width="263" height="256"></span>
+      <span class="label">
+        <span class="name">the agenda</span>
+        <span class="what">what has a time</span>
       </span>
     </a>
   </nav>

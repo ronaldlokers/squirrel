@@ -55,6 +55,8 @@ var pages = map[string]*template.Template{
 	"empty":   page("templates/layout.html", "templates/empty.html"),
 	"enough":  page("templates/layout.html", "templates/enough.html"),
 	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
+	"at":      page("templates/layout.html", "templates/stopping.html", "templates/at.html"),
+	"atone":   page("templates/layout.html", "templates/stopping.html", "templates/atone.html"),
 }
 
 type noteView struct {
@@ -72,6 +74,22 @@ type noteView struct {
 	// the pile's verbs, and pressing KEEP moved it off the tasks screen.
 	Task      bool
 	StateWord string
+}
+
+// momentView is one fixed point with its arithmetic already done. Open is
+// whether the leave-by window is running, worked out in the handler so a
+// template cannot disagree with the core about when to leave.
+type momentView struct {
+	ID    int64
+	Label string
+	// Words is the one sentence a fixed point says, shared with chat and with
+	// the notification so all three cannot drift.
+	Words string
+	// Take is what to bring, or empty. Its own field rather than a clause
+	// appended to Words, because the thing you are standing in the hall
+	// without deserves to be an element.
+	Take string
+	Open bool
 }
 
 type view struct {
@@ -188,8 +206,15 @@ type view struct {
 	Note    *noteView
 	More    bool
 	Results []noteView
-	Chores  []choreView
-	Undo    *undoView
+	// Upcoming is what is still ahead, on /at. Never counted, and never
+	// anything that has already happened.
+	Upcoming []momentView
+	// Moment and Attached are one fixed point and the notes pointing at it,
+	// on /at/{id}.
+	Moment   *momentView
+	Attached []noteView
+	Chores   []choreView
+	Undo     *undoView
 	// Clash says a decision arrived for a note that had already moved
 	// somewhere else — from the room, while the card was still on the screen.
 	// It is not an error and there is nothing to undo: what it says is that

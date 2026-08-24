@@ -278,10 +278,26 @@ to hold everything against:
 A dentist appointment at 14:30 exists whether or not this app knows about it,
 and refusing to hold it does not remove the lateness — it only means Squirrel
 cannot help you leave. What is still refused: nothing is ever marked late,
-nothing accrues, there is no recurrence (that is a chore), and there is no list
-screen, because a browsable set of your appointments is a calendar and a
+nothing accrues, there is no recurrence (that is a chore), and ~~there is no
+list screen, because a browsable set of your appointments is a calendar and a
 calendar is a thing you are behind on. A moment is shown only inside the window
-where leaving matters, and afterwards it is simply over.
+where leaving matters, and afterwards it is simply over.~~
+
+**The list was overturned by the owner on 24 August 2026**, and what the rule
+protected is kept rather than argued away. `what is coming` holds **only what is
+still ahead** — nothing past, nothing done, never a count, and no word anywhere
+about being late. A calendar is a thing you are behind on; there is nothing in
+this list to be behind on, because everything in it is still in front of you.
+
+What it cost, stated rather than discovered: this is a place you can go and look
+at your appointments, which the rule existed to prevent, and the protection now
+rests on the guard rails above rather than on the screen not existing. If it
+ever starts reading as a thing to keep on top of, the rails are what failed and
+the answer is to tighten them rather than to argue the list back out.
+
+The rest of the rule stands. Nothing is ever marked late, nothing accrues, and a
+fixed point that is over is simply over — it leaves the list the moment it
+starts.
 
 **Decided on 20 August 2026: one count is allowed, and only this one.** The
 evening message may say *three notes cleared*. The banned counter counts what

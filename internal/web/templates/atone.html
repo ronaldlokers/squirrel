@@ -1,0 +1,60 @@
+{{define "content"}}
+<section class="every">
+  {{/* The label is the screen's name, under The One Title Rule: every screen
+       that is a screen opens with one heading carrying one class, in the same
+       place. A fixed point is a place you went to, and its name is what it is
+       called. */}}
+  <h1 class="deckhead">{{.Moment.Label}}</h1>
+
+  <article class="rcard atcard">
+    {{/* The one sentence a fixed point says, and it is the core's, shared with
+         chat and with the notification so the three cannot drift apart about
+         when to leave. */}}
+    <p class="when">{{.Moment.Words}}</p>
+
+    {{/* What to take, on its own line rather than as a clause after a middot.
+         It is the thing you are standing in the hall without, so it gets to be
+         an element rather than a tail. Absent when there is nothing to take —
+         an empty label is a row that says nothing. */}}
+    {{if .Moment.Take}}<p class="takeline">take <b>{{.Moment.Take}}</b></p>{{end}}
+
+    {{/* Only inside the window. Outside it there is nothing to press, because
+         the appointment is not yet something you can act on and a button that
+         closes a thing three days early is a button that gets pressed by
+         accident. */}}
+    {{if .Moment.Open}}
+    <form class="acts" method="post" action="/now/act">
+      <input type="hidden" name="kind" value="moment">
+      <input type="hidden" name="id" value="{{.Moment.ID}}">
+      <button class="abtn did" name="act" value="did">LEAVING</button>
+    </form>
+    {{end}}
+  </article>
+
+  {{/* The slot, exactly as home has it, so anything typed becomes an ordinary
+       note in the pile that happens to point at this appointment. No picker:
+       a picker would need a browsable list of appointments to choose from,
+       which is the shape the record refuses — here the appointment is the page
+       you are already on. */}}
+  <form class="slot" method="post" action="/at/{{.Moment.ID}}/note">
+    <textarea name="words" rows="1" placeholder="anything about this" autocomplete="off"></textarea>
+    <button class="post" type="submit">Keep it</button>
+  </form>
+
+  {{range .Attached}}
+  <article class="rcard state-{{.State}}">
+    <div class="meta"><span>{{.When}}</span></div>
+    {{if .Photo}}<p class="rphoto"><img alt="" src="{{.Photo}}"></p>{{end}}
+    <p>{{.Text}}</p>
+    <form class="racts" method="post" action="/at/{{$.Moment.ID}}/detach">
+      <input type="hidden" name="id" value="{{.ID}}">
+      {{/* Back where it came from. Every transition in this product reverses,
+           and the pointer was the whole of the change. */}}
+      <button class="rbtn back" type="submit">BACK IN THE PILE</button>
+    </form>
+  </article>
+  {{end}}
+
+  {{template "stopping" .}}
+</section>
+{{end}}

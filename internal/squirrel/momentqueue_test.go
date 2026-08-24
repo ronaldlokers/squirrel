@@ -4,6 +4,7 @@ package squirrel_test
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -98,4 +99,37 @@ func TestAFixedPointOutsideItsWindowIsNotDue(t *testing.T) {
 	_, found, err := store.DueMoment(ctx, p, now)
 	require.NoError(t, err)
 	require.False(t, found, "hours out, there is nothing to say yet")
+}
+
+// The leave-by push names where to go, and where to go is the fixed point.
+//
+// Nothing tested this payload at all: removing the URL only broke the build,
+// on an unused import, which is not proof of anything. A field nothing asserts
+// is a field that can quietly go back to being empty — and `Push.URL` already
+// spent its whole life written and read by nobody.
+func TestTheLeaveByPushNamesTheFixedPoint(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	m := aFixedPoint(t, store, p, "dentist", 5*time.Minute)
+
+	var sent []squirrel.Push
+	s := squirrel.NewScheduler(squirrel.SchedulerOptions{
+		Store: store, PersonID: p, ConversationID: "9",
+		At: 8 * time.Hour, Location: time.UTC,
+		Send:    func(context.Context, string, string) error { return nil },
+		OnError: func(error) {},
+		Push: func(_ context.Context, _ int64, push squirrel.Push) error {
+			sent = append(sent, push)
+			return nil
+		},
+	})
+
+	require.NoError(t, s.MomentTick(ctx, time.Now()))
+
+	require.Len(t, sent, 1, "the warning was due and a pusher was configured")
+	require.Equal(t, "dentist", sent[0].Title)
+	require.Equal(t, "/at/"+strconv.FormatInt(m.ID, 10), sent[0].URL,
+		"the tap has to land on the thing it is about")
 }

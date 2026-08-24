@@ -227,18 +227,26 @@ func (s *Store) DueMoment(ctx context.Context, personID int64, now time.Time) (M
 	return m, true, nil
 }
 
-func (s *Store) scanMoment(ctx context.Context, q string, args ...any) (Moment, bool, error) {
+// scannable is what pgx.Row and pgx.Rows have in common, which is all this
+// needs. Two read paths that default travel and ready differently would put two
+// screens out of step about when to leave, so there is one body and both use it.
+type scannable interface {
+	Scan(dest ...any) error
+}
+
+// momentFrom is the column order and the defaulting, in one place.
+//
+// A fixed point with no travel time recorded guesses fifteen minutes and says
+// so with Guessed, because anything printed about leaving has to admit it was
+// a guess.
+func momentFrom(row scannable) (Moment, error) {
 	var (
 		m            Moment
 		travel, redy *int64
 	)
-	err := s.pool.QueryRow(ctx, q, args...).
-		Scan(&m.ID, &m.PersonID, &m.Label, &m.Starts, &travel, &redy, &m.Bring, &m.Said)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Moment{}, false, nil
-	}
-	if err != nil {
-		return Moment{}, false, fmt.Errorf("reading a fixed point: %w", err)
+	if err := row.Scan(&m.ID, &m.PersonID, &m.Label, &m.Starts,
+		&travel, &redy, &m.Bring, &m.Said); err != nil {
+		return Moment{}, err
 	}
 	m.Travel, m.Guessed = defaultTravel, true
 	if travel != nil {
@@ -248,7 +256,33 @@ func (s *Store) scanMoment(ctx context.Context, q string, args ...any) (Moment, 
 	if redy != nil {
 		m.Ready = time.Duration(*redy) * time.Second
 	}
+	return m, nil
+}
+
+func (s *Store) scanMoment(ctx context.Context, q string, args ...any) (Moment, bool, error) {
+	m, err := momentFrom(s.pool.QueryRow(ctx, q, args...))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Moment{}, false, nil
+	}
+	if err != nil {
+		return Moment{}, false, fmt.Errorf("reading a fixed point: %w", err)
+	}
 	return m, true, nil
+}
+
+// MomentByID is one fixed point, yours or nobody's.
+//
+// The person is in the where clause rather than checked after, so a stranger's
+// id and a missing id are the same answer and neither leaks that the row
+// exists.
+func (s *Store) MomentByID(ctx context.Context, personID, id int64) (Moment, bool, error) {
+	const q = `
+		select id, person_id, label, starts_at, travel_secs, ready_secs,
+		       coalesce(bring, ''), said_at is not null
+		  from moments
+		 where id = $2 and person_id = $1`
+
+	return s.scanMoment(ctx, q, personID, id)
 }
 
 // MarkMomentSaid records that the leave-by warning went out, so a second tick
@@ -331,4 +365,86 @@ func LeaveWords(m Moment) string {
 		return fmt.Sprintf("at %s — leave about %s, if it is a quarter of an hour away", at, leave)
 	}
 	return fmt.Sprintf("at %s — leave about %s", at, leave)
+}
+
+// AttachNote points a note at a fixed point, and answers whether it was yours
+// to point.
+//
+// The person is in the where clause rather than checked first, so there is no
+// window between reading a row and writing it, and no way for a caller to
+// forget the check. The moment is checked the same way and in the same
+// statement: pointing your note at somebody else's appointment is the same
+// mistake as pointing somebody else's note anywhere.
+func (s *Store) AttachNote(ctx context.Context, personID, itemID, momentID int64) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		update items set moment_id = $3
+		 where id = $2 and person_id = $1
+		   and exists (select 1 from moments where id = $3 and person_id = $1)`,
+		personID, itemID, momentID)
+	if err != nil {
+		return false, fmt.Errorf("pointing a note at a fixed point: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+// DetachNote puts it back in the pile.
+//
+// Every transition in this product reverses, and this is the reversal. There is
+// no previous value to remember because the pointer was the whole of the
+// change — which is the argument for the pointer over an eighth state, made
+// concrete.
+func (s *Store) DetachNote(ctx context.Context, personID, itemID int64) (bool, error) {
+	tag, err := s.pool.Exec(ctx,
+		`update items set moment_id = null where id = $2 and person_id = $1`,
+		personID, itemID)
+	if err != nil {
+		return false, fmt.Errorf("returning a note to the pile: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+// NotesFor is what is pointing at one fixed point, newest first like every
+// other list in this product.
+func (s *Store) NotesFor(ctx context.Context, personID, momentID int64) ([]Item, error) {
+	items, _, err := s.itemsWhere(ctx,
+		`person_id = $1 and moment_id = $2`, notesForLimit, personID, momentID)
+	return items, err
+}
+
+// notesForLimit is a bound rather than a page: nothing here says how many there
+// are, and a limit nothing reaches in practice is a limit nobody sees.
+const notesForLimit = 50
+
+// Upcoming is what is still ahead, soonest first.
+//
+// The list this product spent its whole life refusing, and the refusal is worth
+// keeping in view: a browsable set of your appointments is a calendar, and a
+// calendar is a thing you are behind on. What makes this one allowed is that it
+// holds nothing you can be behind on — `starts_at > $2` and `done_at is null`,
+// so everything in it is still ahead of you.
+//
+// It returns rows and never a total. Nothing above it may count them.
+func (s *Store) Upcoming(ctx context.Context, personID int64, now time.Time, limit int) ([]Moment, error) {
+	const q = `
+		select id, person_id, label, starts_at, travel_secs, ready_secs,
+		       coalesce(bring, ''), said_at is not null
+		  from moments
+		 where person_id = $1 and done_at is null and starts_at > $2
+		 order by starts_at limit $3`
+
+	rows, err := s.pool.Query(ctx, q, personID, now, limit)
+	if err != nil {
+		return nil, fmt.Errorf("reading what is coming: %w", err)
+	}
+	defer rows.Close()
+
+	out := []Moment{}
+	for rows.Next() {
+		m, err := momentFrom(rows)
+		if err != nil {
+			return nil, fmt.Errorf("reading what is coming: %w", err)
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
 }

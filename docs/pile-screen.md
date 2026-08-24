@@ -28,6 +28,7 @@ down here because no test covers it.
 | `/buddy` | Buddy, as a page — a real route so the sheet is an upgrade rather than a requirement | LAN or tailnet, then Authentik |
 | `/buddy/say` | one turn: a sentence, or one of the four chips | LAN or tailnet, then Authentik |
 | `/buddy/close` | forgets the conversation and returns to the page the acorn was pressed on | LAN or tailnet, then Authentik |
+| `/buddy/badly` | says the last thing Buddy said did not land; never counted | LAN or tailnet, then Authentik |
 | `/buddy/do` | applies a proposal, and only one that was pressed — four kinds, in a switch | LAN or tailnet, then Authentik |
 | `/steps` | a step finished, or a breakdown thrown away | LAN or tailnet, then Authentik |
 | `/pile/split` | asks for a note's separate things, and keeps them when pressed | LAN or tailnet, then Authentik |
@@ -35,6 +36,10 @@ down here because no test covers it.
 | `/moods` | how you felt before — a fortnight of readings, grouped by day, with nothing concluded from them | LAN or tailnet, then Authentik |
 | `/held` | what you cannot act on: waiting, blocked, someday — grouped, never counted | LAN or tailnet, then Authentik |
 | `/held/act` | setting one aside, and picking it back up | LAN or tailnet, then Authentik |
+| `/at` | what is coming: fixed points still ahead, soonest first, never counted | LAN or tailnet, then Authentik |
+| `/at/{id}` | one fixed point — when to leave, what to take, and the notes pointing at it | LAN or tailnet, then Authentik |
+| `/at/{id}/note` | keeping a note that points at this one | LAN or tailnet, then Authentik |
+| `/at/{id}/detach` | putting one back in the pile | LAN or tailnet, then Authentik |
 | `/chores` | what comes back | LAN or tailnet, then Authentik |
 | `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
 | `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |
