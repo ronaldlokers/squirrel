@@ -175,3 +175,54 @@ func TestPagingThroughThePileObeysTheSameRule(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, items)
 }
+
+// Only what is still coming. Nothing past, nothing done — because a thing you
+// have not reached yet is not a thing you are late for, and that is the whole
+// of what makes this list allowed to exist at all.
+func TestUpcomingHoldsOnlyWhatIsStillAhead(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	now := time.Now()
+
+	soon := aFixedPoint(t, store, p, "dentist", 2*time.Hour)
+	later := aFixedPoint(t, store, p, "school run", 30*time.Hour)
+	aFixedPoint(t, store, p, "yesterday's thing", -26*time.Hour)
+
+	done := aFixedPoint(t, store, p, "already left", 4*time.Hour)
+	require.NoError(t, store.MomentDone(ctx, p, done.ID, now))
+
+	got, err := store.Upcoming(ctx, p, now, 20)
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	require.Equal(t, soon.ID, got[0].ID, "soonest first")
+	require.Equal(t, later.ID, got[1].ID)
+}
+
+// The defaults survive the second scan path. A fixed point read through
+// Upcoming with no travel recorded must guess the same fifteen minutes one read
+// through NextMoment does, or the two screens disagree about when to leave.
+func TestUpcomingGuessesTravelTheSameWay(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	now := time.Now()
+
+	m, err := store.CreateMoment(ctx, p, squirrel.Moment{
+		Label: "dentist", Starts: now.Add(3 * time.Hour),
+	})
+	require.NoError(t, err)
+
+	got, err := store.Upcoming(ctx, p, now, 20)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+
+	one, found, err := store.NextMoment(ctx, p, now)
+	require.NoError(t, err)
+	require.True(t, found)
+
+	require.Equal(t, one.Travel, got[0].Travel)
+	require.Equal(t, one.Ready, got[0].Ready)
+	require.Equal(t, one.Guessed, got[0].Guessed)
+	require.Equal(t, m.ID, got[0].ID)
+}
