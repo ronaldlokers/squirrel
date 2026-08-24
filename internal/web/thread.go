@@ -41,6 +41,8 @@ type drawn struct {
 	// Pick is a question with its answers on it: rows of choices in one form
 	// with one submit. See askHowOften for why it is one form.
 	Pick *pickView `json:"pick,omitempty"`
+	// Cal is the day picker. See askForADay.
+	Cal *calView `json:"cal,omitempty"`
 	// Faces is the check-in's five drawings. A flag rather than five chips
 	// because they are the product's own faces and the markup for them
 	// already exists; rendering them as words would be a different control
@@ -61,6 +63,7 @@ type turnView struct {
 	Chips []turnChip
 	Faces []faceView
 	Pick  *pickView
+	Cal   *calView
 	// V stamps the asset URLs a turn draws. Filled here rather than by render,
 	// because a turn is also rendered on its own as a fragment, where there is
 	// no page around it to carry it.
@@ -242,7 +245,7 @@ func endsOpen(turns []squirrel.Turn) bool {
 		// nothing more is the safe direction: the other one talks over it.
 		return true
 	}
-	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces || sh.Pick != nil
+	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces || sh.Pick != nil || sh.Cal != nil
 }
 
 // turnViews decodes each turn's own record of what it drew, and marks the live
@@ -263,7 +266,7 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				// better than losing the turn.
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
-				v.Place, v.Cards, v.Chips, v.Pick = sh.Place, sh.Cards, sh.Chips, sh.Pick
+				v.Place, v.Cards, v.Chips, v.Pick, v.Cal = sh.Place, sh.Cards, sh.Chips, sh.Pick, sh.Cal
 				if sh.Faces {
 					v.Faces = theFaces()
 				}
@@ -1154,4 +1157,88 @@ func fixedPointTurn(m squirrel.Moment, notes []squirrel.Item) squirrel.Turn {
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.LeaveWords(m)}
 	}
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.LeaveWords(m), Shown: body}
+}
+
+// calView is the day picker: a month to choose out of, and a time.
+//
+// One form and one submit, exactly as the interval picker. Turning to another
+// month is the one control that posts on its own — it is not an answer, it is
+// turning a page, and it re-asks rather than writing a second question into a
+// record that is never rewritten.
+type calView struct {
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields,omitempty"`
+	Month  string            `json:"month"`
+	// The months either side, as 2026-07. Empty for a month with nothing to
+	// go back to: the picker offers no day in the past, so there is nothing
+	// behind this one.
+	Prev string `json:"prev,omitempty"`
+	Next string `json:"next,omitempty"`
+	// Pad is the blanks before the first, Monday first.
+	Pad   int      `json:"pad"`
+	Days  []calDay `json:"days"`
+	Times []string `json:"times"`
+	Do    string   `json:"do"`
+}
+
+// Padding is the blanks before the first, as a range a template can walk:
+// html/template has no way to count to a number.
+func (c calView) Padding() []struct{} { return make([]struct{}, c.Pad) }
+
+// calDay is one cell. Past days are drawn and not offered: a month with holes
+// in it is harder to read than one where some days cannot be pressed.
+type calDay struct {
+	Day  int    `json:"day"`
+	Date string `json:"date,omitempty"`
+	Gone bool   `json:"gone,omitempty"`
+}
+
+// pickTimes are the hours offered.
+//
+// Three and a way out, like the numbers on the interval picker: these are the
+// times most appointments actually are, and anything else is a sentence — the
+// dock already understands "at 08:15 dentist".
+var pickTimes = []string{"09:00", "14:30", "18:00"}
+
+// askForADay is the question.
+//
+// Monday first, because that is how a week is read here. Days already gone are
+// drawn and not offered — a month with holes in it is harder to read than one
+// where some days cannot be pressed — and there is no way back past this month
+// for the same reason: the list may hold nothing you are already late for.
+func askForADay(label string, month time.Time) squirrel.Turn {
+	first := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, month.Location())
+	// Monday is 0 here; Go's Sunday is 0.
+	pad := (int(first.Weekday()) + 6) % 7
+
+	today := squirrel.StartOfDay(now())
+	cal := calView{
+		Action: "/at/make",
+		Fields: map[string]string{"label": label},
+		Month:  first.Format("January 2006"),
+		Pad:    pad,
+		Times:  pickTimes,
+		Do:     "that's it",
+	}
+	if first.After(today) {
+		cal.Prev = first.AddDate(0, -1, 0).Format("2006-01")
+	}
+	cal.Next = first.AddDate(0, 1, 0).Format("2006-01")
+
+	for d := first; d.Month() == first.Month(); d = d.AddDate(0, 0, 1) {
+		cell := calDay{Day: d.Day()}
+		if d.Before(today) {
+			cell.Gone = true
+		} else {
+			cell.Date = d.Format("2006-01-02")
+		}
+		cal.Days = append(cal.Days, cell)
+	}
+
+	body, err := json.Marshal(drawn{Cal: &cal})
+	if err != nil {
+		slog.Error("drawing the days", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Tell me when, like at 14:30 dentist."}
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Which day?", Shown: body}
 }

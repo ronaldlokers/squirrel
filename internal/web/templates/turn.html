@@ -3,7 +3,7 @@
      is the only thing keeping the server and the browser from growing two
      descriptions of a card. */}}
 {{define "turn"}}
-<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick}} wide{{end}}" id="turn-{{.ID}}">
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal}} wide{{end}}" id="turn-{{.ID}}">
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
@@ -60,6 +60,52 @@
     {{end}}
     <button class="make" type="submit">{{.Pick.Do}}</button>
   </form>
+  {{end}}
+
+  {{/* Which day, and what time. One form and one submit, like the interval
+       question. Turning to another month is the one control that posts on its
+       own: a page turned is not an answer. */}}
+  {{if and .Live .Cal}}
+  <div class="calbox">
+    <div class="calhead">
+      {{if .Cal.Prev}}
+      <form method="post" action="/at/new">
+        {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+        <input type="hidden" name="month" value="{{.Cal.Prev}}">
+        <button class="chip arrow" type="submit" aria-label="the month before">&#8249;</button>
+      </form>
+      {{else}}<span class="arrowgap"></span>{{end}}
+      <b>{{.Cal.Month}}</b>
+      <form method="post" action="/at/new">
+        {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+        <input type="hidden" name="month" value="{{.Cal.Next}}">
+        <button class="chip arrow" type="submit" aria-label="the month after">&#8250;</button>
+      </form>
+    </div>
+
+    <form class="cal" method="post" action="{{.Cal.Action}}">
+      {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+      <div class="calgrid" role="group" aria-label="the days">
+        <span class="dow">M</span><span class="dow">T</span><span class="dow">W</span>
+        <span class="dow">T</span><span class="dow">F</span><span class="dow">S</span><span class="dow">S</span>
+        {{range $i := .Cal.Padding}}<span class="pad"></span>{{end}}
+        {{range .Cal.Days}}
+        {{/* A day already gone is drawn and not offered: a month with holes in
+             it is harder to read than one where some days cannot be pressed. */}}
+        {{if .Gone}}<span class="gone">{{.Day}}</span>
+        {{else}}<label class="day"><input type="radio" name="day" value="{{.Date}}">{{.Day}}</label>{{end}}
+        {{end}}
+      </div>
+
+      <p class="lead">at</p>
+      <div class="pickrow">
+        {{range .Cal.Times}}
+        <label class="chip"><input type="radio" name="at" value="{{.}}">{{.}}</label>
+        {{end}}
+      </div>
+      <button class="make" type="submit">{{.Cal.Do}}</button>
+    </form>
+  </div>
   {{end}}
 
   {{/* The five drawings. Only on the live edge, like every other control: a

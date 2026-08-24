@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
@@ -247,4 +248,106 @@ func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 			fixedPointTurn(m, notes),
 		}), "/")
 	}
+}
+
+// atNewHandler asks which day.
+//
+// Turning to another month re-asks rather than answering: a page turned is not
+// something you said, so it draws the question again without writing your half
+// of it into the record.
+func atNewHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		label := strings.TrimSpace(r.FormValue("label"))
+		if label == "" {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		month := squirrel.StartOfDay(now())
+		turning := false
+		if want := r.FormValue("month"); want != "" {
+			m, err := time.ParseInLocation("2006-01", want, now().Location())
+			if err != nil {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			month, turning = m, true
+		}
+
+		said := []squirrel.Turn{askForADay(label, month)}
+		if !turning {
+			said = append([]squirrel.Turn{{Who: squirrel.SpeakerYou, Words: label}}, said...)
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+	}
+}
+
+// atMakeHandler is the answer: a day and a time, composed into the sentence the
+// parser already reads.
+//
+// No arithmetic here. MomentOn is where "14:30" means something, and a second
+// place that built a time would be a second place to be wrong — the same
+// reasoning composeEvery is written under.
+func atMakeHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		label := strings.TrimSpace(r.FormValue("label"))
+		at := r.FormValue("at")
+		if label == "" || !offeredTime(at) {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		day, err := time.ParseInLocation("2006-01-02", r.FormValue("day"), now().Location())
+		if err != nil || day.Before(squirrel.StartOfDay(now())) {
+			// A day nobody offered. The picker draws none in the past, and an
+			// appointment you are already late for is the one thing this list
+			// may not hold.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		m, ok := squirrel.MomentOn(day, "at "+at+" "+label, now())
+		if !ok {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		kept, err := s.CreateMoment(r.Context(), personID, m)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: kept.Starts.Format("Monday 2 January") + ", " + at},
+			fixedPointTurn(kept, nil),
+		}), "/")
+	}
+}
+
+// offeredTime is the guard on a value that arrives from a form. Only the three
+// the picker draws; anything else is a sentence, which the dock reads.
+func offeredTime(at string) bool {
+	for _, t := range pickTimes {
+		if t == at {
+			return true
+		}
+	}
+	return false
 }

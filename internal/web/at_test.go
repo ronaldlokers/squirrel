@@ -276,3 +276,79 @@ func TestDetachingANoteIsSaid(t *testing.T) {
 	require.Len(t, f.appended, 2)
 	require.Contains(t, f.appended[1].Words, "pile")
 }
+
+// The question offers a month to pick a day out of, and a time.
+func TestAskingForADayOffersAMonthAndTimes(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/new", strings.NewReader("label=dentist"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, `"month"`)
+	require.Contains(t, shown, `"times"`)
+	require.Contains(t, shown, "14:30")
+}
+
+// Answering makes the appointment on the day that was chosen, through the same
+// parser a typed sentence goes through.
+func TestAnsweringMakesItOnThatDay(t *testing.T) {
+	f := &fakeStore{}
+	day := now().AddDate(0, 0, 3)
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+day.Format("2006-01-02")+"&at=14:30"))
+
+	require.Len(t, f.moments, 1)
+	require.Equal(t, "dentist", f.moments[0].Label)
+	require.Equal(t, day.Day(), f.moments[0].Starts.Day())
+	require.Equal(t, 14, f.moments[0].Starts.Hour())
+	require.Equal(t, 30, f.moments[0].Starts.Minute())
+}
+
+// The picker and a typed sentence agree about what a time is. Asserted on the
+// hour and minute, not on a string.
+func TestThePickerAndTheSentenceAgreeAboutTheTime(t *testing.T) {
+	typed, ok := squirrel.ParseMoment("at 14:30 dentist", now())
+	require.True(t, ok)
+
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+typed.Starts.Format("2006-01-02")+"&at=14:30"))
+
+	require.Len(t, f.moments, 1)
+	require.Equal(t, typed.Starts, f.moments[0].Starts)
+}
+
+// A time nobody offered does nothing, and the time is a real one: 25:99 proves
+// nothing, because the parser refuses that on its own. 03:00 is a time this
+// picker does not draw, and pressing it is something only a hand-made post can
+// do — which is exactly what arriving from a form means.
+func TestATimeThatWasNeverOfferedDoesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+now().AddDate(0, 0, 1).Format("2006-01-02")+"&at=03:00"))
+
+	require.Empty(t, f.moments)
+	require.Empty(t, f.appended)
+}
+
+// And a day in the past does nothing either: the picker offers none, and an
+// appointment you are already late for is the one thing this list may not hold.
+func TestADayInThePastDoesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+now().AddDate(0, 0, -2).Format("2006-01-02")+"&at=14:30"))
+
+	require.Empty(t, f.moments)
+}
+
+// Turning to another month asks again rather than writing an appointment: it
+// is not an answer, it is turning a page.
+func TestTurningTheMonthAsksAgainAndMakesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/new", strings.NewReader(
+		"label=dentist&month="+now().AddDate(0, 1, 0).Format("2006-01")))
+
+	require.Empty(t, f.moments)
+	require.Len(t, f.appended, 1, "turning a page is not something you said")
+	require.Contains(t, string(f.appended[0].Shown), `"month"`)
+}
