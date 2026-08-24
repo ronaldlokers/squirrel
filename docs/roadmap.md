@@ -281,10 +281,9 @@ What it cost, stated rather than discovered:
 
 - **A door cannot be opened in a new tab, and the back button does not step
   through doors.** Opening a place writes to the record, so it has to be a POST.
-- **The digit keys that answered the interval question are gone.** They belonged
-  to a disclosure inside the chore card; the question is a turn now. `d`, `o`,
-  `s` and the arrows survive — `o` asks the question instead of opening a
-  drawer — and the digits are worth restoring.
+- ~~**The digit keys that answered the interval question are gone.**~~
+  **Restored in v0.29.0.** They belonged to a disclosure inside the chore card;
+  the question is a turn now, and the carve-out came with it.
 - **The new-chore form went with its screen.** Making one from nothing is a
   sentence in the dock, and an empty list says so. A guided version is a
   multi-turn flow with state to keep, which is a bigger thing than the interval
@@ -345,6 +344,16 @@ as long as the page it was on.
 **Everything the deck can do, the conversation can do.** What is left is the
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
+
+### v0.29.0 — 25 August 2026
+
+**The interval question answers to keys again**, which is the last thing the
+thread took away and did not give back. A digit is a count, a letter is a unit
+by its own first letter, and Enter answers — so `d` means *days* while the
+question is up, rather than DONE on the note behind it.
+
+Only that question: a digit inside the day picker would be a day of the month,
+and guessing which of the two was meant would book the wrong one.
 
 ### v0.28.0 — 25 August 2026
 

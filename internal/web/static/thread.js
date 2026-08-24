@@ -134,11 +134,46 @@
   // — d, k, x, t — because typing them is how triage is done at a desk.
   const PILE_KEYS = { d: "done", k: "keep", x: "drop", t: "task" };
 
+  // A question in progress owns the keys.
+  //
+  // The deck earned this carve-out: 1-4 answered its interval question, and a
+  // letter aimed at the picker must not act on the note behind it. The question
+  // is a turn of its own now, so the rule is about the picker wherever it is —
+  // and the digits came back with it, which the deck's own set lost when the
+  // disclosure went. Roadmap v0.24.0 recorded that as worth restoring.
+  //
+  // The number row by digit, the unit row by first letter, and Enter answers.
+  // Only the interval question: a digit inside the day picker would be a day of
+  // the month, and guessing which of the two you meant would book the wrong one.
+  function askedAKey(event) {
+    const pick = thread.querySelector(".turn:last-child .pick");
+    if (!pick) return false;
+
+    if (event.key === "Enter") {
+      pick.querySelector(".make")?.click();
+      return true;
+    }
+    // A digit is a count; a letter is a unit, by the word's own first letter.
+    // Both are radios, so choosing one is pressing its label.
+    const want = /^[0-9]$/.test(event.key)
+      ? `input[name="count"][value="${event.key}"]`
+      : `input[name="unit"][value^="${event.key.toLowerCase()}"]`;
+    const answer = pick.querySelector(want);
+    if (!answer) return false;
+    answer.checked = true;
+    return true;
+  }
+
   document.addEventListener("keydown", event => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     // A field owns its own letters.
     const on = event.target;
     if (on && (on.tagName === "TEXTAREA" || on.tagName === "INPUT" || on.isContentEditable)) return;
+
+    if (askedAKey(event)) {
+      event.preventDefault();
+      return;
+    }
 
     const act = PILE_KEYS[event.key.toLowerCase()];
     if (!act) return;
