@@ -19,15 +19,12 @@ import (
 // when set-aside was fixed; the fifth answer was not.
 func TestPromotingANoteSaysItBecameATask(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(3, "ring the vet", squirrel.ItemOpen)}}
-	m := mounted(t, f)
+	routed(t, f).call(t, "POST", "/pile/act", strings.NewReader("id=3&act=task&from=thread"))
 
-	to := m.call(t, "POST", "/pile/act",
-		strings.NewReader("id=3&act=task")).Header().Get("Location")
-	body := m.call(t, "GET", to, nil).Body.String()
-
-	require.Contains(t, body, "now a task",
-		"the card was promoted and the screen said nothing true about it")
-	require.NotContains(t, body, "marked done")
+	require.NotEmpty(t, f.appended)
+	require.Contains(t, f.appended[1].Words, "task",
+		"the note was promoted and nothing true was said about it")
+	require.NotContains(t, f.appended[1].Words, "done")
 }
 
 // And the way back is its own verb.
@@ -38,18 +35,17 @@ func TestPromotingANoteSaysItBecameATask(t *testing.T) {
 // their own route rather than by being moved to a state.
 func TestTheWayBackFromATaskIsMakingItANoteAgain(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(3, "ring the vet", squirrel.ItemOpen)}}
-	m := mounted(t, f)
+	m := routed(t, f)
 
-	to := m.call(t, "POST", "/pile/act",
-		strings.NewReader("id=3&act=task")).Header().Get("Location")
-	body := m.call(t, "GET", to, nil).Body.String()
+	m.call(t, "POST", "/pile/act", strings.NewReader("id=3&act=task&from=thread"))
+	shown := string(f.appended[1].Shown)
 
-	require.Contains(t, body, "PUT IT BACK",
+	require.Contains(t, shown, "put it back",
 		"a promotion offered no way to change your mind")
-	require.Contains(t, body, `value="note"`,
+	require.Contains(t, shown, `"act":"note"`,
 		"the way back moves the note's state, which is not what changed")
 
-	m.call(t, "POST", "/pile/act", strings.NewReader("id=3&act=note"))
+	m.call(t, "POST", "/pile/act", strings.NewReader("id=3&act=note&from=thread"))
 	require.Equal(t, squirrel.ItemNote, f.items[0].Kind,
 		"putting it back did not make it a note again")
 }

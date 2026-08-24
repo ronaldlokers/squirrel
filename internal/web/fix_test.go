@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,27 +37,23 @@ func TestANoteCannotBeFixedIntoNothing(t *testing.T) {
 	require.Equal(t, "buy milk", f.items[0].RawText)
 }
 
-// A correction made three notes down comes back to the same place, like every
-// other transition on this screen.
-func TestFixingReturnsToWhereYouWere(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{
-		note(1, "one", squirrel.ItemOpen),
-		note(2, "two", squirrel.ItemOpen),
-	}}
-
-	w := post(t, mounted(t, f), "/pile/fix",
-		url.Values{"id": {"2"}, "text": {"two, corrected"}, "after": {"1"}})
-
-	loc, err := url.Parse(w.Header().Get("Location"))
-	require.NoError(t, err)
-	require.Equal(t, "1", loc.Query().Get("after"))
-}
-
 // The field carries the note's own words, so a correction starts from what is
 // there rather than from an empty box.
 func TestTheFieldStartsFromWhatTheNoteSays(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "the boler makes a noise", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	// The box opens on what it says now, so rewording is a correction rather
+	// than typing it again from nothing.
+	// A fresh reading, so Buddy does not ask how you are and become the live
+	// edge himself — which takes the box off the question.
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
+	m := routed(t, f)
+	m.call(t, "POST", "/pile/reword", strings.NewReader("id=1"))
+	f.turns, f.appended = append(f.turns, f.appended...), nil
+	body := m.call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, `<textarea name="text" rows="3" aria-label="What the note should say">the boler makes a noise</textarea>`)
+	require.Contains(t, body, `>the boler makes a noise</textarea>`)
 }
+
+// TestFixingReturnsToWhereYouWere went with the cursor it carried. Rewording
+// answers in the conversation and hands the note back — see
+// TestRewordingSaysItAndCarriesOn.

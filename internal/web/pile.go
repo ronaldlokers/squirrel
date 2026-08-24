@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 	"net/http"
-	"strings"
 )
 
 // The deck shows one card. The second row is never rendered; it is read only so
@@ -40,7 +39,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
 	m.Get("/{$}", guard(opts, threadHandler(s, opts)))
-	m.Get("/pile", guard(opts, pileHandler(s, opts)))
 	// The slot. Behind the origin check like every other write here: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
@@ -165,48 +163,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	return nil
 }
 
-func pileHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		undo := undoFrom(r.URL.Query())
-		clash := clashFrom(r.URL.Query())
-		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
-			searchInto(w, r, s, opts, personID, q, undo, clash)
-			return
-		}
-		// The cursor is skipping, and it lives here rather than in the store's
-		// idea of the pile: a note skipped past is untouched, and reloading
-		// without the parameter is how you get back to the top.
-		after := cursorFrom(r.URL.Query())
-		items, more, err := s.OpenItemsAfter(r.Context(), personID, after, pileLimit)
-		if err != nil {
-			fail(w, err)
-			return
-		}
-		v := view{Here: "pile", More: more, Undo: undo, After: after, Clash: clash}
-		if len(items) == 0 {
-			// Nothing older is not an empty pile. Everything skipped past is
-			// still open, and a page that said "nothing in the pile" here
-			// would be describing the cursor rather than the pile.
-			if after != 0 {
-				renderWith(w, r, s, opts, "bottom", v)
-				return
-			}
-			renderWith(w, r, s, opts, "empty", v)
-			return
-		}
-		n := toView(items[0])
-		v.Note = &n
-		v.Splittable = splittable(opts, n.Text)
-		v.HeldChips = heldChips()
-		renderWith(w, r, s, opts, "pile", v)
-	}
-}
-
 // splittable reports whether the note on the card is worth asking about.
 //
 // A free check, and it is what keeps a model off every note in the pile: the
@@ -214,28 +170,6 @@ func pileHandler(s Store, opts Options) http.HandlerFunc {
 // expensive part never happens for the ordinary ones.
 func splittable(opts Options, text string) bool {
 	return opts.Split != nil && opts.Splittable != nil && opts.Splittable(text)
-}
-
-// pileInto renders the pile with a proposal attached to the top card.
-//
-// The same page the pile handler draws, so the proposal appears where the note
-// is rather than on a screen of its own — the confirmation surface is the card
-// that is already there, which is what the architecture asked for.
-func pileInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, sp *splitView) {
-	items, more, err := s.OpenItemsAfter(r.Context(), personID, 0, pileLimit)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if len(items) == 0 {
-		http.Redirect(w, r, "/pile", http.StatusSeeOther)
-		return
-	}
-	n := toView(items[0])
-	renderWith(w, r, s, opts, "pile", view{
-		Here: "pile", More: more, Note: &n, Split: sp,
-		Splittable: splittable(opts, n.Text), HeldChips: heldChips(),
-	})
 }
 
 // searchLimit caps the result list. The cap is what makes "there is more"
@@ -247,27 +181,3 @@ const searchLimit = 6
 // list is short, and this is a way to reach one rather than a second list to
 // read.
 const choreHits = 3
-
-func searchInto(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, q string, undo *undoView, clash bool) {
-	items, more, err := s.SearchItems(r.Context(), personID, q, searchLimit)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	// One search, both kinds of thing. The lid carries one field on every
-	// screen, and a person typing a word has not first decided whether the word
-	// belongs to a note or to a chore.
-	chores, err := s.SearchChores(r.Context(), personID, q, choreHits)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	v := view{Here: "pile", Query: q, More: more, Undo: undo, Clash: clash}
-	for _, c := range chores {
-		v.Chores = append(v.Chores, toChoreView(c))
-	}
-	for _, it := range items {
-		v.Results = append(v.Results, toView(it))
-	}
-	renderWith(w, r, s, opts, "results", v)
-}

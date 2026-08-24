@@ -293,8 +293,11 @@ func webhookURL(s *boot.Squirrel) string {
 	return fmt.Sprintf("http://127.0.0.1:%d/transports/campfire", s.Port())
 }
 
-// pileURL is the deck. The screen itself is at the root; the deck kept its own
+// screenURL is the screen. It was the deck at /pile; the deck came out on
+// 24 August 2026 and the conversation at the root is the whole of it.
+//
+// Old comment, kept for the reader who greps for it: the deck kept its own
 // URL so that an installed app's start_url survived the move.
-func pileURL(s *boot.Squirrel) string {
-	return fmt.Sprintf("http://127.0.0.1:%d/pile", s.Port())
+func screenURL(s *boot.Squirrel) string {
+	return fmt.Sprintf("http://127.0.0.1:%d/", s.Port())
 }

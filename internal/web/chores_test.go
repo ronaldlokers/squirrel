@@ -102,37 +102,6 @@ func TestChoresRefusesAnUnknownAction(t *testing.T) {
 	require.Empty(t, f.retired)
 }
 
-// The two screens have to be reachable from each other, or the chores are as
-// invisible as they were before.
-// With three screens the lid carries both of the others: one link that cycled
-// would put the chores two presses from the pile.
-//
-// Two places since 24 August 2026, not three: the tasks and the chores stopped
-// being pages and became messages, and the way to them is the rail on the one
-// screen you reach them from.
-func TestTheLidOffersTheOnePlaceLeftToGo(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	m := mounted(t, f)
-
-	for _, c := range []struct {
-		on    string
-		wants []string
-		not   string
-	}{
-		// One place left in the menu: the pile is the last screen that is a
-		// screen. Everything else is the conversation, and the way back to it
-		// is the mark.
-		{"/kept", []string{`href="/pile"`}, `class="lidlink" href="/kept"`},
-		{"/held", []string{`href="/pile"`}, `class="lidlink" href="/held"`},
-	} {
-		body := m.call(t, "GET", c.on, nil).Body.String()
-		for _, want := range c.wants {
-			require.Contains(t, body, want, c.on)
-		}
-		require.NotContains(t, body, c.not, "a link to where you already are is furniture")
-	}
-}
-
 // A chore nobody has ever done has a baseline anyway — its own birthday — and
 // reporting that as "last done" would be a sentence about the person.
 func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
@@ -350,3 +319,7 @@ func TestThePickerAndTheSentenceAgree(t *testing.T) {
 
 	require.Equal(t, typed, f.reinterval.every)
 }
+
+// The lid's menu is empty since the deck came out: every place is a message,
+// the way to one is the rail, and the way to the rail is the mark. A menu of
+// one item that is always where you are is furniture.

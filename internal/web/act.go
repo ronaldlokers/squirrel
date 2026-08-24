@@ -2,7 +2,6 @@ package web
 
 import (
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -44,29 +43,6 @@ const intervalSentinel = "chore-name-placeholder"
 //
 // The undo hint travels in the query string rather than a session, because
 // this binary has no sessions and the screen is stateless by construction.
-// fromThread says the press was made in the conversation rather than on the
-// deck. The write is the same either way; what differs is the answer.
-//
-// One route and one write, with two answers, rather than a second route that
-// could drift from the first. The branch dies with the deck.
-func fromThread(r *http.Request) bool { return r.FormValue("from") == "thread" }
-
-func back(w http.ResponseWriter, r *http.Request, opts Options, undo url.Values) {
-	target := "/pile"
-	if q := strings.TrimSpace(r.FormValue("q")); q != "" {
-		undo.Set("q", q)
-	}
-	// Where you were, if you had skipped. Without this, acting on the third
-	// note down quietly returns you to the first.
-	if after := strings.TrimSpace(r.FormValue("after")); after != "" {
-		undo.Set("after", after)
-	}
-	if len(undo) > 0 {
-		target += "?" + undo.Encode()
-	}
-	http.Redirect(w, r, target, http.StatusSeeOther)
-}
-
 func actHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -102,24 +78,21 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
+			it, _, _ := s.ItemByID(r.Context(), personID, id)
 			if act == "note" {
-				// Undoing is not a thing to be offered an undo for.
-				back(w, r, opts, url.Values{})
+				// Undoing is not a thing to be offered an undo for, so it says
+				// so and hands you the pile again rather than offering a way
+				// back to where you just came from.
+				answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+					[]squirrel.Turn{
+						{Who: squirrel.SpeakerYou, Words: "put it back"},
+						{Who: squirrel.SpeakerBuddy, Words: "It is a note again."},
+					},
+					pileTurn(r.Context(), s, opts, personID, 0, ""),
+				)), "/")
 				return
 			}
-			if fromThread(r) {
-				it, _, _ := s.ItemByID(r.Context(), personID, id)
-				answerInThread(w, r, s, opts, personID, "task", it.RawText, id, string(it.State))
-				return
-			}
-			// The same way back the four dispositions have. This carried
-			// nothing at all, so the one answer on the card that moves a note
-			// between two screens was the one with no way to change your mind.
-			back(w, r, opts, url.Values{
-				"undo":  {strconv.FormatInt(id, 10)},
-				"was":   {"task"},
-				"state": {"task"},
-			})
+			answerInThread(w, r, s, opts, personID, "task", it.RawText, id, string(it.State))
 			return
 		}
 
@@ -159,22 +132,20 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 				// It moved under you, from the room, while the card was still
 				// on the screen. Saying nothing would be the two views
 				// disagreeing and neither of them mentioning it.
-				back(w, r, opts, url.Values{"clash": {strconv.FormatInt(it.ID, 10)}})
+				answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+					[]squirrel.Turn{{
+						Who:   squirrel.SpeakerBuddy,
+						Words: "That one moved while you were looking at it. It is not where the card said.",
+					}},
+					pileTurn(r.Context(), s, opts, personID, 0, ""),
+				)), "/")
 				return
 			}
 		} else if err := s.SetItemState(r.Context(), it.ID, state, time.Now()); err != nil {
 			fail(w, err)
 			return
 		}
-		if fromThread(r) {
-			answerInThread(w, r, s, opts, personID, r.FormValue("act"), it.RawText, it.ID, string(it.State))
-			return
-		}
-		back(w, r, opts, url.Values{
-			"undo":  {strconv.FormatInt(it.ID, 10)},
-			"was":   {string(it.State)},
-			"state": {string(state)},
-		})
+		answerInThread(w, r, s, opts, personID, r.FormValue("act"), it.RawText, it.ID, string(it.State))
 	}
 }
 
@@ -216,23 +187,13 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if fromThread(r) {
-			it, _, _ := s.ItemByID(r.Context(), personID, id)
-			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
-				[]squirrel.Turn{
-					{Who: squirrel.SpeakerYou, Words: r.FormValue("count") + " " + r.FormValue("unit")},
-					{Who: squirrel.SpeakerBuddy, Words: "It comes back now."},
-				},
-				pileTurn(r.Context(), s, opts, personID, 0, ""),
-			)), "/")
-			_ = it
-			return
-		}
-		back(w, r, opts, url.Values{
-			"undo":  {strconv.FormatInt(id, 10)},
-			"was":   {string(squirrel.ItemOpen)},
-			"state": {"chore"},
-		})
+		answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+			[]squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: r.FormValue("count") + " " + r.FormValue("unit")},
+				{Who: squirrel.SpeakerBuddy, Words: "It comes back now."},
+			},
+			pileTurn(r.Context(), s, opts, personID, 0, ""),
+		)), "/")
 	}
 }
 
@@ -250,7 +211,7 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			back(w, r, opts, url.Values{})
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
@@ -258,31 +219,23 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 		// Empty is not a correction. A note cannot be emptied into nothing —
 		// that is what dropping it is for, and it is reversible.
 		if err != nil || id < 1 || text == "" {
-			back(w, r, opts, url.Values{})
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		if len(text) > captureLimit {
 			text = text[:captureLimit]
 		}
-		if fromThread(r) {
-			if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
-				fail(w, err)
-				return
-			}
-			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
-				[]squirrel.Turn{
-					{Who: squirrel.SpeakerYou, Words: text},
-					{Who: squirrel.SpeakerBuddy, Words: "That is what it says now."},
-				},
-				pileTurn(r.Context(), s, opts, personID, 0, ""),
-			)), "/")
-			return
-		}
 		if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
 			fail(w, err)
 			return
 		}
-		back(w, r, opts, url.Values{})
+		answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+			[]squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: text},
+				{Who: squirrel.SpeakerBuddy, Words: "That is what it says now."},
+			},
+			pileTurn(r.Context(), s, opts, personID, 0, ""),
+		)), "/")
 	}
 }
 

@@ -69,11 +69,6 @@ var appearanceScreens = map[string][]string{
 	// are worth their own visit: they are the control the capacity gate
 	// depends on.
 	"/?ask=1": {".faces", ".face", ".face img", ".face span"},
-	"/pile": {
-		".deckhead", ".views .view", ".card", ".titlebar", "#noteText",
-		".btn", ".btn .key", ".btn.make", ".later", ".hint", ".quietpick",
-		".cantact > summary", ".why", ".reword > summary",
-	},
 	// `.ends .quietpick` as well as `.ends`: the underline is on the link, and
 	// the paragraph around it cannot report what the link is wearing.
 	"/kept":  {".deckhead", ".rcard", ".rcard .tab", ".rcard p", ".rbtn", ".ends"},

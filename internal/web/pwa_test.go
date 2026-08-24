@@ -79,7 +79,7 @@ func TestTheWorkerNeverCachesThePileItself(t *testing.T) {
 
 func TestThePageOffersItselfForInstalling(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
 
 	require.Contains(t, body, `rel="manifest" href="/manifest.webmanifest`)
 	require.Contains(t, body, `name="theme-color"`)
@@ -113,7 +113,7 @@ func TestTheWorkerIsNotBehindTheYearLongCache(t *testing.T) {
 // when the manifest was the thing that never arrived.
 func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
 
 	require.Contains(t, body, `rel="manifest"`)
 	require.Regexp(t, `rel="manifest"[^>]*crossorigin="use-credentials"`, body)

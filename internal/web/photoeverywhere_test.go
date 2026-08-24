@@ -32,12 +32,8 @@ func TestAPhotographIsShownWhereverTheNoteIs(t *testing.T) {
 		name, path string
 		store      *fakeStore
 	}{
-		{"the pile", "/pile", &fakeStore{items: []squirrel.Item{
-			withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemNote)}}},
 		{"the shelf", "/kept", &fakeStore{items: []squirrel.Item{
 			withPhoto(1, "the tax letter", squirrel.ItemKept, squirrel.ItemNote)}}},
-		{"search", "/pile?q=tax", &fakeStore{items: []squirrel.Item{
-			withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemNote)}}},
 	} {
 		t.Run(screen.name, func(t *testing.T) {
 			body := mountedWithCamera(t, screen.store, &fakeSpool{}, &fakePhotos{}).

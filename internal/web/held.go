@@ -2,7 +2,6 @@ package web
 
 import (
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -100,28 +99,13 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 		// one transition in the product where undo was not one press away, on
 		// a card that had simply gone. It was recoverable from /held all
 		// along; it did not look it.
-		if fromThread(r) {
-			answerWith(w, r, keepSaid(r.Context(), s, personID, append(
-				[]squirrel.Turn{
-					{Who: squirrel.SpeakerYou, Words: squirrel.HeldWords[state]},
-					{Who: squirrel.SpeakerBuddy, Words: "Set aside. It is in the set-aside until it is not."},
-				},
-				pileTurn(r.Context(), s, opts, personID, 0, ""),
-			)), "/")
-			return
-		}
-		to, err := url.Parse(back)
-		if err != nil {
-			http.Redirect(w, r, back, http.StatusSeeOther)
-			return
-		}
-		q := to.Query()
-		q.Set("undo", strconv.FormatInt(id, 10))
-		q.Set("was", string(state))
-		q.Set("state", string(state))
-		q.Set("from", back)
-		to.RawQuery = q.Encode()
-		http.Redirect(w, r, to.String(), http.StatusSeeOther)
+		answerWith(w, r, keepSaid(r.Context(), s, personID, append(
+			[]squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: squirrel.HeldWords[state]},
+				{Who: squirrel.SpeakerBuddy, Words: "Set aside. It is in the set-aside until it is not."},
+			},
+			pileTurn(r.Context(), s, opts, personID, 0, ""),
+		)), "/")
 	}
 }
 

@@ -16,14 +16,14 @@ func post(t *testing.T, m *testMux, path string, form url.Values) *httptest.Resp
 	return m.call(t, "POST", path, strings.NewReader(form.Encode()))
 }
 
-func TestActMovesTheNoteAndRedirects(t *testing.T) {
+func TestActMovesTheNoteAndComesBack(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
 	w := post(t, m, "/pile/act", url.Values{"id": {"1"}, "act": {"done"}})
 
 	require.Equal(t, 303, w.Code, "a write answers with See Other so a reload does not repeat it")
-	require.Contains(t, w.Header().Get("Location"), "/pile")
+	require.Equal(t, "/", w.Header().Get("Location"), "there is one place to come back to")
 	require.Equal(t, squirrel.ItemDone, f.items[0].State)
 }
 

@@ -1,8 +1,6 @@
 package web
 
 import (
-	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -10,57 +8,6 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
-
-// Setting a note aside is a disposition like the other four, and was the only
-// one with no way back.
-//
-// DONE, KEEP, DROP and A TASK each leave a stamp, a held card and a focused
-// PUT IT BACK, and without script a banner on the next page rebuilt from the
-// redirect. The three why-not chips posted and redirected with nothing at all,
-// so the card just went. It was recoverable from /held the whole time; it did
-// not look it, and on a bad day a note that vanishes is a note you have lost.
-func TestSettingANoteAsideOffersItBack(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "chase the landlord", squirrel.ItemOpen)}}
-	m := mounted(t, f)
-
-	to := m.call(t, "POST", "/held/act",
-		strings.NewReader("aside=waiting&id=1&from=%2Fpile")).Header().Get("Location")
-
-	body := m.call(t, "GET", to, nil).Body.String()
-
-	require.Contains(t, body, "PUT IT BACK",
-		"the note was set aside and nothing offered it back")
-	require.Contains(t, body, "waiting on someone",
-		"and nothing said what had happened to it")
-}
-
-// The way back is not the way the other four come back.
-//
-// `open` is a state a note can be moved to; a note that was set aside is
-// picked back up, which is its own verb on its own route. The banner has to
-// post to the one that exists.
-func TestTheWayBackFromSetAsideIsPickingItUp(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "chase the landlord", squirrel.ItemOpen)}}
-	m := mounted(t, f)
-
-	to := m.call(t, "POST", "/held/act",
-		strings.NewReader("aside=someday&id=1&from=%2Fpile")).Header().Get("Location")
-	body := m.call(t, "GET", to, nil).Body.String()
-
-	require.Contains(t, body, `action="/held/act"`,
-		"the way back posts where a set-aside note cannot be moved from")
-	require.Contains(t, body, `value="back"`)
-
-	// And pressing it actually picks the note back up.
-	q, err := url.Parse(to)
-	require.NoError(t, err)
-	m.call(t, "POST", "/held/act",
-		strings.NewReader(url.Values{
-			"id": {"1"}, "act": {"back"}, "from": {q.Query().Get("from")},
-		}.Encode()))
-
-	require.Equal(t, []int64{1}, f.unheld)
-}
 
 // The stamp on the card and the line on the next page are the same words for
 // the same press. With script one appears, without it the other does, and a
@@ -106,10 +53,14 @@ func TestEverySessionScreenOffersAWayToStop(t *testing.T) {
 	said := squirrel.Say(squirrel.SayingStop, time.Now())
 	require.NotEmpty(t, said)
 
-	for _, screen := range []string{"/pile", "/kept", "/held"} {
+	for _, screen := range []string{"/kept", "/held"} {
 		body := m.call(t, "GET", screen, nil).Body.String()
 		require.Contains(t, body, `href="/enough"`,
 			"%s is a screen you can spend an evening on with no way to stop", screen)
 		require.Contains(t, body, said, "%s does not say the way out in today's words", screen)
 	}
 }
+
+// Setting one aside is said in the conversation now, and the way back is on
+// /held where it always was — see TestSettingOneAsideSaysSoAndCarriesOn. What
+// these pinned was the deck's redirect carrying an undo, and the deck is gone.

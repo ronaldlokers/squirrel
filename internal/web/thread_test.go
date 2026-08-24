@@ -569,17 +569,6 @@ func TestAnEmptyPileSaysSo(t *testing.T) {
 	require.NotEmpty(t, f.appended[1].Words)
 }
 
-// The deck still answers. It is deleted in its own piece of work, not in this
-// one — a triage loop nobody has used yet is not a reason to take away the one
-// that works.
-func TestTheDeckStillStands(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/pile", nil).Body.String()
-
-	require.Contains(t, body, "the boiler")
-	require.Contains(t, body, `value="done"`)
-}
-
 // The three questions a note can be asked, rather than the three verbs that end
 // it. Without them the deck can never be deleted, because they would be
 // reachable nowhere else.
@@ -630,6 +619,10 @@ func TestSettingOneAsideSaysSoAndCarriesOn(t *testing.T) {
 	require.Contains(t, string(f.appended[2].Shown), "meter reading")
 }
 
+// Searching answers in the conversation. What the deck's search tests pinned is
+// pinned here: both kinds of thing in one answer, and a result that carries no
+// verbs.
+//
 // The lid's one field, answered in the conversation. Both kinds of thing, and
 // a result carries no verbs: it is a thing you went looking for rather than a
 // thing you are deciding about.
@@ -674,3 +667,123 @@ func TestSearchingForNothingAsksNothing(t *testing.T) {
 
 	require.Empty(t, f.appended)
 }
+
+// Skipping is `later` here, and the cursor travels in the press rather than in
+// the address bar. What the deck's skip tests pinned — that acting on the third
+// note down does not quietly return you to the first — the conversation gets for
+// nothing: it never moves you, so there is no place to lose.
+//
+// Skipping to the end is not the same as an empty pile: what you skipped is
+// still there, and saying "nothing to decide about" would be a lie.
+func TestTheEndOfTheSkippedOnesIsNotAnEmptyPile(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	routed(t, f).call(t, "POST", "/pile/later", strings.NewReader("after=9"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "still there")
+	require.NotContains(t, f.appended[1].Words, "Nothing to decide about")
+}
+
+// A cursor that is not a number is no cursor, and nothing is said about it.
+func TestALaterWithNoCursorDoesNothing(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	routed(t, f).call(t, "POST", "/pile/later", strings.NewReader("after=soon"))
+
+	require.Empty(t, f.appended)
+}
+
+// The pile counts and never ranks, like the tasks: "1 of 7" is a position in a
+// list you are behind on, and this is one thing at a time by design.
+func TestThePileNeverRanks(t *testing.T) {
+	items := []squirrel.Item{}
+	for i := int64(1); i <= 7; i++ {
+		items = append(items, note(i, "a thought", squirrel.ItemOpen))
+	}
+	body := strings.ToLower(opened(t, &fakeStore{items: items}, "pile"))
+
+	for _, ranked := range []string{"of 7", "(7)", "1 of ", "7 left", "7 to go"} {
+		require.NotContains(t, body, ranked)
+	}
+}
+
+// Nothing to decide about does not celebrate and does not nag.
+func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
+	body := strings.ToLower(opened(t, &fakeStore{}, "pile"))
+
+	require.Contains(t, body, "nothing to decide about")
+	for _, said := range []string{"well done", "all clear", "inbox zero", "congratulations", "great"} {
+		require.NotContains(t, body, said)
+	}
+}
+
+// A pile it cannot read says so rather than reading as empty.
+func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
+	f := &fakeStore{itemsErr: errTest}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+
+	require.Contains(t, f.appended[1].Words, "cannot reach the pile")
+}
+
+// TestTheDeckStillStands was true for exactly as long as it needed to be. The
+// deck came out once the conversation could do everything it did, which is what
+// that test was there to make safe.
+
+// The deck's undo travelled in the address bar and had to survive an empty
+// pile, a search and a page it could not read. The conversation's travels with
+// what Buddy said, and what was said does not move — so what is left to prove
+// is only that pressing it reverses the write.
+//
+// The way back actually puts it back. The chip carries the act and the state,
+// and pressing it is the same write as any other — which is the whole reason it
+// goes through the same handler.
+func TestPressingTheWayBackPutsItBack(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	m := routed(t, f)
+
+	m.call(t, "POST", "/pile/act", strings.NewReader("id=9&act=keep&was=open&from=thread"))
+	require.Equal(t, squirrel.ItemKept, f.states[9])
+
+	m.call(t, "POST", "/pile/undo", strings.NewReader("id=9&act=open&was=kept"))
+	require.Equal(t, squirrel.ItemOpen, f.states[9], "the way back did not reverse it")
+}
+
+// An undo that names something that was never offered does nothing.
+func TestAnUndoThatWasNeverOfferedDoesNothing(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
+	routed(t, f).call(t, "POST", "/pile/undo", strings.NewReader("id=9&act=unburn&was=open"))
+
+	require.Empty(t, f.states)
+	require.Empty(t, f.appended)
+}
+
+// The card's four answers, in a real browser.
+//
+// This file was gate_test.go, and it tested the opposite of what it now tests.
+// For one day the four answers sat behind a disclosure that asked "what is
+// this?" first — a change made on a review's suggestion, chosen from options,
+// used, and then asked back: "the pile should have all its buttons visible
+// instead of hidden behind a click."
+//
+// The gate is gone from the markup and the stylesheet. Its tests stayed, so
+// five of them had been failing on this branch ever since — which is the whole
+// argument for the file existing in this form rather than being deleted: what
+// the owner asked for had no test holding it in place, and the tests that were
+// there were holding the thing he rejected.
+//
+// checkVisibility rather than a bounding rect throughout, for the reason this
+// package has now learnt three times: a closed <details> keeps its contents in
+// the DOM and Chrome still reports geometry for them, so a rect test says every
+// hidden answer is on screen.
+
+// Retired with the deck on 25 August 2026.
+//
+// These pinned the card's own machinery: the tray of answers that opened
+// without a press, the stamp that leaned at the day's angle, the hold that gave
+// an undo somewhere to be, and the skip link a key pressed. None of it crosses
+// to a conversation, where the answer is a new turn and the way back travels
+// with it.
+//
+// What did cross is pinned elsewhere: the letters, by
+// TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
+// TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
+// TestLaterHandsYouTheNextAndDecidesNothing.
