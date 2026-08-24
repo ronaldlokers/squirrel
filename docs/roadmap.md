@@ -212,6 +212,30 @@ screen's own pose need drawings.
 
 ---
 
+### v0.22.0 — 24 August 2026
+
+**A fixed point you can put things on.** A note can point at an appointment;
+`/at` is what is still coming and `/at/{id}` is one of them, showing when to
+leave, what to take, and the notes pointing at it. The leave-by notification
+lands there instead of the front door.
+
+It cost two recorded decisions, both amended rather than deleted:
+
+- `PRODUCT.md` refused a browsable list of appointments — *a calendar is a thing
+  you are behind on*. Overturned by the owner, with the guard rails that replace
+  it: the list holds only what is still ahead, so there is nothing in it to be
+  behind on.
+- A notification went to the front door, on the argument that a link to
+  something already done is worse than a page saying what is true now. A fixed
+  point inside its leave-by window is the one thing that cannot be stale.
+
+Notes point at the appointment rather than the appointment growing fields, so
+every thought stays in one pile and `!find` still reaches all of it. The pointer
+is the disposition — no eighth state, nothing to migrate, and the reversal is a
+null. Home carries a fourth door, two by two on a phone.
+
+---
+
 ## Open
 
 *(The nudge's two missing floors were decided and built on 20 August — quiet
