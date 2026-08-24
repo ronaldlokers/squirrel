@@ -77,8 +77,7 @@ func aMoment(in time.Duration, bring string) *squirrel.Moment {
 }
 
 func TestAFixedPointShowsWhenToLeaveAndWhatToTake(t *testing.T) {
-	body := routed(t, withMoment(aMoment(3*time.Hour, "keys, wallet"))).
-		call(t, "GET", "/at/4", nil).Body.String()
+	body := landsInTheThread(t, withMoment(aMoment(3*time.Hour, "keys, wallet")))
 
 	require.Contains(t, body, "dentist")
 	require.Contains(t, body, "keys, wallet")
@@ -86,8 +85,7 @@ func TestAFixedPointShowsWhenToLeaveAndWhatToTake(t *testing.T) {
 }
 
 func TestLeavingIsOfferedInsideTheWindow(t *testing.T) {
-	body := routed(t, withMoment(aMoment(10*time.Minute, ""))).
-		call(t, "GET", "/at/4", nil).Body.String()
+	body := landsInTheThread(t, withMoment(aMoment(10*time.Minute, "")))
 
 	require.Contains(t, body, "LEAVING")
 }
@@ -96,7 +94,7 @@ func TestTheNotesPointingAtItAreShown(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, ""))
 	f.attached = []squirrel.Item{{ID: 9, RawText: "the referral letter", ReceivedAt: now()}}
 
-	body := routed(t, f).call(t, "GET", "/at/4", nil).Body.String()
+	body := landsInTheThread(t, f)
 	require.Contains(t, body, "the referral letter")
 }
 
@@ -138,7 +136,7 @@ func TestAFixedPointNeverCountsAnything(t *testing.T) {
 		{ID: 10, RawText: "two", ReceivedAt: now()},
 		{ID: 11, RawText: "three", ReceivedAt: now()},
 	}
-	body := routed(t, f).call(t, "GET", "/at/4", nil).Body.String()
+	body := landsInTheThread(t, f)
 
 	require.NotContains(t, body, "3 notes")
 	require.NotContains(t, body, "three notes")
@@ -155,12 +153,9 @@ func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
 // a page with nothing on it would have passed it silently.
 // The one screen the agenda still has. The list became a turn on 24 August
 // 2026; this is the page a notification lands on, and it stays until phase 4.
-func TestTheFixedPointPageStillRenders(t *testing.T) {
+func TestTappingTheWarningOpensTheAppointment(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
-	f.upcoming = []squirrel.Moment{*f.moment}
-	m := routed(t, f)
-
-	one := m.call(t, "GET", "/at/4", nil).Body.String()
+	one := landsInTheThread(t, f)
 	require.Contains(t, one, "dentist")
 	require.Contains(t, one, "keys, wallet")
 }
@@ -371,4 +366,45 @@ func routedSplitting(t *testing.T, f *fakeStore, pieces ...string) *realMux {
 		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
 	})))
 	return m
+}
+
+// The notification's own URL keeps working, and lands in the conversation.
+//
+// One sent last week is still on a lock screen, so the link may never 404 — and
+// what it opens is the appointment at the live edge rather than a page of its
+// own.
+func TestTheNotificationsURLLandsInTheConversation(t *testing.T) {
+	f := withMoment(aMoment(20*time.Minute, "keys, wallet"))
+	w := routed(t, f).call(t, "GET", "/at/4", nil)
+
+	require.Equal(t, 303, w.Code)
+	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Len(t, f.appended, 2)
+	require.Contains(t, string(f.appended[1].Shown), "take keys, wallet")
+	require.Contains(t, string(f.appended[1].Shown), "LEAVING")
+}
+
+// A fixed point that is not yours is not written into anyone's conversation.
+func TestANotificationForSomethingThatIsNotYoursWritesNothing(t *testing.T) {
+	f := &fakeStore{}
+	w := routed(t, f).call(t, "GET", "/at/99", nil)
+
+	require.Equal(t, 404, w.Code)
+	require.Empty(t, f.appended)
+}
+
+// landsInTheThread taps the notification's URL and renders the conversation it
+// wrote — which is what a person tapping a leave-by warning actually gets.
+func landsInTheThread(t *testing.T, f *fakeStore) string {
+	t.Helper()
+	// A fresh reading, so Buddy does not ask how you are on arrival and become
+	// the live edge himself — which would take LEAVING off the appointment you
+	// just tapped a warning about.
+	if f.checkin == nil {
+		f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
+	}
+	m := routed(t, f)
+	m.call(t, "GET", "/at/4", nil)
+	f.turns, f.appended = append(f.turns, f.appended...), nil
+	return m.call(t, "GET", "/", nil).Body.String()
 }

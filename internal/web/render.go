@@ -48,7 +48,6 @@ var pages = map[string]*template.Template{
 	"held":   page("templates/layout.html", "templates/stopping.html", "templates/held.html"),
 	"moods":  page("templates/layout.html", "templates/moods.html"),
 	"enough": page("templates/layout.html", "templates/enough.html"),
-	"atone":  page("templates/layout.html", "templates/stopping.html", "templates/atone.html"),
 }
 
 type noteView struct {

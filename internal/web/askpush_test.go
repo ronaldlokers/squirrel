@@ -72,3 +72,24 @@ func TestTheWayToTurnPushOnIsAbsentWithoutAKey(t *testing.T) {
 	require.Equal(t, nil, c.eval(t, `return document.getElementById("askPush")`),
 		"no key, no button at all")
 }
+
+// The way back once notifications have been refused. Issue #147: a browser that
+// has been told no will not ask again and this site cannot make it, so a no was
+// the end of it with nothing said.
+func TestARefusalSaysWhereTheSwitchIs(t *testing.T) {
+	body := withPush(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `id="pushRefused"`)
+	require.Contains(t, body, "Turn notifications on for this site")
+	// Hidden until the script has established that the answer was no. A page
+	// that says this to somebody who has not been asked is a page telling them
+	// off for a thing they did not do.
+	require.Contains(t, body, `id="pushRefused" class="pushrefused" hidden`)
+}
+
+// And no key, no sentence: there is nothing to turn on.
+func TestNoKeyMeansNothingIsSaidAboutNotifications(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+
+	require.NotContains(t, body, "pushRefused")
+}

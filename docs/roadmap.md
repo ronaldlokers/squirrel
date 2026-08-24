@@ -346,6 +346,21 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.27.0 — 25 August 2026
+
+**The notification lands in the conversation, and a refusal has a way back.**
+Phase 4, and the last of the thread.
+
+`/at/{id}` stops being a page and becomes the tap itself: it writes the
+appointment as a turn and redirects to `/`, so a warning opens the thing you are
+about to leave for at the live edge. The URL keeps working forever, because one
+sent last week is still on a lock screen. `sw.js` needed no change at all.
+
+**Issue #147 is closed.** A browser told no will not ask again and this site
+cannot make it, so a button would be a control that cannot work. What is shown
+instead — once, and only to somebody who has actually refused — is the sentence
+that says where to turn them back on.
+
 ### v0.26.0 — 25 August 2026
 
 **The deck came out.** `/pile` and its templates are gone: the card, the split
