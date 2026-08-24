@@ -45,6 +45,8 @@ type drawn struct {
 	Cal *calView `json:"cal,omitempty"`
 	// Say is a question whose answer is words. See askForWords.
 	Say *sayView `json:"say,omitempty"`
+	// Cut is a proposal to split a note. See proposeInThread.
+	Cut *cutView `json:"cut,omitempty"`
 	// Faces is the check-in's five drawings. A flag rather than five chips
 	// because they are the product's own faces and the markup for them
 	// already exists; rendering them as words would be a different control
@@ -67,6 +69,7 @@ type turnView struct {
 	Pick  *pickView
 	Cal   *calView
 	Say   *sayView
+	Cut   *cutView
 	// V stamps the asset URLs a turn draws. Filled here rather than by render,
 	// because a turn is also rendered on its own as a fragment, where there is
 	// no page around it to carry it.
@@ -254,7 +257,7 @@ func endsOpen(turns []squirrel.Turn) bool {
 		return true
 	}
 	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces ||
-		sh.Pick != nil || sh.Cal != nil || sh.Say != nil
+		sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
 }
 
 // turnViews decodes each turn's own record of what it drew, and marks the live
@@ -276,7 +279,7 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
 				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
-				v.Pick, v.Cal, v.Say = sh.Pick, sh.Cal, sh.Say
+				v.Pick, v.Cal, v.Say, v.Cut = sh.Pick, sh.Cal, sh.Say, sh.Cut
 				if sh.Faces {
 					v.Faces = theFaces()
 				}
@@ -696,7 +699,7 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		said := placeTurn(r.Context(), s, personID, r.FormValue("where"))
+		said := placeTurn(r.Context(), s, opts, personID, r.FormValue("where"))
 		if len(said) == 0 {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -706,7 +709,7 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 }
 
 // placeTurn is what you said and what Buddy answered, or nothing at all.
-func placeTurn(ctx context.Context, s Store, personID int64, where string) []squirrel.Turn {
+func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where string) []squirrel.Turn {
 	name, ok := doorNames[where]
 	if !ok {
 		return nil
@@ -720,7 +723,7 @@ func placeTurn(ctx context.Context, s Store, personID int64, where string) []squ
 	case "at":
 		reply = agendaTurn(ctx, s, personID, name)
 	case "pile":
-		reply = pileTurn(ctx, s, personID, 0, name)
+		reply = pileTurn(ctx, s, opts, personID, 0, name)
 	default:
 		// The pile and the agenda are phase 3. Until then the doors that are
 		// not built say so rather than answering with silence, which reads as
@@ -1261,7 +1264,7 @@ func askForADay(label string, month time.Time) squirrel.Turn {
 // about, and a list of things to decide about is a list you are behind on.
 // What changes in a conversation is only that the next one arrives underneath
 // the last rather than replacing it.
-func pileTurn(ctx context.Context, s Store, personID, after int64, name string) squirrel.Turn {
+func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64, name string) squirrel.Turn {
 	items, _, err := s.OpenItemsAfter(ctx, personID, after, 1)
 	if err != nil {
 		slog.Error("reading the pile", "error", err)
@@ -1312,6 +1315,17 @@ func pileTurn(ctx context.Context, s Store, personID, after int64, name string) 
 			Label: "later", Action: "/pile/later",
 			Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
 		}},
+	}
+
+	// Only when the note looks like several things. A free check, and it is
+	// what keeps the model off every note in the pile.
+	if splittable(opts, v.Text) {
+		sh.Cards[0].Acts = append(sh.Cards[0].Acts, actView{
+			Label: "this is more than one thing", Action: "/pile/split", Style: "why",
+			Fields: map[string]string{
+				"id": strconv.FormatInt(v.ID, 10), "act": "propose", "from": "thread",
+			},
+		})
 	}
 
 	body, err := json.Marshal(sh)
@@ -1409,4 +1423,39 @@ func askWhyNot(id int64) squirrel.Turn {
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Why not?"}
 	}
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Why not?", Shown: body}
+}
+
+// cutView is a proposal to split a note into pieces.
+//
+// Its own shape because the pieces are a list, and a card's fields are a map:
+// they travel as repeated inputs, exactly as the deck's proposal did.
+//
+// Nothing has been written when this is drawn. The pieces are words in a turn
+// until the press, and a proposal in scrollback has lost its button by the live
+// edge rule — so a stale proposal cannot be applied, which is what the deck got
+// by keeping it only as long as the page it was on.
+type cutView struct {
+	Action string   `json:"action"`
+	ID     int64    `json:"id"`
+	Pieces []string `json:"pieces"`
+	Do     string   `json:"do"`
+}
+
+// proposeInThread is what Buddy says when a note looks like several things.
+func proposeInThread(id int64, pieces []string) squirrel.Turn {
+	body, err := json.Marshal(drawn{Cut: &cutView{
+		Action: "/pile/split", ID: id, Pieces: pieces, Do: "use these",
+	}})
+	if err != nil {
+		slog.Error("drawing the pieces", "error", err)
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I could not read it as more than one thing."}
+	}
+	// What you actually typed is kept beside the pieces, and Buddy says so
+	// before you press rather than after: dropping it would make a machine's
+	// reading of your words the only surviving version of them.
+	return squirrel.Turn{
+		Who:   squirrel.SpeakerBuddy,
+		Words: "Is this what you meant? The note itself is kept either way.",
+		Shown: body,
+	}
 }

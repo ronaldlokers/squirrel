@@ -1115,7 +1115,7 @@
   .newchore .chip:has(input:focus-visible), .pickrow .chip:has(input:focus-visible) {
     outline: var(--line) solid var(--orange-lit); outline-offset: 3px;
   }
-  .newchore .make, .pick .make, .cal .make, .wordbox .make {
+  .newchore .make, .pick .make, .cal .make, .wordbox .make, .cut .make {
     margin-top: 18px;
     padding: 12px 20px; min-height: 46px;
     background: var(--orange); color: var(--outline);
@@ -1125,8 +1125,8 @@
     font-variation-settings: var(--precise), "wght" 750;
     letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   }
-  .newchore .make:hover, .pick .make:hover, .cal .make:hover, .wordbox .make:hover { background: var(--orange-lit); }
-  .newchore .make:active, .pick .make:active, .cal .make:active, .wordbox .make:active {
+  .newchore .make:hover, .pick .make:hover, .cal .make:hover, .wordbox .make:hover, .cut .make:hover { background: var(--orange-lit); }
+  .newchore .make:active, .pick .make:active, .cal .make:active, .wordbox .make:active, .cut .make:active {
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
     background: var(--violet); color: var(--paper);
   }
@@ -3229,3 +3229,20 @@
   }
   .wordbox textarea:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
   .wordbox .make { align-self: flex-start; }
+
+  /* A proposal. The pieces are shown as they would be kept, so what you are
+     agreeing to is the thing in front of you rather than a description of it. */
+  .cut {
+    display: flex; flex-direction: column; gap: 8px; width: 100%;
+    padding: 13px 15px 15px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+  .cut .piece {
+    margin: 0; padding: 9px 12px;
+    background: var(--paper); color: var(--outline);
+    border: 2px solid var(--outline); border-radius: var(--r);
+    font-size: 16px; font-variation-settings: var(--casual), "wght" 500;
+  }
+  .cut .make { align-self: flex-start; margin-top: 4px; }

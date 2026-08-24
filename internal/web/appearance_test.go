@@ -62,7 +62,7 @@ var appearanceScreens = map[string][]string{
 		".railwrap", ".rail", ".rdoor", ".rname",
 		".thread", ".turn", ".frombuddy .bub", ".fromyou .bub",
 		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
-		".pick", ".pick .lead", ".pickrow", ".pick .make", ".wordbox", ".wordbox textarea",
+		".pick", ".pick .lead", ".pickrow", ".pick .make", ".wordbox", ".wordbox textarea", ".cut", ".cut .piece",
 		".dock", ".slot", ".slot textarea", ".slot .post",
 	},
 	// The check-in as a question. It is a turn like any other, and the faces

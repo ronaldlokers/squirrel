@@ -159,6 +159,8 @@ func everyScreen() *fakeStore {
 			{ID: 3, Who: squirrel.SpeakerYou, Words: "the tasks"},
 			{ID: 4, Who: squirrel.SpeakerBuddy, Words: "One thing you decided.",
 				Shown: []byte(`{"place":"the tasks","cards":[{"title":"book the car in for its service","meta":"decided this morning","acts":[{"label":"did it","action":"/tasks/act","style":"did","fields":{"id":"4","act":"done"}},{"label":"not a task","action":"/tasks/act","style":"back","fields":{"id":"4","act":"untask"}}]}],"chips":[{"label":"what you cannot act on","href":"/held"}]}`)},
+			{ID: 6, Who: squirrel.SpeakerBuddy, Words: "Is this what you meant?",
+				Shown: []byte(`{"cut":{"action":"/pile/split","id":9,"pieces":["ring the vet","put the bins out"],"do":"use these"}}`)},
 			{ID: 7, Who: squirrel.SpeakerYou, Words: "the boiler"},
 			{ID: 8, Who: squirrel.SpeakerBuddy, Words: "How should it read?",
 				Shown: []byte(`{"say":{"action":"/pile/fix","fields":{"id":"9"},"was":"the boiler makes a noise","do":"say it this way"}}`)},

@@ -125,3 +125,47 @@ func TestThePiecesAreOrdinaryNotes(t *testing.T) {
 	require.NotContains(t, body, "suggested")
 	require.NotContains(t, body, "split from")
 }
+
+// The proposal, in the conversation. Nothing is written until the press: the
+// pieces are words in a turn, and a proposal in scrollback has lost its button.
+func TestProposingASplitInTheThread(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(9, "call the vet and book the car in", squirrel.ItemOpen),
+	}}
+	routedSplitting(t, f, "call the vet", "book the car in").call(t, "POST", "/pile/split",
+		strings.NewReader("id=9&act=propose&from=thread"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "call the vet")
+	require.Contains(t, shown, "book the car in")
+	require.Empty(t, f.inserted, "nothing is written until the press")
+	require.Empty(t, f.states)
+}
+
+// Pressing it writes the pieces, keeps the note, and hands you the next one.
+func TestKeepingASplitInTheThread(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		note(9, "call the vet and book the car in", squirrel.ItemOpen),
+		note(8, "meter reading", squirrel.ItemOpen),
+	}}
+	routedSplitting(t, f, "call the vet", "book the car in").call(t, "POST", "/pile/split", strings.NewReader(
+		"id=9&act=keep&from=thread&piece=call+the+vet&piece=book+the+car+in"))
+
+	require.Len(t, f.inserted, 2)
+	require.Equal(t, squirrel.ItemKept, f.states[9], "the note itself is kept, not dropped")
+	// And hands you a note again. It is one of the pieces, because a piece is
+	// an ordinary note and the newest open note is what the pile hands you —
+	// the deck would have shown the same thing.
+	require.Len(t, f.appended, 3)
+	require.Contains(t, string(f.appended[2].Shown), `"cards"`)
+}
+
+// A note it reads as one thing says so rather than answering with silence.
+func TestANoteThatIsOneThingSaysSo(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "milk", squirrel.ItemOpen)}}
+	m := routed(t, f) // no splitter configured
+	m.call(t, "POST", "/pile/split", strings.NewReader("id=9&act=propose&from=thread"))
+
+	require.Empty(t, f.appended, "with no splitter there is nothing to say")
+}

@@ -68,6 +68,12 @@
       "text-transform": "none",
       "width": "84px"
     },
+    ".cut": {
+      "missing": "yes"
+    },
+    ".cut .piece": {
+      "missing": "yes"
+    },
     ".dock": {
       "background-color": "rgba(0, 0, 0, 0)",
       "border-radius": "0px",

@@ -359,3 +359,16 @@ func TestTurningTheMonthAsksAgainAndMakesNothing(t *testing.T) {
 	require.Len(t, f.appended, 1, "turning a page is not something you said")
 	require.Contains(t, string(f.appended[0].Shown), `"month"`)
 }
+
+// routedSplitting is a real mux with a coach that will split, for the routes
+// that carry a wildcard or a form the shared testMux cannot post.
+func routedSplitting(t *testing.T, f *fakeStore, pieces ...string) *realMux {
+	t.Helper()
+	c := &fakeCoach{pieces: pieces, splittable: true}
+	m := &realMux{mux: http.NewServeMux()}
+	require.NoError(t, Mount(m, f, c.options(Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+	})))
+	return m
+}

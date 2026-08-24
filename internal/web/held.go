@@ -106,7 +106,7 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 					{Who: squirrel.SpeakerYou, Words: squirrel.HeldWords[state]},
 					{Who: squirrel.SpeakerBuddy, Words: "Set aside. It is in the set-aside until it is not."},
 				},
-				pileTurn(r.Context(), s, personID, 0, ""),
+				pileTurn(r.Context(), s, opts, personID, 0, ""),
 			)), "/")
 			return
 		}

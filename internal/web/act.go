@@ -223,7 +223,7 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 					{Who: squirrel.SpeakerYou, Words: r.FormValue("count") + " " + r.FormValue("unit")},
 					{Who: squirrel.SpeakerBuddy, Words: "It comes back now."},
 				},
-				pileTurn(r.Context(), s, personID, 0, ""),
+				pileTurn(r.Context(), s, opts, personID, 0, ""),
 			)), "/")
 			_ = it
 			return
@@ -274,7 +274,7 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 					{Who: squirrel.SpeakerYou, Words: text},
 					{Who: squirrel.SpeakerBuddy, Words: "That is what it says now."},
 				},
-				pileTurn(r.Context(), s, personID, 0, ""),
+				pileTurn(r.Context(), s, opts, personID, 0, ""),
 			)), "/")
 			return
 		}
@@ -298,7 +298,7 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	said = append(said, pileTurn(r.Context(), s, personID, 0, ""))
+	said = append(said, pileTurn(r.Context(), s, opts, personID, 0, ""))
 	answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
 }
 
@@ -325,7 +325,7 @@ func laterHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "later"},
-			pileTurn(r.Context(), s, personID, after, ""),
+			pileTurn(r.Context(), s, opts, personID, after, ""),
 		}), "/")
 	}
 }
