@@ -88,6 +88,9 @@ type fakeStore struct {
 	// alone — the doors have to survive it while the rest of the page works.
 	waiting    squirrel.Waiting
 	waitingErr error
+	// A failure that belongs to reading the chores alone, so a test about the
+	// door can fail that read while the conversation itself still renders.
+	choresErr error
 
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
@@ -102,6 +105,9 @@ type fakeStore struct {
 var errTest = errors.New("connection refused")
 
 func (f *fakeStore) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, error) {
+	if f.choresErr != nil {
+		return nil, f.choresErr
+	}
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -962,4 +968,25 @@ func (f *fakeStore) Waiting(_ context.Context, _ int64, _ time.Time) (squirrel.W
 		return squirrel.Waiting{}, f.err
 	}
 	return f.waiting, nil
+}
+
+// opened presses a door and renders the conversation it produced.
+//
+// Two steps rather than one, because that is what actually happens: the press
+// writes the turns, and the next render draws them. The fake keeps what was
+// written in `appended`, so moving it into `turns` is what a real store would
+// have done by the time the page came back.
+func opened(t *testing.T, f *fakeStore, where string) string {
+	t.Helper()
+	// A fresh reading, so Buddy does not ask how you are on the way past and
+	// become the live edge himself — which would take the controls off the
+	// cards the door just put there. Incidental to what these tests are about,
+	// and TestOnlyTheNewestBuddyTurnHasControls is where that rule is proved.
+	if f.checkin == nil {
+		f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
+	}
+	m := routed(t, f)
+	m.call(t, "POST", "/open", strings.NewReader("where="+where))
+	f.turns, f.appended = append(f.turns, f.appended...), nil
+	return m.call(t, "GET", "/", nil).Body.String()
 }

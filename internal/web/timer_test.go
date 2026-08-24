@@ -17,7 +17,7 @@ func TestStartingATimerFromAChore(t *testing.T) {
 		url.Values{"minutes": {"10"}, "label": {"the kitchen"}, "from": {"chores"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/chores", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 	require.NotNil(t, f.timer)
 	require.Equal(t, "the kitchen", f.timer.Label)
 	require.Equal(t, 10*time.Minute, f.timer.Ends.Sub(f.timer.Started))
@@ -34,7 +34,7 @@ func TestARunningTimerShowsOnEveryScreen(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	for _, url := range []string{"/", "/pile", "/chores", "/kept"} {
+	for _, url := range []string{"/", "/pile", "/kept"} {
 		body := m.call(t, "GET", url, nil).Body.String()
 		require.Contains(t, body, "the kitchen", url)
 		require.Contains(t, body, `class="running"`, url)

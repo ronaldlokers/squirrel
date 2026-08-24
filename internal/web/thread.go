@@ -70,6 +70,12 @@ type turnView struct {
 }
 
 type cardView struct {
+	// Kind is what sort of thing the card holds, or empty for an ordinary one.
+	//
+	// "chore" makes it render as `article.chore` — the same element the chores
+	// screen used — so pile.js's chore keys and the stylesheet's chore rules
+	// keep working on it. The screen went; the thing on it did not.
+	Kind  string `json:"kind,omitempty"`
 	Title string `json:"title"`
 	Meta  string `json:"meta,omitempty"`
 	// Photo is the note's own picture, or empty. A note with no words at all
@@ -233,7 +239,7 @@ func endsOpen(turns []squirrel.Turn) bool {
 		// nothing more is the safe direction: the other one talks over it.
 		return true
 	}
-	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces
+	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces || sh.Pick != nil
 }
 
 // turnViews decodes each turn's own record of what it drew, and marks the live
@@ -720,7 +726,7 @@ func choresTurn(ctx context.Context, s Store, personID int64, name string) squir
 		}
 		return squirrel.Turn{
 			Who:   squirrel.SpeakerBuddy,
-			Words: "Nothing comes back on its own. When a note becomes a chore, it lives here.",
+			Words: "Nothing comes back on its own. When a note becomes a chore, it lives here. " + makeOne,
 			Shown: body,
 		}
 	}
@@ -745,6 +751,22 @@ func choresTurn(ctx context.Context, s Store, personID int64, name string) squir
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: choreLead(len(sh.Cards)), Shown: body}
 }
 
+// makeOne is how you make one from nothing.
+//
+// The new-chore form went with the screen, and what replaced it is the
+// sentence: the dock already understands this, and saying so is where you find
+// that out. A guided version is a multi-turn flow with state to keep, which is
+// a bigger thing than the interval picker and not what was asked for.
+//
+// It is a sentence rather than a chip because a chip would have to lead
+// somewhere, and there is nowhere for it to lead that the dock does not already
+// answer better.
+//
+// Said only when there is nothing there. Telling you how to make one every time
+// you look at the chores you already keep is nagging, and the empty list is
+// exactly when it is worth knowing.
+const makeOne = "Tell me another like every 2 weeks: descale the kettle."
+
 // choreCard is one chore, drawn the one way.
 //
 // Written once and used by both the list and the reply to making a new one: a
@@ -754,7 +776,7 @@ func choresTurn(ctx context.Context, s Store, personID int64, name string) squir
 func choreCard(v choreView) cardView {
 	row := map[string]string{"id": strconv.FormatInt(v.ID, 10), "label": v.Name}
 	return cardView{
-		Title: v.Name, Meta: choreMeta(v),
+		Kind: "chore", Title: v.Name, Meta: choreMeta(v),
 		Acts: []actView{
 			{Label: "DID IT", Action: "/chores/act", Style: "did", Fields: with(row, "act", "done")},
 			{Label: "HOW OFTEN", Action: "/chores/often", Style: "go", Fields: row},
@@ -770,7 +792,7 @@ func choreCard(v choreView) cardView {
 func choreMeta(v choreView) string {
 	out := v.Every
 	if v.Last != "" {
-		out += " · last done " + v.Last
+		out += " · LAST DONE " + v.Last
 	}
 	if v.When != "" {
 		out += " · " + v.When
@@ -967,12 +989,19 @@ func tasksTurn(ctx context.Context, s Store, personID int64, name string) squirr
 			Title: v.Text, Meta: "decided " + v.When, Photo: v.Photo,
 			Acts: []actView{
 				{Label: "did it", Action: "/tasks/act", Style: "did", Fields: with(row, "act", "done")},
-				{Label: "not a task", Action: "/tasks/act", Style: "later", Fields: with(row, "act", "untask")},
+				// "back" rather than "later": this is not a deferral, it is a
+				// decision reversed. The class matters twice — the tasks are
+				// never late, and `later` has the word inside it.
+				{Label: "not a task", Action: "/tasks/act", Style: "back", Fields: with(row, "act", "untask")},
 			},
 		})
 	}
+	// The way to what you cannot act on. It hung off the tasks screen, and
+	// without it here /held is reachable from nowhere in the product — which
+	// is the bug the mood history had for an afternoon.
+	sh.Chips = []turnChip{{Label: "what you cannot act on", Href: "/held"}}
 	if more {
-		sh.Chips = []turnChip{{Label: "the rest", Href: "/?open=tasks"}}
+		sh.Chips = append(sh.Chips, turnChip{Label: "the rest", Href: "/?open=tasks"})
 	}
 
 	body, err := json.Marshal(sh)

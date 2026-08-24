@@ -39,7 +39,9 @@ func TestAChoreFoundBySearchingIsALinkAndNotAControl(t *testing.T) {
 	}}
 	body := mounted(t, f).call(t, "GET", "/pile?q=bins", nil).Body.String()
 
-	require.Contains(t, body, `<a class="choreHit" href="/chores">`)
+	// Still a link and still not a control — to the conversation now, since
+	// the chores are a message rather than a page.
+	require.Contains(t, body, `<a class="choreHit" href="/">`)
 	require.NotContains(t, body, `value="did"`)
 	require.NotContains(t, body, `value="retire"`)
 }

@@ -1073,10 +1073,25 @@ pile's own colour is what it wears, because nothing ended there.
 Interval chips share the button shape at 13.5px/11px padding. The escape chip
 (*never mind*) drops its offset and takes a dashed border. The chip that carries
 the interval a chore already has is filled Cap Purple: the product's own colour,
-not a state and not a reward. In the new-chore form a chip is a `<label>`
-wrapping its radio, so the whole chip is the target and the choice survives with
-no script at all — the radio itself is never drawn, because the press that
-stayed down is what says which one is chosen.
+not a state and not a reward. A chip is a `<label>` wrapping its radio, so the
+whole chip is the target and the choice survives with no script at all — the
+radio itself is never drawn, because the press that stayed down is what says
+which one is chosen.
+
+**How often is a number and a unit, since 24 August 2026.** ~~Four fixed chips —
+every day, every week, every 2 weeks, every month.~~ Two rows now: `every`
+1/2/3/4/6/8, and `of these` days/weeks/months, in one form with one submit.
+
+The picker asks once and is answered once. Pressing a number is half an answer,
+and a control that posted on each press would write a turn per fiddle into a
+record that is never rewritten — the sound of somebody deciding, kept forever.
+
+It composes the sentence `every 3 weeks` and hands it to the same parser a typed
+sentence goes through, so the two lanes cannot disagree about what a rhythm
+means. Six numbers cover what anyone reaches for; `every 9 weeks` is a sentence.
+A rhythm the picker cannot say — a fortnight, ten days — opens with **both rows
+unmarked** rather than rounding to the nearest offered thing: marking the wrong
+one would say the chore is something it is not.
 
 ### The quiet pill
 
@@ -1475,6 +1490,11 @@ condition, and this is the one thing in the system that meets it — a coach
 conversation happens when everything else on screen is noise. The chore picker
 was refused a modal because choosing an interval needs neither. That reasoning
 is untouched and still governs everything else.
+
+The chore picker is not a disclosure inside the card any more either: it is a
+turn, which is neither a modal nor a thing that replaces the row. The question
+arrives underneath what you asked it about, and what you asked it about is still
+on the screen above it.
 
 - **The button is the acorn, and it lives in the lid.** See The lid.
 - **It is a real page** (`/buddy`) that the script upgrades into a `<dialog>`,

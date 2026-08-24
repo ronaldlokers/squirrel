@@ -26,7 +26,7 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 
@@ -43,7 +43,7 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 
 		mins, err := strconv.Atoi(r.FormValue("minutes"))
 		if err != nil || mins < 1 || mins > 180 {
-			http.Redirect(w, r, "/chores", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		label := strings.TrimSpace(r.FormValue("label"))
@@ -74,7 +74,7 @@ func backFrom(r *http.Request) string {
 	case "kept":
 		return "/kept"
 	}
-	return "/chores"
+	return "/"
 }
 
 // runningTimer is the strip in the lid: what you are doing and how long is

@@ -100,7 +100,7 @@ func TestTheThreadLinksToIt(t *testing.T) {
 // It is not in the lid and not a door. You go looking, or you do not see it.
 func TestTheMoodsPageIsNotInTheLid(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	for _, path := range []string{"/pile", "/tasks", "/chores"} {
+	for _, path := range []string{"/pile", "/kept", "/held"} {
 		body := mounted(t, f).call(t, "GET", path, nil).Body.String()
 		require.NotContains(t, body, `href="/moods"`, "reachable from %s", path)
 	}

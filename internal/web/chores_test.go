@@ -25,7 +25,7 @@ func TestChoresListsWhatComesBack(t *testing.T) {
 		chore(1, "bins out", 14, 3),
 		chore(2, "water the plants", 7, 1),
 	}}
-	body := mounted(t, f).call(t, "GET", "/chores", nil).Body.String()
+	body := opened(t, f, "chores")
 
 	require.Contains(t, body, "bins out")
 	require.Contains(t, body, "water the plants")
@@ -39,7 +39,7 @@ func TestChoresNeverCounts(t *testing.T) {
 	for i := int64(1); i <= 7; i++ {
 		chores = append(chores, chore(i, "chore "+string(rune('a'+i)), 7, 30))
 	}
-	body := mounted(t, &fakeStore{chores: chores}).call(t, "GET", "/chores", nil).Body.String()
+	body := opened(t, &fakeStore{chores: chores}, "chores")
 
 	lower := strings.ToLower(body)
 	for _, forbidden := range []string{"7 chores", "overdue", "behind", "streak", "% ", "of 7"} {
@@ -48,9 +48,9 @@ func TestChoresNeverCounts(t *testing.T) {
 }
 
 func TestTheEmptyChoreListDoesNotNag(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/chores", nil).Body.String()
+	body := opened(t, &fakeStore{}, "chores")
 
-	require.Contains(t, body, "nothing comes back")
+	require.Contains(t, strings.ToLower(body), "nothing comes back")
 	for _, forbidden := range []string{"should", "why not", "add one"} {
 		require.NotContains(t, strings.ToLower(body), forbidden)
 	}
@@ -106,7 +106,11 @@ func TestChoresRefusesAnUnknownAction(t *testing.T) {
 // invisible as they were before.
 // With three screens the lid carries both of the others: one link that cycled
 // would put the chores two presses from the pile.
-func TestTheLidOffersTheTwoPlacesYouAreNot(t *testing.T) {
+//
+// Two places since 24 August 2026, not three: the tasks and the chores stopped
+// being pages and became messages, and the way to them is the rail on the one
+// screen you reach them from.
+func TestTheLidOffersTheOtherPlaceYouAreNot(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 	m := mounted(t, f)
 
@@ -115,14 +119,11 @@ func TestTheLidOffersTheTwoPlacesYouAreNot(t *testing.T) {
 		wants []string
 		not   string
 	}{
-		{"/pile", []string{`href="/tasks"`, `href="/chores"`}, `class="lidlink" href="/pile"`},
-		{"/tasks", []string{`href="/pile"`, `href="/chores"`}, `class="lidlink" href="/tasks"`},
-		{"/chores", []string{`href="/pile"`, `href="/tasks"`}, `class="lidlink" href="/chores"`},
-		// The archive belongs to the tasks and the shelf to the pile: each is
-		// reached from one of them, and that is what you would be looking for
-		// the way back to.
-		{"/tasks/done", []string{`href="/pile"`, `href="/chores"`}, `class="lidlink" href="/tasks"`},
-		{"/kept", []string{`href="/tasks"`, `href="/chores"`}, `class="lidlink" href="/pile"`},
+		{"/pile", []string{`href="/at"`}, `class="lidlink" href="/pile"`},
+		{"/at", []string{`href="/pile"`}, `class="lidlink" href="/at"`},
+		// The shelf belongs to the pile: it is reached from there, and that is
+		// what you would be looking for the way back to.
+		{"/kept", []string{`href="/at"`}, `class="lidlink" href="/pile"`},
 	} {
 		body := m.call(t, "GET", c.on, nil).Body.String()
 		for _, want := range c.wants {
@@ -137,8 +138,7 @@ func TestTheLidOffersTheTwoPlacesYouAreNot(t *testing.T) {
 func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 	never := chore(1, "descale the shower head", 30, 400)
 	never.EverDone = false
-	body := mounted(t, &fakeStore{chores: []squirrel.Chore{never}}).
-		call(t, "GET", "/chores", nil).Body.String()
+	body := opened(t, &fakeStore{chores: []squirrel.Chore{never}}, "chores")
 
 	require.Contains(t, body, "EVERY MONTH")
 	require.NotContains(t, body, "LAST DONE")
@@ -148,8 +148,7 @@ func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 // The chore is at rest here, so it does not wear the colour of something being
 // made, nor the page tab that says what a note ended up as.
 func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
-	body := mounted(t, &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}).
-		call(t, "GET", "/chores", nil).Body.String()
+	body := opened(t, &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}, "chores")
 
 	require.NotContains(t, body, "state-chore")
 	require.NotContains(t, body, `class="rcard`)
@@ -157,11 +156,14 @@ func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
 }
 
 func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
-	f := &fakeStore{err: errTest}
-	w := mounted(t, f).call(t, "GET", "/chores", nil)
+	f := &fakeStore{choresErr: errTest}
+	// The door still opens and Buddy says he cannot reach them. A 503 was
+	// right while this was a page of its own; the conversation cannot answer a
+	// press with a status code, and an empty reply reads as a press that did
+	// not land.
+	body := opened(t, f, "chores")
 
-	require.Equal(t, 503, w.Code)
-	require.Contains(t, w.Body.String(), "cannot reach")
+	require.Contains(t, body, "cannot reach the chores")
 }
 
 // Roughly when, never how long. An exact day count on a chore you have not
@@ -188,10 +190,10 @@ func TestAChoreSaysRoughlyWhenNotHowLong(t *testing.T) {
 }
 
 func TestTheChoresScreenNeverPrintsADayCount(t *testing.T) {
-	body := mounted(t, &fakeStore{chores: []squirrel.Chore{
+	body := opened(t, &fakeStore{chores: []squirrel.Chore{
 		chore(1, "bins out", 14, 3),
 		chore(2, "water the plants", 7, 45),
-	}}).call(t, "GET", "/chores", nil).Body.String()
+	}}, "chores")
 
 	require.Contains(t, body, "this week")
 	require.Contains(t, body, "a while back")

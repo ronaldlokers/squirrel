@@ -264,6 +264,45 @@ appended on every page load, `not now` rendered cream-on-cream at 1.18:1 the
 moment its class changed, and `main`'s centred flex row shrank the conversation
 to 240px of a 390px phone.
 
+### v0.24.0 — 24 August 2026
+
+**The chores and the tasks join the conversation.** Phase 2 of the thread. A
+door is something you say: the rail posts, what is behind it arrives as cards in
+Buddy's reply, and every action on them answers as a turn. `/chores`, `/tasks`
+and `/tasks/done` are gone.
+
+**How often is a number and a unit.** Two rows in one form — `every` 1/2/3/4/6/8
+and `of these` days/weeks/months — replacing the four fixed chips. It needed no
+core work: `ParseEveryAsking` already accepted any count against any unit, and
+the picker composes the same sentence a person would type and hands it to the
+same parser.
+
+What it cost, stated rather than discovered:
+
+- **A door cannot be opened in a new tab, and the back button does not step
+  through doors.** Opening a place writes to the record, so it has to be a POST.
+- **The digit keys that answered the interval question are gone.** They belonged
+  to a disclosure inside the chore card; the question is a turn now. `d`, `o`,
+  `s` and the arrows survive — `o` asks the question instead of opening a
+  drawer — and the digits are worth restoring.
+- **The new-chore form went with its screen.** Making one from nothing is a
+  sentence in the dock, and an empty list says so. A guided version is a
+  multi-turn flow with state to keep, which is a bigger thing than the interval
+  picker.
+- **The archive has nowhere to be drawn** until the pile joins the conversation
+  in phase 3. What you did is still stored and `!find` still reaches it.
+
+One hardening that came free: `taskActHandler` wrote against a bare id, because
+`SetItemState` takes no person. Reading the row for the turn's words is a lookup
+that is already person-scoped, so a row that is not yours is now not yours to
+act on.
+
+Three defects found on the way: `html/template` cannot put an action in a tag
+name and the version that tried rendered nothing at all; the chore keys cached
+their card list at page load, which is empty for cards that arrive in a
+conversation; and the door, having become a button, sat at the browser's default
+13.33px until the appearance snapshot caught it.
+
 ---
 
 ## Open

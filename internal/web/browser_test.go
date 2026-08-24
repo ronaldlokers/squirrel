@@ -285,33 +285,6 @@ func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
 		"what it keeps is assets")
 }
 
-// The chore picker replaces the action row with no script at all — it is a
-// disclosure and a :has() rule. Go can see the markup but not the cascade, and
-// the cascade is the whole mechanism.
-func TestBrowserTheChorePickerReplacesTheRow(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, PersonID: 1, Name: "bins out", Active: true, EverDone: true,
-			Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
-	}}
-	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/chores")
-
-	require.Equal(t, "flex", c.eval(t, `return getComputedStyle(document.querySelector(".abtn.did")).display`))
-	require.Equal(t, "every 2 weeks", c.eval(t, `return document.querySelector(".chip.current").textContent`),
-		"the picker says where the interval sits now")
-
-	c.eval(t, `document.querySelector("details.often").open = true; return true`)
-	c.until(t, "the other actions to step aside",
-		`getComputedStyle(document.querySelector(".abtn.did")).display === "none"`)
-
-	// A chore at rest is not a creation, so nothing on it is orange.
-	require.Equal(t, false, c.eval(t, `
-		return [...document.querySelectorAll(".chore *")].some(el => {
-			const bg = getComputedStyle(el).backgroundColor;
-			return bg === "rgb(230, 109, 13)" || bg === "rgb(255, 138, 43)";
-		});`))
-}
-
 // The chores screen is a list, so a key needs to know which chore it means.
 // Rather than invent a selection model it uses the platform's own — the chore
 // you are focused in — and DESIGN.md's rule decides the rest: letters are
@@ -324,7 +297,7 @@ func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
 			Every: 7 * 24 * time.Hour, EveryDays: 7},
 	}}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/chores")
+	openChores(t, c, srv)
 
 	// Nothing focused: the first key press says where you are rather than
 	// acting on something you did not choose.
@@ -336,26 +309,16 @@ func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
 	c.until(t, "the second chore to take focus",
 		`document.activeElement.closest("article.chore")?.querySelector(".name").textContent === "water the ferns"`)
 
-	// O opens that chore's own question, not the first one's.
+	// O asks that chore's own question, not the first one's. It used to open a
+	// disclosure inside the card; it posts now, and the question arrives as a
+	// turn of its own — so what this checks is which chore the question is
+	// about, which is the thing that was ever worth checking.
 	c.key(t, "o")
-	c.until(t, "the interval question to open",
-		`document.querySelectorAll("details.often[open]").length === 1 &&
-		 document.querySelector("details.often[open]").closest("article.chore")
-		   .querySelector(".name").textContent === "water the ferns"`)
+	c.until(t, "the interval question to arrive", `!!document.querySelector(".pick")`)
 
-	c.key(t, "Escape")
-	c.until(t, "the question to close", `!document.querySelector("details.often[open]")`)
-
-	// The caps show on the chore you are in, and only there.
-	require.Equal(t, float64(3), c.eval(t, `
-		const card = document.activeElement.closest("article.chore");
-		return [...card.querySelectorAll(".key")]
-			.filter(k => getComputedStyle(k).display !== "none").length;`))
-	require.Equal(t, float64(0), c.eval(t, `
-		const other = [...document.querySelectorAll("article.chore")]
-			.find(a => a !== document.activeElement.closest("article.chore"));
-		return [...other.querySelectorAll(".key")]
-			.filter(k => getComputedStyle(k).display !== "none").length;`))
+	require.Equal(t, "2", c.eval(t, `
+		return document.querySelector('.pick input[name="id"]').value`),
+		"the question is about the chore that was focused")
 }
 
 // Five answers, five equal drawings. They were cut from one sheet at one
@@ -525,33 +488,6 @@ func TestBrowserTheCardsBadgeIsStillInItsTitleBar(t *testing.T) {
 	require.Equal(t, true, c.eval(t,
 		`return !!document.querySelector(".lid .tobuddy")`),
 		"the way to Buddy left the lid")
-}
-
-// Every letter here is an action — d is done, s is stop, c asks for an
-// interval — and until this was fixed they fired while you were typing.
-// Naming a chore "shopping" pressed stop and then opened the interval
-// question, and each press moved the focus, which on a phone shuts the
-// keyboard.
-func TestBrowserTypingAChoreNameIsNotAnAction(t *testing.T) {
-	c, srv := open(t, aPile())
-	c.navigate(t, srv.URL+"/chores")
-	c.until(t, "the new chore field", `!!document.querySelector('form[action="/chores/new"] input[name=name]')`)
-
-	// The form lives in a disclosure, so it has to be opened before anything
-	// in it can take focus.
-	c.eval(t, `document.querySelector("details.newchore").open = true`)
-	c.eval(t, `document.querySelector('form[action="/chores/new"] input[name=name]').focus()`)
-	c.until(t, "the field to hold focus", `document.activeElement.name === "name"`)
-	for _, k := range []string{"s", "h", "o", "p"} {
-		c.key(t, k)
-	}
-
-	require.Equal(t, "shop", c.eval(t, `return document.querySelector('form[action="/chores/new"] input[name=name]').value`),
-		"the letters did not reach the field")
-	require.Equal(t, "INPUT", c.eval(t, `return document.activeElement.tagName`),
-		"a key moved the focus out of the field, which shuts the keyboard on a phone")
-	require.Equal(t, false, c.eval(t, `return !!document.querySelector("details.often[open]")`),
-		"typing opened the interval question")
 }
 
 // The same rule in the coach's own box, which is reachable from every screen
@@ -830,3 +766,30 @@ func TestBrowserBuddyAsAnOverlayIsStillACard(t *testing.T) {
 	// Its own small lid, not a screen title: the overlay is an object.
 	require.Equal(t, "17px", style(".sheetname", "fontSize"))
 }
+
+// atChores opens the thread and presses the chores door.
+//
+// The chores stopped being a page on 24 August 2026, so a browser test that
+// wants them presses the door and waits for the cards — which is what a person
+// does, and what makes these tests exercise the swap as well as the cards.
+func atChores(t *testing.T, srv *httptest.Server) *cdp {
+	t.Helper()
+	c := browserAt(t, srv, "/")
+	c.eval(t, `document.querySelector('.doorpress input[value="chores"]').form
+		.querySelector("button").click()`)
+	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
+	return c
+}
+
+// openChores presses the chores door on a browser already open.
+func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
+	t.Helper()
+	c.navigate(t, srv.URL+"/")
+	c.eval(t, `document.querySelector('.doorpress input[value="chores"]').form
+		.querySelector("button").click()`)
+	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
+}
+
+// TestBrowserTypingAChoreNameIsNotAnAction was retired on 24 August 2026 with
+// the new-chore form it covered: making a chore from nothing is a sentence in
+// the dock now, and the dock's own keys are covered by the slot's tests.

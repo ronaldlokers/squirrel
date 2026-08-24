@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -9,19 +10,33 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Which chip is in effect is a state, not a colour.
+// Which choice is in effect is a state, not a colour.
 //
-// Four buttons, identical text, identical roles, separated only by a purple
-// fill: unreachable by a screen reader and painted away in forced colours.
+// Options with identical roles separated only by a purple fill are unreachable
+// by a screen reader and painted away in forced colours. The chips were four
+// buttons carrying aria-pressed; the picker is two radio groups, where checked
+// is the state and the browser says it without being asked — which is why this
+// asserts on the input rather than on an ARIA attribute that would be wrong on
+// a radio.
 func TestTheCurrentIntervalSaysSoAndNotOnlyInPurple(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour, EveryDays: 7, SinceDays: 6, Active: true, EverDone: true},
-	}}
+	// A fresh reading, so Buddy does not ask how you are on the render and
+	// become the live edge himself — which takes the controls off the picker.
+	f := &fakeStore{
+		chores: []squirrel.Chore{{ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
+			EveryDays: 7, SinceDays: 6, Active: true, EverDone: true}},
+		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()},
+	}
 
-	body := mounted(t, f).call(t, "GET", "/chores", nil).Body.String()
+	m := routed(t, f)
+	m.call(t, "POST", "/open", strings.NewReader("where=chores"))
+	m.call(t, "POST", "/chores/often", strings.NewReader("id=1"))
+	f.turns, f.appended = append(f.turns, f.appended...), nil
+	body := m.call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, `class="chip current" aria-pressed="true" name="every" value="every week"`,
-		"the chip in effect does not say so")
-	require.Contains(t, body, `class="chip" aria-pressed="false" name="every" value="every day"`,
-		"the chips not in effect do not say so either")
+	require.Contains(t, body, `<input type="radio" name="count" value="1" checked>`,
+		"the number in effect does not say so")
+	require.Contains(t, body, `<input type="radio" name="unit" value="weeks" checked>`,
+		"the unit in effect does not say so")
+	require.Contains(t, body, `<input type="radio" name="unit" value="days">`,
+		"the ones not in effect do not say so either")
 }
