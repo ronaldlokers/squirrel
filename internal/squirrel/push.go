@@ -121,13 +121,27 @@ func (s *Store) SubscriptionGone(ctx context.Context, id int64, at time.Time) er
 // Push is what a message looks like on the other side. Two lines, because a
 // notification is read at arm's length in one glance and a third line is one
 // nobody reads.
+// The tags are the contract with `sw.js`, which reads `said.title` and
+// `said.body` after spreading this object over its own defaults. Without them
+// Go marshals `Title` and `Body`, the spread adds two keys nobody reads, and
+// the defaults survive — so every notification that arrived said "Squirrel",
+// with no words in it, about nothing.
+//
+// The test that covered this decrypted the payload back into this struct, so it
+// round-tripped through the same capitalisation and passed. See
+// pushwire_test.go, which asserts the keys on the wire instead.
 type Push struct {
-	Title string
-	Body  string
+	Title string `json:"title"`
+	Body  string `json:"body"`
 	// URL is where pressing it goes. Always the screen's front door: the offer
 	// is there, and a deep link to something that has since been done is worse
 	// than a page that says what is true now.
-	URL string
+	//
+	// `sw.js` does not read it — the click handler navigates to "/" itself. It
+	// is tagged with the others so the payload has one spelling convention
+	// rather than two, and so a worker that ever does read it finds what it
+	// expects.
+	URL string `json:"url"`
 }
 
 // Pusher sends to every live browser. It is a func rather than an interface so
