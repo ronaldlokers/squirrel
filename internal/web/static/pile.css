@@ -2952,6 +2952,17 @@
     .chore .abtn.stop { margin-top: 12px; }
   }
 
+  /* The thread is a column of full-width bands, not one centred box: the rail
+     is pinned edge to edge under the lid and the transcript sits in its own
+     measure inside. main is a centred flex row for every other screen, which
+     put five siblings side by side and shrank the conversation to 240px of a
+     390px phone — the face labels stopped fitting their cells, which is how it
+     was found. */
+  main.threadpage {
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    padding: 0;
+  }
+
   /* ══ THE THREAD ══════════════════════════════════════════════════════════
      The screen stopped being a set of pages on 24 August 2026 and became one
      conversation. See docs/superpowers/specs/2026-08-24-the-thread-design.md.
@@ -2982,7 +2993,7 @@
   .rdoor:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
   .rdoor img { height: 28px; width: auto; display: block; flex: none; }
   .rname {
-    font-size: 14.5px; line-height: 1.05;
+    font-size: 14.5px; line-height: 1.05; white-space: nowrap;
     font-variation-settings: var(--precise), "wght" 800;
   }
   /* Where you are, in the mark's own orange. */
@@ -3029,20 +3040,20 @@
   .earlier a { color: var(--cream); }
 
   /* A card inside a turn. Same stock as a door, because it is the same box. */
-  .tcard {
+  .turncard {
     width: 100%; padding: 14px 16px;
     background: var(--card); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: var(--r);
     box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
   }
-  .tname { margin: 0; font-size: 21px; font-variation-settings: var(--casual), "wght" 520; }
-  .tmeta {
+  .turnname { margin: 0; font-size: 21px; font-variation-settings: var(--casual), "wght" 520; }
+  .turnmeta {
     margin: 5px 0 11px; font-size: 11.5px;
     letter-spacing: .1em; text-transform: uppercase; color: var(--brown);
     font-variation-settings: var(--precise), "wght" 750;
   }
-  .tacts, .tchips { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
-  .tacts form { display: contents; }
+  .turnacts, .turnchips { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+  .turnacts form { display: contents; }
 
   /* THE DOCK. The slot, on every view of the app, because there is one view. */
   .dock {
@@ -3050,7 +3061,11 @@
     padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
     background: linear-gradient(to top, var(--purple-dark) 62%, transparent);
   }
-  .dock .slot { width: min(720px, 100%); margin: 0 auto; }
+  /* 676 rather than 720: the rail and the transcript are 720 wide with 22px
+     of padding inside them, so their content sits on a 676 measure. The dock's
+     padding is outside its slot, and at 720 the slot's edge stood 22px proud
+     of every bubble above it. */
+  .dock .slot { width: min(676px, 100%); margin: 0 auto; }
 
   @media (max-width: 620px) {
     /* Four across still, by turning each door on its side rather than by
@@ -3071,3 +3086,39 @@
     .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
     .dock .slot { margin: 0 auto; }
   }
+
+  /* The offer's own three, now that it is an ordinary card in the thread.
+     Spelled out for exactly the reason `.obtn.later` spells them out, and the
+     bug recurred the moment the class changed: `.later` further down this file
+     gives every quiet pill a 2px currentColor border and cream type — right
+     for a pill standing on the field, and on card stock it measures 1.18:1,
+     which is not a colour anyone can read. The contrast walk caught it. */
+  .abtn.later {
+    margin-left: auto;
+    background: var(--card-deep); color: var(--brown);
+    border: var(--line) solid var(--outline);
+  }
+  .abtn.later:hover { background: var(--paper-deep); color: var(--outline); }
+  .abtn.later:active { background: var(--dropped); color: var(--paper); }
+  .abtn.go { background: var(--paper); color: var(--outline); }
+  .abtn.go:hover { background: var(--paper-deep); }
+  /* The four ways of not being able to start. Quieter than the three above
+     them — they are a way out rather than a way on — and quiet here means the
+     brown the held things wear, not a thinner outline. */
+  .abtn.why {
+    background: transparent; color: var(--brown);
+    border: var(--line) solid var(--outline); box-shadow: none;
+    text-transform: none; letter-spacing: .01em;
+    font-variation-settings: var(--precise), "wght" 620;
+  }
+  .abtn.why:hover { background: var(--card-deep); color: var(--outline); }
+
+  /* A turn holding the faces takes the full column. They are five drawings in
+     a row and a bubble's 92% leaves the labels too narrow to fit their own
+     cells at 390px.
+
+     A class the template writes rather than `:has(.faces)`, which reads better
+     and does not match in the browser the tests drive — the measurement said
+     212px of an available 362px, which is the turn still shrinking to fit. */
+  .turn.wide { max-width: 100%; width: 100%; }
+  .turn .faces { width: 100%; }

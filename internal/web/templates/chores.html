@@ -3,7 +3,6 @@
   {{if .Chores}}
   {{/* Says what these are, once, and never how many. */}}
   <h1 class="deckhead">what comes back</h1>
-  {{template "askbuddy" .}}
   {{range .Chores}}
   {{/* A chore is not a search result and does not wear the page tab that says
        what a note ended up as: it has a rhythm rather than an outcome. Cream

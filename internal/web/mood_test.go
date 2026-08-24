@@ -11,7 +11,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-func TestHomeAsksHowRightNowIs(t *testing.T) {
+func TestTheThreadAsksHowRightNowIs(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "how do you feel?")
@@ -22,22 +22,32 @@ func TestHomeAsksHowRightNowIs(t *testing.T) {
 	}
 }
 
-// The load-bearing test for this feature. The history exists — it is what lets
-// a nudge be gentler — and no surface may ever render more than the latest
-// reading. A fortnight of your own bad days on a screen is the counter this
-// product refuses, wearing a face.
-func TestHomeShowsOneReadingAndNeverASeries(t *testing.T) {
+// Every answer stays, and the drawings do not pile up.
+//
+// This was the load-bearing test for the opposite rule: no surface may ever
+// render more than the latest reading, because a fortnight of your own bad
+// days on a screen is the counter this product refuses, wearing a face. The
+// owner retired that on 24 August 2026 along with Principle 2 — history is
+// never rewritten, and a conversation keeps what was said in it.
+//
+// What survives of the rule, and it is not nothing: only the live edge draws
+// the faces. Scrollback holds the words you said, one line each, and never a
+// column of five drawings repeating down the page. /moods is still the only
+// place that groups them.
+func TestEveryAnswerStaysAndOnlyTheLiveEdgeDrawsFaces(t *testing.T) {
 	f := &fakeStore{}
 	m := mounted(t, f)
 
 	for _, mood := range []string{"wiped", "low", "good"} {
 		require.Equal(t, 303, post(t, m, "/mood", url.Values{"mood": {mood}}).Code)
 	}
+	f.turns, f.appended = f.appended, nil
 
 	body := m.call(t, "GET", "/", nil).Body.String()
-	require.Contains(t, body, "noted")
-	require.Contains(t, body, "mood-good.png", "the latest one")
-	require.NotContains(t, body, "mood-wiped.png")
+	for _, said := range []string{"wiped", "low", "good"} {
+		require.Contains(t, body, said, "what you said stays")
+	}
+	require.NotContains(t, body, "mood-wiped.png", "scrollback carries no faces")
 	require.NotContains(t, body, "mood-low.png")
 }
 
@@ -45,6 +55,8 @@ func TestHomeShowsOneReadingAndNeverASeries(t *testing.T) {
 // the person.
 func TestTheCheckinSaysNothingAboutYou(t *testing.T) {
 	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodLow, SaidAt: time.Now()}}
+	post(t, mounted(t, f), "/mood", url.Values{"mood": {"low"}})
+	f.turns, f.appended = f.appended, nil
 	body := strings.ToLower(mounted(t, f).call(t, "GET", "/", nil).Body.String())
 
 	require.Contains(t, body, "noted")
@@ -74,7 +86,11 @@ func TestSayingSomethingElseAsksAgain(t *testing.T) {
 	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}}
 	m := mounted(t, f)
 
-	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), "noted")
+	// A fresh reading, so nothing is asked...
+	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), "how do you feel?")
+	// ...until you say you want to say something else. The way to do that
+	// travels with Buddy's acknowledgement, because the answer is about to be
+	// scrollback and scrollback carries no controls.
 	require.Contains(t, m.call(t, "GET", "/?ask=1", nil).Body.String(), "how do you feel?")
 }
 
@@ -88,12 +104,16 @@ func TestAMoodThatIsNotOneOfTheFiveIsIgnored(t *testing.T) {
 	require.Nil(t, f.checkin)
 }
 
-// Home reads the pile for nothing, and a check-in it cannot read is not a
-// reason to fail a page that otherwise needs no database at all.
-func TestHomeStillStandsWhenTheCheckinCannotBeRead(t *testing.T) {
+// A record it cannot read is not a reason to take the screen away. The doors
+// still work and the dock still writes to the spool, which is the whole of what
+// an unreachable database must not stop — and Buddy says so rather than
+// rendering an empty conversation, because an empty conversation looks like
+// your history is gone.
+func TestTheThreadStillStandsWhenNothingCanBeRead(t *testing.T) {
 	w := mounted(t, &fakeStore{err: errTest}).call(t, "GET", "/", nil)
 
 	require.Equal(t, 200, w.Code)
-	require.Contains(t, w.Body.String(), "how do you feel?")
-	require.Contains(t, w.Body.String(), "the pile")
+	require.Contains(t, w.Body.String(), "I cannot reach what we said")
+	require.Equal(t, 4, strings.Count(w.Body.String(), `class="rdoor`))
+	require.Contains(t, w.Body.String(), `action="/capture"`)
 }

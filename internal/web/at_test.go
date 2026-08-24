@@ -55,6 +55,20 @@ func (m *realMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	return w
 }
 
+// callFragment is a press made by the script rather than by the browser's own
+// form machinery: same URL, same body, one header.
+func (m *realMux) callFragment(t *testing.T, target, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	r := httptest.NewRequest("POST", target, strings.NewReader(body))
+	r.Header.Set("X-Authentik-Username", "ronald")
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Origin", "http://"+r.Host)
+	r.Header.Set("X-Thread", "fragment")
+	w := httptest.NewRecorder()
+	m.mux.ServeHTTP(w, r)
+	return w
+}
+
 func aMoment(in time.Duration, bring string) *squirrel.Moment {
 	return &squirrel.Moment{
 		ID: 4, Label: "dentist", Starts: now().Add(in),

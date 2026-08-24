@@ -26,9 +26,10 @@ func TestPressingTooBigShowsOneStepAndNeverTheList(t *testing.T) {
 
 	w := m.call(t, "POST", "/now/stuck", strings.NewReader("why=big&kind=task&id=7"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/?stuck=big", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 
-	body := m.call(t, "GET", "/?stuck=big", nil).Body.String()
+	f.turns, f.appended = f.appended, nil
+	body := m.call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, body, "open the letter")
 	require.NotContains(t, body, "find the reference")
 	require.NotContains(t, body, "ring the number")
@@ -45,7 +46,8 @@ func TestTooBigFallsBackToTheLineOnTheScreen(t *testing.T) {
 	m := mountedWith(t, f, &fakeCoach{})
 
 	m.call(t, "POST", "/now/stuck", strings.NewReader("why=big&kind=task&id=7"))
-	body := m.call(t, "GET", "/?stuck=big", nil).Body.String()
+	f.turns, f.appended = f.appended, nil
+	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, squirrel.UnstuckFor(squirrel.BlockerBig).Line)
 	require.NotContains(t, body, `class="step"`)

@@ -36,7 +36,10 @@ func TestThreadRendersTurnsInOrder(t *testing.T) {
 // HAS buttons would pass with the rule deleted, so this asserts the older one
 // does NOT.
 func TestOnlyTheNewestBuddyTurnHasControls(t *testing.T) {
-	body := thread(t, &fakeStore{turns: []squirrel.Turn{
+	// A fresh reading, so Buddy does not ask how you are and become the live
+	// edge itself. The interaction is real and worth naming: anything Buddy
+	// adds on arrival takes the controls off whatever was there before.
+	body := thread(t, &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Two are due.",
 			Shown: []byte(`{"cards":[{"title":"water the plants","acts":[{"label":"DID IT","action":"/chores/act"}]}]}`)},
 		{ID: 2, Who: squirrel.SpeakerYou, Words: "never mind"},
@@ -134,11 +137,12 @@ func TestTheDoorsSurviveACountThatFails(t *testing.T) {
 	require.NotContains(t, body, "doorcount")
 }
 
-// Two turns for one press: what you said, and what Buddy said back. A test that
-// only checked the words were kept would pass with the conversation missing.
+// Two turns for one press: what you said, and what Buddy said back. A test
+// that only checked the words were kept would pass with the conversation
+// missing.
 func TestSayingSomethingWritesBothTurns(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/say", strings.NewReader("words=milk"))
+	routed(t, f).call(t, "POST", "/capture", strings.NewReader("text=milk"))
 
 	require.Len(t, f.appended, 2)
 	require.Equal(t, squirrel.SpeakerYou, f.appended[0].Who)
@@ -153,7 +157,7 @@ func TestSayingSomethingWritesBothTurns(t *testing.T) {
 // prevent.
 func TestSayingSomethingSpoolsTheWords(t *testing.T) {
 	sp := &fakeSpool{}
-	routedSpooling(t, &fakeStore{}, sp).call(t, "POST", "/say", strings.NewReader("words=milk"))
+	routedSpooling(t, &fakeStore{}, sp).call(t, "POST", "/capture", strings.NewReader("text=milk"))
 
 	require.Len(t, sp.written, 1)
 	require.Equal(t, "milk", sp.written[0].Text)
@@ -164,7 +168,7 @@ func TestSayingSomethingSpoolsTheWords(t *testing.T) {
 func TestSayingNothingWritesNothing(t *testing.T) {
 	f := &fakeStore{}
 	sp := &fakeSpool{}
-	routedSpooling(t, f, sp).call(t, "POST", "/say", strings.NewReader("words=%20%20"))
+	routedSpooling(t, f, sp).call(t, "POST", "/capture", strings.NewReader("text=%20%20"))
 
 	require.Empty(t, f.appended)
 	require.Empty(t, sp.written)
@@ -175,7 +179,7 @@ func TestSayingNothingWritesNothing(t *testing.T) {
 func TestSayingSomethingThatCannotBeKeptSaysSo(t *testing.T) {
 	f := &fakeStore{}
 	sp := &fakeSpool{err: errTest}
-	routedSpooling(t, f, sp).call(t, "POST", "/say", strings.NewReader("words=milk"))
+	routedSpooling(t, f, sp).call(t, "POST", "/capture", strings.NewReader("text=milk"))
 
 	require.Len(t, f.appended, 2)
 	require.Contains(t, f.appended[1].Words, "cannot reach")
@@ -187,7 +191,7 @@ func TestSayingSomethingThatCannotBeKeptSaysSo(t *testing.T) {
 func TestAFailedKeepStillLeavesTheWordsInTheThread(t *testing.T) {
 	f := &fakeStore{}
 	routedSpooling(t, f, &fakeSpool{err: errTest}).
-		call(t, "POST", "/say", strings.NewReader("words=milk"))
+		call(t, "POST", "/capture", strings.NewReader("text=milk"))
 
 	require.Equal(t, "milk", f.appended[0].Words)
 }
@@ -336,4 +340,82 @@ func TestDoingItAndTurningItDownSayDifferentThings(t *testing.T) {
 		strings.NewReader("kind=chore&id=4&act=later&label=water+the+plants"))
 
 	require.NotEqual(t, did.appended[0].Words, later.appended[0].Words)
+}
+
+// The offer is not put on the table twice. Without this a reload appended a
+// second copy to a record that is never rewritten, and — worse — it took the
+// live edge off whatever Buddy had just said.
+func TestTheOfferIsNotOfferedAgainOverItself(t *testing.T) {
+	f := &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"},
+	}
+	m := routed(t, f)
+
+	m.call(t, "GET", "/", nil)
+	require.Len(t, f.appended, 1)
+
+	f.turns, f.appended = f.appended, nil
+	m.call(t, "GET", "/", nil)
+	require.Empty(t, f.appended, "a reload must not say it again")
+}
+
+// And nothing is offered over an answer Buddy has just given, whatever kind of
+// thing it put on the table.
+func TestNothingIsOfferedOverSomethingAlreadyOnTheTable(t *testing.T) {
+	f := &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"},
+		turns: []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "the way through",
+			Shown: []byte(`{"cards":[{"title":"the smallest piece","acts":[{"label":"5 MIN","action":"/timer"}]}]}`)}},
+	}
+	body := thread(t, f)
+
+	require.Empty(t, f.appended)
+	require.Contains(t, body, "5 MIN", "the answer keeps its button")
+}
+
+// The fragment and the page render the same card. This is the only thing
+// holding the single rendering path in place, and it fails the moment somebody
+// adds a client-side template.
+func TestAFragmentAndAPageRenderTheSameTurn(t *testing.T) {
+	page := thread(t, &fakeStore{turns: []squirrel.Turn{
+		{ID: 9, Who: squirrel.SpeakerBuddy, Words: "Kept."}, {ID: 10, Who: squirrel.SpeakerYou, Words: "milk"},
+	}})
+
+	f := &fakeStore{}
+	fragment := routed(t, f).callFragment(t, "/capture", "text=milk").Body.String()
+
+	require.Contains(t, page, `<p class="bub">Kept.</p>`)
+	require.Contains(t, fragment, `<p class="bub">Kept.</p>`)
+	require.NotContains(t, fragment, "<html", "a fragment is turns and nothing else")
+	require.NotContains(t, fragment, "railwrap")
+}
+
+// A fragment press answers with the new turns rather than a redirect.
+func TestAFragmentPressAnswersWithTheNewTurns(t *testing.T) {
+	w := routed(t, &fakeStore{}).callFragment(t, "/capture", "text=milk")
+
+	require.Equal(t, 200, w.Code)
+	require.Contains(t, w.Body.String(), "milk")
+	require.Contains(t, w.Body.String(), "Kept.")
+}
+
+// Without the header it still redirects, because that is what a form does and
+// the handler must not have two behaviours by accident.
+func TestAnOrdinaryPressStillRedirects(t *testing.T) {
+	w := routed(t, &fakeStore{}).call(t, "POST", "/capture", strings.NewReader("text=milk"))
+
+	require.Equal(t, 303, w.Code)
+	require.Equal(t, "/", w.Header().Get("Location"))
+}
+
+// The turns a press produces arrive with the controls on the last of them, so
+// the live edge moves with the conversation rather than staying where the page
+// was painted.
+func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
+	f := &fakeStore{offer: &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"}}
+	body := routed(t, f).callFragment(t, "/mood", "mood=good").Body.String()
+
+	require.Contains(t, body, `href="/moods"`, "the newest turn keeps its chips")
 }

@@ -128,8 +128,8 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 		forgetOffer(opts, personID)
 		// What the two of you said about it. After the write, because a
 		// conversation must not claim something happened that did not.
-		keepSaid(r.Context(), s, personID, saidAboutTheOffer(r.FormValue("act"), r.FormValue("label")))
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		answerWith(w, r, keepSaid(r.Context(), s, personID,
+			saidAboutTheOffer(r.FormValue("act"), r.FormValue("label"))), "/")
 	}
 }
 
@@ -190,17 +190,19 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 			// ladder answers underneath the card, and swapping the card there
 			// would replace the thing you have just said you cannot start.
 			forgetOffer(opts, personID)
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			answerWith(w, r, keepSaid(r.Context(), s, personID,
+				saidAboutTheOffer("later", r.FormValue("label"))), "/")
 			return
 		}
 		// Broken into steps first, when that is what this blocker wants and
-		// there is something to break down. The redirect is the same either
-		// way — the step is read back out of the store on the next render, so
-		// a reload shows where you actually are rather than repeating a press.
+		// there is something to break down. The step is read back out of the
+		// store rather than carried, so a reload shows where you actually are
+		// rather than repeating a press.
 		if o, found, err := s.PickNow(r.Context(), personID, now(), true); err == nil && found {
 			smallerFor(s, opts, r, b, o)
 		}
-		http.Redirect(w, r, "/?stuck="+url.QueryEscape(string(b)), http.StatusSeeOther)
+		answerWith(w, r, keepSaid(r.Context(), s, personID,
+			saidAboutBeingStuck(s, opts, r, personID, b)), "/")
 	}
 }
 

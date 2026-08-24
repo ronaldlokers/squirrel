@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -77,18 +78,23 @@ func TestNoReadingsReadsAsNothing(t *testing.T) {
 
 // Home shows today's answer and a link. The link is asking; the series lives
 // behind it and nowhere else.
-func TestHomeLinksToItAndShowsNoSeries(t *testing.T) {
+// The way to it travels with Buddy's acknowledgement, because the answer is
+// about to be scrollback and scrollback carries no controls. Without it /moods
+// would be reachable from nowhere in the product, which is the bug the old
+// home screen had for an afternoon.
+func TestTheThreadLinksToIt(t *testing.T) {
 	now := time.Now()
 	f := &fakeStore{
 		checkin:  &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now},
 		readings: []squirrel.Checkin{reading(squirrel.MoodWiped, now.AddDate(0, 0, -1))},
 	}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	m := mounted(t, f)
+	post(t, m, "/mood", url.Values{"mood": {"good"}})
+	f.turns, f.appended = f.appended, nil
 
+	body := m.call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, body, `href="/moods"`)
-	// Today's answer, and not yesterday's.
-	require.Contains(t, body, "mood-good.png")
-	require.NotContains(t, body, "mood-wiped.png")
+	require.NotContains(t, body, "mood-wiped.png", "no series")
 }
 
 // It is not in the lid and not a door. You go looking, or you do not see it.

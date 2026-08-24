@@ -3,21 +3,21 @@
      is the only thing keeping the server and the browser from growing two
      descriptions of a card. */}}
 {{define "turn"}}
-<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}" id="turn-{{.ID}}">
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if .Faces}} wide{{end}}" id="turn-{{.ID}}">
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
   <p class="bub">{{.Words}}</p>
 
   {{range .Cards}}
-  <div class="tcard">
-    <p class="tname">{{.Title}}</p>
-    {{if .Meta}}<p class="tmeta">{{.Meta}}</p>{{end}}
+  <div class="turncard">
+    <p class="turnname">{{.Title}}</p>
+    {{if .Meta}}<p class="turnmeta">{{.Meta}}</p>{{end}}
     {{/* Controls only on the live edge. A card in scrollback keeps its words
          and loses its buttons: pressing DID IT on a card from a conversation
          three days old acts on a state nobody is looking at. */}}
     {{if and $.Live .Acts}}
-    <div class="tacts">
+    <div class="turnacts">
       {{range .Acts}}
       <form method="post" action="{{.Action}}">
         {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
@@ -44,7 +44,7 @@
   {{end}}
 
   {{if and .Live .Chips}}
-  <div class="tchips">
+  <div class="turnchips">
     {{range .Chips}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}
   </div>
   {{end}}

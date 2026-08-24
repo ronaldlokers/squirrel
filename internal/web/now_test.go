@@ -40,7 +40,7 @@ func TestHomeOffersOneThingWithItsClause(t *testing.T) {
 func TestTheOfferIsNeverAListAndNeverACount(t *testing.T) {
 	body := mounted(t, answered(aTask)).call(t, "GET", "/", nil).Body.String()
 
-	require.Equal(t, 1, strings.Count(body, `class="offer"`))
+	require.Equal(t, 1, strings.Count(body, `class="turncard"`))
 	require.Equal(t, 1, strings.Count(body, `value="did"`))
 	require.NotContains(t, body, "and more")
 	require.NotContains(t, body, "left")
@@ -52,7 +52,7 @@ func TestTheOfferIsNeverAListAndNeverACount(t *testing.T) {
 func TestNothingToOfferRendersNoRegionAtAll(t *testing.T) {
 	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
 
-	require.NotContains(t, body, `class="offer"`)
+	require.NotContains(t, body, `class="turncard"`)
 	require.NotContains(t, body, "nothing")
 }
 
@@ -82,9 +82,10 @@ func TestALowDayOffersTheWayThrough(t *testing.T) {
 	s.gated = true
 
 	body := mounted(t, s).call(t, "GET", "/", nil).Body.String()
-	require.NotContains(t, body, `class="offer"`)
-	require.Contains(t, body, "anyway")
+	require.NotContains(t, body, "ring the vet about the booster", "nothing is handed to you")
+	require.Contains(t, body, "show me something anyway")
 
+	s.appended = nil
 	body = mounted(t, s).call(t, "GET", "/?anyway=1", nil).Body.String()
 	require.Contains(t, body, "ring the vet about the booster")
 	require.NotContains(t, body, "show me something anyway",

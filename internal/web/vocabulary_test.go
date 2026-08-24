@@ -20,25 +20,30 @@ import (
 // The path with the script is the one nearly every session takes, so the
 // enhanced path gave less help than the floor. A comment cannot hold two
 // files together; this can.
+// The thread's own path cannot drift, because the script renders the server's
+// HTML rather than words of its own — see static/thread.js. What still has two
+// copies is pile.js, which enhances the slots on the pages that are still
+// pages, and this pins those to the sentences the Go code says.
 func TestBothCapturePathsSayTheSameWords(t *testing.T) {
-	home, err := templateFS.ReadFile("templates/home.html")
-	require.NoError(t, err)
 	js, err := staticFS.ReadFile("static/pile.js")
 	require.NoError(t, err)
 
-	// The server's four, as they are written in the template.
-	said := regexp.MustCompile(`<p class="slotsaid[^"]*"[^>]*>([^<]+)</p>`)
-	found := said.FindAllStringSubmatch(string(home), -1)
-	require.Len(t, found, 4, "the slot no longer says four things")
-
-	for _, m := range found {
-		words := strings.TrimSpace(m[1])
-		// Entities are how the template writes a dash; the script writes the
-		// character. Compare what a person reads.
-		words = strings.ReplaceAll(words, "&mdash;", "—")
+	for _, words := range []string{
+		refusalOf(errNotAPhotograph),
+		refusalOf(errTest),
+	} {
 		require.Contains(t, string(js), words,
 			"the script does not say what the server says:\n  %q", words)
 	}
+
+	// And the one answer that is not a turn, because there is no database to
+	// put a turn in when the worker takes it.
+	thread, err := templateFS.ReadFile("templates/thread.html")
+	require.NoError(t, err)
+	held := regexp.MustCompile(`<p class="slotsaid held"[^>]*>([^<]+)</p>`).
+		FindStringSubmatch(string(thread))
+	require.Len(t, held, 2, "the dock no longer says what happens with no network")
+	require.Contains(t, string(js), strings.ReplaceAll(strings.TrimSpace(held[1]), "&mdash;", "—"))
 }
 
 // And the recovery clause specifically, because that is what went missing and
@@ -61,7 +66,7 @@ func TestTheFailureMessagesSayWhatToDoNext(t *testing.T) {
 // meaning three different things, in a product whose argument is that
 // deciding is the scarce resource.
 func TestKeepMeansOneThing(t *testing.T) {
-	for _, name := range []string{"home.html", "coach.html"} {
+	for _, name := range []string{"thread.html", "coach.html"} {
 		body, err := templateFS.ReadFile("templates/" + name)
 		require.NoError(t, err)
 		require.NotContains(t, string(body), ">Keep it<",

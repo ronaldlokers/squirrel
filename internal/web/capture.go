@@ -1,12 +1,12 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -90,7 +90,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// went wrong was the sentence the person reading it could not
 			// act on.
 			slog.Warn("a capture was refused", "error", err)
-			backToHome(w, r, text, refusalOf(err))
+			answerWith(w, r, saidInThread(r.Context(), s, opts, text, refusalOf(err)), "/")
 			return
 		}
 
@@ -103,6 +103,13 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// was rather than redirecting in silence.
 			slog.Info("a capture had nothing in it",
 				"content_type", r.Header.Get("Content-Type"), "bytes", r.ContentLength)
+			if wantsFragment(r) {
+				// Nothing back, and it must be nothing rather than a
+				// redirect: the script follows a redirect, and what it would
+				// have appended is the whole page.
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -131,10 +138,14 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// This means the disk is unwritable, which is a different and much
 			// louder problem than a database being briefly unreachable.
 			slog.Warn("a capture could not be spooled", "error", err)
-			backToHome(w, r, text, "nokeep")
+			answerWith(w, r, saidInThread(r.Context(), s, opts, text, refusalOf(err)), "/")
 			return
 		}
-		http.Redirect(w, r, "/?kept=1", http.StatusSeeOther)
+		// Says which it was, so the script knows whether to empty the box. The
+		// turns alone cannot answer that: a failure is two turns as well, and
+		// clearing on one of them is a capture box that eats thoughts.
+		w.Header().Set("X-Kept", "1")
+		answerWith(w, r, saidInThread(r.Context(), s, opts, text, "Kept."), "/")
 	}
 }
 
@@ -145,26 +156,40 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 // and it is a lie that makes you press the same button again.
 var errNotAPhotograph = errors.New("not a photograph this keeps")
 
-// refusalOf is which sentence the slot says back.
+// refusalOf is which sentence Buddy says back.
+//
+// Two sentences and not one, because they send you to do different things: the
+// first is worth pressing again in a moment, the second never will be.
 func refusalOf(err error) string {
 	if errors.Is(err, errNotAPhotograph) {
-		return "nophoto"
+		return "That photograph was not kept — too big, or a kind Squirrel does not take. Your words are still here; keep them without it, or try another picture."
 	}
-	return "nokeep"
+	return "Not kept — Squirrel cannot reach its memory. Your words are still here; try again in a moment."
 }
 
-// backToHome returns to the slot, carrying the words when there are any to
-// carry. 303 rather than 302: the method has to become GET so a reload does
-// not repost.
-func backToHome(w http.ResponseWriter, r *http.Request, text, refused string) {
-	q := url.Values{}
-	if refused != "" {
-		q.Set(refused, "1")
+// saidInThread puts a capture and its answer into the conversation.
+//
+// The screen used to carry this back in the address bar and render it inside
+// the slot — which worked while there was a home screen to come back to. The
+// thread says it the way it says everything else, and Buddy's line must never
+// claim more than happened: a "kept" over a failed write is the two views
+// disagreeing about the pile.
+//
+// A capture with no words is a photograph, and it says so rather than putting
+// an empty bubble in a record that is never rewritten.
+func saidInThread(ctx context.Context, s Store, opts Options, text, reply string) []squirrel.Turn {
+	personID, ok := opts.person()
+	if !ok {
+		return nil
 	}
-	if text != "" {
-		q.Set("said", text)
+	yours := text
+	if yours == "" {
+		yours = "a photograph"
 	}
-	http.Redirect(w, r, "/?"+q.Encode(), http.StatusSeeOther)
+	return keepSaid(ctx, s, personID, []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: yours},
+		{Who: squirrel.SpeakerBuddy, Words: reply},
+	})
 }
 
 // readCapture pulls the words and the photograph off the request, streaming
