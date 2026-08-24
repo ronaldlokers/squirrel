@@ -29,6 +29,20 @@
   </div>
   {{end}}
 
+  {{/* The five drawings. Only on the live edge, like every other control: a
+       question from this morning is a thing that was asked, not a thing to
+       answer now. */}}
+  {{if and .Live .Faces}}
+  <form class="faces" method="post" action="/mood">
+    {{range .Faces}}
+    <button class="face" name="mood" value="{{.Mood}}">
+      <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+      <span>{{.Word}}</span>
+    </button>
+    {{end}}
+  </form>
+  {{end}}
+
   {{if and .Live .Chips}}
   <div class="tchips">
     {{range .Chips}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}

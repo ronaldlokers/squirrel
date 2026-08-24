@@ -191,3 +191,62 @@ func TestAFailedKeepStillLeavesTheWordsInTheThread(t *testing.T) {
 
 	require.Equal(t, "milk", f.appended[0].Words)
 }
+
+// Buddy asks while the reading is stale, and the question is a turn — so the
+// morning is still in the record this evening. Home used to let the answer
+// replace the question, and the morning was gone.
+func TestBuddyAsksHowYouAreWhenTheReadingIsStale(t *testing.T) {
+	f := &fakeStore{}
+	thread(t, f)
+
+	require.Len(t, f.appended, 1)
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[0].Who)
+	require.Contains(t, string(f.appended[0].Shown), "faces")
+}
+
+// And does not ask again while the answer still describes now. A question
+// re-asked on every render would fill the record with the same turn.
+func TestBuddyDoesNotAskWhileTheReadingIsFresh(t *testing.T) {
+	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}}
+	thread(t, f)
+
+	require.Empty(t, f.appended)
+}
+
+// The five drawings, not five words. They are the control the capacity gate
+// depends on and they are the product's own faces.
+func TestTheQuestionCarriesTheFiveFaces(t *testing.T) {
+	body := thread(t, &fakeStore{})
+
+	require.Equal(t, 5, strings.Count(body, `class="face"`))
+	require.Contains(t, body, "mood-frazzled.png")
+}
+
+// Walking up the conversation does not ask anything. A page of the past is
+// being read, and reading it must not add to it.
+func TestWalkingBackDoesNotAsk(t *testing.T) {
+	f := &fakeStore{turns: []squirrel.Turn{{ID: 9, Who: squirrel.SpeakerYou, Words: "hello"}}}
+	routed(t, f).call(t, "GET", "/?before=9", nil)
+
+	require.Empty(t, f.appended)
+}
+
+// Answering records the reading and writes both turns.
+func TestAnsweringTheCheckinWritesTurnsAndRecords(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/mood", strings.NewReader("mood=good"))
+
+	require.Equal(t, squirrel.MoodGood, f.recorded)
+	require.Len(t, f.appended, 2)
+	require.Equal(t, squirrel.SpeakerYou, f.appended[0].Who)
+	require.Equal(t, "good", f.appended[0].Words)
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
+}
+
+// Not one of the five is no answer rather than a wrong one, and no turn at all.
+func TestAnAnswerThatIsNotOneOfTheFiveWritesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/mood", strings.NewReader("mood=splendid"))
+
+	require.Empty(t, f.appended)
+}

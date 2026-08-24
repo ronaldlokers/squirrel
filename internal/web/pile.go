@@ -49,7 +49,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
 	}
-	m.Post("/mood", guard(opts, sameOrigin(moodHandler(s, opts))))
+	m.Post("/mood", guard(opts, sameOrigin(threadMoodHandler(s, opts))))
 	// The one thing's three answers. Behind the origin check like every other
 	// write here.
 	m.Post("/now/act", guard(opts, sameOrigin(nowActHandler(s, opts))))

@@ -37,6 +37,11 @@ type shown struct {
 	Place string     `json:"place,omitempty"`
 	Cards []cardView `json:"cards,omitempty"`
 	Chips []turnChip `json:"chips,omitempty"`
+	// Faces is the check-in's five drawings. A flag rather than five chips
+	// because they are the product's own faces and the markup for them
+	// already exists; rendering them as words would be a different control
+	// wearing the same question.
+	Faces bool `json:"faces,omitempty"`
 }
 
 type turnView struct {
@@ -50,6 +55,11 @@ type turnView struct {
 	Place string
 	Cards []cardView
 	Chips []turnChip
+	Faces []faceView
+	// V stamps the asset URLs a turn draws. Filled here rather than by render,
+	// because a turn is also rendered on its own as a fragment, where there is
+	// no page around it to carry it.
+	V string
 	// Live is the newest Buddy turn and nothing else.
 	Live bool
 }
@@ -123,6 +133,23 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
+		// The one thing Buddy opens with, and only while the last answer no
+		// longer describes now. Written rather than rendered, because a
+		// question that is not in the record is a question the record cannot
+		// show you answering.
+		//
+		// Never while walking back: a page of the past is being read, and
+		// reading it must not add to it.
+		if !walkingBack {
+			if t, ask := checkinTurn(ctx, s, personID); ask {
+				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
+					turns = append(turns, saved)
+				} else {
+					slog.Error("asking how you are", "error", err)
+				}
+			}
+		}
+
 		v := view{
 			Home:      true,
 			Here:      "thread",
@@ -147,7 +174,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 func turnViews(turns []squirrel.Turn) []turnView {
 	out := make([]turnView, 0, len(turns))
 	for _, t := range turns {
-		v := turnView{ID: t.ID, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words}
+		v := turnView{ID: t.ID, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
 		if len(t.Shown) > 0 {
 			var sh shown
 			if err := json.Unmarshal(t.Shown, &sh); err != nil {
@@ -157,6 +184,9 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
 				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
+				if sh.Faces {
+					v.Faces = theFaces()
+				}
 			}
 		}
 		out = append(out, v)
@@ -257,6 +287,85 @@ func threadSayHandler(s Store, opts Options) http.HandlerFunc {
 		said = append(said, squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: reply})
 
 		for _, t := range said {
+			if _, err := s.AppendTurn(ctx, personID, t); err != nil {
+				slog.Error("keeping what was said", "error", err)
+			}
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+// theFaces is the five, in the one order both surfaces use.
+func theFaces() []faceView {
+	out := make([]faceView, 0, len(squirrel.Moods))
+	for _, m := range squirrel.Moods {
+		out = append(out, faceView{Mood: string(m), Word: squirrel.Words[m]})
+	}
+	return out
+}
+
+// checkinTurn is Buddy's question, while the last answer no longer describes
+// now.
+//
+// It is a turn rather than a region, and that is the change: the answer used to
+// replace the question and the morning was gone. Both stay now, which is what a
+// record that is never rewritten buys.
+//
+// How is right now — right now, and not today. That rule is unchanged; what
+// changed is only where the question lives.
+func checkinTurn(ctx context.Context, s Store, personID int64) (squirrel.Turn, bool) {
+	c, found, err := s.LatestCheckin(ctx, personID)
+	if err != nil {
+		slog.Error("reading how you are", "error", err)
+		return squirrel.Turn{}, false
+	}
+	if found && c.Fresh(now()) {
+		return squirrel.Turn{}, false
+	}
+	body, err := json.Marshal(shown{Faces: true})
+	if err != nil {
+		slog.Error("drawing the faces", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "How do you feel?", Shown: body}, true
+}
+
+// threadMoodHandler is the answer to Buddy's question.
+//
+// The reading is recorded first and the turns after: an answer that reached the
+// conversation but not the readings would make /moods disagree with the thread,
+// and the readings are what the picker actually consults.
+func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		ctx := r.Context()
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		m, ok := squirrel.ParseMood(r.FormValue("mood"))
+		if !ok {
+			// Not one of the five. This arrives from a form, so it is read the
+			// way a stranger's typing is read: no answer rather than a wrong
+			// one, and nothing said about it in the record.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		if err := s.RecordCheckin(ctx, personID, m, "screen", now()); err != nil {
+			fail(w, err)
+			return
+		}
+		// "Noted" is the word this screen has always answered with, and it is
+		// the whole of what it may say: this reports what you said and may
+		// never characterise you.
+		for _, t := range []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: squirrel.Words[m]},
+			{Who: squirrel.SpeakerBuddy, Words: "Noted."},
+		} {
 			if _, err := s.AppendTurn(ctx, personID, t); err != nil {
 				slog.Error("keeping what was said", "error", err)
 			}

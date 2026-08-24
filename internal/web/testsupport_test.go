@@ -81,6 +81,9 @@ type fakeStore struct {
 	appended    []squirrel.Turn
 	moreTurns   bool
 	pagedBefore int64
+	// The reading this render wrote, so a test can assert on the write rather
+	// than on a rendering of it.
+	recorded squirrel.Mood
 	// What each door is holding, and a failure that belongs to the counting
 	// alone — the doors have to survive it while the rest of the page works.
 	waiting    squirrel.Waiting
@@ -333,6 +336,7 @@ func (f *fakeStore) RecordCheckin(_ context.Context, _ int64, m squirrel.Mood, _
 		return f.err
 	}
 	f.checkin = &squirrel.Checkin{Mood: m, SaidAt: at}
+	f.recorded = m
 	return nil
 }
 
