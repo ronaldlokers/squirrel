@@ -303,6 +303,35 @@ their card list at page load, which is empty for cards that arrive in a
 conversation; and the door, having become a button, sat at the browser's default
 13.33px until the appearance snapshot caught it.
 
+### v0.25.0 — 24 August 2026
+
+**The agenda joins the conversation, and gains the day picker.** Phase 3a. The
+agenda door draws what is still ahead; opening one draws it with what to take
+and the notes pointing at it; and an appointment can be made for any day rather
+than only today or tomorrow.
+
+That last one needed the core. `ParseMoment` built from today's date, so a date
+was not sayable at all. Two answers were refused — a grammar that takes dates,
+which widens the bar that stops a stray thought becoming an interruption, and a
+time built in the web package, which is a second place to be wrong — and the
+third was to anchor the same parser to a chosen day. `ParseMoment` is now
+literally `MomentOn(now, s, now)`.
+
+`/at` is gone. `/at/{id}` stays until phase 4, because a notification sent
+yesterday is still on a lock screen.
+
+The lid's menu is down to one entry: the pile is the last screen that is a
+screen, and the way back to the conversation is the mark.
+
+**Phase 3b, not started: the pile.** It is the deck — one-card triage with
+split, undo, paging, search and seven states — and it is the hardest surface in
+the product. Splitting it out landed the day picker rather than hiding it
+inside a larger change.
+
+One test found doing nothing: `TestWhatIsComingCountsNothingAndScoldsNobody`
+asked for a route that had just been deleted, so every assertion passed over an
+empty body.
+
 ---
 
 ## Open

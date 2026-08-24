@@ -120,3 +120,58 @@ func TestMatchRecognisesADeliberateFixedPoint(t *testing.T) {
 	require.Equal(t, squirrel.IntentCapture, squirrel.Match(".at 14:30 dentist").Kind,
 		"the escape hatch still wins")
 }
+
+// The same sentence, on a day you chose.
+//
+// ParseMoment builds from today's date, so there is no way to say a date at
+// all. Rather than widen the grammar — the "at" or "tomorrow" bar exists so a
+// stray thought is never silently turned into something that interrupts you —
+// the same parser is anchored somewhere else.
+func TestMomentOnPutsItOnTheChosenDay(t *testing.T) {
+	now := time.Date(2026, 8, 24, 9, 0, 0, 0, time.Local)
+	day := time.Date(2026, 8, 27, 0, 0, 0, 0, time.Local)
+
+	m, ok := squirrel.MomentOn(day, "at 14:30 dentist", now)
+	require.True(t, ok)
+	require.Equal(t, 2026, m.Starts.Year())
+	require.Equal(t, time.August, m.Starts.Month())
+	require.Equal(t, 27, m.Starts.Day())
+	require.Equal(t, 14, m.Starts.Hour())
+	require.Equal(t, 30, m.Starts.Minute())
+}
+
+// An hour already gone today does not move a day that was chosen: choosing the
+// 27th means the 27th, whatever o'clock it is now.
+func TestAChosenDayIsNotRolledForward(t *testing.T) {
+	now := time.Date(2026, 8, 24, 18, 0, 0, 0, time.Local)
+	day := time.Date(2026, 8, 27, 0, 0, 0, 0, time.Local)
+
+	m, ok := squirrel.MomentOn(day, "at 09:00 dentist", now)
+	require.True(t, ok)
+	require.Equal(t, 27, m.Starts.Day())
+}
+
+// And ParseMoment is unchanged, in both directions — an hour still ahead is
+// today, and one that has gone is tomorrow. Both halves, because a version
+// that simply anchored a day later satisfies the first on its own.
+func TestParseMomentStillRollsForwardAndOnlyThen(t *testing.T) {
+	now := time.Date(2026, 8, 24, 18, 0, 0, 0, time.Local)
+
+	gone, ok := squirrel.ParseMoment("at 09:00 dentist", now)
+	require.True(t, ok)
+	require.Equal(t, 25, gone.Starts.Day(), "an hour that has gone is tomorrow")
+
+	ahead, ok := squirrel.ParseMoment("at 20:00 dentist", now)
+	require.True(t, ok)
+	require.Equal(t, 24, ahead.Starts.Day(), "an hour still ahead is today")
+}
+
+// The bar is unchanged. A chosen day does not make a bare time a fixed point:
+// the picker composes a sentence that clears the bar, and anything that does
+// not clear it is still a note.
+func TestAChosenDayDoesNotLowerTheBar(t *testing.T) {
+	now := time.Now()
+
+	_, ok := squirrel.MomentOn(now.AddDate(0, 0, 3), "14:30 dentist", now)
+	require.False(t, ok)
+}

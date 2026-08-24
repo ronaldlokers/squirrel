@@ -318,6 +318,18 @@ still ahead** — nothing past, nothing done, never a count, and no word anywher
 about being late. A calendar is a thing you are behind on; there is nothing in
 this list to be behind on, because everything in it is still in front of you.
 
+**It stopped being a screen on 24 August 2026** and became a message: you ask
+for it, and Buddy answers with what is still ahead. The guard rails are the same
+ones and they are what still make it allowed — only what is coming, nothing
+past, nothing marked late — and one of them got easier to keep, because a
+conversation has nowhere to put a badge.
+
+**The day picker is a calendar, and it is the one place that word applies.**
+Choosing a day needs a month to choose it out of. What keeps it from being the
+thing the rule refused: it offers no day in the past, it shows nothing that has
+happened, and it is a question Buddy asked rather than a place you can go and
+browse. Days already gone are drawn so the month reads and cannot be pressed.
+
 What it cost, stated rather than discovered: this is a place you can go and look
 at your appointments, which the rule existed to prevent, and the protection now
 rests on the guard rails above rather than on the screen not existing. If it

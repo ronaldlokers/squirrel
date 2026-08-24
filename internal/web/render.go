@@ -52,7 +52,6 @@ var pages = map[string]*template.Template{
 	"empty":   page("templates/layout.html", "templates/empty.html"),
 	"enough":  page("templates/layout.html", "templates/enough.html"),
 	"results": page("templates/layout.html", "templates/every.html", "templates/results.html"),
-	"at":      page("templates/layout.html", "templates/stopping.html", "templates/at.html"),
 	"atone":   page("templates/layout.html", "templates/stopping.html", "templates/atone.html"),
 }
 
@@ -291,15 +290,17 @@ func placeName(here string) string {
 // existed. Buddy is not in it either — it is one tap in the lid, because a
 // conversation about what is in front of you should not be two.
 func elsewhere(here string) []linkView {
-	// Two, since 24 August 2026. The tasks and the chores stopped being pages
-	// and became messages, and a menu that offered them would be offering a
-	// link to somewhere that no longer exists — see internal/web/thread.go.
-	// The way to them is the rail, which is on the one screen you reach them
-	// from.
+	// One, since 24 August 2026. The tasks, the chores and the agenda stopped
+	// being pages and became messages, and a menu that offered them would be
+	// offering a link to somewhere that no longer exists. The way to them is
+	// the rail, on the one screen you reach them from; the way back to that
+	// screen is the mark, as it always was.
+	//
+	// The pile is still a page — it is the deck, and absorbing it is its own
+	// piece of work — so the menu is the one place there is still to go.
 	mine := placeName(here)
 	return []linkView{
 		{Href: "/pile", Label: "the pile", Here: mine == "the pile"},
-		{Href: "/at", Label: "the agenda", Here: mine == "the agenda"},
 	}
 }
 

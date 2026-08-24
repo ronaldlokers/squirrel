@@ -1101,16 +1101,21 @@
      the choice survives with no script at all. The radio itself is not drawn:
      the press that stayed down is what says which one is chosen, the same
      gesture as every other press here. */
-  .newchore .chip { position: relative; cursor: pointer; }
-  .newchore .chip input {
+  /* The same chip wherever one wraps a radio: the new-chore form, the interval
+     question and the day picker's times. It was scoped to .newchore, and the
+     pickers inherited a chip with its radio drawn in the middle of it. */
+  .newchore .chip, .pickrow .chip { position: relative; cursor: pointer; }
+  .newchore .chip input, .pickrow .chip input {
     position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0;
   }
-  .newchore .chip:has(input:checked) {
+  .newchore .chip:has(input:checked), .pickrow .chip:has(input:checked) {
     background: var(--violet); color: var(--paper);
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
   }
-  .newchore .chip:has(input:focus-visible) { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
-  .newchore .make {
+  .newchore .chip:has(input:focus-visible), .pickrow .chip:has(input:focus-visible) {
+    outline: var(--line) solid var(--orange-lit); outline-offset: 3px;
+  }
+  .newchore .make, .pick .make, .cal .make {
     margin-top: 18px;
     padding: 12px 20px; min-height: 46px;
     background: var(--orange); color: var(--outline);
@@ -1120,8 +1125,8 @@
     font-variation-settings: var(--precise), "wght" 750;
     letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   }
-  .newchore .make:hover { background: var(--orange-lit); }
-  .newchore .make:active {
+  .newchore .make:hover, .pick .make:hover, .cal .make:hover { background: var(--orange-lit); }
+  .newchore .make:active, .pick .make:active, .cal .make:active {
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
     background: var(--violet); color: var(--paper);
   }
@@ -3143,6 +3148,7 @@
   }
   .pickrow { display: flex; flex-wrap: wrap; gap: 8px; }
   .pick .make { align-self: flex-start; margin-top: 4px; }
+  .cal .make { align-self: flex-start; margin-top: 2px; }
   .turn.wide { max-width: 100%; width: 100%; }
 
   /* A turn holding the faces takes the full column. They are five drawings in
@@ -3153,3 +3159,49 @@
      and does not match in the browser the tests drive — the measurement said
      212px of an available 362px, which is the turn still shrinking to fit. */
   .turn .faces { width: 100%; }
+
+  /* THE DAY PICKER. Same stock as the question it is: a card of choices. */
+  .calbox {
+    display: flex; flex-direction: column; gap: 10px; width: 100%;
+    padding: 13px 15px 15px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+  .calhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .calhead b {
+    font-family: "Inter", sans-serif; font-weight: 900; font-size: 16px;
+    letter-spacing: -.01em;
+  }
+  .calhead form { display: contents; }
+  .chip.arrow { min-width: 40px; padding: 0 12px; display: grid; place-items: center; font-size: 17px; }
+  .arrowgap { width: 40px; }
+  .cal { display: flex; flex-direction: column; gap: 9px; }
+  .calgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  /* 44px tall, and at 390px about 43 wide — one pixel under the touch floor.
+     Seven columns cannot do better without cropping the month to weekdays or
+     scrolling it sideways, and both are worse than the pixel. */
+  .calgrid label.day, .calgrid span.gone {
+    min-height: 44px; display: grid; place-items: center; border-radius: 9px;
+    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 700;
+    border: 2px solid var(--outline); background: var(--paper); color: var(--outline);
+    cursor: pointer;
+  }
+  .calgrid label.day input { position: absolute; opacity: 0; pointer-events: none; }
+  .calgrid label.day:has(input:checked) {
+    background: var(--violet); color: var(--paper); box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .calgrid label.day:has(input:focus-visible) { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
+  /* A day already gone: still drawn, so the month reads, and plainly not a
+     control. */
+  .calgrid span.gone { background: none; border-color: transparent; color: var(--brown); opacity: .55; }
+  .calgrid span.dow, .calgrid span.pad {
+    min-height: 0; display: grid; place-items: center;
+    font-size: 10.5px; letter-spacing: .06em; color: var(--brown);
+    font-variation-settings: var(--precise), "wght" 750;
+  }
+
+  @media (max-width: 620px) {
+    .calbox { padding: 13px 10px 15px; }
+    .calgrid { gap: 4px; }
+  }

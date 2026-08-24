@@ -153,14 +153,12 @@ func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
 // The contrast walk cannot tell a clean screen from an empty one, so this says
 // the two new paths render something. Both were added to that walk's list, and
 // a page with nothing on it would have passed it silently.
-func TestBothNewScreensRenderSomething(t *testing.T) {
+// The one screen the agenda still has. The list became a turn on 24 August
+// 2026; this is the page a notification lands on, and it stays until phase 4.
+func TestTheFixedPointPageStillRenders(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
 	f.upcoming = []squirrel.Moment{*f.moment}
 	m := routed(t, f)
-
-	list := m.call(t, "GET", "/at", nil).Body.String()
-	require.Contains(t, list, "the agenda")
-	require.Contains(t, list, "dentist")
 
 	one := m.call(t, "GET", "/at/4", nil).Body.String()
 	require.Contains(t, one, "dentist")
@@ -172,29 +170,192 @@ func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	body := routed(t, f).call(t, "GET", "/at", nil).Body.String()
+	// Soonest first, in the turn the door draws now.
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	body := string(f.appended[1].Shown)
 
 	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
-	require.Contains(t, body, `href="/at/4"`)
 }
 
 // Never a count, and never a word about being behind. Everything here is still
 // ahead of you, which is the only reason this list is allowed to exist.
-func TestWhatIsComingCountsNothingAndScoldsNobody(t *testing.T) {
+func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 	f := &fakeStore{upcoming: []squirrel.Moment{
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	body := strings.ToLower(routed(t, f).call(t, "GET", "/at", nil).Body.String())
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	said := strings.ToLower(f.appended[1].Words)
+	drawn := strings.ToLower(string(f.appended[1].Shown))
 
-	for _, banned := range []string{"late", "overdue", "2 coming", "you have"} {
-		require.NotContains(t, body, banned)
+	// Buddy counts what is ahead — permitted since 24 August 2026 — and the
+	// counting is the only number here.
+	require.Contains(t, said, "2 things have a time")
+	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
+		require.NotContains(t, said, banned)
+		require.NotContains(t, drawn, banned)
 	}
 }
 
 func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
-	body := routed(t, &fakeStore{}).call(t, "GET", "/at", nil).Body.String()
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	body := strings.ToLower(f.appended[1].Words)
 
 	require.Contains(t, body, "when something has a time you can be late for")
-	require.NotContains(t, strings.ToLower(body), "plan")
+	require.NotContains(t, body, "plan")
+}
+
+// The agenda arrives as cards, and each says when to leave in the core's own
+// words — so the card, chat and the notification cannot drift apart about it.
+func TestOpeningTheAgendaDrawsWhatIsComing(t *testing.T) {
+	m := aMoment(3*time.Hour, "keys, wallet")
+	f := withUpcoming(*m)
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "dentist")
+	require.Contains(t, shown, `"place":"the agenda"`)
+	require.Contains(t, shown, squirrel.LeaveWords(*m))
+}
+
+// LEAVING only inside the window. Outside it there is nothing to press: the
+// appointment is not yet something you can act on, and a button that closes a
+// thing three hours early is one that gets pressed by accident.
+func TestLeavingIsAbsentOutsideTheWindow(t *testing.T) {
+	far := withUpcoming(*aMoment(3*time.Hour, ""))
+	routed(t, far).call(t, "POST", "/open", strings.NewReader("where=at"))
+	require.NotContains(t, string(far.appended[1].Shown), "LEAVING")
+
+	near := withUpcoming(*aMoment(20*time.Minute, ""))
+	routed(t, near).call(t, "POST", "/open", strings.NewReader("where=at"))
+	require.Contains(t, string(near.appended[1].Shown), "LEAVING")
+}
+
+// An absence, not an encouragement. Nothing here says you ought to be making
+// plans, and nothing counts what is not there.
+func TestAnEmptyAgendaSaysSoWithoutEncouraging(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+
+	require.Len(t, f.appended, 2)
+	require.Contains(t, strings.ToLower(f.appended[1].Words), "when something has a time you can be late for")
+	for _, nag := range []string{"why not", "get started", "add your first", "0"} {
+		require.NotContains(t, strings.ToLower(f.appended[1].Words), nag)
+	}
+}
+
+func withUpcoming(ms ...squirrel.Moment) *fakeStore {
+	return &fakeStore{upcoming: ms}
+}
+
+// Opening one draws it with what to take and the notes pointing at it.
+func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
+	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
+	f.attached = []squirrel.Item{
+		{ID: 7, RawText: "the referral letter", State: squirrel.ItemOpen},
+	}
+	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=4"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "dentist")
+	require.Contains(t, shown, "take keys, wallet")
+	require.Contains(t, shown, "the referral letter")
+}
+
+// A fixed point that is not yours draws nothing and says nothing.
+func TestAFixedPointThatIsNotYoursDrawsNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=99"))
+
+	require.Empty(t, f.appended)
+}
+
+// A note goes back to the pile, and the going back is said.
+func TestDetachingANoteIsSaid(t *testing.T) {
+	f := withMoment(aMoment(3*time.Hour, ""))
+	f.attached = []squirrel.Item{{ID: 7, RawText: "the referral letter", State: squirrel.ItemOpen}}
+	routed(t, f).call(t, "POST", "/at/4/detach", strings.NewReader("id=7"))
+
+	require.Equal(t, []int64{7}, f.detached)
+	require.Len(t, f.appended, 2)
+	require.Contains(t, f.appended[1].Words, "pile")
+}
+
+// The question offers a month to pick a day out of, and a time.
+func TestAskingForADayOffersAMonthAndTimes(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/new", strings.NewReader("label=dentist"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, `"month"`)
+	require.Contains(t, shown, `"times"`)
+	require.Contains(t, shown, "14:30")
+}
+
+// Answering makes the appointment on the day that was chosen, through the same
+// parser a typed sentence goes through.
+func TestAnsweringMakesItOnThatDay(t *testing.T) {
+	f := &fakeStore{}
+	day := now().AddDate(0, 0, 3)
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+day.Format("2006-01-02")+"&at=14:30"))
+
+	require.Len(t, f.moments, 1)
+	require.Equal(t, "dentist", f.moments[0].Label)
+	require.Equal(t, day.Day(), f.moments[0].Starts.Day())
+	require.Equal(t, 14, f.moments[0].Starts.Hour())
+	require.Equal(t, 30, f.moments[0].Starts.Minute())
+}
+
+// The picker and a typed sentence agree about what a time is. Asserted on the
+// hour and minute, not on a string.
+func TestThePickerAndTheSentenceAgreeAboutTheTime(t *testing.T) {
+	typed, ok := squirrel.ParseMoment("at 14:30 dentist", now())
+	require.True(t, ok)
+
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+typed.Starts.Format("2006-01-02")+"&at=14:30"))
+
+	require.Len(t, f.moments, 1)
+	require.Equal(t, typed.Starts, f.moments[0].Starts)
+}
+
+// A time nobody offered does nothing, and the time is a real one: 25:99 proves
+// nothing, because the parser refuses that on its own. 03:00 is a time this
+// picker does not draw, and pressing it is something only a hand-made post can
+// do — which is exactly what arriving from a form means.
+func TestATimeThatWasNeverOfferedDoesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+now().AddDate(0, 0, 1).Format("2006-01-02")+"&at=03:00"))
+
+	require.Empty(t, f.moments)
+	require.Empty(t, f.appended)
+}
+
+// And a day in the past does nothing either: the picker offers none, and an
+// appointment you are already late for is the one thing this list may not hold.
+func TestADayInThePastDoesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+		"label=dentist&day="+now().AddDate(0, 0, -2).Format("2006-01-02")+"&at=14:30"))
+
+	require.Empty(t, f.moments)
+}
+
+// Turning to another month asks again rather than writing an appointment: it
+// is not an answer, it is turning a page.
+func TestTurningTheMonthAsksAgainAndMakesNothing(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/at/new", strings.NewReader(
+		"label=dentist&month="+now().AddDate(0, 1, 0).Format("2006-01")))
+
+	require.Empty(t, f.moments)
+	require.Len(t, f.appended, 1, "turning a page is not something you said")
+	require.Contains(t, string(f.appended[0].Shown), `"month"`)
 }

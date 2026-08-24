@@ -84,7 +84,17 @@ var travelSuffix = regexp.MustCompile(`(?i)^(.*?)[,\s]+(\d{1,3})\s*(?:m|min|mins
 // calendar is a thing you are behind on; the two answers this takes are today
 // and tomorrow, and a time that has already passed today means tomorrow —
 // which is what a person means when they type it.
-func ParseMoment(s string, now time.Time) (Moment, bool) {
+func ParseMoment(s string, now time.Time) (Moment, bool) { return MomentOn(now, s, now) }
+
+// MomentOn is the same sentence, anchored to a day you chose.
+//
+// One parser and one definition of what "14:30" means. The alternative was a
+// grammar that takes dates — which would widen the bar momentPattern
+// deliberately sets, and that bar is why a stray thought is never silently
+// turned into something that will interrupt you — or a second place in the web
+// package that built a time of its own, which is what composeEvery exists not
+// to be.
+func MomentOn(day time.Time, s string, now time.Time) (Moment, bool) {
 	text := strings.TrimSpace(s)
 
 	m := momentPattern.FindStringSubmatch(text)
@@ -135,9 +145,14 @@ func ParseMoment(s string, now time.Time) (Moment, bool) {
 		travel = defaultTravel
 	}
 
-	starts := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
+	starts := time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, now.Location())
 	// Tomorrow if it was said, and tomorrow if the time has already gone —
 	// which is what someone means when they type a time that has passed.
+	//
+	// This needs no carve-out for a chosen day, and one was written and taken
+	// out again: a day later than today is always after now whatever hour was
+	// picked, so the second clause cannot fire on one. The picker offers no day
+	// in the past, which is what makes that true.
 	if m[1] != "" || !starts.After(now) {
 		starts = starts.AddDate(0, 0, 1)
 	}
