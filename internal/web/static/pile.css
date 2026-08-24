@@ -271,7 +271,7 @@
      everything else in this world. */
   /* Three now, and still equals: one grid, identical cells, identical stock
      and depth, no ordering that implies importance. */
-  .doors { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .doors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 
   .door {
     display: flex; flex-direction: column; justify-content: center; gap: 7px;
@@ -1671,7 +1671,16 @@
        takes the Note floor rather than the phone's step-up. They still sit in
        one row: their equality is the screen's statement, and a stacked one
        would read as first. */
-    .doors { gap: 7px; }
+    /* Two by two, because four across is not four equals.
+     *
+     * At 390px the frame is 364px: three cells with a 7px gap measure about
+     * 115px and four measure about 84px — and "what you decided" already wraps
+     * to two lines at 115px while the art has already stepped down to 50px. So
+     * the row breaks rather than the cells cramping. It trades "side by side at
+     * every width" for rearranging instead of shrinking, which keeps the four
+     * equal to each other, and their equality is what that rule was protecting.
+     */
+    .doors { gap: 7px; grid-template-columns: 1fr 1fr; }
     .door { min-height: 104px; padding: 13px 9px; gap: 5px; }
     .door .label { align-self: stretch; }
     /* The art steps down where the doors are ~177px wide; at 66px tall both
@@ -2178,7 +2187,10 @@
    * shallower offset — because it is a thing you read rather than a card in a
    * deck you decide about.
    */
-  .atcard { margin-bottom: 18px; }
+  /* The result card's own material, which .rcard already carries: cream stock,
+     the 3px outline, the shallower offset. It takes no page tab — a tab says
+     what a note ended up as, and a fixed point has no outcome, only a time. */
+  .atcard { margin-bottom: 18px; padding-right: 20px; }
   .atcard .when {
     margin: 0;
     font-size: 17px; line-height: 1.4;
@@ -2190,13 +2202,17 @@
      It is the thing you are standing in the hall without, so it is an element
      rather than a tail. The label is the meta role; the words are his, so they
      take his axis. */
-  .takeline {
+  /* Scoped to the card, because `.rcard p` is 0,1,1 and a bare `.takeline` is
+     0,1,0 — so the result role's 18px outranked this and the label rendered at
+     the size of the sentence above it. The same shape as the `.lead` cascade
+     bug: a rule present, correct, and outvoted. */
+  .rcard .takeline {
     margin: 10px 0 0;
     font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     font-variation-settings: var(--precise), "wght" 750;
     color: var(--brown);
   }
-  .takeline b {
+  .rcard .takeline b {
     margin-left: 6px;
     font-size: 15px; letter-spacing: 0; text-transform: none;
     font-variation-settings: var(--casual), "wght" 520;
