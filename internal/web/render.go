@@ -42,6 +42,7 @@ func page(files ...string) *template.Template {
 }
 
 var pages = map[string]*template.Template{
+	"thread":  page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
 	"home":    page("templates/layout.html", "templates/askbuddy.html", "templates/step.html", "templates/home.html"),
 	"chores":  page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/chores.html"),
 	"kept":    page("templates/layout.html", "templates/askbuddy.html", "templates/stopping.html", "templates/kept.html"),
@@ -218,6 +219,16 @@ type view struct {
 	Attached []noteView
 	Chores   []choreView
 	Undo     *undoView
+	// Turns is the conversation, oldest first. The screen is one page now;
+	// see internal/web/thread.go.
+	Turns []turnView
+	// Rail is the four doors, pinned under the lid at every width, with what
+	// is waiting behind each.
+	Rail []doorView
+	// MoreAbove and Oldest are the page above this one. Oldest is the id the
+	// "earlier" control walks back from.
+	MoreAbove bool
+	Oldest    int64
 	// Clash says a decision arrived for a note that had already moved
 	// somewhere else — from the room, while the card was still on the screen.
 	// It is not an error and there is nothing to undo: what it says is that

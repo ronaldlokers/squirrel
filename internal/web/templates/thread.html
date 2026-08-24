@@ -1,0 +1,40 @@
+{{define "content"}}
+{{/* The doors, pinned under the lid and never scrolled away. Four equals: one
+     grid, four cells, the same stock, rendering identically in every state.
+     What changed on 24 August 2026 is that they carry numbers — see
+     squirrel.Waiting for what that decision cost and how it reverses. */}}
+<nav class="railwrap" aria-label="The four things the box holds">
+  <div class="rail">
+    {{range .Rail}}
+    <a class="rdoor{{if .Here}} here{{end}}" href="{{.Href}}">
+      <img alt="" src="/static/{{.Art}}?v={{$.V}}">
+      <span class="rname">{{.Label}}</span>
+      {{/* Zero is no number, not a nought: a door reading "0" is a scoreboard,
+           and that is what the retired rule was protecting against. */}}
+      {{if .Count}}<span class="doorcount">{{.Count}}</span>{{end}}
+    </a>
+    {{end}}
+  </div>
+</nav>
+
+<div class="thread" id="thread">
+  {{/* The way up the conversation. It says that there is more and never how
+       much more — not because a count is forbidden any longer, but because the
+       number above you is not a thing you can act on. */}}
+  {{if .MoreAbove}}<p class="earlier"><a href="/?before={{.Oldest}}">earlier</a></p>{{end}}
+  {{range .Turns}}{{template "turn" .}}{{end}}
+</div>
+
+{{/* Anything the script changes without a navigation is said out loud here
+     too, or the screen is silent for exactly the person who cannot see it
+     change. */}}
+<p class="offscreen" id="threadsay" role="status" aria-live="polite"></p>
+
+<form class="dock" method="post" action="/say">
+  <div class="slot">
+    <textarea name="words" rows="1" placeholder="{{.SaySlot}}"
+      aria-label="Tell Squirrel a thing" autocomplete="off"></textarea>
+    <button class="post" type="submit">Tell it</button>
+  </div>
+</form>
+{{end}}

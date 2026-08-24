@@ -1,0 +1,38 @@
+{{/* One turn, and the same markup whether it arrives with the page or as a
+     fragment after a press. That sameness is the single rendering path, and it
+     is the only thing keeping the server and the browser from growing two
+     descriptions of a card. */}}
+{{define "turn"}}
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}" id="turn-{{.ID}}">
+  {{/* The place's name, when this turn opens one. The thread has no <h1>, so
+       these are what heading navigation walks — see The One Title Rule. */}}
+  {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
+  <p class="bub">{{.Words}}</p>
+
+  {{range .Cards}}
+  <div class="tcard">
+    <p class="tname">{{.Title}}</p>
+    {{if .Meta}}<p class="tmeta">{{.Meta}}</p>{{end}}
+    {{/* Controls only on the live edge. A card in scrollback keeps its words
+         and loses its buttons: pressing DID IT on a card from a conversation
+         three days old acts on a state nobody is looking at. */}}
+    {{if and $.Live .Acts}}
+    <div class="tacts">
+      {{range .Acts}}
+      <form method="post" action="{{.Action}}">
+        {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+        <button class="abtn {{.Style}}" type="submit">{{.Label}}</button>
+      </form>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if and .Live .Chips}}
+  <div class="tchips">
+    {{range .Chips}}<a class="chip" href="{{.Href}}">{{.Label}}</a>{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}

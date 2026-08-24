@@ -2951,3 +2951,123 @@
        next thing down. */
     .chore .abtn.stop { margin-top: 12px; }
   }
+
+  /* ══ THE THREAD ══════════════════════════════════════════════════════════
+     The screen stopped being a set of pages on 24 August 2026 and became one
+     conversation. See docs/superpowers/specs/2026-08-24-the-thread-design.md.
+
+     THE RAIL. The four doors, pinned under the lid and never scrolled away.
+     They are still equals — one grid, four cells, the same stock, identical in
+     every state — and what changed is that they carry a number. */
+  .railwrap {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--purple-dark);
+    border-bottom: var(--line) solid var(--outline);
+    box-shadow: 0 12px 24px -16px rgba(0, 0, 0, .85);
+  }
+  .rail {
+    width: min(720px, 100%); margin: 0 auto;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px;
+    padding: 10px 22px;
+  }
+  .rdoor {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    min-height: 52px; padding: 8px 12px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 4px 0 0 var(--outline);
+    text-decoration: none;
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+  }
+  .rdoor:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
+  .rdoor img { height: 28px; width: auto; display: block; flex: none; }
+  .rname {
+    font-size: 14.5px; line-height: 1.05;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  /* Where you are, in the mark's own orange. */
+  .rdoor.here { background: var(--orange); }
+  /* What is waiting behind it. Absent at zero — a door reading "0" is a
+     scoreboard, and that is the thing Principle 2 was actually protecting
+     against when it was retired. */
+  .doorcount {
+    min-width: 22px; height: 22px; padding: 0 5px;
+    display: grid; place-items: center;
+    background: var(--outline); color: var(--paper);
+    border-radius: 999px;
+    font-size: 12px; font-variation-settings: var(--precise), "wght" 800;
+  }
+
+  /* THE TRANSCRIPT. */
+  .thread {
+    width: min(720px, 100%); margin: 0 auto;
+    padding: 22px 22px 132px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .turn { display: flex; flex-direction: column; gap: 10px; max-width: 92%; }
+  .frombuddy { align-self: flex-start; }
+  .fromyou { align-self: flex-end; align-items: flex-end; max-width: 80%; }
+  .bub {
+    margin: 0; padding: 11px 15px;
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    font-size: 16px; line-height: 1.4;
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+  .frombuddy .bub {
+    background: var(--paper); color: var(--outline);
+    box-shadow: 0 4px 0 0 var(--outline);
+  }
+  .fromyou .bub { background: var(--cream); color: var(--outline); }
+  /* The place's name, when a turn opens one. The thread has no title of its
+     own — home's exemption — so these are what heading navigation walks. */
+  .turnplace {
+    margin: 0;
+    font-family: "Inter", sans-serif; font-weight: 900; font-size: 19px;
+    letter-spacing: -.02em; color: var(--paper);
+  }
+  .earlier { margin: 0; text-align: center; }
+  .earlier a { color: var(--cream); }
+
+  /* A card inside a turn. Same stock as a door, because it is the same box. */
+  .tcard {
+    width: 100%; padding: 14px 16px;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+  }
+  .tname { margin: 0; font-size: 21px; font-variation-settings: var(--casual), "wght" 520; }
+  .tmeta {
+    margin: 5px 0 11px; font-size: 11.5px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--brown);
+    font-variation-settings: var(--precise), "wght" 750;
+  }
+  .tacts, .tchips { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+  .tacts form { display: contents; }
+
+  /* THE DOCK. The slot, on every view of the app, because there is one view. */
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
+    padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--purple-dark) 62%, transparent);
+  }
+  .dock .slot { width: min(720px, 100%); margin: 0 auto; }
+
+  @media (max-width: 620px) {
+    /* Four across still, by turning each door on its side rather than by
+       dropping one. At 390px the frame gives each about 81px, which holds a
+       24px drawing over an 11px label. */
+    .rail { gap: 7px; padding: 9px 14px; }
+    .rdoor {
+      flex-direction: column; gap: 3px; min-height: 60px; padding: 7px 4px;
+      border-radius: 16px; position: relative;
+    }
+    .rdoor img { height: 24px; }
+    .rname { font-size: 11px; }
+    .doorcount { position: absolute; top: -7px; right: -3px; }
+
+    .thread { padding: 18px 14px 128px; gap: 14px; }
+    .turn { max-width: 96%; }
+    .fromyou { max-width: 88%; }
+    .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
+    .dock .slot { margin: 0 auto; }
+  }
