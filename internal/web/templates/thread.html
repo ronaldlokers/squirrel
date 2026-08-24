@@ -6,13 +6,19 @@
 <nav class="railwrap" aria-label="The four things the box holds">
   <div class="rail">
     {{range .Rail}}
-    <a class="rdoor{{if .Here}} here{{end}}" href="{{.Href}}">
-      <img alt="" src="/static/{{.Art}}?v={{$.V}}">
-      <span class="rname">{{.Label}}</span>
-      {{/* Zero is no number, not a nought: a door reading "0" is a scoreboard,
-           and that is what the retired rule was protecting against. */}}
-      {{if .Count}}<span class="doorcount">{{.Count}}</span>{{end}}
-    </a>
+    {{/* A form rather than a link: opening a place is something you said, and
+         it goes into the record. See openHandler for what that costs. */}}
+    <form class="doorpress" method="post" action="/open">
+      <input type="hidden" name="where" value="{{.Where}}">
+      <button class="rdoor{{if .Here}} here{{end}}" type="submit">
+        <img alt="" src="/static/{{.Art}}?v={{$.V}}">
+        <span class="rname">{{.Label}}</span>
+        {{/* Zero is no number, not a nought: a door reading "0" is a
+             scoreboard, and that is what the retired rule was protecting
+             against. */}}
+        {{if .Count}}<span class="doorcount">{{.Count}}</span>{{end}}
+      </button>
+    </form>
     {{end}}
   </div>
 </nav>

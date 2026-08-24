@@ -2981,6 +2981,8 @@
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px;
     padding: 10px 22px;
   }
+  /* The door is the button; the form around it is not a box. */
+  .doorpress { display: contents; }
   .rdoor {
     display: flex; align-items: center; justify-content: center; gap: 9px;
     min-height: 52px; padding: 8px 12px;
