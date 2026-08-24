@@ -332,3 +332,51 @@ func LeaveWords(m Moment) string {
 	}
 	return fmt.Sprintf("at %s — leave about %s", at, leave)
 }
+
+// AttachNote points a note at a fixed point, and answers whether it was yours
+// to point.
+//
+// The person is in the where clause rather than checked first, so there is no
+// window between reading a row and writing it, and no way for a caller to
+// forget the check. The moment is checked the same way and in the same
+// statement: pointing your note at somebody else's appointment is the same
+// mistake as pointing somebody else's note anywhere.
+func (s *Store) AttachNote(ctx context.Context, personID, itemID, momentID int64) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		update items set moment_id = $3
+		 where id = $2 and person_id = $1
+		   and exists (select 1 from moments where id = $3 and person_id = $1)`,
+		personID, itemID, momentID)
+	if err != nil {
+		return false, fmt.Errorf("pointing a note at a fixed point: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+// DetachNote puts it back in the pile.
+//
+// Every transition in this product reverses, and this is the reversal. There is
+// no previous value to remember because the pointer was the whole of the
+// change — which is the argument for the pointer over an eighth state, made
+// concrete.
+func (s *Store) DetachNote(ctx context.Context, personID, itemID int64) (bool, error) {
+	tag, err := s.pool.Exec(ctx,
+		`update items set moment_id = null where id = $2 and person_id = $1`,
+		personID, itemID)
+	if err != nil {
+		return false, fmt.Errorf("returning a note to the pile: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+// NotesFor is what is pointing at one fixed point, newest first like every
+// other list in this product.
+func (s *Store) NotesFor(ctx context.Context, personID, momentID int64) ([]Item, error) {
+	items, _, err := s.itemsWhere(ctx,
+		`person_id = $1 and moment_id = $2`, notesForLimit, personID, momentID)
+	return items, err
+}
+
+// notesForLimit is a bound rather than a page: nothing here says how many there
+// are, and a limit nothing reaches in practice is a limit nobody sees.
+const notesForLimit = 50
