@@ -38,16 +38,26 @@ The measure is whether it gets opened again next week.
 
 ## Positioning
 
-Squirrel is built around a single rule that a neighbouring product could not
-copy without abandoning its own metrics: **nothing accrues that can be
+Squirrel was built around a single rule that a neighbouring product could not
+copy without abandoning its own metrics: ~~**nothing accrues that can be
 destroyed.** No streaks, no counts, no completion percentage, no badge of how
-much is outstanding.
+much is outstanding.~~ **The owner retired that rule on 24 August 2026**; the
+doors carry what is waiting behind them, and Buddy says how many of anything it
+likes. See *Never a count* below for what was traded and how it reverses.
 
-That rule comes from the ADHD literature this project is designed against —
-loss aversion makes losing hurt about twice as much as the equivalent gain
-pleases, an all-or-nothing counter makes one miss read as total failure, and the
-abstinence violation effect turns that into abandonment. Every competitor in this
-category sells the counter as the feature.
+What is left is narrower and still not what the category sells: **nothing here
+is a score.** Nothing is ever marked late. Nothing you did not do is counted,
+only what is waiting — a number that goes down when you deal with it and never
+records that you did not. Stopping partway is a normal ending. No streak, no
+percentage, no history of your compliance, and no number anywhere that a bad
+week makes permanently worse.
+
+The reasoning the old rule came from is unchanged and is now what the narrower
+one has to carry: loss aversion makes losing hurt about twice as much as the
+equivalent gain pleases, an all-or-nothing counter makes one miss read as total
+failure, and the abstinence violation effect turns that into abandonment. A
+counter of what is waiting cannot be broken, which is the whole of why this one
+was allowed; a streak can, and streaks stay refused.
 
 ## Operating Context
 
@@ -110,9 +120,28 @@ category sells the counter as the feature.
 
 **Constraints that are not negotiable:**
 
-- **Never a count.** No badge, no total, no "N to review", no page count. A
+- ~~**Never a count.** No badge, no total, no "N to review", no page count. A
   capped list may say *that* there is more, never *how much* more. This is the
-  single rule most likely to be broken by accident.
+  single rule most likely to be broken by accident.~~
+
+  **Retired by the owner on 24 August 2026.** Counts are permitted on every
+  surface: the doors carry what is waiting behind them, and Buddy says how many
+  of anything it likes. Principle 5's opening on 20 August had already permitted
+  counts in *speech*; this is the other half.
+
+  What the rule protected is real and is now unprotected, stated in the shape it
+  actually arrives in: a number beside a door, with an implied target of zero,
+  that grows while nobody is looking and that a bad week makes worse. The
+  argument it was traded for is that not knowing how much is waiting is its own
+  weight. If the doors start reading as a scoreboard, this is the decision to
+  reverse, and it reverses cleanly — the numbers are computed at render time and
+  stored nowhere, so removing one call removes all of them.
+
+  Two things the retirement did **not** license, and they are the difference
+  between a count and a score: nothing counts what you failed to do, and no
+  number here survives being dealt with. A capped list still says *that* there
+  is more rather than how much, because what is above you in a conversation is
+  not a thing you can act on.
 
   **One exception, added 20 August 2026: what the coach has cost this month.**
   It sits in the coach sheet's own lid and on no other screen. The rule bans
@@ -390,8 +419,12 @@ which pull toward a precision tool — the design has to be both, not average th
 
 1. **Capture is sacred; everything else is a view over it.** No feature may make
    a thought harder to record or easier to lose.
-2. **Nothing accrues that can be destroyed.** No counter, no streak, no
-   percentage — not on any surface, in any form.
+2. ~~**Nothing accrues that can be destroyed.** No counter, no streak, no
+   percentage — not on any surface, in any form.~~ **Retired by the owner on
+   24 August 2026**, with the *Never a count* constraint above; see there for
+   what it protected and what reverses it. What survives: **nothing here is a
+   score.** No streak, no percentage, nothing marked late, and no number that
+   counts what you did not do.
 3. **Stopping partway is a normal ending.** The design must never make leaving
    look like failure.
 4. **Two views, one pile.** Chat and screen must agree about what a note is and

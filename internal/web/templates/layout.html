@@ -181,7 +181,7 @@
      and a region that is replaced announces nothing. pile.js writes here when
      it changes what is on screen without a navigation. */}}
 <p id="say" class="offscreen" role="status" aria-live="polite"></p>
-<main id="stage" class="{{if .Scrolling}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
+<main id="stage" class="{{if .Home}}threadpage {{end}}{{if .Scrolling}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
 {{/* The undo lives here rather than on the card, because by the time this
      page is drawn the card it undoes has gone. pile.js shows the card's own
      row during the hold; this is the same offer once the write has landed,
@@ -229,5 +229,8 @@
      would be a count, and a dimmed acorn would be the product forming an
      opinion out of how a button gets used. */}}
 <script src="/static/pile.js?v={{.V}}" defer></script>
+{{/* The thread's own script, and only on the thread. Required rather than an
+     enhancement: see static/thread.js. */}}
+{{if .Home}}<script src="/static/thread.js?v={{.V}}" defer></script>{{end}}
 </body>
 </html>{{end}}

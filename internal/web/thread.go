@@ -1,0 +1,628 @@
+package web
+
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"strconv"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
+)
+
+// The thread: the whole of the screen.
+//
+// This replaced home on 24 August 2026. Home's argument was that a front door
+// showing what is waiting greets you with what is waiting; the owner retired
+// that along with Principle 2, and the doors carry numbers now. What survives
+// unchanged is that the doors are equals — one grid, four cells, the same stock
+// — and that the slot is the way in.
+//
+// Only the newest Buddy turn carries controls. A card from this morning keeps
+// its words and loses its buttons, because pressing DID IT on a card from a
+// conversation three days old acts on a state nobody is looking at. See The
+// live edge in docs/superpowers/specs/2026-08-24-the-thread-design.md.
+
+// threadLimit is how much of the conversation one render holds. A bound rather
+// than a page: everything above it is still there and one press away.
+const threadLimit = 40
+
+// drawn is what a turn drew, as it was drawn.
+//
+// Decoded from the turn's own JSON and never re-read from another table. A turn
+// holding a chore id would show today's chore inside yesterday's sentence,
+// which is what "history is never rewritten" forbids.
+type drawn struct {
+	Place string     `json:"place,omitempty"`
+	Cards []cardView `json:"cards,omitempty"`
+	Chips []turnChip `json:"chips,omitempty"`
+	// Faces is the check-in's five drawings. A flag rather than five chips
+	// because they are the product's own faces and the markup for them
+	// already exists; rendering them as words would be a different control
+	// wearing the same question.
+	Faces bool `json:"faces,omitempty"`
+}
+
+type turnView struct {
+	ID    int64
+	Buddy bool
+	Words string
+	// Place is the <h2> when this turn opens one, and empty otherwise. The
+	// thread has no <h1> — home's exemption, because nobody arrives at the
+	// place they started wondering where they are — so these are what heading
+	// navigation walks.
+	Place string
+	Cards []cardView
+	Chips []turnChip
+	Faces []faceView
+	// V stamps the asset URLs a turn draws. Filled here rather than by render,
+	// because a turn is also rendered on its own as a fragment, where there is
+	// no page around it to carry it.
+	V string
+	// Live is the newest Buddy turn and nothing else.
+	Live bool
+}
+
+type cardView struct {
+	Title string    `json:"title"`
+	Meta  string    `json:"meta,omitempty"`
+	Acts  []actView `json:"acts,omitempty"`
+}
+
+// actView is one button on a card.
+//
+// Fields is a map rather than one name-and-value pair because the presses this
+// has to carry are not all one field wide: /now/act wants kind, id and act
+// together. A struct that can hold only one hidden input would be wrong again
+// the first time a second one is needed.
+type actView struct {
+	Label  string            `json:"label"`
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields,omitempty"`
+	Style  string            `json:"style,omitempty"`
+}
+
+// turnChip is a choice offered in the conversation, as a link.
+//
+// Not chipView: that is the pile's three reasons for setting something aside,
+// and one type meaning two things is how a template ends up rendering the
+// wrong one.
+type turnChip struct {
+	Label string `json:"label"`
+	Href  string `json:"href"`
+}
+
+type doorView struct {
+	Href  string
+	Label string
+	Art   string
+	// Count is what is waiting behind the door. Zero renders no number at
+	// all — a door reading "0" is a scoreboard, and that is what the retired
+	// rule was actually protecting against.
+	Count int
+	Here  bool
+}
+
+func threadHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		ctx := r.Context()
+
+		var (
+			turns []squirrel.Turn
+			more  bool
+			err   error
+		)
+		// `?before=` walks up the conversation. It is in the address bar
+		// rather than in a cursor because a page of the past is a place you
+		// can send yourself back to.
+		before, perr := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
+		walkingBack := perr == nil && before > 0
+		if walkingBack {
+			turns, more, err = s.TurnsBefore(ctx, personID, before, threadLimit)
+		} else {
+			turns, more, err = s.RecentTurns(ctx, personID, threadLimit)
+		}
+		// A record that cannot be read is not a reason to take the screen
+		// away: the doors still work, and the dock still writes to the spool,
+		// which is the whole of what an unreachable database must not stop.
+		// Said out loud rather than rendered as an empty conversation, because
+		// an empty conversation looks like your history is gone.
+		unreadable := err != nil
+		if unreadable {
+			slog.Error("reading the conversation", "error", err)
+			turns, more = nil, false
+		}
+
+		// The one thing Buddy opens with, and only while the last answer no
+		// longer describes now. Written rather than rendered, because a
+		// question that is not in the record is a question the record cannot
+		// show you answering.
+		//
+		// Never while walking back: a page of the past is being read, and
+		// reading it must not add to it.
+		asked := false
+		if !walkingBack && !unreadable {
+			if t, ask := checkinTurn(ctx, s, personID, r.URL.Query().Get("ask") != ""); ask {
+				asked = true
+				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
+					turns = append(turns, saved)
+				} else {
+					slog.Error("asking how you are", "error", err)
+				}
+			}
+		}
+
+		// Only once the question has been answered. Asking how you are and
+		// then handing you a job in the same breath is the interruption this
+		// product exists to reduce — and the answer is what shapes the offer
+		// anyway.
+		if !walkingBack && !asked && !unreadable && !endsOpen(turns) {
+			if t, has := offerTurn(s, opts, r); has {
+				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
+					turns = append(turns, saved)
+				} else {
+					slog.Error("offering it", "error", err)
+				}
+			}
+		}
+
+		v := view{
+			Home: true,
+			// The worker having taken the words because there was no network.
+			// From the address bar, read the way a stranger's typing is read:
+			// a present flag and nothing else.
+			Held:      r.URL.Query().Get("held") != "",
+			Here:      "thread",
+			Scrolling: true,
+			Turns:     turnViews(turns),
+			Rail:      railFor(ctx, s, personID, ""),
+			MoreAbove: more,
+		}
+		if len(turns) > 0 {
+			v.Oldest = turns[0].ID
+		}
+		if unreadable {
+			v.Turns = []turnView{{
+				Buddy: true, Live: true, V: assetVersion,
+				Words: "I cannot reach what we said. Tell me things anyway — they are kept, and they go in when I can.",
+			}}
+		}
+		renderWith(w, r, s, opts, "thread", v)
+	}
+}
+
+// endsOpen says the conversation already ends with something to act on.
+//
+// Without it the offer was appended on every single load: a reload put a second
+// copy in the record, and — worse — it stole the live edge from whatever Buddy
+// had just said, so pressing "too big" got you the way through with its timer
+// button already taken off it.
+//
+// The question it asks is deliberately about shape rather than about which
+// offer: anything Buddy has put on the table and you have not answered is a
+// reason not to put something else there.
+func endsOpen(turns []squirrel.Turn) bool {
+	if len(turns) == 0 {
+		return false
+	}
+	last := turns[len(turns)-1]
+	if last.Who != squirrel.SpeakerBuddy || len(last.Shown) == 0 {
+		return false
+	}
+	var sh drawn
+	if err := json.Unmarshal(last.Shown, &sh); err != nil {
+		// A turn whose record cannot be read is treated as open. Saying
+		// nothing more is the safe direction: the other one talks over it.
+		return true
+	}
+	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces
+}
+
+// turnViews decodes each turn's own record of what it drew, and marks the live
+// edge.
+//
+// The scan for the live edge runs backwards and stops at the first Buddy turn,
+// so a run of your own turns at the bottom does not leave the conversation with
+// nothing to press.
+func turnViews(turns []squirrel.Turn) []turnView {
+	out := make([]turnView, 0, len(turns))
+	for _, t := range turns {
+		v := turnView{ID: t.ID, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
+		if len(t.Shown) > 0 {
+			var sh drawn
+			if err := json.Unmarshal(t.Shown, &sh); err != nil {
+				// A turn whose record cannot be read still said something, and
+				// the words are the part that matters. Losing the cards is
+				// better than losing the turn.
+				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
+			} else {
+				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
+				if sh.Faces {
+					v.Faces = theFaces()
+				}
+			}
+		}
+		out = append(out, v)
+	}
+	for i := len(out) - 1; i >= 0; i-- {
+		if out[i].Buddy {
+			out[i].Live = true
+			break
+		}
+	}
+	return out
+}
+
+// railFor is the four doors, with what is waiting behind each.
+//
+// A failed count is four doors and no numbers rather than an error page: the
+// doors are how you get anywhere, and a database that cannot count is not a
+// reason to take the navigation away.
+func railFor(ctx context.Context, s Store, personID int64, here string) []doorView {
+	rail := []doorView{
+		{Href: "/pile", Label: "the pile", Art: "door-pile.png"},
+		{Href: "/tasks", Label: "the tasks", Art: "door-tasks.png"},
+		{Href: "/chores", Label: "the chores", Art: "door-chores.png"},
+		{Href: "/at", Label: "the agenda", Art: "door-at.png"},
+	}
+	for i := range rail {
+		rail[i].Here = rail[i].Label == here
+	}
+	waiting, err := s.Waiting(ctx, personID, now())
+	if err != nil {
+		slog.Error("counting what is waiting", "error", err)
+		return rail
+	}
+	rail[0].Count = waiting.Pile
+	rail[1].Count = waiting.Tasks
+	rail[2].Count = waiting.Chores
+	rail[3].Count = waiting.Agenda
+	return rail
+}
+
+// theFaces is the five, in the one order both surfaces use.
+func theFaces() []faceView {
+	out := make([]faceView, 0, len(squirrel.Moods))
+	for _, m := range squirrel.Moods {
+		out = append(out, faceView{Mood: string(m), Word: squirrel.Words[m]})
+	}
+	return out
+}
+
+// checkinTurn is Buddy's question, while the last answer no longer describes
+// now.
+//
+// It is a turn rather than a region, and that is the change: the answer used to
+// replace the question and the morning was gone. Both stay now, which is what a
+// record that is never rewritten buys.
+//
+// How is right now — right now, and not today. That rule is unchanged; what
+// changed is only where the question lives.
+func checkinTurn(ctx context.Context, s Store, personID int64, again bool) (squirrel.Turn, bool) {
+	c, found, err := s.LatestCheckin(ctx, personID)
+	if err != nil {
+		slog.Error("reading how you are", "error", err)
+		return squirrel.Turn{}, false
+	}
+	if found && c.Fresh(now()) && !again {
+		return squirrel.Turn{}, false
+	}
+	body, err := json.Marshal(drawn{Faces: true})
+	if err != nil {
+		slog.Error("drawing the faces", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: body}, true
+}
+
+// threadMoodHandler is the answer to Buddy's question.
+//
+// The reading is recorded first and the turns after: an answer that reached the
+// conversation but not the readings would make /moods disagree with the thread,
+// and the readings are what the picker actually consults.
+func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		ctx := r.Context()
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		m, ok := squirrel.ParseMood(r.FormValue("mood"))
+		if !ok {
+			// Not one of the five. This arrives from a form, so it is read the
+			// way a stranger's typing is read: no answer rather than a wrong
+			// one, and nothing said about it in the record.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		if err := s.RecordCheckin(ctx, personID, m, "screen", now()); err != nil {
+			fail(w, err)
+			return
+		}
+		// "Noted" is the word this screen has always answered with, and it is
+		// the whole of what it may say: this reports what you said and may
+		// never characterise you.
+		//
+		// The way to change your mind travels with it, because the answer is
+		// about to be scrollback and scrollback carries no controls. Changing
+		// your mind is not a special case; it is the same answer given twice.
+		// "how you felt before" and not "what you said before": the pile's own
+		// door is what you said, and the same words naming two different
+		// things on one screen is what the rename fixed.
+		again, err := json.Marshal(drawn{Chips: []turnChip{
+			{Label: "say something else", Href: "/?ask=1"},
+			{Label: "how you felt before", Href: "/moods"},
+		}})
+		if err != nil {
+			slog.Error("drawing the way back", "error", err)
+		}
+		answerWith(w, r, keepSaid(ctx, s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: squirrel.Words[m]},
+			{Who: squirrel.SpeakerBuddy, Words: "Noted.", Shown: again},
+		}), "/")
+	}
+}
+
+// offerTurn is the one thing Squirrel picked, or nothing.
+//
+// Nothing renders nothing: being handed nothing is a normal state, and a
+// reassuring sentence in its place would be the product deciding you ought to
+// be busy. That was home's rule and it is unchanged by the move.
+func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
+	// "Show me anyway" lifts the capacity gate for this render and nothing
+	// else. It lives in the address bar rather than in the database on
+	// purpose: a person who says they are wiped and then works anyway has not
+	// changed their answer, and storing it would make them re-decide tomorrow
+	// that they meant it.
+	anyway := r.URL.Query().Get("anyway") != ""
+	o := offerFor(s, opts, r, anyway, true)
+	if o == nil {
+		// Nothing, or something being withheld because of how you said you
+		// were. Those are different and only the second has anything to say:
+		// having nothing to be handed is a normal state, and a reassuring
+		// sentence in its place would be the product deciding you ought to be
+		// busy.
+		if !anyway && offerFor(s, opts, r, true, false) != nil {
+			return wayThrough()
+		}
+		return squirrel.Turn{}, false
+	}
+
+	card := cardView{Title: o.Text, Meta: o.Because}
+	// A running timer carries no buttons of its own: it is a thing you are
+	// doing rather than a row that was picked, and the lid already has the one
+	// control it needs, which is the way to stop.
+	if !o.Running {
+		row := map[string]string{"kind": o.Kind, "id": strconv.FormatInt(o.RefID, 10), "label": o.Text}
+		did := "DID IT"
+		if o.Kind == string(squirrel.OfferMoment) {
+			// A fixed point is not done, it is left for. The word the card has
+			// always used, kept.
+			did = "LEAVING"
+		}
+		switch o.Kind {
+		case string(squirrel.OfferAgain):
+			// A breadcrumb is not a job. It is the thing you were on a little
+			// while ago, and the only two answers are picking it back up and
+			// not — there is nothing here to have done.
+			card.Acts = []actView{
+				{Label: "PICK IT UP", Action: "/now/act", Style: "go", Fields: with(with(row, "act", "start"), "minutes", "10")},
+				{Label: "not now", Action: "/now/act", Style: "later", Fields: with(row, "act", "later")},
+			}
+		default:
+			card.Acts = []actView{
+				{Label: did, Action: "/now/act", Style: "did", Fields: with(row, "act", "did")},
+				{Label: "10 MIN", Action: "/now/act", Style: "go", Fields: with(with(row, "act", "start"), "minutes", "10")},
+				{Label: "not now", Action: "/now/act", Style: "later", Fields: with(row, "act", "later")},
+			}
+		}
+		// The four ways of not being able to start. They are on the card
+		// rather than behind a disclosure because the card is about to be
+		// scrollback, and scrollback carries no controls — a ladder you can
+		// only reach by pressing something that has already gone is a ladder
+		// nobody reaches.
+		for _, b := range blockersFor(o.Kind) {
+			card.Acts = append(card.Acts, actView{
+				Label: squirrel.BlockerWords[b], Action: "/now/stuck", Style: "why",
+				Fields: with(row, "why", string(b)),
+			})
+		}
+	}
+
+	body, err := json.Marshal(drawn{Cards: []cardView{card}})
+	if err != nil {
+		slog.Error("drawing the offer", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{
+		Who: squirrel.SpeakerBuddy, Words: squirrel.Say(squirrel.SayingOffer, now()), Shown: body,
+	}, true
+}
+
+// with is one field added to a row's own fields, copied rather than mutated —
+// three buttons share the row and each needs a different act.
+func with(fields map[string]string, name, value string) map[string]string {
+	out := make(map[string]string, len(fields)+1)
+	for k, v := range fields {
+		out[k] = v
+	}
+	out[name] = value
+	return out
+}
+
+// saidAboutTheOffer is what the two of you said when a press landed.
+//
+// Turning it down is in the record beside doing it, and they do not read the
+// same: which answer you gave is the whole of what happened, and stopping
+// partway is a normal ending rather than an absence.
+func saidAboutTheOffer(act, label string) []squirrel.Turn {
+	if label == "" {
+		label = "that"
+	}
+	switch act {
+	case "did":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "did it — " + label},
+			{Who: squirrel.SpeakerBuddy, Words: "Good."},
+		}
+	case "later":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "not now — " + label},
+			{Who: squirrel.SpeakerBuddy, Words: "Fine. It will come back."},
+		}
+	case "start":
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "picked it up — " + label},
+			{Who: squirrel.SpeakerBuddy, Words: "Ten minutes. Stop whenever."},
+		}
+	}
+	return nil
+}
+
+// keepSaid writes what was said, and says so in the log when it cannot.
+//
+// A press that changed the pile and failed to reach the conversation is a
+// conversation with a hole in it, which is recoverable; refusing the press
+// because the record could not be written would not be.
+func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn) []squirrel.Turn {
+	out := make([]squirrel.Turn, 0, len(said))
+	for _, t := range said {
+		saved, err := s.AppendTurn(ctx, personID, t)
+		if err != nil {
+			slog.Error("keeping what was said", "error", err)
+			continue
+		}
+		out = append(out, saved)
+	}
+	return out
+}
+
+// saidAboutBeingStuck is the ladder, as two turns.
+//
+// It used to be a region under the offer, reached back through the address
+// bar. It is in the record now for the same reason everything else is: the
+// thing you could not start, and what was said about it, are part of the
+// conversation rather than a state the next render happens to be in.
+//
+// The line stays whatever the core says it is. One sentence, lower case, no
+// exclamation — and the step, when there is one, sits above it rather than
+// replacing it: the fixed answer is the floor, not a draft.
+func saidAboutBeingStuck(s Store, opts Options, r *http.Request, personID int64, b squirrel.Blocker) []squirrel.Turn {
+	u := squirrel.UnstuckFor(b)
+	if u.Refuse {
+		return nil
+	}
+
+	card := cardView{Title: u.Line}
+	if step := stepFor(s, opts, r); step != nil {
+		// One step, and there is deliberately nowhere here to put a second:
+		// the failure being avoided is the twelve-step plan.
+		card.Title = step.Body
+		card.Meta = u.Line
+	}
+	if u.Minutes > 0 {
+		card.Acts = []actView{{
+			Label: strconv.Itoa(u.Minutes) + " MIN", Action: "/timer", Style: "go",
+			Fields: map[string]string{"minutes": strconv.Itoa(u.Minutes), "label": r.FormValue("label")},
+		}}
+	}
+
+	body, err := json.Marshal(drawn{Cards: []cardView{card}})
+	if err != nil {
+		slog.Error("drawing the way through", "error", err)
+		return nil
+	}
+	words := "Right."
+	if u.Ask {
+		// The one branch that captures: "what would I have to find out first"
+		// is a thought, and thoughts go in the pile. The dock is always there
+		// now, so there is nothing to offer — only something to ask.
+		words = "What would you have to find out first? Tell me and I will keep it."
+	}
+	return []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: squirrel.BlockerWords[b]},
+		{Who: squirrel.SpeakerBuddy, Words: words, Shown: body},
+	}
+}
+
+// blockersFor is the four ways of not being able to start, on the things they
+// are about.
+//
+// Not on a breadcrumb: "I can't start" about a thing you were already doing is
+// a question about something else, and the answer to it is the breadcrumb's own
+// "not now".
+func blockersFor(kind string) []squirrel.Blocker {
+	if kind == string(squirrel.OfferAgain) {
+		return nil
+	}
+	return squirrel.Blockers
+}
+
+// wayThrough is what a low day gets instead of a job.
+//
+// The gate is real and it is kept: nothing is handed to you. What is offered is
+// the way past it, once, in your own hands — because a person who says they are
+// wiped and then decides to work anyway has not changed their answer.
+func wayThrough() (squirrel.Turn, bool) {
+	body, err := json.Marshal(drawn{Chips: []turnChip{
+		{Label: "show me something anyway", Href: "/?anyway=1"},
+	}})
+	if err != nil {
+		slog.Error("drawing the way through", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Nothing from me today.", Shown: body}, true
+}
+
+// wantsFragment is a press made by the script rather than by the browser's own
+// form machinery.
+//
+// A header rather than a second route: one URL per action, one handler, one
+// write. A `/capture/fragment` twin would be a second place the write can drift
+// from the first.
+func wantsFragment(r *http.Request) bool { return r.Header.Get("X-Thread") == "fragment" }
+
+// answerWith is what a press gets back.
+//
+// The same HTML the page would have rendered for those turns, from the same
+// templates. There is no JSON here and no client-side template; a second
+// description of a card is how the two ends grow apart.
+//
+// The live edge moves to the last turn that came back, so the controls follow
+// the conversation rather than staying where the page was painted.
+func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, back string) {
+	if !wantsFragment(r) {
+		http.Redirect(w, r, back, http.StatusSeeOther)
+		return
+	}
+	vs := turnViews(said)
+	for i := range vs {
+		vs[i].Live = false
+	}
+	for i := len(vs) - 1; i >= 0; i-- {
+		if vs[i].Buddy {
+			vs[i].Live = true
+			break
+		}
+	}
+
+	t := pages["thread"]
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	for _, v := range vs {
+		if err := t.ExecuteTemplate(w, "turn", v); err != nil {
+			slog.Error("drawing a turn", "turn", v.ID, "error", err)
+			return
+		}
+	}
+}

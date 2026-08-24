@@ -59,8 +59,11 @@ func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Se
 // /?kept=1 — the capture posted the form, the browser left, and the page came
 // back at the top with a word on it. It keeps in place now, so the sign that
 // it worked is the slot's own answer rather than a change of address.
-const landed = `!document.querySelector("#slotsaid").hidden &&
-	document.querySelector("#slotsaid").textContent.trim() === "kept"`
+// It landed when Buddy has said so. The answer used to be a word inside the
+// box; it is a turn in the conversation now, and the box being empty is the
+// other half of the same fact.
+const landed = `document.querySelector("#thread .turn:last-child .bub")
+	?.textContent.trim() === "Kept."`
 
 // heldPhoto asks the page's own database whether a photograph is being held.
 //

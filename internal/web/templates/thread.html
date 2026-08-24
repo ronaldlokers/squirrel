@@ -1,0 +1,73 @@
+{{define "content"}}
+{{/* The doors, pinned under the lid and never scrolled away. Four equals: one
+     grid, four cells, the same stock, rendering identically in every state.
+     What changed on 24 August 2026 is that they carry numbers — see
+     squirrel.Waiting for what that decision cost and how it reverses. */}}
+<nav class="railwrap" aria-label="The four things the box holds">
+  <div class="rail">
+    {{range .Rail}}
+    <a class="rdoor{{if .Here}} here{{end}}" href="{{.Href}}">
+      <img alt="" src="/static/{{.Art}}?v={{$.V}}">
+      <span class="rname">{{.Label}}</span>
+      {{/* Zero is no number, not a nought: a door reading "0" is a scoreboard,
+           and that is what the retired rule was protecting against. */}}
+      {{if .Count}}<span class="doorcount">{{.Count}}</span>{{end}}
+    </a>
+    {{end}}
+  </div>
+</nav>
+
+<div class="thread" id="thread">
+  {{/* The way up the conversation. It says that there is more and never how
+       much more — not because a count is forbidden any longer, but because the
+       number above you is not a thing you can act on. */}}
+  {{if .MoreAbove}}<p class="earlier"><a href="/?before={{.Oldest}}">earlier</a></p>{{end}}
+  {{range .Turns}}{{template "turn" .}}{{end}}
+</div>
+
+{{/* Anything the script changes without a navigation is said out loud here
+     too, or the screen is silent for exactly the person who cannot see it
+     change. */}}
+<p class="offscreen" id="threadsay" role="status" aria-live="polite"></p>
+
+{{/* The one thing that may interrupt you, and it has to ask before it can.
+     Hidden until the script has established that there is a key, that the
+     browser can, and that the question has not already been answered — a
+     control that cannot change anything is furniture, and one that asks again
+     after a no is a nag. */}}
+{{if .PushKey}}<button id="askPush" class="askpush" type="button" hidden>tell me when to leave</button>{{end}}
+
+{{/* The dock: home's slot, pinned. Same route, same field, same camera — one
+     capture path, because a second one would have weaker guarantees than the
+     first and nobody would know which they were using. What it says back is a
+     turn now rather than a paragraph inside the box. */}}
+<div class="dock">
+  <form class="slot" method="post" action="/capture"{{if .Camera}} enctype="multipart/form-data"{{end}}>
+    <textarea name="text" rows="1" placeholder="{{.SaySlot}}"
+      aria-label="Tell Squirrel a thing"></textarea>
+    {{if .Camera}}
+    {{/* No `capture` attribute: it reads like "prefer the camera" and it is
+         not — on a phone it removes every other source, so the letter you
+         photographed this morning becomes unreachable. */}}
+    <label class="camera">
+      <input type="file" name="photo" accept="image/*">
+      <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
+        <path d="M2 5.5h4.2L8 3h8l1.8 2.5H22v12H2z" fill="none" stroke="#1c110b" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="12" cy="11" r="3.6" fill="none" stroke="#1c110b" stroke-width="2.4"/>
+      </svg>
+      <span class="offscreen">Add a photograph</span>
+    </label>
+    {{end}}
+    <button class="post" type="submit">Tell it</button>
+
+    {{/* The one answer that is not a turn, and it cannot be one: the worker
+         took these words because there is no network, so there is no database
+         to put a turn in. Not an error — the words are somewhere and they go
+         in when there is one. sw.js redirects here with ?held=1 while
+         offline. */}}
+    {{if .Held}}<p class="slotsaid held" role="status">No network &mdash; I have it. It goes in when you are back.</p>{{end}}
+    {{/* What the script writes into without the page moving. */}}
+    <p class="slotsaid" id="slotsaid" role="status" hidden>kept</p>
+  </form>
+</div>
+{{end}}

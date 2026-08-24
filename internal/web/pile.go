@@ -36,7 +36,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
-	m.Get("/{$}", guard(opts, homeHandler(s, opts)))
+	m.Get("/{$}", guard(opts, threadHandler(s, opts)))
 	m.Get("/pile", guard(opts, pileHandler(s, opts)))
 	// The slot. Behind the origin check like every other write here: the
 	// identity says who is asking, sameOrigin says which page asked.
@@ -46,7 +46,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
 	}
-	m.Post("/mood", guard(opts, sameOrigin(moodHandler(s, opts))))
+	m.Post("/mood", guard(opts, sameOrigin(threadMoodHandler(s, opts))))
 	// The one thing's three answers. Behind the origin check like every other
 	// write here.
 	m.Post("/now/act", guard(opts, sameOrigin(nowActHandler(s, opts))))

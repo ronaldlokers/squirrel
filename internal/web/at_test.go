@@ -26,10 +26,18 @@ func (m *realMux) Post(pattern string, h http.HandlerFunc) { m.mux.HandleFunc("P
 
 func routed(t *testing.T, f *fakeStore) *realMux {
 	t.Helper()
+	return routedSpooling(t, f, &fakeSpool{})
+}
+
+// routedSpooling is the same mount with a spool the test can look inside. The
+// dock writes there rather than straight to the pile, exactly as /capture
+// does, so a test about the dock is a test about what reached the spool.
+func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
+	t.Helper()
 	m := &realMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
 		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		Owner: func() int64 { return 1 }, Spool: sp,
 	}))
 	return m
 }
@@ -42,6 +50,20 @@ func (m *realMux) call(t *testing.T, method, target string, body io.Reader) *htt
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r.Header.Set("Origin", "http://"+r.Host)
 	}
+	w := httptest.NewRecorder()
+	m.mux.ServeHTTP(w, r)
+	return w
+}
+
+// callFragment is a press made by the script rather than by the browser's own
+// form machinery: same URL, same body, one header.
+func (m *realMux) callFragment(t *testing.T, target, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	r := httptest.NewRequest("POST", target, strings.NewReader(body))
+	r.Header.Set("X-Authentik-Username", "ronald")
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Origin", "http://"+r.Host)
+	r.Header.Set("X-Thread", "fragment")
 	w := httptest.NewRecorder()
 	m.mux.ServeHTTP(w, r)
 	return w

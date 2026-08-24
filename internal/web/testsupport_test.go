@@ -75,6 +75,20 @@ type fakeStore struct {
 	finished []int64
 	cleared  int
 
+	// The conversation: what has been said, what this render said, and
+	// whether there is a page above.
+	turns       []squirrel.Turn
+	appended    []squirrel.Turn
+	moreTurns   bool
+	pagedBefore int64
+	// The reading this render wrote, so a test can assert on the write rather
+	// than on a rendering of it.
+	recorded squirrel.Mood
+	// What each door is holding, and a failure that belongs to the counting
+	// alone — the doors have to survive it while the rest of the page works.
+	waiting    squirrel.Waiting
+	waitingErr error
+
 	// What the chore handlers did, so a test can assert on the write rather
 	// than on a rendering of it.
 	completed  []int64
@@ -322,6 +336,7 @@ func (f *fakeStore) RecordCheckin(_ context.Context, _ int64, m squirrel.Mood, _
 		return f.err
 	}
 	f.checkin = &squirrel.Checkin{Mood: m, SaidAt: at}
+	f.recorded = m
 	return nil
 }
 
@@ -897,4 +912,54 @@ func (f *fakeStore) DetachNote(_ context.Context, _, itemID int64) (bool, error)
 	}
 	f.detached = append(f.detached, itemID)
 	return true, nil
+}
+
+// The conversation. turns is what has been said already; appended is what the
+// handler under test said, so a test can assert on the write rather than on a
+// rendering of it.
+func (f *fakeStore) AppendTurn(_ context.Context, _ int64, t squirrel.Turn) (squirrel.Turn, error) {
+	if f.err != nil {
+		return squirrel.Turn{}, f.err
+	}
+	t.ID = int64(len(f.turns) + len(f.appended) + 1)
+	t.SaidAt = now()
+	f.appended = append(f.appended, t)
+	return t, nil
+}
+
+func (f *fakeStore) RecentTurns(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	if len(f.turns) > limit {
+		return f.turns[len(f.turns)-limit:], true, nil
+	}
+	return f.turns, f.moreTurns, nil
+}
+
+func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, before int64, limit int) ([]squirrel.Turn, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	out := []squirrel.Turn{}
+	for _, t := range f.turns {
+		if t.ID < before {
+			out = append(out, t)
+		}
+	}
+	f.pagedBefore = before
+	if len(out) > limit {
+		return out[len(out)-limit:], true, nil
+	}
+	return out, false, nil
+}
+
+func (f *fakeStore) Waiting(_ context.Context, _ int64, _ time.Time) (squirrel.Waiting, error) {
+	if f.waitingErr != nil {
+		return squirrel.Waiting{}, f.waitingErr
+	}
+	if f.err != nil {
+		return squirrel.Waiting{}, f.err
+	}
+	return f.waiting, nil
 }

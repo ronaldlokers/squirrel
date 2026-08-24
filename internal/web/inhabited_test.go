@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
@@ -48,9 +49,13 @@ func TestTheMoodHistoryIsNamedForFeelingRatherThanForSaying(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	home := m.call(t, "GET", "/", nil).Body.String()
-	require.Contains(t, home, "how you felt before")
-	require.Contains(t, home, "what you said", "the pile's door is the one that says said")
+	post(t, m, "/mood", url.Values{"mood": {"calm"}})
+	f.turns, f.appended = f.appended, nil
+
+	thread := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, thread, "how you felt before")
+	require.NotContains(t, thread, "what you said before",
+		"the pile's door is the one that is about what you said")
 
 	// The link and the page it opens agree, or the rename made it worse.
 	require.Contains(t, m.call(t, "GET", "/moods", nil).Body.String(), "how you felt before")

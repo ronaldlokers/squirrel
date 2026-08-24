@@ -89,8 +89,10 @@ func TestBrowserTheOffersThirdControlIsTheSameShapeAsTheOtherTwo(t *testing.T) {
 	c := browserAt(t, srv, "/")
 
 	for _, prop := range []string{"border-top-width", "border-top-color"} {
-		did := style(t, c, ".obtn.did", prop)
-		later := style(t, c, ".obtn.later", prop)
+		// .abtn now: the offer is an ordinary card in the thread, wearing the
+		// same buttons every other card wears, which is most of the point.
+		did := style(t, c, ".abtn.did", prop)
+		later := style(t, c, ".abtn.later", prop)
 		require.Equal(t, did, later,
 			"the offer's %s differs: `did it` is %s, `not now` is %s", prop, did, later)
 	}

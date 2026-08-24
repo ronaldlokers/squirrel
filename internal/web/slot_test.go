@@ -15,48 +15,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// scrolled is how far down the page is, so a test can say the page did not
-// move rather than trusting that it did not.
-const scrolled = `window.scrollY`
-
-func TestBrowserKeepingSomethingDoesNotMoveThePage(t *testing.T) {
+// Keeping something does not take the page away.
+//
+// It used to mean the page did not move at all, because the slot was in the
+// middle of a screen and posting it navigated you to the top of a fresh one.
+// The dock is pinned and the answer arrives at the end of the conversation, so
+// the page is *meant* to move — to the newest turn, which is what you just
+// caused. What must not happen is a navigation.
+func TestBrowserKeepingSomethingDoesNotTakeThePageAway(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	c, _ := openCamera(t, sp, ph)
 
-	// Somewhere other than the top, which is where you are when you have
-	// scrolled past the doors to reach the slot.
-	c.eval(t, `document.querySelector(".slot").scrollIntoView({block: "center"}); return 1`)
-	where := c.eval(t, `return `+scrolled)
-
+	c.eval(t, `window.__stillHere = true; return 1`)
 	c.eval(t, `const t = document.querySelector(".slot textarea");
 		t.value = "the boiler again"; t.dispatchEvent(new Event("input")); return 1`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the slot to say it landed",
-		`!document.querySelector("#slotsaid").hidden`)
+	c.until(t, "Buddy to say it landed",
+		`document.querySelector("#thread .turn:last-child .bub")?.textContent.trim() === "Kept."`)
 
 	require.Len(t, sp.written, 1, "nothing reached the server")
 	require.Equal(t, "the boiler again", sp.written[0].Text)
 
-	require.Equal(t, where, c.eval(t, `return `+scrolled), "the page moved")
+	// The assertion that matters, and the naive one — "a turn appeared" —
+	// passes with the script deleted, because the redirect would put it there.
+	require.Equal(t, true, c.eval(t, `return window.__stillHere === true`),
+		"the page navigated; the swap did not happen")
 	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
 		"the capture navigated")
 }
 
-// And it says so inside the box, not somewhere else on the page.
-func TestBrowserTheSlotSaysItLandedInsideItself(t *testing.T) {
+// And it says so as a turn, at the end of the conversation the press was made
+// in. The answer used to be a word inside the box, which was where it belonged
+// while the box was the whole interaction; the box is one end of a conversation
+// now, and the other end is where answers come from.
+func TestBrowserTheAnswerArrivesAsATurn(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	c, _ := openCamera(t, sp, ph)
-
-	require.Equal(t, true, c.eval(t, `
-		return document.querySelector(".slot").contains(document.querySelector("#slotsaid"))`),
-		"the answer is outside the box the action was in")
 
 	c.eval(t, `const t = document.querySelector(".slot textarea");
 		t.value = "kaas"; t.dispatchEvent(new Event("input")); return 1`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the slot to say it landed", `!document.querySelector("#slotsaid").hidden`)
+	c.until(t, "Buddy to say it landed",
+		`document.querySelector("#thread .turn:last-child .bub")?.textContent.trim() === "Kept."`)
 
-	require.Equal(t, "kept", c.eval(t, `return document.querySelector("#slotsaid").textContent`))
+	require.Equal(t, "Kept.", c.eval(t,
+		`return document.querySelector("#thread .turn:last-child .bub").textContent.trim()`))
 	require.Equal(t, "", c.eval(t, `return document.querySelector(".slot textarea").value`),
 		"the box kept the words after they were kept")
 }
@@ -71,7 +74,8 @@ func TestBrowserKeepingAPhotographClearsTheSlot(t *testing.T) {
 	c.until(t, "the photograph to be held", heldPhoto)
 
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the slot to say it landed", `!document.querySelector("#slotsaid").hidden`)
+	c.until(t, "Buddy to say it landed",
+		`document.querySelector("#thread .turn:last-child .bub")?.textContent.trim() === "Kept."`)
 
 	require.Len(t, sp.written, 1)
 	require.NotEmpty(t, sp.written[0].PhotoName)
@@ -93,10 +97,11 @@ func TestBrowserAFailedCaptureKeepsWhatYouTyped(t *testing.T) {
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
 	c.until(t, "the preview", `(`+visible+`)(".slot .gotphoto")`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "the slot to say what happened",
-		`!document.querySelector("#slotsaid").hidden`)
+	c.until(t, "Buddy to say what happened",
+		`/not kept/i.test(document.querySelector("#thread .turn:last-child .bub")?.textContent || "")`)
 
-	require.Contains(t, c.eval(t, `return document.querySelector("#slotsaid").textContent`),
+	require.Contains(t, c.eval(t,
+		`return document.querySelector("#thread .turn:last-child .bub").textContent`),
 		"photograph")
 	require.Equal(t, "the tax letter", c.eval(t,
 		`return document.querySelector(".slot textarea").value`),
@@ -112,10 +117,13 @@ func TestBrowserAnEmptySlotSaysNothing(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	c, _ := openCamera(t, sp, ph)
 
+	// Buddy opens by asking how you are, so the conversation is not empty —
+	// what must not happen is it growing.
+	before := c.eval(t, `return document.querySelectorAll("#thread .turn").length`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.eval(t, `return new Promise(r => setTimeout(r, 400))`)
 
-	require.Equal(t, true, c.eval(t, `return document.querySelector("#slotsaid").hidden`),
+	require.Equal(t, before, c.eval(t, `return document.querySelectorAll("#thread .turn").length`),
 		"an empty capture claimed something happened")
 	require.Empty(t, sp.written)
 	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`))

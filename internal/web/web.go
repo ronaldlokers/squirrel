@@ -223,6 +223,18 @@ type Store interface {
 	AttachNote(ctx context.Context, personID, itemID, momentID int64) (bool, error)
 	DetachNote(ctx context.Context, personID, itemID int64) (bool, error)
 
+	// The conversation. The screen is one now — see
+	// docs/superpowers/specs/2026-08-24-the-thread-design.md — and these are
+	// the only three things done with it: add to it, read the end of it, and
+	// walk back up it. There is deliberately nothing here that edits a turn
+	// or removes one.
+	AppendTurn(ctx context.Context, personID int64, t squirrel.Turn) (squirrel.Turn, error)
+	RecentTurns(ctx context.Context, personID int64, limit int) ([]squirrel.Turn, bool, error)
+	TurnsBefore(ctx context.Context, personID, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
+	// The four numbers on the doors. Computed at read time and stored
+	// nowhere, which is what makes the decision that allowed them reversible.
+	Waiting(ctx context.Context, personID int64, now time.Time) (squirrel.Waiting, error)
+
 	SaveSteps(ctx context.Context, personID int64, itemID *int64, label string, steps []string) error
 	NextStep(ctx context.Context, personID int64) (squirrel.Step, bool, error)
 	StepDone(ctx context.Context, personID, stepID int64, at time.Time) error

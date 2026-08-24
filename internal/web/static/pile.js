@@ -561,6 +561,14 @@
     const box = form.querySelector("textarea");
     if (!said || !post) return;
 
+    // The thread is the same slot in a different room, and this file keeps
+    // owning it: the camera, the stash, the survival of the app being
+    // reclaimed and of the worker taking the words offline all live here, and
+    // handing capture to another file would have to move all of it. What
+    // changes on the thread is only what the answer looks like — a turn
+    // appended to the conversation instead of a word inside the box.
+    const thread = document.getElementById("thread");
+
     // Word for word what the server renders, because the comment below has
     // always claimed they were the same and they were not: this path dropped
     // "try again in a moment" and "keep them without it, or try another
@@ -598,12 +606,36 @@
       // there is not, so the worker can still hold it offline.
       const body = carrying ? new FormData(form)
         : new URLSearchParams([...new FormData(form)].filter(([, v]) => typeof v === "string"));
-      const init = { method: "POST", body, credentials: "same-origin" };
-      if (!carrying) init.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+      const init = { method: "POST", body, credentials: "same-origin", headers: {} };
+      if (!carrying) init.headers["Content-Type"] = "application/x-www-form-urlencoded";
+      // Ask for the turns rather than a redirect. The server renders them from
+      // the same templates the page uses, so there is one description of a
+      // card rather than two that can disagree.
+      if (thread) init.headers["X-Thread"] = "fragment";
 
       post.disabled = true;
       try {
         const res = await fetch(form.action, init);
+
+        if (thread) {
+          // What came back is the conversation's next two turns, as HTML from
+          // this server's own templates — see thread.js for why parsing it is
+          // safe. Empty means the server decided there was nothing to keep.
+          const html = res.ok ? await res.text() : "";
+          if (html.trim()) window.__threadAppend?.(html);
+          // Only when the server said it kept them. A failure comes back as
+          // turns too, and emptying the box on one of those is a capture box
+          // that eats thoughts — which is the thing this whole path exists
+          // not to do.
+          if (res.headers.get("X-Kept") === "1") {
+            box.value = "";
+            box.style.height = "auto";
+            if (input.files?.length) { input.value = ""; enctypeFor(); hide(); forget().catch(() => {}); }
+          }
+          post.disabled = false;
+          return;
+        }
+
         const out = new URL(res.url, location.href).searchParams;
         const which = ["kept", "held", "nokeep", "nophoto"].find(k => out.has(k));
         // Nothing at all in the URL means the server decided there was nothing
@@ -620,7 +652,8 @@
         // The network went while it was in the air. The words and the
         // photograph are both still on the screen, which is the whole reason
         // this box never clears until the server has said so.
-        tell("nokeep");
+        if (thread) window.__threadSay?.(words.nokeep);
+        else tell("nokeep");
       } finally {
         post.disabled = false;
       }

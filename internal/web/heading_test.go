@@ -30,12 +30,16 @@ var notATitle = map[string]string{
 	"step.html":     "one step, drawn inside whatever raised it",
 	"stopping.html": "the way out, drawn into the foot of whatever offers it",
 	"results.html":  "has one, and two of them, one per branch",
+	"turn.html":     "one turn, drawn into the thread; its <h2> is the place it opens",
 	// The front door, and the one screen without a title. Every other screen
 	// is a place you navigated to, and its title answers "where am I"; home is
 	// where you start, and nobody arrives there wondering. It carried "right
 	// now" for an afternoon and read as a label for a room you were already
 	// standing in.
-	"home.html": "the front door — you do not arrive there wondering",
+	// The thread keeps home's exemption for the same reason, and it is the
+	// only screen left with it: a turn that opens a place carries that place's
+	// name as an <h2>, which is what heading navigation walks now.
+	"thread.html": "the front door — you do not arrive there wondering",
 }
 
 func templates(t *testing.T) map[string]string {

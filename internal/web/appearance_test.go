@@ -55,21 +55,19 @@ var appearanceProps = []string{
 // of something, the first is enough: what this catches is a rule moving, and a
 // rule moves all of them at once.
 var appearanceScreens = map[string][]string{
+	// The thread. The doors are a rail now and the offer is an ordinary card
+	// in it, so what is recorded here is the conversation's own shapes.
 	"/": {
 		".lid", ".brand img", ".wordmark", ".lidbtn",
-		".slot", ".slot textarea", ".slot .post",
-		".noted > span", ".noted .again", ".noted .view",
-		// The offer's own head, because it is the label that spent this
-		// screen's whole life the wrong colour: `.checkin .lead` reached into
-		// the card and painted it cream on cream stock. Nothing here recorded
-		// it, so nothing here could have said.
-		".offer .lead", ".offer .what", ".offer .because",
-		".door", ".door .name", ".door .what",
+		".railwrap", ".rail", ".rdoor", ".rname",
+		".thread", ".turn", ".frombuddy .bub", ".fromyou .bub",
+		".turncard", ".turnname", ".turnmeta", ".abtn",
+		".dock", ".slot", ".slot textarea", ".slot .post",
 	},
-	// The check-in as a question rather than as an answer. Home shows one or
-	// the other, never both, so the faces need their own visit — and they are
-	// worth one: they are the control the capacity gate depends on.
-	"/?ask=1": {".checkin .lead", ".faces", ".face", ".face img", ".face span"},
+	// The check-in as a question. It is a turn like any other, and the faces
+	// are worth their own visit: they are the control the capacity gate
+	// depends on.
+	"/?ask=1": {".faces", ".face", ".face img", ".face span"},
 	"/pile": {
 		".deckhead", ".views .view", ".card", ".titlebar", "#noteText",
 		".btn", ".btn .key", ".btn.make", ".later", ".hint", ".quietpick",

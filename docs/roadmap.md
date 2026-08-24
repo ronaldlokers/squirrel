@@ -234,6 +234,36 @@ every thought stays in one pile and `!find` still reaches all of it. The pointer
 is the disposition — no eighth state, nothing to migrate, and the reversal is a
 null. Home carries a fourth door, two by two on a phone.
 
+### v0.23.0 — 24 August 2026
+
+**Buddy is the app.** Home is gone; `/` is one conversation. The four doors are
+a rail pinned under the lid carrying what is waiting behind each, the check-in
+and the offer are turns, the dock is the slot, and every press appends to the
+record instead of reloading the page. Phase 1 of
+`docs/superpowers/specs/2026-08-24-the-thread-design.md`; the number × unit
+interval picker, the day/time picker, and the other three doors as messages are
+phases 2–4.
+
+It cost three recorded decisions, all amended rather than deleted:
+
+- **Principle 2 — *nothing accrues that can be destroyed*.** Retired by the
+  owner. The doors carry numbers. What is left is narrower and still refused
+  elsewhere: nothing here is a score, nothing counts what you did not do, and no
+  number survives being dealt with. It reverses cleanly — the numbers are
+  computed at render time and stored nowhere.
+- **Progressive enhancement.** Retired the same day. The thread requires the
+  script. The single rendering path is kept: handlers return HTML from the same
+  templates whether the browser asked for a page or for the turns a press made.
+- **One reading, never a series.** Narrowed. A conversation keeps what was said
+  in it, and what you answered is something you said. Only the newest turn draws
+  the faces, so scrollback holds one line each; `/moods` is still the only
+  surface that groups them.
+
+Three defects it turned up, none of them visible in a diff: the offer was being
+appended on every page load, `not now` rendered cream-on-cream at 1.18:1 the
+moment its class changed, and `main`'s centred flex row shrank the conversation
+to 240px of a 390px phone.
+
 ---
 
 ## Open

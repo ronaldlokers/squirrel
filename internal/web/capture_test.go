@@ -17,7 +17,7 @@ func TestTheSlotKeepsAThought(t *testing.T) {
 	w := post(t, m, "/capture", url.Values{"text": {"ask the garage about the rattle"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/?kept=1", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 
 	// Through the spool, not straight to Postgres. Durable before anything
 	// says it was kept, which is what the room's captures have always had and
@@ -33,13 +33,19 @@ func TestTheSlotKeepsAThought(t *testing.T) {
 	require.Equal(t, "ronald", *sp.written[0].SenderID)
 }
 
-// The one word the slot says back, and it names no place you are behind.
+// The one word Buddy says back, and it names no place you are behind.
+//
+// It is a turn now rather than a paragraph inside the slot: the answer lives
+// in the conversation, like everything else the screen says.
 func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/?kept=1", nil).Body.String()
+	f := &fakeStore{}
+	post(t, mountedSpooling(t, f, &fakeSpool{}), "/capture", url.Values{"text": {"a thought"}})
 
-	require.Contains(t, body, "kept")
+	require.Len(t, f.appended, 2)
+	said := strings.ToLower(f.appended[1].Words)
+	require.Contains(t, said, "kept")
 	for _, total := range []string{"1 note", "added", "in the pile now", "to review"} {
-		require.NotContains(t, strings.ToLower(body), total)
+		require.NotContains(t, said, total)
 	}
 }
 
@@ -51,20 +57,22 @@ func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
 // louder problem than a database being briefly unreachable — and the words
 // still come back rather than disappearing.
 func TestAFailedCaptureKeepsTheWords(t *testing.T) {
-	m := mountedSpooling(t, &fakeStore{}, &fakeSpool{err: errTest})
+	f := &fakeStore{}
+	m := mountedSpooling(t, f, &fakeSpool{err: errTest})
 
 	w := post(t, m, "/capture", url.Values{"text": {"the boiler makes a noise"}})
 
 	require.Equal(t, 303, w.Code)
-	loc, err := url.Parse(w.Header().Get("Location"))
-	require.NoError(t, err)
-	require.Equal(t, "1", loc.Query().Get("nokeep"))
-	require.Equal(t, "the boiler makes a noise", loc.Query().Get("said"),
-		"the words come back rather than disappearing")
+	require.Equal(t, "/", w.Header().Get("Location"))
 
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/?"+loc.RawQuery, nil).Body.String()
-	require.Contains(t, body, "Not kept")
-	require.Contains(t, body, "the boiler makes a noise", "still in the field")
+	// The words are in the conversation and Buddy says they were not kept.
+	// The old shape carried them back in the address bar to be re-rendered
+	// inside the slot, which needed a home screen to come back to; the promise
+	// is the same and the record is where it is kept now.
+	require.Len(t, f.appended, 2)
+	require.Equal(t, "the boiler makes a noise", f.appended[0].Words,
+		"the words are kept rather than disappearing")
+	require.Contains(t, f.appended[1].Words, "Not kept")
 }
 
 // A thought that reads like a command is still a thought. In a chat room the
@@ -98,9 +106,15 @@ func TestAnEmptySlotDoesNothing(t *testing.T) {
 
 // The words come back through the address bar, so they are escaped on the way
 // out like any other text on this screen.
+// What you said comes back on the screen as text, whatever you typed.
+//
+// It used to come back through the address bar and into the slot; it comes
+// back as a turn now, and the escaping matters in exactly the same way — the
+// thread renders your own words on every load, forever.
 func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
-	body := mounted(t, &fakeStore{}).
-		call(t, "GET", "/?nokeep=1&said=%3Cscript%3Ealert(1)%3C%2Fscript%3E", nil).Body.String()
+	body := mounted(t, &fakeStore{turns: []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerYou, Words: "<script>alert(1)</script>"},
+	}}).call(t, "GET", "/", nil).Body.String()
 
 	require.NotContains(t, body, "<script>alert(1)</script>")
 	require.Contains(t, body, "&lt;script&gt;")
@@ -108,6 +122,8 @@ func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 
 // Held is a third state, not a flavour of the other two: the words are safe,
 // which failure is not, and they are not in the pile yet, which kept is.
+// The one answer that is not a turn, because a turn needs a database and this
+// is what happens when there is no network to reach one.
 func TestTheSlotSaysWhenWordsAreHeld(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/?held=1", nil).Body.String()
 

@@ -42,7 +42,7 @@ func page(files ...string) *template.Template {
 }
 
 var pages = map[string]*template.Template{
-	"home":    page("templates/layout.html", "templates/step.html", "templates/home.html"),
+	"thread":  page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
 	"chores":  page("templates/layout.html", "templates/stopping.html", "templates/chores.html"),
 	"kept":    page("templates/layout.html", "templates/stopping.html", "templates/kept.html"),
 	"tasks":   page("templates/layout.html", "templates/stopping.html", "templates/tasks.html"),
@@ -215,6 +215,16 @@ type view struct {
 	Attached []noteView
 	Chores   []choreView
 	Undo     *undoView
+	// Turns is the conversation, oldest first. The screen is one page now;
+	// see internal/web/thread.go.
+	Turns []turnView
+	// Rail is the four doors, pinned under the lid at every width, with what
+	// is waiting behind each.
+	Rail []doorView
+	// MoreAbove and Oldest are the page above this one. Oldest is the id the
+	// "earlier" control walks back from.
+	MoreAbove bool
+	Oldest    int64
 	// Clash says a decision arrived for a note that had already moved
 	// somewhere else — from the room, while the card was still on the screen.
 	// It is not an error and there is nothing to undo: what it says is that
@@ -261,6 +271,8 @@ func placeName(here string) string {
 		return "the tasks"
 	case "chores":
 		return "the chores"
+	case "at":
+		return "the agenda"
 	case "buddy", "coach":
 		return "buddy"
 	}

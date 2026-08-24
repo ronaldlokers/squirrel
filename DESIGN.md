@@ -633,8 +633,14 @@ it: a button is machinery, and machinery does not have a voice.
 carrying one class, in Inter, sentence case, in the same place. There were five
 treatments and ten of thirteen templates had no `<h1>` at all, which meant
 heading navigation did not work anywhere in a product built for someone who
-might well use it. A title never counts anything — this is the one place a count
-would look most reasonable, and *3 things you kept* is still a count.
+might well use it. ~~A title never counts anything — this is the one place a
+count would look most reasonable, and *3 things you kept* is still a count.~~
+**The no-count half was retired on 24 August 2026** with Principle 2; a title
+still does not count anything, now as a matter of taste rather than of rule.
+
+**The thread has no `<h1>`**, on home's own exemption, and a turn that opens a
+place carries that place's name as an `<h2>` instead. Heading navigation walks
+the conversation rather than a list of pages.
 
 **Inter is the box's own label, so a title is set in it.** The lid says
 Squirrel; each screen says its own name in the same face, one size down. That is
@@ -743,27 +749,58 @@ edge of their own control, 8px below it. Absolute, so opening one never moves
 the page underneath it; right-aligned, because both controls sit at the right
 end of the lid and a panel hung from the left ran off the side of a phone.
 
-### Home
+### The thread
 
-**Home is the one screen with no title**, and the only one. Every other screen
-is a place you navigated to and its title answers *where am I*; home is where
-you start, and nobody arrives there wondering. It carried a title for an
-afternoon and read as a label for a room you were already standing in.
+**Home became a conversation on 24 August 2026.** What follows replaces its
+fixed order; everything home carried is a turn now, and the record of what it
+was is in `docs/superpowers/specs/2026-08-24-the-thread-design.md`.
 
-Its order is fixed and each step is 26px from the last:
+**The thread is the one screen with no title**, and it keeps that for home's own
+reason: every other screen is a place you navigated to and its title answers
+*where am I*; this is where you start, and nobody arrives there wondering. What
+replaces the title for heading navigation is **an `<h2>` on any turn that opens
+a place** — walking the headings walks the conversation, which is a better map
+of this app than a list of pages was.
 
-1. **The slot** — the way in. First, because the thing you most often open this
-   for is to put a thought down before it goes.
-2. **The check-in, or its answer** — one interactive thing, and it is either the
-   question or the chip that replaced it.
-3. **The offer**, when there is one, and absent when there is not.
-4. **The four doors**, side by side above 620px and two by two below it.
+Three bands, top to bottom:
 
-**The three doors are equals**: three cells of one grid, the same stock, the
-same depth, and they must render identically in every state. Nothing on that
-screen depends on what the pile holds, so a full pile and an empty one are the
-same page — which is what *stopping partway is a normal ending* looks like when
-it is structural rather than a reassuring sentence.
+1. **The rail** — the four doors, pinned under the lid and never scrolled away.
+2. **The transcript** — what has been said, oldest first, ending at the live
+   edge.
+3. **The dock** — the slot, pinned to the bottom, on every view because there is
+   only one view.
+
+`main` is a column of full-width bands here and a centred flex row everywhere
+else. That is a real difference and it is load-bearing: as a row it put the
+three bands side by side and shrank the conversation to 240px of a 390px phone.
+
+**The four doors are equals**: four cells of one grid, the same stock, the same
+depth, rendering identically in every state — art beside name above 620px, art
+over name below it, four across at every width. What changed with them is that
+they carry a number, and the number is what is *waiting* behind the door rather
+than what it holds. Zero renders no number at all: a door reading `0` is a
+scoreboard, and that is what Principle 2 was protecting against when it was
+retired.
+
+**The live edge.** Only the newest turn Buddy has spoken carries controls. Older
+turns keep their words and lose their buttons — a card from a conversation three
+days old acts on a state nobody is looking at, and history is not rewritten.
+The script applies the same rule to what is already on the screen when new turns
+arrive.
+
+**Buddy does not talk over himself.** Nothing is put on the table while
+something Buddy already put there is unanswered. Without that rule the offer was
+appended on every page load: a reload wrote a second copy into a record that is
+never rewritten, and it stole the live edge from whatever had just been said.
+
+**The script is required here.** ~~Every upgrade `pile.js` makes works with the
+script off.~~ **Retired 24 August 2026**, with Principle 2: without JavaScript
+the thread is the lid, the rail and nothing else. What is *not* retired is the
+single rendering path — handlers return HTML from the same templates whether the
+browser asked for a page or for the turns a press produced, so there is one
+description of a card rather than two that can drift. Capture stays in
+`pile.js`, which owns the camera, the stash and the offline path; `thread.js`
+owns everything else and exposes the two entry points capture answers through.
 
 ### The deck
 
@@ -1208,6 +1245,11 @@ Its guard rails, which are a refused drawing written down as rules. Door art may
 never depict a count, a progress state, a tick or a completion; never wears a
 state colour *as a state* (amber as straw is a colour, a green tick is a claim);
 never grey; never orange.
+
+**This still applies to the drawing, and only to it, since 24 August 2026.** The
+door wears a number on the pill beside its art now — see The thread — and that
+is the pill's job rather than the picture's. A count drawn *into* the art would
+be the same number said twice, in the one place it cannot be turned off.
 
 **The exception the door art carries, and the one that was retired.**
 
