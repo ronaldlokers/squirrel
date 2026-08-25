@@ -66,3 +66,15 @@ func TestWhatIsKnownReachesTheModel(t *testing.T) {
 }
 
 var _ = squirrel.Learner(nil)
+
+// The screen is given a way to read the box.
+//
+// The third field to earn this check. `captureHandler` returns the old
+// behaviour when `Reads` is nil, so a field left unset in the options literal
+// is a box that silently goes back to being a filing cabinet — and the symptom
+// is Buddy saying "Kept.", which is exactly what he said for a month.
+func TestTheScreenIsGivenAWayToReadTheBox(t *testing.T) {
+	require.Nil(t, reader(coach.NoCoach{}, nil),
+		"a build with no key was given something to call")
+	require.NotNil(t, reader(stubCoach{}, nil))
+}

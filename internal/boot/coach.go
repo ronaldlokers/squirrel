@@ -253,6 +253,25 @@ func breaker(c coach.Coach) squirrel.Breaker {
 	}
 }
 
+// reader is what the box is answered by, or nil.
+//
+// Nil with no coach, and the nil is what captureHandler checks — so a build
+// without a key keeps the words and says "Kept.", which is what the box did
+// for its whole life before this.
+//
+// The state of the day goes in the same way every other turn gets it, through
+// nowFor: what somebody types at eleven at night reads differently from the
+// same words at nine in the morning, and this is the one call that sees
+// everything typed.
+func reader(c coach.Coach, store *squirrel.Store) func(context.Context, int64, string) (string, bool, error) {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return func(ctx context.Context, personID int64, said string) (string, bool, error) {
+		return c.Reads(ctx, personID, said, nowFor(ctx, store, personID, time.Now()))
+	}
+}
+
 // learner is the weekly read of the record, or nil.
 //
 // Nil with no coach, and the nil is what the scheduler checks — so a build

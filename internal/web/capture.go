@@ -145,7 +145,8 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// turns alone cannot answer that: a failure is two turns as well, and
 		// clearing on one of them is a capture box that eats thoughts.
 		w.Header().Set("X-Kept", "1")
-		answerWith(w, r, saidInThread(r.Context(), s, opts, text, "Kept."), "/")
+		answerWith(w, r, saidInThread(r.Context(), s, opts, text,
+			whatBuddyMakesOfIt(r.Context(), s, opts, text, photo != "")), "/")
 	}
 }
 
@@ -282,4 +283,78 @@ func said(raw string) string {
 		text = text[:captureLimit]
 	}
 	return text
+}
+
+// whatBuddyMakesOfIt is the answer to what you typed.
+//
+// The box was a capture slot and said "Kept.", which is what a filing cabinet
+// says. Ronald asked on 25 August 2026 for typing to be talking, and chose the
+// version where Buddy decides what the words were — knowing, because it was
+// said at the time, that a model between you and the capture promise can be
+// wrong.
+//
+// The order is where that risk is managed, and it is the whole design. The
+// words are already spooled and already a note by the time this is called.
+// Nothing here can stop that. What this can do is drop a note afterwards,
+// which is a state the product already has, which the pile can reverse, and
+// which leaves the words in the database either way.
+//
+// So the failures line up in the safe direction. No coach, a spent budget, an
+// unreachable model, a reply that fails its shape, a wrong judgement — every
+// one of them costs a note sitting in the pile that you did not want there.
+// None of them costs a thought.
+//
+// A photograph is always kept and never read. It is not words, there is
+// nothing to answer, and a model asked to judge a picture it cannot see would
+// be guessing about the one capture that is hardest to make again.
+func whatBuddyMakesOfIt(ctx context.Context, s Store, opts Options, text string, photo bool) string {
+	kept := squirrel.Say(squirrel.SayingKept, now())
+	if opts.Reads == nil || photo || strings.TrimSpace(text) == "" {
+		return kept
+	}
+	personID, ok := opts.person()
+	if !ok {
+		return kept
+	}
+
+	say, keep, err := opts.Reads(ctx, personID, text)
+	if err != nil {
+		// The floor, and it is the box exactly as it was before any of this:
+		// kept, and said so.
+		return kept
+	}
+	if keep {
+		return say
+	}
+
+	// A question, answered. The note is dropped rather than deleted — the
+	// words stay in the database, the pile can put it back, and "drop" is what
+	// this product already calls a note it does not want.
+	if err := dropWhatWasAQuestion(ctx, s, personID, text); err != nil {
+		// It could not be dropped, so it is still in the pile. Say the answer
+		// anyway: the answer is the useful half, and a note you did not want
+		// is a smaller problem than an answer you did not get.
+		slog.Warn("a question stayed in the pile", "error", err)
+	}
+	return say
+}
+
+// dropWhatWasAQuestion finds the note that was just made and drops it.
+//
+// By the words rather than by an id, because there is no id: the capture went
+// through the spool, which is what makes it durable, and the row it becomes is
+// written by the drain rather than returned from here. Reading the newest open
+// note back and checking it says what was typed is how this stays honest — if
+// the drain has not caught up, nothing matches and nothing is dropped, which
+// leaves a question in the pile and loses nothing.
+func dropWhatWasAQuestion(ctx context.Context, s Store, personID int64, text string) error {
+	items, _, err := s.OpenItems(ctx, personID, 1)
+	if err != nil {
+		return err
+	}
+	if len(items) == 0 || strings.TrimSpace(items[0].RawText) != strings.TrimSpace(text) {
+		return nil
+	}
+	_, err = s.MoveItemState(ctx, items[0].ID, squirrel.ItemOpen, squirrel.ItemDropped, now())
+	return err
 }

@@ -284,6 +284,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// break on the press.
 			Photos: photoStore(photos),
 			Ask:    webAsk,
+			// What the box is answered by. Nil with no key, and the nil is
+			// what captureHandler checks — see reader.
+			Reads:  reader(s.coach, store),
 			Recent: webRecent,
 
 			Remember:    webRemember,

@@ -66,6 +66,14 @@ type Options struct {
 	// acorn is still drawn and the four chips still answer, but typing a
 	// sentence gets the chips back rather than a reply.
 	Ask func(ctx context.Context, personID int64, kind, said, subject string) (Answer, error)
+	// Reads answers what was typed into the box and says whether it was a
+	// thought worth keeping. Nil with no coach, and the nil means the box does
+	// exactly what it always did: keeps the words and says "Kept."
+	//
+	// The boolean is advice, not an instruction. captureHandler keeps the
+	// words first and drops them afterwards if this says to, so a wrong answer
+	// costs a note in the pile rather than a note that is gone.
+	Reads func(ctx context.Context, personID int64, said string) (reply string, keep bool, err error)
 	// Recent is the conversation so far, oldest first, or nil.
 	Recent func(personID int64) []Exchange
 	// Remember adds one round to it. The screen calls this for the ladder's

@@ -345,6 +345,31 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.35.0 — 25 August 2026
+
+**Typing into the box is talking to Buddy.** It was a capture slot that said
+"Kept.", which is what a filing cabinet says — and that is why the thread still
+did not feel like one.
+
+He reads what you typed, answers it, and says whether it was a thought worth
+keeping or a question he has just dealt with. A question does not stay in the
+pile.
+
+Ronald asked for this knowing the risk, which was named at the time: a model
+between you and the capture promise can be wrong. **The order is where that
+risk is managed, and it is the whole design.** The words are spooled and
+already a note before Buddy is asked anything. Nothing in the new path can stop
+that; what it can do is drop a note afterwards, which is a state the product
+already has, which the pile reverses, and which leaves the words in the
+database either way.
+
+So every failure lands in the same place. No coach, a spent budget, an
+unreachable model, a reply that fails its shape, a wrong judgement — each costs
+a note sitting in the pile you did not want there. None costs a thought.
+
+A photograph is kept and never read: it is not words, there is nothing to
+answer, and it is the one capture that is hardest to make again.
+
 ### v0.34.2 — 25 August 2026
 
 Three things a phone showed that a laptop could not, all reported from one
