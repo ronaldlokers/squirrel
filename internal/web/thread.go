@@ -302,6 +302,21 @@ func endsOpen(turns []squirrel.Turn) bool {
 		// nothing more is the safe direction: the other one talks over it.
 		return true
 	}
+	// An opening line is not something on the table.
+	//
+	// It says what is true and carries one way to the place it is about; it
+	// asks nothing and there is nothing in it to answer. Counting its chip as
+	// "open" meant that on any day with something on the agenda, a chore due,
+	// or notes in the pile — which is most days — Squirrel opened with a line
+	// and then said nothing about what to actually do. The offer is the
+	// product's whole argument, and it was off.
+	//
+	// Shipped in v0.33.0 and found the same night by asking the question
+	// directly rather than by reading the code: the offer's own test fixtures
+	// have no agenda, so nothing failed.
+	if sh.Opened != "" {
+		return false
+	}
 	return len(sh.Cards) > 0 || len(sh.Chips) > 0 || sh.Faces ||
 		sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
 }

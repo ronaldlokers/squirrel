@@ -186,3 +186,35 @@ func TestTheOpeningLineUsesThePersonsDay(t *testing.T) {
 	require.Contains(t, said, "dentist tomorrow")
 	require.Contains(t, said, "00:30", "it printed the time in the wrong clock")
 }
+
+// The opening line does not swallow the offer.
+//
+// The offer is the product's whole argument — one thing, chosen for you — and
+// tonight's opening line turned it off on every day it spoke, which is most
+// days. An opening says what is true and asks nothing; it is not something on
+// the table.
+func TestTheOpeningDoesNotSwallowTheOffer(t *testing.T) {
+	f := &fakeStore{
+		checkin:  fresh(),
+		waiting:  squirrel.Waiting{Agenda: 1},
+		upcoming: []squirrel.Moment{{ID: 1, Label: "dentist", Starts: now().Add(3 * time.Hour)}},
+		offer:    &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet"},
+	}
+	body := thread(t, f)
+
+	require.Contains(t, body, "dentist", "it did not open at all")
+	require.Contains(t, body, "ring the vet", "the opening line swallowed the offer")
+}
+
+// And the offer still refuses to talk over anything that is genuinely on the
+// table, which is what endsOpen is for.
+func TestTheOfferStillWillNotTalkOverACard(t *testing.T) {
+	f := &fakeStore{
+		checkin: fresh(),
+		offer:   &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet"},
+		turns: []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "This one.",
+			Shown: []byte(`{"cards":[{"title":"the boiler","acts":[{"label":"DONE","action":"/pile/act"}]}]}`)}},
+	}
+
+	require.NotContains(t, thread(t, f), "ring the vet")
+}
