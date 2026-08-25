@@ -505,10 +505,15 @@ func toView(it squirrel.Item) noteView {
 		words = taskWords
 	}
 	return noteView{
-		ID:        it.ID,
-		Photo:     photo,
-		Text:      it.RawText,
-		When:      strings.ToUpper(it.ReceivedAt.Local().Format("2 January")),
+		ID:    it.ID,
+		Photo: photo,
+		Text:  it.RawText,
+		// No `.Local()`. It carried one until 25 August 2026, which read the
+		// *process* clock — and the pods run in UTC on purpose since #148, so
+		// anything captured after ten in the evening wore yesterday's date.
+		// The store hands this back in the person's clock now; converting
+		// again here would be the same bug with an extra step.
+		When:      strings.ToUpper(it.ReceivedAt.Format("2 January")),
 		State:     string(it.State),
 		Task:      it.Kind == squirrel.ItemTask,
 		StateWord: words[it.State],

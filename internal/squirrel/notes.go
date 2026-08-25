@@ -362,6 +362,9 @@ func (s *Store) itemsWhere(ctx context.Context, where string, limit int, args ..
 		if !isNote(it.RawText, payload) {
 			continue
 		}
+		// When it arrived, in the person's clock. See Store.here — this is the
+		// same defect the fixed points had, on the other table.
+		it.ReceivedAt = s.here(it.ReceivedAt)
 		items = append(items, it)
 	}
 	if err := rows.Err(); err != nil {
@@ -405,6 +408,7 @@ func (s *Store) ItemByID(ctx context.Context, personID, itemID int64) (Item, boo
 	if !isNote(it.RawText, payload) {
 		return Item{}, false, nil
 	}
+	it.ReceivedAt = s.here(it.ReceivedAt)
 	return it, true, nil
 }
 
@@ -473,6 +477,7 @@ func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, er
 		// anything else and can be triaged by a redelivery or a stray tap, and
 		// undo must not answer with one.
 		if isNote(it.RawText, payload) {
+			it.ReceivedAt = s.here(it.ReceivedAt)
 			return it, true, nil
 		}
 	}

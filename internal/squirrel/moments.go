@@ -274,29 +274,6 @@ type scannable interface {
 // A fixed point with no travel time recorded guesses fifteen minutes and says
 // so with Guessed, because anything printed about leaving has to admit it was
 // a guess.
-// here puts a stored instant back into the person's clock.
-//
-// A timestamptz is an instant and carries no zone, so pgx hands it back in
-// UTC. Every one of these times is then printed — "at 14:30", "leave about
-// 14:05", "Monday 2 January" — and printing the right instant with the wrong
-// digits on it is a missed appointment.
-//
-// This is issue #148 one layer further out. That fix threaded the location
-// into everything that *parses* a time, and the reading side was never
-// audited: the leave-by sentence, the agenda card and the notification all
-// formatted whatever the driver handed them. Found on 25 August 2026 by
-// probing what Upcoming actually returns, an hour after shipping an opening
-// line that printed an appointment two hours early.
-//
-// Applied here rather than at each call site, because "each call site" is what
-// let it happen. There is one place a moment comes out of the database.
-func (s *Store) here(t time.Time) time.Time {
-	if s.where == nil {
-		return t
-	}
-	return t.In(s.where)
-}
-
 func momentFrom(row scannable) (Moment, error) {
 	var (
 		m            Moment

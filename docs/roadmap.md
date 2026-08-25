@@ -345,6 +345,25 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.34.1 — 25 August 2026
+
+**A note carries your date, not the container's.** The other half of v0.33.1,
+found by looking for the same shape somewhere else rather than by waiting for
+it to be reported.
+
+`ReceivedAt` came back from the driver in UTC and `toView` called `.Local()` on
+it — the *process* clock, and the pods run in UTC on purpose since #148. So
+anything captured after ten in the evening wore the previous day's date on the
+corner of its card.
+
+The conversion moved to `Store.here`, which now serves both tables, and it is
+applied where a row comes out of the database rather than where it is printed —
+because "each print site" is what let this happen twice. `pick.go` had already
+patched one of them by hand, which is what that looks like from the inside:
+correct, local, and no help to the next reader.
+
+Both integration tests run under `TZ=UTC`, which is what the clusters do.
+
 ### v0.34.0 — 25 August 2026
 
 **Buddy comes to know you.** He read the last few things said and nothing
