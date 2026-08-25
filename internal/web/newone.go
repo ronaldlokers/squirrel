@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -146,4 +147,36 @@ func saidRhythm(every time.Duration) string {
 		return "when you asked"
 	}
 	return "every " + count + " " + unit
+}
+
+// One page of a list, and whether there is another.
+//
+// "The rest" was a link — `/?open=tasks` — and the thread has never read a
+// query like that, so it reloaded the conversation and did nothing. Search's
+// was worse: `/pile?q=…`, a route deleted with the deck. All three had been
+// dead since the doors became messages, and dropping a door's reply from
+// twelve cards to five is what would have made somebody find out.
+//
+// Generic because the three lists are three types and the arithmetic is the
+// same. An offset rather than a cursor: these are short lists read from the
+// top, and a cursor would be a stable identity that a chore list reordered by
+// what is due does not have.
+func slice[T any](all []T, from int) (page []T, more bool) {
+	if from >= len(all) {
+		return nil, false
+	}
+	to := from + listLimit
+	if to >= len(all) {
+		return all[from:], false
+	}
+	return all[from:to], true
+}
+
+// theRest is the chip that asks for the next page. A form, because it opens a
+// place and opening a place is something you said.
+func theRest(where string, from int) turnChip {
+	return turnChip{
+		Label: "the rest", Action: "/open",
+		Fields: map[string]string{"where": where, "from": strconv.Itoa(from)},
+	}
 }
