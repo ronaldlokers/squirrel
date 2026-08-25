@@ -53,7 +53,9 @@ func TestEverySessionScreenOffersAWayToStop(t *testing.T) {
 	said := squirrel.Say(squirrel.SayingStop, time.Now())
 	require.NotEmpty(t, said)
 
-	for _, screen := range []string{"/kept", "/held"} {
+	// One screen, since every place became a message. The shelf and the
+	// set-aside were the last two with a lid of their own.
+	for _, screen := range []string{"/"} {
 		body := m.call(t, "GET", screen, nil).Body.String()
 		require.Contains(t, body, `href="/enough"`,
 			"%s is a screen you can spend an evening on with no way to stop", screen)

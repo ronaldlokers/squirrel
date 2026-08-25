@@ -158,7 +158,7 @@ func everyScreen() *fakeStore {
 				Shown: []byte(`{"place":"the chores","cards":[{"title":"water the plants","meta":"EVERY WEEK · LAST DONE a while back","acts":[{"label":"DID IT","action":"/chores/act","style":"did","fields":{"id":"1","act":"done"}},{"label":"HOW OFTEN","action":"/chores/often","style":"go","fields":{"id":"1"}},{"label":"STOP ASKING","action":"/chores/act","style":"stop","fields":{"id":"1","act":"retire"}}]}]}`)},
 			{ID: 3, Who: squirrel.SpeakerYou, Words: "the tasks"},
 			{ID: 4, Who: squirrel.SpeakerBuddy, Words: "One thing you decided.",
-				Shown: []byte(`{"place":"the tasks","cards":[{"title":"book the car in for its service","meta":"decided this morning","acts":[{"label":"did it","action":"/tasks/act","style":"did","fields":{"id":"4","act":"done"}},{"label":"not a task","action":"/tasks/act","style":"back","fields":{"id":"4","act":"untask"}}]}],"chips":[{"label":"what you cannot act on","href":"/held"}]}`)},
+				Shown: []byte(`{"place":"the tasks","cards":[{"title":"book the car in for its service","meta":"decided this morning","acts":[{"label":"did it","action":"/tasks/act","style":"did","fields":{"id":"4","act":"done"}},{"label":"not a task","action":"/tasks/act","style":"back","fields":{"id":"4","act":"untask"}}]}],"chips":[{"label":"what you set aside","action":"/open","fields":{"where":"held"}}]}`)},
 			{ID: 6, Who: squirrel.SpeakerBuddy, Words: "Is this what you meant?",
 				Shown: []byte(`{"cut":{"action":"/pile/split","id":9,"pieces":["ring the vet","put the bins out"],"do":"use these"}}`)},
 			{ID: 7, Who: squirrel.SpeakerYou, Words: "the boiler"},
@@ -205,7 +205,7 @@ func TestEveryWordCanBeRead(t *testing.T) {
 		// task card, a note being triaged and the interval picker on it, and
 		// the dock.
 		"/",
-		"/kept", "/held", "/moods", "/enough", "/buddy",
+		"/moods", "/enough", "/buddy",
 		"/at/4",
 	}
 

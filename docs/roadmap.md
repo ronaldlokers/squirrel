@@ -345,6 +345,34 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.30.0 — 25 August 2026
+
+**The shelf and the set-aside come into the conversation**, and the shelf stops
+being unreachable. `/kept` and `/held` were the last two screens in a product
+whose every place is a message. What made it a defect rather than an
+untidiness: the only way to the shelf hung off the card drawn in the pile's
+turn, so the moment there was nothing left to decide about, it was reachable
+from nowhere at all — the exact bug the comment beside that chip had been
+warning about since the deck came out.
+
+Neither is a door. The rail is four and its equality is the whole statement it
+makes, and a door for the things you explicitly set aside would put them back
+in front of you, which is the one thing setting them aside was for. They are
+chips on the pile's turn — on every branch of it now, including the one that
+says there is nothing to decide about.
+
+The shelf offers one thing and it is the way back. A kept note was never going
+to be done, so DONE there would answer a question nobody asked.
+
+**The conversation gained a way to stop.** The stopping line lived on those two
+pages and nowhere else, so deleting them would have left the product with no
+exit at all. Found by a test that had been asserting it on one of them.
+
+**Two accessibility tests were deleted rather than retargeted.** Both asserted
+on the deck's markup — the key badges and the stack behind the card — and
+neither renders anywhere since it came out, so both had been comparing zero to
+zero. A test that cannot fail reads like cover.
+
 ### v0.29.0 — 25 August 2026
 
 **The interval question answers to keys again**, which is the last thing the

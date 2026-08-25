@@ -24,7 +24,7 @@ func TestBuddyIsMarkedInTheLidRatherThanRemovedFromIt(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	elsewhere := m.call(t, "GET", "/kept", nil).Body.String()
+	elsewhere := m.call(t, "GET", "/moods", nil).Body.String()
 	require.Contains(t, elsewhere, `class="lidbtn tobuddy"`)
 	require.NotContains(t, elsewhere, "lidbtn tobuddy here")
 

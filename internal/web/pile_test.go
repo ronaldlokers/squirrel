@@ -37,10 +37,8 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /buddy/do",
 		"GET /coach",
 		"POST /steps",
-		"GET /held",
 		"GET /moods",
 		"POST /held/act",
-		"GET /kept",
 		"GET /enough",
 		"POST /tasks/act",
 		"POST /tasks/new",
@@ -61,7 +59,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 44, "a route was added without being pinned here")
+	require.Len(t, m.routes, 42, "a route was added without being pinned here")
 }
 
 // Buddy was /coach for the release it shipped in, and the same rule applies:

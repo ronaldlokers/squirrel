@@ -26,7 +26,7 @@ func TestTheAcornIsOnEveryScreenAndLinksBack(t *testing.T) {
 	m := mounted(t, f)
 
 	href := regexp.MustCompile(`<a class="lidbtn tobuddy" href="([^"]+)"`)
-	for _, path := range []string{"/", "/kept"} {
+	for _, path := range []string{"/", "/moods"} {
 		body := m.call(t, "GET", path, nil).Body.String()
 		found := href.FindStringSubmatch(body)
 		require.Len(t, found, 2, "no way to Buddy on %s", path)
@@ -337,7 +337,7 @@ func TestNoOtherScreenSaysWhatItHasCost(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
 	m := mountedWith(t, withOffer(nil), c)
 
-	for _, path := range []string{"/", "/kept"} {
+	for _, path := range []string{"/", "/moods"} {
 		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
 			"the spend leaked onto %s", path)
 	}

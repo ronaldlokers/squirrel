@@ -867,6 +867,11 @@ then lost the digits when its disclosure went; they are back.
 Only that question. A digit inside the day picker would be a day of the month,
 and guessing which of the two was meant would book the wrong one.
 
+**A turn with nothing on it can still take you somewhere.** A chip that hangs
+off a drawn card disappears with the card, and the branch that draws no card is
+usually the branch where going elsewhere is the point. The shelf was reachable
+from nowhere for a day because of exactly this.
+
 **A photograph on a card is bounded by height, and it is the small copy.**
 A card in a conversation is read at a glance and scrolled past, so the failure
 to prevent is a portrait photograph pushing the buttons off the screen —

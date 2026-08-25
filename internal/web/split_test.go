@@ -28,7 +28,7 @@ func aDump() *fakeStore {
 
 // With no coach at all the pile is exactly the screen it was.
 func TestTheCardOffersNothingWithNoCoach(t *testing.T) {
-	require.NotContains(t, mounted(t, aDump()).call(t, "GET", "/kept", nil).Body.String(),
+	require.NotContains(t, mounted(t, aDump()).call(t, "GET", "/", nil).Body.String(),
 		"this is more than one thing")
 }
 
@@ -98,7 +98,7 @@ func TestThePiecesAreOrdinaryNotes(t *testing.T) {
 	mounted(t, f).call(t, "POST", "/pile/split",
 		strings.NewReader("act=keep&id=1&piece=ring+the+vet&piece=put+the+bins+out"))
 
-	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 	require.NotContains(t, body, "suggested")
 	require.NotContains(t, body, "split from")
 }

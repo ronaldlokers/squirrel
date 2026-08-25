@@ -33,7 +33,7 @@ func TestThePileOffersTheWayToStop(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(1, "the boiler makes a noise", squirrel.ItemOpen),
 	}}
-	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, `href="/enough"`)
 	require.Contains(t, body, squirrel.Say(squirrel.SayingStop, time.Now()))

@@ -129,12 +129,13 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/at/make", guard(opts, sameOrigin(atMakeHandler(s, opts))))
 	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
 	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
-	m.Get("/held", guard(opts, heldHandler(s, opts)))
+	// The page went on 25 August 2026 — what you set aside is a message now,
+	// reached from the pile's turn. Setting one aside and picking it back up
+	// stayed, and both answer with a turn. See elsewhere.go.
 	m.Post("/held/act", guard(opts, sameOrigin(heldActHandler(s, opts))))
 	// How you have been, and only when asked for by name. Nothing links here
 	// except the check-in you just answered.
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
-	m.Get("/kept", guard(opts, keptHandler(s, opts)))
 	// Stopping. No store, on purpose: a route that cannot read cannot start
 	// keeping score of how much you did before you pressed it.
 	m.Get("/enough", guard(opts, enoughHandler(opts)))

@@ -42,10 +42,8 @@ func page(files ...string) *template.Template {
 }
 
 var pages = map[string]*template.Template{
-	"thread": page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
-	"kept":   page("templates/layout.html", "templates/stopping.html", "templates/kept.html"),
+	"thread": page("templates/layout.html", "templates/turn.html", "templates/stopping.html", "templates/thread.html"),
 	"coach":  page("templates/layout.html", "templates/step.html", "templates/coach.html"),
-	"held":   page("templates/layout.html", "templates/stopping.html", "templates/held.html"),
 	"moods":  page("templates/layout.html", "templates/moods.html"),
 	"enough": page("templates/layout.html", "templates/enough.html"),
 }
@@ -170,11 +168,6 @@ type view struct {
 	// for the render that answers the press — nothing stores it, which is what
 	// makes it impossible for one to be applied without a second press.
 	Split *splitView
-	// SetAside is what you cannot act on, grouped, and only the held page
-	// fills it. Not `Held`: that is already the worker having taken your words
-	// offline, and one word meaning two things in one struct is how a template
-	// ends up rendering the wrong one.
-	SetAside []heldGroup
 	// HeldChips is the three ways to set the card's note aside, offered on the
 	// pile. Filled by the pile handler alone.
 	HeldChips []chipView
@@ -303,12 +296,9 @@ func elsewhere(here string) []linkView {
 // what is stalled. They sit under the title because that is what they are
 // about — a link to the archive means nothing next to the chores.
 func views(here string) []linkView {
-	switch here {
-	case "kept":
-		return []linkView{{Href: "/kept", Label: "the things you kept", Here: true}}
-	case "held":
-		return []linkView{{Href: "/held", Label: "what you cannot act on", Here: true}}
-	}
+	// None, since the shelf and the set-aside came into the conversation on
+	// 25 August 2026. They were the last two screens with a view of their own,
+	// and a place that is a message has no page to hang one on.
 	return nil
 }
 

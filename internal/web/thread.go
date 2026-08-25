@@ -679,6 +679,10 @@ const listLimit = 12
 // something destructive. The same device the offer's kinds use.
 var doorNames = map[string]string{
 	"pile": "the pile", "tasks": "the tasks", "chores": "the chores", "at": "the agenda",
+	// Not doors on the rail — the rail is four and its equality is the whole
+	// statement it makes. These are places all the same: opening one is
+	// something you said, and the chips on the pile's turn are how you say it.
+	"kept": "the things you kept", "held": "what you set aside",
 }
 
 // openHandler is a door being pressed.
@@ -726,6 +730,10 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 		reply = agendaTurn(ctx, s, personID, name)
 	case "pile":
 		reply = pileTurn(ctx, s, opts, personID, 0, name)
+	case "kept":
+		reply = keptTurn(ctx, s, personID, name)
+	case "held":
+		reply = heldTurn(ctx, s, personID, name)
 	default:
 		// The pile and the agenda are phase 3. Until then the doors that are
 		// not built say so rather than answering with silence, which reads as
@@ -1024,7 +1032,11 @@ func tasksTurn(ctx context.Context, s Store, personID int64, name string) squirr
 	// The way to what you cannot act on. It hung off the tasks screen, and
 	// without it here /held is reachable from nowhere in the product — which
 	// is the bug the mood history had for an afternoon.
-	sh.Chips = []turnChip{{Label: "what you cannot act on", Href: "/held"}}
+	// A form rather than a link, now that what you set aside is a message and
+	// not a page. Same chip, same place — the tasks are where you look when
+	// you wonder what happened to something.
+	sh.Chips = []turnChip{{Label: "what you set aside", Action: "/open",
+		Fields: map[string]string{"where": "held"}}}
 	if more {
 		sh.Chips = append(sh.Chips, turnChip{Label: "the rest", Href: "/?open=tasks"})
 	}
@@ -1273,18 +1285,19 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the pile just now."}
 	}
 	if len(items) == 0 {
+		// Nothing to decide about is exactly when the other two places are
+		// worth reaching, and it was the one branch that could not reach them:
+		// the chips hung off the drawn card, so an empty pile answered with a
+		// sentence and no way anywhere. The shelf was reachable from nowhere,
+		// which is the bug the comment below it had been warning about since
+		// the deck came out.
+		words := "Nothing to decide about. Anything you tell me lands here."
 		if after != 0 {
 			// The bottom, reached by skipping. Not the same as an empty pile:
 			// what is above you is still there.
-			return squirrel.Turn{
-				Who:   squirrel.SpeakerBuddy,
-				Words: "That is the end of them. The ones you skipped are still there.",
-			}
+			words = "That is the end of them. The ones you skipped are still there."
 		}
-		return squirrel.Turn{
-			Who:   squirrel.SpeakerBuddy,
-			Words: "Nothing to decide about. Anything you tell me lands here.",
-		}
+		return sayWithChips(words, elsewhereFromThePile())
 	}
 
 	v := toView(items[0])
@@ -1311,18 +1324,14 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
 			},
 		}},
-		Chips: []turnChip{
+		Chips: append([]turnChip{
 			// Later is not a decision. It leaves the note where it was and
 			// hands you the next, which is the deck's own LATER.
 			{
 				Label: "later", Action: "/pile/later",
 				Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
 			},
-			// The shelf hung off the foot of the deck. Without a way to it
-			// here it is reachable from nowhere, which is the bug the mood
-			// history had for an afternoon.
-			{Label: "the things you kept", Href: "/kept"},
-		},
+		}, elsewhereFromThePile()...),
 	}
 
 	// Only when the note looks like several things. A free check, and it is
