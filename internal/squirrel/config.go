@@ -50,6 +50,10 @@ type CoachConfig struct {
 	// ceiling in this process; the provider's own spend limit still applies and
 	// is the one that guards against a stolen key.
 	BudgetMicros int64
+	// GuestBudgetMicros is the monthly ceiling for anybody who is not the
+	// owner. Zero means a guest may not spend at all, which is also a
+	// reasonable choice.
+	GuestBudgetMicros int64
 	// HouseURL and HouseModel are the small model on the cluster, or empty for
 	// none. An OpenAI-shaped endpoint with no key, which is what ollama and
 	// llama.cpp both serve.
@@ -303,6 +307,13 @@ func LoadConfig(env map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	// What anybody who is not the owner may spend in a month. Small on
+	// purpose: a demo account exists to be tried, not to be lived in, and two
+	// of them must not be two monthly allowances.
+	guestBudget, err := number(env, "COACH_BUDGET_GUEST_EUR", 1)
+	if err != nil {
+		return Config{}, err
+	}
 
 	config := Config{
 		Port:          port,
@@ -327,11 +338,12 @@ func LoadConfig(env map[string]string) (Config, error) {
 			BaseURL: optional(env, "COACH_BASE_URL", "https://api.openai.com/v1"),
 			// Confirmed against GET /v1/models on 20 August 2026 rather than
 			// copied from a pricing page.
-			Fast:         optional(env, "COACH_MODEL_FAST", "gpt-5.6-luna"),
-			Deep:         optional(env, "COACH_MODEL_DEEP", "gpt-5.6-terra"),
-			BudgetMicros: int64(budget) * 1_000_000,
-			HouseURL:     env["COACH_HOUSE_URL"],
-			HouseModel:   optional(env, "COACH_HOUSE_MODEL", "qwen2.5:1.5b-instruct-q4_K_M"),
+			Fast:              optional(env, "COACH_MODEL_FAST", "gpt-5.6-luna"),
+			Deep:              optional(env, "COACH_MODEL_DEEP", "gpt-5.6-terra"),
+			BudgetMicros:      int64(budget) * 1_000_000,
+			GuestBudgetMicros: int64(guestBudget) * 1_000_000,
+			HouseURL:          env["COACH_HOUSE_URL"],
+			HouseModel:        optional(env, "COACH_HOUSE_MODEL", "qwen2.5:1.5b-instruct-q4_K_M"),
 		},
 
 		Push: PushConfig{

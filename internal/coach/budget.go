@@ -56,10 +56,30 @@ type Log interface {
 // Budget answers one question: is there room left this month.
 type Budget struct {
 	Log Log
-	// CeilingMicros is the monthly ceiling in micro-euros. Zero means no
-	// ceiling, which is a supported choice — the provider's own spend limit is
-	// the real backstop and someone may reasonably prefer only that.
-	CeilingMicros int64
+	// CeilingFor is the monthly ceiling in micro-euros for one person. Nil, or
+	// a function returning zero, means no ceiling — a supported choice, since
+	// the provider's own spend limit is the real backstop and someone may
+	// reasonably prefer only that.
+	//
+	// A function rather than a number because a demo account must not be able
+	// to spend a month's allowance. One process-wide ceiling applied to
+	// whoever asked would have made two demo accounts into two monthly
+	// ceilings, both of them yours to pay.
+	CeilingFor func(personID int64) int64
+}
+
+func (b Budget) ceiling(personID int64) int64 {
+	if b.CeilingFor == nil {
+		return 0
+	}
+	return b.CeilingFor(personID)
+}
+
+// FlatCeiling is one ceiling for everybody. It is what a single-person
+// deployment wants and what most tests want; the two-tier version lives in
+// internal/boot, where the owner is known.
+func FlatCeiling(micros int64) func(int64) int64 {
+	return func(int64) int64 { return micros }
 }
 
 // MonthStart is the first instant of now's calendar month, locally. The budget
@@ -86,10 +106,11 @@ func (b Budget) Allows(ctx context.Context, personID int64, now time.Time) (bool
 	if err != nil {
 		return false, 0
 	}
-	if b.CeilingMicros <= 0 {
+	ceiling := b.ceiling(personID)
+	if ceiling <= 0 {
 		return true, spent
 	}
-	return spent < b.CeilingMicros, spent
+	return spent < ceiling, spent
 }
 
 // Permit is proof that the month's ceiling was checked before a paid call was
@@ -184,7 +205,7 @@ func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead 
 		// deterministic answers take over for the rest of the month and
 		// nothing about the product stops.
 		slog.Info("the coach is over its budget for the month; "+instead,
-			"spent_micros", spent, "ceiling_micros", b.CeilingMicros)
+			"spent_micros", spent, "ceiling_micros", b.ceiling(personID))
 		return Permit{}, ErrUnavailable
 	}
 	return Permit{held: held}, nil
@@ -210,7 +231,7 @@ func (b Budget) Spent(ctx context.Context, personID int64, now time.Time) (int64
 	if err != nil {
 		return 0, 0, false
 	}
-	return spent, b.CeilingMicros, true
+	return spent, b.ceiling(personID), true
 }
 
 // Euros renders micro-euros the way money is written, to the cent.

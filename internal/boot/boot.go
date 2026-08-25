@@ -212,7 +212,13 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// because the screen will ask for the coach in the phase that adds the
 	// sheet. Neither one connecting to anything yet is the point: a coach that
 	// is not there must be an ordinary state at boot, not an error path.
-	s.budget = budgetFor(config.Coach, store)
+	// Declared here rather than beside the screen it feeds because the budget
+	// needs it too: the owner's monthly ceiling and a guest's are two numbers,
+	// and telling them apart means knowing who the owner is. It is zero until
+	// connectAndDrain fills it in, and a ceiling lookup that runs before then
+	// sees a guest — which is the safe way round.
+	var webOwner atomic.Int64
+	s.budget = budgetFor(config.Coach, store, webOwner.Load)
 	s.coach = coachFor(config.Coach, s.budget, store)
 	s.house = coach.NewHouse(config.Coach.HouseURL, config.Coach.HouseModel)
 	if s.house != nil {
@@ -248,7 +254,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		slog.Info("no photo directory configured; the camera is not offered")
 	}
 
-	var webOwner atomic.Int64
 	// The coach's three seams for the screen, converted here because boot is
 	// the only package that may know both shapes. All three are nil-safe: with
 	// no coach the acorn still opens, the four chips still answer, and the

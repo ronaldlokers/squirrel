@@ -118,7 +118,7 @@ func TestReleasingTwiceFreesOneTurn(t *testing.T) {
 // or a spent month would wedge every later call behind a permit nobody holds.
 func TestARefusedCallGivesTheGateBack(t *testing.T) {
 	freshGate(t)
-	b := Budget{Log: gateLog{spent: 1_000_000}, CeilingMicros: 1}
+	b := Budget{Log: gateLog{spent: 1_000_000}, CeilingFor: FlatCeiling(1)}
 
 	_, err := b.Ask(t.Context(), 1, time.Now(), "the picker chooses")
 	require.ErrorIs(t, err, ErrUnavailable)

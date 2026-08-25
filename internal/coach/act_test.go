@@ -60,7 +60,7 @@ func (h *fakeHands) CreateTask(_ context.Context, _ int64, _ string) error {
 
 func actingFor(api *toolAPI, f *fakeFacts, h *fakeHands, log *fakeLog) *coach.Provider {
 	p := coach.NewProvider(api.server.URL, "sk-test", "gpt-5.6-luna", "gpt-5.6-terra",
-		coach.Budget{Log: log, CeilingMicros: 10_000_000})
+		coach.Budget{Log: log, CeilingFor: coach.FlatCeiling(10_000_000)})
 	p.Clock = func() time.Time { return august }
 	p.Facts = f
 	p.Hands = h
