@@ -345,6 +345,57 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.39.0 — 25 August 2026
+
+**Proper OIDC: the application does its own authentication.** Squirrel's whole
+authentication was one line — Traefik called an Authentik forward-auth outpost,
+Authentik decided, and `guard` compared one header to one configured string.
+That was the right size while there was one person and one pile. The outpost
+could only ever say "somebody Authentik likes" and never *which* somebody, so a
+second person meant a redeploy.
+
+`guard` keeps its name and its position and loses its body. It reads a session
+cookie, resolves it through a minute of memory, and puts the person and the
+OIDC `sub` on the request. Sessions live in Postgres, hashed, so a database dump
+is a list of hashes rather than a set of live sessions.
+
+**`Options.Owner` is deleted.** It was a process-global `atomic.Int64` that
+forty-nine call sites read through `opts.person()`, and it could not survive two
+people: a second person's request would have read the first one's owner and
+drawn their pile. Nothing about that was visible at a call site, which is why
+the refactor landed as its own commit with every suite passing unchanged before
+anything about authentication moved.
+
+**The gate**, not the door — a door here is a section of the pile and has been
+since v0.10.0. One screen, `/enough`'s composition, four states differing only
+in the sentence under the mark, and a first arrival says nothing at all because
+an arrival is not an error. The refusal never names the group somebody lacks:
+that is a fact about the Authentik rather than about them.
+
+**Two ceilings.** The coach's monthly budget was one number for the process,
+applied to whoever asked, so every demo account would have been another monthly
+allowance. `COACH_BUDGET_GUEST_EUR` is what anybody who is not the owner may
+spend.
+
+**The isolation sweep** is the part worth keeping even if the rest were thrown
+away. Every store function already took a `personID` and every one was scoped by
+it — and nothing tested that, because for the product's whole life there was one
+person and nothing to leak into. Two people now get one of everything, and
+thirty reads are walked as one of them. Five real scopes were removed one at a
+time to prove it bites; it caught all five and named the leaked row each time.
+
+Three dependencies arrive with it — `go-oidc`, `x/oauth2`, `go-jose` — in a
+repository that had been pgx and testify since it started. The alternative was
+hand-rolling JWKS fetching, key rotation and RS256 verification, where being
+subtly wrong is a login that accepts a forged token.
+
+**A migration**, `0029_sessions`. And a deployment order that matters: the
+forward-auth middleware must not come off before the OIDC client exists and
+Squirrel is serving the gate, or the deploy locks you out of your own pile.
+
+Adding somebody to a group in Authentik is now the whole of admitting a second
+person or a demo account. There is no redeploy, which was the point.
+
 ### v0.38.0 — 25 August 2026
 
 **Buddy is the mascot, unframed.** v0.37.0 gave him a drawn acorn on a purple
