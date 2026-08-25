@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -289,4 +290,27 @@ func TestAnEmptyFilePartIsJustWords(t *testing.T) {
 	require.Empty(t, ph.kept, "an empty file part was kept as a photograph")
 	require.Len(t, sp.written, 1)
 	require.Empty(t, sp.written[0].PhotoName)
+}
+
+// A card prints the date the note carries, and does not reach for a clock.
+//
+// `toView` called `.Local()` on it until 25 August 2026 — the *process* clock,
+// and the pods run in UTC on purpose since #148. So anything captured after
+// ten in the evening wore the previous day's date. The store hands rows back
+// in the person's clock now; converting again here would be the same bug with
+// an extra step.
+func TestACardPrintsTheDateTheNoteCarries(t *testing.T) {
+	ams, err := time.LoadLocation("Europe/Amsterdam")
+	require.NoError(t, err)
+	// Half past midnight on the 14th where the person is, which is half past
+	// ten on the 13th in UTC. The whole test is that those are different days.
+	at := time.Date(2026, 3, 14, 0, 30, 0, 0, ams)
+	require.Equal(t, 13, at.UTC().Day(), "the fixture does not straddle a day boundary")
+
+	v := toView(squirrel.Item{
+		ID: 1, RawText: "the boiler makes a noise", ReceivedAt: at,
+		State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
+	})
+
+	require.Equal(t, "14 MARCH", v.When)
 }

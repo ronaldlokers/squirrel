@@ -274,6 +274,11 @@ func choreBecause(c Chore) string {
 // makes a task a task. Never how long ago in days — that number goes up while
 // nobody is looking, which is the shape this product is without.
 func taskBecause(it Item, now time.Time) string {
+	// The store hands this back in the person's clock since 25 August 2026, so
+	// the conversion here is now a no-op on every path that reads a row. Kept
+	// because this also runs on an Item a caller built rather than read — and
+	// because it is what "each call site" looked like from the inside: correct,
+	// local, and no help at all to the next person to hit the same thing.
 	decided := it.ReceivedAt.In(now.Location())
 	switch days := int(startOfDay(now).Sub(startOfDay(decided)).Hours() / 24); {
 	case days <= 0:
