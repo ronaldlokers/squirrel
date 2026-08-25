@@ -50,6 +50,17 @@ type CoachConfig struct {
 	// ceiling in this process; the provider's own spend limit still applies and
 	// is the one that guards against a stolen key.
 	BudgetMicros int64
+	// HouseURL and HouseModel are the small model on the cluster, or empty for
+	// none. An OpenAI-shaped endpoint with no key, which is what ollama and
+	// llama.cpp both serve.
+	//
+	// It reads everything typed into the box and answers one question about
+	// it, which is a job worth doing in the house: it costs electricity in a
+	// cupboard rather than money abroad, so it may run on every capture where
+	// the hosted model may not. Empty is supported and is what shipped — the
+	// rule underneath needs nothing running at all.
+	HouseURL   string
+	HouseModel string
 }
 
 // Enabled reports whether there is enough here to build a coach at all.
@@ -319,6 +330,8 @@ func LoadConfig(env map[string]string) (Config, error) {
 			Fast:         optional(env, "COACH_MODEL_FAST", "gpt-5.6-luna"),
 			Deep:         optional(env, "COACH_MODEL_DEEP", "gpt-5.6-terra"),
 			BudgetMicros: int64(budget) * 1_000_000,
+			HouseURL:     env["COACH_HOUSE_URL"],
+			HouseModel:   optional(env, "COACH_HOUSE_MODEL", "qwen2.5:1.5b-instruct-q4_K_M"),
 		},
 
 		Push: PushConfig{

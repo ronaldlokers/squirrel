@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -189,8 +190,59 @@ func saidInThread(ctx context.Context, s Store, opts Options, text, reply string
 	}
 	return keepSaid(ctx, s, personID, []squirrel.Turn{
 		{Who: squirrel.SpeakerYou, Words: yours},
-		{Who: squirrel.SpeakerBuddy, Words: reply},
+		answerable(opts, text, reply),
 	})
+}
+
+// answerable is Buddy's reply, with the way to say he read it wrong.
+//
+// The judgement that got here was made from one word by a small model, or by a
+// rule that only says yes when the sentence is doing nothing else. Both are
+// deliberately biased towards keeping — a thought dropped out of the pile is
+// the one failure this product does not have, so the bias costs a question
+// answered as a note.
+//
+// This is the way out of that, and it is one press: the words are handed to
+// Buddy properly. The rule stays free and you keep the escape hatch, which is
+// the shape Ronald asked for on 25 August 2026.
+//
+// Only on an acknowledgement, and only when there is somebody to ask. A chip
+// offering to answer something that has just been answered is furniture, and
+// one that cannot work is worse.
+func answerable(opts Options, text, reply string) squirrel.Turn {
+	said := squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: reply}
+	if opts.Reads == nil || strings.TrimSpace(text) == "" {
+		return said
+	}
+	if !isKeptWording(reply) {
+		return said
+	}
+	body, err := json.Marshal(drawn{Chips: []turnChip{{
+		Label: "answer this", Action: "/buddy/say",
+		Fields: map[string]string{"said": text},
+	}}})
+	if err != nil {
+		slog.Error("drawing the way to be answered", "error", err)
+		return said
+	}
+	said.Shown = body
+	return said
+}
+
+// isKeptWording is whether Buddy said one of the acknowledgements rather than
+// something he wrote.
+//
+// Asked of the pool rather than tracked alongside, because the pool is the
+// definition: an acknowledgement is one of these sentences, and anything else
+// is an answer. A second flag threaded through the call would be a second
+// place for the two to disagree.
+func isKeptWording(reply string) bool {
+	for _, one := range squirrel.Sayings(squirrel.SayingKept) {
+		if one == reply {
+			return true
+		}
+	}
+	return false
 }
 
 // readCapture pulls the words and the photograph off the request, streaming
@@ -309,11 +361,38 @@ func said(raw string) string {
 // be guessing about the one capture that is hardest to make again.
 func whatBuddyMakesOfIt(ctx context.Context, s Store, opts Options, text string, photo bool) string {
 	kept := squirrel.Say(squirrel.SayingKept, now())
-	if opts.Reads == nil || photo || strings.TrimSpace(text) == "" {
+	if photo || strings.TrimSpace(text) == "" {
 		return kept
 	}
 	personID, ok := opts.person()
 	if !ok {
+		return kept
+	}
+
+	// Was that a question? Three tiers, cheapest first.
+	//
+	// The rule needs nothing running and is the floor. The house is a small
+	// model on the cluster and is asked only to improve on the rule — it costs
+	// electricity in a cupboard rather than money abroad, so it may run on
+	// everything typed. Neither of them writes an answer; they only decide
+	// whether one is worth paying for.
+	asking := squirrel.LooksLikeAQuestion(text)
+	if opts.AskedAQuestion != nil {
+		if said, answered := opts.AskedAQuestion(ctx, text); answered {
+			asking = said
+		}
+	}
+	if !asking {
+		// A thought, which is almost everything typed into this box. Kept, and
+		// answered in the product's own words — no call, no network, and the
+		// same reply it gave for a month.
+		return kept
+	}
+
+	if opts.Reads == nil {
+		// It reads as a question and there is nobody to answer it. Keeping it
+		// is the honest outcome: a question nobody answered is a note you will
+		// want to see again.
 		return kept
 	}
 
@@ -324,6 +403,8 @@ func whatBuddyMakesOfIt(ctx context.Context, s Store, opts Options, text string,
 		return kept
 	}
 	if keep {
+		// It read the whole sentence and disagrees with the one-word
+		// judgement that got it here. Its answer wins.
 		return say
 	}
 

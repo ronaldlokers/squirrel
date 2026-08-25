@@ -76,10 +76,21 @@ var readsTool = []map[string]any{
 
 // Reads answers what was typed and says whether it was a thought.
 //
-// ErrUnavailable means the box behaves exactly as it did before this existed:
-// kept, and "Kept." said back. That is the floor, and it is the reason this
-// can be built at all — every failure lands on the old guarantee rather than
-// on a lost thought.
+// The judgement is made before this is called now — by the model in the house,
+// or by the rule under it — so what reaches here is already believed to be a
+// question. It is asked anyway, and its answer wins: the caller was working
+// from a one-word classification and this is the one that has read the whole
+// sentence.
+//
+// So the tiers are: the rule for free, the house for a better guess, and this
+// only for what survives both. Which is the argument the splitter and the
+// interruption pre-filter are already built on — rules narrow, and the model
+// answers the few that survive.
+//
+// ErrUnavailable means the box behaves exactly as it did before any of this:
+// kept, and the kept wording said back. That is the floor, and it is the
+// reason this can be built at all — every failure lands on the old guarantee
+// rather than on a lost thought.
 func (p *Provider) Reads(ctx context.Context, personID int64, said string, n Now) (string, bool, error) {
 	said = strings.TrimSpace(said)
 	if said == "" {

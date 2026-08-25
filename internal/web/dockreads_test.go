@@ -31,17 +31,21 @@ func aQuestion(reply string) func(string) (string, bool, error) {
 	return func(string) (string, bool, error) { return reply, false, nil }
 }
 
-// A thought is kept, and answered with something real rather than "Kept."
-func TestAThoughtIsKeptAndAnswered(t *testing.T) {
+// A thought never reaches a model at all.
+//
+// This is the architecture the product states and briefly stopped following:
+// rules narrow, and the model answers the few that survive. Almost everything
+// typed into this box is a thought, so almost everything costs nothing.
+func TestAThoughtNeverReachesAModel(t *testing.T) {
 	f := &fakeStore{}
-	m := mountedReading(t, f, aThought("That is the third time the boiler has come up."))
+	m := mountedReading(t, f, aThought("should not be called"))
 
-	m.call(t, "POST", "/capture", strings.NewReader("text=the+boiler+again"))
+	m.call(t, "POST", "/capture", strings.NewReader("text=the+boiler+is+making+that+noise+again"))
 
-	require.Equal(t, []string{"the boiler again"}, f.readAsked)
+	require.Empty(t, f.readAsked, "a thought was sent abroad to be read")
 	require.Len(t, f.appended, 2)
-	require.Equal(t, "the boiler again", f.appended[0].Words)
-	require.Equal(t, "That is the third time the boiler has come up.", f.appended[1].Words)
+	require.Equal(t, "the boiler is making that noise again", f.appended[0].Words)
+	require.Contains(t, squirrel.Sayings(squirrel.SayingKept), f.appended[1].Words)
 	require.Empty(t, f.states, "a thought was dropped")
 }
 
@@ -50,11 +54,11 @@ func TestAThoughtIsKeptAndAnswered(t *testing.T) {
 // pile can put it back.
 func TestAQuestionIsAnsweredAndNotLeftInThePile(t *testing.T) {
 	f := &fakeStore{}
-	f.items = []squirrel.Item{note(7, "what should I do about the tax thing", squirrel.ItemOpen)}
+	f.items = []squirrel.Item{note(7, "what should I do about the tax thing?", squirrel.ItemOpen)}
 	m := mountedReading(t, f, aQuestion("Open the envelope and read the first line."))
 
 	m.call(t, "POST", "/capture",
-		strings.NewReader("text=what+should+I+do+about+the+tax+thing"))
+		strings.NewReader("text=what+should+I+do+about+the+tax+thing%3F"))
 
 	require.Equal(t, "Open the envelope and read the first line.", f.appended[1].Words)
 	require.Equal(t, squirrel.ItemDropped, f.states[7], "the question stayed in the pile")
@@ -76,12 +80,12 @@ func TestWithNoCoachTheBoxKeepsAndSaysSo(t *testing.T) {
 // A model that cannot be reached, or a budget that is spent.
 func TestAnUnreachableModelKeepsTheWords(t *testing.T) {
 	f := &fakeStore{}
-	f.items = []squirrel.Item{note(7, "the boiler", squirrel.ItemOpen)}
+	f.items = []squirrel.Item{note(7, "what now?", squirrel.ItemOpen)}
 	m := mountedReading(t, f, func(string) (string, bool, error) {
 		return "", true, errors.New("no coach")
 	})
 
-	m.call(t, "POST", "/capture", strings.NewReader("text=the+boiler"))
+	m.call(t, "POST", "/capture", strings.NewReader("text=what+now%3F"))
 
 	require.Contains(t, squirrel.Sayings(squirrel.SayingKept), f.appended[1].Words)
 	require.Empty(t, f.states, "an unreachable model threw a thought away")
@@ -103,7 +107,7 @@ func TestTheWordsAreSpooledBeforeBuddyIsAsked(t *testing.T) {
 		},
 	}))
 
-	m.call(t, "POST", "/capture", strings.NewReader("text=what+now"))
+	m.call(t, "POST", "/capture", strings.NewReader("text=what+should+I+do%3F"))
 
 	require.True(t, spooledFirst,
 		"Buddy was asked before the words were durable, so a crash mid-call loses them")
@@ -117,7 +121,7 @@ func TestOnlyTheNoteThatMatchesIsDropped(t *testing.T) {
 	f.items = []squirrel.Item{note(7, "something else entirely", squirrel.ItemOpen)}
 	m := mountedReading(t, f, aQuestion("Open the envelope."))
 
-	m.call(t, "POST", "/capture", strings.NewReader("text=what+now"))
+	m.call(t, "POST", "/capture", strings.NewReader("text=what+now%3F"))
 
 	require.Empty(t, f.states, "it dropped a note it had not just made")
 	require.Equal(t, "Open the envelope.", f.appended[1].Words, "the answer was lost too")
@@ -156,4 +160,132 @@ func TestAnEmptyBoxAsksNothing(t *testing.T) {
 	m.call(t, "POST", "/capture", strings.NewReader("text=+++"))
 
 	require.Empty(t, f.readAsked)
+}
+
+// The three tiers, and which one answers.
+
+// The rule is the floor and it needs nothing running. No house, no key, and
+// the box still tells a question from a thought.
+func TestTheRuleAnswersWithNothingRunning(t *testing.T) {
+	for _, thought := range []string{
+		"the boiler is making that noise again",
+		"bins out thursday",
+		"meter reading 48213",
+		"ring the vet? no, the dentist",
+		"what a day",
+	} {
+		require.False(t, squirrel.LooksLikeAQuestion(thought), "%q read as a question", thought)
+	}
+	for _, question := range []string{
+		"what should I do about the tax thing?",
+		"what should I do about the tax thing",
+		"should I ring them today",
+		"can you break this down",
+		"how do i even start this",
+	} {
+		require.True(t, squirrel.LooksLikeAQuestion(question), "%q read as a thought", question)
+	}
+}
+
+// The house is asked about everything and overrules the rule, because it has
+// read the sentence rather than matched its shape.
+func TestTheHouseOverrulesTheRule(t *testing.T) {
+	f := &fakeStore{}
+	f.items = []squirrel.Item{note(7, "remind me what the boiler code was", squirrel.ItemOpen)}
+	var housed []string
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		AskedAQuestion: func(_ context.Context, said string) (bool, bool) {
+			housed = append(housed, said)
+			return true, true
+		},
+		Reads: func(context.Context, int64, string) (string, bool, error) {
+			return "4471.", false, nil
+		},
+	}))
+
+	m.call(t, "POST", "/capture",
+		strings.NewReader("text=remind+me+what+the+boiler+code+was"))
+
+	require.Len(t, housed, 1, "the house was not asked")
+	require.Equal(t, "4471.", f.appended[1].Words, "the rule won over the house")
+	require.Equal(t, squirrel.ItemDropped, f.states[7])
+}
+
+// A house that does not answer falls through to the rule rather than guessing.
+func TestAHouseThatDoesNotAnswerFallsThroughToTheRule(t *testing.T) {
+	f := &fakeStore{}
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		// True and "did not answer". Believing the first return without
+		// checking the second would send a thought abroad — which is what the
+		// mutation that caught this test being weak actually did.
+		AskedAQuestion: func(context.Context, string) (bool, bool) { return true, false },
+		Reads: func(context.Context, int64, string) (string, bool, error) {
+			return "should not be called", false, nil
+		},
+	}))
+
+	m.call(t, "POST", "/capture", strings.NewReader("text=the+boiler+again"))
+
+	require.Contains(t, squirrel.Sayings(squirrel.SayingKept), f.appended[1].Words)
+}
+
+// A question with nobody to answer it is kept, which is the honest outcome: a
+// question nobody answered is a note you will want to see again.
+func TestAQuestionWithNoCoachIsKept(t *testing.T) {
+	f := &fakeStore{}
+	f.items = []squirrel.Item{note(7, "what should I do?", squirrel.ItemOpen)}
+	routed(t, f).call(t, "POST", "/capture", strings.NewReader("text=what+should+I+do%3F"))
+
+	require.Contains(t, squirrel.Sayings(squirrel.SayingKept), f.appended[1].Words)
+	require.Empty(t, f.states, "a question nobody could answer was thrown away")
+}
+
+// And the way out when the rule reads it wrong: one press hands the words to
+// Buddy properly.
+func TestAnAcknowledgementOffersToBeAnswered(t *testing.T) {
+	f := &fakeStore{}
+	m := mountedReading(t, f, aThought("should not be called"))
+
+	m.call(t, "POST", "/capture", strings.NewReader("text=the+boiler+again"))
+
+	drew := string(f.appended[1].Shown)
+	require.Contains(t, drew, "answer this")
+	require.Contains(t, drew, "/buddy/say")
+	require.Contains(t, drew, "the boiler again", "the chip does not carry the words")
+}
+
+// Not on something Buddy actually answered. A chip offering to answer what has
+// just been answered is furniture.
+func TestAnAnswerDoesNotOfferToBeAnswered(t *testing.T) {
+	f := &fakeStore{}
+	f.items = []squirrel.Item{note(7, "what should I do?", squirrel.ItemOpen)}
+	m := mountedReading(t, f, aQuestion("Open the envelope."))
+
+	m.call(t, "POST", "/capture", strings.NewReader("text=what+should+I+do%3F"))
+
+	require.NotContains(t, string(f.appended[1].Shown), "answer this")
+}
+
+// And never when there is nobody to ask. A control that cannot work is worse
+// than one that was never drawn.
+func TestWithNoCoachThereIsNoWayToBeAnswered(t *testing.T) {
+	f := &fakeStore{}
+	routed(t, f).call(t, "POST", "/capture", strings.NewReader("text=the+boiler+again"))
+
+	require.NotContains(t, string(f.appended[1].Shown), "answer this")
+}
+
+// A command is never a question. The grammar has already claimed these, and
+// answering them with a model would be answering something the product knows
+// how to do itself.
+func TestACommandIsNeverAQuestion(t *testing.T) {
+	for _, command := range []string{"!find boiler", "!at 14:30 dentist", "!notes"} {
+		require.False(t, squirrel.LooksLikeAQuestion(command), "%q read as a question", command)
+	}
 }

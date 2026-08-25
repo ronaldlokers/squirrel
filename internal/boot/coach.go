@@ -253,6 +253,36 @@ func breaker(c coach.Coach) squirrel.Breaker {
 	}
 }
 
+// reading is the three tiers the box judges with, as one value.
+//
+// Lifted out of the inline literal it was written in, for the reason
+// schedulerOptionsFor was: a field set in an inline literal cannot be checked
+// by a test, and `AskedAQuestion` proved it by going missing while the whole
+// suite stayed green.
+type reading struct {
+	Reads          func(context.Context, int64, string) (string, bool, error)
+	AskedAQuestion func(context.Context, string) (bool, bool)
+}
+
+// readingWiring is what the screen is given.
+func readingWiring(c coach.Coach, store *squirrel.Store, h *coach.House) reading {
+	return reading{Reads: reader(c, store), AskedAQuestion: housed(h)}
+}
+
+// housed is the model on the cluster, or nil.
+//
+// Its own seam rather than a method on the coach, because it has nothing to do
+// with the coach: no key, no budget, no accounting, and it answers when the
+// hosted one is absent entirely. A build with a house and no API key reads
+// every capture locally and never asks anybody for an answer, which is a
+// configuration worth being able to have.
+func housed(h *coach.House) func(context.Context, string) (bool, bool) {
+	if h == nil {
+		return nil
+	}
+	return h.AskedAQuestion
+}
+
 // reader is what the box is answered by, or nil.
 //
 // Nil with no coach, and the nil is what captureHandler checks — so a build
