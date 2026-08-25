@@ -104,7 +104,12 @@ func endsAsking(turns []squirrel.Turn) bool {
 		// is the safe direction; the other one talks over it.
 		return true
 	}
-	return sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
+	// Faces counts. The check-in is a question with its answers drawn on it,
+	// exactly like the picker, and it was left out when this was written —
+	// so the opening line landed on top of "how do you feel?" and the two of
+	// them alternated down the screen. Reported from a phone with three
+	// unanswered check-ins on it.
+	return sh.Faces || sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
 }
 
 // openingTurn is that line as a turn, or nothing at all.
@@ -201,6 +206,34 @@ func saidAlready(turns []squirrel.Turn, mark string) bool {
 		// The most recent opening is the only one that matters. An older one
 		// saying the same thing is a day you have already moved past.
 		return sh.Opened == mark
+	}
+	return false
+}
+
+// alreadyAsking is whether the conversation already holds a check-in nobody
+// has answered.
+//
+// The whole conversation on screen, not only the last turn: Buddy says other
+// things after asking — the opening line, what a door drew — so by the time
+// you come back the question is rarely the newest thing. What stops it being
+// asked forever is that answering writes a reading, and a fresh reading is
+// what checkinTurn already refuses on.
+//
+// Bounded to the turns in hand, which is the page. A question older than the
+// page you are looking at is one you have scrolled past and will not answer,
+// and asking again there is a new question rather than a repeat.
+func alreadyAsking(turns []squirrel.Turn) bool {
+	for _, t := range turns {
+		if t.Who != squirrel.SpeakerBuddy || len(t.Shown) == 0 {
+			continue
+		}
+		var sh drawn
+		if err := json.Unmarshal(t.Shown, &sh); err != nil {
+			continue
+		}
+		if sh.Faces {
+			return true
+		}
 	}
 	return false
 }

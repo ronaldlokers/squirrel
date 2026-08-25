@@ -218,3 +218,68 @@ func TestTheOfferStillWillNotTalkOverACard(t *testing.T) {
 
 	require.NotContains(t, thread(t, f), "ring the vet")
 }
+
+// A question you have not answered is not asked again.
+//
+// It is still on the screen; asking again does not make it easier to answer,
+// it makes a column of the same question — which is what a phone showed on
+// 25 August 2026, three deep, with opening lines in between them.
+func TestAnUnansweredCheckinIsNotAskedAgain(t *testing.T) {
+	f := &fakeStore{}
+	m := routed(t, f)
+
+	m.call(t, "GET", "/", nil)
+	require.Len(t, f.appended, 1, "it did not ask at all")
+	require.Contains(t, f.appended[0].Words, "how do you feel")
+	f.turns, f.appended = append(f.turns, f.appended...), nil
+
+	m.call(t, "GET", "/", nil)
+	require.Empty(t, f.appended, "it asked how you feel a second time")
+}
+
+// Not even with other things said after it. Buddy says more after asking —
+// the opening line, what a door drew — so by the time you come back the
+// question is rarely the newest thing.
+func TestAnUnansweredCheckinIsNotAskedAgainFromFurtherUp(t *testing.T) {
+	f := &fakeStore{turns: []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: []byte(`{"faces":true}`)},
+		{ID: 2, Who: squirrel.SpeakerYou, Words: "the pile"},
+		{ID: 3, Who: squirrel.SpeakerBuddy, Words: "This one.", Shown: []byte(`{"cards":[{"title":"the boiler"}]}`)},
+	}}
+	thread(t, f)
+
+	require.Empty(t, f.appended, "it asked again from under a conversation")
+}
+
+// Answering is what makes it askable again, and a fresh reading is what
+// checkinTurn already refuses on — so the two halves compose without a second
+// piece of state.
+func TestAnsweringMakesItAskableAgain(t *testing.T) {
+	f := &fakeStore{
+		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()},
+		turns: []squirrel.Turn{
+			{ID: 1, Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: []byte(`{"faces":true}`)},
+			{ID: 2, Who: squirrel.SpeakerYou, Words: "good"},
+		},
+	}
+	thread(t, f)
+
+	require.Empty(t, f.appended, "a fresh reading was asked about anyway")
+}
+
+// The opening line does not land on top of the check-in.
+//
+// The check-in is a question with its answers drawn on it, exactly like the
+// picker — and it was left out of endsAsking when that was written, so the two
+// alternated down the screen.
+func TestTheOpeningDoesNotTalkOverTheCheckin(t *testing.T) {
+	f := &fakeStore{
+		waiting:  squirrel.Waiting{Agenda: 1},
+		upcoming: []squirrel.Moment{{ID: 1, Label: "dentist", Starts: now().Add(3 * time.Hour)}},
+	}
+	body := thread(t, f)
+
+	require.Contains(t, body, "how do you feel")
+	require.NotContains(t, body, "dentist",
+		"it handed you something while the question was still open")
+}

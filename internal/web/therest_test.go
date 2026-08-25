@@ -147,3 +147,26 @@ func TestNoChipInTheConversationIsALink(t *testing.T) {
 	require.NotContains(t, body, `class="chip" href="/?open`)
 	require.NotContains(t, body, `href="/pile`)
 }
+
+// The dock covers the end of the page unless the page leaves room for it.
+//
+// The clearance was on `.thread`, and `.thread` is not the last thing on the
+// page: the two chips and the way out sit below it, outside its padding. On a
+// phone they were behind the dock with no way to scroll them clear — reported
+// from a phone, and invisible on a laptop where the page is short enough that
+// nothing needs scrolling at all.
+func TestThePageLeavesRoomForTheDock(t *testing.T) {
+	css, err := staticFS.ReadFile("static/pile.css")
+	require.NoError(t, err)
+	sheet := string(css)
+
+	require.Contains(t, sheet, "padding-bottom: var(--dockspace",
+		"the column reserves no room for the dock")
+	require.NotContains(t, sheet, "padding: 22px 22px 132px",
+		"the clearance is back on .thread, which is not the last thing on the page")
+	require.NotContains(t, sheet, "padding: 18px 14px 128px")
+}
+
+// That the reserve follows the slot as it grows is measured in a browser —
+// see TestBrowserTheReserveFollowsTheSlot. A source-text assertion passed with
+// the observer disabled, because the word was still in the file.
