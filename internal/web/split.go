@@ -24,7 +24,7 @@ import (
 // splitHandler is both halves: proposing, and keeping what was proposed.
 func splitHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

@@ -50,7 +50,7 @@ func askForThumb(t *testing.T, f *fakeStore, ph *fakePhotos, id string) *httptes
 	r.Header.Set("X-Authentik-Username", "ronald")
 	r.SetPathValue("id", id)
 	w := httptest.NewRecorder()
-	thumbHandler(f, opts)(w, r)
+	thumbHandler(f, opts)(w, asking(r))
 	return w
 }
 

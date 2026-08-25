@@ -20,7 +20,7 @@ import (
 // either way.
 func timerHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -80,7 +80,7 @@ func backFrom(r *http.Request) string {
 // *down* — it is a fact about a thing you chose to start, not a total of what
 // you have not done.
 func runningTimer(s Store, opts Options, r *http.Request) *timerView {
-	personID, ok := opts.person()
+	personID, ok := personOf(r)
 	if !ok {
 		return nil
 	}

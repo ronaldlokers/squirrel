@@ -25,7 +25,7 @@ const subscribeLimit = 4 << 10
 // asking, sameOrigin says which page asked.
 func pushSubscribeHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

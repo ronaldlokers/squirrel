@@ -92,7 +92,7 @@ func alsoOffer(t squirrel.Turn, chips ...turnChip) squirrel.Turn {
 // lines is three places for one of them to drift.
 func askNameHandler(s Store, opts Options, said, question, action, field, does string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -112,7 +112,7 @@ func askNameHandler(s Store, opts Options, said, question, action, field, does s
 // answered, so abandoning it halfway leaves no half-made chore behind.
 func choreNameHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

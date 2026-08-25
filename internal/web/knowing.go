@@ -35,7 +35,7 @@ func knowingChip() turnChip {
 // opinion about you invites reading it as a file.
 func knowingHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -81,7 +81,7 @@ func knowingHandler(s Store, opts Options) http.HandlerFunc {
 // consequence is invisible is a control you press once and then wonder about.
 func forgetKnowingHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

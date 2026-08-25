@@ -49,7 +49,7 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		personID, known := opts.person()
+		personID, known := personOf(r)
 		if !known {
 			fail(w, errNoOwner)
 			return
@@ -155,7 +155,7 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		personID, known := opts.person()
+		personID, known := personOf(r)
 		if !known {
 			fail(w, errNoOwner)
 			return
@@ -205,7 +205,7 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 // the same place, like every other transition here.
 func fixHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -262,7 +262,7 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 // that only kept the decisions would be a record of a different afternoon.
 func laterHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -307,7 +307,7 @@ func undoHandler(s Store, opts Options) http.HandlerFunc {
 // press: a row that is not yours is not yours to ask about.
 func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

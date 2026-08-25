@@ -1058,3 +1058,11 @@ func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool
 	}))
 	return m
 }
+
+// asking is a request with a person on it.
+//
+// guard does this in production — it decides who is asking and puts them on
+// the request — so a test that calls a handler directly, bypassing the mux,
+// has to do it itself. Two tests do, both because the test mux matches by
+// prefix and cannot resolve a `{id}` wildcard.
+func asking(r *http.Request) *http.Request { return withWho(r, 1, "ronald") }

@@ -88,7 +88,7 @@ func coachAvailable(opts Options) bool { return opts.Ask != nil }
 // blockers press.
 func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -110,7 +110,7 @@ func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 
 func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -250,7 +250,7 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 // words that did not land rather than told about them.
 func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -289,7 +289,7 @@ func backTolerant(from string) string {
 // sentence has already overridden the quiet of a low day by asking. A picker
 // that cannot answer costs a hint and nothing else.
 func subjectFor(s Store, opts Options, r *http.Request) string {
-	personID, ok := opts.person()
+	personID, ok := personOf(r)
 	if !ok {
 		return ""
 	}
@@ -360,7 +360,7 @@ func withDid(a Answer) string {
 // is a code change someone reviews.
 func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

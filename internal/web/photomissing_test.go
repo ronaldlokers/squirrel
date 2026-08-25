@@ -40,7 +40,7 @@ func TestAPhotographTheDiskHasLostSaysSo(t *testing.T) {
 	r := httptest.NewRequest("GET", "/photo/7", nil)
 	r.SetPathValue("id", "7")
 	res := httptest.NewRecorder()
-	photoHandler(f, opts)(res, r)
+	photoHandler(f, opts)(res, asking(r))
 
 	require.Equal(t, 404, res.Code, "it is still a 404 and not a 500")
 	require.Contains(t, said.String(), "a photograph the row expects is not on disk",
