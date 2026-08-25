@@ -30,6 +30,11 @@ type fakeIdP struct {
 	claims map[string]any
 	// signWith, when set, signs with a different key than the JWKS publishes.
 	signWith *rsa.PrivateKey
+	// discoveries counts how often it was asked who it is, so a test can prove
+	// the answer is remembered rather than fetched per press.
+	discoveries int
+	// refuse makes discovery fail, which is an authentik that is down.
+	refuse bool
 }
 
 func anIdP(t *testing.T) *fakeIdP {
@@ -46,6 +51,11 @@ func anIdP(t *testing.T) *fakeIdP {
 	t.Cleanup(idp.Close)
 
 	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
+		idp.discoveries++
+		if idp.refuse {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"issuer":                                idp.URL,
@@ -186,7 +196,9 @@ func TestATokenForAnotherAudienceIsRefused(t *testing.T) {
 func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
-	away, err := url.Parse(d.Away("the-state", "the-verifier"))
+	raw, err := d.Away("the-state", "the-verifier")
+	require.NoError(t, err)
+	away, err := url.Parse(raw)
 	require.NoError(t, err)
 	require.Equal(t, "the-state", away.Query().Get("state"))
 	require.Equal(t, "S256", away.Query().Get("code_challenge_method"))
@@ -198,7 +210,9 @@ func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
 func TestTheChallengeIsTheHashOfTheVerifier(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
-	away, err := url.Parse(d.Away("s", "the-verifier"))
+	raw, err := d.Away("s", "the-verifier")
+	require.NoError(t, err)
+	away, err := url.Parse(raw)
 	require.NoError(t, err)
 
 	sum := sha256.Sum256([]byte("the-verifier"))
@@ -215,4 +229,104 @@ func TestAGateWithNoRequiredGroupIsRefused(t *testing.T) {
 		RedirectURL: "https://squirrel.example/auth/callback",
 	})
 	require.Error(t, err, "a gate was built that would let anybody in")
+}
+
+// A gate whose authentik cannot be reached still builds.
+//
+// This is the test that would have prevented the outage on 25 August 2026.
+// Discovery ran at boot and a failure was a boot that failed — which took down
+// capture, the drain and the Campfire webhook, none of which have anything to
+// do with the screen. Squirrel's rule is that a failure costs a feature and not
+// the product; the spool exists so a Postgres outage does not lose a note. An
+// identity provider the screen needs must not be a harder dependency than the
+// database the whole product needs.
+func TestAGateBuildsWithoutReachingAuthentik(t *testing.T) {
+	g, err := NewAuthentik(context.Background(), Authentik{
+		Issuer:   "https://nothing.invalid/application/o/squirrel/",
+		ClientID: "squirrel", ClientSecret: "shh",
+		RedirectURL:   "https://squirrel.example/auth/callback",
+		RequiredGroup: "squirrel-users",
+	})
+	require.NoError(t, err, "an unreachable authentik stopped the whole product from booting")
+	require.NotNil(t, g)
+}
+
+// It refuses to act until it has, rather than pretending.
+func TestAGateThatHasNotFoundAuthentikRefuses(t *testing.T) {
+	g := unreachableGate(t)
+
+	_, err := g.Away("the-state", "the-verifier")
+	require.Error(t, err)
+
+	_, err = g.Back(context.Background(), "a-code", "a-verifier")
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrNotAllowed, "a gate that is not ready blamed the account")
+}
+
+// And it starts working once authentik answers, without a restart. An outage
+// during boot must not need a human to notice it ended.
+func TestAGateFindsAuthentikLater(t *testing.T) {
+	idp := anIdP(t)
+	g := aGate(t, idp, "squirrel-users")
+	// aGate builds against a live idp; take discovery away and put it back to
+	// prove the lookup is not once-and-for-all.
+	g.forget()
+
+	who, err := g.Back(context.Background(), "a-code", "a-verifier")
+	require.NoError(t, err, "a gate could not find authentik a second time")
+	require.Equal(t, "sub-123", who.Sub)
+}
+
+// Discovery is not repeated on every press. It is a network call, and the
+// request path in this product does not make one it can avoid.
+func TestAuthentikIsFoundOnceAndRemembered(t *testing.T) {
+	idp := anIdP(t)
+	g := aGate(t, idp, "squirrel-users")
+	require.Zero(t, idp.discoveries, "building the gate went to the network")
+
+	for range 3 {
+		_, err := g.Away("s", "v")
+		require.NoError(t, err)
+	}
+	require.Equal(t, 1, idp.discoveries, "it asked authentik who it was on every press")
+}
+
+// A failed lookup is retried, but not on every request: an authentik that is
+// down would otherwise take a network round trip per press to say so.
+func TestAFailedLookupIsNotRetriedOnEveryPress(t *testing.T) {
+	// The clock, moved rather than the gate's own field, so the backoff is
+	// what is under test rather than a hole poked in it.
+	at := time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC)
+	was := now
+	now = func() time.Time { return at }
+	t.Cleanup(func() { now = was })
+
+	idp := anIdP(t)
+	idp.refuse = true
+	g := aGate(t, idp, "squirrel-users")
+
+	for range 3 {
+		_, err := g.Away("s", "v")
+		require.Error(t, err)
+	}
+	require.Equal(t, 1, idp.discoveries, "a down authentik cost a round trip per press")
+
+	// Past the backoff it tries again, and by then authentik is up.
+	at = at.Add(retryEvery + time.Second)
+	idp.refuse = false
+	_, err := g.Away("s", "v")
+	require.NoError(t, err, "it never tried again")
+	require.Equal(t, 2, idp.discoveries)
+}
+
+func unreachableGate(t *testing.T) *Gate {
+	t.Helper()
+	g, err := NewAuthentik(context.Background(), Authentik{
+		Issuer:   "https://nothing.invalid/application/o/squirrel/",
+		ClientID: "squirrel", ClientSecret: "shh",
+		RedirectURL:   "https://squirrel.example/auth/callback",
+		RequiredGroup: "squirrel-users",
+	})
+	require.NoError(t, err)
+	return g
 }

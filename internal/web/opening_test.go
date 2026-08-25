@@ -28,6 +28,18 @@ func TestOnAQuietAfternoonBuddySaysNothingFirst(t *testing.T) {
 // Something with a time you can be late for is the thing that most wants
 // saying, because it will happen whether or not you look.
 func TestSomethingTodayIsWhatBuddyOpensWith(t *testing.T) {
+	// A fixed morning, not now().Add(3h).
+	//
+	// Three hours from now is tomorrow after nine in the evening, so this test
+	// asserted "dentist today" against a card correctly reading "dentist
+	// tomorrow" — and failed every night between 21:00 and midnight, on any
+	// branch, for a reason having nothing to do with anybody's change. The
+	// sibling test below already pins tomorrow explicitly; this one was
+	// relying on the clock it was run at.
+	was := now
+	now = func() time.Time { return time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { now = was })
+
 	at := now().Add(3 * time.Hour)
 	f := &fakeStore{
 		checkin:  fresh(),

@@ -115,9 +115,42 @@ func TestTheWayInIsReachableWithNoSession(t *testing.T) {
 	require.Equal(t, http.StatusOK, res.StatusCode)
 }
 
-// A screen that is asked for and cannot be signed into is not a screen. Boot
-// refuses rather than mounting one, because the alternative is a deploy that
-// looks healthy and locks you out of your own pile.
+// An authentik that cannot be reached costs the way in and nothing else.
+//
+// **This is the test that was missing on 25 August 2026.** Discovery ran at
+// boot and a failure was a boot that failed, so when squirrel's pod turned out
+// to have no egress to authentik's hostname, both clusters crash-looped — and
+// what went down with the screen was capture, the drain and the Campfire
+// webhook, none of which have anything to do with signing in. The room does
+// not retry a delivery it could not make.
+//
+// The rule this restores is the product's oldest: a failure costs a feature,
+// never the product. The spool exists so an unreachable Postgres does not lose
+// a note; an unreachable identity provider must not be a harder dependency
+// than that.
+func TestAnUnreachableAuthentikStillBoots(t *testing.T) {
+	withStore(t)
+	s := boots(t, envFor(t, map[string]string{
+		"WEB_IDENTITY":       "ronald",
+		"WEB_REQUIRED_GROUP": "squirrel-users",
+		// A hostname that resolves to nothing, which is what a pod with no
+		// egress to authentik looks like from in here.
+		"WEB_OIDC_ISSUER":        "https://nothing.invalid/application/o/squirrel/",
+		"WEB_OIDC_CLIENT_ID":     "squirrel",
+		"WEB_OIDC_CLIENT_SECRET": "shh",
+		"WEB_OIDC_REDIRECT_URL":  "https://squirrel.example/auth/callback",
+	}))
+
+	// The screen is up and says what is wrong, rather than the process being
+	// down and saying nothing.
+	require.Equal(t, http.StatusOK, get(t, screenURL(s)+"auth").StatusCode)
+	require.Equal(t, http.StatusSeeOther, get(t, screenURL(s)).StatusCode,
+		"the pile answered without a session")
+}
+
+// A screen that is asked for and cannot be *configured* is a different thing,
+// and still refuses. A missing value cannot come right on its own the way an
+// unreachable host can.
 func TestBootRefusesAScreenWithNoWayIn(t *testing.T) {
 	withStore(t)
 	_, err := boot.Boot(context.Background(), envFor(t, map[string]string{
