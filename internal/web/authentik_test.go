@@ -101,7 +101,7 @@ func (f *fakeIdP) sign(t *testing.T) string {
 	return signing + "." + base64.RawURLEncoding.EncodeToString(sig)
 }
 
-func aDoor(t *testing.T, idp *fakeIdP, group string) *Door {
+func aGate(t *testing.T, idp *fakeIdP, group string) *Gate {
 	t.Helper()
 	d, err := NewAuthentik(context.Background(), Authentik{
 		Issuer: idp.URL, ClientID: "squirrel", ClientSecret: "shh",
@@ -112,7 +112,7 @@ func aDoor(t *testing.T, idp *fakeIdP, group string) *Door {
 }
 
 func TestAGoodLoginGivesBackWhoItWas(t *testing.T) {
-	d := aDoor(t, anIdP(t), "squirrel-users")
+	d := aGate(t, anIdP(t), "squirrel-users")
 
 	who, err := d.Back(context.Background(), "a-code", "a-verifier")
 	require.NoError(t, err)
@@ -125,7 +125,7 @@ func TestAGoodLoginGivesBackWhoItWas(t *testing.T) {
 func TestAnAccountWithoutTheGroupIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	idp.claims["groups"] = []any{"somebody-elses-app"}
-	d := aDoor(t, idp, "squirrel-users")
+	d := aGate(t, idp, "squirrel-users")
 
 	_, err := d.Back(context.Background(), "a-code", "a-verifier")
 	require.ErrorIs(t, err, ErrNotAllowed)
@@ -137,7 +137,7 @@ func TestAnAccountWithoutTheGroupIsRefused(t *testing.T) {
 func TestAnAccountWithNoGroupsIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	delete(idp.claims, "groups")
-	d := aDoor(t, idp, "squirrel-users")
+	d := aGate(t, idp, "squirrel-users")
 
 	_, err := d.Back(context.Background(), "a-code", "a-verifier")
 	require.ErrorIs(t, err, ErrNotAllowed)
@@ -148,7 +148,7 @@ func TestAnAccountWithNoGroupsIsRefused(t *testing.T) {
 // assuming the library was configured correctly.
 func TestATokenSignedByTheWrongKeyIsRefused(t *testing.T) {
 	idp := anIdP(t)
-	d := aDoor(t, idp, "squirrel-users")
+	d := aGate(t, idp, "squirrel-users")
 
 	other, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
@@ -163,7 +163,7 @@ func TestATokenSignedByTheWrongKeyIsRefused(t *testing.T) {
 func TestAnExpiredTokenIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	idp.claims["exp"] = time.Now().Add(-time.Hour).Unix()
-	d := aDoor(t, idp, "squirrel-users")
+	d := aGate(t, idp, "squirrel-users")
 
 	_, err := d.Back(context.Background(), "a-code", "a-verifier")
 	require.Error(t, err)
@@ -174,7 +174,7 @@ func TestAnExpiredTokenIsRefused(t *testing.T) {
 func TestATokenForAnotherAudienceIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	idp.claims["aud"] = "somebody-elses-app"
-	d := aDoor(t, idp, "squirrel-users")
+	d := aGate(t, idp, "squirrel-users")
 
 	_, err := d.Back(context.Background(), "a-code", "a-verifier")
 	require.Error(t, err)
@@ -184,7 +184,7 @@ func TestATokenForAnotherAudienceIsRefused(t *testing.T) {
 // The way out carries state and a PKCE challenge, or the callback cannot tell
 // its own redirect from somebody else's.
 func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
-	d := aDoor(t, anIdP(t), "squirrel-users")
+	d := aGate(t, anIdP(t), "squirrel-users")
 
 	away, err := url.Parse(d.Away("the-state", "the-verifier"))
 	require.NoError(t, err)
@@ -196,7 +196,7 @@ func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
 
 // The challenge is the hash of the verifier, not the verifier renamed.
 func TestTheChallengeIsTheHashOfTheVerifier(t *testing.T) {
-	d := aDoor(t, anIdP(t), "squirrel-users")
+	d := aGate(t, anIdP(t), "squirrel-users")
 
 	away, err := url.Parse(d.Away("s", "the-verifier"))
 	require.NoError(t, err)
@@ -208,11 +208,11 @@ func TestTheChallengeIsTheHashOfTheVerifier(t *testing.T) {
 
 // A door with no required group is refused at construction. Everything else
 // missing degrades to less product; this would degrade to more access.
-func TestADoorWithNoRequiredGroupIsRefused(t *testing.T) {
+func TestAGateWithNoRequiredGroupIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	_, err := NewAuthentik(context.Background(), Authentik{
 		Issuer: idp.URL, ClientID: "squirrel", ClientSecret: "shh",
 		RedirectURL: "https://squirrel.example/auth/callback",
 	})
-	require.Error(t, err, "a door was built that would let anybody in")
+	require.Error(t, err, "a gate was built that would let anybody in")
 }

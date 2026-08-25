@@ -1,0 +1,45 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+{{/* The same viewport rule the app uses, and for the same reason, which
+     DESIGN.md's The Step-Up Rule records in full. */}}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#58388a">
+<title>Squirrel</title>
+<link rel="stylesheet" href="/static/pile.css?v={{.V}}">
+<link rel="icon" href="/static/logo.png?v={{.V}}">
+</head>
+{{/* No lid, and that is deliberate.
+
+     Every control in the lid goes somewhere a signed-out person cannot reach,
+     so offering them is offering a bounce straight back to here. The frame is
+     for people who are inside it.
+
+     This is the first thing anybody ever sees of this product, and for a demo
+     user it may be the only thing they see before deciding whether they trust
+     it. It gets the mascot and one sentence, which is what /enough gets. */}}
+<body class="gatepage" style="--tilt: {{.Tilt}}deg; --light: {{.Light}}%">
+<main class="gate">
+  <img class="resting" alt="" src="/static/resting.png?v={{.V}}" width="300" height="207">
+  <h1>Squirrel</h1>
+  {{/* One sentence, four states, one composition. They are the same moment
+       arrived at four ways — a first arrival, a sign-out, a refusal and an
+       Authentik that is not answering — and building them as separate pages
+       would mean three of them were pages nobody drew.
+
+       The cold state says nothing at all. A first arrival is not an error and
+       must not read as one. */}}
+  {{with .Said}}<p class="gatesays">{{.}}</p>{{end}}
+  {{/* A POST because it writes: it sets the state cookie and the PKCE
+       verifier before it sends you anywhere. The same rule that makes opening
+       a door a POST rather than a link, and it also means a prefetch or a
+       crawler cannot begin a login. */}}
+  <form method="post" action="/auth/in">
+    <input type="hidden" name="next" value="{{.Next}}">
+    <button class="letmein" type="submit">{{.Button}}</button>
+  </form>
+</main>
+</body>
+</html>
+{{end}}

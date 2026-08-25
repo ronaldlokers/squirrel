@@ -47,6 +47,12 @@ var pages = map[string]*template.Template{
 	"enough": page("templates/layout.html", "templates/enough.html"),
 }
 
+// gatePage is on its own, outside `pages`, because it carries none of the
+// app's frame and none of view's fields. Everything render() fills in — the
+// menu, the sentences, the timer — is for people who are already inside.
+var gatePage = template.Must(
+	template.New("gate.html").Funcs(helpers).ParseFS(templateFS, "templates/gate.html"))
+
 type noteView struct {
 	ID   int64
 	Text string

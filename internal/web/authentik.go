@@ -38,8 +38,12 @@ type Authentik struct {
 	RequiredGroup string
 }
 
-// Door is a configured way in and back.
-type Door struct {
+// Gate is a configured way in and back.
+//
+// Not "door": a door in this product is a section of the pile — /pile,
+// /chores, /kept — with its own art and its own heading. Reusing the word for
+// the thing you sign in through would make every mention of it ambiguous.
+type Gate struct {
 	oauth    oauth2.Config
 	verifier *oidc.IDTokenVerifier
 	group    string
@@ -54,24 +58,24 @@ type Person struct {
 	Handle string
 }
 
-// NewAuthentik discovers the provider and builds the door.
+// NewAuthentik discovers the provider and builds the gate.
 //
 // Discovery is a network call, made once at boot rather than per request. A
 // provider that cannot be reached at boot is a boot that fails, which is the
 // honest outcome: a Squirrel with no way in is not a working Squirrel.
-func NewAuthentik(ctx context.Context, a Authentik) (*Door, error) {
+func NewAuthentik(ctx context.Context, a Authentik) (*Gate, error) {
 	// Refused rather than defaulted. Every other missing value in this product
 	// degrades to less product — no coach, no camera, no push. An empty
 	// required group would degrade to more access, which is the one direction
 	// a default must never go.
 	if a.RequiredGroup == "" {
-		return nil, errors.New("refusing to build the door: no required group")
+		return nil, errors.New("refusing to build the gate: no required group")
 	}
 	provider, err := oidc.NewProvider(ctx, a.Issuer)
 	if err != nil {
-		return nil, fmt.Errorf("finding the door at %s: %w", a.Issuer, err)
+		return nil, fmt.Errorf("finding the gate at %s: %w", a.Issuer, err)
 	}
-	return &Door{
+	return &Gate{
 		oauth: oauth2.Config{
 			ClientID:     a.ClientID,
 			ClientSecret: a.ClientSecret,
@@ -89,7 +93,7 @@ func NewAuthentik(ctx context.Context, a Authentik) (*Door, error) {
 // The verifier never leaves this machine — only its hash does, as the PKCE
 // challenge — so a code intercepted on the way back cannot be spent by
 // whoever intercepted it.
-func (d *Door) Away(state, verifier string) string {
+func (d *Gate) Away(state, verifier string) string {
 	sum := sha256.Sum256([]byte(verifier))
 	return d.oauth.AuthCodeURL(state,
 		oauth2.SetAuthURLParam("code_challenge", base64.RawURLEncoding.EncodeToString(sum[:])),
@@ -102,7 +106,7 @@ func (d *Door) Away(state, verifier string) string {
 // verify is something wrong — a forgery, a clock, a rotated key — and says so.
 // ErrNotAllowed is nothing wrong at all: it is Authentik doing its job for an
 // account that is simply not for this product.
-func (d *Door) Back(ctx context.Context, code, verifier string) (Person, error) {
+func (d *Gate) Back(ctx context.Context, code, verifier string) (Person, error) {
 	token, err := d.oauth.Exchange(ctx, code,
 		oauth2.SetAuthURLParam("code_verifier", verifier))
 	if err != nil {
@@ -112,7 +116,7 @@ func (d *Door) Back(ctx context.Context, code, verifier string) (Person, error) 
 	if !ok {
 		// An access token without an ID token is an OAuth answer to an OIDC
 		// question. There is nobody in it.
-		return Person{}, errors.New("the door answered without an id token")
+		return Person{}, errors.New("the gate answered without an id token")
 	}
 	id, err := d.verifier.Verify(ctx, raw)
 	if err != nil {
