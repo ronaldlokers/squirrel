@@ -33,7 +33,7 @@ import (
 // offer solved it by refusing to talk over an open turn, which is not enough
 // here because this speaks when nothing is open at all. So it speaks when what
 // it would say has actually changed.
-func openingLine(w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (words, mark string) {
+func openingLine(loc *time.Location, w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (words, mark string) {
 	// Ordered by how little of your choosing it is. A fixed point will happen
 	// whether or not you look; a chore came back on its own; the pile is
 	// yours, and is last because a pile of undecided things is not urgent by
@@ -42,10 +42,18 @@ func openingLine(w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (word
 	case len(soon) > 0:
 		m := soon[0]
 		when := "today"
-		if !sameDayIn(m.Starts, on) {
+		if !sameDayIn(loc, m.Starts, on) {
 			when = "tomorrow"
 		}
-		words = m.Label + " " + when + ", at " + m.Starts.Format("15:04") + "."
+		// In the person's clock. The store hands this back converted since
+		// 25 August 2026, and this says so again rather than relying on it:
+		// the sentence names a time somebody will act on, and there is no
+		// cheaper insurance than one call.
+		at := m.Starts
+		if loc != nil {
+			at = at.In(loc)
+		}
+		words = m.Label + " " + when + ", at " + at.Format("15:04") + "."
 	case w.Chores > 0:
 		words = "Something has come back round."
 	case w.Pile > 0:
@@ -57,10 +65,17 @@ func openingLine(w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (word
 }
 
 // sameDayIn is whether two instants fall on the same day where the person is.
-// StartOfDay is not enough on its own here — the comparison has to be made in
-// the same location the rest of the product reads the clock in, which is why
-// this takes the reference time rather than reaching for the process clock.
-func sameDayIn(a, b time.Time) bool {
+//
+// Both are moved into one location first, and that location is given rather
+// than assumed. YearDay reads whatever zone the value happens to carry, so
+// comparing a row straight out of the database — UTC — against a local clock
+// answers about two different days. An appointment at half past midnight is
+// "today" for two hours either side of the boundary if you get this wrong,
+// which is the one way this line could make somebody leave the house.
+func sameDayIn(loc *time.Location, a, b time.Time) bool {
+	if loc != nil {
+		a, b = a.In(loc), b.In(loc)
+	}
 	return a.YearDay() == b.YearDay() && a.Year() == b.Year()
 }
 
@@ -116,7 +131,7 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 	// an appointment in nine days is not a thing that needs attention now.
 	soon = withinADay(soon, now())
 
-	words, _ := openingLine(waiting, soon, now())
+	words, _ := openingLine(opts.Location, waiting, soon, now())
 	if words == "" {
 		return squirrel.Turn{}, false
 	}

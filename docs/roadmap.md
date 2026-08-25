@@ -345,6 +345,24 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.33.1 — 25 August 2026
+
+**A fixed point comes back in your clock, not the driver's.** Issue #148 one
+layer further out, found an hour after v0.33.0 shipped by probing what
+`Upcoming` actually returns.
+
+A `timestamptz` is an instant and carries no zone, so pgx hands it back in UTC.
+Everything then *prints* it — "at 14:30", "leave about 14:05", the new opening
+line — and printing the right instant with the wrong digits on it is a missed
+appointment. On a process running in UTC, which is what the #148 fix
+deliberately left the pods as, every one of those read two hours early in
+summer.
+
+The #148 fix threaded the location into everything that *parses* a time. The
+reading side was never audited. The conversion is at the one place a moment
+comes out of the database, because "each call site" is exactly what let it
+happen.
+
 ### v0.33.0 — 25 August 2026
 
 **Buddy talks.** Four things, all reported as the same complaint: it does not
