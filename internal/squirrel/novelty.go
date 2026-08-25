@@ -43,6 +43,32 @@ const (
 	// SayingEnough is the stopping screen's own line — the product's signature
 	// beat, and the one it can least afford to have stopped being read.
 	SayingEnough Saying = "enough"
+
+	// The acknowledgements. Every one of these is met several times in a
+	// single sitting now that the app is one conversation, which is far more
+	// often than anything above: the four wordings the slot has are read once
+	// a visit, and "Good." was read every time anything at all happened.
+	//
+	// A conversation whose every reply is the same word is a conversation with
+	// a machine, and this product's whole argument is that it is not one.
+
+	// SayingDid is what Buddy says when you finished something.
+	SayingDid Saying = "did"
+	// SayingKept is a note put on the shelf rather than ended.
+	SayingKept Saying = "kept"
+	// SayingDropped is a note thrown away. Quieter than the rest: this one is
+	// never congratulated, because throwing a thought away is not an
+	// achievement and saying so would make it one.
+	SayingDropped Saying = "dropped"
+	// SayingDecided is a note that became a task.
+	SayingDecided Saying = "decided"
+	// SayingHere is Buddy handing you a note out of the pile, which is the
+	// single most repeated sentence in the product.
+	SayingHere Saying = "here"
+	// SayingLater is skipping one without deciding.
+	SayingLater Saying = "later"
+	// SayingHeard is a reply that landed badly, taken.
+	SayingHeard Saying = "heard"
 )
 
 // sayings are the wordings, all of which mean exactly what the original did.
@@ -85,6 +111,53 @@ var sayings = map[Saying][]string{
 		"that was a session",
 		"you did some",
 		"leave the rest",
+	},
+	SayingDid: {
+		"Good.",
+		"That is done.",
+		"Off the list.",
+		"Right, done.",
+		"Good — that one is finished.",
+		"Done.",
+	},
+	SayingKept: {
+		"Kept.",
+		"On the shelf.",
+		"Put away.",
+		"Kept — it is on the shelf.",
+		"Filed.",
+	},
+	SayingDropped: {
+		"Gone.",
+		"Thrown away.",
+		"Dropped.",
+		"That one is gone.",
+	},
+	SayingDecided: {
+		"On the list.",
+		"That is a task now.",
+		"Decided.",
+		"Right — on the list.",
+	},
+	SayingHere: {
+		"This one.",
+		"Here is one.",
+		"Next.",
+		"How about this one.",
+		"And this.",
+		"Here.",
+	},
+	SayingLater: {
+		"Fine.",
+		"Later, then.",
+		"Leave it.",
+		"All right.",
+	},
+	SayingHeard: {
+		"Noted.",
+		"Taken.",
+		"Understood.",
+		"Right — noted.",
 	},
 }
 

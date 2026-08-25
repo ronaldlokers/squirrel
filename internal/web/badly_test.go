@@ -53,7 +53,8 @@ func TestSayingItLandedBadlyIsHeardAndNothingElse(t *testing.T) {
 	require.Len(t, f.landedBadly, 1, "the press was not recorded")
 
 	body := f.appended[1].Words
-	require.Contains(t, strings.ToLower(body), "noted")
+	require.Contains(t, body, "I will be shown that one.",
+		"it did not say the words would be shown to Buddy")
 
 	// No count, no list, no history. How often a thing lands badly is a fact
 	// about the person, and rule 2 forbids one on any surface.
@@ -71,7 +72,10 @@ func TestAPressWithNothingToMarkClaimsNothing(t *testing.T) {
 	f.appended = nil
 	mountedWith(t, f, c).call(t, "POST", "/buddy/badly", strings.NewReader(""))
 
-	require.Equal(t, "Noted.", f.appended[1].Words,
+	// The wording varies by the day, so this asks for the shape rather than
+	// one phrasing: taken, and no claim that anything was marked.
+	require.Contains(t, squirrel.Sayings(squirrel.SayingHeard), f.appended[1].Words)
+	require.NotContains(t, f.appended[1].Words, "I will be shown",
 		"it said it had heard something that was not there")
 }
 
