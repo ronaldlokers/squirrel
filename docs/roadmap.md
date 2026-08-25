@@ -345,6 +345,20 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.33.3 — 25 August 2026
+
+**The opening line stopped swallowing the offer.** Shipped in v0.33.0 and found
+the same night by asking the question directly rather than by reading the code.
+
+`endsOpen` counts anything Buddy has put on the table, and the opening line
+carries one chip to the place it is about — so on every day it spoke, which is
+any day with something on the agenda, a chore due or notes in the pile,
+Squirrel opened with a line and then said nothing about what to actually do.
+The offer is the product's whole argument, and it was off.
+
+An opening says what is true and asks nothing. It is not something on the
+table. Nothing failed, because the offer's own fixtures have no agenda.
+
 ### v0.33.2 — 25 August 2026
 
 **"The rest" shows the rest.** All three of them were dead, and had been since
