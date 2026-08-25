@@ -128,15 +128,30 @@ func TestAnEmptyDecisionDoesNothing(t *testing.T) {
 // sentence with the target said out loud.
 func TestTheTasksAreCountedAndNeverRanked(t *testing.T) {
 	items := []squirrel.Item{}
-	for i := int64(1); i <= 7; i++ {
+	for i := int64(1); i <= 4; i++ {
 		items = append(items, task(i, "a decided thing", squirrel.ItemOpen))
 	}
 	body := strings.ToLower(opened(t, &fakeStore{items: items}, "tasks"))
 
-	require.Contains(t, body, "7 things you decided")
-	for _, ranked := range []string{"of 7", "(7)", "1 of ", "7 left", "7 remaining"} {
+	require.Contains(t, body, "4 things you decided")
+	for _, ranked := range []string{"of 4", "(4)", "1 of ", "4 left", "4 remaining"} {
 		require.NotContains(t, body, ranked)
 	}
+}
+
+// A reply is not a screen of list. Five cards and one press for the rest,
+// since 25 August 2026: twelve arrived as a wall with a sentence on top, and
+// reading it was the work the conversation was supposed to replace.
+func TestADoorHandsYouAFewRatherThanAllOfThem(t *testing.T) {
+	items := []squirrel.Item{}
+	for i := int64(1); i <= 9; i++ {
+		items = append(items, task(i, "a decided thing", squirrel.ItemOpen))
+	}
+	f := &fakeStore{items: items}
+	drew := drewFor(t, f, "tasks")
+
+	require.Equal(t, 5, strings.Count(drew, "a decided thing"), "it handed over the lot")
+	require.Contains(t, drew, "the rest")
 }
 
 // No deadline, nothing red, no urgency — a task is a thing to do, not a thing

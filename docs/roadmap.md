@@ -345,6 +345,35 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.33.0 — 25 August 2026
+
+**Buddy talks.** Four things, all reported as the same complaint: it does not
+feel conversational yet.
+
+**He says the first thing now.** Every turn in the product was a reply — you
+arrived and the conversation sat there until you pressed something, which is
+not what a conversation is. The bar is meaningfulness rather than a budget:
+something on today or tomorrow, a chore that has come back, notes waiting to be
+decided about. Nothing worth saying means nothing said, which is the common
+case on a quiet afternoon. It is one thing, not a summary of all four — the
+rail already says all four — and it does not say the same sentence twice.
+
+**The words vary.** The acknowledgements met several times a sitting — *Good.*,
+*Kept.*, *This one.* — go through the same day-seeded pools the slot's line has
+used since novelty shipped. Deterministic, so both viewports agree and a reload
+is not a slot machine, and the wording that shipped still leads every pool.
+
+**A door hands you five, not twelve.** Twelve was chosen so that "there is
+more" would be rare, which is the wrong thing to optimise: a reply that arrives
+as twelve cards is a screen of list with a sentence on top, and reading it is
+the work the conversation was supposed to replace.
+
+**And Buddy can say what he noticed.** One model call per set, bounded to
+fifteen words, cached so opening a door twice costs one call. Never advice —
+that is checked here rather than asked for in the prompt, because a prompt is a
+request and this is a rule. The product's own sentence comes first: Principle 8
+draws the line at authorship, and the count is Squirrel's own fact.
+
 ### v0.32.0 — 25 August 2026
 
 **A new one, at every door.** Making a thing from nothing went with the

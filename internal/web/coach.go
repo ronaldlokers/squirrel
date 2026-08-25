@@ -265,9 +265,9 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 		// Nothing rendered back except that it was heard. No count, no list,
 		// no history — what it feeds is the next prompt, where the model is
 		// shown the words that did not land rather than told about them.
-		words := "Noted."
+		words := squirrel.Say(squirrel.SayingHeard, now())
 		if heard {
-			words = "Noted — I will be shown that one."
+			words += " I will be shown that one."
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "that went badly"},

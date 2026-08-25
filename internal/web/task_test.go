@@ -22,8 +22,14 @@ func TestPromotingANoteSaysItBecameATask(t *testing.T) {
 	routed(t, f).call(t, "POST", "/pile/act", strings.NewReader("id=3&act=task&from=thread"))
 
 	require.NotEmpty(t, f.appended)
-	require.Contains(t, f.appended[1].Words, "task",
+	// What you said carries the verb; the reply's wording varies by the day.
+	// The defect this pins is that the fifth answer had no word of its own and
+	// fell through to "marked done" — so what must never happen is the wrong
+	// verb, on either side of the exchange.
+	require.Contains(t, f.appended[0].Words, "a task",
 		"the note was promoted and nothing true was said about it")
+	require.Contains(t, squirrel.Sayings(squirrel.SayingDecided), f.appended[1].Words)
+	require.NotContains(t, f.appended[0].Words, "done")
 	require.NotContains(t, f.appended[1].Words, "done")
 }
 

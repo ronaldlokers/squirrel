@@ -867,6 +867,20 @@ then lost the digits when its disclosure went; they are back.
 Only that question. A digit inside the day picker would be a day of the month,
 and guessing which of the two was meant would book the wrong one.
 
+**Buddy may speak first, and only when there is something true to say.** The
+bar is meaningfulness, not a budget: silence on a quiet afternoon is the
+correct answer, and a line that arrives whether or not anything is happening is
+wallpaper by the third day. One thing, never a summary — and never the same
+sentence twice in a row.
+
+**A reply hands you a few, not all of them.** Five cards and one press for the
+rest. A reply that arrives as a screen of list is the work the conversation was
+supposed to replace.
+
+**A model may remark; only the product may instruct.** One short sentence about
+what a set has in common, after the product's own. Advice is refused in code
+rather than discouraged in the prompt.
+
 **What must be reachable from anywhere goes at the foot of the thread, not on
 the live edge.** The live edge is the newest Buddy turn, and there is not always
 one — a conversation that has not started has no turns at all. A control that

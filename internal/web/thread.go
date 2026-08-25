@@ -39,10 +39,14 @@ const threadLimit = 40
 type drawn struct {
 	// Cost is what the coach has spent, on the reply that spent it. Only ever
 	// there — see coachReplyCosting.
-	Cost  string     `json:"cost,omitempty"`
-	Place string     `json:"place,omitempty"`
-	Cards []cardView `json:"cards,omitempty"`
-	Chips []turnChip `json:"chips,omitempty"`
+	Cost string `json:"cost,omitempty"`
+	// Opened marks a turn Buddy started himself, and carries what it was
+	// about, so the conversation can be asked whether it has said this
+	// already. See openingTurn.
+	Opened string     `json:"opened,omitempty"`
+	Place  string     `json:"place,omitempty"`
+	Cards  []cardView `json:"cards,omitempty"`
+	Chips  []turnChip `json:"chips,omitempty"`
 	// Pick is a question with its answers on it: rows of choices in one form
 	// with one submit. See askHowOften for why it is one form.
 	Pick *pickView `json:"pick,omitempty"`
@@ -219,6 +223,22 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 					turns = append(turns, saved)
 				} else {
 					slog.Error("drawing where you were", "error", err)
+				}
+			}
+		}
+
+		// And the first thing, when there is a first thing worth saying.
+		//
+		// Before the offer, because the offer is Squirrel choosing one job for
+		// you and this is Squirrel saying what is actually happening — the
+		// order is the same one the ladder uses, world first and initiative
+		// second.
+		if !walkingBack && !unreadable && !endsAsking(turns) {
+			if t, has := openingTurn(ctx, s, opts, personID, turns); has {
+				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
+					turns = append(turns, saved)
+				} else {
+					slog.Error("opening", "error", err)
 				}
 			}
 		}
@@ -539,7 +559,7 @@ func saidAboutTheOffer(act, label string) []squirrel.Turn {
 	case "did":
 		return []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "did it — " + label},
-			{Who: squirrel.SpeakerBuddy, Words: "Good."},
+			{Who: squirrel.SpeakerBuddy, Words: squirrel.Say(squirrel.SayingDid, now())},
 		}
 	case "later":
 		return []squirrel.Turn{
@@ -695,10 +715,17 @@ func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, ba
 
 // listLimit is how many cards one turn draws.
 //
+// Five since 25 August 2026, down from twelve. Twelve was chosen as "enough
+// that the chip saying there is more is rare", which is the wrong thing to
+// optimise: a reply that arrives as twelve cards is a screen of list with a
+// sentence on top, and reading it is the work the conversation was supposed to
+// replace. Five is what fits on a phone under Buddy's line without scrolling,
+// and "the rest" is one press.
+//
 // A bound rather than a page, and it matters more here than anywhere else: a
 // turn is frozen the moment it is written, so a turn holding forty cards is
 // forty cards in the record forever.
-const listLimit = 12
+const listLimit = 5
 
 // doorNames is the vocabulary, as a map rather than a switch so an unknown door
 // is a lookup miss instead of a default branch someone later fills in with
@@ -749,9 +776,9 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 	var reply squirrel.Turn
 	switch where {
 	case "chores":
-		reply = choresTurn(ctx, s, personID, name)
+		reply = choresTurn(ctx, s, opts, personID, name)
 	case "tasks":
-		reply = tasksTurn(ctx, s, personID, name)
+		reply = tasksTurn(ctx, s, opts, personID, name)
 	case "at":
 		reply = agendaTurn(ctx, s, personID, name)
 	case "pile":
@@ -776,7 +803,7 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 }
 
 // choresTurn is what comes back, as cards.
-func choresTurn(ctx context.Context, s Store, personID int64, name string) squirrel.Turn {
+func choresTurn(ctx context.Context, s Store, opts Options, personID int64, name string) squirrel.Turn {
 	chores, err := s.ActiveChores(ctx, personID)
 	if err != nil {
 		slog.Error("reading what comes back", "error", err)
@@ -813,7 +840,11 @@ func choresTurn(ctx context.Context, s Store, personID int64, name string) squir
 		slog.Error("drawing the chores", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw the chores just now."}
 	}
-	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: choreLead(len(sh.Cards)), Shown: body}
+	return squirrel.Turn{
+		Who:   squirrel.SpeakerBuddy,
+		Words: withNotice(ctx, opts, personID, "the chores", choreLead(len(sh.Cards)), sh.Cards),
+		Shown: body,
+	}
 }
 
 // makeOne is how you make one from nothing.
@@ -1033,7 +1064,7 @@ func oneOf(list []string, v string) bool {
 //
 // Newest first, like the pile: a task decided this morning is the one you still
 // remember deciding.
-func tasksTurn(ctx context.Context, s Store, personID int64, name string) squirrel.Turn {
+func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name string) squirrel.Turn {
 	items, more, err := s.Tasks(ctx, personID, listLimit)
 	if err != nil {
 		slog.Error("reading what you decided", "error", err)
@@ -1078,7 +1109,11 @@ func tasksTurn(ctx context.Context, s Store, personID int64, name string) squirr
 		slog.Error("drawing the tasks", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw the tasks just now."}
 	}
-	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: taskLead(len(sh.Cards)), Shown: body}
+	return squirrel.Turn{
+		Who:   squirrel.SpeakerBuddy,
+		Words: withNotice(ctx, opts, personID, "the tasks", taskLead(len(sh.Cards)), sh.Cards),
+		Shown: body,
+	}
 }
 
 func taskLead(n int) string {
@@ -1101,7 +1136,7 @@ func saidAboutATask(act, text string) []squirrel.Turn {
 	case "done":
 		return []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "did it — " + text},
-			{Who: squirrel.SpeakerBuddy, Words: "Done."},
+			{Who: squirrel.SpeakerBuddy, Words: squirrel.Say(squirrel.SayingDid, now())},
 		}
 	case "open":
 		return []squirrel.Turn{
@@ -1382,7 +1417,7 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 		slog.Error("drawing the pile", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: v.Text}
 	}
-	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "This one.", Shown: body}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.Say(squirrel.SayingHere, now()), Shown: body}
 }
 
 // saidAboutANote is what the two of you said, and the way to change your mind.
@@ -1391,16 +1426,20 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 // scrollback, and scrollback carries no controls: an undo you can only reach by
 // pressing something that has already gone is an undo nobody reaches.
 func saidAboutANote(act, text string, id int64, was string) []squirrel.Turn {
+	// The reply varies by the day, the way the slot's own line does. This is
+	// the most repeated exchange in the product — four sentences met several
+	// times in a single sitting — and a conversation whose every reply is the
+	// same word is a conversation with a machine.
 	words, reply := "", ""
 	switch act {
 	case "done":
-		words, reply = "done — "+text, "Good."
+		words, reply = "done — "+text, squirrel.Say(squirrel.SayingDid, now())
 	case "keep":
-		words, reply = "keep — "+text, "On the shelf."
+		words, reply = "keep — "+text, squirrel.Say(squirrel.SayingKept, now())
 	case "drop":
-		words, reply = "drop — "+text, "Gone."
+		words, reply = "drop — "+text, squirrel.Say(squirrel.SayingDropped, now())
 	case "task":
-		words, reply = "a task — "+text, "It is a task now."
+		words, reply = "a task — "+text, squirrel.Say(squirrel.SayingDecided, now())
 	default:
 		return nil
 	}

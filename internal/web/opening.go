@@ -1,0 +1,191 @@
+package web
+
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
+)
+
+// Buddy says the first thing.
+//
+// Every turn in this product was a reply. You arrived, and the conversation
+// sat there until you pressed something — which is not what a conversation is,
+// and is the reason the thread reads as a menu rendered in bubbles.
+//
+// The bar is meaningfulness rather than a budget. "Every visit, but only if it
+// is meaningful" is the whole rule: something on today or tomorrow, notes
+// waiting to be decided about, a chore that is due. Nothing worth saying means
+// nothing said, and that is the common case on a quiet afternoon.
+//
+// It is deliberately not a summary of everything. A line that reads out all
+// four numbers is the rail said twice, and the rail is already there — this
+// says the one thing that most wants attention, or it says nothing.
+
+// openingLine is what Buddy would open with, and a fingerprint of the facts it
+// was built from.
+//
+// The fingerprint is what stops the record filling with the same sentence.
+// Appending on every load is the defect the offer had for an afternoon; the
+// offer solved it by refusing to talk over an open turn, which is not enough
+// here because this speaks when nothing is open at all. So it speaks when what
+// it would say has actually changed.
+func openingLine(w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (words, mark string) {
+	// Ordered by how little of your choosing it is. A fixed point will happen
+	// whether or not you look; a chore came back on its own; the pile is
+	// yours, and is last because a pile of undecided things is not urgent by
+	// being large.
+	switch {
+	case len(soon) > 0:
+		m := soon[0]
+		when := "today"
+		if !sameDayIn(m.Starts, on) {
+			when = "tomorrow"
+		}
+		words = m.Label + " " + when + ", at " + m.Starts.Format("15:04") + "."
+	case w.Chores > 0:
+		words = "Something has come back round."
+	case w.Pile > 0:
+		words = "There are things in the pile you have not decided about."
+	default:
+		return "", ""
+	}
+	return words, mark
+}
+
+// sameDayIn is whether two instants fall on the same day where the person is.
+// StartOfDay is not enough on its own here — the comparison has to be made in
+// the same location the rest of the product reads the clock in, which is why
+// this takes the reference time rather than reaching for the process clock.
+func sameDayIn(a, b time.Time) bool {
+	return a.YearDay() == b.YearDay() && a.Year() == b.Year()
+}
+
+// endsAsking is whether the conversation is waiting for an answer.
+//
+// Narrower than endsOpen on purpose. endsOpen refuses to put anything down
+// while there is anything at all on the table, which is right for the offer —
+// it hands you a job, and two jobs is one too many. The opening line is not a
+// job: it says what is true. What it must not do is talk over a question, and
+// its own guard against repeating itself is the fingerprint rather than this.
+//
+// Using endsOpen here would have made the line a one-off: the opening carries
+// a chip to the place it is about, so it ends open by its own hand and would
+// never speak again.
+func endsAsking(turns []squirrel.Turn) bool {
+	if len(turns) == 0 {
+		return false
+	}
+	last := turns[len(turns)-1]
+	if last.Who != squirrel.SpeakerBuddy || len(last.Shown) == 0 {
+		return false
+	}
+	var sh drawn
+	if err := json.Unmarshal(last.Shown, &sh); err != nil {
+		// A turn that cannot be read is treated as a question. Saying nothing
+		// is the safe direction; the other one talks over it.
+		return true
+	}
+	return sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
+}
+
+// openingTurn is that line as a turn, or nothing at all.
+//
+// The mark travels in the turn's own record, so "have I said this already" is
+// answered by reading the conversation rather than by keeping state beside it.
+// A conversation that needs a second store to know what it said is two records
+// that can disagree.
+func openingTurn(ctx context.Context, s Store, opts Options, personID int64, turns []squirrel.Turn) (squirrel.Turn, bool) {
+	waiting, err := s.Waiting(ctx, personID, now())
+	if err != nil {
+		// A count that cannot be read is a line not drawn. Nothing here is
+		// worth an error page: you came to talk, not to be told the database
+		// is unwell.
+		slog.Error("reading what is waiting, to open with", "error", err)
+		return squirrel.Turn{}, false
+	}
+	soon, err := s.Upcoming(ctx, personID, now(), 1)
+	if err != nil {
+		slog.Error("reading what is coming, to open with", "error", err)
+		soon = nil
+	}
+	// Only what is close enough to act on. Upcoming is everything ahead, and
+	// an appointment in nine days is not a thing that needs attention now.
+	soon = withinADay(soon, now())
+
+	words, _ := openingLine(waiting, soon, now())
+	if words == "" {
+		return squirrel.Turn{}, false
+	}
+	mark := fingerprint(words)
+	if saidAlready(turns, mark) {
+		return squirrel.Turn{}, false
+	}
+
+	sh := drawn{Opened: mark}
+	// And what it is about, so the line is a way in rather than an
+	// announcement. A sentence about the agenda with no way to the agenda is a
+	// notification.
+	switch {
+	case len(soon) > 0:
+		sh.Chips = []turnChip{{Label: "the agenda", Action: "/open",
+			Fields: map[string]string{"where": "at"}}}
+	case waiting.Chores > 0:
+		sh.Chips = []turnChip{{Label: "the chores", Action: "/open",
+			Fields: map[string]string{"where": "chores"}}}
+	default:
+		sh.Chips = []turnChip{{Label: "the pile", Action: "/open",
+			Fields: map[string]string{"where": "pile"}}}
+	}
+
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing what Buddy opened with", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: words, Shown: body}, true
+}
+
+// withinADay is what is close enough to be worth mentioning unprompted.
+func withinADay(soon []squirrel.Moment, on time.Time) []squirrel.Moment {
+	out := soon[:0]
+	for _, m := range soon {
+		if m.Starts.After(on) && m.Starts.Before(on.Add(36*time.Hour)) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// fingerprint is the line itself, which is the only thing that has to match.
+// Two visits that would produce the same sentence are two visits where the
+// second has nothing to add.
+func fingerprint(words string) string { return strings.TrimSpace(words) }
+
+// saidAlready walks back for an opening with the same mark.
+//
+// The whole conversation that is on screen, not only the last turn: you talk
+// to it in between, so the opening is rarely the newest thing by the time you
+// come back. What it must not do is say the same sentence twice in a row with
+// three of your own turns in between.
+func saidAlready(turns []squirrel.Turn, mark string) bool {
+	for i := len(turns) - 1; i >= 0; i-- {
+		if turns[i].Who != squirrel.SpeakerBuddy || len(turns[i].Shown) == 0 {
+			continue
+		}
+		var sh drawn
+		if err := json.Unmarshal(turns[i].Shown, &sh); err != nil {
+			continue
+		}
+		if sh.Opened == "" {
+			continue
+		}
+		// The most recent opening is the only one that matters. An older one
+		// saying the same thing is a day you have already moved past.
+		return sh.Opened == mark
+	}
+	return false
+}

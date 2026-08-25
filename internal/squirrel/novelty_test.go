@@ -18,7 +18,7 @@ func TestADaySaysOneThing(t *testing.T) {
 	day := time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC)
 	later := time.Date(2026, 8, 22, 23, 30, 0, 0, time.UTC)
 
-	for _, what := range []Saying{SayingSlot, SayingOffer, SayingStop, SayingEnough} {
+	for _, what := range everySaying {
 		require.Equal(t, Say(what, day), Say(what, later), "%s changed during the day", what)
 		require.NotEmpty(t, Say(what, day))
 	}
@@ -31,7 +31,7 @@ func TestADaySaysOneThing(t *testing.T) {
 func TestAFortnightIsNotOneSentence(t *testing.T) {
 	start := time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC)
 
-	for _, what := range []Saying{SayingSlot, SayingOffer, SayingStop, SayingEnough} {
+	for _, what := range everySaying {
 		seen := map[string]bool{}
 		for d := 0; d < 14; d++ {
 			seen[Say(what, start.AddDate(0, 0, d))] = true
@@ -43,10 +43,19 @@ func TestAFortnightIsNotOneSentence(t *testing.T) {
 
 // Every wording is one of the wordings. A day that lands outside the pool
 // would be a sentence nobody wrote.
+// everySaying is the whole set, so a pool added later is held to the rules
+// without anybody remembering to add it to four lists. The acknowledgements
+// joined on 25 August 2026 and this is what stopped them arriving unguarded.
+var everySaying = []Saying{
+	SayingSlot, SayingOffer, SayingStop, SayingEnough,
+	SayingDid, SayingKept, SayingDropped, SayingDecided,
+	SayingHere, SayingLater, SayingHeard,
+}
+
 func TestEveryDaySaysSomethingSomebodyWrote(t *testing.T) {
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	for _, what := range []Saying{SayingSlot, SayingOffer, SayingStop, SayingEnough} {
+	for _, what := range everySaying {
 		pool := map[string]bool{}
 		for _, said := range Sayings(what) {
 			pool[said] = true
@@ -66,6 +75,12 @@ func TestTheOriginalWordingIsStillInEveryPool(t *testing.T) {
 		SayingOffer:  "RIGHT NOW",
 		SayingStop:   "stop whenever you like",
 		SayingEnough: "that will do",
+		// The acknowledgements' own originals, which are the words the
+		// conversation shipped with.
+		SayingDid:     "Good.",
+		SayingKept:    "Kept.",
+		SayingHere:    "This one.",
+		SayingDecided: "On the list.",
 	} {
 		require.Equal(t, first, Sayings(what)[0], "%s no longer leads with what shipped", what)
 	}
@@ -75,7 +90,7 @@ func TestTheOriginalWordingIsStillInEveryPool(t *testing.T) {
 // this product where prose was written in bulk and the guard rails matter more
 // than usual.
 func TestNoWordingBreaksTheRules(t *testing.T) {
-	for _, what := range []Saying{SayingSlot, SayingOffer, SayingStop, SayingEnough} {
+	for _, what := range everySaying {
 		for _, said := range Sayings(what) {
 			require.NotEmpty(t, strings.TrimSpace(said))
 
