@@ -165,3 +165,24 @@ func TestAStoreThatCannotCountOpensWithNothing(t *testing.T) {
 
 	require.NotContains(t, strings.ToLower(w.Body.String()), "cannot count")
 }
+
+// The day boundary is the person's, not the process's.
+//
+// A row comes out of the database in UTC. An appointment at half past midnight
+// tomorrow, read against a local clock at half past eleven tonight, is
+// "tomorrow" where the person is and "today" in UTC — and reading "dentist
+// today" the night before is the one way this line could make somebody leave
+// the house.
+func TestTheOpeningLineUsesThePersonsDay(t *testing.T) {
+	ams, err := time.LoadLocation("Europe/Amsterdam")
+	require.NoError(t, err)
+	tonight := time.Date(2026, 8, 25, 23, 30, 0, 0, ams)
+	appointment := time.Date(2026, 8, 26, 0, 30, 0, 0, ams)
+
+	// As the store hands it back before conversion: the right instant, in UTC.
+	said, _ := openingLine(ams, squirrel.Waiting{Agenda: 1},
+		[]squirrel.Moment{{Label: "dentist", Starts: appointment.UTC()}}, tonight)
+
+	require.Contains(t, said, "dentist tomorrow")
+	require.Contains(t, said, "00:30", "it printed the time in the wrong clock")
+}
