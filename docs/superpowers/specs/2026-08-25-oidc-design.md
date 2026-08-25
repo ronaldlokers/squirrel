@@ -24,21 +24,26 @@ cookie instead of `X-Authentik-Username`, and puts two things in the request's
 context: the **person id**, which almost everything uses, and the **`sub`**,
 which only capture needs — see section 4 for why it needs it.
 
-Three new routes:
+Four new routes:
 
 | Route | What it does |
 | --- | --- |
-| `GET /auth/in` | 302 to Authentik, carrying `state` and a PKCE challenge |
+| `GET /auth` | the door — see section 1a |
+| `POST /auth/in` | sets `state` and the PKCE verifier, 302 to Authentik |
 | `GET /auth/callback` | takes the code, opens a session, 302 to where you were going |
-| `POST /auth/out` | deletes the session, 302 to `/` |
+| `POST /auth/out` | deletes the session, 302 to `/auth?said=out` |
 
-**A GET for a page redirects; a POST does not.** An unauthenticated POST, and
-any request carrying `X-Thread: fragment`, gets `401` with no body. A redirect
-there would swallow the form and `thread.js` would paste Authentik's login page
-into the conversation as a turn.
+Starting a login is a POST because it writes — the same rule that makes opening
+a door a POST rather than a link. It also means a prefetch or a crawler cannot
+begin a login.
 
-`/auth/callback` and `/auth/in` are the only routes outside the guard. Static
-assets stay outside it as they are today.
+**A GET for a page redirects to the door; a POST does not.** An unauthenticated
+POST, and any request carrying `X-Thread: fragment`, gets `401` with no body. A
+redirect there would swallow the form and `thread.js` would paste the door into
+the conversation as a turn.
+
+The four `/auth` routes are the only ones outside the guard. Static assets stay
+outside it as they are today.
 
 ### The refactor this forces
 
@@ -52,6 +57,58 @@ than left in place, because a global that still compiles is a global something
 will use.
 
 ---
+
+## 1a. The door
+
+Squirrel gets one screen of its own, and it is the first thing anybody ever
+sees of this product.
+
+It is built the way `/enough` is built, which DESIGN.md already describes as a
+treatment rather than a page: *the mascot, a headline in the casual axis, a
+screen that is an absence.* Nothing new is invented for it.
+
+```
+        ┌────────────────────────┐
+        │                        │
+        │        (buddy)         │
+        │                        │
+        │       Squirrel         │
+        │                        │
+        │   ┌────────────────┐   │
+        │   │    LET ME IN   │   │
+        │   └────────────────┘   │
+        │                        │
+        └────────────────────────┘
+```
+
+**One screen, four states.** Each is the same composition with a different
+sentence under the mark, because they are the same moment arrived at four ways
+— not four pages nobody designed.
+
+| State | What it says | The button |
+| --- | --- | --- |
+| cold | nothing | LET ME IN |
+| signed out | you are signed out | LET ME IN |
+| refused | that account cannot use Squirrel | LET ME IN, to try another |
+| Authentik unreachable | I cannot reach the door just now | TRY AGAIN |
+
+Why a door rather than a straight redirect, since a redirect is one press
+fewer:
+
+- **This is a PWA.** A cold launch from the home-screen icon that immediately
+  lurches to another domain is the awkward case, and worst on iOS.
+- **Sign-out needs somewhere that does not bounce.** Deleting the session and
+  landing on `/` would redirect to Authentik, which still has *its* session,
+  and sign you straight back in. The door is where signing out lands.
+- **The unhappy states need a page anyway.** Building them as states of one
+  screen costs nothing; building them as an afterthought is three pages nobody
+  drew.
+- **It is the only screen a demo user sees** before deciding whether they trust
+  this thing.
+
+`?next=` carries where you were going, and is refused unless it is a path this
+server serves — the same `backTolerant` rule the timer already uses, and for
+the same reason: a value that arrives in a URL is a place a stranger can type.
 
 ## 2. The session
 
@@ -216,16 +273,17 @@ abandoned.
 
 | What | What happens |
 | --- | --- |
-| Authentik unreachable at login | the page says so; existing sessions keep working |
+| Authentik unreachable at login | the door says so and offers TRY AGAIN; existing sessions keep working |
 | `state` missing or wrong | refused, no session, logged |
 | ID token fails verification | refused, no session, logged |
-| `groups` lacks the required group | refused, and the page says which group is needed |
+| `groups` lacks the required group | the door, refused, saying that account cannot use Squirrel |
 | Postgres down at callback | login fails; an existing session still captures |
 | Postgres down mid-session | the cache covers up to a minute; after that, refused |
 | No `WEB_REQUIRED_GROUP` | the web surface refuses to mount and says so at boot |
 
 A refusal never explains more than it must. "That account cannot use Squirrel"
-is the whole of what an unknown person is told.
+is the whole of what a refused person is told — not which group they lack,
+which is a fact about your Authentik rather than about them.
 
 ---
 
@@ -240,9 +298,11 @@ Cases: a good login; an unknown `sub` that provisions; a wrong `state`; an
 expired token; a token signed by the wrong key; a missing group; a login when
 Postgres is down.
 
-**Browser tests** for the shapes only markup can prove: a GET redirecting, the
-callback landing you on the conversation, a POST getting 401 rather than HTML,
-and `thread.js` not pasting a login page into the thread.
+**Browser tests** for the shapes only markup can prove: a GET landing on the
+door, the door's four states, the callback landing you on the conversation, a
+POST getting 401 rather than HTML, `thread.js` not pasting the door into the
+thread as a turn, and signing out landing somewhere that does not bounce
+straight back in.
 
 **The isolation sweep** from section 6.
 
