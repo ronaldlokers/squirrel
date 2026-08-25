@@ -39,7 +39,7 @@ func photographed(t *testing.T, words, kind string, bytesIn []byte) (string, *by
 func postPhoto(t *testing.T, m *testMux, contentType string, body *bytes.Buffer) *httptest.ResponseRecorder {
 	t.Helper()
 	r := httptest.NewRequest(http.MethodPost, "/capture", body)
-	r.Header.Set("X-Authentik-Username", "ronald")
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 	r.Header.Set("Content-Type", contentType)
 	r.Header.Set("Origin", "http://"+r.Host)
 	w := httptest.NewRecorder()

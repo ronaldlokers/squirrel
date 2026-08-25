@@ -119,7 +119,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// person id: the drain resolves every capture's owner from its sender,
 		// and this one is no different for being typed on the screen. boot
 		// seeds the matching identity.
-		sender := opts.Identity
+		sender := subOf(r)
 
 		slog.Info("a capture is being kept",
 			"photograph", photo != "", "kind", kind, "words", len(text) > 0)

@@ -36,8 +36,18 @@ type remembered struct {
 	until   time.Time
 }
 
+// sessionStore is the durable half. Declared here and satisfied structurally
+// by *squirrel.Store, the way Store and Spool already are in this package: the
+// screen is a transport and states what it needs rather than importing a
+// concrete thing to get it.
+type sessionStore interface {
+	OpenSession(ctx context.Context, personID int64, sub string, token []byte, at time.Time, life time.Duration) error
+	SessionFor(ctx context.Context, token []byte, at time.Time) (squirrel.Session, bool, error)
+	EndSession(ctx context.Context, token []byte) error
+}
+
 type sessions struct {
-	read  func(context.Context, []byte, time.Time) (squirrel.Session, bool, error)
+	store sessionStore
 	life  time.Duration
 	most  int
 	mu    sync.Mutex
@@ -45,8 +55,22 @@ type sessions struct {
 	order []string
 }
 
-func newSessions(read func(context.Context, []byte, time.Time) (squirrel.Session, bool, error), life time.Duration, most int) *sessions {
-	return &sessions{read: read, life: life, most: most, known: map[string]remembered{}}
+func newSessions(store sessionStore, life time.Duration, most int) *sessions {
+	return &sessions{store: store, life: life, most: most, known: map[string]remembered{}}
+}
+
+// Open records a login. Nothing is cached here: the cookie has not reached a
+// browser yet, and caching an answer nobody has asked for is a way to be wrong
+// about a session that was never used.
+func (c *sessions) Open(ctx context.Context, personID int64, sub string, token []byte, at time.Time, life time.Duration) error {
+	return c.store.OpenSession(ctx, personID, sub, token, at, life)
+}
+
+// End is signing out, in the table and in memory both. Forgetting as well as
+// deleting is what makes it immediate for the person doing it.
+func (c *sessions) End(ctx context.Context, token []byte) error {
+	c.Forget(token)
+	return c.store.EndSession(ctx, token)
 }
 
 // For resolves a token, from memory when it can.
@@ -67,7 +91,7 @@ func (c *sessions) For(ctx context.Context, token []byte, at time.Time) (squirre
 		return had.session, had.known, nil
 	}
 
-	session, known, err := c.read(ctx, token, at)
+	session, known, err := c.store.SessionFor(ctx, token, at)
 	if err != nil {
 		switch {
 		case seen && !had.known:
@@ -115,4 +139,13 @@ func (c *sessions) held() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.known)
+}
+
+// NewSessions is the cache in front of the store, with the shipping numbers.
+//
+// Exported because internal/boot has to build one, and it takes the store
+// rather than a pool or a func for the same reason Store and Spool do: this
+// package states what it needs and lets boot decide what satisfies it.
+func NewSessions(store sessionStore) *sessions {
+	return newSessions(store, cacheFor, cacheMost)
 }

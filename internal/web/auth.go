@@ -2,34 +2,76 @@ package web
 
 import (
 	"context"
+	"crypto/subtle"
 	"log/slog"
 	"net/http"
+	"net/url"
 )
 
-// guard is the whole of this product's authentication, and that is the point.
-// Traefik calls an Authentik outpost, Authentik decides, and Squirrel compares
-// one header to one configured value. No sessions, no cookies, no redirect
-// flow, no OIDC library in a binary that has none of that anywhere else.
+// guard is this product's authentication, and it keeps its name and its
+// position while losing its body.
 //
-// The comparison is exact. Trimming or lower-casing the header would be this
-// file quietly deciding that two identities are the same one.
+// It was one comparison: Traefik called an Authentik forward-auth outpost,
+// Authentik decided, and Squirrel compared one header to one configured
+// string. That was the right size while there was one person and one pile. It
+// could only ever say "somebody Authentik likes" — never which somebody — so a
+// second person meant a redeploy.
+//
+// It reads a session cookie now and puts two things on the request: the person
+// id, which almost everything uses, and the sub, which only capture needs.
+//
+// **A GET for a page redirects; nothing else does.** An unauthenticated POST,
+// and any request carrying X-Thread, gets 401 with no body. A redirect there
+// would swallow a form's words into a login screen, and thread.js would paste
+// the gate into the conversation as a turn.
 func guard(opts Options, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		who := r.Header.Get(opts.IdentityHeader)
-		if who == "" || who != opts.Identity {
-			// No body: a refusal that describes what it is refusing tells an
-			// unauthenticated caller that there is something here.
-			slog.Warn("refused the pile", "identity", who, "path", r.URL.Path)
-			w.WriteHeader(http.StatusForbidden)
+		carried, err := r.Cookie(sessionCookie)
+		if err != nil {
+			refuse(w, r, "no cookie")
 			return
 		}
-		id, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
+		session, known, err := opts.Sessions.For(r.Context(), hashOf(carried.Value), now())
+		if err != nil {
+			// Past the cache's memory and the database cannot answer. This is
+			// the one place in the product that fails closed on an unreachable
+			// Postgres, and it has to: the alternative is guessing who is
+			// asking.
+			slog.Error("could not tell who is asking", "error", err)
+			refuse(w, r, "cannot say")
 			return
 		}
-		h(w, withWho(r, id, opts.Identity))
+		if !known || session.PersonID == 0 {
+			refuse(w, r, "no session")
+			return
+		}
+		h(w, withWho(r, session.PersonID, session.Sub))
 	}
+}
+
+// refuse is what a request with nobody behind it gets.
+//
+// No body on the 401: a refusal that describes what it is refusing tells an
+// unauthenticated caller that there is something here.
+func refuse(w http.ResponseWriter, r *http.Request, why string) {
+	slog.Warn("refused the pile", "why", why, "path", r.URL.Path)
+	if r.Method != http.MethodGet || r.Header.Get("X-Thread") != "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	to := url.URL{Path: "/auth"}
+	if r.URL.Path != "/" {
+		// Where you were going, so signing in puts you back rather than at the
+		// top of the pile. Only the path: a query string can carry anything,
+		// and the gate checks what it is given anyway.
+		to.RawQuery = url.Values{"next": {r.URL.Path}}.Encode()
+	}
+	http.Redirect(w, r, to.String(), http.StatusSeeOther)
+}
+
+// sameSecret compares two secrets without leaking which byte differed.
+func sameSecret(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
 type whoKey struct{}
@@ -48,7 +90,7 @@ func withWho(r *http.Request, personID int64, sub string) *http.Request {
 // personOf is whose pile this request is about.
 //
 // It replaced Options.Owner on 25 August 2026. That was a process-global
-// atomic.Int64 read through personOf(r), and every handler read it. It could
+// atomic.Int64 read through opts.person(), and every handler read it. It could
 // not survive two people: a second person's request would have read the first
 // one's owner and drawn their pile.
 //

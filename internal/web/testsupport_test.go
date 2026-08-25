@@ -526,14 +526,21 @@ func (f *fakeStore) PromoteItem(_ context.Context, _ int64, id int64, _ time.Dur
 }
 
 // testMux collects routes so a test can call one directly.
-type testMux struct{ routes map[string]http.HandlerFunc }
+type testMux struct {
+	routes map[string]http.HandlerFunc
+	// opts is what the screen was mounted with, for the handful of tests that
+	// need to build a guarded handler of their own.
+	opts Options
+}
 
 func newTestMux() *testMux { return &testMux{routes: map[string]http.HandlerFunc{}} }
 
 func (m *testMux) Get(pattern string, h http.HandlerFunc)  { m.routes["GET "+pattern] = h }
 func (m *testMux) Post(pattern string, h http.HandlerFunc) { m.routes["POST "+pattern] = h }
 
-func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *httptest.ResponseRecorder {
+// route resolves a call the way the real ServeMux would. Shared by call and
+// callAnonymously, because two copies of a matcher is two matchers that drift.
+func (m *testMux) route(t *testing.T, method, target string) string {
 	t.Helper()
 	// Longest pattern first, so /pile/act is not answered by /pile. A map
 	// iterates in a random order and the real ServeMux resolves this by
@@ -561,15 +568,38 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	}
 	if best == "" {
 		t.Fatalf("no route for %s %s", method, target)
-		return nil
 	}
+	return best
+}
+
+func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *httptest.ResponseRecorder {
+	t.Helper()
+	best := m.route(t, method, target)
 
 	r := httptest.NewRequest(method, target, body)
-	r.Header.Set("X-Authentik-Username", "ronald")
+	// Signed in. This was an identity header until 25 August 2026; it is a
+	// cookie the guard resolves through the session store now, and
+	// alwaysSignedIn is what answers for it.
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 	if method == "POST" {
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		// What a browser sends when this screen's own form is submitted.
 		// csrf_test.go covers what it sends when someone else's is.
+		r.Header.Set("Origin", "http://"+r.Host)
+	}
+	w := httptest.NewRecorder()
+	m.routes[best](w, r)
+	return w
+}
+
+// callAnonymously is the same call with nobody behind it, for the tests about
+// what a stranger gets.
+func (m *testMux) callAnonymously(t *testing.T, method, target string, body io.Reader) *httptest.ResponseRecorder {
+	t.Helper()
+	best := m.route(t, method, target)
+	r := httptest.NewRequest(method, target, body)
+	if method == "POST" {
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r.Header.Set("Origin", "http://"+r.Host)
 	}
 	w := httptest.NewRecorder()
@@ -762,8 +792,10 @@ func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos
 	t.Helper()
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: sp, Photos: ph,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    sp, Photos: ph,
 	}))
 	return m
 }
@@ -772,8 +804,10 @@ func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
 	t.Helper()
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: sp,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    sp,
 	}))
 	return m
 }
@@ -782,8 +816,10 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 	t.Helper()
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 	}))
 	return m
 }
@@ -900,8 +936,10 @@ func mountedWith(t *testing.T, f *fakeStore, c *fakeCoach) *testMux {
 	t.Helper()
 	m := newTestMux()
 	opts := Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 	}
 	if c != nil {
 		opts = c.options(opts)
@@ -1049,8 +1087,10 @@ func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool
 	f.reads = reads
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 		Reads: func(_ context.Context, _ int64, said string) (string, bool, error) {
 			f.readAsked = append(f.readAsked, said)
 			return f.reads(said)
@@ -1066,3 +1106,40 @@ func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool
 // has to do it itself. Two tests do, both because the test mux matches by
 // prefix and cannot resolve a `{id}` wildcard.
 func asking(r *http.Request) *http.Request { return withWho(r, 1, "ronald") }
+
+// alwaysSignedIn is the session store for every test that is not about
+// signing in. It resolves any cookie to the one person the tests are about,
+// which is exactly what the identity header used to do.
+type alwaysSignedIn struct{}
+
+func (alwaysSignedIn) SessionFor(_ context.Context, _ []byte, _ time.Time) (squirrel.Session, bool, error) {
+	return squirrel.Session{PersonID: 1, Sub: "ronald", ExpiresAt: time.Now().Add(time.Hour)}, true, nil
+}
+
+func (alwaysSignedIn) OpenSession(context.Context, int64, string, []byte, time.Time, time.Duration) error {
+	return nil
+}
+func (alwaysSignedIn) EndSession(context.Context, []byte) error { return nil }
+
+// signedInOptions is the shape every mounted screen in these tests wants: a
+// way in that is never walked through, and a session that is always there.
+//
+// Before 25 August 2026 this was two struct fields and a request header. The
+// header is gone; what replaced it is a cookie the guard resolves through the
+// store, so a test that mounts the screen has to supply one.
+func signedInOptions() Options {
+	return Options{
+		RequiredGroup: "squirrel-users",
+		// A zero Gate. Nothing here walks through it — login_test.go is where
+		// the way in is exercised, against an Authentik that signs real
+		// tokens.
+		Gate:     &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
+	}
+}
+
+// aTestLogin is what a login resolves to in a test that is not about logging
+// in: the one person these tests are about.
+func aTestLogin(context.Context, string, string) (int64, error) { return 1, nil }

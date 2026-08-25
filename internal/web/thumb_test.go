@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -43,11 +44,13 @@ func photosOnDisk(t *testing.T) *fakePhotos {
 func askForThumb(t *testing.T, f *fakeStore, ph *fakePhotos, id string) *httptest.ResponseRecorder {
 	t.Helper()
 	opts := Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{}, Photos: ph,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{}, Photos: ph,
 	}
 	r := httptest.NewRequest("GET", "/photo/"+id+"/thumb", nil)
-	r.Header.Set("X-Authentik-Username", "ronald")
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 	r.SetPathValue("id", id)
 	w := httptest.NewRecorder()
 	thumbHandler(f, opts)(w, asking(r))

@@ -99,8 +99,10 @@ func TestTheWordsAreSpooledBeforeBuddyIsAsked(t *testing.T) {
 	var spooledFirst bool
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: sp,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    sp,
 		Reads: func(_ context.Context, _ int64, said string) (string, bool, error) {
 			spooledFirst = len(sp.written) == 1
 			return "answered", false, nil
@@ -135,8 +137,10 @@ func TestAPhotographIsNeverJudged(t *testing.T) {
 	m := newTestMux()
 	var asked bool
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{}, Photos: ph,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{}, Photos: ph,
 		Reads: func(context.Context, int64, string) (string, bool, error) {
 			asked = true
 			return "", false, nil
@@ -195,8 +199,10 @@ func TestTheHouseOverrulesTheRule(t *testing.T) {
 	var housed []string
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 		AskedAQuestion: func(_ context.Context, said string) (bool, bool) {
 			housed = append(housed, said)
 			return true, true
@@ -219,8 +225,10 @@ func TestAHouseThatDoesNotAnswerFallsThroughToTheRule(t *testing.T) {
 	f := &fakeStore{}
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 		// True and "did not answer". Believing the first return without
 		// checking the second would send a thought abroad — which is what the
 		// mutation that caught this test being weak actually did.

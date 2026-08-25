@@ -34,8 +34,10 @@ func TestAPhotographTheDiskHasLostSaysSo(t *testing.T) {
 	// exists rather than calling it. fakePhotos.Open has always answered
 	// ErrNotExist, which is exactly the disagreement this is about.
 	opts := Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{}, Photos: &fakePhotos{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{}, Photos: &fakePhotos{},
 	}
 	r := httptest.NewRequest("GET", "/photo/7", nil)
 	r.SetPathValue("id", "7")

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -17,7 +18,7 @@ import (
 func crossSite(t *testing.T, m *testMux, path string, form url.Values, headers map[string]string) int {
 	t.Helper()
 	r := httptest.NewRequest("POST", path, strings.NewReader(form.Encode()))
-	r.Header.Set("X-Authentik-Username", "ronald")
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	for k, v := range headers {
 		r.Header.Set(k, v)

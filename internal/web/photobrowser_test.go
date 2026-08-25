@@ -26,8 +26,10 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *
 	t.Helper()
 
 	opts := Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: sp, Photos: ph,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    sp, Photos: ph,
 	}
 	if c != nil {
 		opts = c.options(opts)
@@ -37,7 +39,7 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *
 	require.NoError(t, Mount(m, f, opts))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Set("X-Authentik-Username", "ronald")
+		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 		if r.Method == http.MethodPost && r.Header.Get("Origin") == "" {
 			r.Header.Set("Origin", "http://"+r.Host)
 		}

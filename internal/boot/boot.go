@@ -276,10 +276,36 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// See readingWiring.
 	read := readingWiring(s.coach, store, s.house)
 
+	// The way in, built once at boot. Discovery is a network call to
+	// Authentik, and a Squirrel that cannot find its own way in is not a
+	// working Squirrel — so this fails the boot rather than mounting a screen
+	// nobody can reach.
+	var gate *web.Gate
+	if config.OIDC.Ready() {
+		var err error
+		gate, err = web.NewAuthentik(ctx, web.Authentik{
+			Issuer:        config.OIDC.Issuer,
+			ClientID:      config.OIDC.ClientID,
+			ClientSecret:  config.OIDC.ClientSecret,
+			RedirectURL:   config.OIDC.RedirectURL,
+			RequiredGroup: config.WebRequiredGroup,
+		})
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("building the way in: %w", err)
+		}
+		slog.Info("the way in is open", "issuer", config.OIDC.Issuer,
+			"group", config.WebRequiredGroup)
+	}
+
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
-			IdentityHeader: config.WebIdentityHeader,
-			Identity:       config.WebIdentity,
+			Gate:          gate,
+			RequiredGroup: config.WebRequiredGroup,
+			// One cache in front of one table. The store is passed rather than
+			// the pool: internal/web states what it needs and nothing more.
+			Sessions: web.NewSessions(store),
+			Login:    store.PersonForLogin,
 			// The same location the scheduler's quiet hours and evening
 			// message already take. Threaded rather than read off the process
 			// clock — see issue #148.
@@ -290,7 +316,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// can send on: subscriptions stored, permission spent, and silence
 			// — which is the one shape worse than never offering.
 			PushKey: pushKeyFor(config.Push),
-			Owner:   webOwner.Load,
 			// The same spool the room's captures go through, so there is one
 			// durable path into the pile rather than two to keep in step.
 			Spool: spool,
@@ -542,6 +567,20 @@ func seedsFrom(c squirrel.Config) []squirrel.IdentitySeed {
 		seeds = append(seeds, squirrel.IdentitySeed{
 			Transport: squirrel.ScreenTransport, ExternalID: c.WebIdentity,
 		})
+	}
+	// The owner's sub, so that logging in resolves to the person who already
+	// owns the pile rather than making a second one beside it.
+	//
+	// Both transports, and the screen one is why WEB_IDENTITY is still here:
+	// the drain resolves a spooled capture's owner from its sender string, so
+	// the owner needs a `screen` identity under the sub as well as under
+	// whatever the header used to say. Two rows rather than one is what keeps
+	// a note typed before the deploy and a note typed after it the same
+	// person's.
+	if c.WebOwnerSub != "" {
+		seeds = append(seeds,
+			squirrel.IdentitySeed{Transport: squirrel.OIDCTransport, ExternalID: c.WebOwnerSub},
+			squirrel.IdentitySeed{Transport: squirrel.ScreenTransport, ExternalID: c.WebOwnerSub})
 	}
 
 	if c.Campfire == nil {
