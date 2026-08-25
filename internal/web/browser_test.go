@@ -544,3 +544,89 @@ const visible = `(sel) => {
 		checkOpacity: true, checkVisibilityCSS: true, contentVisibilityAuto: true,
 	});
 }`
+
+// Nothing at the foot of the conversation hides behind the dock.
+//
+// The reported bug, measured the way a phone meets it: a conversation long
+// enough to scroll, scrolled to the very bottom, with the last two things on
+// the page checked against the top of the box.
+//
+// The first version of this test had no turns in its fixture at all, so the
+// page did not scroll and nothing could overlap — it passed with the defect
+// deliberately put back. A test that cannot reproduce the bug it is named
+// after is worse than none.
+func aScrollingThread() *fakeStore {
+	f := aPile()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
+	for i := int64(1); i <= 24; i++ {
+		who := squirrel.SpeakerBuddy
+		if i%2 == 0 {
+			who = squirrel.SpeakerYou
+		}
+		f.turns = append(f.turns, squirrel.Turn{
+			ID: i, Who: who,
+			Words: "a line of the conversation that is long enough to wrap on a phone",
+		})
+	}
+	return f
+}
+
+func atTheBottomOfAPhone(t *testing.T) *cdp {
+	t.Helper()
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.eval(t, `window.scrollTo(0, document.body.scrollHeight); return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
+	require.Greater(t, c.eval(t, `return document.body.scrollHeight - window.innerHeight`),
+		float64(0), "the fixture does not scroll, so nothing can be hidden")
+	return c
+}
+
+func TestBrowserTheEndOfThePageClearsTheDock(t *testing.T) {
+	c := atTheBottomOfAPhone(t)
+
+	for _, what := range []string{".alsochips", ".ends"} {
+		gap := c.eval(t, `
+			const it = document.querySelector("`+what+`").getBoundingClientRect();
+			const dock = document.querySelector(".dock").getBoundingClientRect();
+			return Math.round(dock.top - it.bottom);`)
+		require.GreaterOrEqual(t, gap, float64(0),
+			"%s sits %v pixels under the dock", what, gap)
+	}
+}
+
+// And the reserve follows the slot as it grows. At four lines a static reserve
+// leaves the last thing you said underneath the box you said it in.
+func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
+	c := atTheBottomOfAPhone(t)
+
+	before := c.eval(t, `
+		const box = document.querySelector(".dock textarea");
+		box.value = "one line";
+		return Math.round(document.querySelector(".dock").getBoundingClientRect().height);`)
+
+	c.eval(t, `
+		const box = document.querySelector(".dock textarea");
+		const nl = String.fromCharCode(10);
+		box.value = ["a much longer thing to say", "that runs", "to four", "lines"].join(nl);
+		box.style.height = "auto";
+		box.style.height = box.scrollHeight + "px";
+		return 1;`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 250))`)
+
+	after := c.eval(t, `return Math.round(document.querySelector(".dock").getBoundingClientRect().height)`)
+	require.Greater(t, after, before, "the slot did not grow, so this proves nothing")
+
+	c.eval(t, `window.scrollTo(0, document.body.scrollHeight); return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 250))`)
+
+	gap := c.eval(t, `
+		const it = document.querySelector(".ends").getBoundingClientRect();
+		const dock = document.querySelector(".dock").getBoundingClientRect();
+		return Math.round(dock.top - it.bottom);`)
+	require.GreaterOrEqual(t, gap, float64(0),
+		"the grown slot covers the end of the page by %v pixels", gap)
+}

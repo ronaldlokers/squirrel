@@ -345,6 +345,33 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.34.2 — 25 August 2026
+
+Three things a phone showed that a laptop could not, all reported from one
+screenshot.
+
+**The dock covered the end of the page.** The clearance was on `.thread`, and
+`.thread` is not the last thing on the page — the two chips and the way out sit
+below it, outside its padding, so there was no way to scroll them clear. It is
+on the whole column now, and the reserve is the dock's measured height rather
+than a guess, so a slot grown to four lines pushes the conversation up instead
+of sitting on top of it.
+
+**"How do you feel?" was asked on every visit.** A question you have not
+answered is still on the screen; asking again does not make it easier to
+answer, it makes a column of the same question. The reading going stale is what
+makes it worth asking; having asked and been ignored is what makes it not worth
+asking again.
+
+**And the opening line landed on top of it.** The check-in is a question with
+its answers drawn on it, exactly like the picker, and it was left out of
+`endsAsking` when that was written — so the two alternated down the screen.
+
+The browser test for the first of these **passed with the defect deliberately
+put back**: its fixture had no turns, so the page did not scroll and nothing
+could overlap. Rebuilt against a conversation long enough to scroll, where it
+fails by eighteen pixels.
+
 ### v0.34.1 — 25 August 2026
 
 **A note carries your date, not the container's.** The other half of v0.33.1,

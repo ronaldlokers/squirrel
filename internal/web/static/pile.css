@@ -2978,6 +2978,20 @@
   main.threadpage {
     flex-direction: column; align-items: stretch; justify-content: flex-start;
     padding: 0;
+    /* Room at the bottom for the dock, which is fixed and covers whatever is
+       under it.
+
+       On the whole column rather than on .thread, which is where it was until
+       25 August 2026 — and .thread is not the last thing on the page. The two
+       chips and the way out sit below it, outside its padding, so on a phone
+       they were behind the dock with no way to scroll them clear. Reported
+       from a phone, and invisible on a laptop where the page is short enough
+       that nothing needs scrolling at all.
+
+       The fallback is what the dock measures at rest. thread.js replaces it
+       with the real height, so a textarea grown to four lines pushes the tail
+       of the conversation up rather than sitting on top of it. */
+    padding-bottom: var(--dockspace, 132px);
   }
 
   /* ══ THE THREAD ══════════════════════════════════════════════════════════
@@ -3036,7 +3050,10 @@
   /* THE TRANSCRIPT. */
   .thread {
     width: min(720px, 100%); margin: 0 auto;
-    padding: 22px 22px 132px;
+    /* No bottom clearance here — see main.threadpage. It carried 132px until
+       25 August 2026, which cleared the dock for the conversation and for
+       nothing after it. */
+    padding: 22px 22px 0;
     display: flex; flex-direction: column; gap: 16px;
   }
   .turn { display: flex; flex-direction: column; gap: 10px; max-width: 92%; }
@@ -3133,7 +3150,7 @@
     .rname { font-size: 11px; }
     .doorcount { position: absolute; top: -7px; right: -3px; }
 
-    .thread { padding: 18px 14px 128px; gap: 14px; }
+    .thread { padding: 18px 14px 0; gap: 14px; }
     .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }

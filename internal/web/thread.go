@@ -191,8 +191,15 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		//
 		// Never while walking back: a page of the past is being read, and
 		// reading it must not add to it.
+		// And never twice over. A question you have not answered is still on
+		// the screen; asking it again does not make it easier to answer, it
+		// makes a column of the same question — which is what a phone showed
+		// on 25 August 2026, three deep.
+		//
+		// The reading going stale is what makes it worth asking. Having asked
+		// and been ignored is what makes it not worth asking again.
 		asked := false
-		if !walkingBack && !unreadable {
+		if !walkingBack && !unreadable && !alreadyAsking(turns) {
 			if t, ask := checkinTurn(ctx, s, personID, r.URL.Query().Get("ask") != ""); ask {
 				asked = true
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
