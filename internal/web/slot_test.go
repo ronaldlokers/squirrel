@@ -29,9 +29,9 @@ func TestBrowserKeepingSomethingDoesNotTakeThePageAway(t *testing.T) {
 	c.eval(t, `window.__stillHere = true; return 1`)
 	c.eval(t, `const t = document.querySelector(".slot textarea");
 		t.value = "the boiler again"; t.dispatchEvent(new Event("input")); return 1`)
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "Buddy to say it landed",
-		`document.querySelector("#thread .turn:last-child .bub")?.textContent.trim() === "Kept."`)
+	c.until(t, "Buddy to say it landed", landed)
 
 	require.Len(t, sp.written, 1, "nothing reached the server")
 	require.Equal(t, "the boiler again", sp.written[0].Text)
@@ -54,11 +54,15 @@ func TestBrowserTheAnswerArrivesAsATurn(t *testing.T) {
 
 	c.eval(t, `const t = document.querySelector(".slot textarea");
 		t.value = "kaas"; t.dispatchEvent(new Event("input")); return 1`)
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "Buddy to say it landed",
-		`document.querySelector("#thread .turn:last-child .bub")?.textContent.trim() === "Kept."`)
+	c.until(t, "Buddy to say it landed", landed)
 
-	require.Equal(t, "Kept.", c.eval(t,
+	// Whatever Buddy said, he said something. The wording varies by the day,
+	// and since the box became a conversation it may be a sentence he wrote
+	// rather than an acknowledgement at all — what this pins is that the
+	// answer arrives as a turn rather than as a word inside the box.
+	require.NotEmpty(t, c.eval(t,
 		`return document.querySelector("#thread .turn:last-child .bub").textContent.trim()`))
 	require.Equal(t, "", c.eval(t, `return document.querySelector(".slot textarea").value`),
 		"the box kept the words after they were kept")
@@ -73,9 +77,9 @@ func TestBrowserKeepingAPhotographClearsTheSlot(t *testing.T) {
 	c.until(t, "the preview", `(`+visible+`)(".slot .gotphoto")`)
 	c.until(t, "the photograph to be held", heldPhoto)
 
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
-	c.until(t, "Buddy to say it landed",
-		`document.querySelector("#thread .turn:last-child .bub")?.textContent.trim() === "Kept."`)
+	c.until(t, "Buddy to say it landed", landed)
 
 	require.Len(t, sp.written, 1)
 	require.NotEmpty(t, sp.written[0].PhotoName)

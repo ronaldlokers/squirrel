@@ -22,11 +22,13 @@ import (
 // count, none of which is a database question. The store's own behaviour is
 // covered by the integration tests in internal/squirrel.
 type fakeStore struct {
-	knowing []string
-	forgot  bool
-	items   []squirrel.Item
-	chores  []squirrel.Chore
-	checkin *squirrel.Checkin
+	reads     func(string) (string, bool, error)
+	readAsked []string
+	knowing   []string
+	forgot    bool
+	items     []squirrel.Item
+	chores    []squirrel.Chore
+	checkin   *squirrel.Checkin
 	// readings is the fortnight the moods page reads, newest first.
 	readings []squirrel.Checkin
 	timer    *squirrel.Timer
@@ -1035,4 +1037,24 @@ func (f *fakeStore) ForgetKnowing(_ context.Context, _ int64) error {
 	}
 	f.knowing, f.forgot = nil, true
 	return nil
+}
+
+// mountedReading is mounted with a Buddy who reads the box.
+//
+// The seam rather than a whole coach: what the screen has to be tested for is
+// what it does with the two answers, and the answers themselves are the
+// coach's business.
+func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool, error)) *testMux {
+	t.Helper()
+	f.reads = reads
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, Options{
+		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		Reads: func(_ context.Context, _ int64, said string) (string, bool, error) {
+			f.readAsked = append(f.readAsked, said)
+			return f.reads(said)
+		},
+	}))
+	return m
 }

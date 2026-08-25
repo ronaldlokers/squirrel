@@ -380,15 +380,18 @@ func TestNothingIsOfferedOverSomethingAlreadyOnTheTable(t *testing.T) {
 // holding the single rendering path in place, and it fails the moment somebody
 // adds a client-side template.
 func TestAFragmentAndAPageRenderTheSameTurn(t *testing.T) {
+	// The wording varies by the day, the way the slot's own line does, so the
+	// fixture asks for today's rather than pinning one of them.
+	kept := squirrel.Say(squirrel.SayingKept, now())
 	page := thread(t, &fakeStore{turns: []squirrel.Turn{
-		{ID: 9, Who: squirrel.SpeakerBuddy, Words: "Kept."}, {ID: 10, Who: squirrel.SpeakerYou, Words: "milk"},
+		{ID: 9, Who: squirrel.SpeakerBuddy, Words: kept}, {ID: 10, Who: squirrel.SpeakerYou, Words: "milk"},
 	}})
 
 	f := &fakeStore{}
 	fragment := routed(t, f).callFragment(t, "/capture", "text=milk").Body.String()
 
-	require.Contains(t, page, `<p class="bub">Kept.</p>`)
-	require.Contains(t, fragment, `<p class="bub">Kept.</p>`)
+	require.Contains(t, page, `<p class="bub">`+kept+`</p>`)
+	require.Contains(t, fragment, `<p class="bub">`+kept+`</p>`)
 	require.NotContains(t, fragment, "<html", "a fragment is turns and nothing else")
 	require.NotContains(t, fragment, "railwrap")
 }
@@ -399,7 +402,7 @@ func TestAFragmentPressAnswersWithTheNewTurns(t *testing.T) {
 
 	require.Equal(t, 200, w.Code)
 	require.Contains(t, w.Body.String(), "milk")
-	require.Contains(t, w.Body.String(), "Kept.")
+	require.Contains(t, w.Body.String(), squirrel.Say(squirrel.SayingKept, now()))
 }
 
 // Without the header it still redirects, because that is what a form does and

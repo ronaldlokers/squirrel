@@ -62,8 +62,18 @@ func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Se
 // It landed when Buddy has said so. The answer used to be a word inside the
 // box; it is a turn in the conversation now, and the box being empty is the
 // other half of the same fact.
-const landed = `document.querySelector("#thread .turn:last-child .bub")
-	?.textContent.trim() === "Kept."`
+// The exact word varies by the day, the way the slot's own line does — and
+// since the box became a conversation it may be a sentence Buddy wrote rather
+// than an acknowledgement at all. So this waits for a turn that was not there
+// before rather than for a phrasing.
+//
+// The count is stamped on the page before the press. A predicate that only
+// asked "has Buddy said something" was satisfied by whatever was already on
+// screen and returned instantly, which is how a spool assertion ran before the
+// write it was about.
+const marking = `window.__before = document.querySelectorAll("#thread .turn").length; return 1`
+
+const landed = `document.querySelectorAll("#thread .turn").length > window.__before`
 
 // heldPhoto asks the page's own database whether a photograph is being held.
 //
@@ -119,6 +129,7 @@ func TestBrowserAPhotographIsKept(t *testing.T) {
 	c, _ := openCamera(t, sp, ph)
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "the capture to land", landed)
 
@@ -135,6 +146,7 @@ func TestBrowserAPhotographKeepsItsWords(t *testing.T) {
 
 	c.eval(t, `document.querySelector(".slot textarea").value = "the tax letter"`)
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "the capture to land", landed)
 
@@ -159,6 +171,7 @@ func TestBrowserAPhotographSurvivesTheWorker(t *testing.T) {
 	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "the capture to land", landed)
 
@@ -197,6 +210,7 @@ func TestBrowserAPhotographCanBeTakenOffAgain(t *testing.T) {
 		`!(`+visible+`)(".slot .gotphoto")`)
 
 	c.eval(t, `document.querySelector(".slot textarea").value = "words only"`)
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "the capture to land", landed)
 
@@ -232,6 +246,7 @@ func TestBrowserAPhotographSurvivesTheAppBeingReclaimed(t *testing.T) {
 		`return document.querySelector(".slot input[name=photo]").files.length`),
 		"the photograph was shown but not put back on the input")
 
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "the capture to land", landed)
 
@@ -250,6 +265,7 @@ func TestBrowserAKeptPhotographIsNotOfferedAgain(t *testing.T) {
 	c.until(t, "the slot to show the photograph",
 		`(`+visible+`)(".slot .gotphoto")`)
 	c.until(t, "the photograph to be held", heldPhoto)
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	// The hold is dropped by the same press that keeps it, rather than by the
 	// page that used to load afterwards. There is no page afterwards now, and
@@ -267,6 +283,7 @@ func TestBrowserAKeptPhotographIsNotOfferedAgain(t *testing.T) {
 
 	c.eval(t, `const t = document.querySelector(".slot textarea");
 		t.value = "a later thought"; t.dispatchEvent(new Event("input")); return 1`)
+	c.eval(t, marking)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "the second capture to land", landed)
 
