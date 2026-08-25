@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -695,6 +696,13 @@ func (f *fakeStore) ClearSteps(_ context.Context, _ int64) error {
 type fakePhotos struct {
 	kept []string
 	err  error
+	// dir, when set, is a real directory the fake reads back from, so a test
+	// about serving bytes can serve actual bytes. Empty is the default and
+	// behaves as it always did: nothing is there.
+	dir string
+	// noThumb is the WebP and HEIC case: bytes on disk that Go cannot decode,
+	// so there is no smaller copy and the original has to do.
+	noThumb bool
 }
 
 func (p *fakePhotos) Keep(r io.Reader, contentType string) (string, error) {
@@ -709,7 +717,19 @@ func (p *fakePhotos) Keep(r io.Reader, contentType string) (string, error) {
 	return "photo-1.jpg", nil
 }
 
-func (p *fakePhotos) Open(string) (*os.File, error) { return nil, os.ErrNotExist }
+func (p *fakePhotos) Open(name string) (*os.File, error) {
+	if p.dir == "" {
+		return nil, os.ErrNotExist
+	}
+	return os.Open(filepath.Join(p.dir, name))
+}
+
+func (p *fakePhotos) Thumb(name string) (*os.File, error) {
+	if p.dir == "" || p.noThumb {
+		return nil, os.ErrNotExist
+	}
+	return os.Open(filepath.Join(p.dir, squirrel.ThumbName(name)))
+}
 
 // fakeSpool stands in for the durable half of capture. The spool's own
 // durability — write, fsync, rename, fsync the directory — is proved in

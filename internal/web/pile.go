@@ -48,6 +48,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// letter is at least as private as the note beside it.
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
+		// The card asks for this one. See thumbHandler.
+		m.Get("/photo/{id}/thumb", guard(opts, thumbHandler(s, opts)))
 	}
 	m.Post("/mood", guard(opts, sameOrigin(threadMoodHandler(s, opts))))
 	// The one thing's three answers. Behind the origin check like every other

@@ -188,8 +188,10 @@ func TestThePileShowsAPhotographByTheNotesID(t *testing.T) {
 	}}}
 	// A photograph is fetched by the note's id and never by the file's name:
 	// the name is on a volume this process can see and the browser cannot.
-	require.Contains(t, opened(t, f, "pile"), `src="/photo/7"`)
-	require.NotContains(t, opened(t, f, "pile"), "photo-1.jpg")
+	body := opened(t, f, "pile")
+	require.Contains(t, body, `src="/photo/7/thumb"`)
+	require.Contains(t, body, `href="/photo/7"`)
+	require.NotContains(t, body, "photo-1.jpg")
 }
 
 // The one that only production could tell us about, until now.
