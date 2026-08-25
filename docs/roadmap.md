@@ -345,6 +345,33 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.37.0 — 25 August 2026
+
+**Buddy has a face.** The product is built around a mascot who appeared nowhere
+in the conversation he was having. It is the acorn, filled cream on purple,
+exactly as the mascot wears it on its cap — and only Buddy has one, because
+there is one person using this and he knows which words are his.
+
+A turn became a gutter and a column, which also gave the place's name somewhere
+to belong: it had been floating in the field beside the bubble it titled.
+
+Three things the pass found rather than added. Buddy's bubble was `--paper`,
+which is near enough to white on a surface whose second stated characteristic
+is that white is not Squirrel. The two permanent chips were centred at the same
+weight as chips that had just arrived, so they read as a page footer. And every
+gap in the conversation was the same size, which makes a reply no more part of
+the exchange than the next thing entirely.
+
+One thing it refused to change: the stopping line is an outlined pill and stays
+one. Pills are pressable and underline means *going somewhere else to look at
+something* — a documented decision, and polishing it would have been undoing it
+on taste.
+
+**`.face` was already taken** — it is the check-in's mood button, and it
+carries a 44px tap target, so Buddy's disc came out 34 wide and 44 tall. The
+third class collision on this surface after `.tcard` and `.say`, and the second
+found by measuring the rendered box rather than by reading the stylesheet.
+
 ### v0.36.0 — 25 August 2026
 
 **The box asks the house first.** v0.35.0 sent every capture abroad to be read,

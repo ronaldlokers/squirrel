@@ -68,6 +68,11 @@ type turnView struct {
 	Words string
 	// Cost is what this reply cost, on the reply that cost it.
 	Cost string
+	// Opens marks the turn that begins a run of Buddy's. It is where his face
+	// goes: consecutive turns are one utterance, and an acorn on every bubble
+	// is wallpaper by the third day — which matters more here than usual,
+	// because habituation is a documented risk for this user.
+	Opens bool
 	// Place is the <h2> when this turn opens one, and empty otherwise. The
 	// thread has no <h1> — home's exemption, because nobody arrives at the
 	// place they started wondering where they are — so these are what heading
@@ -356,6 +361,12 @@ func turnViews(turns []squirrel.Turn) []turnView {
 		}
 		out = append(out, v)
 	}
+	// Where Buddy starts speaking. The first turn of a run and every turn
+	// after somebody else spoke.
+	for i := range out {
+		out[i].Opens = out[i].Buddy && (i == 0 || !out[i-1].Buddy)
+	}
+
 	for i := len(out) - 1; i >= 0; i-- {
 		if out[i].Buddy {
 			out[i].Live = true

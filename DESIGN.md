@@ -881,6 +881,47 @@ supposed to replace.
 what a set has in common, after the product's own. Advice is refused in code
 rather than discouraged in the prompt.
 
+**Only Buddy has a face, and it appears once per run.** There is one person
+using this and he knows which words are his; a profile picture on your own
+messages is furniture, and the alignment and the fill already say it. What the
+conversation was missing was not two avatars but one presence — the product is
+built around a mascot who appeared nowhere in the conversation he was having.
+
+It is the acorn, filled cream on purple, exactly as the mascot wears it on its
+cap. Not the whole mascot, which is mush at this size, and not a hollow outline:
+a stroke-only acorn at 34px reads as a dark blob, which is the whole of why the
+logo fills it.
+
+Once per run, so consecutive turns read as one utterance. An acorn on every
+bubble is wallpaper by the third day, and habituation is a documented risk for
+this user.
+
+**A turn is a gutter and a column.** Buddy's face on the left, everything he
+said to the right of it. Every turn of his reserves the gutter whether or not
+it draws a face, so a run stays on one left edge instead of stepping in and
+out — and the place's name sits in that column too, because a heading outside
+the column it titles belongs to nothing.
+
+**A full-width control spans the gutter.** A question with its answers drawn on
+it is a control strip rather than speech. The check-in's five labels stopped
+fitting a 390px phone the moment the gutter took 44px off them.
+
+**Tight within a speaker's run, generous between them.** A conversation where
+every gap is the same size is a list of sentences. The reply sits closer to
+what it answers than to the next thing entirely.
+
+**A bubble is card stock, never paper.** `--paper` is the raised things sat *on*
+the stock; a bubble on the purple field is the stock. Buddy's was `--paper` for
+a day, which is near enough to white — and the second line of this system's key
+characteristics is that a white surface is not Squirrel. What let it drift is
+that the fill was doing the work of saying who spoke, and the face does that
+now.
+
+**What is always there is quieter than what just arrived.** The two chips at
+the foot of the conversation are outlined rather than filled, and they sit on
+the thread's own left edge rather than centred. At identical weight, directly
+under chips that had just arrived, they read as a footer belonging to the page.
+
 **The page reserves the dock's measured height, and the reserve is on the whole
 column.** The dock is fixed to the bottom and covers whatever is under it. The
 clearance sat on `.thread` until 25 August 2026, and `.thread` is not the last

@@ -630,3 +630,61 @@ func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 	require.GreaterOrEqual(t, gap, float64(0),
 		"the grown slot covers the end of the page by %v pixels", gap)
 }
+
+// The face is a circle, and it stays one.
+//
+// `.face` was already the check-in's mood button and carries a 44px tap
+// target, so Buddy's disc came out 34 wide and 44 tall. The stylesheet reads
+// correctly either way; only the rendered box says which class won.
+func TestBrowserBuddysFaceIsACircle(t *testing.T) {
+	f := aPile()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
+	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
+	c := browserAt(t, screen(t, f), "/")
+
+	box := c.eval(t, `
+		const r = document.querySelector(".buddyface").getBoundingClientRect();
+		return Math.round(r.width) + "x" + Math.round(r.height);`)
+
+	require.Equal(t, "34x34", box, "the disc is an egg: something else owns this class")
+}
+
+// And the acorn inside it is not clipped by it.
+func TestBrowserTheAcornFitsItsDisc(t *testing.T) {
+	f := aPile()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
+	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
+	c := browserAt(t, screen(t, f), "/")
+
+	clear := c.eval(t, `
+		const disc = document.querySelector(".buddyface").getBoundingClientRect();
+		const acorn = document.querySelector(".buddyface svg").getBoundingClientRect();
+		return Math.round(Math.min(
+			acorn.top - disc.top, disc.bottom - acorn.bottom,
+			acorn.left - disc.left, disc.right - acorn.right));`)
+
+	require.GreaterOrEqual(t, clear, float64(3),
+		"the acorn touches the edge of its own disc and reads as a capsule")
+}
+
+// A full-width control spans the gutter. The check-in's five labels stopped
+// fitting a 390px phone the moment the gutter took 44px off them.
+func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
+	f := aPile()
+	f.turns = []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: []byte(`{"faces":true}`)},
+	}
+	c := browserAt(t, screen(t, f), "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.eval(t, `return new Promise(r => setTimeout(r, 200))`)
+
+	inset := c.eval(t, `
+		const turn = document.querySelector(".turn.frombuddy").getBoundingClientRect();
+		const faces = document.querySelector(".faces").getBoundingClientRect();
+		return Math.round(faces.left - turn.left);`)
+
+	require.Equal(t, float64(0), inset,
+		"the mood row is indented past the gutter by %v pixels", inset)
+}

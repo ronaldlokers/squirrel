@@ -790,3 +790,56 @@ func TestAnUndoThatWasNeverOfferedDoesNothing(t *testing.T) {
 // TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
 // TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
 // TestLaterHandsYouTheNextAndDecidesNothing.
+
+// Buddy's face, and where it goes.
+
+// Once per run. Consecutive turns are one utterance, and an acorn on every
+// bubble is wallpaper by the third day — which matters more here than usual,
+// because habituation is a documented risk for this user.
+func TestBuddyShowsHisFaceOncePerRun(t *testing.T) {
+	f := &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "dentist today."},
+		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Something has come back round."},
+		{ID: 3, Who: squirrel.SpeakerYou, Words: "the pile"},
+		{ID: 4, Who: squirrel.SpeakerBuddy, Words: "This one."},
+	}}
+
+	require.Equal(t, 2, strings.Count(thread(t, f), `class="buddyface"`),
+		"the acorn is on every bubble rather than where he starts speaking")
+}
+
+// And never on your own words. There is one person using this and he knows
+// which words are his; a profile picture on them is furniture.
+func TestYourOwnWordsHaveNoFace(t *testing.T) {
+	f := &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerYou, Words: "the boiler again"},
+	}}
+	body := thread(t, f)
+
+	// The one face on the page is the check-in's, which is a mood button.
+	require.NotContains(t, body, `class="buddyface"`)
+}
+
+// It is drawn rather than borrowed, and hidden from the accessibility tree —
+// a screen reader gets the speaker from the words, and "acorn, acorn, acorn"
+// down a conversation is the poster on the wall being read out.
+func TestTheFaceIsDrawnAndNotReadOut(t *testing.T) {
+	f := &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."},
+	}}
+	body := thread(t, f)
+
+	require.Contains(t, body, `class="buddyface" aria-hidden="true"`)
+	require.Contains(t, body, "<svg", "the acorn is not drawn")
+}
+
+// `.face` was already the check-in's mood button, and it carries a 44px tap
+// target — so Buddy's disc came out 34 wide and 44 tall, an egg rather than a
+// circle. The third class collision on this surface after `.tcard` and `.say`.
+func TestBuddysFaceDoesNotTakeTheMoodButtonsName(t *testing.T) {
+	css, err := staticFS.ReadFile("static/pile.css")
+	require.NoError(t, err)
+
+	require.Contains(t, string(css), ".buddyface {")
+	require.Contains(t, string(css), "  .face {", "the mood button lost its own rule")
+}
