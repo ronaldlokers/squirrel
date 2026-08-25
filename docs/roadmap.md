@@ -345,6 +345,51 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.39.1 — 26 August 2026
+
+**An unreachable authentik costs the way in, not the product.** v0.39.0 was
+tagged, deployed, and took both clusters down. Production squirrel crash-looped
+for about half an hour, and because Campfire does not retry a delivery it could
+not make, anything said in the room during that window is gone.
+
+Two bugs. The first is ordinary: the config trimmed the trailing slash off
+`WEB_OIDC_ISSUER`, copied from the `WEB_URL` line above it. go-oidc compares
+the issuer it discovers against the one it was given byte for byte, and
+authentik publishes this one *with* a slash. The config test asserted the trim
+was correct, so it shipped with a test pinning it — a reminder that a test
+written from the same misunderstanding as the code defends the bug.
+
+The second is a design mistake worth keeping the reasoning for. `NewAuthentik`
+did OIDC discovery at boot and a failure was a boot that failed, on the
+argument that "a Squirrel with no way in is not a working Squirrel". That
+argument is wrong, and the shape of the outage is the proof: what went down
+alongside the screen was capture, the drain and the Campfire webhook, none of
+which have anything to do with signing in.
+
+**A failure costs a feature and never the product.** The spool exists so that
+an unreachable Postgres does not lose a note. An identity provider the *screen*
+needs must not be a harder dependency than the database the *whole product*
+needs — and it was.
+
+The split is now by what a failure means. Configuration that is missing or
+dangerous is refused synchronously, without a network, because it cannot come
+right on its own: an empty `WEB_REQUIRED_GROUP` still refuses to mount.
+authentik being unreachable is not refused at all — the gate says so, in the
+sentence the screen already had for it, and tries again every thirty seconds
+rather than on every press.
+
+The immediate cause was a missing NetworkPolicy: squirrel's pod had no egress
+to authentik's hostname, because forward auth never needed one. That is a
+homelab fix. This is the half that means getting it wrong again costs the login
+screen rather than the room.
+
+One unrelated fix rides along. `TestSomethingTodayIsWhatBuddyOpensWith` built
+an appointment three hours from now and asserted the card reads "today", which
+is false after nine in the evening — on any branch, for a reason having nothing
+to do with anybody's change.
+
+No migration.
+
 ### v0.39.0 — 25 August 2026
 
 **Proper OIDC: the application does its own authentication.** Squirrel's whole
