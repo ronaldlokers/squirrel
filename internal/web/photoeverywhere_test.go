@@ -50,7 +50,11 @@ func TestATaskInTheThreadKeepsItsPhotograph(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		withPhoto(1, "the tax letter", squirrel.ItemOpen, squirrel.ItemTask)}}
 
-	require.Contains(t, opened(t, f, "tasks"), `src="/photo/1"`)
+	// The card draws the smaller copy and links to the whole one, both by the
+	// note's id. See thumb_test.go for why the card asks for the copy.
+	body := opened(t, f, "tasks")
+	require.Contains(t, body, `src="/photo/1/thumb"`)
+	require.Contains(t, body, `href="/photo/1"`)
 }
 
 // And on the screen for things you cannot act on, which needed the store to

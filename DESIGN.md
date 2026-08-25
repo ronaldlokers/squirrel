@@ -867,6 +867,18 @@ then lost the digits when its disclosure went; they are back.
 Only that question. A digit inside the day picker would be a day of the month,
 and guessing which of the two was meant would book the wrong one.
 
+**A photograph on a card is bounded by height, and it is the small copy.**
+A card in a conversation is read at a glance and scrolled past, so the failure
+to prevent is a portrait photograph pushing the buttons off the screen —
+`max-height`, and `object-fit: contain` rather than `cover`, because a note's
+photograph is usually *of words* and cropping them is losing the note. The card
+asks for a card-sized copy and links to the whole picture; tapping it is how
+you read something photographed at arm's length.
+
+A kind the standard library cannot decode has no small copy and never will.
+The card draws the original rather than a broken image, and that is a larger
+download for WebP and HEIC.
+
 **A chip that acts is a form, not a link.** Chips in a turn carry either an href
 or an action, never both: a GET that writes writes again on every reload, which
 is the same reason a door is a press.

@@ -20,7 +20,12 @@
   <article class="turncard{{if eq .Kind "chore"}} chore{{end}}">
     {{/* The photograph is the note, and the words beside it are the caption —
          the same order the pile's card draws them in. */}}
-    {{if .Photo}}<p class="cardphoto"><img src="{{.Photo}}" alt="the photograph on this note" loading="lazy"></p>{{end}}
+    {{/* The card asks for the smaller copy and links to the whole one. A card
+         is 260 pixels wide and the original is a photograph from a phone, so
+         the card was downloading megabytes to draw a thumbnail; tapping it is
+         how you get the real thing, which is also the only way to read
+         something photographed at arm's length. */}}
+    {{if .Photo}}<p class="cardphoto"><a href="{{.Photo}}"><img src="{{.Photo}}/thumb" alt="the photograph on this note" loading="lazy"></a></p>{{end}}
     <p class="{{if eq .Kind "chore"}}name{{else}}turnname{{end}}">{{.Title}}</p>
     {{if .Meta}}<p class="{{if eq .Kind "chore"}}meta{{else}}turnmeta{{end}}">{{.Meta}}</p>{{end}}
     {{if .Take}}<p class="takeline">{{.Take}}</p>{{end}}

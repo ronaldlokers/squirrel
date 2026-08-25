@@ -27,6 +27,9 @@ import (
 type Photos interface {
 	Keep(r io.Reader, contentType string) (string, error)
 	Open(name string) (*os.File, error)
+	// Thumb is the same picture at card size. It errors for a kind Go cannot
+	// decode, and the caller serves the original instead.
+	Thumb(name string) (*os.File, error)
 }
 
 // photoHandler serves one back.
@@ -40,6 +43,19 @@ type Photos interface {
 // from the row too, and the row only ever holds one of the handful the store
 // will keep — so nothing a browser once claimed is echoed back as a type.
 func photoHandler(s Store, opts Options) http.HandlerFunc {
+	return photoOrThumb(s, opts, false)
+}
+
+// thumbHandler serves the card-sized copy.
+//
+// Behind the same guard, answering from the same row, and falling back to the
+// original when there is no thumbnail to be had — a WebP or a HEIC has none,
+// and a card drawing a broken image would be a worse answer than a large one.
+func thumbHandler(s Store, opts Options) http.HandlerFunc {
+	return photoOrThumb(s, opts, true)
+}
+
+func photoOrThumb(s Store, opts Options, small bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := opts.person()
 		if !ok {
@@ -62,7 +78,23 @@ func photoHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		f, err := opts.Photos.Open(it.PhotoName)
+		kind := it.PhotoType
+		var f *os.File
+		if small {
+			if f, err = opts.Photos.Thumb(it.PhotoName); err == nil {
+				// Whatever went in, a thumbnail comes out as one thing.
+				kind = "image/jpeg"
+			} else {
+				// Not a fault: a kind that cannot be decoded has no smaller
+				// copy and never will. Serving the original is the honest
+				// answer, and it is the one the card can still draw.
+				slog.Info("no smaller copy for this photograph; serving the original",
+					"item", it.ID, "type", it.PhotoType, "error", err)
+				f, err = opts.Photos.Open(it.PhotoName)
+			}
+		} else {
+			f, err = opts.Photos.Open(it.PhotoName)
+		}
 		if err != nil {
 			// The row says there is a photograph and the disk disagrees. That
 			// is worth a log and a 404 rather than a 500: the pile still
@@ -80,7 +112,7 @@ func photoHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		defer f.Close()
 
-		w.Header().Set("Content-Type", it.PhotoType)
+		w.Header().Set("Content-Type", kind)
 		// Immutable: the name is random and a name never gets new bytes, so a
 		// browser that has it never needs to ask again. Private, because this
 		// is behind forward-auth and no shared cache has any business with it.
