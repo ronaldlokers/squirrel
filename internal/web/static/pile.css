@@ -3049,7 +3049,7 @@
 
   /* THE TRANSCRIPT. */
   .thread {
-    --gutter: 34px;
+    --gutter: 40px;
     width: min(720px, 100%); margin: 0 auto;
     /* No bottom clearance here — see main.threadpage. It carried 132px until
        25 August 2026, which cleared the dock for the conversation and for
@@ -3084,23 +3084,23 @@
 
   /* The face itself. Cream stock and the 3px outline, like everything else on
      this field that is an object rather than the room. */
-  /* Purple, because that is where the mascot keeps this acorn: on the cap.
-     It also keeps the face off the cream the bubbles are made of, so the two
-     read as different things rather than as one shape with a bite out of it. */
-  /* `.buddyface`, not `.face`. `.face` is the check-in's mood button and has
-     been since the readings shipped — it carries a 44px tap target, so the
-     disc came out 34 wide and 44 tall, an egg rather than a circle. The third
-     class collision on this surface after `.tcard` and `.say`, and the second
-     to be found by measuring the rendered box rather than by reading. */
+  /* Nothing around it.
+     
+     The artwork brings its own outline — the same 3px ring the system draws
+     on every object — so a disc behind it stacked two, which is the heaviest
+     thing on a surface made of light cream bubbles. Bare, the head sits in
+     the field the way the door art sits on its cards.
+     
+     Forty rather than the thirty-four a disc needed. A circle crops to the
+     face; a silhouette has to fit the ears and the headphones inside the same
+     width, so at the same size the face itself comes out about a fifth
+     smaller. Six pixels of gutter buys that back. */
   .buddyface {
     grid-column: 1; grid-row: 1;
-    width: var(--gutter); height: var(--gutter);
-    display: grid; place-items: center;
-    background: var(--purple);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 3px 0 0 var(--outline);
+    width: var(--gutter); height: auto;
+    display: block;
   }
-  .buddyface svg { display: block; }
+  .buddyface img { width: 100%; height: auto; display: block; }
   .bub {
     margin: 0; padding: 11px 15px;
     border: var(--line) solid var(--outline); border-radius: var(--r);
@@ -3221,7 +3221,7 @@
     .rname { font-size: 11px; }
     .doorcount { position: absolute; top: -7px; right: -3px; }
 
-    .thread { --gutter: 30px; padding: 18px 14px 0; gap: 8px; }
+    .thread { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
     .alsochips { padding: 0 14px; }
     .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }

@@ -631,40 +631,47 @@ func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 		"the grown slot covers the end of the page by %v pixels", gap)
 }
 
-// The face is a circle, and it stays one.
+// Buddy's face is the gutter wide, and nothing is drawn around it.
 //
-// `.face` was already the check-in's mood button and carries a 44px tap
-// target, so Buddy's disc came out 34 wide and 44 tall. The stylesheet reads
-// correctly either way; only the rendered box says which class won.
-func TestBrowserBuddysFaceIsACircle(t *testing.T) {
+// `.face` is the check-in's mood button and carries a 44px tap target, so a
+// face that took that class came out the wrong size — the stylesheet reads
+// correctly either way, and only the rendered box says which class won.
+//
+// The second half is the design: the artwork brings its own outline, so a
+// border or a fill here would stack two.
+func TestBrowserBuddysFaceIsTheGutterAndNothingElse(t *testing.T) {
 	f := aPile()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
 	c := browserAt(t, screen(t, f), "/")
 
-	box := c.eval(t, `
-		const r = document.querySelector(".buddyface").getBoundingClientRect();
-		return Math.round(r.width) + "x" + Math.round(r.height);`)
+	require.Equal(t, float64(40), c.eval(t, `
+		return Math.round(document.querySelector(".buddyface").getBoundingClientRect().width);`),
+		"the face is not the gutter wide: something else owns this class")
 
-	require.Equal(t, "34x34", box, "the disc is an egg: something else owns this class")
+	// Each read on its own. The first version of this joined them and asked
+	// for substrings, which passed with a 3px purple disc put back: the
+	// computed border width is "3px" rather than "px solid", and a background
+	// *colour* leaves background-image reading "none".
+	face := `getComputedStyle(document.querySelector(".buddyface"))`
+	require.Equal(t, "0px", c.eval(t, `return `+face+`.borderTopWidth`),
+		"there is a border around artwork that has its own outline")
+	require.Equal(t, "none", c.eval(t, `return `+face+`.boxShadow`),
+		"there is a shadow behind the artwork")
+	require.Contains(t, []any{"rgba(0, 0, 0, 0)", "transparent"},
+		c.eval(t, `return `+face+`.backgroundColor`),
+		"there is a fill behind the artwork")
 }
 
-// And the acorn inside it is not clipped by it.
-func TestBrowserTheAcornFitsItsDisc(t *testing.T) {
+// And the image fills it rather than sitting in it.
+func TestBrowserTheArtworkFillsTheGutter(t *testing.T) {
 	f := aPile()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
 	c := browserAt(t, screen(t, f), "/")
 
-	clear := c.eval(t, `
-		const disc = document.querySelector(".buddyface").getBoundingClientRect();
-		const acorn = document.querySelector(".buddyface svg").getBoundingClientRect();
-		return Math.round(Math.min(
-			acorn.top - disc.top, disc.bottom - acorn.bottom,
-			acorn.left - disc.left, disc.right - acorn.right));`)
-
-	require.GreaterOrEqual(t, clear, float64(3),
-		"the acorn touches the edge of its own disc and reads as a capsule")
+	require.Equal(t, float64(40), c.eval(t, `
+		return Math.round(document.querySelector(".buddyface img").getBoundingClientRect().width);`))
 }
 
 // A full-width control spans the gutter. The check-in's five labels stopped

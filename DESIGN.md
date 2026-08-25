@@ -881,16 +881,34 @@ supposed to replace.
 what a set has in common, after the product's own. Advice is refused in code
 rather than discouraged in the prompt.
 
+**Nothing is drawn around the face.** The artwork carries the same heavy
+outline the system draws on every object, so a disc behind it stacks two — and
+two of them is the heaviest thing on a surface made of light cream bubbles. It
+is also this world's own language: the material is described as the mascot's
+sticker drawing, and a sticker has no plate under it.
+
+The gutter is 40px rather than the 34 a disc needed. A circle crops to the
+face; a silhouette has to fit the ears and the headphones inside the same
+width, so at the same size the face itself comes out about a fifth smaller.
+
+**The artwork is head-only, and that is what makes it work.** An avatar is a
+portrait, and artwork whose centre of mass is the head crops to a portrait by
+itself. The version with a tail needed the crop to fight its own composition:
+the face landed low and left in every framing, because the frame's centre was
+never the head's.
+
 **Only Buddy has a face, and it appears once per run.** There is one person
 using this and he knows which words are his; a profile picture on your own
 messages is furniture, and the alignment and the fill already say it. What the
 conversation was missing was not two avatars but one presence — the product is
 built around a mascot who appeared nowhere in the conversation he was having.
 
-It is the acorn, filled cream on purple, exactly as the mascot wears it on its
-cap. Not the whole mascot, which is mush at this size, and not a hollow outline:
-a stroke-only acorn at 34px reads as a dark blob, which is the whole of why the
-logo fills it.
+It is the mascot's own head, drawn. The acorn was tried first and shipped for
+an afternoon — DESIGN.md's rule that the acorn exists for exactly this size was
+written when the only alternative was the whole character, tail included, which
+is mush. A head-only portrait is a case that rule did not consider, and it was
+measured rather than argued: at 40px the cap, the acorn badge, both eyes and
+the mouth all read.
 
 Once per run, so consecutive turns read as one utterance. An acorn on every
 bubble is wallpaper by the third day, and habituation is a documented risk for
