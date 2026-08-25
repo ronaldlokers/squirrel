@@ -881,6 +881,16 @@ supposed to replace.
 what a set has in common, after the product's own. Advice is refused in code
 rather than discouraged in the prompt.
 
+**The page reserves the dock's measured height, and the reserve is on the whole
+column.** The dock is fixed to the bottom and covers whatever is under it. The
+clearance sat on `.thread` until 25 August 2026, and `.thread` is not the last
+thing on the page — the two chips and the way out are below it, so on a phone
+they were behind the box with no way to scroll them clear. Measured rather than
+guessed, because the slot grows as you type: at four lines a static reserve
+leaves the last thing you said underneath the box you said it in. The
+stylesheet keeps a fallback for the height at rest, so the page is right before
+the script runs.
+
 **What must be reachable from anywhere goes at the foot of the thread, not on
 the live edge.** The live edge is the newest Buddy turn, and there is not always
 one — a conversation that has not started has no turns at all. A control that
