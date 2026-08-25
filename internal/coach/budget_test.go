@@ -69,7 +69,7 @@ func TestBudgetWithNoCeilingAlwaysAllows(t *testing.T) {
 // money without limit, so it costs the feature instead.
 func TestBudgetFailsClosedWhenTheSpendCannotBeRead(t *testing.T) {
 	b := coach.Budget{
-		Log:           &fakeLog{err: errors.New("no database")},
+		Log:        &fakeLog{err: errors.New("no database")},
 		CeilingFor: coach.FlatCeiling(10_000_000),
 	}
 	ok, _ := b.Allows(context.Background(), 1, august)
