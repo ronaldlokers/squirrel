@@ -3049,31 +3049,85 @@
 
   /* THE TRANSCRIPT. */
   .thread {
+    --gutter: 34px;
     width: min(720px, 100%); margin: 0 auto;
     /* No bottom clearance here — see main.threadpage. It carried 132px until
        25 August 2026, which cleared the dock for the conversation and for
        nothing after it. */
     padding: 22px 22px 0;
-    display: flex; flex-direction: column; gap: 16px;
+    display: flex; flex-direction: column; gap: 8px;
   }
-  .turn { display: flex; flex-direction: column; gap: 10px; max-width: 92%; }
+  /* Tight within one speaker's run, generous between them. A conversation
+     where every gap is the same size is a list of sentences: the reply has to
+     sit closer to what it answers than to the next thing entirely. */
+  .frombuddy + .fromyou,
+  .fromyou + .frombuddy { margin-top: 14px; }
+  /* A turn is a gutter and a column: Buddy's face on the left, everything he
+     said to the right of it. Every turn of his carries the gutter whether or
+     not it draws a face, so a run of them stays on one left edge instead of
+     stepping in and out. */
+  .turn {
+    display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr);
+    align-items: start; column-gap: 10px; row-gap: 10px;
+    max-width: 92%;
+  }
+  .turn > * { grid-column: 2; }
   .frombuddy { align-self: flex-start; }
-  .fromyou { align-self: flex-end; align-items: flex-end; max-width: 80%; }
+  /* Your own words need no gutter. There is one person here and he knows
+     which words are his. */
+  .fromyou {
+    align-self: flex-end; justify-items: end;
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 80%;
+  }
+  .fromyou > * { grid-column: 1; }
+
+  /* The face itself. Cream stock and the 3px outline, like everything else on
+     this field that is an object rather than the room. */
+  /* Purple, because that is where the mascot keeps this acorn: on the cap.
+     It also keeps the face off the cream the bubbles are made of, so the two
+     read as different things rather than as one shape with a bite out of it. */
+  /* `.buddyface`, not `.face`. `.face` is the check-in's mood button and has
+     been since the readings shipped — it carries a 44px tap target, so the
+     disc came out 34 wide and 44 tall, an egg rather than a circle. The third
+     class collision on this surface after `.tcard` and `.say`, and the second
+     to be found by measuring the rendered box rather than by reading. */
+  .buddyface {
+    grid-column: 1; grid-row: 1;
+    width: var(--gutter); height: var(--gutter);
+    display: grid; place-items: center;
+    background: var(--purple);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+  .buddyface svg { display: block; }
   .bub {
     margin: 0; padding: 11px 15px;
     border: var(--line) solid var(--outline); border-radius: var(--r);
     font-size: 16px; line-height: 1.4;
     font-variation-settings: var(--casual), "wght" 500;
   }
+  /* Card stock, not paper.
+     
+     It was `--paper` (#fffbf3) until 25 August 2026, which is near enough to
+     white — and "cream card stock, never white" is the second line of this
+     system's key characteristics. `--paper` is documented as the raised things
+     sat *on* the stock; a bubble on the purple field is the stock. What let it
+     drift is that the fill was doing the work of saying who spoke, and the
+     face does that now. */
   .frombuddy .bub {
-    background: var(--paper); color: var(--outline);
+    background: var(--card); color: var(--outline);
     box-shadow: 0 4px 0 0 var(--outline);
   }
   .fromyou .bub { background: var(--cream); color: var(--outline); }
   /* The place's name, when a turn opens one. The thread has no title of its
      own — home's exemption — so these are what heading navigation walks. */
+  /* The place's name, inside Buddy's own column rather than floating in the
+     field beside it. It was left-aligned to the thread while the bubble under
+     it was indented past the gutter, so it belonged to neither — a heading
+     with nothing under it. */
   .turnplace {
-    margin: 0;
+    margin: 2px 0 0;
     font-family: "Inter", sans-serif; font-weight: 900; font-size: 19px;
     letter-spacing: -.02em; color: var(--paper);
   }
@@ -3118,10 +3172,27 @@
   /* The two ways elsewhere, at the foot of the conversation. Quieter than a
      chip on a turn: these are always there, and a thing that is always there
      must not read as a thing that just arrived. */
+  /* The two ways elsewhere, at the foot of the conversation.
+     
+     On the thread's own left edge rather than centred: they were the only
+     centred thing on a surface where everything else hangs off one of two
+     margins, so they read as a footer belonging to the page instead of a
+     quiet offer belonging to the conversation.
+     
+     Quieter than a chip on a turn, too. These are always here, and a thing
+     that is always here must not read as a thing that just arrived — which is
+     what they did, at identical weight, directly under chips that had. */
   .alsochips {
     display: flex; flex-wrap: wrap; gap: 9px; align-items: center;
-    justify-content: center; margin: 4px 0 0;
+    width: min(720px, 100%); margin: 6px auto 0; padding: 0 22px;
+    box-sizing: border-box;
   }
+  .alsochips .chip {
+    background: none; color: var(--cream);
+    border-color: var(--cream); border-width: 2px;
+    box-shadow: none;
+  }
+  .alsochips .chip:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
   .alsochips form { display: contents; }
   .turnacts form { display: contents; }
 
@@ -3150,7 +3221,8 @@
     .rname { font-size: 11px; }
     .doorcount { position: absolute; top: -7px; right: -3px; }
 
-    .thread { padding: 18px 14px 0; gap: 14px; }
+    .thread { --gutter: 30px; padding: 18px 14px 0; gap: 8px; }
+    .alsochips { padding: 0 14px; }
     .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
@@ -3216,7 +3288,18 @@
      A class the template writes rather than `:has(.faces)`, which reads better
      and does not match in the browser the tests drive — the measurement said
      212px of an available 362px, which is the turn still shrinking to fit. */
-  .turn .faces { width: 100%; }
+  /* The full-width controls span the gutter as well.
+     
+     A question with its answers drawn on it is a control strip rather than
+     speech, and Buddy's face does not indent it — the check-in's five labels
+     stopped fitting a 390px phone the moment the gutter took 44px off them,
+     which is the second time this surface has lost that fit and the second
+     time the same test found it. */
+  .turn .faces,
+  .turn .pick,
+  .turn .calbox,
+  .turn .wordbox,
+  .turn .cutbox { grid-column: 1 / -1; width: 100%; }
 
   /* THE DAY PICKER. Same stock as the question it is: a card of choices. */
   .calbox {

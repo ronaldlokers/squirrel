@@ -26,7 +26,7 @@
       "font-size": "12.5px",
       "font-variation-settings": "\"CASL\" 0, \"MONO\" 0, \"wght\" 700",
       "letter-spacing": "0.875px",
-      "margin": "0px 0px 0px 50.7031px",
+      "margin": "0px 0px 0px 6.70312px",
       "min-height": "44px",
       "outline-color": "rgb(88, 65, 61)",
       "padding": "10px 16px",
@@ -92,7 +92,7 @@
       "width": "1270px"
     },
     ".frombuddy .bub": {
-      "background-color": "rgb(255, 251, 243)",
+      "background-color": "rgb(253, 236, 212)",
       "border-radius": "14px",
       "border-width": "3px",
       "color": "rgb(28, 17, 11)",
@@ -106,7 +106,7 @@
       "padding": "11px 15px",
       "text-decoration-line": "none",
       "text-transform": "none",
-      "width": "621.906px"
+      "width": "577.906px"
     },
     ".fromyou .bub": {
       "missing": "yes"
@@ -284,7 +284,7 @@
       "border-radius": "0px",
       "border-width": "0px",
       "color": "rgb(255, 251, 243)",
-      "display": "flex",
+      "display": "grid",
       "font-size": "16px",
       "font-variation-settings": "\"CASL\" 0, \"MONO\" 0",
       "letter-spacing": "normal",
@@ -311,7 +311,7 @@
       "padding": "14px 16px",
       "text-decoration-line": "none",
       "text-transform": "none",
-      "width": "621.906px"
+      "width": "577.906px"
     },
     ".turnmeta": {
       "background-color": "rgba(0, 0, 0, 0)",
@@ -328,7 +328,7 @@
       "padding": "0px",
       "text-decoration-line": "none",
       "text-transform": "uppercase",
-      "width": "583.906px"
+      "width": "539.906px"
     },
     ".turnname": {
       "background-color": "rgba(0, 0, 0, 0)",
@@ -345,7 +345,7 @@
       "padding": "0px",
       "text-decoration-line": "none",
       "text-transform": "none",
-      "width": "583.906px"
+      "width": "539.906px"
     },
     ".wordbox": {
       "missing": "yes"
