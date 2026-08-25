@@ -22,18 +22,20 @@
        turn's own words, and "acorn, acorn, acorn" down a conversation is the
        poster on the wall being read out. */}}
   {{if .Opens}}
-  {{/* The acorn as the mascot actually draws it: filled cream on purple, cap
-       and body as two shapes. The first version of this was the lid's
-       stroke-only acorn scaled down, and at this size a hollow outline reads
-       as a dark blob rather than as an acorn — which is the whole of why the
-       logo fills it. */}}
+  {{/* Nothing drawn around it.
+       
+       The artwork carries the same heavy outline this system draws around
+       everything, so a disc behind it was a second outline on top of the
+       first — and side by side that read as a black mass beside bubbles made
+       of light cream. It is also the world's own language: DESIGN.md calls
+       this the mascot's sticker drawing, and a sticker has no plate under it.
+
+       The head-only artwork rather than the full character. An avatar is a
+       portrait, and artwork whose centre of mass is the head crops to a
+       portrait by itself; the version with a tail needed the crop to fight
+       its own composition. */}}
   <span class="buddyface" aria-hidden="true">
-    <svg width="16" height="19" viewBox="0 0 15 18">
-      <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z"
-        fill="var(--cream)" stroke="var(--outline)" stroke-width="1.7" stroke-linejoin="round"/>
-      <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z"
-        fill="var(--cream)" stroke="var(--outline)" stroke-width="1.7" stroke-linejoin="round"/>
-    </svg>
+    <img src="/static/buddy.png?v={{$.V}}" alt="" width="40" height="41">
   </span>
   {{end}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}

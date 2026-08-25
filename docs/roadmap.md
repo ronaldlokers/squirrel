@@ -345,6 +345,33 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.38.0 — 25 August 2026
+
+**Buddy is the mascot, unframed.** v0.37.0 gave him a drawn acorn on a purple
+disc. Both halves of that turned out to be wrong, and both were settled by
+rendering rather than by arguing.
+
+The acorn was the right glyph and the wrong idea: DESIGN.md's rule that it
+exists for exactly this size was written when the only alternative was the
+whole character, tail and all, which is mush at 40px. A **head-only** portrait
+is a case the rule did not consider — the artwork's centre of mass is the head,
+so a square crop centres it for free. The version with a tail needed every crop
+to fight its own composition.
+
+And the disc was a second outline on top of the first. The artwork already
+carries the 3px ring this system draws on everything, so the two stacked read
+as a black mass beside bubbles made of light cream. Bare, the head sits in the
+field the way the door art sits on its cards — which is the world's own
+language: a sticker has no plate under it.
+
+Forty pixels rather than thirty-four. A circle crops to the face; a silhouette
+has to fit the ears and the headphones inside the same width, so at the same
+size the face comes out about a fifth smaller.
+
+One test assertion was wrong and passed with a disc deliberately put back: the
+computed border width is `3px`, not `px solid`, and a background *colour* leaves
+`background-image` reading `none`. Each property is read on its own now.
+
 ### v0.37.0 — 25 August 2026
 
 **Buddy has a face.** The product is built around a mascot who appeared nowhere

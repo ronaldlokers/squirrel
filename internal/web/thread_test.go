@@ -820,9 +820,9 @@ func TestYourOwnWordsHaveNoFace(t *testing.T) {
 	require.NotContains(t, body, `class="buddyface"`)
 }
 
-// It is drawn rather than borrowed, and hidden from the accessibility tree —
-// a screen reader gets the speaker from the words, and "acorn, acorn, acorn"
-// down a conversation is the poster on the wall being read out.
+// It is hidden from the accessibility tree — a screen reader gets the speaker
+// from the words, and the same face read out down a conversation is the poster
+// on the wall being read aloud.
 func TestTheFaceIsDrawnAndNotReadOut(t *testing.T) {
 	f := &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."},
@@ -830,7 +830,10 @@ func TestTheFaceIsDrawnAndNotReadOut(t *testing.T) {
 	body := thread(t, f)
 
 	require.Contains(t, body, `class="buddyface" aria-hidden="true"`)
-	require.Contains(t, body, "<svg", "the acorn is not drawn")
+	require.Contains(t, body, "/static/buddy.png", "the artwork is not there")
+	// Width and height on the tag, so the gutter is reserved before the image
+	// arrives and the conversation does not jump as it loads.
+	require.Contains(t, body, `width="40" height="41"`)
 }
 
 // `.face` was already the check-in's mood button, and it carries a 44px tap
@@ -842,4 +845,6 @@ func TestBuddysFaceDoesNotTakeTheMoodButtonsName(t *testing.T) {
 
 	require.Contains(t, string(css), ".buddyface {")
 	require.Contains(t, string(css), "  .face {", "the mood button lost its own rule")
+	// And nothing is drawn around the artwork, which already has an outline.
+	require.NotContains(t, string(css), ".buddyface {\n    grid-column: 1; grid-row: 1;\n    box-sizing: border-box;")
 }
