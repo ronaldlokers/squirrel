@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"log/slog"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -43,7 +44,61 @@ const noticeAsk = "Here is what is in front of me. In at most fifteen words, " +
 //
 // Keyed by the set rather than by the door, so a set that has changed is a set
 // worth looking at again, and one that has not is not.
-var noticed sync.Map
+//
+// It had no bottom when it shipped: a sync.Map nothing ever evicted, growing by
+// one entry per distinct set anybody ever looked at. At one person on a pod
+// that restarts every deploy that is slow and invisible, which is the shape of
+// leak that is discovered by a pod being OOM-killed on a quiet Tuesday months
+// later. Bounded now, and the bound is small on purpose — see noticeKeep.
+var noticed = &remembers{said: map[string]string{}}
+
+// noticeKeep is how many answers are held.
+//
+// Sixty-four, which is far more than the doors a person opens in a sitting and
+// far less than a number worth thinking about. The cache exists to stop a
+// repeated press repeating a call, and a press you made a hundred sets ago is
+// not a press you are about to repeat.
+const noticeKeep = 64
+
+// remembers is a bounded map that forgets the oldest thing when it is full.
+//
+// A ring of keys beside the map rather than a real LRU: this is protecting
+// against a repeated press within a minute, and reordering on read would buy
+// nothing a queue does not already give. Fewer moving parts is the point.
+type remembers struct {
+	mu    sync.Mutex
+	said  map[string]string
+	order []string
+}
+
+func (r *remembers) Load(key string) (string, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	said, ok := r.said[key]
+	return said, ok
+}
+
+func (r *remembers) Store(key, said string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, already := r.said[key]; already {
+		return
+	}
+	r.said[key] = said
+	r.order = append(r.order, key)
+	for len(r.order) > noticeKeep {
+		delete(r.said, r.order[0])
+		r.order = r.order[1:]
+	}
+}
+
+// Clear empties it. For tests, which would otherwise share one cache across
+// every case in the package and pass or fail by the order they ran in.
+func (r *remembers) Clear() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.said, r.order = map[string]string{}, nil
+}
 
 // noticeAbout is that sentence, or nothing at all.
 //
@@ -61,7 +116,7 @@ func noticeAbout(ctx context.Context, opts Options, personID int64, place string
 	}
 	key := noticeKey(personID, place, of)
 	if said, ok := noticed.Load(key); ok {
-		return said.(string)
+		return said
 	}
 
 	answer, err := opts.Ask(ctx, personID, "door", noticeAsk+strings.Join(of, "\n"), "")
@@ -106,6 +161,13 @@ func keepIfItIsALine(said string) string {
 	return said
 }
 
+// noticeKey identifies a person's view of one set.
+//
+// The person goes in as digits. It went in as `string(rune(personID))`, which
+// is a rune conversion rather than a number: every id above U+10FFFF and every
+// negative one becomes the same replacement character, so all of them shared a
+// cache entry. Unreachable at one person, and unreachable is not a property
+// worth relying on in a key.
 func noticeKey(personID int64, place string, of []string) string {
 	h := sha256.New()
 	_, _ = h.Write([]byte(place))
@@ -113,7 +175,7 @@ func noticeKey(personID int64, place string, of []string) string {
 		_, _ = h.Write([]byte{0})
 		_, _ = h.Write([]byte(s))
 	}
-	return string(rune(personID)) + hex.EncodeToString(h.Sum(nil))
+	return strconv.FormatInt(personID, 10) + ":" + hex.EncodeToString(h.Sum(nil))
 }
 
 // titlesOf is what is on the cards, for the model to look at. Only the words:

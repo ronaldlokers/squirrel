@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -137,4 +138,82 @@ func TestTheChoresMaySayWhatTheyNoticed(t *testing.T) {
 	m.call(t, "POST", "/open", strings.NewReader("where=chores"))
 
 	require.Contains(t, f.appended[1].Words, "both of these are bin day")
+}
+
+// The cache has a bottom.
+//
+// It shipped as a sync.Map nothing ever evicted, growing by one entry per
+// distinct set anybody ever looked at — the shape of leak discovered by a pod
+// being OOM-killed on a quiet Tuesday months later.
+func TestTheDoorCacheForgetsTheOldest(t *testing.T) {
+	noticed.Clear()
+
+	for i := range noticeKeep + 20 {
+		noticed.Store("key-"+strconv.Itoa(i), "said "+strconv.Itoa(i))
+	}
+
+	require.Len(t, noticed.said, noticeKeep, "it kept everything")
+	require.Len(t, noticed.order, noticeKeep)
+
+	_, oldest := noticed.Load("key-0")
+	require.False(t, oldest, "the oldest is still there")
+	_, newest := noticed.Load("key-" + strconv.Itoa(noticeKeep+19))
+	require.True(t, newest, "the newest was forgotten")
+}
+
+// Storing the same key twice does not grow the ring, or a door pressed a
+// hundred times would evict everything else on its own.
+func TestStoringTheSameSetTwiceDoesNotGrowIt(t *testing.T) {
+	noticed.Clear()
+
+	for range 200 {
+		noticed.Store("one", "about the car")
+	}
+
+	require.Len(t, noticed.order, 1)
+	said, ok := noticed.Load("one")
+	require.True(t, ok)
+	require.Equal(t, "about the car", said)
+}
+
+// An empty answer is remembered as an empty answer. Nothing worth saying is a
+// result, and asking again would be paying twice for the same silence.
+func TestNothingWorthSayingIsRememberedToo(t *testing.T) {
+	noticed.Clear()
+	f := someTasks(3)
+	c := &fakeCoach{reply: "You should start with the car one"} // refused: advice
+	m := mountedWith(t, f, c)
+
+	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+
+	require.Len(t, c.asked, 1, "it paid twice to be told nothing")
+}
+
+// The key names the person in digits.
+//
+// It was `string(rune(personID))`, a rune conversion rather than a number, so
+// every id above U+10FFFF and every negative one collapsed onto the same
+// replacement character and shared a cache entry.
+func TestEveryPersonGetsTheirOwnKey(t *testing.T) {
+	set := []string{"the tax letter", "the boiler"}
+	seen := map[string]bool{}
+
+	for _, id := range []int64{1, 2, 65537, 1 << 40, -1, -2} {
+		key := noticeKey(id, "the tasks", set)
+		require.False(t, seen[key], "person %d shares a key with somebody else", id)
+		seen[key] = true
+		require.NotContains(t, key, "�", "person %d has an unreadable key", id)
+	}
+}
+
+// A different set is a different key, which is what makes the cache correct
+// rather than merely small.
+func TestADifferentSetIsADifferentKey(t *testing.T) {
+	a := noticeKey(1, "the tasks", []string{"the boiler", "the vet"})
+	b := noticeKey(1, "the tasks", []string{"the vet", "the boiler"})
+	c := noticeKey(1, "the chores", []string{"the boiler", "the vet"})
+
+	require.NotEqual(t, a, b, "the order of the set does not change the key")
+	require.NotEqual(t, a, c, "two doors share a key")
 }
