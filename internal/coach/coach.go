@@ -100,6 +100,14 @@ type Now struct {
 	// 2 forbids one on any surface — including this one, which the person
 	// never reads.
 	LandedBadly []string
+	// Knowing is what a weekly read of the record concluded about how this
+	// person works. Shown to the model and never to the person mid-sentence —
+	// see knowsYou.
+	//
+	// Sentences rather than fields, for the reason the table gives: a schema
+	// decides in advance what is worth knowing about somebody, and the useful
+	// observations are the ones nobody thought to add a column for.
+	Knowing []string
 }
 
 // Turn is one thing said to the coach.
@@ -188,6 +196,11 @@ type Coach interface {
 	// otherwise have happened, because nothing else is ever passed to it — and
 	// it fails open, so an absent coach leaves the nudge exactly as it was.
 	ShouldInterrupt(ctx context.Context, personID int64, about string, n Now) (string, bool)
+	// Learn reads the record of the conversation back and says what it shows
+	// about how this person works. Once a week, and everything about it is
+	// optional: ErrUnavailable leaves Squirrel knowing whatever it knew, which
+	// for a month was nothing at all.
+	Learn(ctx context.Context, personID int64, record []string) ([]string, error)
 }
 
 // NoCoach is the zero value and the default build. It is not a stub for tests
@@ -201,6 +214,10 @@ func (NoCoach) Answer(context.Context, Turn) (Reply, error) {
 
 func (NoCoach) Decide(context.Context, int64) (Decision, error) {
 	return Decision{}, ErrUnavailable
+}
+
+func (NoCoach) Learn(context.Context, int64, []string) ([]string, error) {
+	return nil, ErrUnavailable
 }
 
 func (NoCoach) Smaller(context.Context, int64, string, string) ([]string, error) {

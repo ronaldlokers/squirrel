@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -41,7 +42,17 @@ type SchedulerOptions struct {
 	// this field and are what make the list of rules it cannot lift true
 	// rather than aspirational.
 	Interrupt Interrupter
+	// Learn reads the record back and says what it shows about how this person
+	// works. Nil means Squirrel never learns anything, which is the state it
+	// was in before 25 August 2026 and a perfectly good one — a Buddy with no
+	// memory of you is the Buddy that shipped for a month.
+	Learn Learner
 }
+
+// Learner is the weekly read-back. Declared here rather than imported for the
+// reason every other seam in this package is: internal/squirrel must not have
+// to know that internal/coach exists.
+type Learner func(ctx context.Context, personID int64, record []string) ([]string, error)
 
 // resurfaceOdds is how often a kept note rides along with the evening message.
 //
@@ -674,6 +685,12 @@ func (s *Scheduler) Run(ctx context.Context) {
 		if err := s.MomentTick(ctx, time.Now()); err != nil {
 			s.opts.OnError(err)
 		}
+		// Separate for the mildest version of the same reason: it runs once a
+		// week and its own clock is the rows it writes, so it has to be
+		// reachable on a day that has already spoken.
+		if err := s.KnowingTick(ctx, time.Now()); err != nil {
+			s.opts.OnError(err)
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -749,4 +766,98 @@ func (s *Scheduler) TimerTick(ctx context.Context, now time.Time) error {
 	}
 	_, err = s.sendMessage(ctx, TimerUpMessage(t))
 	return err
+}
+
+// learnEvery is how often Squirrel reads the record back.
+//
+// A week. Not a cost decision — one deep call every seven days is nothing
+// against a month of conversation — but a truth one: an observation worth
+// keeping is one that survived a week of evidence, and a pass that ran nightly
+// would notice something every night because it was asked to.
+//
+// It also matches what changes. How somebody works moves on the scale of
+// weeks; a daily read would mostly be re-describing Tuesday.
+const learnEvery = 7 * 24 * time.Hour
+
+// learnFrom is how much of the record one pass reads.
+//
+// Four hundred turns, which is a busy fortnight and a quiet two months. The
+// bound is about what a model can hold and reason over rather than about
+// tokens: past a few hundred turns the early ones stop influencing the answer
+// and start padding it.
+const learnFrom = 400
+
+// KnowingTick reads the record back, at most once a week.
+//
+// Its own tick rather than a branch inside Once, and for the sharper version
+// of the reason MomentTick has one: Once returns early for the rest of the day
+// once the evening message has gone, and a weekly pass that could only run in
+// the morning would be skipped by any day that had already spoken.
+//
+// Every failure here is silent and costs nothing anybody sees. What Squirrel
+// knows about you is an improvement on a product that works without it, and a
+// week where the read-back could not run is a week where Buddy is what he was
+// in July.
+func (s *Scheduler) KnowingTick(ctx context.Context, now time.Time) error {
+	if s.opts.Learn == nil {
+		return nil
+	}
+	last, err := s.opts.Store.LearnedAt(ctx, s.opts.PersonID)
+	if err != nil {
+		return fmt.Errorf("reading when it last learned: %w", err)
+	}
+	if now.Sub(last) < learnEvery {
+		return nil
+	}
+
+	turns, _, err := s.opts.Store.RecentTurns(ctx, s.opts.PersonID, learnFrom)
+	if err != nil {
+		return fmt.Errorf("reading the record back: %w", err)
+	}
+	record := asRecord(turns)
+	if len(record) == 0 {
+		// Nothing has been said yet. Not a failure and not an empty
+		// conclusion: there is no record to read, so nothing is written and
+		// the next tick tries again rather than waiting a week from now.
+		return nil
+	}
+
+	said, err := s.opts.Learn(ctx, s.opts.PersonID, record)
+	if err != nil {
+		// The model was unreachable or declined. Nothing is written, so
+		// LearnedAt does not move and this is retried on the next tick — which
+		// is the right direction for a job that costs one call a week.
+		slog.Info("the record was not read back", "error", err)
+		return nil
+	}
+
+	// Written even when empty, which is what makes the record replaced rather
+	// than accumulated: a pass that concluded nothing clears what was there,
+	// because keeping last week's would make the set older than it claims.
+	if err := s.opts.Store.ReplaceKnowing(ctx, s.opts.PersonID, said, now); err != nil {
+		return fmt.Errorf("keeping what was learned: %w", err)
+	}
+	slog.Info("read the record back", "observations", len(said), "turns", len(record))
+	return nil
+}
+
+// asRecord is the transcript as lines a model can read.
+//
+// Who said it and what was said, and nothing else. Not the cards, not the
+// chips, not the ids: what is being looked for is how somebody works, and a
+// serialised button is noise that a model will dutifully find a pattern in.
+func asRecord(turns []Turn) []string {
+	out := make([]string, 0, len(turns))
+	for _, t := range turns {
+		words := strings.TrimSpace(t.Words)
+		if words == "" {
+			continue
+		}
+		who := "Buddy"
+		if t.Who == SpeakerYou {
+			who = "Them"
+		}
+		out = append(out, who+": "+words)
+	}
+	return out
 }

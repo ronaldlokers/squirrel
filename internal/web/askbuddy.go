@@ -124,6 +124,11 @@ func coachReplyCosting(words, cost string, askWhich, fromModel bool, p *Proposal
 	}
 	if fromModel {
 		sh.Chips = append(sh.Chips, turnChip{Label: "that went badly", Action: "/buddy/badly"})
+		// And the way to see what is behind the answer. Only on a reply a
+		// model wrote: what Squirrel knows about you shapes those and nothing
+		// else, so beside a fixed sentence from the core it would be pointing
+		// at something that had no part in it.
+		sh.Chips = append(sh.Chips, knowingChip())
 	}
 	body, err := json.Marshal(sh)
 	if err != nil {

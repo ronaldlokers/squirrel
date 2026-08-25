@@ -54,6 +54,7 @@ func System(n Now, kind string) string {
 		b.WriteString(lowVoice)
 	}
 	b.WriteString(badlyLanded(n.LandedBadly))
+	b.WriteString(knowsYou(n.Knowing))
 	return b.String()
 }
 

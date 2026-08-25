@@ -99,6 +99,11 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
 	m.Post("/find/ask", guard(opts, sameOrigin(findAskHandler(s, opts))))
+	// What Squirrel thinks it knows about you, and the way to throw it away.
+	// A POST for both: reading it is something you asked, and it goes into the
+	// record like anything else you say. See knowing.go.
+	m.Post("/knowing", guard(opts, sameOrigin(knowingHandler(s, opts))))
+	m.Post("/knowing/forget", guard(opts, sameOrigin(forgetKnowingHandler(s, opts))))
 	// A new one, at every door. Each asks for words; the routes underneath are
 	// the ones the screens posted to. See newone.go.
 	m.Post("/chores/ask", guard(opts, sameOrigin(askNameHandler(s, opts,

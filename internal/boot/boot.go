@@ -254,6 +254,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	makeSmaller := breaker(s.coach)
 	split, splittable := splitter(s.coach)
 	hold := interrupter(s.coach, store)
+	// The weekly read of the record. Nil with no key, and the scheduler
+	// checks the nil — see KnowingTick.
+	learnBack := learner(s.coach)
 	spent := spentFor(s.coach, s.budget)
 	over := overFor(s.coach, s.budget)
 	if config.WebIdentity != "" {
@@ -318,7 +321,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	go func() {
 		defer close(s.drained)
 		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
-			coachChat(asker(s.coach, store, s.talk)), decide, makeSmaller, hold, over)
+			coachChat(asker(s.coach, store, s.talk)), decide, makeSmaller, hold, learnBack, over)
 	}()
 
 	return s, nil
@@ -333,7 +336,7 @@ type Asker func(ctx context.Context, personID int64, kind, said, subject string)
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
 func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64, ask Asker, decide squirrel.Decider, makeSmaller squirrel.Breaker,
-	hold squirrel.Interrupter, over func(context.Context, int64) bool) {
+	hold squirrel.Interrupter, learnBack squirrel.Learner, over func(context.Context, int64) bool) {
 	var personID int64
 	for {
 		var err error
@@ -422,6 +425,8 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 				// A veto, never a trigger: it is only ever asked about a
 				// chore the rules already chose to raise.
 				interrupt: hold,
+				// Once a week, and only with a key. See KnowingTick.
+				learn: learnBack,
 			}))
 
 			// A capture can carry a nudge back on the same message, and an
@@ -542,6 +547,9 @@ type schedulerWiring struct {
 	// would mean this function handling a case its only caller cannot produce.
 	conversationID string
 	interrupt      squirrel.Interrupter
+	// learn is the weekly read of the record. Nil with no coach, which is the
+	// state the product was in for a month and works.
+	learn squirrel.Learner
 }
 
 // schedulerOptionsFor is the struct literal boot used to write inline, lifted
@@ -565,6 +573,7 @@ func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
 		Location:       w.config.DigestLocation,
 		OnError:        func(err error) { slog.Error("digest", "error", err) },
 		Interrupt:      w.interrupt,
+		Learn:          w.learn,
 		Push:           pusher(w.config.Push, w.store),
 	}
 }

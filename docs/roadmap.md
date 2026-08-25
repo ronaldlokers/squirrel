@@ -345,6 +345,42 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.34.0 — 25 August 2026
+
+**Buddy comes to know you.** He read the last few things said and nothing
+else — helpful about the sentence in front of him and never about the person
+typing it, because there was no memory outside a rolling window that forgets by
+design.
+
+The turns table made this possible on 24 August: it is a complete record of
+everything that has happened on the screen. Once a week Squirrel reads it back
+and writes down at most six short observations about how you actually work —
+what you finish, what you put off, when in the day you do things — and those
+are shown to the model on every later turn.
+
+Once a week rather than once a turn, and that is a truth argument before it is
+a cost one: an observation worth keeping is one that survived a week of
+evidence, and a model asked "what have you noticed" after every message will
+notice something after every message.
+
+What it may conclude is bounded in three places, because a preamble is a
+request rather than a rule. Never a count — "always" and "never" are a count
+with the number taken off. Never a judgement about you as a person, only about
+how you work. Six at most: a model asked for twenty things it has noticed will
+produce twenty, and the last fourteen will be invented.
+
+**You can read it and throw it away.** This is the only thing in the product
+that holds an opinion about somebody rather than something they said, and a
+product that quietly builds a picture of you that you cannot read is not this
+product. It is one press off Buddy's own reply, in the model's own words rather
+than a summary of them, and one more press to forget all of it.
+
+The model is told never to say any of it back. Nothing can enforce that, which
+is exactly why it is written down.
+
+**The door cache has a bottom**, and a key that names the person in digits
+rather than as a rune — see the review of 25 August, items 6 and 7.
+
 ### v0.33.3 — 25 August 2026
 
 **The opening line stopped swallowing the offer.** Shipped in v0.33.0 and found

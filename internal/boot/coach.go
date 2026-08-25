@@ -213,6 +213,14 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 		n.LandedBadly = said
 	}
 
+	// What a weekly read of the record concluded about how this person works.
+	// Fails soft for the same reason as everything else here — and its absence
+	// is the state the product was in until 25 August 2026, so a Buddy without
+	// it is a Buddy that works.
+	if known, err := store.Knowing(ctx, personID); err == nil {
+		n.Knowing = known
+	}
+
 	if m, found, err := store.NextMoment(ctx, personID, now); err == nil && found {
 		// Minutes to the thing itself rather than to when to leave for it.
 		// Leave-by arithmetic is the product's own job and it is already done
@@ -243,6 +251,18 @@ func breaker(c coach.Coach) squirrel.Breaker {
 		}
 		return steps, true
 	}
+}
+
+// learner is the weekly read of the record, or nil.
+//
+// Nil with no coach, and the nil is what the scheduler checks — so a build
+// without a key never asks and never writes, which is the state the product
+// was in for a month and works.
+func learner(c coach.Coach) squirrel.Learner {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return c.Learn
 }
 
 // splitter is the seam a note is separated through, or nil.
