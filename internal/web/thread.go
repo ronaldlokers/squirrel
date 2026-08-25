@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -758,7 +757,11 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		said := placeTurn(r.Context(), s, opts, personID, r.FormValue("where"))
+		// How far in. A door pressed from the rail starts at nothing; "the
+		// rest" is the same door pressed again from where the last one
+		// stopped. See theRest.
+		from, _ := strconv.Atoi(r.FormValue("from"))
+		said := placeTurn(r.Context(), s, opts, personID, r.FormValue("where"), from)
 		if len(said) == 0 {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -768,7 +771,7 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 }
 
 // placeTurn is what you said and what Buddy answered, or nothing at all.
-func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where string) []squirrel.Turn {
+func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where string, from int) []squirrel.Turn {
 	name, ok := doorNames[where]
 	if !ok {
 		return nil
@@ -776,11 +779,11 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 	var reply squirrel.Turn
 	switch where {
 	case "chores":
-		reply = choresTurn(ctx, s, opts, personID, name)
+		reply = choresTurn(ctx, s, opts, personID, name, from)
 	case "tasks":
-		reply = tasksTurn(ctx, s, opts, personID, name)
+		reply = tasksTurn(ctx, s, opts, personID, name, from)
 	case "at":
-		reply = agendaTurn(ctx, s, personID, name)
+		reply = agendaTurn(ctx, s, personID, name, from)
 	case "pile":
 		reply = pileTurn(ctx, s, opts, personID, 0, name)
 	case "kept":
@@ -795,15 +798,21 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 	}
 	// And the way to make one more. On every branch, including the one that
 	// says there is nothing here — an empty list is the moment you are most
-	// likely to want to add to it.
+	// likely to want to add to it. Not on "the rest", which is the middle of
+	// a list rather than the top of one.
+	said := name
+	if from > 0 {
+		said = "the rest of " + name
+		return []squirrel.Turn{{Who: squirrel.SpeakerYou, Words: said}, reply}
+	}
 	return []squirrel.Turn{
-		{Who: squirrel.SpeakerYou, Words: name},
+		{Who: squirrel.SpeakerYou, Words: said},
 		alsoOffer(reply, newChipFor(where)...),
 	}
 }
 
 // choresTurn is what comes back, as cards.
-func choresTurn(ctx context.Context, s Store, opts Options, personID int64, name string) squirrel.Turn {
+func choresTurn(ctx context.Context, s Store, opts Options, personID int64, name string, from int) squirrel.Turn {
 	chores, err := s.ActiveChores(ctx, personID)
 	if err != nil {
 		slog.Error("reading what comes back", "error", err)
@@ -823,16 +832,16 @@ func choresTurn(ctx context.Context, s Store, opts Options, personID int64, name
 		}
 	}
 
-	more := false
-	if len(chores) > listLimit {
-		chores, more = chores[:listLimit], true
+	chores, more := slice(chores, from)
+	if len(chores) == 0 {
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "That is all of them."}
 	}
 	sh := drawn{Place: name}
 	for _, c := range chores {
 		sh.Cards = append(sh.Cards, choreCard(toChoreView(c)))
 	}
 	if more {
-		sh.Chips = []turnChip{{Label: "the rest", Href: "/?open=chores"}}
+		sh.Chips = []turnChip{theRest("chores", from+listLimit)}
 	}
 
 	body, err := json.Marshal(sh)
@@ -1064,17 +1073,23 @@ func oneOf(list []string, v string) bool {
 //
 // Newest first, like the pile: a task decided this morning is the one you still
 // remember deciding.
-func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name string) squirrel.Turn {
-	items, more, err := s.Tasks(ctx, personID, listLimit)
+func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name string, from int) squirrel.Turn {
+	// Over-read by the offset, because Tasks caps rather than skips. A list
+	// this size is one query either way.
+	all, _, err := s.Tasks(ctx, personID, from+listLimit+1)
 	if err != nil {
 		slog.Error("reading what you decided", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the tasks just now."}
 	}
-	if len(items) == 0 {
+	if len(all) == 0 {
 		return squirrel.Turn{
 			Who:   squirrel.SpeakerBuddy,
 			Words: "Nothing decided yet. A task is a note you said yes to.",
 		}
+	}
+	items, more := slice(all, from)
+	if len(items) == 0 {
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "That is all of them."}
 	}
 
 	sh := drawn{Place: name}
@@ -1101,7 +1116,7 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 	sh.Chips = []turnChip{{Label: "what you set aside", Action: "/open",
 		Fields: map[string]string{"where": "held"}}}
 	if more {
-		sh.Chips = append(sh.Chips, turnChip{Label: "the rest", Href: "/?open=tasks"})
+		sh.Chips = append(sh.Chips, theRest("tasks", from+listLimit))
 	}
 
 	body, err := json.Marshal(sh)
@@ -1158,8 +1173,8 @@ func saidAboutATask(act, text string) []squirrel.Turn {
 // allowed is unchanged by its moving into a turn: it holds only what is still
 // coming. Nothing past, nothing done, and nothing here has been missed —
 // because a thing you have not reached yet is not a thing you are late for.
-func agendaTurn(ctx context.Context, s Store, personID int64, name string) squirrel.Turn {
-	coming, err := s.Upcoming(ctx, personID, now(), listLimit)
+func agendaTurn(ctx context.Context, s Store, personID int64, name string, from int) squirrel.Turn {
+	coming, err := s.Upcoming(ctx, personID, now(), from+listLimit+1)
 	if err != nil {
 		slog.Error("reading what is coming", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the agenda just now."}
@@ -1171,8 +1186,13 @@ func agendaTurn(ctx context.Context, s Store, personID int64, name string) squir
 		}
 	}
 
+	page, more := slice(coming, from)
+	if len(page) == 0 {
+		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "That is all of them."}
+	}
+
 	sh := drawn{Place: name}
-	for _, m := range coming {
+	for _, m := range page {
 		row := map[string]string{"id": strconv.FormatInt(m.ID, 10)}
 		// The core's own sentence, shared with chat and with the notification,
 		// so the three cannot drift apart about when to leave.
@@ -1192,6 +1212,9 @@ func agendaTurn(ctx context.Context, s Store, personID int64, name string) squir
 			})
 		}
 		sh.Cards = append(sh.Cards, card)
+	}
+	if more {
+		sh.Chips = append(sh.Chips, theRest("at", from+listLimit))
 	}
 
 	body, err := json.Marshal(sh)
@@ -1596,7 +1619,12 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 	if more {
 		// That there is more, and not how much: what is further down a list of
 		// results is not a thing you can act on.
-		sh.Chips = []turnChip{{Label: "there is more than this", Href: "/pile?q=" + url.QueryEscape(q)}}
+		// It pointed at /pile?q= until 25 August 2026, which is a route the
+		// deck took with it — so the one chip that said there was more led
+		// nowhere at all. Narrowing the words is the honest offer: there is no
+		// second page of search, and inventing one to make a chip work would
+		// be building a feature to fix a link.
+		sh.Chips = []turnChip{{Label: "say it more exactly", Action: "/find/ask"}}
 	}
 
 	body, err := json.Marshal(sh)

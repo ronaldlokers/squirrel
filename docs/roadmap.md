@@ -345,6 +345,22 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.33.2 — 25 August 2026
+
+**"The rest" shows the rest.** All three of them were dead, and had been since
+the doors became messages.
+
+The chores' and the tasks' pointed at `/?open=chores` and `/?open=tasks` —
+a query the thread has never read, so pressing them reloaded the conversation
+and did nothing. Search's pointed at `/pile?q=…`, a route deleted with the
+deck, which answers 404. Nobody had found out because twelve cards is more than
+most people have; v0.33.0 dropped that to five, which is what would have made
+somebody press one.
+
+They are forms now, carrying where to carry on from, and the agenda gained one
+it never had. Search has no second page, so the offer is narrowed to *say it
+more exactly* rather than inventing pagination to make a chip work.
+
 ### v0.33.1 — 25 August 2026
 
 **A fixed point comes back in your clock, not the driver's.** Issue #148 one
