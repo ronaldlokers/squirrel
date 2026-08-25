@@ -64,7 +64,10 @@ type Squirrel struct {
 	// coach, budget and talk are built at boot and used by every surface that
 	// asks a model. All three are safe to hold before Postgres answers:
 	// nothing here touches the store until something is actually asked.
-	coach  coach.Coach
+	coach coach.Coach
+	// house is the small model on the cluster, or nil. Independent of the
+	// coach on purpose: it needs no key and answers when the coach is absent.
+	house  *coach.House
 	budget coach.Budget
 	// talk is the rolling window, shared by every surface so that two of them
 	// cannot disagree about how long a conversation lasts.
@@ -211,6 +214,11 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// is not there must be an ordinary state at boot, not an error path.
 	s.budget = budgetFor(config.Coach, store)
 	s.coach = coachFor(config.Coach, s.budget, store)
+	s.house = coach.NewHouse(config.Coach.HouseURL, config.Coach.HouseModel)
+	if s.house != nil {
+		slog.Info("there is a model in the house",
+			"url", config.Coach.HouseURL, "model", config.Coach.HouseModel)
+	}
 	s.offers = coach.NewOffers()
 	s.talk = coach.NewConversations()
 
@@ -259,6 +267,10 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	learnBack := learner(s.coach)
 	spent := spentFor(s.coach, s.budget)
 	over := overFor(s.coach, s.budget)
+	// The three tiers the box judges with, as one value a test can inspect.
+	// See readingWiring.
+	read := readingWiring(s.coach, store, s.house)
+
 	if config.WebIdentity != "" {
 		if err := web.Mount(server, store, web.Options{
 			IdentityHeader: config.WebIdentityHeader,
@@ -286,8 +298,18 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			Ask:    webAsk,
 			// What the box is answered by. Nil with no key, and the nil is
 			// what captureHandler checks — see reader.
-			Reads:  reader(s.coach, store),
-			Recent: webRecent,
+			Reads: read.Reads,
+			// The small model on the cluster, asked about everything typed.
+			// Nil falls through to squirrel.LooksLikeAQuestion, which needs
+			// nothing running — see whatBuddyMakesOfIt.
+			//
+			// This line was written, lost to a stray edit, and only found
+			// because a mutation went looking for it. A field in an inline
+			// literal cannot be checked by a test, which is the whole of what
+			// `Push` cost three releases — so readingWiring exists and
+			// TestTheBoxIsGivenItsThreeTiers asserts all three.
+			AskedAQuestion: read.AskedAQuestion,
+			Recent:         webRecent,
 
 			Remember:    webRemember,
 			Forget:      webForget,

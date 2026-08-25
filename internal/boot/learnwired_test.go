@@ -78,3 +78,43 @@ func TestTheScreenIsGivenAWayToReadTheBox(t *testing.T) {
 		"a build with no key was given something to call")
 	require.NotNil(t, reader(stubCoach{}, nil))
 }
+
+// The screen is given the model in the house.
+//
+// The fourth field to earn this check. `whatBuddyMakesOfIt` falls back to the
+// rule when it is nil, so a field left unset is every capture going abroad
+// again — which is the defect this whole seam exists to fix, and it would be
+// invisible except on the bill.
+func TestTheScreenIsGivenTheHouse(t *testing.T) {
+	require.Nil(t, housed(nil), "a build with no house was given something to call")
+	require.NotNil(t, housed(coach.NewHouse("http://the-house", "a small one")))
+}
+
+// And no address is no house rather than a house that cannot work.
+func TestNoAddressMeansNoHouse(t *testing.T) {
+	require.Nil(t, coach.NewHouse("", "a small one"))
+}
+
+// The box is given all three of its tiers.
+//
+// The rule is compiled in and needs nothing. The other two are fields, and a
+// field in an inline struct literal is exactly what `Push` cost three releases
+// to learn about: nothing warns, nothing fails, and the symptom is a product
+// that quietly does less.
+//
+// This one earned it immediately. `AskedAQuestion` was written, lost to a
+// stray edit, and found only because a mutation went looking for it — the
+// suite was green with every capture going abroad again, which is the defect
+// the whole seam exists to fix.
+func TestTheBoxIsGivenItsThreeTiers(t *testing.T) {
+	with := readingWiring(stubCoach{}, nil, coach.NewHouse("http://the-house", "a small one"))
+
+	require.NotNil(t, with.Reads, "there is nobody to answer a question")
+	require.NotNil(t, with.AskedAQuestion, "every capture goes abroad to be judged")
+
+	// And the nils stay meaningful: no key and no house is the configuration
+	// this shipped with, and the rule answers alone.
+	without := readingWiring(coach.NoCoach{}, nil, nil)
+	require.Nil(t, without.Reads)
+	require.Nil(t, without.AskedAQuestion)
+}

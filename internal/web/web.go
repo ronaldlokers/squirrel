@@ -74,6 +74,15 @@ type Options struct {
 	// words first and drops them afterwards if this says to, so a wrong answer
 	// costs a note in the pile rather than a note that is gone.
 	Reads func(ctx context.Context, personID int64, said string) (reply string, keep bool, err error)
+	// AskedAQuestion is the model in the house: a small one on the cluster,
+	// asked whether the words are a question. The second return is whether it
+	// answered at all — false falls back to squirrel.LooksLikeAQuestion, which
+	// needs nothing running.
+	//
+	// Nil is a supported configuration and the one this shipped with. It costs
+	// electricity in a cupboard rather than money abroad, which is why it may
+	// run on everything typed and Reads may not.
+	AskedAQuestion func(ctx context.Context, said string) (question bool, answered bool)
 	// Recent is the conversation so far, oldest first, or nil.
 	Recent func(personID int64) []Exchange
 	// Remember adds one round to it. The screen calls this for the ladder's

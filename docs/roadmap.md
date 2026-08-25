@@ -345,6 +345,42 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.36.0 — 25 August 2026
+
+**The box asks the house first.** v0.35.0 sent every capture abroad to be read,
+which is the opposite of the architecture this product states — *"rules narrow,
+and the model answers the few that survive"*, the argument the interruption
+pre-filter and the splitter are both built on. Ronald caught it the same day.
+
+Three tiers, cheapest first.
+
+**The rule** needs no model, no network and no cluster.
+`LooksLikeAQuestion` says yes only when the sentence is doing nothing else: a
+question mark at the end, or one of the openings that is a thing you say to
+somebody rather than about something. It is biased towards keeping, and
+deliberately — a question read as a thought is a note in the pile, and a
+thought read as a question is a thought dropped out of it.
+
+**The house** is a small model on the cluster, asked about everything typed. It
+costs electricity in a cupboard rather than money abroad, so it may run on
+every capture where the hosted one may not. It answers one word. Anything that
+is not one of the two words is no answer rather than a guess, and the rule
+underneath is better than a coin toss.
+
+**Abroad** only answers what survives both — a question, which is rare, and the
+one place quality is the whole point.
+
+And when the rule reads it wrong, the acknowledgement carries **one press** that
+hands the words to Buddy properly.
+
+On a normal day of putting thoughts down, that is no hosted calls at all rather
+than one per note.
+
+Two mutations survived a restore during this work and one of them — the line
+wiring the house into the screen — left the suite green with every capture
+going abroad again. The wiring is a value a test can inspect now, which is what
+`Push` cost three releases to learn.
+
 ### v0.35.0 — 25 August 2026
 
 **Typing into the box is talking to Buddy.** It was a capture slot that said
