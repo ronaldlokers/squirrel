@@ -29,11 +29,10 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 	})
 
 	// The deck, its results and its bottom were three pages; they are one
-	// conversation now, and the pages left are the ones still reached by name.
+	// conversation now. The shelf and the set-aside went the same way on
+	// 25 August 2026, and what is left is reached by name and nothing else.
 	pages := map[string]string{
 		"the conversation": "/",
-		"the shelf":        "/kept",
-		"the set-aside":    "/held",
 		"the readings":     "/moods",
 	}
 	// The empty pile is its own page, and it is the one with the way back on it.

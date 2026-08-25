@@ -69,8 +69,8 @@ func backFrom(r *http.Request) string {
 	switch r.FormValue("from") {
 	case "home":
 		return "/"
-	case "kept":
-		return "/kept"
+	case "moods":
+		return "/moods"
 	}
 	return "/"
 }

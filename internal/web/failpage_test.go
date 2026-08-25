@@ -16,10 +16,14 @@ import (
 // a database the screen cannot reach does not stop you keeping a thought. The
 // server-rendered one, which fires on a mid-triage write as well as on a read,
 // left you on a full page with no way forward at all.
+// Asked of /moods rather than of the conversation: the thread catches a store
+// it cannot reach and says so in a turn, because a conversation that cannot
+// remember is still a conversation you can talk to. This is the other half —
+// a screen that has nothing to draw at all.
 func TestTheFailurePageSaysWhereNotesStillGo(t *testing.T) {
 	f := &fakeStore{err: errTest}
 
-	res := mounted(t, f).call(t, "GET", "/kept", nil)
+	res := mounted(t, f).call(t, "GET", "/moods", nil)
 
 	require.Equal(t, http.StatusServiceUnavailable, res.Code)
 	require.Contains(t, res.Body.String(), "Campfire",
@@ -33,7 +37,7 @@ func TestTheFailurePageSaysWhereNotesStillGo(t *testing.T) {
 func TestTheFailurePageAndTheOfflinePageAgree(t *testing.T) {
 	f := &fakeStore{err: errTest}
 
-	page := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
+	page := mounted(t, f).call(t, "GET", "/moods", nil).Body.String()
 
 	worker, err := staticFS.ReadFile("static/sw.js")
 	require.NoError(t, err)

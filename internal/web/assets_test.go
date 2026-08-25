@@ -70,7 +70,7 @@ func TestAMissingAssetIsNotCachedForAYear(t *testing.T) {
 // thinks to hard-reload — which is exactly what happened to v0.7.0.
 func TestAssetURLsCarryAVersion(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/kept", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "pile.css?v="+assetVersion)
 	require.Contains(t, body, "pile.js?v="+assetVersion)

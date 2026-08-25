@@ -187,24 +187,11 @@ func TestBrowserBothLidPanelsEndWhereThePageEnds(t *testing.T) {
 // amount. The set-aside card is quieter than a card in the deck on purpose —
 // less shadow, less weight — and it was also narrower, by four pixels nobody
 // chose.
-func TestBrowserTheSetAsideInsetsItsWordsLikeEveryOtherList(t *testing.T) {
-	f := aPile()
-	f.items = append(f.items, note(9, "ask about the bike rack", squirrel.ItemKept))
-	f.aside = []squirrel.HeldItem{{
-		ID: 10, Text: "chase the landlord about the window",
-		State: squirrel.ItemWaiting, Because: "waiting on him", Kind: squirrel.ItemTask,
-	}}
-	srv := screen(t, f)
-	c := browserAt(t, srv, "/kept")
-
-	shelf := style(t, c, ".rcard", "padding-left")
-
-	c.navigate(t, srv.URL+"/held")
-	setAside := style(t, c, ".aside", "padding-left")
-
-	require.Equal(t, shelf, setAside,
-		"the shelf insets its words by %s and the set-aside by %s", shelf, setAside)
-}
+// TestBrowserTheSetAsideInsetsItsWordsLikeEveryOtherList was retired on
+// 25 August 2026. It measured `.rcard` on the shelf against `.aside` on the
+// set-aside page, and both pages went the same day: the two are cards in the
+// conversation now and draw from `.turncard`, which is one rule rather than
+// two that could drift apart. The appearance snapshot records it.
 
 // TestBrowserTheEndingIsNotTheNextThingUnderTheDoing was retired on 24 August
 // 2026. It measured STOP ASKING against the disclosure that used to sit beside
