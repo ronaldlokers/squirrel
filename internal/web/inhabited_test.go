@@ -17,24 +17,10 @@ import (
 // screen that answered "where am I" with an absence, and removing it shifted
 // the other two icons left, which moved the one piece of chrome that is meant
 // to be identical on all thirteen screens.
-func TestBuddyIsMarkedInTheLidRatherThanRemovedFromIt(t *testing.T) {
-	f := &fakeStore{
-		items:   []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)},
-		checkin: &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()},
-	}
-	m := mounted(t, f)
-
-	elsewhere := m.call(t, "GET", "/moods", nil).Body.String()
-	require.Contains(t, elsewhere, `class="lidbtn tobuddy"`)
-	require.NotContains(t, elsewhere, "lidbtn tobuddy here")
-
-	onBuddy := m.call(t, "GET", "/buddy", nil).Body.String()
-	require.Contains(t, onBuddy, "lidbtn tobuddy here",
-		"Buddy still says where you are by removing its own icon")
-	require.Contains(t, onBuddy, `aria-current="page"`)
-	require.NotContains(t, onBuddy, `href="/buddy?from=`,
-		"the place you are standing is still offered as somewhere to go")
-}
+// TestBuddyIsMarkedInTheLidRatherThanRemovedFromIt was retired on 25 August
+// 2026 with the acorn it was about. Buddy is not a place you can be standing
+// any more, so there is nothing in the lid to mark: `ask Buddy` is a chip on
+// the live edge, and TestTheWayToBuddyIsOnTheLiveEdge is where it is pinned.
 
 // Two different things were called by the same name on one screen.
 //

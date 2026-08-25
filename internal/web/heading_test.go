@@ -27,7 +27,6 @@ var notATitle = map[string]string{
 	"card.html":     "a note in the deck, titled by the deck",
 	"every.html":    "the interval picker, drawn inside a card",
 	"split.html":    "a proposal, drawn inside a card",
-	"step.html":     "one step, drawn inside whatever raised it",
 	"stopping.html": "the way out, drawn into the foot of whatever offers it",
 	"results.html":  "has one, and two of them, one per branch",
 	"turn.html":     "one turn, drawn into the thread; its <h2> is the place it opens",

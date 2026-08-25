@@ -77,7 +77,6 @@ var appearanceScreens = map[string][]string{
 	// and the same one shrunk, and the HTML attribute cannot hold it — the
 	// shared rule would win.
 	"/enough": {".empty h1", ".empty p", ".empty img", ".leavehere", ".onemore a"},
-	"/buddy":  {".sheet", ".sheetname", ".onscreen .lead", ".onscreen .what", ".why", ".slot.say textarea"},
 }
 
 const appearanceFile = "testdata/appearance.json"

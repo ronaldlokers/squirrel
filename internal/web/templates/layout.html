@@ -108,72 +108,24 @@
        as the camera and the cross, because this product draws its icons and
        does not borrow them from a font. */}}
 
-  {{/* Buddy, outside the menu: it is one tap from anywhere, which is what it
-       was as a floating acorn and what it must stay. What it is not any more
-       is a button sitting on top of whatever is underneath it — it sat over a
-       chore's timer row on a phone and over the sheet's own send button on a
-       tablet. In the lid it overlaps nothing.
+  {{/* The acorn was here, and the search disclosure and the map beside it.
+       All three came off on 25 August 2026.
 
-       The acorn at last, rather than the whole mascot at 46px where its face
-       is mush. This is the case DESIGN.md says the acorn exists for. */}}
-  {{if ne .Place "buddy"}}
-  <a class="lidbtn tobuddy" href="/buddy?from={{.Path}}" aria-label="Ask Buddy">
-    <svg width="19" height="23" viewBox="0 0 15 18" aria-hidden="true">
-      <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-      <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-    </svg>
-  </a>
-  {{else}}
-  {{/* The place you are standing, marked the way the menu marks it:
-       kept in view, filled, and not a link. It used to be removed
-       outright — so Buddy was the one screen that said where you were
-       by absence, and taking the icon out shifted the other two left,
-       which moved the one piece of chrome meant to be identical on
-       every screen. */}}
-  <span class="lidbtn tobuddy here" aria-current="page" aria-label="Buddy, and you are in it">
-    <svg width="19" height="23" viewBox="0 0 15 18" aria-hidden="true">
-      <path d="M1.9 5.3 C1.9 2.5 4.4 1 7.5 1 C10.6 1 13.1 2.5 13.1 5.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-      <path d="M2.7 6.3 H12.3 C12.3 11.9 10.2 16.4 7.5 16.4 C4.8 16.4 2.7 11.9 2.7 6.3 Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-    </svg>
-  </span>
-  {{end}}
+       The acorn opened a sheet over whatever you were looking at, because
+       Buddy had to bring a conversation with him when the rest of the product
+       was seven screens. He joins the one that is already here instead: `ask
+       Buddy` is a chip on the live edge, and the exchange is turns.
 
-  {{/* Looking something up is a thing you decide to do, so it is behind the
-       press that decides it. Open when there is a query, so a search result
-       never shows you a field you cannot see the words in. */}}
-  <details class="findbox"{{if .Query}} open{{end}}>
-    <summary aria-label="Search every note">
-      <svg width="19" height="19" viewBox="0 0 17 17" aria-hidden="true">
-        <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/>
-        <path d="M11 11 L15.5 15.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-      </svg>
-    </summary>
-    {{/* A POST to the conversation: a search is a thing you asked, and it goes
-         into the record like anything else you say. */}}
-    <form class="find" method="post" action="/find" role="search">
-      <input type="search" name="q" value="{{.Query}}" placeholder="every note, any state" aria-label="Search every note">
-    </form>
-  </details>
+       Search was a disclosure here for the same reason — it had to be reachable
+       from seven places. There is one place. It is a chip too.
 
-  {{/* The map. Everywhere you can go, with the one you are in marked — the
-       page's own title says it too, and a menu that drops the place you are
-       standing is a menu whose items move as you move. */}}
-  <details class="where">
-    <summary aria-label="Where to go">
-      <svg class="ifshut" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M3 5.5h14M3 10h14M3 14.5h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-      </svg>
-      <svg class="ifopen" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-      </svg>
-    </summary>
-    <nav class="wherelist" aria-label="Where to go">
-      {{range .Elsewhere}}
-      {{if .Here}}<span class="here" aria-current="page">{{.Label}}</span>
-      {{else}}<a href="{{.Href}}">{{.Label}}</a>{{end}}
-      {{end}}
-    </nav>
-  </details>
+       The map was already empty: `elsewhere` has returned nothing since the
+       deck came out, so the hamburger opened onto a blank list. A control that
+       shows nothing is worse than one that was never drawn.
+
+       What is left is the mark, which is the way back to the conversation, and
+       the timer when one is running. */}}
+
   <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
     <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>

@@ -293,22 +293,6 @@ func TestBrowserAnExistingPhotographCanBeChosen(t *testing.T) {
 // Closing the sheet with a coach actually behind it. The two tests that
 // covered this ran with no coach configured, so the sheet they closed was the
 // short one — no spend in the lid, no conversation in it.
-func TestBrowserClosingTheCoachWithACoachBehindIt(t *testing.T) {
-	coach := &fakeCoach{
-		spent: "€0.61", ceiling: "€10",
-		talk: []Exchange{{Said: "I am stuck", Replied: "Start with the envelope."}},
-	}
-	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, coach)
-	c := browserAt(t, srv, "/")
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
-	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
-	require.Equal(t, "/", c.eval(t, `return location.pathname`),
-		"closing the sheet navigated instead of closing")
-}
 
 // aLongConversation is what the sheet looks like after a few minutes of use,
 // which is the only state the close button was ever reported broken in.
@@ -329,68 +313,10 @@ func aLongConversation() *fakeCoach {
 // holding the close button is its first child — so reading Buddy's answer
 // carries the way out off the top of the screen. Escape needs a keyboard and
 // the backdrop is a strip above an 88vh sheet, which leaves nothing to press.
-func TestBrowserTheCloseButtonStaysReachableOnAPhone(t *testing.T) {
-	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
-	c := browserAt(t, srv, "/")
-
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	// Read to the bottom, the way you do when the answer is down there.
-	c.eval(t, `
-		const sheet = document.querySelector("dialog.coachsheet .sheet");
-		sheet.scrollTop = sheet.scrollHeight;`)
-
-	require.Equal(t, true, c.eval(t, `
-		const shut = document.querySelector("dialog.coachsheet .shut");
-		const r = shut.getBoundingClientRect();
-		return r.top >= 0 && r.bottom <= innerHeight && r.height > 0;`),
-		"the close button scrolled off the sheet")
-
-	require.Equal(t, true, c.eval(t, `
-		const shut = document.querySelector("dialog.coachsheet .shut");
-		const r = shut.getBoundingClientRect();
-		const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-		return shut.contains(hit);`),
-		"the close button is covered by the conversation scrolled under it")
-}
 
 // The close button has to be somewhere a thumb can reach it, which is a
 // different question from whether the handler fires. A control pushed out of
 // its own lid by the spend beside it is a control that cannot be pressed.
-func TestBrowserTheCloseButtonIsInsideTheSheet(t *testing.T) {
-	coach := &fakeCoach{
-		spent: "€0.61", ceiling: "€10",
-		talk: []Exchange{{Said: "I am stuck", Replied: "Start with the envelope."}},
-	}
-	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, coach)
-	c := browserAt(t, srv, "/")
-
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	inside := c.eval(t, `
-		const shut = document.querySelector("dialog.coachsheet .shut").getBoundingClientRect();
-		const lid = document.querySelector("dialog.coachsheet .sheetlid").getBoundingClientRect();
-		return shut.right <= lid.right + 1 && shut.left >= lid.left - 1
-			&& shut.width > 0 && shut.height > 0;`)
-	require.Equal(t, true, inside, "the close button is not inside the lid")
-
-	// And that a press at its own centre reaches it, rather than something
-	// drawn over the top.
-	onTop := c.eval(t, `
-		const shut = document.querySelector("dialog.coachsheet .shut");
-		const r = shut.getBoundingClientRect();
-		const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-		return shut.contains(hit);`)
-	require.Equal(t, true, onTop, "something else is drawn over the close button")
-}
 
 // The close button, in a short window.
 //
@@ -398,56 +324,10 @@ func TestBrowserTheCloseButtonIsInsideTheSheet(t *testing.T) {
 // so vh and dvh resolve to the same number here and this test passes against
 // the code that shipped the bug. It is a guard on the sticky lid, not evidence
 // about a phone; the unit is guarded separately, in the stylesheet, below.
-func TestBrowserTheCloseButtonSurvivesAShortWindow(t *testing.T) {
-	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
-	c := browserAt(t, srv, "/")
 
-	// 390 wide, and short: what is left of an iPhone once the address bar and
-	// the home indicator have taken their share.
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-	c.eval(t, `
-		const s = document.querySelector("dialog.coachsheet .sheet");
-		s.scrollTop = s.scrollHeight; return 1;`)
-
-	require.Equal(t, true, c.eval(t, `
-		const r = document.querySelector("dialog.coachsheet .shut").getBoundingClientRect();
-		return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth;`),
-		"the close button is off the visible window")
-
-	// And it is the thing at its own centre, not something drawn over it.
-	require.Equal(t, true, c.eval(t, `
-		const shut = document.querySelector("dialog.coachsheet .shut");
-		const r = shut.getBoundingClientRect();
-		return shut.contains(document.elementFromPoint(r.left + r.width/2, r.top + r.height/2));`),
-		"something covers the close button")
-
-	// Pressing it closes.
-	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
-	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
-}
-
-// The strip of backdrop above the sheet is the other way out, and it has to
-// stay a strip: a sheet that fills the window leaves nothing to press.
-func TestBrowserTheBackdropIsStillReachableOnAShortPhone(t *testing.T) {
-	srv := cameraScreen(t, aPile(), &fakeSpool{}, &fakePhotos{}, aLongConversation())
-	c := browserAt(t, srv, "/")
-
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 600, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	gap := c.eval(t, `
-		const r = document.querySelector("dialog.coachsheet .sheet").getBoundingClientRect();
-		return Math.round(r.top);`)
-	require.GreaterOrEqual(t, gap, float64(44),
-		"no room above the sheet to press the backdrop")
-}
+// TestBrowserTheBackdropIsStillReachableOnAShortPhone was retired on 25 August
+// 2026 with the sheet it measured. Nothing is over anything else now, so there
+// is no backdrop to leave a strip of.
 
 // The sheet is measured in dvh, and this is the only check on it that means
 // anything.

@@ -66,7 +66,9 @@ func TestTheFailureMessagesSayWhatToDoNext(t *testing.T) {
 // meaning three different things, in a product whose argument is that
 // deciding is the scarce resource.
 func TestKeepMeansOneThing(t *testing.T) {
-	for _, name := range []string{"thread.html", "coach.html"} {
+	// coach.html went on 25 August 2026 — Buddy is turns, and what he draws is
+	// built in Go. turn.html is where a card's buttons are rendered now.
+	for _, name := range []string{"thread.html", "turn.html"} {
 		body, err := templateFS.ReadFile("templates/" + name)
 		require.NoError(t, err)
 		require.NotContains(t, string(body), ">Keep it<",

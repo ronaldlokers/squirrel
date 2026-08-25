@@ -1,9 +1,9 @@
 package web
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -76,23 +76,6 @@ type Proposal struct {
 // typing a sentence gets the four chips back instead of an answer.
 func coachAvailable(opts Options) bool { return opts.Ask != nil }
 
-// coachHandler is the page.
-//
-// It paints with whatever the picker would hand you right now, and painting
-// costs nothing: no model is called on open. Idle opens have to be free or the
-// widget becomes a thing you think about before pressing, and thinking about it
-// is the cost this product spends everything else avoiding.
-func coachHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		renderCoach(w, r, s, opts, personID, coachView{})
-	}
-}
-
 // coachSayHandler is one turn.
 //
 // Two ways in, and they are the same route on purpose: a chip is the sentence
@@ -100,6 +83,31 @@ func coachHandler(s Store, opts Options) http.HandlerFunc {
 // have to compose anything to be helped, which is what the four blockers are
 // for — one press, and the answer still comes back about this task rather than
 // in general.
+// coachAskHandler is the chip: it asks for words and nothing else. The reply
+// comes back through coachSayHandler, which is the same route the four
+// blockers press.
+func coachAskHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := opts.person()
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		// What you would be handed right now, so the question is about
+		// something rather than about nothing. The picker is six rules and no
+		// model, so asking costs nothing — which is what let the acorn be
+		// pressed idly, and has to stay true of the chip.
+		question := "What is going on?"
+		if about := offerHint(s, opts, r); about != "" {
+			question = "What is going on with " + about + "?"
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "ask Buddy"},
+			askInWords(question, "/buddy/say", "say it", nil),
+		}), "/")
+	}
+}
+
 func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := opts.person()
@@ -108,7 +116,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/buddy", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 
@@ -122,7 +130,9 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 
 		said := strings.TrimSpace(r.FormValue("said"))
 		if said == "" {
-			http.Redirect(w, r, "/buddy", http.StatusSeeOther)
+			// An empty press says nothing, so nothing is said back. Not an
+			// error: the box was there and you did not use it.
+			answerWith(w, r, nil, "/")
 			return
 		}
 
@@ -130,16 +140,23 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			// No coach, and the honest answer to a sentence is the four
 			// chips: the ladder cannot read a paragraph, but it can be asked
 			// which of four things is in the way. The words are kept.
-			renderCoach(w, r, s, opts, personID, coachView{Said: said, AskWhich: true})
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: said},
+				coachReply("Which of these is it?", true, false, nil, stepFor(s, opts, r)),
+			}), "/")
 			return
 		}
 
-		answer, err := opts.Ask(r.Context(), personID, "sheet", said, subjectFor(s, opts, r))
+		answer, err := opts.Ask(r.Context(), personID, "thread", said, subjectFor(s, opts, r))
 		if err != nil {
-			// The floor. What was typed stays in the box — a box that clears
-			// on failure is a box that eats thoughts, which is the slot's rule
-			// and it holds here for the same reason.
-			renderCoach(w, r, s, opts, personID, coachView{Said: said, AskWhich: true})
+			// The floor. What was said is kept — the record is what the box
+			// used to be, and words that reached the server do not evaporate
+			// because a model was unreachable.
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: said},
+				coachReply("I cannot think just now. Which of these is it?",
+					true, false, nil, stepFor(s, opts, r)),
+			}), "/")
 			return
 		}
 
@@ -149,19 +166,16 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 		// saying "done" is not evidence anything did.
 		remember(opts, personID, said, withDid(answer))
 
-		if answer.Propose != nil {
-			// A proposal cannot survive a redirect: it is stored nowhere and
-			// travels in the form that renders it. So this render is the page
-			// it lives on, and reloading asks again rather than applying
-			// anything — which is the safe direction for a press that has not
-			// happened yet.
-			renderCoach(w, r, s, opts, personID, coachView{Propose: answer.Propose})
-			return
-		}
-		// Redirect rather than render, so the answer survives a reload and
-		// pressing back does not offer to ask again. The conversation is in
-		// the window; this page is a view of it.
-		http.Redirect(w, r, "/buddy", http.StatusSeeOther)
+		// The reply, the proposal and where you are in a breakdown, as one
+		// turn. A proposal is stored nowhere and travels in the form that
+		// renders it, so a press is still the only thing that can apply one —
+		// and in scrollback it has lost its button by the live edge rule,
+		// which is the same guarantee the page gave by not surviving a reload.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: said},
+			coachReplyCosting(withDid(answer), costLine(r.Context(), opts, personID),
+				false, true, answer.Propose, stepFor(s, opts, r)),
+		}), "/")
 	}
 }
 
@@ -201,31 +215,20 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 	// control that comes with them is drawn from the same view the home screen
 	// draws. A reload re-reads rather than repeating the press.
 	remember(opts, personID, squirrel.BlockerWords[b], squirrel.UnstuckFor(b).Line)
-	http.Redirect(w, r, "/buddy?stuck="+url.QueryEscape(string(b)), http.StatusSeeOther)
+	// The ladder's words come from the core, so they are the same wherever
+	// they are read. The step, when there is one, is drawn on the same turn —
+	// which is what the address bar used to carry.
+	answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: squirrel.BlockerWords[b]},
+		coachReply(squirrel.UnstuckFor(b).Line, false, false, nil, stepFor(s, opts, r)),
+	}), "/")
 }
 
-// coachCloseHandler is the way out, and closing means one thing: the
-// conversation is over.
-//
-// It does not mean anything else. The widget never initiates — you opened it —
-// so three opens with no engagement is not a signal, the acorn does not dim,
-// and nothing goes quiet. Reading meaning into how a button gets used would be
-// the product forming an opinion about you from behaviour rather than from
-// something you said, and the check-in already exists for saying it.
-func coachCloseHandler(opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if personID, ok := opts.person(); ok {
-			forget(opts, personID)
-		}
-		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-			return
-		}
-		http.Redirect(w, r, backTolerant(r.FormValue("from")), http.StatusSeeOther)
-	}
-}
+// Closing was a route. It is not one now: the sheet was a thing that could be
+// open, and a conversation is not — you stop talking. What closing also did
+// was forget the window, and the record is the window now.
 
-// backTolerant is where closing returns to.
+// backTolerant is where a form's "from" may send you.
 //
 // Only a path this screen serves, and only ever a path: the value arrives from
 // a form field and a form field is a place a stranger can type. An open
@@ -259,11 +262,17 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 		if err != nil {
 			slog.Error("recording that a reply landed badly", "error", err)
 		}
-		to := "/buddy"
+		// Nothing rendered back except that it was heard. No count, no list,
+		// no history — what it feeds is the next prompt, where the model is
+		// shown the words that did not land rather than told about them.
+		words := "Noted."
 		if heard {
-			to += "?heard=1"
+			words = "Noted — I will be shown that one."
 		}
-		http.Redirect(w, r, to, http.StatusSeeOther)
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "that went badly"},
+			{Who: squirrel.SpeakerBuddy, Words: words},
+		}), "/")
 	}
 }
 
@@ -303,63 +312,22 @@ func forget(opts Options, personID int64) {
 	}
 }
 
-// coachView is what the page needs beyond the conversation itself.
-type coachView struct {
-	// Said is what is in the box: preserved across a failure, and empty on an
-	// ordinary open.
-	Said string
-	// AskWhich means the four chips are the answer this time — no coach, or a
-	// coach that could not say anything usable.
-	AskWhich bool
-	// Propose is a thing the coach wants permission for, on this render only.
-	Propose *Proposal
-}
-
-// renderCoach draws the page: the offer first, then the conversation, then the
-// chips and the box.
-func renderCoach(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, cv coachView) {
-	v := view{
-		// "buddy" is what the layout checks to leave the acorn off the page
-		// it would link to, so this and the route have to agree.
-		Here:      "buddy",
-		Scrolling: true,
-		Said:      cv.Said,
-		Coach: &coachPanel{
-			Heard: r.URL.Query().Get("heard") != "",
-			// Painted from the picker, or from a decision that was already
-			// paid for. Never from a new call: opening costs nothing and has
-			// to keep costing nothing, or the acorn becomes a thing you think
-			// about before pressing.
-			Offer: offerFor(s, opts, r, true, false),
-			// Whether there is a model behind the box is not rendered anywhere
-			// and has not been: AskWhich below already carries the only thing
-			// the sheet does differently without one.
-			AskWhich: cv.AskWhich || !coachAvailable(opts),
-			Blockers: blockerChips(),
-			From:     backTolerant(r.URL.Query().Get("from")),
-			// The ladder's control, when a chip was the last thing pressed.
-			// Read out of the address bar and read the way a stranger's typing
-			// is read: anything that is not one of the four is no answer.
-			Unstuck: unstuckFrom(r.URL.Query()),
-			Propose: cv.Propose,
-			// Shown whether or not a chip was just pressed. Coming back an
-			// hour later and finding the step you were on is the whole reason
-			// the sequence is stored rather than held in a reply.
-			Step: stepFor(s, opts, r),
-		},
+// costLine is what the coach has spent this month, for the reply that spent it.
+//
+// A figure that cannot be read is a figure not drawn, and no ceiling is a
+// supported choice — "of €0.00" would read as one that had been reached.
+func costLine(ctx context.Context, opts Options, personID int64) string {
+	if opts.Spent == nil {
+		return ""
 	}
-	if opts.Recent != nil {
-		v.Coach.Said = opts.Recent(personID)
+	spent, ceiling, ok := opts.Spent(ctx, personID)
+	if !ok || spent == "" {
+		return ""
 	}
-	if opts.Spent != nil {
-		// Only here, and only in the sheet's own lid. It belongs where the
-		// spending happens and nowhere else: a running cost on the home screen
-		// would be a number you meet before you have asked for anything.
-		if spent, ceiling, ok := opts.Spent(r.Context(), personID); ok {
-			v.Coach.Spent, v.Coach.Ceiling = spent, ceiling
-		}
+	if ceiling == "" {
+		return spent
 	}
-	renderWith(w, r, s, opts, "coach", v)
+	return spent + " of " + ceiling
 }
 
 // blockerChips is the four, in the order the ladder already uses. One press,
@@ -398,7 +366,7 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/buddy", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 
@@ -417,7 +385,12 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/buddy", http.StatusSeeOther)
+		// What was applied is said, because a press with no answer is a press
+		// you cannot tell landed.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "keep it"},
+			{Who: squirrel.SpeakerBuddy, Words: "Kept."},
+		}), "/")
 	}
 }
 

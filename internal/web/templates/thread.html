@@ -36,6 +36,25 @@
      change. */}}
 <p class="offscreen" id="threadsay" role="status" aria-live="polite"></p>
 
+{{/* The two that have to be reachable from anywhere.
+
+     The acorn and the search field were chrome, so they were on every screen
+     by being outside all of them. There is one screen, so they are here — at
+     the foot of the conversation, above the way out and the dock.
+
+     Not on the live edge, which was tried first: the live edge is the newest
+     Buddy turn and there is not always one. A brand new conversation has no
+     turns at all, and a way to Buddy that appears once Buddy has spoken is a
+     way to Buddy you cannot use to start. */}}
+<div class="alsochips">
+  {{range .Also}}
+  <form method="post" action="{{.Action}}">
+    {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+    <button class="chip" type="submit">{{.Label}}</button>
+  </form>
+  {{end}}
+</div>
+
 {{/* The way out.
      
      It was on the shelf and the set-aside and nowhere else, so when those two

@@ -161,14 +161,26 @@
   * { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
   :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
   /* Violet on card stock, wherever card stock is.
-     .chore and .sheet take the same --card fill and were left out, so the ring
+     .chore and .sheet took the same --card fill and were left out, so the ring
      on the chores list and inside Buddy stayed orange-lit: measured 2.03:1
      against the 3:1 that WCAG 1.4.11 asks of a focus indicator, on the two
      most keyboard-dense surfaces outside the deck. Violet on the same stock
-     measures about 7.7:1. */
+     measures about 7.7:1.
+
+     The dock joined them on 25 August 2026, and it had been wrong the whole
+     time. `.sheet` carried the override and the dock's slot is the same cream
+     stock with no `.sheet` above it, so the ring on "Tell it" measured 2.33:1
+     — on the one control that is on the screen at every single moment. It was
+     invisible because the only test that measured this measured the sheet.
+
+     `.sheet` stays in the list: the class went with the widget, and a selector
+     for something that does not render costs nothing and documents what the
+     rule is about. */
   .card :focus-visible,
   .rcard :focus-visible,
   .chore :focus-visible,
+  .turncard :focus-visible,
+  .dock :focus-visible,
   .sheet :focus-visible { outline-color: var(--violet); }
 
   /* ---------- the lid: the mascot's cap ---------- */
@@ -3085,6 +3097,15 @@
     font-variation-settings: var(--precise), "wght" 750;
   }
   .turnacts, .turnchips { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+
+  /* The two ways elsewhere, at the foot of the conversation. Quieter than a
+     chip on a turn: these are always there, and a thing that is always there
+     must not read as a thing that just arrived. */
+  .alsochips {
+    display: flex; flex-wrap: wrap; gap: 9px; align-items: center;
+    justify-content: center; margin: 4px 0 0;
+  }
+  .alsochips form { display: contents; }
   .turnacts form { display: contents; }
 
   /* THE DOCK. The slot, on every view of the app, because there is one view. */

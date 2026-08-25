@@ -91,29 +91,30 @@ func Mount(m Mux, s Store, opts Options) error {
 	// asking, and keeping what was asked for — because they are the only two
 	// things you can do to a proposal.
 	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
-	// Buddy. A real route rather than a JavaScript-only construct, so it works
-	// with scripting off, deep-links, and survives a reload — and so pile.js
-	// has something real to upgrade into a sheet.
-	m.Get("/buddy", guard(opts, coachHandler(s, opts)))
+	// Buddy. A page until 25 August 2026, and turns since: the sheet brought a
+	// conversation with it because there was not one to join, and there is
+	// one now. Closing went with it — you stop talking, the way you stop
+	// talking to anyone.
+	m.Post("/buddy/ask", guard(opts, sameOrigin(coachAskHandler(s, opts))))
+	// Looking something up. A chip rather than a field in the lid — see
+	// findAskHandler.
+	m.Post("/find/ask", guard(opts, sameOrigin(findAskHandler(s, opts))))
 	m.Post("/buddy/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
-	// Closing is a write because it forgets the conversation, and a write here
-	// carries the origin check like every other one.
-	m.Post("/buddy/close", guard(opts, sameOrigin(coachCloseHandler(opts))))
 	// "That landed badly." One press, about the thing you just read.
 	m.Post("/buddy/badly", guard(opts, sameOrigin(coachBadlyHandler(s, opts))))
 	// A proposal, applied because it was pressed. Four things and no more —
 	// see coachDoHandler for why it is a switch rather than a dispatcher.
 	m.Post("/buddy/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
-	// It was /coach for the release it shipped in. A bookmark that dies
-	// quietly is worse than a redirect nobody notices — the same reasoning
-	// /pile/chores already gets, and the same status.
-	m.Get("/coach", guard(opts, func(w http.ResponseWriter, r *http.Request) {
-		to := "/buddy"
-		if q := r.URL.RawQuery; q != "" {
-			to += "?" + q
-		}
-		http.Redirect(w, r, to, http.StatusMovedPermanently)
-	}))
+	// It was /coach, then /buddy, and now it is the conversation. A bookmark
+	// that dies quietly is worse than a redirect nobody notices — the same
+	// reasoning /pile/chores already gets, and the same status. The query
+	// string is dropped rather than carried: nothing at the other end reads
+	// one any more.
+	for _, gone := range []string{"/coach", "/buddy"} {
+		m.Get(gone, guard(opts, func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		}))
+	}
 	// A step finished, or a sequence thrown away. One route because they are
 	// the only two things you can do to a breakdown.
 	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))

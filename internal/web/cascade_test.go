@@ -48,16 +48,6 @@ func style(t *testing.T, c *cdp, sel, prop string) string {
 // stopped applying without anything failing: the rule was written for
 // `.find input`, and when search moved behind an icon the field became
 // `.findbox .find input`, which outranks it.
-func TestBrowserTheSearchFieldClearsTheZoomFloorOnAPhone(t *testing.T) {
-	c := lid(t)
-
-	c.eval(t, `document.querySelector("details.findbox > summary").click()`)
-	c.until(t, "the field", `(`+shown+`)(".findbox .find")`)
-
-	got := style(t, c, ".findbox .find input", "font-size")
-	require.Equal(t, "16px", got,
-		"the search field is %s on a phone; under 16px, focusing it zooms the page", got)
-}
 
 // The offer's three controls are one shape, and only colour separates them.
 // That is the whole argument for the row: it used to offer four choices in

@@ -345,6 +345,40 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.31.0 — 25 August 2026
+
+**The lid comes off.** The acorn, the search field and the hamburger all went
+the same day, and with them roughly three hundred lines of script that existed
+to make a sheet behave like a sheet. What is left in the lid is the mark and
+the running timer.
+
+**Buddy is turns.** The sheet brought a conversation with it because there was
+not one to join; there is one now. `ask Buddy` is a chip at the foot of the
+thread, the exchange is turns, and everything that does something came with it:
+the four blockers, the steps a thing breaks into, the four proposals he must
+ask permission for, and saying that a reply landed badly. Closing did not come:
+a sheet is a thing that can be open and a conversation is not — you stop
+talking.
+
+Two guarantees the sheet held by hand are now the thread's own. A proposal
+still cannot be applied by anything but a press, because it is stored nowhere
+and travels in the form that renders it — and in scrollback it has lost its
+button by the live edge rule. And the step you were on is still there when you
+come back, drawn under the same rule as the offer so it cannot append a copy of
+itself on every load.
+
+**Search is a chip.** It was a disclosure in the lid because it had to be
+reachable from seven screens.
+
+Two defects this turned up. The chips were on the live edge first, which is the
+newest Buddy turn — so a brand new conversation, which has none, had no way to
+Buddy at all. They are at the foot of the thread instead. And **the focus ring
+on the dock measured 2.33:1**, against the 3:1 WCAG 1.4.11 asks: the violet
+override keyed off `.sheet`, and the dock is the same cream stock without it.
+It had been wrong the whole time, on the one control that is on screen at every
+moment, and only surfaced because the test that measured the sheet had to be
+pointed somewhere else.
+
 ### v0.30.0 — 25 August 2026
 
 **The shelf and the set-aside come into the conversation**, and the shelf stops

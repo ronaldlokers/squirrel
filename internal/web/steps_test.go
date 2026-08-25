@@ -67,12 +67,28 @@ func TestOnlyTooBigAsksForABreakdownOnTheScreen(t *testing.T) {
 
 // Coming back an hour later and finding the step you were on is the whole
 // reason the sequence is stored rather than held in a reply.
-func TestTheStepIsStillThereOnTheSheet(t *testing.T) {
+func TestTheStepIsStillThereWhenYouComeBack(t *testing.T) {
 	f := withOffer(nil)
+	f.checkin = fresh()
 	f.steps = []squirrel.Step{{ID: 1, Label: "the tax thing", Body: "open the letter"}}
 
-	body := mounted(t, f).call(t, "GET", "/buddy", nil).Body.String()
-	require.Contains(t, body, "open the letter")
+	require.Contains(t, thread(t, f), "open the letter")
+}
+
+// And once only. The sheet was a view of the sequence and could redraw it
+// freely; a conversation is a record, and a turn appended on every load is a
+// second copy in it — which is the defect the offer had for an afternoon.
+func TestWhereYouWereIsNotSaidTwice(t *testing.T) {
+	f := withOffer(nil)
+	f.checkin = fresh()
+	f.steps = []squirrel.Step{{ID: 1, Label: "the tax thing", Body: "open the letter"}}
+	m := routed(t, f)
+
+	m.call(t, "GET", "/", nil)
+	f.turns, f.appended = append(f.turns, f.appended...), nil
+	m.call(t, "GET", "/", nil)
+
+	require.Empty(t, f.appended, "it said where you were a second time")
 }
 
 func TestFinishingAStepMovesToTheNext(t *testing.T) {
@@ -83,14 +99,15 @@ func TestFinishingAStepMovesToTheNext(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/steps", strings.NewReader("act=done&id=1&from=%2Fbuddy"))
+	w := m.call(t, "POST", "/steps", strings.NewReader("act=done&id=1&from=%2F"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/buddy", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 	require.Equal(t, []int64{1}, f.finished)
 
-	body := m.call(t, "GET", "/buddy", nil).Body.String()
+	f.checkin = fresh()
+	body := thread(t, f)
 	require.Contains(t, body, "ring the number")
-	require.Contains(t, body, "that is the last one")
+	require.Contains(t, body, "the last one")
 }
 
 // One press, no consequence, nothing asked back — the same shape "not now"
