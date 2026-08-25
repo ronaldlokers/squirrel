@@ -22,6 +22,8 @@ import (
 // count, none of which is a database question. The store's own behaviour is
 // covered by the integration tests in internal/squirrel.
 type fakeStore struct {
+	knowing []string
+	forgot  bool
 	items   []squirrel.Item
 	chores  []squirrel.Chore
 	checkin *squirrel.Checkin
@@ -1015,4 +1017,22 @@ func opened(t *testing.T, f *fakeStore, where string) string {
 	m.call(t, "POST", "/open", strings.NewReader("where="+where))
 	f.turns, f.appended = append(f.turns, f.appended...), nil
 	return m.call(t, "GET", "/", nil).Body.String()
+}
+
+// What Squirrel thinks it knows, faked. The weekly pass that writes these is
+// proved against a real database in internal/squirrel; what the screen has to
+// be tested for is that it shows them and can throw them away.
+func (f *fakeStore) Knowing(_ context.Context, _ int64) ([]string, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.knowing, nil
+}
+
+func (f *fakeStore) ForgetKnowing(_ context.Context, _ int64) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.knowing, f.forgot = nil, true
+	return nil
 }

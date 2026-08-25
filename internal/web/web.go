@@ -154,6 +154,11 @@ type Store interface {
 	// still a task and the archive can exist.
 	Tasks(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
 	ArchivedTasks(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
+	// What a weekly read of the record concluded about how this person works,
+	// and the way to throw it away. The screen only reads and deletes: what
+	// writes is the scheduler, once a week.
+	Knowing(ctx context.Context, personID int64) ([]string, error)
+	ForgetKnowing(ctx context.Context, personID int64) error
 	SetItemKind(ctx context.Context, personID, itemID int64, k squirrel.ItemKind) (bool, error)
 
 	// How you are right now. One reading in, one reading out — there is
