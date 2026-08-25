@@ -87,12 +87,13 @@ func newTaskHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		text := strings.TrimSpace(r.FormValue("text"))
 		if text == "" {
-			http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+			// Nothing to decide on. Silence rather than a scolding.
+			answerWith(w, r, nil, "/")
 			return
 		}
 		if len(text) > captureLimit {
@@ -111,6 +112,12 @@ func newTaskHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+		// The task you just decided on, as a card, so it is on the screen
+		// rather than somewhere you have to go and look at it. The screen it
+		// used to send you back to is a message now.
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: text},
+			{Who: squirrel.SpeakerBuddy, Words: "On the list."},
+		}), "/")
 	}
 }

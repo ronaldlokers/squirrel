@@ -766,7 +766,13 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 		// a press that did not land.
 		reply = squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Not yet — that one is still a page."}
 	}
-	return []squirrel.Turn{{Who: squirrel.SpeakerYou, Words: name}, reply}
+	// And the way to make one more. On every branch, including the one that
+	// says there is nothing here — an empty list is the moment you are most
+	// likely to want to add to it.
+	return []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: name},
+		alsoOffer(reply, newChipFor(where)...),
+	}
 }
 
 // choresTurn is what comes back, as cards.

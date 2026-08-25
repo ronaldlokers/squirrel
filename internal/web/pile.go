@@ -99,6 +99,15 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
 	m.Post("/find/ask", guard(opts, sameOrigin(findAskHandler(s, opts))))
+	// A new one, at every door. Each asks for words; the routes underneath are
+	// the ones the screens posted to. See newone.go.
+	m.Post("/chores/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
+		"a new chore", "What should come back?", "/chores/name", "name", "next"))))
+	m.Post("/chores/name", guard(opts, sameOrigin(choreNameHandler(s, opts))))
+	m.Post("/tasks/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
+		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it"))))
+	m.Post("/pile/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
+		"put something down", "What is it?", "/capture", "text", "keep it"))))
 	m.Post("/buddy/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
 	// "That landed badly." One press, about the thing you just read.
 	m.Post("/buddy/badly", guard(opts, sameOrigin(coachBadlyHandler(s, opts))))
