@@ -284,10 +284,10 @@ What it cost, stated rather than discovered:
 - ~~**The digit keys that answered the interval question are gone.**~~
   **Restored in v0.29.0.** They belonged to a disclosure inside the chore card;
   the question is a turn now, and the carve-out came with it.
-- **The new-chore form went with its screen.** Making one from nothing is a
-  sentence in the dock, and an empty list says so. A guided version is a
-  multi-turn flow with state to keep, which is a bigger thing than the interval
-  picker.
+- ~~**The new-chore form went with its screen.**~~ **Restored in v0.32.0**, as
+  the guided version this entry called a bigger thing: two turns, with the name
+  travelling in the picker's own hidden fields so nothing is written until the
+  interval is answered.
 - **The archive has nowhere to be drawn** until the pile joins the conversation
   in phase 3. What you did is still stored and `!find` still reaches it.
 
@@ -344,6 +344,23 @@ as long as the page it was on.
 **Everything the deck can do, the conversation can do.** What is left is the
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
+
+### v0.32.0 — 25 August 2026
+
+**A new one, at every door.** Making a thing from nothing went with the
+screens: each had a form at its foot, and when the screen became a message the
+form had nowhere to be. v0.24.0 recorded that for the chores and said making
+one from nothing is a sentence in the dock — which is true of a note and is not
+true of a chore or an appointment, because neither is a thought you had. You
+decide to have them.
+
+Each door's turn carries one chip, on every branch including the one that says
+there is nothing here — an empty list is the moment you are most likely to want
+to add to it. Never over a question.
+
+A chore is two answers, and nothing is written until the second, so walking
+away halfway leaves no half-made chore behind. `/chores/new` now takes the
+picker's number and unit as well as the four strings the old form posted.
 
 ### v0.31.0 — 25 August 2026
 

@@ -210,7 +210,14 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 			name = name[:choreNameLimit]
 		}
 
-		every, ok := offered(r.FormValue("every"))
+		// A number and a unit from the picker, or one of the four strings the
+		// screen's form used to post. Both go through a parser that only
+		// accepts what was actually offered — see offered() for why parsing
+		// the value loosely is looser than it looks.
+		every, ok := composeEvery(r.FormValue("count"), r.FormValue("unit"))
+		if !ok {
+			every, ok = offered(r.FormValue("every"))
+		}
 		if !ok {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -229,7 +236,7 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 		// The chore you just made, as a card, so it is on the screen rather
 		// than somewhere you have to go and look at.
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
-			{Who: squirrel.SpeakerYou, Words: name + " — " + r.FormValue("every")},
+			{Who: squirrel.SpeakerYou, Words: name + " — " + saidRhythm(c.Every)},
 			madeAChore(c),
 		}), "/")
 	}
