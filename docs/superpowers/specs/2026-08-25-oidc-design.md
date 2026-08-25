@@ -331,7 +331,43 @@ it.
 
 ---
 
-## 10. What is deliberately not here
+## 10. The Authentik side
+
+Squirrel's OIDC client is one more entry in the homelab's
+`authentik-blueprints` Secret, which already declares every other client. That
+file says why, and the reason applies here too: letting Authentik generate the
+client id and secret leaves the working values only in its database, so
+recreating it breaks every client at once.
+
+The application is bound to the group named by `WEB_REQUIRED_GROUP`. That
+binding, not anything in Squirrel, is what decides who can get a pile.
+
+The forward-auth outpost and its ingress come out in the same change, and that
+is the only moment where getting the order wrong locks you out: the outpost
+must not be removed before the OIDC client exists and Squirrel is serving the
+door.
+
+---
+
+## 11. What is deliberately not here
+
+- **No username and password form.** Squirrel could post credentials to
+  Authentik with the OAuth password grant and never redirect at all. It would
+  cost MFA and passkeys, which have nowhere to prompt in a form; it would make
+  this binary a credential-handling application, which is a class of bug it
+  currently cannot have; and it would bypass Authentik's own lockout, recovery
+  and consent flows. The grant is deprecated in current guidance and removed in
+  OAuth 2.1. Considered on 25 August 2026 and declined.
+
+- **No Authentik branding.** Making the handover less jarring by styling
+  Authentik to look like Squirrel is real and cheap — but Authentik matches a
+  **brand by domain**, not by application, so one Authentik on one hostname
+  means one brand for linkding, immich, tandoor and everything else behind it.
+  Squirrel-only branding needs a second hostname, a second brand, another
+  certificate, and an answer to whether `go-oidc`'s issuer check survives the
+  same provider being served on two names. That is a great deal of machinery
+  for a page seen once a month. Declined the same day; the door either side of
+  the handover is what carries the identity.
 
 - **No admin screen.** People come from Authentik; there is nothing to
   administer in Squirrel.
