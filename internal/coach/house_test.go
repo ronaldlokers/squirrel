@@ -13,17 +13,36 @@ import (
 
 // The model in the house.
 
-func housed(t *testing.T, answer string, code int, wait time.Duration) *House {
+// A fake house. It records what it was asked for; nothing is asserted inside
+// the handler.
+//
+// `require` in a handler goroutine calls FailNow off the test goroutine, which
+// testify documents as undefined and which here reported "it asked for the
+// wrong model" about a request the slow case abandons on purpose. What the
+// model was is a fact for the test body to check, where a failure belongs.
+type fakeHouse struct {
+	*House
+	asked chan string
+}
+
+func housed(t *testing.T, answer string, code int, wait time.Duration) *fakeHouse {
 	t.Helper()
+	asked := make(chan string, 8)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var in map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&in); err == nil {
+			if model, ok := in["model"].(string); ok {
+				select {
+				case asked <- model:
+				default:
+				}
+			}
+		}
 		time.Sleep(wait)
 		if code != http.StatusOK {
 			w.WriteHeader(code)
 			return
 		}
-		var in map[string]any
-		_ = json.NewDecoder(r.Body).Decode(&in)
-		require.Equal(t, "a small one", in["model"], "it asked for the wrong model")
 		w.Header().Set("Content-Type", "application/json")
 		// Marshalled rather than concatenated: one of the cases is an answer
 		// wrapped in quotation marks, and pasting that into a JSON string
@@ -37,17 +56,24 @@ func housed(t *testing.T, answer string, code int, wait time.Duration) *House {
 			Content string     `json:"content"`
 			Calls   []toolCall `json:"tool_calls"`
 		}{Content: answer}}}})
-		require.NoError(t, err)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		_, _ = w.Write(out)
 	}))
 	t.Cleanup(srv.Close)
-	return NewHouse(srv.URL, "a small one")
+	return &fakeHouse{House: NewHouse(srv.URL, "a small one"), asked: asked}
 }
 
 func TestTheHouseAnswersTheOneQuestionItIsAsked(t *testing.T) {
-	said, answered := housed(t, "QUESTION", 200, 0).AskedAQuestion(context.Background(), "what now?")
+	h := housed(t, "QUESTION", 200, 0)
+	said, answered := h.AskedAQuestion(context.Background(), "what now?")
 	require.True(t, answered)
 	require.True(t, said)
+	// Asserted here rather than inside the handler, where a failure would be
+	// raised off the test goroutine.
+	require.Equal(t, "a small one", <-h.asked, "it asked for the wrong model")
 
 	said, answered = housed(t, "THOUGHT", 200, 0).AskedAQuestion(context.Background(), "the boiler")
 	require.True(t, answered)
