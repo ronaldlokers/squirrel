@@ -34,13 +34,15 @@ func TestAPhotographTheDiskHasLostSaysSo(t *testing.T) {
 	// exists rather than calling it. fakePhotos.Open has always answered
 	// ErrNotExist, which is exactly the disagreement this is about.
 	opts := Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{}, Photos: &fakePhotos{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{}, Photos: &fakePhotos{},
 	}
 	r := httptest.NewRequest("GET", "/photo/7", nil)
 	r.SetPathValue("id", "7")
 	res := httptest.NewRecorder()
-	photoHandler(f, opts)(res, r)
+	photoHandler(f, opts)(res, asking(r))
 
 	require.Equal(t, 404, res.Code, "it is still a 404 and not a 500")
 	require.Contains(t, said.String(), "a photograph the row expects is not on disk",

@@ -132,7 +132,7 @@ func newToolAPI(t *testing.T, turns ...map[string]any) *toolAPI {
 
 func deciderFor(api *toolAPI, f *fakeFacts, log *fakeLog) *coach.Provider {
 	p := coach.NewProvider(api.server.URL, "sk-test", "gpt-5.6-luna", "gpt-5.6-terra",
-		coach.Budget{Log: log, CeilingMicros: 10_000_000})
+		coach.Budget{Log: log, CeilingFor: coach.FlatCeiling(10_000_000)})
 	p.Clock = func() time.Time { return august }
 	p.Facts = f
 	return p

@@ -127,16 +127,54 @@ func TestLoadConfigRejectsABadEveningTime(t *testing.T) {
 func TestWebDefaults(t *testing.T) {
 	cfg, err := squirrel.LoadConfig(minimalEnv(nil))
 	require.NoError(t, err)
-	require.Equal(t, "X-Authentik-Username", cfg.WebIdentityHeader)
 	require.Empty(t, cfg.WebIdentity, "no identity means the screen is not mounted")
+	require.Empty(t, cfg.WebRequiredGroup, "a group nobody set would let anybody in")
+	require.False(t, cfg.OIDC.Ready(), "a way in appeared out of an empty environment")
 }
 
 func TestWebIdentityIsTakenFromTheEnvironment(t *testing.T) {
 	cfg, err := squirrel.LoadConfig(minimalEnv(map[string]string{
-		"WEB_IDENTITY":        "ronald",
-		"WEB_IDENTITY_HEADER": "X-Forwarded-User",
+		"WEB_IDENTITY": "ronald",
 	}))
 	require.NoError(t, err)
 	require.Equal(t, "ronald", cfg.WebIdentity)
-	require.Equal(t, "X-Forwarded-User", cfg.WebIdentityHeader)
+}
+
+// All four together or none. A partially configured way in is a boot that
+// half-works, and the half that works is the half that lets people in.
+func TestAPartialWayInIsNotAWayIn(t *testing.T) {
+	full := map[string]string{
+		"WEB_OIDC_ISSUER":        "https://auth.example/application/o/squirrel/",
+		"WEB_OIDC_CLIENT_ID":     "squirrel",
+		"WEB_OIDC_CLIENT_SECRET": "shh",
+		"WEB_OIDC_REDIRECT_URL":  "https://squirrel.example/auth/callback",
+	}
+	cfg, err := squirrel.LoadConfig(minimalEnv(full))
+	require.NoError(t, err)
+	require.True(t, cfg.OIDC.Ready())
+	// The trailing slash comes off, because go-oidc compares the issuer it
+	// discovers to the one it was given, byte for byte.
+	require.Equal(t, "https://auth.example/application/o/squirrel", cfg.OIDC.Issuer)
+
+	for missing := range full {
+		short := map[string]string{}
+		for k, v := range full {
+			if k != missing {
+				short[k] = v
+			}
+		}
+		cfg, err := squirrel.LoadConfig(minimalEnv(short))
+		require.NoError(t, err)
+		require.False(t, cfg.OIDC.Ready(), "a way in was ready without %s", missing)
+	}
+}
+
+func TestTheRequiredGroupAndOwnerSubAreTakenFromTheEnvironment(t *testing.T) {
+	cfg, err := squirrel.LoadConfig(minimalEnv(map[string]string{
+		"WEB_REQUIRED_GROUP": "squirrel-users",
+		"WEB_OIDC_SUB":       "a-uuid",
+	}))
+	require.NoError(t, err)
+	require.Equal(t, "squirrel-users", cfg.WebRequiredGroup)
+	require.Equal(t, "a-uuid", cfg.WebOwnerSub)
 }

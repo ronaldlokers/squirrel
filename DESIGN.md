@@ -1889,6 +1889,48 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### The Gate
+
+The screen you sign in through, and the first thing anybody ever sees of this
+product. Added 25 August 2026, when the application started doing OIDC itself
+rather than sitting behind a forward-auth outpost that answered before any of
+this was drawn.
+
+Not called a door. **A door in this world is a section of the pile** — the
+card-stock links above, with their own art and their own headings — and reusing
+the word for the thing you sign in through would make every mention of either
+ambiguous.
+
+- **Composition:** `/enough`'s, exactly. The resting mascot at 300×207, a
+  headline in the casual axis at `wght` 800 with the 2px outline, one sentence
+  in cream, one control. Nothing new is invented for it: a screen with four
+  states that invented its own treatment would be inventing four.
+- **No lid.** The only page in the product without one. Every control up there
+  goes somewhere a signed-out person cannot reach, so offering them offers a
+  bounce straight back to here. `main` is the whole body and it centres, which
+  it can because there is exactly one thing on the page.
+- **The control:** the orange fill with dark ink, at 15px `wght` 800 with
+  `.06em` tracking. It is this screen's make-something button and it is the
+  only control, so it takes the colour that means *this makes something happen*
+  rather than the outlined one that means *this is a choice among several*.
+
+**One screen, four states, one composition.** A first arrival, a sign-out, a
+refusal, and an Authentik that is not answering are the same moment arrived at
+four ways. Only the sentence under the mark differs, and on a first arrival
+there is no sentence at all — an arrival is not an error and must not read as
+one.
+
+| State | The sentence | The control |
+| --- | --- | --- |
+| cold | *(nothing)* | LET ME IN |
+| signed out | you are signed out | LET ME IN |
+| refused | that account cannot use Squirrel | LET ME IN |
+| unreachable | I cannot reach the way in just now | TRY AGAIN |
+
+**The refusal names no group.** Which group an account lacks is a fact about
+the Authentik rather than about the person reading it, and printing it tells a
+stranger exactly what to go and ask for.
+
 ## Do's and Don'ts
 
 ### Do:

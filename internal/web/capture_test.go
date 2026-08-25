@@ -1,9 +1,11 @@
 package web
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -28,7 +30,9 @@ func TestTheSlotKeepsAThought(t *testing.T) {
 
 	// Whose it is, in the transport's own vocabulary — the drain resolves the
 	// owner from this, and a capture that resolves to nobody is a note that
-	// belongs to no one.
+	// belongs to no one. It is the session's sub;
+	// TestACaptureIsSpooledUnderTheSubThatTypedIt is the one that proves it
+	// comes from there rather than from anywhere else that says "ronald".
 	require.NotNil(t, sp.written[0].SenderID)
 	require.Equal(t, "ronald", *sp.written[0].SenderID)
 }
@@ -130,4 +134,49 @@ func TestTheSlotSaysWhenWordsAreHeld(t *testing.T) {
 	require.Contains(t, body, "No network")
 	require.Contains(t, body, "goes in when you are back")
 	require.NotContains(t, body, "Not kept", "nothing has gone wrong")
+}
+
+// signedInAs resolves any cookie to one person with one sub, so a test can
+// tell a capture written under the session's sub from one written under
+// anything else that happens to say "ronald".
+type signedInAs struct {
+	personID int64
+	sub      string
+}
+
+func (s signedInAs) SessionFor(context.Context, []byte, time.Time) (squirrel.Session, bool, error) {
+	return squirrel.Session{
+		PersonID: s.personID, Sub: s.sub, ExpiresAt: time.Now().Add(time.Hour),
+	}, true, nil
+}
+
+func (signedInAs) OpenSession(context.Context, int64, string, []byte, time.Time, time.Duration) error {
+	return nil
+}
+func (signedInAs) EndSession(context.Context, []byte) error { return nil }
+
+// A capture is spooled under the sub of whoever typed it.
+//
+// This is the trap the design's section 4 names. The screen does not write to
+// Postgres — it spools, with a sender string, and the drain resolves the
+// owner from that string rather than from the session. So the sender has to be
+// the sub, and a second person's notes land belonging to nobody if it is
+// anything else.
+//
+// The sub rather than the person id because the spool is a transport queue and
+// speaks in transport vocabulary, the same as the room's captures do.
+func TestACaptureIsSpooledUnderTheSubThatTypedIt(t *testing.T) {
+	f, sp := &fakeStore{}, &fakeSpool{}
+	m := newTestMux()
+	opts := signedInOptions()
+	opts.Spool = sp
+	opts.Sessions = newSessions(signedInAs{personID: 7, sub: "sub-seven"}, cacheFor, cacheMost)
+	require.NoError(t, Mount(m, f, opts))
+
+	m.call(t, "POST", "/capture", strings.NewReader("text=the+boiler"))
+
+	require.Len(t, sp.written, 1)
+	require.NotNil(t, sp.written[0].SenderID)
+	require.Equal(t, "sub-seven", *sp.written[0].SenderID,
+		"the capture was spooled under somebody else's name")
 }

@@ -31,7 +31,7 @@ const upcomingLimit = 30
 
 func atOneHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -87,7 +87,7 @@ func atOneHandler(s Store, opts Options) http.HandlerFunc {
 // appointment is the page you are already on.
 func atNoteHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -130,7 +130,7 @@ func atNoteHandler(s Store, opts Options) http.HandlerFunc {
 // atDetachHandler puts a note back in the pile, which is the whole reversal.
 func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -208,7 +208,7 @@ func upcomingViews(ms []squirrel.Moment) []momentView {
 // page until phase 4: a notification sent yesterday is still on a lock screen.
 func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -251,7 +251,7 @@ func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 // of it into the record.
 func atNewHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -293,7 +293,7 @@ func atNewHandler(s Store, opts Options) http.HandlerFunc {
 // reasoning composeEvery is written under.
 func atMakeHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

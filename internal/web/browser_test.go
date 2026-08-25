@@ -64,8 +64,10 @@ func screenWith(t *testing.T, f *fakeStore, c *fakeCoach) *httptest.Server {
 	t.Helper()
 
 	opts := Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 	}
 	if c != nil {
 		opts = c.options(opts)
@@ -75,7 +77,7 @@ func screenWith(t *testing.T, f *fakeStore, c *fakeCoach) *httptest.Server {
 	require.NoError(t, Mount(m, f, opts))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Set("X-Authentik-Username", "ronald")
+		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 		if r.Method == http.MethodPost && r.Header.Get("Origin") == "" {
 			r.Header.Set("Origin", "http://"+r.Host)
 		}

@@ -37,7 +37,7 @@ import (
 // that might be expensive is an acorn you think about before pressing, and
 // thinking about it is the cost this product spends everything else avoiding.
 func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offerView {
-	personID, ok := opts.person()
+	personID, ok := personOf(r)
 	if !ok {
 		return nil
 	}
@@ -89,7 +89,7 @@ func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer, may
 // the press.
 func nowActHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -156,7 +156,7 @@ func forgetOffer(opts Options, personID int64) {
 // where the chat reads them too.
 func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

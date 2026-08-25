@@ -52,7 +52,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// Still checked, and still refuses: the owner not being known yet means
 		// the drain cannot resolve this capture to anybody either, so
 		// accepting it would spool a note nobody owns.
-		if _, ok := opts.person(); !ok {
+		if _, ok := personOf(r); !ok {
 			// The same 503 the rest of the screen gives when nobody knows
 			// whose pile this is: a redirect here would look like the words
 			// went somewhere.
@@ -91,7 +91,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// went wrong was the sentence the person reading it could not
 			// act on.
 			slog.Warn("a capture was refused", "error", err)
-			answerWith(w, r, saidInThread(r.Context(), s, opts, text, refusalOf(err)), "/")
+			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err)), "/")
 			return
 		}
 
@@ -119,7 +119,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// person id: the drain resolves every capture's owner from its sender,
 		// and this one is no different for being typed on the screen. boot
 		// seeds the matching identity.
-		sender := opts.Identity
+		sender := subOf(r)
 
 		slog.Info("a capture is being kept",
 			"photograph", photo != "", "kind", kind, "words", len(text) > 0)
@@ -139,15 +139,15 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// This means the disk is unwritable, which is a different and much
 			// louder problem than a database being briefly unreachable.
 			slog.Warn("a capture could not be spooled", "error", err)
-			answerWith(w, r, saidInThread(r.Context(), s, opts, text, refusalOf(err)), "/")
+			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err)), "/")
 			return
 		}
 		// Says which it was, so the script knows whether to empty the box. The
 		// turns alone cannot answer that: a failure is two turns as well, and
 		// clearing on one of them is a capture box that eats thoughts.
 		w.Header().Set("X-Kept", "1")
-		answerWith(w, r, saidInThread(r.Context(), s, opts, text,
-			whatBuddyMakesOfIt(r.Context(), s, opts, text, photo != "")), "/")
+		answerWith(w, r, saidInThread(r, s, opts, text,
+			whatBuddyMakesOfIt(r, s, opts, text, photo != "")), "/")
 	}
 }
 
@@ -179,8 +179,9 @@ func refusalOf(err error) string {
 //
 // A capture with no words is a photograph, and it says so rather than putting
 // an empty bubble in a record that is never rewritten.
-func saidInThread(ctx context.Context, s Store, opts Options, text, reply string) []squirrel.Turn {
-	personID, ok := opts.person()
+func saidInThread(r *http.Request, s Store, opts Options, text, reply string) []squirrel.Turn {
+	ctx := r.Context()
+	personID, ok := personOf(r)
 	if !ok {
 		return nil
 	}
@@ -359,12 +360,13 @@ func said(raw string) string {
 // A photograph is always kept and never read. It is not words, there is
 // nothing to answer, and a model asked to judge a picture it cannot see would
 // be guessing about the one capture that is hardest to make again.
-func whatBuddyMakesOfIt(ctx context.Context, s Store, opts Options, text string, photo bool) string {
+func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, photo bool) string {
+	ctx := r.Context()
 	kept := squirrel.Say(squirrel.SayingKept, now())
 	if photo || strings.TrimSpace(text) == "" {
 		return kept
 	}
-	personID, ok := opts.person()
+	personID, ok := personOf(r)
 	if !ok {
 		return kept
 	}

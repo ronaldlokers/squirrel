@@ -19,15 +19,28 @@ type Mux interface {
 	Post(pattern string, h http.HandlerFunc)
 }
 
-// Mount registers the screen, or refuses. An empty identity is not a
+// Mount registers the screen, or refuses. A missing gate is not a
 // misconfiguration to warn about and continue past: the pile is every thought
 // you have ever had at this bot.
 func Mount(m Mux, s Store, opts Options) error {
-	if opts.Identity == "" {
-		return fmt.Errorf("refusing to mount the pile: WEB_IDENTITY is empty")
+	// Refused rather than defaulted, and it is the only value here that would
+	// be dangerous to default. Everything else missing degrades to less
+	// product — no coach, no camera, no push. An empty required group would
+	// degrade to more access, which is the one direction a default must never
+	// go.
+	if opts.RequiredGroup == "" {
+		return fmt.Errorf("refusing to mount the pile: WEB_REQUIRED_GROUP is empty")
 	}
-	if opts.Owner == nil {
-		return fmt.Errorf("refusing to mount the pile: no owner")
+	if opts.Gate == nil {
+		return fmt.Errorf("refusing to mount the pile: no way in")
+	}
+	if opts.Sessions == nil {
+		// guard would refuse every request forever, which looks from the
+		// outside like an outage nobody can explain.
+		return fmt.Errorf("refusing to mount the pile: no sessions")
+	}
+	if opts.Login == nil {
+		return fmt.Errorf("refusing to mount the pile: nothing turns a login into a person")
 	}
 	if opts.Spool == nil {
 		// A screen that captures with nowhere durable to put the words is the
@@ -171,6 +184,19 @@ func Mount(m Mux, s Store, opts Options) error {
 	// and one that answers 403 leaves an installed app with no icon and no
 	// explanation. It names the app and lists four PNGs — there is nothing in
 	// it to protect.
+	// The way in, and the three routes that work it. Outside the guard on
+	// purpose and necessarily: a person with no session has to be able to get
+	// one.
+	//
+	// Both writes still carry the origin check. It is a weaker claim here than
+	// elsewhere — there is no session yet to ride on — but a cross-site POST
+	// to /auth/in is a login started by somebody else's page, and a cross-site
+	// POST to /auth/out signs you out of your own notes from a page you were
+	// only reading.
+	m.Get("/auth", gateHandler())
+	m.Post("/auth/in", sameOrigin(beginHandler(opts)))
+	m.Get("/auth/callback", backHandler(opts))
+	m.Post("/auth/out", sameOrigin(outHandler(opts)))
 	m.Get("/manifest.webmanifest", manifestHandler())
 	// Not behind the guard: a browser fetches the worker without the cookies
 	// that carry the identity, and a worker that 302s to a login page is a

@@ -74,8 +74,20 @@ template plus a header to widen the worker's scope by one character.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `WEB_IDENTITY` | *(empty)* | The one identity that may read the pile. **Empty leaves the screen unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
-| `WEB_IDENTITY_HEADER` | `X-Authentik-Username` | The header the forward-auth middleware fills. |
+| `WEB_IDENTITY` | *(empty)* | **No longer an identity anybody authenticates with.** It is seeded as a `screen` identity so captures already sitting in the spool at deploy time still resolve to their person. **Empty leaves the screen unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
+| `WEB_REQUIRED_GROUP` | *(empty)* | The Authentik group an account must be in. **Empty refuses the mount**, and it is the only setting here that is dangerous to default: every other missing value costs a feature, this one would cost the pile. |
+| `WEB_OIDC_ISSUER` | *(empty)* | Authentik's issuer URL for this application. |
+| `WEB_OIDC_CLIENT_ID` | *(empty)* | The OIDC client id. |
+| `WEB_OIDC_CLIENT_SECRET` | *(empty)* | **A credential: it comes from a Kubernetes Secret, never from this repository.** |
+| `WEB_OIDC_REDIRECT_URL` | *(empty)* | Where Authentik sends you back — `https://<host>/auth/callback`. |
+| `WEB_OIDC_SUB` | *(empty)* | The owner's OIDC subject, seeded so the first login lands on the person who already owns the pile rather than making a second one beside it. |
+| `COACH_BUDGET_GUEST_EUR` | `1` | The monthly ceiling for anybody who is not the owner. A demo account can try Buddy without spending a month's allowance, and two of them are not two allowances. |
+
+The four `WEB_OIDC_*` values are all-or-nothing: a partially configured way in
+is a boot that half-works, and the half that works is the half that lets people
+in. With `WEB_IDENTITY` set and no way in configured, **boot fails** rather than
+mounting a screen nobody can sign into — a deploy that looked healthy and locked
+you out of your own pile is the failure this exists to prevent.
 | `WEB_URL` | *(empty)* | Where the screen is reachable from outside, so chat can link to it. **Empty means chat says nothing about the screen** — a link built from a guess is a link that 404s, and a bot that confidently sends you nowhere is worse than one that stays quiet. |
 | `VAPID_PUBLIC_KEY` | *(empty)* | The application server key the browser subscribes with. **Empty leaves `/push/subscribe` unmounted** and the screen never offers — a subscribe button with no key behind it fails silently, which is worse than one that was never drawn. |
 | `VAPID_PRIVATE_KEY` | *(empty)* | The raw 32-byte P-256 scalar, base64url. **A credential: it comes from a Kubernetes Secret, never from this repository.** |
@@ -106,72 +118,67 @@ Rotating the pair costs only the subscriptions, which every browser re-creates
 on its next visit. See `docs/runbooks/squirrel.md` in homelab for the
 procedure.
 
-The comparison against `WEB_IDENTITY` is exact — no trimming, no case folding.
-Two identities that differ by a space are two identities.
-
 An unset `WEB_IDENTITY` logs `no web identity configured; the pile screen is not
 mounted` at boot. A screen that is missing looks exactly like one that is
 working until you go looking for it, so the log line is the only way a
 mis-wired secret announces itself.
 
-Immediately after boot the routes are live but the owner is not yet known —
-`connectAndDrain` learns it when Postgres first answers. Requests in that window
-get a 503 that says Squirrel cannot reach its memory, which is what is
-happening.
+## Authentik
 
-## Authentik and Traefik
+Until 25 August 2026 Squirrel wrote **no authentication code**: Traefik called
+an Authentik forward-auth outpost, and Squirrel compared `X-Authentik-Username`
+to `WEB_IDENTITY`. That was the right size while there was one person and one
+pile. The outpost could only ever say "somebody Authentik likes" — never *which*
+somebody in a way Squirrel could act on — so a second person meant a redeploy.
 
-Squirrel writes **no authentication code**. It holds no session, sets no cookie,
-runs no redirect flow, and has no OIDC library. Traefik calls an Authentik
-outpost, Authentik decides who this is, and Squirrel compares one header to one
-configured value. App-level OIDC would add sessions, cookies and a callback
-route to a binary that has none of that anywhere else, for one user.
+The application does OIDC itself now. Four routes, and they are the only ones
+outside the guard besides the manifest, the worker and the static files:
 
-The middleware, in Traefik's dynamic configuration:
+| Route | What it does |
+| --- | --- |
+| `GET /auth` | the way in — one screen, four states, see DESIGN.md's The Gate |
+| `POST /auth/in` | sets `state` and a PKCE verifier, 303 to Authentik |
+| `GET /auth/callback` | takes the code, opens a session, 303 to where you were going |
+| `POST /auth/out` | ends the session, 303 to `/auth?said=out` |
 
-```yaml
-http:
-  middlewares:
-    authentik:
-      forwardAuth:
-        address: http://authentik-outpost.authentik:9000/outpost.goauthentik.io/auth/traefik
-        trustForwardHeader: true
-        authResponseHeaders:
-          - X-Authentik-Username
-          - X-Authentik-Groups
-          - X-Authentik-Email
-```
+Starting a login is a POST because it writes, which also means a prefetch or a
+crawler cannot begin one.
 
-`X-Authentik-Username` is the one Squirrel reads; the others are listed because
-the outpost sets them and stripping them here would be a change with no reason
-behind it.
+**The group is checked twice**: bound on the application in Authentik, and
+checked again on the ID token's `groups` claim. Not because one gate is
+insufficient, but because a misconfigured binding would otherwise hand out piles
+silently. An absent claim is refused rather than treated as unrestricted — this
+is the one place in the product where a missing value would mean *more* access.
 
-Chain it **after** the phase 4 `ipAllowList`, so LAN-only stays the outer layer
-and Authentik is the inner one:
+**The session** is 32 bytes from `crypto/rand` in an `HttpOnly; Secure;
+SameSite=Lax; Path=/` cookie. The table stores only their SHA-256, so a database
+dump is a list of hashes rather than a set of live sessions. `Lax` and not
+`Strict` because the callback arrives as a top-level navigation from Authentik,
+and `Strict` drops the cookie on exactly that hop.
 
-```yaml
-    # on the router for squirrel.ronaldlokers.nl
-    middlewares:
-      - lan-only@file      # the phase 4 ipAllowList — first
-      - authentik@file     # then the identity
-```
+A session is remembered in-process for a minute, which is what is left of "the
+request path does not touch Postgres". The cost, stated so it can be found
+again: **signing out elsewhere takes up to a minute to bite here.**
 
-Order matters in one direction only: the allow list must run first, so a request
-from outside the LAN is refused before it can reach an authentication flow at
-all.
+### The middleware comes off
 
-Because the identity arrives in a plain header, the only thing keeping it
-truthful is that nothing but Traefik can reach the pod. That is the ipAllowList's
-job, and it is why the two middlewares are a chain rather than a choice.
+The forward-auth middleware must not be removed before the OIDC client exists
+and Squirrel is serving `/auth`, or the deploy locks you out of your own pile.
+The order is: add the client and the configuration with the outpost still in
+front, verify signing in from behind it, then remove the middleware and verify
+again from a browser with no Authentik session at all.
+
+The `ipAllowList` is unaffected and stays the outer layer.
 
 ## Cross-site writes
 
-Header-based auth means a form on someone else's site posting to `/pile/act`
-would travel with the Authentik session cookie like any other request. The two
-write routes therefore check `Origin` (falling back to `Referer`) against the
-request's own `Host`, and refuse anything that does not match or that says
-nothing at all. No token, no cookie, no secret — a browser will not let a page
-lie about its own origin.
+A form on someone else's site posting to `/pile/act` would travel with the
+session cookie like any other same-site-lax navigation. Every write route
+therefore checks `Origin` (falling back to `Referer`) against the request's own
+`Host`, and refuses anything that does not match or that says nothing at all.
+`/auth/in` and `/auth/out` carry the same check: a cross-site POST to the first
+is a login started by somebody else's page, and to the second is being signed
+out of your own notes from a page you were only reading.
 
 This requires the proxy to pass the original `Host` through. Traefik does by
 default; if a middleware is ever added that rewrites it, every write on this

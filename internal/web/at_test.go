@@ -36,8 +36,10 @@ func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
 	t.Helper()
 	m := &realMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: sp,
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    sp,
 	}))
 	return m
 }
@@ -45,7 +47,7 @@ func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
 func (m *realMux) call(t *testing.T, method, target string, body io.Reader) *httptest.ResponseRecorder {
 	t.Helper()
 	r := httptest.NewRequest(method, target, body)
-	r.Header.Set("X-Authentik-Username", "ronald")
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 	if method == "POST" {
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r.Header.Set("Origin", "http://"+r.Host)
@@ -60,7 +62,7 @@ func (m *realMux) call(t *testing.T, method, target string, body io.Reader) *htt
 func (m *realMux) callFragment(t *testing.T, target, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	r := httptest.NewRequest("POST", target, strings.NewReader(body))
-	r.Header.Set("X-Authentik-Username", "ronald")
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	r.Header.Set("Origin", "http://"+r.Host)
 	r.Header.Set("X-Thread", "fragment")
@@ -362,8 +364,10 @@ func routedSplitting(t *testing.T, f *fakeStore, pieces ...string) *realMux {
 	c := &fakeCoach{pieces: pieces, splittable: true}
 	m := &realMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, c.options(Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		Spool:    &fakeSpool{},
 	})))
 	return m
 }

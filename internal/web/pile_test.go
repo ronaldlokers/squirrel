@@ -62,10 +62,18 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /at/open",
 		"POST /at/{id}/note",
 		"POST /at/{id}/detach",
+		// The way in, and the three routes that work it. The only routes
+		// outside the guard besides the manifest, the worker and the static
+		// files — necessarily, since a person with no session has to be able
+		// to get one.
+		"GET /auth",
+		"POST /auth/in",
+		"GET /auth/callback",
+		"POST /auth/out",
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 49, "a route was added without being pinned here")
+	require.Len(t, m.routes, 53, "a route was added without being pinned here")
 }
 
 // Both old addresses now answer with the conversation — see
@@ -88,14 +96,17 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 // is the worst possible moment to find out.
 func TestMountRefusesWithoutASpool(t *testing.T) {
 	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		Owner: func() int64 { return 1 },
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
 	}))
 }
 
 func TestMountRefusesWithoutAnOwner(t *testing.T) {
 	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
 	}))
 }
 

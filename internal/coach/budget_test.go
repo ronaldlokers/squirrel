@@ -42,7 +42,7 @@ func TestMonthStartIsTheFirstOfTheMonthLocally(t *testing.T) {
 }
 
 func TestBudgetAllowsUnderTheCeilingAndRefusesAtIt(t *testing.T) {
-	b := coach.Budget{Log: &fakeLog{spent: 9_000_000}, CeilingMicros: 10_000_000}
+	b := coach.Budget{Log: &fakeLog{spent: 9_000_000}, CeilingFor: coach.FlatCeiling(10_000_000)}
 	ok, spent := b.Allows(context.Background(), 1, august)
 	require.True(t, ok)
 	require.Equal(t, int64(9_000_000), spent)
@@ -50,7 +50,7 @@ func TestBudgetAllowsUnderTheCeilingAndRefusesAtIt(t *testing.T) {
 	// Exactly at the ceiling is over it. A ceiling that lets one more call
 	// through at the boundary is a ceiling that is off by one call, every
 	// month, in the direction that costs money.
-	at := coach.Budget{Log: &fakeLog{spent: 10_000_000}, CeilingMicros: 10_000_000}
+	at := coach.Budget{Log: &fakeLog{spent: 10_000_000}, CeilingFor: coach.FlatCeiling(10_000_000)}
 	ok, _ = at.Allows(context.Background(), 1, august)
 	require.False(t, ok)
 }
@@ -69,8 +69,8 @@ func TestBudgetWithNoCeilingAlwaysAllows(t *testing.T) {
 // money without limit, so it costs the feature instead.
 func TestBudgetFailsClosedWhenTheSpendCannotBeRead(t *testing.T) {
 	b := coach.Budget{
-		Log:           &fakeLog{err: errors.New("no database")},
-		CeilingMicros: 10_000_000,
+		Log:        &fakeLog{err: errors.New("no database")},
+		CeilingFor: coach.FlatCeiling(10_000_000),
 	}
 	ok, _ := b.Allows(context.Background(), 1, august)
 	require.False(t, ok)
@@ -86,7 +86,7 @@ func TestBudgetWithNoLogRefuses(t *testing.T) {
 // rewrite what last month cost.
 func TestRecordPricesTheAnswerItself(t *testing.T) {
 	log := &fakeLog{}
-	b := coach.Budget{Log: log, CeilingMicros: 10_000_000}
+	b := coach.Budget{Log: log, CeilingFor: coach.FlatCeiling(10_000_000)}
 
 	require.NoError(t, b.Record(context.Background(), 1, coach.Answer{
 		Kind:      "sheet",
@@ -123,7 +123,7 @@ func TestRecordCountsARejectedReply(t *testing.T) {
 // than a score, bounded by a ceiling that was set on purpose, and a fact about
 // a machine rather than about the person reading it.
 func TestSpentReportsTheMonthAndTheCeiling(t *testing.T) {
-	b := coach.Budget{Log: &fakeLog{spent: 2_610_000}, CeilingMicros: 10_000_000}
+	b := coach.Budget{Log: &fakeLog{spent: 2_610_000}, CeilingFor: coach.FlatCeiling(10_000_000)}
 
 	spent, ceiling, ok := b.Spent(context.Background(), 1, august)
 	require.True(t, ok)
@@ -134,7 +134,7 @@ func TestSpentReportsTheMonthAndTheCeiling(t *testing.T) {
 // It fails quiet, not closed. A spend that cannot be read is a line that is
 // not drawn — unlike Allows, where the same failure has to stop a call.
 func TestSpentFailsQuietRatherThanClosed(t *testing.T) {
-	b := coach.Budget{Log: &fakeLog{err: errors.New("no database")}, CeilingMicros: 10_000_000}
+	b := coach.Budget{Log: &fakeLog{err: errors.New("no database")}, CeilingFor: coach.FlatCeiling(10_000_000)}
 
 	_, _, ok := b.Spent(context.Background(), 1, august)
 	require.False(t, ok)
@@ -161,4 +161,53 @@ func TestEurosNeverReadsLowerThanWhatWasSpent(t *testing.T) {
 	require.Equal(t, "€0.02", coach.Euros(10_001))
 	require.Equal(t, "€2.61", coach.Euros(2_610_000))
 	require.Equal(t, "€10.00", coach.Euros(10_000_000))
+}
+
+// The owner's ceiling and everybody else's are two numbers.
+//
+// Budget carried one CeilingMicros for the whole process and applied it to
+// whoever asked, so two demo accounts would have been two monthly ceilings and
+// the second one would have been yours to pay.
+func TestTheOwnerAndAGuestHaveDifferentCeilings(t *testing.T) {
+	b := coach.Budget{
+		Log: &fakeLog{spent: 500_000},
+		CeilingFor: func(personID int64) int64 {
+			if personID == 1 {
+				return 10_000_000
+			}
+			return 100_000
+		},
+	}
+
+	ok, _ := b.Allows(context.Background(), 1, august)
+	require.True(t, ok, "the owner was refused under their own ceiling")
+
+	ok, _ = b.Allows(context.Background(), 2, august)
+	require.False(t, ok, "a guest spent against the owner's ceiling")
+}
+
+// What a surface shows is the asker's ceiling too, or a guest reads the
+// owner's allowance as their own.
+func TestTheCeilingShownIsTheAskersOwn(t *testing.T) {
+	b := coach.Budget{
+		Log: &fakeLog{spent: 500_000},
+		CeilingFor: func(personID int64) int64 {
+			if personID == 1 {
+				return 10_000_000
+			}
+			return 100_000
+		},
+	}
+
+	_, ceiling, ok := b.Spent(context.Background(), 2, august)
+	require.True(t, ok)
+	require.Equal(t, int64(100_000), ceiling, "a guest was shown the owner's ceiling")
+}
+
+// No ceiling function at all is no ceiling, which is the state a build with no
+// budget configured is in.
+func TestNoCeilingFunctionIsNoCeiling(t *testing.T) {
+	b := coach.Budget{Log: &fakeLog{spent: 999_999_999}}
+	ok, _ := b.Allows(context.Background(), 1, august)
+	require.True(t, ok)
 }

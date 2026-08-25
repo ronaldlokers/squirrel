@@ -31,12 +31,14 @@ func pushScreen(t *testing.T, f *fakeStore) *httptest.Server {
 	t.Helper()
 	m := &serveMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
-		IdentityHeader: "X-Authentik-Username", Identity: "ronald",
-		PushKey: "BKtestkey",
-		Owner:   func() int64 { return 1 }, Spool: &fakeSpool{},
+		RequiredGroup: "squirrel-users", Gate: &Gate{},
+		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+		Login:    aTestLogin,
+		PushKey:  "BKtestkey",
+		Spool:    &fakeSpool{},
 	}))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Set("X-Authentik-Username", "ronald")
+		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
 		m.mux.ServeHTTP(w, r)
 	}))
 	t.Cleanup(srv.Close)

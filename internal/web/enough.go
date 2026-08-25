@@ -22,7 +22,7 @@ import "net/http"
 // the cheapest possible guarantee that it never grows one.
 func enoughHandler(opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := opts.person(); !ok {
+		if _, ok := personOf(r); !ok {
 			fail(w, errNoOwner)
 			return
 		}

@@ -51,8 +51,26 @@ func (l coachLog) CoachSpentSince(ctx context.Context, personID int64, since tim
 }
 
 // budgetFor is the monthly ceiling, wired to the log that answers it.
-func budgetFor(cfg squirrel.CoachConfig, store *squirrel.Store) coach.Budget {
-	return coach.Budget{Log: coachLog{store: store}, CeilingMicros: cfg.BudgetMicros}
+//
+// Two ceilings: the owner's, and a smaller one for everybody else. A demo
+// account can then try Buddy without being able to spend a month's allowance,
+// and two demo accounts are not two allowances.
+//
+// The owner is whoever SeedOwner made. There is no admin flag and no column,
+// because there is one owner and it is configuration — the same reason the
+// screen's owner is a seeded identity rather than a role. owner() is zero
+// until Postgres answers, and a lookup before then sees a guest, which is the
+// safe way round.
+func budgetFor(cfg squirrel.CoachConfig, store *squirrel.Store, owner func() int64) coach.Budget {
+	return coach.Budget{
+		Log: coachLog{store: store},
+		CeilingFor: func(personID int64) int64 {
+			if personID != 0 && personID == owner() {
+				return cfg.BudgetMicros
+			}
+			return cfg.GuestBudgetMicros
+		},
+	}
 }
 
 // coachFor builds the coach, or NoCoach.

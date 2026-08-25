@@ -22,7 +22,7 @@ import (
 // be read must not take down a page that rendered without one for the
 // product's whole life.
 func stepFor(s Store, opts Options, r *http.Request) *stepView {
-	personID, ok := opts.person()
+	personID, ok := personOf(r)
 	if !ok {
 		return nil
 	}
@@ -40,7 +40,7 @@ func stepFor(s Store, opts Options, r *http.Request) *stepView {
 // line is already what renders when this returns nil, so a model that is slow,
 // absent or wrong costs nothing anyone can see.
 func smallerFor(s Store, opts Options, r *http.Request, b squirrel.Blocker, o squirrel.Offer) *stepView {
-	personID, ok := opts.person()
+	personID, ok := personOf(r)
 	if !ok || opts.Smaller == nil || !squirrel.BreakingHelps(b) || o.Text == "" {
 		return nil
 	}
@@ -68,7 +68,7 @@ func smallerFor(s Store, opts Options, r *http.Request, b squirrel.Blocker, o sq
 // as cheap to dismiss as it was to produce.
 func stepsHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

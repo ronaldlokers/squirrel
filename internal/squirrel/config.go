@@ -12,6 +12,22 @@ import (
 // without matching on message text.
 var ErrConfig = errors.New("configuration")
 
+// OIDCConfig is the way in.
+//
+// All four together or none: a partially configured door is a boot that
+// half-works, and the half that works is the half that lets people in.
+type OIDCConfig struct {
+	Issuer       string
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// Ready reports whether there is enough here to build a way in.
+func (o OIDCConfig) Ready() bool {
+	return o.Issuer != "" && o.ClientID != "" && o.ClientSecret != "" && o.RedirectURL != ""
+}
+
 type PostgresConfig struct {
 	Host     string
 	Port     int
@@ -50,6 +66,10 @@ type CoachConfig struct {
 	// ceiling in this process; the provider's own spend limit still applies and
 	// is the one that guards against a stolen key.
 	BudgetMicros int64
+	// GuestBudgetMicros is the monthly ceiling for anybody who is not the
+	// owner. Zero means a guest may not spend at all, which is also a
+	// reasonable choice.
+	GuestBudgetMicros int64
 	// HouseURL and HouseModel are the small model on the cluster, or empty for
 	// none. An OpenAI-shaped endpoint with no key, which is what ollama and
 	// llama.cpp both serve.
@@ -100,16 +120,33 @@ type Config struct {
 	// point for a real arrival, but that would blow any test budget built to
 	// wait one out over a real socket.
 	PresenceDelay time.Duration
-	// WebIdentity is the value Authentik puts in WebIdentityHeader for the one
-	// person who may read this. Empty means the screen is not mounted at all —
-	// the same refusal PresenceSecret makes, and for a stronger reason: the
-	// pile is every thought you have ever had at this bot, and a screen that
-	// mounted without knowing who is allowed to read it would be open.
+	// WebIdentity is the screen's own sender string, and it is no longer an
+	// identity anybody authenticates with.
+	//
+	// It was: Authentik's forward-auth outpost filled a header, and the screen
+	// compared it to this. The application does OIDC itself since 25 August
+	// 2026, so what is left of this value is the one job the header never did
+	// — it is seeded as a `screen` identity so that captures already sitting
+	// in the spool at deploy time still resolve to their person when the drain
+	// picks them up.
+	//
+	// Empty means the screen is not mounted. Kept as that refusal because
+	// nothing already spooled may be orphaned by this change.
 	WebIdentity string
-	// WebIdentityHeader is the header Traefik's forward-auth middleware fills
-	// from the Authentik outpost. Squirrel writes no authentication code and
-	// holds no session; it compares one header to one configured value.
-	WebIdentityHeader string
+	// OIDC is the way in, or the zero value. Every field is required together;
+	// see OIDCConfig.
+	OIDC OIDCConfig
+	// WebOwnerSub is the owner's OIDC subject, seeded so that the first login
+	// lands on the person who already owns the pile rather than making a
+	// second one beside it. Empty is supported: without it the owner's first
+	// login creates a new person, which is correct for a fresh deployment and
+	// wrong for this one.
+	WebOwnerSub string
+	// WebRequiredGroup is the Authentik group an account must be in to use
+	// Squirrel. Empty refuses the mount, and it is the only value in this
+	// config that is dangerous to default: everything else missing costs a
+	// feature, and this would cost the pile.
+	WebRequiredGroup string
 	// PhotoDir is where photographs are kept, or empty. Empty is a supported
 	// state and the default: with nowhere to put them the screen never offers
 	// a camera, exactly as it never offers to subscribe without a push key.
@@ -303,6 +340,13 @@ func LoadConfig(env map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	// What anybody who is not the owner may spend in a month. Small on
+	// purpose: a demo account exists to be tried, not to be lived in, and two
+	// of them must not be two monthly allowances.
+	guestBudget, err := number(env, "COACH_BUDGET_GUEST_EUR", 1)
+	if err != nil {
+		return Config{}, err
+	}
 
 	config := Config{
 		Port:          port,
@@ -327,11 +371,12 @@ func LoadConfig(env map[string]string) (Config, error) {
 			BaseURL: optional(env, "COACH_BASE_URL", "https://api.openai.com/v1"),
 			// Confirmed against GET /v1/models on 20 August 2026 rather than
 			// copied from a pricing page.
-			Fast:         optional(env, "COACH_MODEL_FAST", "gpt-5.6-luna"),
-			Deep:         optional(env, "COACH_MODEL_DEEP", "gpt-5.6-terra"),
-			BudgetMicros: int64(budget) * 1_000_000,
-			HouseURL:     env["COACH_HOUSE_URL"],
-			HouseModel:   optional(env, "COACH_HOUSE_MODEL", "qwen2.5:1.5b-instruct-q4_K_M"),
+			Fast:              optional(env, "COACH_MODEL_FAST", "gpt-5.6-luna"),
+			Deep:              optional(env, "COACH_MODEL_DEEP", "gpt-5.6-terra"),
+			BudgetMicros:      int64(budget) * 1_000_000,
+			GuestBudgetMicros: int64(guestBudget) * 1_000_000,
+			HouseURL:          env["COACH_HOUSE_URL"],
+			HouseModel:        optional(env, "COACH_HOUSE_MODEL", "qwen2.5:1.5b-instruct-q4_K_M"),
 		},
 
 		Push: PushConfig{
@@ -340,9 +385,16 @@ func LoadConfig(env map[string]string) (Config, error) {
 			Contact:    env["PUSH_CONTACT"],
 		},
 
-		WebIdentity:       env["WEB_IDENTITY"],
-		WebIdentityHeader: optional(env, "WEB_IDENTITY_HEADER", "X-Authentik-Username"),
-		WebURL:            strings.TrimRight(env["WEB_URL"], "/"),
+		WebIdentity:      env["WEB_IDENTITY"],
+		WebRequiredGroup: env["WEB_REQUIRED_GROUP"],
+		WebOwnerSub:      env["WEB_OIDC_SUB"],
+		OIDC: OIDCConfig{
+			Issuer:       strings.TrimRight(env["WEB_OIDC_ISSUER"], "/"),
+			ClientID:     env["WEB_OIDC_CLIENT_ID"],
+			ClientSecret: env["WEB_OIDC_CLIENT_SECRET"],
+			RedirectURL:  env["WEB_OIDC_REDIRECT_URL"],
+		},
+		WebURL: strings.TrimRight(env["WEB_URL"], "/"),
 	}
 
 	if slicesContains(transports, "campfire") {

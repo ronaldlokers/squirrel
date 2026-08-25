@@ -21,11 +21,21 @@ import (
 // every template, a header to widen the worker's scope by one character, and an
 // ingress that had to agree with all of it — for a setting nothing ever set.
 type Options struct {
-	// IdentityHeader is filled by Traefik's forward-auth middleware.
-	IdentityHeader string
-	// Identity is the one value that may read this pile. Mount refuses to
-	// register a single route when it is empty.
-	Identity string
+	// Gate is the way in: the OIDC client that turns a code into a person.
+	// Nil is refused at mount — a pile with no way in is not a working
+	// Squirrel, and a pile with no way in and every route open is worse.
+	Gate *Gate
+	// Sessions is who is signed in, remembered for a minute. Nil is refused at
+	// mount: guard would otherwise refuse every request forever.
+	Sessions *sessions
+	// RequiredGroup is the Authentik group an account must be in. Refused when
+	// empty, and it is the only value in this struct that is. Everything else
+	// missing degrades to less product — no coach, no camera, no push. This
+	// would degrade to more access.
+	RequiredGroup string
+	// SessionLife is how long a session lasts without being used. Zero takes
+	// the default.
+	SessionLife time.Duration
 	// Location is where the person is, and it is not where the process is.
 	//
 	// Threaded rather than read off the clock, the way the scheduler's quiet
@@ -38,15 +48,10 @@ type Options struct {
 	// behind it is a button that fails silently, which is worse than one that
 	// was never drawn.
 	PushKey string
-	// Owner answers whose pile this is. There is one person and SeedOwner
-	// reconciles them once, so this is not a per-request lookup — it is a
-	// function only because of when it can be answered. Routes must be
-	// registered before the server listens, and the owner's id is only known
-	// once Postgres has answered, which may be a while after boot or never;
-	// internal/boot's nudgeRelay exists for exactly that window. A zero id
-	// means "not yet", and the screen says the same thing it says for any
-	// other unreachable database.
-	Owner func() int64
+	// Login turns an OIDC subject into a person, creating them the first
+	// time. A func rather than a Store method because this package must not
+	// have to know how a person is made — internal/boot supplies it.
+	Login func(ctx context.Context, sub, handle string) (int64, error)
 	// Photos is where a photograph is kept, or nil. Nil means the camera is
 	// never offered — a control that cannot work is worse than one that was
 	// never drawn.
@@ -127,14 +132,11 @@ type Options struct {
 	Splittable func(text string) bool
 }
 
-// person answers who the pile belongs to, and whether that is known yet.
-func (o Options) person() (int64, bool) {
-	if o.Owner == nil {
-		return 0, false
-	}
-	id := o.Owner()
-	return id, id != 0
-}
+// Options.person() was here until 25 August 2026. It read Owner, a
+// process-global atomic.Int64, and answered "whose pile this is" for every
+// handler in the package. It is deleted rather than left in place because a
+// global that still compiles is a global something will use, and the answer it
+// gave was correct for exactly one person. personOf(r) replaced it.
 
 // Spool is the durable half of capture, and the same one the room's captures
 // go through.

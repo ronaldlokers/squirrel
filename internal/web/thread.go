@@ -156,7 +156,7 @@ type doorView struct {
 
 func threadHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -445,7 +445,7 @@ func checkinTurn(ctx context.Context, s Store, personID int64, again bool) (squi
 // and the readings are what the picker actually consults.
 func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -781,7 +781,7 @@ var doorNames = map[string]string{
 // ordinary trade for one page, and it is the only thing the rail gave up.
 func openHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -1693,7 +1693,7 @@ func foundLead(n int) string {
 // every other turn follows.
 func findHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

@@ -3397,3 +3397,65 @@
     font-size: 13.5px; line-height: 1.45; color: var(--cream);
     font-variation-settings: var(--precise), "wght" 500;
   }
+
+  /* The way in.
+   *
+   * The first thing anybody ever sees of this product, and for a demo user
+   * possibly the only thing they see before deciding whether they trust it. It
+   * is /enough's composition — the mascot, a headline in the casual axis, one
+   * sentence, an absence — because that treatment already exists and inventing
+   * a second one for a screen with four states would be inventing four.
+   *
+   * It carries no lid. Every control up there goes somewhere a signed-out
+   * person cannot reach, so offering them offers a bounce straight back here.
+   * Which means this is the one page where `main` is the whole body, and it
+   * centres rather than starting at the top: there is exactly one thing on it.
+   */
+  main.gate {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 58px 22px 48px; text-align: center;
+    width: min(560px, 100%); margin: 0 auto;
+  }
+  main.gate img.resting {
+    width: 300px; height: 207px; display: block; margin: 0 auto 22px;
+    filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .3));
+  }
+  main.gate h1 {
+    margin: 0 0 10px;
+    font-size: clamp(27px, 3.4vw, 36px); line-height: 1.15;
+    font-variation-settings: var(--casual), "wght" 800;
+    letter-spacing: -.01em;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--outline);
+    paint-order: stroke fill;
+  }
+  /* The sentence, and it is the only thing that differs between the four
+   * states. Cream rather than paper: it is a note about how you got here, not
+   * the heading. */
+  .gatesays {
+    margin: 0 auto 26px; max-width: 34ch;
+    font-size: 17px; line-height: 1.5; color: var(--cream);
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+  /* The heading sits closer to the button when nothing is said, so the cold
+   * state is not a screen with a hole in it. */
+  main.gate h1 + form { margin-top: 26px; }
+  /* One control, and it is the orange one: this is the make-something button
+   * of this screen. Dark ink on the fill, the Fill-and-Ink Rule holding as it
+   * does on .btn.make. */
+  .letmein {
+    font: inherit; cursor: pointer;
+    padding: 14px 28px;
+    font-size: 15px; letter-spacing: .06em;
+    font-variation-settings: var(--precise), "wght" 800;
+    background: var(--orange); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 5px 0 0 var(--outline);
+    transition: transform 90ms, box-shadow 90ms, background 90ms;
+  }
+  .letmein:hover { background: var(--orange-lit); }
+  .letmein:active {
+    transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
+    background: var(--purple); color: var(--paper);
+  }

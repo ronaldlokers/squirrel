@@ -57,7 +57,7 @@ func thumbHandler(s Store, opts Options) http.HandlerFunc {
 
 func photoOrThumb(s Store, opts Options, small bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return

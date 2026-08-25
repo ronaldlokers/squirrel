@@ -22,7 +22,7 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		personID, known := opts.person()
+		personID, known := personOf(r)
 		if !known {
 			fail(w, errNoOwner)
 			return
@@ -190,7 +190,7 @@ func lastDone(sinceDays int) string {
 // so nothing new was invented and nothing has to be typed in a format.
 func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
@@ -275,7 +275,7 @@ func offered(every string) (time.Duration, bool) {
 // not in the record is a question the record cannot show you answering.
 func oftenHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := opts.person()
+		personID, ok := personOf(r)
 		if !ok {
 			fail(w, errNoOwner)
 			return
