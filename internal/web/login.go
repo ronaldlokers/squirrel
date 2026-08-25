@@ -88,14 +88,21 @@ func beginHandler(opts Options) http.HandlerFunc {
 		if err == nil {
 			var verifier string
 			if verifier, err = secret(32); err == nil {
-				http.SetCookie(w, cookie(stateCookie,
-					started(state, verifier, backTolerant(r.FormValue("next"))), stateLife))
-				http.Redirect(w, r, opts.Gate.Away(state, verifier), http.StatusSeeOther)
-				return
+				var away string
+				// The gate may not have found authentik yet — it is looked up
+				// lazily and retried rather than at boot, so that an authentik
+				// that is down costs the way in and not the whole product. The
+				// screen already has a sentence for this.
+				if away, err = opts.Gate.Away(state, verifier); err == nil {
+					http.SetCookie(w, cookie(stateCookie,
+						started(state, verifier, backTolerant(r.FormValue("next"))), stateLife))
+					http.Redirect(w, r, away, http.StatusSeeOther)
+					return
+				}
 			}
 		}
-		// No randomness is not a login. Nothing else in this product fails
-		// this way, and nothing else in it depends on being unguessable.
+		// No randomness, or no authentik. Neither is a login, and neither is
+		// anything the person pressing the button can do something about.
 		slog.Error("could not start a login", "error", err)
 		http.Redirect(w, r, "/auth?said=down", http.StatusSeeOther)
 	}

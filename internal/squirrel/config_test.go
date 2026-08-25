@@ -152,9 +152,18 @@ func TestAPartialWayInIsNotAWayIn(t *testing.T) {
 	cfg, err := squirrel.LoadConfig(minimalEnv(full))
 	require.NoError(t, err)
 	require.True(t, cfg.OIDC.Ready())
-	// The trailing slash comes off, because go-oidc compares the issuer it
-	// discovers to the one it was given, byte for byte.
-	require.Equal(t, "https://auth.example/application/o/squirrel", cfg.OIDC.Issuer)
+	// The trailing slash stays on, and this test asserted the opposite until
+	// it took both clusters down on 25 August 2026.
+	//
+	// go-oidc compares the issuer it discovers against the one it was
+	// configured with, byte for byte, and authentik publishes this one with a
+	// trailing slash — confirmed by reading its own discovery document, which
+	// answers `"issuer": ".../application/o/squirrel/"`. Trimming it is a boot
+	// that fails on every deploy, and the reasoning that put the trim there
+	// was that the line above does it to WEB_URL. WEB_URL is a base somebody
+	// concatenates onto. This is a value somebody compares.
+	require.Equal(t, "https://auth.example/application/o/squirrel/", cfg.OIDC.Issuer,
+		"the issuer was reshaped; go-oidc compares it byte for byte")
 
 	for missing := range full {
 		short := map[string]string{}

@@ -389,7 +389,15 @@ func LoadConfig(env map[string]string) (Config, error) {
 		WebRequiredGroup: env["WEB_REQUIRED_GROUP"],
 		WebOwnerSub:      env["WEB_OIDC_SUB"],
 		OIDC: OIDCConfig{
-			Issuer:       strings.TrimRight(env["WEB_OIDC_ISSUER"], "/"),
+			// Taken exactly as given, trailing slash and all.
+			//
+			// It was trimmed the way WEB_URL above it is trimmed, which is
+			// wrong for a reason that has nothing to do with tidiness:
+			// go-oidc compares the issuer it discovers against the one it
+			// was configured with, byte for byte, and authentik publishes
+			// this one with a trailing slash. Trimming it is a boot that
+			// fails on every deploy.
+			Issuer:       env["WEB_OIDC_ISSUER"],
 			ClientID:     env["WEB_OIDC_CLIENT_ID"],
 			ClientSecret: env["WEB_OIDC_CLIENT_SECRET"],
 			RedirectURL:  env["WEB_OIDC_REDIRECT_URL"],
