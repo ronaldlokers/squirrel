@@ -20,28 +20,26 @@ func aConversation(t *testing.T) (*fakeStore, *fakeCoach) {
 	return f, c
 }
 
-// The sheet offers a way to say the last thing landed badly.
+// A way to say the last thing landed badly, on the reply it is about.
 //
 // Principle 5 was opened on 20 August so the coach could be useful at the one
 // thing a coach is for, and the cost was written down at the time: it can now
 // say something that lands badly on a bad day. Every exchange has been kept
 // since, for exactly that reason — and until now nothing read one back, so
 // there was no way for a bad night to matter afterwards.
-func TestTheSheetOffersAWayToSayItLandedBadly(t *testing.T) {
+//
+// On the reply, and only the newest reply carries controls: by the live edge
+// rule the offer is gone from anything in scrollback, which is what stops it
+// meaning a reply from three days ago.
+func TestTheReplyOffersAWayToSayItLandedBadly(t *testing.T) {
 	f, c := aConversation(t)
+	m := mountedWith(t, f, c)
+	drew := asked(t, m, f, "said=still+stuck")
 
-	body := mountedWith(t, f, c).call(t, "GET", "/buddy", nil).Body.String()
-
-	require.Contains(t, body, "that landed badly")
-	require.Contains(t, body, `action="/buddy/badly"`)
-
-	// On the last reply and nowhere else: an exchange is two strings and
-	// carries no row id, so this can only mean the one you just read.
-	require.Equal(t, 1, strings.Count(body, `action="/buddy/badly"`),
-		"every reply in the conversation offered it, and only the last one can mean it")
-	require.Less(t, strings.Index(body, "you have done this three times"),
-		strings.Index(body, "that landed badly"),
-		"the control sits above the reply it is about")
+	require.Contains(t, drew, "that went badly")
+	require.Contains(t, drew, "/buddy/badly")
+	require.Equal(t, 1, strings.Count(drew, "/buddy/badly"),
+		"every reply offered it, and only the last one can mean it")
 }
 
 // Pressing it records it, and says only that it was heard.
@@ -49,12 +47,13 @@ func TestSayingItLandedBadlyIsHeardAndNothingElse(t *testing.T) {
 	f, c := aConversation(t)
 	m := mountedWith(t, f, c)
 
-	to := m.call(t, "POST", "/buddy/badly", strings.NewReader("")).Header().Get("Location")
-	require.Equal(t, "/buddy?heard=1", to)
+	f.appended = nil
+	w := m.call(t, "POST", "/buddy/badly", strings.NewReader(""))
+	require.Equal(t, "/", w.Header().Get("Location"))
 	require.Len(t, f.landedBadly, 1, "the press was not recorded")
 
-	body := m.call(t, "GET", to, nil).Body.String()
-	require.Contains(t, body, "noted")
+	body := f.appended[1].Words
+	require.Contains(t, strings.ToLower(body), "noted")
 
 	// No count, no list, no history. How often a thing lands badly is a fact
 	// about the person, and rule 2 forbids one on any surface.
@@ -69,10 +68,11 @@ func TestAPressWithNothingToMarkClaimsNothing(t *testing.T) {
 	f, c := aConversation(t)
 	f.noReplyToMark = true
 
-	to := mountedWith(t, f, c).call(t, "POST", "/buddy/badly", strings.NewReader("")).
-		Header().Get("Location")
+	f.appended = nil
+	mountedWith(t, f, c).call(t, "POST", "/buddy/badly", strings.NewReader(""))
 
-	require.Equal(t, "/buddy", to, "it said it had heard something that was not there")
+	require.Equal(t, "Noted.", f.appended[1].Words,
+		"it said it had heard something that was not there")
 }
 
 // And a store that cannot record it does not answer with an error page.
@@ -86,5 +86,5 @@ func TestAFailureToRecordIsNotAnErrorPage(t *testing.T) {
 	res := mountedWith(t, f, c).call(t, "POST", "/buddy/badly", strings.NewReader(""))
 
 	require.Equal(t, 303, res.Code, "it failed loudly at the worst moment to fail loudly")
-	require.Equal(t, "/buddy", res.Header().Get("Location"))
+	require.Equal(t, "/", res.Header().Get("Location"))
 }

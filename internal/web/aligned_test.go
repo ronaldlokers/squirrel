@@ -122,16 +122,12 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 
-	// The thread is first and is not navigated to: its meta labels are the
-	// picker's, and the picker arrives by pressing HOW OFTEN.
-	for _, path := range []string{"", "/buddy"} {
-		if path == "" {
-			openChores(t, c, srv)
-			c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
-			c.until(t, "the question", `!!document.querySelector(".pick")`)
-		} else {
-			c.navigate(t, srv.URL+path)
-		}
+	// One screen since /buddy went. Its meta labels are the picker's, and the
+	// picker arrives by pressing HOW OFTEN.
+	for _, path := range []string{""} {
+		openChores(t, c, srv)
+		c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
+		c.until(t, "the question", `!!document.querySelector(".pick")`)
 
 		found := c.eval(t, `
 			const body = parseFloat(getComputedStyle(document.body).fontSize);
@@ -154,34 +150,10 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 	}
 }
 
-// Both lid panels end on the same edge, and it is inside the margin.
-//
-// Each hangs from the right edge of its own control, and the search icon is
-// not the last control in the lid. So on a 390px phone the 320px field started
-// two pixels from the side of the screen — outside the margin every other
-// thing on the page keeps — and ended 54px short of the edge the menu's own
-// panel uses.
-func TestBrowserBothLidPanelsEndWhereThePageEnds(t *testing.T) {
-	c := lid(t)
-
-	c.eval(t, `document.querySelector("details.where > summary").click()`)
-	c.until(t, "the map", `(`+shown+`)(".wherelist")`)
-	menu := box(t, c, ".wherelist")
-
-	c.eval(t, `document.querySelector("details.findbox > summary").click()`)
-	c.until(t, "the field", `(`+shown+`)(".findbox .find")`)
-	find := box(t, c, ".findbox .find")
-
-	require.Equal(t, menu["right"], find["right"],
-		"the field's panel ends at %vpx and the menu's at %vpx", find["right"], menu["right"])
-
-	// The thread is the page's own left margin now that the card is gone, and
-	// the panel must not sit outside it.
-	card := box(t, c, "#thread")
-	require.GreaterOrEqual(t, find["left"], card["left"],
-		"the field's panel starts at %vpx, outside the %vpx margin the page keeps",
-		find["left"], card["left"])
-}
+// TestBrowserBothLidPanelsEndWhereThePageEnds was retired on 25 August 2026.
+// It measured the search field's panel against the map's, and both came off
+// the lid the same day: search is a chip in the conversation and the map had
+// been empty since the deck came out. There are no panels to align.
 
 // Two lists of the same rows, one tab apart, inset their words by the same
 // amount. The set-aside card is quieter than a card in the deck on purpose —

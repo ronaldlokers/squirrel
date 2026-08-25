@@ -867,6 +867,11 @@ then lost the digits when its disclosure went; they are back.
 Only that question. A digit inside the day picker would be a day of the month,
 and guessing which of the two was meant would book the wrong one.
 
+**What must be reachable from anywhere goes at the foot of the thread, not on
+the live edge.** The live edge is the newest Buddy turn, and there is not always
+one — a conversation that has not started has no turns at all. A control that
+appears once Buddy has spoken is a control you cannot use to start.
+
 **A turn with nothing on it can still take you somewhere.** A chip that hangs
 off a drawn card disappears with the card, and the branch that draws no card is
 usually the branch where going elsewhere is the point. The shelf was reachable

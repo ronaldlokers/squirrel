@@ -732,8 +732,9 @@
   }
 
   addEventListener("keydown", e => {
-    // A modal is modal for the keyboard too. Buddy's sheet is a <dialog>, and
-    // every letter below acts on the screen behind it — so with the sheet open
+    // A modal is modal for the keyboard too. Nothing in this product is a
+    // <dialog> since Buddy's sheet went on 25 August 2026, and the check stays
+    // because the rule is about any modal rather than about that one — with one open
     // and focus on any control that is not a text box, pressing `d` stamped
     // the card underneath, invisibly, because a modal was over it. On the
     // chores that same press could fire DID IT or STOP ASKING on whichever
@@ -948,310 +949,23 @@
   }
 
   // ---------------------------------------------------------------- //
-  // Buddy.
+  // Buddy and the lid's two panels were here.
   //
-  // /buddy is a real page and the acorn is a real link to it; everything here
-  // upgrades that into a sheet over whatever you were already looking at,
-  // because the conversation is about the screen behind it and navigating away
-  // from that screen is the one thing this must not do.
+  // Buddy was an acorn in the lid opening `/buddy` as a sheet over whatever
+  // you were looking at, because the conversation was about the screen behind
+  // it and navigating away from that screen was the one thing it must not do.
+  // There is one screen now and the conversation is on it: `ask Buddy` is a
+  // chip on the live edge and the exchange is turns, so there is nothing to
+  // lift out of a page and nothing to close.
   //
-  // A native <dialog>, so Escape closes it and focus stays inside it without
-  // either being implemented here. Nothing below is load-bearing: with this
-  // file absent the acorn is a link, /buddy is a page, and every form on it
-  // posts and redirects.
-  // ---------------------------------------------------------------- //
-  (() => {
-    const acorn = document.querySelector(".tobuddy");
-    if (!acorn || typeof HTMLDialogElement === "undefined") return;
-
-    let sheet = null;
-    // What was typed, kept across a close. A box that clears when you close it
-    // is a box that eats thoughts — the slot's rule, and it holds here for the
-    // same reason. In memory only: it is a half-written sentence, not a note.
-    let draft = "";
-
-    function box() { return sheet?.querySelector('textarea[name="said"]'); }
-
-    function keepDraft() {
-      const t = box();
-      if (t) draft = t.value;
-    }
-
-    function restoreDraft() {
-      const t = box();
-      // Only when the server sent nothing back itself. A failed ask returns
-      // the words it could not answer, and those are the newer ones.
-      if (t && !t.value && draft) t.value = draft;
-    }
-
-    // Pulls /buddy and lifts its sheet out. The response is a whole page
-    // because it has to be one for the scriptless path; taking one element out
-    // of it is the cheapest possible upgrade.
-    async function fetchSheet() {
-      const res = await fetch("/buddy?from=" + encodeURIComponent(location.pathname),
-        { headers: { "X-Requested-With": "fetch" } });
-      if (!res.ok) return null;
-      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-      return doc.querySelector(".sheet");
-    }
-
-    function wireSheet() {
-      restoreDraft();
-
-      // Bound to the control itself as well as to the form's submit. Two
-      // routes to the same call, because this is the only way out of a modal
-      // sheet and it has failed in the field three times without failing once
-      // in a test — belt and braces is the honest response to that.
-      const shut = sheet.querySelector(".shut");
-      shut?.addEventListener("click", e => {
-        e.preventDefault();
-        if (!close()) leave(shut.form);
-      });
-
-      // Enter sends, Shift+Enter is the newline — the same rule the slot has,
-      // because it is the same interaction and because it is how a message is
-      // sent in the room this product lives in.
-      //
-      // Bound here rather than with the slot's: that one is attached once at
-      // load to the page's own box, and this box does not exist yet. Without
-      // it, pressing return on a phone put a newline in and nothing happened,
-      // which is what "I can't send a message to the coach" was.
-      box()?.addEventListener("keydown", e => {
-        if (e.key !== "Enter" || e.shiftKey) return;
-        e.preventDefault();
-        if (e.target.value.trim()) e.target.form.requestSubmit();
-      });
-
-      sheet.addEventListener("submit", async e => {
-        const form = e.target;
-        const action = form.getAttribute("action");
-        // The capture slot and the timer are the rest of the product reached
-        // from in here. Let them navigate: starting a timer is leaving the
-        // conversation to go and do the thing, which is the point of it.
-        if (action !== "/buddy/say" && action !== "/buddy/close") return;
-        e.preventDefault();
-
-        if (action === "/buddy/close") {
-          // Not posted here: the dialog's own close event does it, so every
-          // route out — Escape, the backdrop, this button — forgets the
-          // conversation exactly once and in one place. Unless it did not
-          // close, in which case the browser gets its form back.
-          if (!close()) leave(form);
-          return;
-        }
-
-        const data = formDataFor(form, e.submitter);
-        keepDraft();
-
-        // The network can go while the question is in the air, and this is the
-        // screen you are on when you cannot start anything else — so it says
-        // so, in the slot's own words and with the slot's own shape.
-        //
-        // It said nothing at all before. `post` and `fetchSheet` were awaited
-        // bare, so a failure was an uncaught rejection: the button never
-        // moved, the box never cleared, nothing appeared, and because there is
-        // no spinner either, a slow answer and a dead one looked identical.
-        const pressed = form.querySelector(".post");
-        if (pressed) pressed.disabled = true;
-        let fresh;
-        try {
-          const res = await post(action, data);
-          // A 5xx is the same event as a dropped connection from here: the
-          // words did not land. `fetch` only rejects on the network, so this
-          // is the half that would otherwise pass for success.
-          if (!res.ok) throw new Error(res.status);
-          // Whatever was said is now in the window on the server, so the sheet
-          // is re-read rather than patched. One source for what the
-          // conversation is, and no chance of the two disagreeing.
-          fresh = await fetchSheet();
-        } catch {
-          // The words are still in the box, which is why the box is never
-          // cleared until the server has said something back.
-          saidInSheet(form, "Not sent — Squirrel cannot reach Buddy. Your words are still here; try again in a moment.");
-          if (pressed) pressed.disabled = false;
-          return;
-        }
-        if (!fresh) { location.href = "/buddy"; return; }
-        // The box empties when something was actually said, and keeps its
-        // words when the server sent them back.
-        draft = "";
-        sheet.replaceWith(fresh);
-        sheet = fresh;
-        wireSheet();
-        announce("Squirrel answered");
-        sheet.querySelector(".talk")?.lastElementChild?.scrollIntoView({ block: "nearest" });
-        box()?.focus();
-      });
-    }
-
-    // What happened, on the sheet, in the slot's own voice. The element is in
-    // the markup rather than made here so the scriptless path renders the same
-    // shape and the stylesheet needs no second rule.
-    function saidInSheet(form, words) {
-      const said = form.querySelector("#saysaid");
-      if (!said) return;
-      said.textContent = words;
-      said.className = "slotsaid bad";
-      said.hidden = false;
-      // No timeout. A failure you have to be quick to read is a failure you
-      // will meet again without knowing why — the same reason the slot's own
-      // bad news stays until something else happens.
-    }
-
-    // Posted the way a form posts, and that is not a detail.
-    //
-    // A FormData body goes out as multipart, and Go's ParseForm only reads
-    // urlencoded — it does not error on multipart, it just finds nothing. So
-    // every message sent from the sheet arrived at the server with no words in
-    // it, was treated as "nothing was said", and redirected back. The box
-    // cleared and nothing happened, which is what "I can't send a message to
-    // the coach" was.
-    //
-    // The service worker's own capture flush has always done it this way. This
-    // is the same shape, so the script's path and the scriptless path put
-    // identical bytes on the wire.
-    function post(action, data) {
-      return fetch(action, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams(data),
-      });
-    }
-
-    // FormData's second argument is what carries which button was pressed, and
-    // it is newer than the rest of what this file uses — a browser without it
-    // throws rather than ignoring it. That matters more here than it looks:
-    // the submit has already been prevented by the time this runs, so a throw
-    // means the form neither posts nor navigates and the press does nothing at
-    // all. The chips would go the same way, since which chip is a submitter.
-    function formDataFor(form, submitter) {
-      try {
-        return new FormData(form, submitter);
-      } catch {
-        const data = new FormData(form);
-        if (submitter?.name) data.append(submitter.name, submitter.value);
-        return data;
-      }
-    }
-
-    let dialog = null;
-
-    // Closes, and says whether it actually did.
-    //
-    // That return value is the whole of this. The submit handler used to
-    // preventDefault and then call this, so if anything in here failed for any
-    // reason the native post was already dead and the press did nothing at all
-    // — a sheet you cannot get out of, on the one screen with no other way
-    // back. Reported three times, and never once reproducible here.
-    //
-    // So the fallback is real rather than assumed: the caller checks, and
-    // posts the form the browser's own way if the dialog is still standing.
-    function close() {
-      try {
-        keepDraft();
-        dialog?.close();
-      } catch {
-        // Whatever went wrong, the answer is the same one below.
-      }
-      return !dialog?.open;
-    }
-
-    // The last resort, and it must not go back through the submit handler that
-    // just failed to work: form.submit() posts without firing submit at all,
-    // so the server closes the conversation and redirects to where the acorn
-    // was pressed. Slower than the dialog closing, and it always happens.
-    function leave(form) {
-      try {
-        form?.submit();
-      } catch {
-        location.href = "/buddy/close";
-      }
-    }
-
-    acorn.addEventListener("click", async e => {
-      e.preventDefault();
-      const fresh = await fetchSheet();
-      // No sheet means no upgrade, so the link does what the link does. A
-      // failure here must never leave the acorn doing nothing.
-      if (!fresh) { location.href = acorn.href; return; }
-
-      if (!dialog) {
-        dialog = document.createElement("dialog");
-        dialog.className = "coachsheet";
-        document.body.appendChild(dialog);
-        // Closing by any route — Escape, the backdrop, the button — is the
-        // same close, and it forgets the conversation on the server exactly
-        // once.
-        dialog.addEventListener("close", () => {
-          post("/buddy/close", new FormData());
-        });
-        dialog.addEventListener("click", e => {
-          if (e.target === dialog) close();
-        });
-      }
-      dialog.replaceChildren(fresh);
-      sheet = fresh;
-      wireSheet();
-      // Buddy is reached from the lid's menu now, so the menu has to shut
-      // behind you: a disclosure left standing open under a modal sheet is
-      // waiting there when the sheet closes.
-      acorn.closest("details.where")?.removeAttribute("open");
-      dialog.showModal();
-      box()?.focus();
-    });
-  })();
-
-  // ---------------------------------------------------------------- //
-  // The lid's two panels.
+  // The panels were the search field and the map, made to behave like menus —
+  // closing on Escape, on a press outside, and never both at once. The map had
+  // been empty since the deck came out and search is a chip now. The lid is a
+  // mark and the running timer.
   //
-  // A <details> is the right thing here — it opens with no script at all, and
-  // it is the same grammar as the card's one question — but on its own it has
-  // no idea it is a menu. Left alone it stays open until you press the summary
-  // again, so the way out of it is a target you have to go back and find.
-  //
-  // Everything below is the part that makes it behave like a menu, and none of
-  // it is load-bearing: with this file absent both panels still open, still
-  // close on their own summary, and still work.
-  // ---------------------------------------------------------------- //
-  (() => {
-    const panels = [...document.querySelectorAll("details.where, details.findbox")];
-    if (!panels.length) return;
+  // All of it went on 25 August 2026. Roughly 300 lines, and every guarantee
+  // it maintained by hand — focus, Escape, one-at-a-time, a way out that
+  // survives a dialog refusing to close — is a guarantee the thread does not
+  // need, because nothing here is over anything else any more.
 
-    function shut(except) {
-      for (const p of panels) {
-        if (p !== except && p.open) p.open = false;
-      }
-    }
-
-    for (const panel of panels) {
-      panel.addEventListener("toggle", () => {
-        if (!panel.open) return;
-        // One at a time. Two panels hanging off the same corner is two things
-        // to close and one of them covering the other.
-        shut(panel);
-        // Asking for the field is asking to type in it.
-        panel.querySelector('input[type="search"]')?.focus({ preventScroll: true });
-      });
-    }
-
-    // Anywhere else means anywhere else, including the page behind the panel.
-    // The summary is inside the details, so opening one never closes it.
-    document.addEventListener("click", e => {
-      for (const panel of panels) {
-        if (panel.open && !panel.contains(e.target)) panel.open = false;
-      }
-    });
-
-    // And the key that means "not this", which is what closes the sheet too.
-    // Focus goes back to the control that opened it rather than being dropped
-    // on the page, which is where a keyboard would otherwise have to start
-    // again from.
-    document.addEventListener("keydown", e => {
-      if (e.key !== "Escape") return;
-      const open = panels.find(p => p.open);
-      if (!open) return;
-      open.open = false;
-      open.querySelector("summary")?.focus({ preventScroll: true });
-    });
-  })();
 })();

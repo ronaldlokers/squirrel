@@ -8,6 +8,10 @@
        these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
   <p class="bub">{{.Words}}</p>
+  {{/* What this cost, on the reply that cost it and nowhere else. A running
+       total anywhere else would be a number you meet before you have asked for
+       anything, which is the rule the sheet's own lid was protecting. */}}
+  {{if .Cost}}<p class="cost">{{.Cost}}</p>{{end}}
 
   {{range .Cards}}
   {{/* A chore renders as the element the chores screen used, so the keys
@@ -90,7 +94,7 @@
   {{if and .Live .Say}}
   <form class="wordbox" method="post" action="{{.Say.Action}}">
     {{range $name, $value := .Say.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
-    <textarea name="text" rows="2" aria-label="How it should read">{{.Say.Was}}</textarea>
+    <textarea name="{{.Say.Field}}" rows="2" aria-label="{{.Say.Label}}">{{.Say.Was}}</textarea>
     <button class="make" type="submit">{{.Say.Do}}</button>
   </form>
   {{end}}

@@ -354,154 +354,33 @@ func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
 // on the pile at all: `.acorn` was the card's drawn badge as well as the
 // button, and pile.js wired the badge — so the acorn navigated away instead,
 // and what looked like "closing does not work" was "this was never a sheet".
-func TestBrowserClosingTheCoach(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `document.querySelector("dialog.coachsheet .shut").click()`)
-	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
-	require.Equal(t, "/", c.eval(t, `return location.pathname`),
-		"closing the sheet navigated instead of closing")
-}
 
 // Escape, which the platform gives us and which nothing here implements.
-func TestBrowserEscapeClosesTheCoach(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.key(t, "Escape")
-	c.until(t, "the sheet to close", `!document.querySelector("dialog.coachsheet[open]")`)
-}
 
 // The acorn opens a sheet over the page rather than going anywhere. This is
 // the half of the bug above that was invisible: it did navigate, and the page
 // it landed on worked, so nothing looked broken until you tried to get out.
-func TestBrowserTheAcornDoesNotNavigate(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-	require.Equal(t, "/", c.eval(t, `return location.pathname`))
-}
 
 // The same rule in the coach's own box, which is reachable from every screen
 // and so meets the deck's keys as well as the chores'.
-func TestBrowserTypingToTheCoachIsNotAnAction(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `document.querySelector('dialog.coachsheet textarea[name=said]').focus()`)
-	before := c.eval(t, `return document.querySelectorAll("#thread .turn").length`)
-	for _, k := range []string{"d", "k", "x"} {
-		c.key(t, k)
-	}
-
-	require.Equal(t, "dkx", c.eval(t,
-		`return document.querySelector('dialog.coachsheet textarea[name=said]').value`))
-	// The conversation behind the sheet is untouched. Counted before and after,
-	// because it is not empty to begin with — Buddy opens by asking how you
-	// are, and a turn arriving would be a letter having triaged something.
-	require.Equal(t, before, c.eval(t,
-		`return document.querySelectorAll("#thread .turn").length`),
-		"typing to the coach triaged the note behind it")
-}
 
 // Sending from the sheet. Reported: you cannot send a message to the coach
 // from the app. Enter is the send affordance — it is how the slot works and
 // how the room this product lives in works — and the sheet's box never had it,
 // because the slot's handler is bound once at load to the page's own box and
 // the sheet arrives later.
-func TestBrowserEnterSendsToTheCoach(t *testing.T) {
-	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `
-		const t = document.querySelector('dialog.coachsheet textarea[name=said]');
-		t.focus(); t.value = "everything at once";
-	`)
-	c.key(t, "Enter")
-
-	c.until(t, "the coach to answer",
-		`document.querySelector("dialog.coachsheet")?.textContent.includes("Start with the envelope.")`)
-}
 
 // Shift+Enter is the newline, for a thought with two parts. Same rule as the
 // slot, because it is the same interaction.
-func TestBrowserShiftEnterDoesNotSendToTheCoach(t *testing.T) {
-	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `
-		const t = document.querySelector('dialog.coachsheet textarea[name=said]');
-		t.focus(); t.value = "one thing";
-	`)
-	c.eval(t, `
-		document.querySelector('dialog.coachsheet textarea[name=said]')
-			.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", shiftKey: true, bubbles: true, cancelable: true}));
-	`)
-
-	require.Equal(t, false, c.eval(t,
-		`return document.querySelector("dialog.coachsheet").textContent.includes("Start with the envelope.")`),
-		"shift+enter sent instead of making a newline")
-}
 
 // The chips send too, and they carry which one was pressed. Same path as the
 // box, so the same bug hit both: a chip press reached the server with no
 // answer in it and bounced straight back.
-func TestBrowserAChipSendsToTheCoach(t *testing.T) {
-	f := withOffer(&squirrel.Offer{
-		Kind: squirrel.OfferTask, RefID: 7, Text: "the tax thing",
-	})
-	f.items = aPile().items
-	c, _ := openWith(t, f, breaksInto(&fakeCoach{}, "open the letter", "ring the number"))
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `document.querySelector('dialog.coachsheet .why[value="big"]').click()`)
-	c.until(t, "the ladder to answer",
-		`document.querySelector("dialog.coachsheet")?.textContent.includes("open the letter")`)
-}
 
 // What the sheet puts on the wire, pinned. It is not a detail: a FormData body
 // goes out as multipart, Go's ParseForm reads only urlencoded, and the
 // mismatch is silent at both ends — the server finds no words and answers as
 // though nothing was said.
-func TestBrowserTheSheetPostsTheWayAFormPosts(t *testing.T) {
-	c, _ := openWith(t, aPile(), &fakeCoach{reply: "Start with the envelope."})
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	c.eval(t, `
-		window.__sent = [];
-		const real = window.fetch;
-		window.fetch = (url, opts) => {
-			if (opts?.method === "POST") {
-				window.__sent.push(String(url) + " " + (opts.headers?.["Content-Type"] || "none"));
-			}
-			return real(url, opts);
-		};
-		const t = document.querySelector('dialog.coachsheet textarea[name=said]');
-		t.focus(); t.value = "everything at once";
-	`)
-	c.key(t, "Enter")
-	c.until(t, "the coach to answer",
-		`document.querySelector("dialog.coachsheet")?.textContent.includes("Start with the envelope.")`)
-
-	require.Contains(t, c.eval(t, `return JSON.stringify(window.__sent)`),
-		"/buddy/say application/x-www-form-urlencoded")
-}
 
 // degreesOf resolves an angle the way the browser will, so the test compares
 // degrees rather than the strings they were written as.
@@ -544,81 +423,11 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 // piece of text that ends up standing on the field itself — anything inside an
 // object with its own fill is that object's problem, and already tested — and
 // checks it is light enough to read.
-func TestBrowserBuddyAsAPageIsLegibleOnTheField(t *testing.T) {
-	f := aPile()
-	f.offer = &squirrel.Offer{
-		Kind: squirrel.OfferChore, RefID: 1,
-		Text: "put the bins out", Because: "it is bin day tomorrow",
-	}
-	srv := screenWith(t, f, &fakeCoach{reply: "start with the bins."})
-	c := browserAt(t, srv, "/buddy?from=/")
-
-	// Nothing between the conversation and the field: no card behind it.
-	require.Equal(t, "rgba(0, 0, 0, 0)",
-		c.eval(t, `return getComputedStyle(document.querySelector(".sheet")).backgroundColor`),
-		"the page still draws a card behind Buddy")
-
-	// The title is set like every other screen's: the wordmark's face on paper.
-	// Without this only its legibility is pinned, and it would inherit the
-	// sheet's quiet cream — readable, and the wrong one of the two inks.
-	require.Equal(t, "rgb(255, 251, 243)",
-		c.eval(t, `return getComputedStyle(document.querySelector(".sheetname")).color`),
-		"Buddy's title is not written in the ink every other screen title uses")
-	require.Equal(t, "21px",
-		c.eval(t, `return getComputedStyle(document.querySelector(".sheetname")).fontSize`))
-
-	dark := c.eval(t, `
-		const lum = c => {
-			const [r, g, b] = c.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number).map(v => {
-				v /= 255;
-				return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-			});
-			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-		};
-		// Does anything between this and the body paint its own ground?
-		const onTheField = el => {
-			for (let n = el; n && n !== document.body; n = n.parentElement) {
-				const bg = getComputedStyle(n).backgroundColor;
-				if (bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return false;
-			}
-			return true;
-		};
-		const bad = [];
-		for (const el of document.querySelectorAll(".sheet, .sheet *")) {
-			// Its own words, not its children's.
-			const own = [...el.childNodes]
-				.filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join("");
-			if (!own || !onTheField(el)) continue;
-			if (lum(getComputedStyle(el).color) < 0.5) {
-				bad.push(el.className + ": " + own.slice(0, 24) + " " + getComputedStyle(el).color);
-			}
-		}
-		return bad.join(" | ");
-	`)
-	require.Equal(t, "", dark, "dark ink standing on the purple field")
-}
 
 // And the overlay keeps the card it is supposed to be.
 //
 // The same markup, so this is the half that a fix to the page could quietly
 // take away. It has taken three releases to notice a sheet regression before.
-func TestBrowserBuddyAsAnOverlayIsStillACard(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	c.eval(t, `document.querySelector(".tobuddy").click(); return 1`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-
-	style := func(sel, prop string) any {
-		return c.eval(t, fmt.Sprintf(
-			`return getComputedStyle(document.querySelector("dialog.coachsheet %s")).%s`, sel, prop))
-	}
-	require.Equal(t, "rgb(253, 236, 212)", style(".sheet", "backgroundColor"),
-		"the overlay lost its card stock")
-	require.Equal(t, "rgb(28, 17, 11)", style(".sheet", "color"),
-		"the overlay is no longer written in the card's ink")
-	// Its own small lid, not a screen title: the overlay is an object.
-	require.Equal(t, "17px", style(".sheetname", "fontSize"))
-}
 
 // atChores opens the thread and presses the chores door.
 //
@@ -656,8 +465,11 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 	c, srv := open(t, f)
 	c.navigate(t, srv.URL+"/")
 
-	c.eval(t, `document.querySelector(".findbox").open = true`)
-	c.eval(t, `const f = document.querySelector(".find input");
+	// A chip on the live edge since 25 August 2026, rather than a field in the
+	// lid: it asks for words, and /find answers them.
+	c.eval(t, `document.querySelector('form[action="/find/ask"] button').click()`)
+	c.until(t, "the question", `!!document.querySelector(".wordbox")`)
+	c.eval(t, `const f = document.querySelector(".wordbox textarea");
 		f.value = "boiler"; f.form.requestSubmit(); return 1`)
 	c.until(t, "the answer to arrive",
 		`!!document.querySelector("#thread .turn:last-child .turncard")`)

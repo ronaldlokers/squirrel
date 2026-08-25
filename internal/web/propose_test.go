@@ -26,12 +26,12 @@ func TestAProposalIsRenderedAndNothingIsWritten(t *testing.T) {
 		Text: "dentist", At: "14:30",
 	})
 
-	body := mountedWith(t, f, c).
-		call(t, "POST", "/buddy/say", strings.NewReader("said=dentist+at+half+two")).Body.String()
+	m := mountedWith(t, f, c)
+	drew := asked(t, m, f, "said=dentist+at+half+two")
 
-	require.Contains(t, body, "Shall I keep 14:30 for the dentist?")
-	require.Contains(t, body, `value="moment"`)
-	require.Contains(t, body, "KEEP IT")
+	require.Contains(t, drew, "Shall I keep 14:30 for the dentist?")
+	require.Contains(t, drew, `"moment"`)
+	require.Contains(t, drew, "KEEP IT")
 	require.Empty(t, f.moments, "a proposal created something")
 }
 
@@ -141,9 +141,8 @@ func TestWhatChangedIsShownInTheConversation(t *testing.T) {
 	c := &fakeCoach{reply: "Done.", did: []string{"put the bins out is done"}}
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/buddy/say", strings.NewReader("said=I+did+the+bins"))
+	drew := asked(t, m, f, "said=I+did+the+bins")
 
-	body := m.call(t, "GET", "/buddy", nil).Body.String()
-	require.Contains(t, body, "Done.")
-	require.Contains(t, body, "put the bins out is done")
+	require.Contains(t, drew, "Done.")
+	require.Contains(t, drew, "put the bins out is done")
 }

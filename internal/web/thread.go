@@ -37,6 +37,9 @@ const threadLimit = 40
 // holding a chore id would show today's chore inside yesterday's sentence,
 // which is what "history is never rewritten" forbids.
 type drawn struct {
+	// Cost is what the coach has spent, on the reply that spent it. Only ever
+	// there — see coachReplyCosting.
+	Cost  string     `json:"cost,omitempty"`
 	Place string     `json:"place,omitempty"`
 	Cards []cardView `json:"cards,omitempty"`
 	Chips []turnChip `json:"chips,omitempty"`
@@ -60,6 +63,8 @@ type turnView struct {
 	ID    int64
 	Buddy bool
 	Words string
+	// Cost is what this reply cost, on the reply that cost it.
+	Cost string
 	// Place is the <h2> when this turn opens one, and empty otherwise. The
 	// thread has no <h1> — home's exemption, because nobody arrives at the
 	// place they started wondering where they are — so these are what heading
@@ -199,6 +204,25 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// then handing you a job in the same breath is the interruption this
 		// product exists to reduce — and the answer is what shapes the offer
 		// anyway.
+		// Where you were in a breakdown, if you were in one.
+		//
+		// The sheet drew this on every open, and coming back an hour later to
+		// find the step you were on is the entire reason the sequence is
+		// stored rather than held in a reply. The sheet is gone, so the
+		// conversation carries it — under the same rule as the offer, or it
+		// would append a copy of itself on every load and steal the live edge
+		// from whatever Buddy last said.
+		if !walkingBack && !unreadable && !endsOpen(turns) {
+			if st := stepFor(s, opts, r); st != nil {
+				t := coachReply("Where you were.", false, false, nil, st)
+				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
+					turns = append(turns, saved)
+				} else {
+					slog.Error("drawing where you were", "error", err)
+				}
+			}
+		}
+
 		if !walkingBack && !asked && !unreadable && !endsOpen(turns) {
 			if t, has := offerTurn(s, opts, r); has {
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
@@ -217,6 +241,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Held:      r.URL.Query().Get("held") != "",
 			Here:      "thread",
 			Scrolling: true,
+			Also:      alwaysThere(),
 			Turns:     turnViews(turns),
 			Rail:      railFor(ctx, s, personID, ""),
 			MoreAbove: more,
@@ -281,6 +306,7 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
 				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
+				v.Cost = sh.Cost
 				v.Pick, v.Cal, v.Say, v.Cut = sh.Pick, sh.Cal, sh.Say, sh.Cut
 				if sh.Faces {
 					v.Faces = theFaces()
@@ -1402,7 +1428,17 @@ func saidAboutANote(act, text string, id int64, was string) []squirrel.Turn {
 // rather than be kept. A dock that sometimes captured and sometimes edited
 // would be a dock you could not trust with a thought.
 type sayView struct {
-	Action string            `json:"action"`
+	Action string `json:"action"`
+	// Field is what the box is called when it is posted. Each route was
+	// written before this shape existed and they do not agree: rewording takes
+	// `text`, Buddy takes `said`, and search has always taken `q`. Renaming
+	// them to match would break the one URL in this product a person might
+	// have typed, for tidiness.
+	Field string `json:"field"`
+	// Label is what a screen reader calls the box. The question above it is a
+	// paragraph, not a label, so without this every box in the product is
+	// announced as the one that was written first.
+	Label  string            `json:"label,omitempty"`
 	Fields map[string]string `json:"fields,omitempty"`
 	Was    string            `json:"was,omitempty"`
 	Do     string            `json:"do"`
@@ -1411,7 +1447,8 @@ type sayView struct {
 // askForWords is the reword question, with what it says now already in the box.
 func askForWords(action string, fields map[string]string, was, does string) squirrel.Turn {
 	body, err := json.Marshal(drawn{Say: &sayView{
-		Action: action, Fields: fields, Was: was, Do: does,
+		Action: action, Field: "text", Label: "How it should read",
+		Fields: fields, Was: was, Do: does,
 	}})
 	if err != nil {
 		slog.Error("drawing the question", "error", err)

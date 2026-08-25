@@ -43,7 +43,6 @@ func page(files ...string) *template.Template {
 
 var pages = map[string]*template.Template{
 	"thread": page("templates/layout.html", "templates/turn.html", "templates/stopping.html", "templates/thread.html"),
-	"coach":  page("templates/layout.html", "templates/step.html", "templates/coach.html"),
 	"moods":  page("templates/layout.html", "templates/moods.html"),
 	"enough": page("templates/layout.html", "templates/enough.html"),
 }
@@ -178,8 +177,9 @@ type view struct {
 	// Coach is the sheet's contents, and only the coach page fills it. Every
 	// other page carries the acorn and nothing more — the sheet's markup
 	// arrives when it is opened, because a conversation nobody has started is
-	// not worth putting in every response.
-	Coach *coachPanel
+	// Also is the pair of chips at the foot of the conversation: asking Buddy
+	// and looking something up. See thread.html.
+	Also []turnChip
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -351,46 +351,10 @@ type unstuckView struct {
 	Step *stepView
 }
 
-// coachPanel is the sheet.
-//
-// One conversation, one offer, four chips and a box. There is deliberately
-// nowhere here to put a second thing being worked on, and nowhere to put a
-// list: the struct is the same argument unstuckView makes, at the scale of a
-// whole surface.
-type coachPanel struct {
-	// Offer is what you would be handed right now, painted on open. Nil is an
-	// ordinary state and renders nothing — having nothing to be handed is not
-	// a failure, and a sentence in its place would be the product deciding you
-	// ought to be busy.
-	Offer *offerView
-	// Said is the conversation so far, oldest first.
-	Said []Exchange
-	// Unstuck is the ladder's control, when a chip was the last thing pressed.
-	Unstuck *unstuckView
-	// Step is the sequence's next one, when there is one in progress. Shown
-	// whether or not a chip was just pressed: coming back to the sheet an hour
-	// later and finding the step you were on is the whole point of storing it.
-	Step *stepView
-	// AskWhich puts the question back: which of the four is it. True when
-	// there is no coach, and when there was one that could not say anything
-	// usable.
-	AskWhich bool
-	Blockers []chipView
-	// From is the page the acorn was pressed on, so closing returns there.
-	From string
-	// Heard says the last "that landed badly" was recorded, on this render
-	// only. It says nothing else — no count and no list, because how often a
-	// thing lands badly is a fact about the person.
-	Heard bool
-	// Spent and Ceiling are what the coach has cost this month and what it may
-	// cost, as money. Empty when there is no coach or the sum cannot be read —
-	// a figure that cannot be trusted is a figure not drawn.
-	Spent   string
-	Ceiling string
-	// Propose is a thing the coach wants permission for, on this render only.
-	// Nothing stores it, so it cannot be applied by anything but the press.
-	Propose *Proposal
-}
+// coachPanel was the sheet. It went with the page on 25 August 2026: Buddy is
+// turns in the conversation now, and the parts of it that do something —
+// the four blockers, the steps, the four proposals, "that went badly" and the
+// spend — are drawn by askbuddy.go from the same values.
 
 // chipView is one blocker as a press. Why is what the form sends; Word is what
 // it says, and they differ because "not today" is an answer and `not today` is

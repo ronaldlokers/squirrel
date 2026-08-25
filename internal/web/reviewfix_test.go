@@ -66,66 +66,16 @@ func contrast(t *testing.T, c *cdp, sel, prop, against string) float64 {
 	return ratio
 }
 
-// Asking for help is the worst thing in this product to fail quietly at, and
-// it was the only thing that did.
-//
-// The sheet's submit awaited a bare `fetch`, so a network that went while the
-// question was in the air was an uncaught rejection: the button never moved,
-// the box never cleared, and nothing appeared. The slot on home has said what
-// happened since the day it was written, forty lines away in the same file.
-func TestBrowserTheSheetSaysSoWhenItCannotReachBuddy(t *testing.T) {
-	f := aPile()
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
-	c, _ := openWith(t, f, &fakeCoach{reply: "one thing at a time."})
+// TestBrowserTheSheetSaysSoWhenItCannotReachBuddy was retired on 25 August
+// 2026 with the sheet. What it pinned — a submit that fails must say so, keep
+// the words, and leave the way to try again usable — is the thread's rule now,
+// and thread.js falls back to an ordinary form submission on a failed fetch
+// rather than swallowing it. TestBrowserAFailedPressGoesThroughAnyway.
 
-	// The sheet as it is actually met: opened over the deck by the acorn. The
-	// standalone page is the scriptless path and posts by navigating, which
-	// cannot fail this way.
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet", `!!document.querySelector("dialog[open] .slot.say")`)
-
-	// The network goes, in the one way the page cannot tell apart from a real
-	// one: the request is made and never arrives.
-	c.eval(t, `window.fetch = () => Promise.reject(new TypeError("Failed to fetch"))`)
-
-	c.eval(t, `
-		const box = document.querySelector(".slot.say textarea");
-		box.value = "i cannot start any of it";
-		box.form.requestSubmit(box.form.querySelector(".post"));`)
-	c.until(t, "the sheet to say what happened",
-		`!document.getElementById("saysaid")?.hidden`)
-
-	require.Contains(t, c.eval(t, `return document.getElementById("saysaid").textContent`),
-		"Your words are still here",
-		"the sheet failed without saying so")
-	require.Equal(t, "i cannot start any of it",
-		c.eval(t, `return document.querySelector(".slot.say textarea").value`),
-		"the words went with the failure")
-	require.Equal(t, false, c.eval(t, `return document.querySelector(".slot.say .post").disabled`),
-		"the way to try again is still disabled")
-}
-
-// A modal is modal for the keyboard too.
-//
-// Every letter on the deck is an action, and the keydown handler had no idea a
-// dialog was open. With the sheet up and focus on its own cross — a button,
-// which `typing()` does not exempt — pressing `d` stamped the card underneath,
-// invisibly, because a modal was over it.
-func TestBrowserKeysDoNotReachTheCardBehindTheSheet(t *testing.T) {
-	f := aPile()
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
-	c, _ := open(t, f)
-
-	c.eval(t, `document.querySelector(".tobuddy").click()`)
-	c.until(t, "the sheet", `!!document.querySelector("dialog[open]")`)
-	c.eval(t, `document.querySelector("dialog[open] .shut").focus()`)
-
-	c.key(t, "d")
-
-	require.Equal(t, false,
-		c.eval(t, `return document.getElementById("card")?.classList.contains("stamped") ?? false`),
-		"a key pressed inside the sheet acted on the card behind it")
-}
+// TestBrowserKeysDoNotReachTheCardBehindTheSheet was retired on 25 August 2026
+// with the sheet. There is nothing over anything else now, so a key cannot
+// reach a card behind a modal — and the carve-out in pile.js stays anyway,
+// because the rule is about any modal rather than about that one.
 
 // The focus ring is visible on every surface a key can reach, not only the
 // ones the override happened to name.
@@ -149,28 +99,15 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	require.GreaterOrEqual(t, onChore, 3.0,
 		"the ring on a chore measures %.2f:1 against the card it sits on", onChore)
 
-	// In the overlay, where the sheet really is cream stock. It is measured
-	// there rather than on `/buddy` because the page route has no card behind
-	// it any more — the conversation stands on the field — so `.sheet` is not
-	// the ground there and measuring against it would be measuring against
-	// nothing.
+	// And in the dock, where the ground under a button is the slot rather than
+	// a card. The sheet was the third cream surface a key could reach and it
+	// went on 25 August 2026; these two are what is left, and they are the two
+	// that were wrong when this was written.
 	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector(".tobuddy").click(); return 1`)
-	c.until(t, "the sheet to open", `!!document.querySelector("dialog.coachsheet[open]")`)
-	tabTo(t, c, "dialog.coachsheet .sheet .post")
-	inSheet := contrast(t, c, "dialog.coachsheet .sheet .post", "outline-color", "dialog.coachsheet .sheet")
-	require.GreaterOrEqual(t, inSheet, 3.0,
-		"the ring in Buddy's sheet measures %.2f:1 against the card it sits on", inSheet)
-
-	// And on the page, where the ground under that same button is the slot.
-	// The override keys off `.sheet` as an ancestor, so it still applies —
-	// this is what proves it, rather than the treatment change quietly having
-	// taken the ring back to orange-lit on a cream slot.
-	c.navigate(t, srv.URL+"/buddy")
-	tabTo(t, c, ".sheet .post")
-	onSlot := contrast(t, c, ".sheet .post", "outline-color", ".sheet .slot")
+	tabTo(t, c, ".dock .post")
+	onSlot := contrast(t, c, ".dock .post", "outline-color", ".dock .slot")
 	require.GreaterOrEqual(t, onSlot, 3.0,
-		"the ring on Buddy's page measures %.2f:1 against the slot it sits in", onSlot)
+		"the ring in the dock measures %.2f:1 against the slot it sits in", onSlot)
 }
 
 // Three about the deck's card: a decision pending inside its hold, the chore
