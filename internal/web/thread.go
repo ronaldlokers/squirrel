@@ -64,10 +64,9 @@ type turnView struct {
 	Words string
 	// Cost is what this reply cost, on the reply that cost it.
 	Cost string
-	// Opens marks the turn that begins a run of Buddy's. It is where his face
-	// goes: consecutive turns are one utterance, and an acorn on every bubble
-	// is wallpaper by the third day — which matters more here than usual,
-	// because habituation is a documented risk for this user.
+	// Opens marks the turn that begins a run of Buddy's, which is where his
+	// face goes: consecutive turns are one utterance, and a face on every one
+	// is wallpaper by the third day.
 	Opens bool
 	// Place is the <h2> when this turn opens one, and empty otherwise. The
 	// thread has no <h1> — home's exemption, because nobody arrives at the
@@ -75,8 +74,6 @@ type turnView struct {
 	// navigation walks.
 	Place string
 	Cards []cardView
-	// Hits are search results, which are not cards. See searchTurn and
-	// DESIGN.md, Results.
 	Hits  []hitView
 	Chips []turnChip
 	Faces []faceView
@@ -129,8 +126,7 @@ type turnChip struct {
 	Action string            `json:"action,omitempty"`
 	Fields map[string]string `json:"fields,omitempty"`
 	// Count is a number beside the label, in the menu only. Zero is no number
-	// and not a nought — a door reading "0" is a scoreboard, which is the rule
-	// the four doors carried and the menu inherited with them.
+	// and not a nought: a place reading "0" is a scoreboard.
 	Count int `json:"-"`
 }
 
@@ -177,6 +173,18 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			turns, more = nil, false
 		}
 
+		// say appends one of Buddy's own turns. A turn that fails to reach the
+		// record leaves a hole in the conversation, which is recoverable;
+		// refusing the page over it would not be.
+		say := func(t squirrel.Turn, doing string) {
+			saved, err := s.AppendTurn(ctx, personID, t)
+			if err != nil {
+				slog.Error(doing, "error", err)
+				return
+			}
+			turns = append(turns, saved)
+		}
+
 		// Whether this is a first run is decided before anything is appended, because
 		// every turn below is about to make the record non-empty.
 		//
@@ -193,11 +201,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		if !walkingBack && !unreadable && !alreadyAsking(turns) {
 			if t, ask := checkinTurn(ctx, s, personID, r.URL.Query().Get("ask") != ""); ask {
 				asked = true
-				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
-					turns = append(turns, saved)
-				} else {
-					slog.Error("asking how you are", "error", err)
-				}
+				say(t, "asking how you are")
 			}
 		}
 
@@ -206,12 +210,8 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// reduce, and the answer shapes the offer anyway.
 		if !walkingBack && !unreadable && !endsOpen(turns) {
 			if st := stepFor(s, opts, r); st != nil {
-				t := coachReply("Where you were.", false, false, nil, st)
-				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
-					turns = append(turns, saved)
-				} else {
-					slog.Error("drawing where you were", "error", err)
-				}
+				say(coachReply("Where you were.", false, false, nil, st),
+					"drawing where you were")
 			}
 		}
 
@@ -222,11 +222,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 				// Squirrel has something to say about your world, so you have
 				// one.
 				first = false
-				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
-					turns = append(turns, saved)
-				} else {
-					slog.Error("opening", "error", err)
-				}
+				say(t, "opening")
 			}
 		}
 
@@ -236,11 +232,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 				// worked example above it would be explaining a product that
 				// is mid-sentence about your own things.
 				first = false
-				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
-					turns = append(turns, saved)
-				} else {
-					slog.Error("offering it", "error", err)
-				}
+				say(t, "offering it")
 			}
 		}
 
