@@ -216,6 +216,8 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 		{"the one thing", "POST", "/now/act", url.Values{"act": {"later"}}},
 		{"a step", "POST", "/steps", url.Values{"act": {"done"}}},
 		{"starting fresh", "POST", "/place/fresh", nil},
+		{"their parked note, kept waiting", "POST", "/held/act",
+			url.Values{"id": {theirNote}, "act": {"still"}}},
 		{"a timer", "POST", "/timer", url.Values{"minutes": {"5"}}},
 	} {
 		var body string

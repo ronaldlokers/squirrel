@@ -194,6 +194,14 @@ type Store interface {
 	HoldItem(ctx context.Context, personID, itemID int64, state squirrel.ItemState, because string, at time.Time) (bool, error)
 	HeldItems(ctx context.Context, personID int64, limit int) ([]squirrel.HeldItem, bool, error)
 	Unhold(ctx context.Context, personID, itemID int64, at time.Time) (bool, error)
+	// Something you set aside that nobody has mentioned since. The three
+	// states shipped as a one-way door: you park something precisely so you do
+	// not have to hold it, and that only works if something else does.
+	//
+	// One, never a list — a screen that handed back everything you had ever
+	// parked would be a second pile wearing a different word.
+	GoneQuiet(ctx context.Context, personID int64, at time.Time) (squirrel.HeldItem, bool, error)
+	StillHolding(ctx context.Context, personID, itemID int64, at time.Time) (bool, error)
 
 	// The one thing. PickNow chooses it, and the other three are the only
 	// answers it takes. There is deliberately no function here that returns

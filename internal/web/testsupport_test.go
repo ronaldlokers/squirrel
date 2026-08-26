@@ -29,6 +29,12 @@ type choreRhythm struct {
 }
 
 type fakeStore struct {
+	// Something set aside that has gone quiet, and what the screen did about
+	// it.
+	quiet    squirrel.HeldItem
+	hasQuiet bool
+	quietErr error
+	stilled  []int64
 	// Every rhythm the screen set, so a test can assert on the write rather
 	// than on a rendering of it — including the ones it refused, which are
 	// the interesting half.
@@ -1203,4 +1209,20 @@ func (f *fakeStore) SetChoreRhythm(_ context.Context, _, choreID int64, day time
 		}
 	}
 	return nil
+}
+
+// What has gone quiet, faked. The thresholds and the someday exemption are
+// proved against Postgres in internal/squirrel; what the screen has to be
+// tested for is whether it mentions it, how it says it, and what the three
+// answers do.
+func (f *fakeStore) GoneQuiet(_ context.Context, _ int64, _ time.Time) (squirrel.HeldItem, bool, error) {
+	if f.quietErr != nil {
+		return squirrel.HeldItem{}, false, f.quietErr
+	}
+	return f.quiet, f.hasQuiet, nil
+}
+
+func (f *fakeStore) StillHolding(_ context.Context, _, itemID int64, _ time.Time) (bool, error) {
+	f.stilled = append(f.stilled, itemID)
+	return true, nil
 }
