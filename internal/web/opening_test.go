@@ -188,7 +188,7 @@ func TestTheOpeningLineUsesThePersonsDay(t *testing.T) {
 	appointment := time.Date(2026, 8, 26, 0, 30, 0, 0, ams)
 
 	// As the store hands it back before conversion: the right instant, in UTC.
-	said, _ := openingLine(ams, squirrel.Waiting{Agenda: 1},
+	said := openingLine(ams, squirrel.Waiting{Agenda: 1},
 		[]squirrel.Moment{{Label: "dentist", Starts: appointment.UTC()}}, tonight)
 
 	require.Contains(t, said, "dentist tomorrow")

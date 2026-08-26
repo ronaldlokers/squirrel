@@ -16,10 +16,10 @@ import (
 // something on today or tomorrow, notes waiting, a chore due. Nothing worth
 // saying means nothing said.
 
-// openingLine is what Buddy would open with, and a fingerprint of the facts it
-// was built from. The fingerprint is what stops the record filling with the same
-// sentence: it speaks when what it would say has changed.
-func openingLine(loc *time.Location, w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (words, mark string) {
+// openingLine is what Buddy would open with, or empty when nothing is worth
+// saying. openingTurn fingerprints it, which is what stops the record filling
+// with the same sentence: it speaks again when what it would say has changed.
+func openingLine(loc *time.Location, w squirrel.Waiting, soon []squirrel.Moment, on time.Time) string {
 	// Ordered by how little of your choosing it is. A fixed point will happen
 	// whether or not you look; a chore came back on its own; the pile is
 	// yours, and is last because a pile of undecided things is not urgent by
@@ -39,15 +39,13 @@ func openingLine(loc *time.Location, w squirrel.Waiting, soon []squirrel.Moment,
 		if loc != nil {
 			at = at.In(loc)
 		}
-		words = m.Label + " " + when + ", at " + at.Format("15:04") + "."
+		return m.Label + " " + when + ", at " + at.Format("15:04") + "."
 	case w.Chores > 0:
-		words = "Something has come back round."
+		return "Something has come back round."
 	case w.Pile > 0:
-		words = "There are things in the pile you have not decided about."
-	default:
-		return "", ""
+		return "There are things in the pile you have not decided about."
 	}
-	return words, mark
+	return ""
 }
 
 // sameDayIn is whether two instants fall on the same day where the person is.
@@ -124,7 +122,7 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 	// an appointment in nine days is not a thing that needs attention now.
 	soon = withinADay(soon, now())
 
-	words, _ := openingLine(opts.Location, waiting, soon, now())
+	words := openingLine(opts.Location, waiting, soon, now())
 	if words == "" {
 		return squirrel.Turn{}, false
 	}
