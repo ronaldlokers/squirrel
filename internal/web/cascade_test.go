@@ -75,7 +75,7 @@ func TestBrowserTheOffersThirdControlIsTheSameShapeAsTheOtherTwo(t *testing.T) {
 		Mood: squirrel.MoodGood, SaidAt: time.Now().Add(-time.Minute),
 	}
 
-	srv := cameraScreen(t, f, &fakeSpool{}, &fakePhotos{}, nil)
+	srv := cameraScreen(t, f, &fakeSpool{}, &fakePhotos{})
 	c := browserAt(t, srv, "/")
 
 	for _, prop := range []string{"border-top-width", "border-top-color"} {

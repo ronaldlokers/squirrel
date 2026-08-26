@@ -22,7 +22,7 @@ import (
 
 // cameraScreen is the screen with somewhere to put a photograph, which is what
 // makes the camera appear at all.
-func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *fakeCoach) *httptest.Server {
+func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *httptest.Server {
 	t.Helper()
 
 	opts := Options{
@@ -30,9 +30,6 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		Spool:    sp, Photos: ph,
-	}
-	if c != nil {
-		opts = c.options(opts)
 	}
 
 	m := &serveMux{mux: http.NewServeMux()}
@@ -52,7 +49,7 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *
 // openCamera points a browser at home, where the slot and its camera are.
 func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Server) {
 	t.Helper()
-	srv := cameraScreen(t, aPile(), sp, ph, nil)
+	srv := cameraScreen(t, aPile(), sp, ph)
 	c := browserAt(t, srv, "/")
 	return c, srv
 }
@@ -305,41 +302,6 @@ func TestBrowserAnExistingPhotographCanBeChosen(t *testing.T) {
 	require.Equal(t, "image/*", c.eval(t,
 		`return document.querySelector(".slot input[name=photo]").getAttribute("accept")`))
 }
-
-// Closing the sheet with a coach actually behind it. The two tests that
-// covered this ran with no coach configured, so the sheet they closed was the
-// short one — no spend in the lid, no conversation in it.
-
-// aLongConversation is what the sheet looks like after a few minutes of use,
-// which is the only state the close button was ever reported broken in.
-func aLongConversation() *fakeCoach {
-	c := &fakeCoach{spent: "€0.61", ceiling: "€10"}
-	for i := 0; i < 14; i++ {
-		c.talk = append(c.talk, Exchange{
-			Said:    "I still cannot make a start on the tax thing and I do not know why",
-			Replied: "Open the envelope and read the first line. That is the whole of it.",
-		})
-	}
-	return c
-}
-
-// Closing on a phone, after a conversation long enough to scroll.
-//
-// The sheet is a bottom sheet under 620px and it is what scrolls, and the lid
-// holding the close button is its first child — so reading Buddy's answer
-// carries the way out off the top of the screen. Escape needs a keyboard and
-// the backdrop is a strip above an 88vh sheet, which leaves nothing to press.
-
-// The close button has to be somewhere a thumb can reach it, which is a
-// different question from whether the handler fires. A control pushed out of
-// its own lid by the spend beside it is a control that cannot be pressed.
-
-// The close button, in a short window.
-//
-// Read what this does not prove. An emulated viewport has no browser chrome,
-// so vh and dvh resolve to the same number here and this test passes against
-// the code that shipped the bug. It is a guard on the sticky lid, not evidence
-// about a phone; the unit is guarded separately, in the stylesheet, below.
 
 // The sheet is measured in dvh, and this is the only check on it that means
 // anything.
