@@ -108,7 +108,16 @@ var sayings = map[Saying][]string{
 		"that will do",
 		"that is enough",
 		"good enough",
-		"that was a session",
+		// "that was a session" was here from #129 until 26 August 2026. The
+		// stopping screen's own test has banned the word since #73 — it is on
+		// a list with "cleared", "progress" and "streak" — and the phrase was
+		// added later without anyone noticing, because a saying is chosen from
+		// the day and this one only came up now and then. The screen failed
+		// its own test roughly one day in six.
+		//
+		// Removed rather than un-banned: naming what just happened as "a
+		// session" makes it a unit of work, which is the thing this screen
+		// exists not to do.
 		"you did some",
 		"leave the rest",
 	},
