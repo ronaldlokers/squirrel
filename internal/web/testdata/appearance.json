@@ -68,12 +68,6 @@
       "text-transform": "none",
       "width": "84px"
     },
-    ".cut": {
-      "missing": "yes"
-    },
-    ".cut .piece": {
-      "missing": "yes"
-    },
     ".dock": {
       "background-color": "rgba(0, 0, 0, 0)",
       "border-radius": "0px",
@@ -91,11 +85,39 @@
       "text-transform": "none",
       "width": "1270px"
     },
-    ".frombuddy .bub": {
-      "missing": "yes"
+    ".frombuddy .said": {
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border-radius": "0px",
+      "border-width": "0px",
+      "color": "rgb(255, 251, 243)",
+      "display": "block",
+      "font-size": "16px",
+      "font-variation-settings": "\"CASL\" 1, \"MONO\" 0, \"wght\" 500",
+      "letter-spacing": "normal",
+      "margin": "0px",
+      "min-height": "auto",
+      "outline-color": "rgb(255, 251, 243)",
+      "padding": "0px",
+      "text-decoration-line": "none",
+      "text-transform": "none",
+      "width": "173.922px"
     },
     ".fromyou .bub": {
-      "missing": "yes"
+      "background-color": "rgb(254, 214, 167)",
+      "border-radius": "14px",
+      "border-width": "3px",
+      "color": "rgb(28, 17, 11)",
+      "display": "block",
+      "font-size": "16px",
+      "font-variation-settings": "\"CASL\" 1, \"MONO\" 0, \"wght\" 500",
+      "letter-spacing": "normal",
+      "margin": "0px",
+      "min-height": "auto",
+      "outline-color": "rgb(28, 17, 11)",
+      "padding": "11px 15px",
+      "text-decoration-line": "none",
+      "text-transform": "none",
+      "width": "120.484px"
     },
     ".lid": {
       "background-color": "rgb(59, 37, 96)",
@@ -113,33 +135,6 @@
       "text-decoration-line": "none",
       "text-transform": "none",
       "width": "1270px"
-    },
-    ".lidbtn": {
-      "missing": "yes"
-    },
-    ".pick": {
-      "missing": "yes"
-    },
-    ".pick .lead": {
-      "missing": "yes"
-    },
-    ".pick .make": {
-      "missing": "yes"
-    },
-    ".pickrow": {
-      "missing": "yes"
-    },
-    ".rail": {
-      "missing": "yes"
-    },
-    ".railwrap": {
-      "missing": "yes"
-    },
-    ".rdoor": {
-      "missing": "yes"
-    },
-    ".rname": {
-      "missing": "yes"
     },
     ".slot": {
       "background-color": "rgb(255, 251, 243)",
@@ -224,7 +219,7 @@
       "padding": "0px",
       "text-decoration-line": "none",
       "text-transform": "none",
-      "width": "621.906px"
+      "width": "120.484px"
     },
     ".turncard": {
       "background-color": "rgb(253, 236, 212)",
@@ -276,12 +271,6 @@
       "text-decoration-line": "none",
       "text-transform": "none",
       "width": "533.906px"
-    },
-    ".wordbox": {
-      "missing": "yes"
-    },
-    ".wordbox textarea": {
-      "missing": "yes"
     },
     ".wordmark": {
       "background-color": "rgba(0, 0, 0, 0)",

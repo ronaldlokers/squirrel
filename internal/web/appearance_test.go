@@ -45,14 +45,17 @@ var appearanceProps = []string{
 // of something, the first is enough: what this catches is a rule moving, and a
 // rule moves all of them at once.
 var appearanceScreens = map[string][]string{
-	// The thread. The doors are a rail now and the offer is an ordinary card
-	// in it, so what is recorded here is the conversation's own shapes.
+	// The thread, which is the whole app. Only the newest Buddy turn carries
+	// controls, so one load can record one interactive shape and no more: the
+	// card is the one worth having, and the picker, the word box and the split
+	// are covered by the contrast walk, which renders them one at a time.
+	//
+	// Buddy's words are `.said` and yours are `.bub`, so there is no
+	// `.frombuddy .bub` to record.
 	"/": {
-		".lid", ".brand img", ".wordmark", ".lidbtn",
-		".railwrap", ".rail", ".rdoor", ".rname",
-		".thread", ".turn", ".frombuddy .bub", ".fromyou .bub",
+		".lid", ".brand img", ".wordmark",
+		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",
 		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
-		".pick", ".pick .lead", ".pickrow", ".pick .make", ".wordbox", ".wordbox textarea", ".cut", ".cut .piece",
 		".dock", ".slot", ".slot textarea", ".slot .post",
 	},
 	// The check-in as a question. It is a turn like any other, and the faces
@@ -81,7 +84,10 @@ const appearanceFile = "testdata/appearance.json"
 // and read the diff before committing it. A snapshot that rewrites itself on
 // failure is a snapshot that records whatever happened, which is the opposite
 // of a fence.
-func TestTheScreensLookLikeThemselves(t *testing.T) {
+// appearanceFixture is a store with something in every shape the screens can
+// draw. A selector whose element the fixture never renders records only that it
+// is missing, which pins nothing.
+func appearanceFixture() *fakeStore {
 	f := aPile()
 	f.chores = []squirrel.Chore{{
 		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
@@ -100,6 +106,17 @@ func TestTheScreensLookLikeThemselves(t *testing.T) {
 	f.offer = &squirrel.Offer{
 		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
 	}
+	// Plain scrollback, so both speakers' words have a shape to record. The
+	// offer stays the live edge and draws the card.
+	f.turns = []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerYou, Words: "the chores"},
+		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back round."},
+	}
+	return f
+}
+
+func TestTheScreensLookLikeThemselves(t *testing.T) {
+	f := appearanceFixture()
 
 	// The clock is frozen, and that is load-bearing rather than tidy: four of
 	// the sentences on these screens are chosen from the date, so a snapshot

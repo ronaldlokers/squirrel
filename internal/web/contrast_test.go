@@ -190,13 +190,11 @@ func everyScreen() *fakeStore {
 // size change moves what counts as large text.
 func TestEveryWordCanBeRead(t *testing.T) {
 	screens := []string{
-		// "/" is several screens now: the rail, the transcript with a chore
-		// card, a task card and the interval picker on it, and the dock.
-		// "/" is the whole app: the rail, the transcript with a chore card, a
+		// "/" is the whole app: the menu, the transcript with a chore card, a
 		// task card, a note being triaged and the interval picker on it, and
 		// the dock.
 		"/",
-		"/moods", "/enough", "/buddy",
+		"/moods", "/enough",
 		"/at/4",
 	}
 
