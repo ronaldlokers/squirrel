@@ -345,6 +345,79 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.41.0 — 26 August 2026
+
+**The second draft of the conversation.** Everything moved into the thread over
+the previous week, and then the thread was never redrawn for what it had become.
+Three rounds of mockups, argued and recorded in
+`docs/superpowers/specs/2026-08-26-the-second-draft-design.md`, and all eight
+sections of it are here.
+
+**Buddy loses his bubble.** His words are set plainly and yours stay in a bubble,
+which is the whole grammar of the screen — and it was invisible while both wore
+the same shape. Two voices drawn the same way is a transcript; one bubbled and
+one not is a conversation.
+
+**The frame comes off.** The rail of four doors, the chip row under every turn
+and the stop link below that took about a fifth of a phone before a word was
+said. All three went together. Every destination is in the menu, permanently,
+with its counts — navigation and copy are two different jobs, and Buddy
+mentioning a place in a sentence only covers the second. Doing only that makes
+the product unnavigable ten turns in.
+
+**Six kinds of thing, six bodies.** A note, a task, a chore, a fixed point, a
+thing set aside and a thing kept are six different kinds of thing that were one
+card with different words in it.
+
+**Four verbs end a card, and the questions are behind a press.** Triage is two
+tiers now: the four verbs that finish a thing, and `something else?` for
+everything that does not. A card that offers eight things is a card that asks
+you to choose how to choose.
+
+**What's coming, first.** The most common reason to open Squirrel was three
+interactions deep behind a door press while the conversation opened with
+history. Buddy opens with it, as a turn rather than a standing strip — a fixture
+that rewrites itself is a record that rewrites itself.
+
+**A search result opens into a card.** A hit is a quiet full-bleed row with no
+verbs, because a result is a thing you went looking for rather than a thing you
+are deciding about, and dressing one as a card asks a question nobody posed.
+Tapping it draws the ordinary card with the ordinary verbs, built from the
+note's real state. The quiet row and the deciding card are two states of one
+note and the tap is the step between them.
+
+**The readings are a calendar.** Six weeks by seven days, replacing the list of
+the days you had answered. *The gaps are the honest part*: the days you said
+nothing are most of what is there, and a list can only ever show the days you
+answered. Days that have not happened are drawn as nothing rather than as gaps —
+an empty Friday next week outlined like a missed day says you are already
+behind. A day answered twice shows what the day came to. Nothing said at all
+draws no grid, because forty-two empty outlines is a picture of forty-two days
+you did not check in, which is the one judgement this page could still make by
+accident. Five mood colours of their own, deliberately not the state colours: a
+fill in this product means an outcome, and lending green to `good` would make
+one colour mean two things the first time a note and a reading shared a screen.
+
+**A first run plays the loop through once.** An empty conversation with a box in
+it saying *put it down here* asks a stranger to trust the product with the
+contents of their head before showing them what it will do with it. Buddy plays
+the loop dimmed instead — a capture, an answer, a chore offered — then rules a
+line and hands over. Three turns, because three is the whole loop. It is never
+stored: the first thing this product does must not be to write a false memory
+into a record whose whole value is that you made all of it. It is inert by
+construction — the verbs are spans and there is no route they could reach — and
+it sits outside the thread, so the live edge can never be a turn nobody said.
+
+**Two defects the suites caught rather than a reading did.** The browser tests'
+live-edge selector matched the worked example's last turn, which is what moved
+the example out of `#thread`. And the mood cells carried offscreen labels
+sitting on a coloured ground at 2.67:1; each cell is `role="img"` with an
+`aria-label` now and has no text node in it at all.
+
+Eleven mutations this round, and one that *failed* to kill — a redundant rail
+check on the first run — so the check was removed rather than left as an
+unpinned condition. No migrations.
+
 ### v0.40.0 — 26 August 2026
 
 **Four things it did not do.** Chosen from a design study — three rounds of
