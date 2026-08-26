@@ -345,6 +345,48 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.42.0 — 26 August 2026
+
+**Buddy can open a place.** Asked *can you show me the tasks?*, he answered that
+he did not have the task list available. He was right, and that was the bug.
+
+Three rules met to make the question unanswerable. `Guard` refuses any reply
+containing a list — bullets, numbers, headings. The brief is two sentences at
+most. And he had no tool that opened anything. So he could read the tasks,
+`open_work` having returned them, was forbidden to recite them, and had no way
+to show them: the only honest thing left to say was no. The menu, in the same
+lid, did it in one press.
+
+**When the places became messages in v0.41.0, the menu learnt to open them and
+Buddy did not.** This is that press, given to him. One tool, `open`, and the
+place arrives as cards in the next turn — the same turn `placeTurn` has always
+produced for a door.
+
+*He opens it rather than offering a chip.* Opening a place changes nothing, so
+it asks no permission and the worst a wrong one costs is a scroll; a chip would
+put a press on the most ordinary request in the product. *It arrives as his
+turn, not yours* — pressing the menu is an utterance and belongs in the record
+as one, where Buddy opening a place because you asked is his answer, and putting
+"the tasks" in your mouth would be the record inventing a sentence you never
+typed. `placeSaid` is split out of `placeTurn` for exactly that. *The screen
+only*: `Turn.CanOpen` is set by the surface, because what a surface can draw is
+a fact about the surface, and a place in chat would be the list the guard exists
+to refuse.
+
+**One mutation survived the first pass, and it was the seam.** `Open` is a field
+in an inline literal in `coachWeb`; dropping it left every test green while
+Buddy said "here they are" above nothing at all — a reply claiming to have done
+something it had not, which this codebase calls the worst failure available. It
+is the fourth field to earn a wiring check for the reason `Push` cost three
+releases to learn, and `TestTheScreenIsGivenThePlaceToOpen` is that check. Eight
+mutations in total.
+
+`nowFor` is nil-safe now, which its own comment already asked for: every read in
+it fails soft, so a missing store should be the softest failure of all rather
+than a panic.
+
+No migrations.
+
 ### v0.41.0 — 26 August 2026
 
 **The second draft of the conversation.** Everything moved into the thread over
