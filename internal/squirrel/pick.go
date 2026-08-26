@@ -8,15 +8,9 @@ import (
 
 // The one thing.
 //
-// The rules below are deterministic and fixed in order, and that is the design
-// rather than an implementation detail: when the picker is wrong you can read
-// the rules and see why, which nothing that scores or learns or generates
-// allows. It also works when everything else is down, and it can be explained
-// in one clause — a requirement, because an offer nobody can account for is a
-// demand.
-//
-// It never changes what is true. A chore is exactly as due on a low day, and
-// nothing here hides anything from someone who goes looking.
+// The rules are deterministic and fixed in order, so when the picker is wrong you
+// can read them and see why. It never changes what is true: a chore is exactly as
+// due on a low day.
 
 // OfferKind is which rule produced an offer. It is also the suppression key's
 // first half, and the word the screen and the chat both use for it.
@@ -62,17 +56,13 @@ type Offer struct {
 // recorded against.
 func (o Offer) Key() string { return suppressionKey(o.Kind, o.RefID) }
 
-// PickNow is the rules, in order, with the capacity gate in front of them.
+// PickNow is the rules in order, with the capacity gate in front.
 //
-// The gate first: a fresh wiped or frazzled reading drops rules 4 and 5 —
-// everything Squirrel would have raised on its own initiative — and keeps 1
-// through 3, which are the world's business and yours. A low day offers what
-// is fixed and what you were already doing, and nothing else.
+// A fresh wiped or frazzled reading drops rules 4 and 5 — everything Squirrel
+// would raise on its own initiative — and keeps 1 through 3, which are the
+// world's business and yours.
 //
-// `showAnyway` is how that stops being a wall. Someone who says they are wiped
-// and then wants to work must not find the product has decided for them, so
-// the screen carries a quiet "show me anyway" that calls this with the gate
-// lifted, once, without persisting anything.
+// showAnyway lifts the gate once, without persisting anything.
 func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, showAnyway bool) (Offer, bool, error) {
 	capacity := s.Capacity(ctx, personID, now)
 
@@ -116,17 +106,13 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 		return Offer{}, false, nil
 	}
 
-	// Rule 4 — a chore that is due, and inside the window where raising it is
-	// worth doing. Being due and being worth interrupting for are two
-	// questions, and Asking.Open is where they part company; the nudge already
-	// makes exactly this distinction and this must agree with it.
+	// Rule 4 — a chore that is due and inside the window where raising it is worth
+	// doing. Asking.Open is where due and worth-interrupting-for part company, and
+	// the nudge makes the same distinction.
 	//
-	// Not PickChore's weighted draw. That randomness is right for a message
-	// that arrives unasked — it is what stops the same overdue thing being
-	// named every morning — and wrong for a screen you opened on purpose,
-	// where a different answer on every reload reads as the product changing
-	// its mind. So: the most overdue of the ones that are worth raising, which
-	// DueChores already orders first.
+	// Not PickChore's weighted draw: randomness is right for a message that arrives
+	// unasked and wrong for a screen you opened, where a different answer per reload
+	// reads as the product changing its mind.
 	due, err := s.DueChores(ctx, personID, now)
 	if err != nil {
 		return Offer{}, false, err
@@ -147,13 +133,9 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 		}, true, nil
 	}
 
-	// Rule 5 — the oldest thing you decided to do.
-	//
-	// Oldest, where every list in this product is newest-first, and the
-	// difference is deliberate. A list is read, and the newest is the one you
-	// still remember writing; an offer is acted on, and the oldest open task is
-	// the one that has been quietly avoided. That is the one worth handing you
-	// with a way to start it.
+	// Rule 5 — the oldest thing you decided to do. Oldest, where every list here is
+	// newest-first: a list is read and the newest is what you remember writing; an
+	// offer is acted on, and the oldest open task is the one quietly avoided.
 	tasks, _, err := s.Tasks(ctx, personID, taskPickDepth)
 	if err != nil {
 		return Offer{}, false, err
@@ -177,37 +159,23 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 	return Offer{}, false, nil
 }
 
-// pickAgain is rule 3: what you were on before you got up.
+// pickAgain is rule 3: what you were on before you got up. Ahead of anything
+// Squirrel would raise and behind a running timer, and it survives the capacity
+// gate because it is your initiative from an hour ago.
 //
-// Ahead of anything Squirrel would raise and behind a running timer, which is
-// the order the person's own attention is already in. It survives the capacity
-// gate for the same reason the timer does — picking something back up is not
-// Squirrel's initiative, it is yours from an hour ago.
-//
-// The words never mention finishing. "You were on this" is a fact; "you did
-// not finish this" is a sentence about the person, and the difference is the
-// whole reason this is safe to show.
+// The words never mention finishing: "you were on this" is a fact.
 func (s *Store) pickAgain(ctx context.Context, personID int64, now time.Time) (Offer, bool, error) {
 	t, found, err := s.LastFocus(ctx, personID, now)
 	if err != nil || !found {
 		return Offer{}, false, err
 	}
-	// Turned down, like anything else here can be.
+	// Turned down, like anything else. This rule sits above the shared refusal set,
+	// so "not now" on a breadcrumb once wrote the refusal and handed the same thing
+	// straight back — reported as "the button does nothing".
 	//
-	// This rule used to be the one that could not be: it sits above the
-	// refusal set the rules below share, so "not now" on a breadcrumb wrote
-	// the refusal, redirected, and got handed the identical thing straight
-	// back. Reported live on 23 August 2026 as "the button does nothing",
-	// which is exactly what it was.
-	//
-	// Asked as a time rather than through that set, and the difference is the
-	// whole of the fix. A breadcrumb names a label rather than a row, so its
-	// key is `again:0` however many different things you were on today —
-	// suppressing on the key would have cost you the way back into everything
-	// you touched for the rest of the day, which is worse than the bug it
-	// fixes. A refusal recorded after this breadcrumb appeared was about this
-	// breadcrumb; the next thing you get up from ends later than it, and is
-	// offered.
+	// Asked as a time rather than through that set: a breadcrumb names a label, so
+	// its key is `again:0` however many things you were on today, and suppressing on
+	// the key would cost you everything you touched for the rest of the day.
 	refused, err := s.RefusedSince(ctx, personID, OfferAgain, t.Ended)
 	if err != nil {
 		return Offer{}, false, err
@@ -236,13 +204,9 @@ func agoWords(d time.Duration) string {
 	}
 }
 
-// taskPickDepth is how far back the picker will reach for a task.
-//
-// A cap rather than a scan, and the number matters less than that there is
-// one: it reads newest-first and walks backwards, so this is "the oldest of
-// your most recent thirty decisions" rather than "the oldest thing you ever
-// decided". Something decided four months ago and never done is not a thing to
-// hand someone this morning; it is a thing to find in the list and un-decide.
+// taskPickDepth is how far back the picker reaches for a task. It reads
+// newest-first and walks backwards, so this is "the oldest of your most recent
+// thirty decisions" rather than "the oldest thing you ever decided".
 const taskPickDepth = 30
 
 // choreBecause is the clause for a chore, and it never says late.
@@ -298,32 +262,19 @@ func startOfDay(t time.Time) time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
 
-// Decider is the seam a model reaches this decision through, or nil.
+// Decider is the seam a model reaches this decision through, or nil. A func of
+// primitives, because this package must not import internal/coach.
 //
-// A func of primitives, like the coach's other seam and for the same reason:
-// this package must not import internal/coach. It takes the picker's own
-// answer and hands back one to render instead, or says it has nothing.
+// mayAsk is whether this caller may spend a call: false means "use an answer you
+// already have, or say you have nothing".
 //
-// mayAsk is whether this caller is allowed to spend a call. False means "use
-// an answer you already have, or say you have nothing" — which is what makes
-// a surface that must be free to open able to show the same thing the paying
-// surface shows, without ever becoming a reason to pay.
-//
-// Every caller must be written so that nil, and false, and a model that never
-// answers are all ordinary. PickNow is the whole answer whenever this is not
-// available, which is most of the time by design.
+// Every caller must treat nil, false, and a model that never answers as ordinary.
 type Decider func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
 	mayAsk bool) (kind string, refID int64, text, because string, ok bool)
 
-// JudgementHelps reports whether a model is allowed near this offer.
-//
-// Only three of the five kinds. A running timer is a thing you are already
-// doing rather than a thing that was picked, and a fixed point is the one
-// thing here the world imposed rather than the product suggested — a model
-// second-guessing either would be overruling a rule with an opinion.
-//
-// It lives in the core rather than in the wiring so both surfaces ask the same
-// question, and so the rule is next to the rules it protects.
+// JudgementHelps reports whether a model is allowed near this offer. Only three
+// of the five kinds: a running timer is something you are already doing, and a
+// fixed point is imposed by the world rather than suggested.
 func JudgementHelps(kind OfferKind) bool {
 	switch kind {
 	case OfferChore, OfferTask, OfferAgain:
@@ -349,13 +300,9 @@ func StartOfDayIn(loc *time.Location, t time.Time) time.Time {
 	return startOfDay(t.In(loc))
 }
 
-// Refuse records a "not now" and is the only thing that suppresses an offer.
-//
-// It costs one press, it changes nothing about the thing itself, and it is
-// never followed by a question. A chore refused here is exactly as due as it
-// was — this is not a snooze and does not touch the chore's clock, because the
-// picker's memory and the nudge's are two different budgets and merging them
-// would let one press silence the other surface.
+// Refuse records a "not now" and is the only thing that suppresses an offer. It
+// does not touch the chore's clock: the picker's memory and the nudge's are two
+// budgets, and merging them would let one press silence the other surface.
 func (s *Store) Refuse(ctx context.Context, personID int64, kind OfferKind, refID int64, at time.Time) error {
 	return s.RecordAnswer(ctx, personID, kind, refID, AnswerLater, at)
 }
