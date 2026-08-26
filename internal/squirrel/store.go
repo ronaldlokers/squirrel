@@ -48,6 +48,23 @@ func (s *Store) here(t time.Time) time.Time {
 // today is the person's day, not the process's.
 func (s *Store) today(now time.Time) time.Time { return StartOfDayIn(s.where, now) }
 
+// zone is the name a query hands to `at time zone`, so SQL that reads a date or
+// a day of week reads the person's rather than the session's.
+//
+// The session is UTC, so anything comparing dates without this is asking about
+// yesterday for the first hours of every local day.
+//
+// Empty when nowhere is configured, and the query falls back to the session's
+// own zone — which is what every one of these did before. time.Local's name is
+// the literal "Local", which Postgres does not recognise, so it can never be
+// handed over.
+func (s *Store) zone() string {
+	if s.where == nil || s.where == time.Local {
+		return ""
+	}
+	return s.where.String()
+}
+
 func URLFor(c PostgresConfig) string {
 	u := url.URL{
 		Scheme: "postgres",

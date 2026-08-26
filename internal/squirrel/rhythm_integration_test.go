@@ -16,13 +16,18 @@ func TestAWeekdayChoreIsDueOnItsDay(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
+	// Where the person is, so the day this walks and the day the rule reads are
+	// the same day. Without it they disagree for the first hours of every local
+	// morning — see TestAWeekdayChoreUsesThePersonsDayNotTheDatabases.
+	ams := amsterdam(t)
+	store.In(ams)
 
 	c, err := store.UpsertChore(ctx, p, "the bins", 7*24*time.Hour, 24*time.Hour)
 	require.NoError(t, err)
 	require.NoError(t, store.SetChoreRhythm(ctx, p, c.ID, time.Thursday, 1))
 
 	// The chore was created now; walk the next fortnight day by day.
-	start := time.Now()
+	start := time.Now().In(ams)
 	var dueOn []time.Weekday
 	for i := 1; i <= 14; i++ {
 		at := start.AddDate(0, 0, i)
@@ -42,12 +47,14 @@ func TestAnAlternatingChoreSkipsAWeek(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
+	ams := amsterdam(t)
+	store.In(ams)
 
 	c, err := store.UpsertChore(ctx, p, "the bins", 14*24*time.Hour, 24*time.Hour)
 	require.NoError(t, err)
 	require.NoError(t, store.SetChoreRhythm(ctx, p, c.ID, time.Thursday, 2))
 
-	start := time.Now()
+	start := time.Now().In(ams)
 	thursdays := 0
 	due := 0
 	for i := 1; i <= 28; i++ {
@@ -221,4 +228,47 @@ func next(from time.Time, want time.Weekday) time.Time {
 		}
 	}
 	return d
+}
+
+// A weekday chore is due on the day it is where the person is, not where the
+// database is.
+//
+// extract(dow) reads the session's timezone, which is UTC, so between midnight
+// and 02:00 in Amsterdam the rule was asking about yesterday. The bins are
+// alternating Thursdays — the whole motivating example — so opening the screen
+// at half past midnight on a Thursday said they were not due, and at half past
+// midnight on a Friday said they were.
+//
+// Issue #148 again, one feature further on: the store already carries where the
+// person is, and this rule was not using it.
+func TestAWeekdayChoreUsesThePersonsDayNotTheDatabases(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	ams := amsterdam(t)
+	store.In(ams)
+
+	c, err := store.UpsertChore(ctx, p, "the bins", 7*24*time.Hour, 24*time.Hour)
+	require.NoError(t, err)
+	require.NoError(t, store.SetChoreRhythm(ctx, p, c.ID, time.Thursday, 1))
+	// A week earlier, so the parity lines up and the baseline is behind both
+	// days this asks about.
+	backdateChoreTo(t, store, c.ID, time.Date(2026, 8, 20, 12, 0, 0, 0, ams))
+
+	// Half past midnight on a Thursday in Amsterdam, which is still Wednesday
+	// in UTC.
+	thursday := time.Date(2026, 8, 27, 0, 30, 0, 0, ams)
+	require.Equal(t, time.Thursday, thursday.Weekday())
+	require.Equal(t, time.Wednesday, thursday.UTC().Weekday(), "the instant this pins")
+
+	due, err := store.DueChores(ctx, p, thursday)
+	require.NoError(t, err)
+	require.Len(t, due, 1, "a thursday chore was not due at 00:30 on a thursday")
+
+	// And the other side of it: half past midnight on Friday is Thursday in
+	// UTC, and the chore must not come due again.
+	friday := time.Date(2026, 8, 28, 0, 30, 0, 0, ams)
+	due, err = store.DueChores(ctx, p, friday)
+	require.NoError(t, err)
+	require.Empty(t, due, "a thursday chore came due at 00:30 on a friday")
 }

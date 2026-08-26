@@ -1889,6 +1889,27 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### A Weekday Is Where You Are
+
+A chore that comes back on a day reads that day where the person is, not where
+the database is. Fixed 27 August 2026, the first Thursday after the rhythm
+shipped.
+
+**`extract(dow)` and `::date` both follow the session's timezone, which is UTC.**
+So between midnight and 02:00 in Amsterdam the rule was asking about yesterday:
+the bins were not due at 00:30 on a Thursday, and were due at 00:30 on a Friday.
+The bins are the whole motivating example.
+
+Issue #148 again, one feature further on. That fix threaded the location into
+everything that *parses* a time and everything that *reads a row back*; this is
+the third place — a comparison made inside SQL, where the zone is the session's
+and nothing in Go can see it.
+
+**The store hands the query its zone.** Every date in the weekday rule is read
+`at time zone` the person's, falling back to the session's own when nowhere is
+configured — which is exactly what the rule did before, so a deployment with no
+location set is unchanged.
+
 ### The Box Opens a Place
 
 The one box this product has can show you a place too. Added 26 August 2026,

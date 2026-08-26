@@ -161,6 +161,12 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 	// under or over 24 hours apart. Against an untouched tolerance a short morning
 	// silently pushes a day-or-less chore out of its window. The slack absorbs both,
 	// and cannot cause a second nudge because the digest fires once daily.
+	// Every date in the weekday rule below is read in $3, where the person is,
+	// rather than in the session's own zone — which is UTC in production and in
+	// the suite. extract(dow) and ::date both follow the session, so between
+	// midnight and 02:00 in Amsterdam the rule was asking about yesterday: the
+	// bins were not due at 00:30 on a Thursday and were due at 00:30 on a
+	// Friday. Issue #148, one feature further on.
 	const q = baselineCTE + `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
 		       extract(epoch from ($2::timestamptz - b.since))::bigint,
@@ -184,17 +190,20 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		            -- creation rather than from an ISO week number, which wraps
 		            -- at the turn of the year and would flip every alternating
 		            -- chore in the house on 1 January.
-		            extract(dow from $2::timestamptz)::int = c.on_weekday
-		            and (($2::timestamptz)::date - c.created_at::date) / 7
+		            extract(dow from ($2::timestamptz at time zone coalesce(nullif($3, ''), current_setting('TimeZone'))))::int
+		                    = c.on_weekday
+		            and (($2::timestamptz at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date
+		                 - (c.created_at at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date) / 7
 		                    % c.every_weeks = 0
-		            and b.since::date < ($2::timestamptz)::date
+		            and (b.since at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date
+		                    < ($2::timestamptz at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date
 		       end
 		   and (b.last_shown is null
 		        or $2::timestamptz >= b.last_shown
 		               + make_interval(secs => c.tolerance_seconds) - interval '2 hours')
 		 order by extract(epoch from ($2::timestamptz - b.since)) / c.interval_seconds desc, c.name`
 
-	return s.scanChores(ctx, q, personID, now)
+	return s.scanChores(ctx, q, personID, now, s.zone())
 }
 
 // SearchChores finds an active chore by name, because searching is one thing
