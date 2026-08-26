@@ -104,3 +104,34 @@ func TestTheRuleKeepsAlmostEverything(t *testing.T) {
 	require.Equal(t, 1, questions,
 		"the rule sent %d of %d captures abroad", questions, len(typed))
 }
+
+// A request to be shown a place is asked of Buddy, not written down.
+//
+// "show chores" has no question mark and no asking opening, so it read as a
+// thought and was filed as one — twice, in the same minute, by somebody trying
+// to look at their chores. The product answered a request to see something by
+// writing it down.
+func TestAskingToBeShownAPlaceIsNotAThought(t *testing.T) {
+	for _, said := range []string{
+		"show chores", "show me the chores", "show the tasks", "open the pile",
+		"list my chores", "see the agenda", "show me what i set aside",
+	} {
+		require.True(t, squirrel.LooksLikeAQuestion(said), "%q was filed as a note", said)
+	}
+}
+
+// And it stays narrow. A verb of showing is not enough, and neither is a place
+// word: it takes both, or the pile fills up with answered sentences.
+func TestShowingSomethingThatIsNotAPlaceIsStillAThought(t *testing.T) {
+	for _, said := range []string{
+		"show mum the photos", "show up at nine", "open the wine",
+		"the chores are done", "list of things for saturday",
+		"see the dentist", "open a bank account",
+		// A place word inside a longer word is not a place. Without the
+		// bounded check these are all requests to be shown something.
+		"open the compiler", "show up at the taskforce meeting",
+		"list the chorister rehearsals",
+	} {
+		require.False(t, squirrel.LooksLikeAQuestion(said), "%q was sent to be answered", said)
+	}
+}

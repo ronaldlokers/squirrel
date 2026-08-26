@@ -292,7 +292,7 @@ func breaker(c coach.Coach) squirrel.Breaker {
 // by a test, and `AskedAQuestion` proved it by going missing while the whole
 // suite stayed green.
 type reading struct {
-	Reads          func(context.Context, int64, string) (string, bool, error)
+	Reads          func(context.Context, int64, string) (string, bool, string, error)
 	AskedAQuestion func(context.Context, string) (bool, bool)
 }
 
@@ -325,11 +325,11 @@ func housed(h *coach.House) func(context.Context, string) (bool, bool) {
 // nowFor: what somebody types at eleven at night reads differently from the
 // same words at nine in the morning, and this is the one call that sees
 // everything typed.
-func reader(c coach.Coach, store *squirrel.Store) func(context.Context, int64, string) (string, bool, error) {
+func reader(c coach.Coach, store *squirrel.Store) func(context.Context, int64, string) (string, bool, string, error) {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
 	}
-	return func(ctx context.Context, personID int64, said string) (string, bool, error) {
+	return func(ctx context.Context, personID int64, said string) (string, bool, string, error) {
 		return c.Reads(ctx, personID, said, nowFor(ctx, store, personID, time.Now()))
 	}
 }

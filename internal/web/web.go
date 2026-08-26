@@ -78,7 +78,10 @@ type Options struct {
 	// The boolean is advice, not an instruction. captureHandler keeps the
 	// words first and drops them afterwards if this says to, so a wrong answer
 	// costs a note in the pile rather than a note that is gone.
-	Reads func(ctx context.Context, personID int64, said string) (reply string, keep bool, err error)
+	// The fourth return is a place to draw underneath the reply, when the
+	// words asked to see one and Buddy said which. Empty on every other turn,
+	// which is nearly all of them.
+	Reads func(ctx context.Context, personID int64, said string) (reply string, keep bool, open string, err error)
 	// AskedAQuestion is the model in the house: a small one on the cluster,
 	// asked whether the words are a question. The second return is whether it
 	// answered at all — false falls back to squirrel.LooksLikeAQuestion, which

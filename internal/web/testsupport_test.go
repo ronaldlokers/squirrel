@@ -55,7 +55,7 @@ type fakeStore struct {
 	runErr    error
 	marked    []string
 	ended     int
-	reads     func(string) (string, bool, error)
+	reads     func(string) (string, bool, string, error)
 	readAsked []string
 	knowing   []string
 	forgot    bool
@@ -1117,7 +1117,7 @@ func (f *fakeStore) ForgetKnowing(_ context.Context, _ int64) error {
 // The seam rather than a whole coach: what the screen has to be tested for is
 // what it does with the two answers, and the answers themselves are the
 // coach's business.
-func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool, error)) *testMux {
+func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool, string, error)) *testMux {
 	t.Helper()
 	f.reads = reads
 	m := newTestMux()
@@ -1126,7 +1126,7 @@ func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		Spool:    &fakeSpool{},
-		Reads: func(_ context.Context, _ int64, said string) (string, bool, error) {
+		Reads: func(_ context.Context, _ int64, said string) (string, bool, string, error) {
 			f.readAsked = append(f.readAsked, said)
 			return f.reads(said)
 		},

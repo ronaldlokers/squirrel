@@ -213,13 +213,14 @@ type Coach interface {
 	// otherwise have happened, because nothing else is ever passed to it — and
 	// it fails open, so an absent coach leaves the nudge exactly as it was.
 	ShouldInterrupt(ctx context.Context, personID int64, about string, n Now) (string, bool)
-	// Reads answers what was typed into the box and says whether it was a
-	// thought worth keeping or a question it has just answered.
+	// Reads answers what was typed into the box, says whether it was a thought
+	// worth keeping or a question it has just answered, and names a place to
+	// show when the words asked to see one.
 	//
 	// ErrUnavailable means the box behaves exactly as it did before this
 	// existed: kept, and "Kept." said back. Every failure lands on the old
 	// guarantee rather than on a lost thought.
-	Reads(ctx context.Context, personID int64, said string, n Now) (string, bool, error)
+	Reads(ctx context.Context, personID int64, said string, n Now) (string, bool, string, error)
 	// Learn reads the record of the conversation back and says what it shows
 	// about how this person works. Once a week, and everything about it is
 	// optional: ErrUnavailable leaves Squirrel knowing whatever it knew, which
@@ -244,8 +245,8 @@ func (NoCoach) Learn(context.Context, int64, []string) ([]string, error) {
 	return nil, ErrUnavailable
 }
 
-func (NoCoach) Reads(context.Context, int64, string, Now) (string, bool, error) {
-	return "", true, ErrUnavailable
+func (NoCoach) Reads(context.Context, int64, string, Now) (string, bool, string, error) {
+	return "", true, "", ErrUnavailable
 }
 
 func (NoCoach) Smaller(context.Context, int64, string, string) ([]string, error) {
