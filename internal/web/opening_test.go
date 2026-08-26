@@ -146,7 +146,7 @@ func TestBuddyDoesNotOpenOverAQuestion(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// It is one thing, not a summary of all four. The rail already says all four.
+// It is one thing, not a summary of all four. The menu already says all four.
 func TestTheOpeningLineIsOneThing(t *testing.T) {
 	f := &fakeStore{
 		checkin: fresh(),
@@ -228,8 +228,8 @@ func TestTheOfferStillWillNotTalkOverACard(t *testing.T) {
 // A question you have not answered is not asked again.
 //
 // It is still on the screen; asking again does not make it easier to answer,
-// it makes a column of the same question — which is what a phone showed on
-// 25 August 2026, three deep, with opening lines in between them.
+// it makes a column of the same question — which is what a phone showed, three
+// deep, with opening lines in between them.
 func TestAnUnansweredCheckinIsNotAskedAgain(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)
