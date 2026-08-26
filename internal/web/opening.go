@@ -127,6 +127,12 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 	// useful sentence this screen has — more useful than the dentist, because
 	// the dentist will still be there after you have been told. Everything
 	// below is what Buddy opens with when there is no run to come back to.
+	// The exit ramp first of all, because it is the only one of these about
+	// something happening *now*. Where you got to is a thing you were doing;
+	// this is a thing you are still doing and have been for hours.
+	if turn, ok := exitRampTurn(ctx, s, personID); ok {
+		return turn, true
+	}
 	if turn, ok := whereYouGotTo(ctx, s, personID); ok {
 		return turn, true
 	}
@@ -232,6 +238,78 @@ func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn,
 		Words: "You were part way through " + placeCalled(run.Place) + ", " + agoInWords(run.Since) + ".",
 		Shown: body,
 	}, true
+}
+
+// exitRampTurn is the one interruption this product allows itself, and it only
+// happens because you asked for it.
+//
+// The thing about hyperfocus is not that you cannot stop. It is that the
+// decision to stop never arrives — there is no moment at which you notice, so
+// there is no moment at which you choose. This is that moment, arriving from
+// outside, once.
+//
+// It says how long rather than that the timer ran out, because the useful fact
+// is the elapsed time and not the broken promise. And it offers a place to stop
+// rather than telling you to: "after this bit" is the difference between a
+// suggestion and an alarm.
+//
+// Marked said in the same breath as being drawn. Everything else in this
+// opening is idempotent — it reads state and says it — and this one writes,
+// because "once" is the entire safety property.
+func exitRampTurn(ctx context.Context, s Store, personID int64) (squirrel.Turn, bool) {
+	t, found, err := s.RampDue(ctx, personID, now())
+	if err != nil {
+		slog.Error("reading the exit ramp", "error", err)
+		return squirrel.Turn{}, false
+	}
+	if !found {
+		return squirrel.Turn{}, false
+	}
+	if err := s.RampSaid(ctx, personID, now()); err != nil {
+		// Not said rather than said twice. An interruption that repeats is the
+		// version of this that gets switched off after two days.
+		slog.Error("marking the exit ramp said", "error", err)
+		return squirrel.Turn{}, false
+	}
+
+	body, err := json.Marshal(drawn{
+		Opened: "ramp:" + t.Started.Format(time.RFC3339),
+		Cards: []cardView{{
+			Title: "a good place to stop is after this bit",
+			Meta:  "you asked me to say something",
+			Acts: []actView{
+				{Label: "STOPPING", Style: "did", Action: "/timer",
+					Fields: map[string]string{"stop": "1", "from": "home"}},
+				{Label: "20 more minutes", Action: "/timer",
+					Fields: map[string]string{"minutes": "20", "label": t.Label, "from": "home"}},
+				{Label: "leave me alone", Style: "stop", Action: "/timer",
+					Fields: map[string]string{"hush": "1", "from": "home"}},
+			},
+		}},
+	})
+	if err != nil {
+		slog.Error("drawing the exit ramp", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{
+		Who: squirrel.SpeakerBuddy,
+		Words: "You have been on " + t.Label + " for " +
+			onItInWords(now().Sub(t.Started)) + ".",
+		Shown: body,
+	}, true
+}
+
+// onItInWords is how long you have been at it, in a person's units.
+//
+// Hours and minutes, never a decimal and never seconds: this is a sentence
+// somebody reads while deep in something else, and "2h 40m" is read at a glance
+// where "160 minutes" has to be converted.
+func onItInWords(d time.Duration) string {
+	mins := int(d.Minutes())
+	if mins < 60 {
+		return strconv.Itoa(mins) + "m"
+	}
+	return strconv.Itoa(mins/60) + "h " + strconv.Itoa(mins%60) + "m"
 }
 
 // goneQuietTurn mentions something you set aside and nobody has touched since.

@@ -30,6 +30,18 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
+		// "leave me alone". It silences the exit ramp for the rest of the day
+		// and leaves the timer exactly where it is — you did not say you were
+		// stopping, you said you did not want to be asked.
+		if r.FormValue("hush") != "" {
+			if err := s.HushRamp(r.Context(), personID, now()); err != nil {
+				fail(w, err)
+				return
+			}
+			http.Redirect(w, r, backFrom(r), http.StatusSeeOther)
+			return
+		}
+
 		// Stopping is its own answer and never an error: stopping something
 		// that is not running is the state you asked for.
 		if r.FormValue("stop") != "" {
@@ -58,6 +70,16 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 			time.Duration(mins)*time.Minute, now()); err != nil {
 			fail(w, err)
 			return
+		}
+		// The exit ramp, opted in on here and nowhere else. StartTimer clears
+		// the flag, so this is an arming rather than a toggle: a timer with no
+		// box ticked is a timer nothing watches, which is what every timer was
+		// before this existed and what every timer the chat starts still is.
+		if r.FormValue("ramp") != "" {
+			if err := s.ArmRamp(r.Context(), personID, true); err != nil {
+				fail(w, err)
+				return
+			}
 		}
 		http.Redirect(w, r, backFrom(r), http.StatusSeeOther)
 	}
