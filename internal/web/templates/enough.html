@@ -1,47 +1,32 @@
 {{define "content"}}
-{{/* Where stopping happens.
+{{/* Where stopping happens: the one screen that exists to be an ending, saying
+     this was a normal way to finish rather than an abandoned job.
 
-     The one screen in this product that exists to be an ending. It says the
-     thing the pile's twelve-pixel line has always said and could not carry:
-     that this was a normal way to finish, not an abandoned job.
-
-     What is deliberately absent, and has to stay absent: any account of what
-     you did. No number of notes, no "good session", no picture of a mountain
-     with a flag on it. A screen that praised you for three would be a screen
-     that had a view about two, and the whole product exists so that nothing
-     here can be lost by doing less of it.
+     Deliberately absent, and has to stay absent: any account of what you did.
+     No number of notes, no "good session". A screen that praised you for three
+     would be a screen with a view about two.
 
      What is left is a fact and a door. */}}
 <section class="empty enough">
-  {{/* Its own drawing, and that is the whole of what this element is for.
-  
-       It used to be the same `logo.png` the empty pile, the empty chores, the
-       empty tasks and the empty archive all use. Rendered side by side, those
-       screens and this one were the same composition, the same drawing and the
-       same sizes, and only the sentence differed — so choosing to stop looked
-       exactly like having nothing left, which is the one equivalence this
-       product exists to break.
-  
-       Resting, not asleep and not pleased: leaning on a closed lid, cap
-       forward, tail settled. Stopping is a normal ending, so a drawing that
-       looked relieved would make it something you needed rescuing from, and
-       one that looked proud would make it an achievement.
-  
-       Larger than the shared mark because it is a whole pose rather than a
-       head, and at the mark's size the face — which is the character — came
-       out at a third of the width it has anywhere else. */}}
+  {{/* Its own drawing rather than the shared mark: with the same one, choosing
+       to stop looked exactly like having nothing left, which is the one
+       equivalence this product exists to break.
+
+       Resting, not asleep and not pleased. A drawing that looked relieved
+       would make stopping something you needed rescuing from; one that looked
+       proud would make it an achievement.
+
+       Larger than the mark because it is a whole pose rather than a head — at
+       the mark's size the face came out a third of its usual width. */}}
   <img class="resting" alt="" src="/static/resting.png?v={{.V}}" width="300" height="207">
   <h1>{{.SayEnough}}</h1>
   <p>the pile keeps. what you did not get to is not waiting for you &mdash;
     it is just still there, which is a different thing.</p>
-  {{/* Back in, for the times you pressed this and then found you had another
-       one in you. Quiet, and second: the door out is the point of the room. */}}
-  {{/* Two exits, and they are not equals.
-
-       They shipped as identical pills, which made the screen whose whole job
-       is to say stopping is normal offer "keep going" at the same volume. The
-       door out is the point of the room; the way back in is for the times you
-       pressed this and then found you had another one in you. */}}
+  {{/* Two exits, and not equals. They shipped as identical pills, which made
+       the screen whose whole job is to say stopping is normal offer "keep
+       going" at the same volume. The door out is the point of the room; the
+       way back in is for the times you pressed this and found you had another
+       one in you. */}}
   <p class="ends">
     <a class="leavehere" href="/">home</a>
   </p>

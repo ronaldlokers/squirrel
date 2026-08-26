@@ -38,7 +38,7 @@ func page(files ...string) *template.Template {
 }
 
 var pages = map[string]*template.Template{
-	"thread": page("templates/layout.html", "templates/turn.html", "templates/stopping.html", "templates/thread.html"),
+	"thread": page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
 	"moods":  page("templates/layout.html", "templates/moods.html"),
 	"enough": page("templates/layout.html", "templates/enough.html"),
 }
