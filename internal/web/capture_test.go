@@ -60,13 +60,9 @@ func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
 	}
 }
 
-// There is no spool behind this write. The chat's 👀 means the words reached
-// disk before anything else could go wrong; here there is no such stage, so an
-// unreachable database is a note that was never taken — and the only honest
-// answer is to say so and give the words back.
-// The only way a capture can fail now is an unwritable disk, which is a much
-// louder problem than a database being briefly unreachable — and the words
-// still come back rather than disappearing.
+// A capture goes through the spool, so the only way it can fail is an unwritable
+// disk — a much louder problem than a database being briefly unreachable. The
+// words still come back rather than disappearing.
 func TestAFailedCaptureKeepsTheWords(t *testing.T) {
 	f := &fakeStore{}
 	m := mountedSpooling(t, f, &fakeSpool{err: errTest})
@@ -115,13 +111,8 @@ func TestAnEmptySlotDoesNothing(t *testing.T) {
 	require.Empty(t, f.items, "whitespace is not a thought")
 }
 
-// The words come back through the address bar, so they are escaped on the way
-// out like any other text on this screen.
-// What you said comes back on the screen as text, whatever you typed.
-//
-// It used to come back through the address bar and into the slot; it comes
-// back as a turn now, and the escaping matters in exactly the same way — the
-// thread renders your own words on every load, forever.
+// What you said comes back on the screen as text, whatever you typed. It comes
+// back as a turn, which the thread renders on every load, forever.
 func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 	body := mounted(t, &fakeStore{turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerYou, Words: "<script>alert(1)</script>"},
@@ -132,9 +123,9 @@ func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 }
 
 // Held is a third state, not a flavour of the other two: the words are safe,
-// which failure is not, and they are not in the pile yet, which kept is.
-// The one answer that is not a turn, because a turn needs a database and this
-// is what happens when there is no network to reach one.
+// which failure is not, and they are not in the pile yet, which kept is. It is
+// also the one answer that is not a turn, because a turn needs a database and
+// this is what happens when there is no network to reach one.
 func TestTheSlotSaysWhenWordsAreHeld(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/?held=1", nil).Body.String()
 

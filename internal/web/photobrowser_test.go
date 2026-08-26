@@ -57,22 +57,19 @@ func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Se
 	return c, srv
 }
 
-// landed is the slot saying a capture went in. It used to be a navigation to
-// /?kept=1 — the capture posted the form, the browser left, and the page came
-// back at the top with a word on it. It keeps in place now, so the sign that
-// it worked is the slot's own answer rather than a change of address.
-// It landed when Buddy has said so. The answer used to be a word inside the
-// box; it is a turn in the conversation now, and the box being empty is the
-// other half of the same fact.
-// The exact word varies by the day, the way the slot's own line does — and
-// since the box became a conversation it may be a sentence Buddy wrote rather
-// than an acknowledgement at all. So this waits for a turn that was not there
-// before rather than for a phrasing.
+// marking stamps how many turns are on the page before the press, and landed
+// waits for one more.
 //
-// The count is stamped on the page before the press. A predicate that only
-// asked "has Buddy said something" was satisfied by whatever was already on
-// screen and returned instantly, which is how a spool assertion ran before the
-// write it was about.
+// A capture has landed when Buddy has said so, and the page keeps in place — so
+// the sign that it worked is a new turn rather than a change of address.
+//
+// It waits for a turn rather than for a phrasing: the acknowledgement varies by
+// the day, and since the box became a conversation it may be a sentence Buddy
+// wrote rather than an acknowledgement at all.
+//
+// The count has to be stamped first. A predicate that only asked "has Buddy said
+// something" was satisfied by whatever was already on screen and returned
+// instantly, which is how a spool assertion ran before the write it was about.
 const marking = `window.__before = document.querySelectorAll("#thread .turn").length; return 1`
 
 const landed = `document.querySelectorAll("#thread .turn").length > window.__before`

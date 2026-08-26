@@ -914,11 +914,11 @@ func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) 
 	return Answer{Text: c.reply, Did: c.did, Propose: c.propose, Open: c.opens}, nil
 }
 
-// decided is what the model chooses instead, when a test says it chooses
+// decide is what the model chooses instead, when a test says it chooses
 // anything. The zero value chooses nothing, which is the shipping state
 // whenever the picker's answer is good enough or nothing is configured.
 func (c *fakeCoach) decide(_ context.Context, _ int64, pickedKind string, pickedRef int64,
-	mayAsk bool) (string, int64, string, string, bool) {
+	mayAsk bool) (kind string, refID int64, text, because string, ok bool) {
 
 	c.picked = append(c.picked, pickedKind)
 	if !mayAsk {

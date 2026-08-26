@@ -24,11 +24,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// contrast is the WCAG ratio between two `rgb(r, g, b)` strings, which is what
-// getComputedStyle hands back. A focus indicator needs 3:1 against what it sits
-// on (1.4.11), and reading it off the stylesheet is exactly how the two
-// surfaces below were missed: the rule that fixes them is correct and simply
-// does not name them.
 // tabTo walks the focus there with the Tab key. It has to be the key: Chromium
 // only matches `:focus-visible` after a keyboard interaction, so a scripted
 // `.focus()` reads back the element's ordinary outline and would have measured
@@ -44,6 +39,11 @@ func tabTo(t *testing.T, c *cdp, sel string) {
 	t.Fatalf("60 tabs never reached %s", sel)
 }
 
+// contrast is the WCAG ratio between two `rgb(r, g, b)` strings, which is what
+// getComputedStyle hands back. A focus indicator needs 3:1 against what it sits
+// on (1.4.11), and reading it off the stylesheet is exactly how the two
+// surfaces below were missed: the rule that fixes them is correct and simply
+// does not name them.
 func contrast(t *testing.T, c *cdp, sel, prop, against string) float64 {
 	t.Helper()
 	got := c.eval(t, fmt.Sprintf(`
