@@ -176,7 +176,7 @@ func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(perso
 // It returns nil when there is no coach at all, and the nil is meaningful: the
 // core checks it and does not advertise `!coach` in help when there is nothing
 // behind it.
-func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) turnFn {
+func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canOpen bool) turnFn {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
 	}
@@ -201,6 +201,11 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) turn
 			Said:     said,
 			Subject:  subject,
 			Recent:   talk.Recent(personID, now),
+			// Whether a place can be drawn is a fact about the surface, and
+			// the screen is the surface that can. See coachChat for the other
+			// half: chat leaves this false, because a place there would be the
+			// list the guard exists to refuse.
+			CanOpen: canOpen,
 		})
 	}
 }
@@ -211,6 +216,15 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) turn
 // costs the model a hint; it must not cost the person an answer, because the
 // alternative to a slightly less informed reply is no reply at all.
 func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time.Time) coach.Now {
+	// The softest failure of all, and the one this function's own rule asks
+	// for: no store is no hints, not no answer.
+	if store == nil {
+		return coach.Now{
+			Clock:     now.Format("15:04"),
+			PartOfDay: string(squirrel.PartOfDay(now)),
+		}
+	}
+
 	n := coach.Now{
 		Clock:     now.Format("15:04"),
 		PartOfDay: string(squirrel.PartOfDay(now)),
@@ -450,7 +464,7 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 	}
 	forget := func(personID int64) { talk.Forget(personID) }
 
-	ask := asker(c, store, talk)
+	ask := asker(c, store, talk, true)
 	if ask == nil {
 		return nil, recent, remember, forget
 	}
@@ -460,7 +474,7 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 		if err != nil {
 			return web.Answer{}, err
 		}
-		a := web.Answer{Text: reply.Text, Did: reply.Did}
+		a := web.Answer{Text: reply.Text, Did: reply.Did, Open: reply.Open}
 		if reply.Propose != nil {
 			a.Propose = &web.Proposal{
 				Do: reply.Propose.Do, Said: reply.Propose.Said, Text: reply.Propose.Text,

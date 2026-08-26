@@ -118,3 +118,48 @@ func TestTheBoxIsGivenItsThreeTiers(t *testing.T) {
 	require.Nil(t, without.Reads)
 	require.Nil(t, without.AskedAQuestion)
 }
+
+// sayingCoach answers with a place to open, so the seam between the coach's
+// reply and the screen's answer can be read rather than assumed.
+type sayingCoach struct {
+	coach.NoCoach
+	reply coach.Reply
+	saw   coach.Turn
+}
+
+func (c *sayingCoach) Answer(_ context.Context, t coach.Turn) (coach.Reply, error) {
+	c.saw = t
+	return c.reply, nil
+}
+
+// The screen is given the place the coach asked to open.
+//
+// The fourth field to earn this check, and it is the same shape as the other
+// three: `Open` is a field in an inline literal in `coachWeb`, nothing warns if
+// it is dropped, and the symptom is Buddy saying "here they are" above nothing
+// at all — a reply that claims to have done something it did not do, which is
+// the worst failure available here.
+func TestTheScreenIsGivenThePlaceToOpen(t *testing.T) {
+	c := &sayingCoach{reply: coach.Reply{Text: "Here they are.", Open: "tasks"}}
+	ask, _, _, _ := coachWeb(c, nil, coach.NewConversations())
+
+	answer, err := ask(context.Background(), 1, "thread", "show me the tasks", "")
+	require.NoError(t, err)
+	require.Equal(t, "tasks", answer.Open, "the screen was told nothing to open")
+}
+
+// And the screen is the surface allowed to ask for one. Chat is not: a place
+// there would be the list the guard exists to refuse.
+func TestOnlyTheScreenMayBeOfferedAPlace(t *testing.T) {
+	c := &sayingCoach{reply: coach.Reply{Text: "Here they are."}}
+	ask, _, _, _ := coachWeb(c, nil, coach.NewConversations())
+	_, err := ask(context.Background(), 1, "thread", "show me the tasks", "")
+	require.NoError(t, err)
+	require.True(t, c.saw.CanOpen, "the screen cannot draw a place")
+
+	chat := &sayingCoach{reply: coach.Reply{Text: "Here they are."}}
+	_, err = asker(chat, nil, coach.NewConversations(), false)(
+		context.Background(), 1, "chat", "show me the tasks", "")
+	require.NoError(t, err)
+	require.False(t, chat.saw.CanOpen, "chat was offered a place it cannot draw")
+}

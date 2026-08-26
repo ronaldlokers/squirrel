@@ -893,6 +893,35 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 	if !ok {
 		return nil
 	}
+	reply, _ := placeSaid(ctx, s, opts, personID, where, from)
+	// And the way to make one more. On every branch, including the one that
+	// says there is nothing here — an empty list is the moment you are most
+	// likely to want to add to it. Not on "the rest", which is the middle of
+	// a list rather than the top of one.
+	said := name
+	if from > 0 {
+		return []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "the rest of " + name}, reply,
+		}
+	}
+	return []squirrel.Turn{
+		{Who: squirrel.SpeakerYou, Words: said},
+		alsoOffer(reply, newChipFor(where)...),
+	}
+}
+
+// placeSaid is the place itself, without the utterance that opened it.
+//
+// Split out because a place has two ways of being opened and only one of them
+// is something you said. Pressing the menu is an utterance and goes into the
+// record as one; Buddy opening it because you asked him to is his answer, and
+// putting "the tasks" in your mouth would be the record inventing a sentence
+// you did not say. See coachSayHandler.
+func placeSaid(ctx context.Context, s Store, opts Options, personID int64, where string, from int) (squirrel.Turn, bool) {
+	name, ok := doorNames[where]
+	if !ok {
+		return squirrel.Turn{}, false
+	}
 	var reply squirrel.Turn
 	switch where {
 	case "chores":
@@ -913,19 +942,7 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 		// a press that did not land.
 		reply = squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Not yet — that one is still a page."}
 	}
-	// And the way to make one more. On every branch, including the one that
-	// says there is nothing here — an empty list is the moment you are most
-	// likely to want to add to it. Not on "the rest", which is the middle of
-	// a list rather than the top of one.
-	said := name
-	if from > 0 {
-		said = "the rest of " + name
-		return []squirrel.Turn{{Who: squirrel.SpeakerYou, Words: said}, reply}
-	}
-	return []squirrel.Turn{
-		{Who: squirrel.SpeakerYou, Words: said},
-		alsoOffer(reply, newChipFor(where)...),
-	}
+	return reply, true
 }
 
 // choresTurn is what comes back, as cards.

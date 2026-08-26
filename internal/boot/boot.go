@@ -376,7 +376,8 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	go func() {
 		defer close(s.drained)
 		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
-			coachChat(asker(s.coach, store, s.talk)), decide, makeSmaller, hold, learnBack, over)
+			// false: chat has no cards to draw a place with. See Turn.CanOpen.
+			coachChat(asker(s.coach, store, s.talk, false)), decide, makeSmaller, hold, learnBack, over)
 	}()
 
 	return s, nil

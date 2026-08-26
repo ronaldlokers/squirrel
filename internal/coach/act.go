@@ -59,6 +59,27 @@ var writeTools = []map[string]any{
 		map[string]any{"text": map[string]any{"type": "string"}}),
 }
 
+// openTool shows them one of their places, whole.
+//
+// It exists because the coach is forbidden to recite a list — Guard refuses
+// bullets, numbers and headings, and the brief is two sentences — and asking
+// to see your tasks is one of the most ordinary things anybody says here. The
+// coach knew the answer, was not allowed to type it, and said it could not
+// help. It could: the same places the menu opens are turns full of cards, and
+// this is the press.
+//
+// Not a write, and it asks no permission, because it changes nothing. Say
+// something as well: this draws the place, it does not answer the question.
+var openTool = spec("open",
+	"Show them one of their places, whole, as cards they can act on. Use this whenever they ask to see something rather than asking about it. Say something as well.",
+	map[string]any{
+		"where": map[string]any{
+			"type":        "string",
+			"enum":        []string{"pile", "tasks", "chores", "at", "held", "kept"},
+			"description": "pile: everything untriaged. tasks: what is open. chores: what comes back. at: what is at a fixed time. held: what they set aside. kept: what they kept for later.",
+		},
+	})
+
 // actPreamble is added when a turn can act.
 //
 // The last line is the one that matters. A model given tools will use them,
@@ -103,11 +124,16 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 	msgs[0].Content += actPreamble
 
 	tools := append(append([]map[string]any{}, readTools()...), writeTools...)
+	// Only where there is something to draw it on. See Turn.CanOpen.
+	if t.CanOpen {
+		tools = append(tools, openTool)
+	}
 
 	var inTotal, outTotal int
 	var reply Reply
 	var proposal *Proposal
 	var acted []string
+	var open string
 
 	defer func() {
 		if inTotal+outTotal == 0 {
@@ -140,7 +166,10 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 					"kind", t.Kind, "model", model, "said", text)
 				return Reply{}, ErrUnavailable
 			}
-			reply = Reply{Text: guarded, Model: model, InTokens: inTotal, OutTokens: outTotal}
+			reply = Reply{
+				Text: guarded, Model: model, InTokens: inTotal, OutTokens: outTotal,
+				Did: acted, Propose: proposal, Open: open,
+			}
 			return reply, nil
 		}
 
@@ -157,9 +186,26 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 				}
 				reply = Reply{
 					Text: guarded, Model: model, InTokens: inTotal, OutTokens: outTotal,
-					Did: acted, Propose: proposal,
+					Did: acted, Propose: proposal, Open: open,
 				}
 				return reply, nil
+
+			case "open":
+				// Taken only when the surface offered it, and only for a
+				// place that exists. A model naming something else is told so
+				// and gets to try again, the same as any other refusal here.
+				if where, ok := openIn(call); ok && t.CanOpen {
+					open = where
+					msgs = append(msgs, chatMessage{
+						Role: "tool", ToolCallID: call.ID,
+						Content: `{"shown":true}`,
+					})
+					break
+				}
+				msgs = append(msgs, chatMessage{
+					Role: "tool", ToolCallID: call.ID,
+					Content: refused("that is not one of their places"),
+				})
 
 			case "propose":
 				proposal = proposalIn(call)
@@ -304,6 +350,27 @@ func saidIn(call toolCall) string {
 	}
 	_ = json.Unmarshal([]byte(call.Function.Arguments), &args)
 	return args.Text
+}
+
+// places is the vocabulary the open tool accepts, checked here as well as
+// stated in the enum.
+//
+// A map rather than a switch, so a name that is not one of them is a lookup
+// miss instead of a default branch: the same device doorNames uses on the
+// screen. The screen holds the same six and is the only thing that draws them
+// — this list exists so a model naming "inbox" is refused here rather than
+// producing an empty turn there.
+var places = map[string]bool{
+	"pile": true, "tasks": true, "chores": true, "at": true, "held": true, "kept": true,
+}
+
+// openIn reads which place, and reports whether it is one.
+func openIn(call toolCall) (string, bool) {
+	var args struct {
+		Where string `json:"where"`
+	}
+	_ = json.Unmarshal([]byte(call.Function.Arguments), &args)
+	return args.Where, places[args.Where]
 }
 
 // proposalIn reads a proposal, or nil.
