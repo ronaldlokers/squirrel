@@ -13,11 +13,10 @@ import (
 
 // Typing into the box is talking to Buddy.
 //
-// It was a capture slot that said "Kept.", which is what a filing cabinet
-// says. Ronald asked on 25 August 2026 for typing to be talking, and chose the
-// version where Buddy decides what the words were — knowing, because it was
-// said at the time, that a model between you and the capture promise can be
-// wrong.
+// It was a capture slot that said "Kept.", which is what a filing cabinet says.
+// The owner asked for typing to be talking, and chose the version where Buddy
+// decides what the words were — knowing, and saying so at the time, that a model
+// between you and the capture promise can be wrong.
 //
 // Everything below is about where that risk lands. The words are spooled and
 // already a note before Buddy is asked anything, so the worst any failure can

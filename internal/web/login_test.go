@@ -93,8 +93,7 @@ func TestTheGateIsOutsideTheGuard(t *testing.T) {
 
 func TestAGoodCallbackOpensASessionAndSendsYouOn(t *testing.T) {
 	sess := newFakeSessions()
-	m, idp := mountedWithAGate(t, &fakeStore{}, sess)
-	_ = idp
+	m, _ := mountedWithAGate(t, &fakeStore{}, sess)
 
 	w := m.callback(t, "/chores")
 
@@ -143,7 +142,7 @@ func TestACallbackWithTheWrongStateIsRefused(t *testing.T) {
 	m, _ := mountedWithAGate(t, &fakeStore{}, sess)
 
 	r := httptest.NewRequest("GET", "/auth/callback?code=a-code&state=somebody-elses", nil)
-	r.AddCookie(&http.Cookie{Name: stateCookie, Value: startedValue(t, "the-state", "the-verifier", "/")})
+	r.AddCookie(&http.Cookie{Name: stateCookie, Value: started("the-state", "the-verifier", "/")})
 	w := httptest.NewRecorder()
 	m.routes["GET /auth/callback"](w, r)
 
@@ -295,12 +294,6 @@ func mountedWithAGate(t *testing.T, f *fakeStore, sess *fakeSessions) (*testMux,
 	require.NoError(t, Mount(m, f, opts))
 	m.opts = opts
 	return m, idp
-}
-
-// startedValue packs a login in progress the way beginHandler does.
-func startedValue(t *testing.T, state, verifier, next string) string {
-	t.Helper()
-	return started(state, verifier, next)
 }
 
 // callback walks the way back from Authentik with a state that matches.
