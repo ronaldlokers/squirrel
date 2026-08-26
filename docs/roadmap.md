@@ -345,6 +345,66 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.40.0 — 26 August 2026
+
+**Four things it did not do.** Chosen from a design study — three rounds of
+mockups, recorded in `docs/superpowers/specs/2026-08-26-the-second-draft-design.md`
+— and built cheapest first. None of the four needs a model.
+
+**Keeping your place.** You start triaging, the phone rings, and forty minutes
+later the conversation opens as if nothing had been happening. Losing your place
+is the failure this product is built around and it kept no memory of a run in
+progress. Buddy says where you got to before anything else and offers both
+honest answers, because after forty minutes away either can be the truthful one.
+
+*Expiry is the design, not a tuning knob.* Three hours, and if it is ever
+changed it should get shorter: coming back to yesterday's half-finished pile is
+being nagged about an afternoon you have already had. The clock measures silence
+rather than duration, so a long afternoon of triage never goes stale. No count
+is stored — a stored one could lie the moment a capture lands from Campfire —
+and the sentence never names a clock time, because "40 minutes ago" is a fact
+about the gap where "you stopped at 14:12" is a record of your afternoon.
+
+**Chores that come back on a day.** A chore was `every N seconds` from 0002 and
+almost nothing real is. The difference is not vocabulary: an interval measured
+from the last completion *slides*, so doing the bins a day late once makes every
+reminder after it a day late too. `interval_seconds` is still written for a
+weekday chore, so the tolerance gate, the asking window and everything that
+renders "how often" keep reading the column they always read. The week parity
+counts from the chore's creation rather than an ISO week number, which wraps at
+the turn of the year and would flip every alternating chore in the house on
+1 January.
+
+**Something you set aside can speak up.** The three states shipped in August as
+a one-way door: you park something waiting on the surgery precisely so that you
+do not have to hold it, and that only works if something else is holding it.
+The oldest one that has gone quiet comes back once, with how long it has been.
+
+*someday never speaks up*, and that is the design. It is the state that means
+"not now, and do not ask me". It is a mention rather than a task — no question
+mark, no "should you" — and `still waiting` is the cheapest of the three
+answers, because if saying "still" were harder than closing it this would be a
+screen that pushes you to finish things.
+
+**The hyperfocus exit ramp**, last because it is the only one that can annoy
+you. The problem is not that you cannot stop; it is that the decision to stop
+never arrives. Opt-in at the moment the timer starts, on the screen and nowhere
+else — the chat, the coach and a nudge all start timers nobody ticked a box for.
+It says once, and is marked said in the same breath as being drawn: if the mark
+cannot be written the line is not drawn at all, because not said beats said
+twice. `leave me alone` means today rather than this timer.
+
+**Three real bugs, each found by a test written to bite.** A clearing branch in
+the chore rhythms read the chore returned by `UpsertChore`, whose `RETURNING`
+does not carry the new columns, so it was dead in production. `StartTimer` did
+not clear the exit ramp's opt-in, so a timer started by the chat would have
+inherited it and interrupted somebody who never asked. And a table proving a day
+is refused against days and months used counts the *count* check refuses anyway,
+so it passed with the unit check deleted — the fourth time this month a test
+looked like proof and was not.
+
+Three migrations: `0030_runs`, `0031_chore_weekday`, `0032_exit_ramp`.
+
 ### v0.39.1 — 26 August 2026
 
 **An unreachable authentik costs the way in, not the product.** v0.39.0 was
