@@ -281,35 +281,12 @@ func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
 		})`), "every label fits its own cell")
 }
 
-// The screen writes straight to the pile and there is no spool behind that, so
-// a capture typed with no network would simply be lost. The worker holding it
-// is the nearest honest substitute — and this is the test that it actually
-// holds, rather than that the code reads as though it would.
+// The worker holding a capture is the nearest honest substitute for a spool, and
+// this is the test that it actually holds.
 //
-// The server is closed rather than the network emulated: CDP's offline
-// emulation applies to the page's network stack and not to the worker's own,
-// so the first version of this test passed while the POST reached the server
-// and came back "kept". A closed socket is offline for both.
-// waitForTheWorker waits for a worker that is actually driving the page.
-//
-// Registration, install, activate and `clients.claim()` are four steps, and a
-// page that loaded before the last of them is not controlled — so waiting on
-// `controller` alone is waiting on a race, which this machine wins every time
-// and a loaded runner does not. It failed CI twice on branches that had not
-// touched the worker, which is the way a flake does its real damage: it
-// teaches you to re-run the job instead of reading it.
-//
-// So this waits for the registration to be ready first, and then, if the page
-// still is not controlled, navigates once more. A worker that has activated
-// controls the next navigation by definition, so the second visit is a
-// guarantee rather than another roll.
-//
-// What that costs, and it is worth naming rather than discovering later: these
-// tests no longer notice `clients.claim()` going missing. Claiming is what
-// makes the *first* visit controlled without a reload, and the only way to
-// assert it is to race activation — which is the race that was flaking. The
-// property is real and remains untested here on purpose; a test of it would be
-// a test that fails on a busy machine for a reason unrelated to the change.
+// The server is closed rather than the network emulated: CDP's offline emulation
+// applies to the page's network stack and not the worker's, so the first version
+// passed while the POST reached the server and came back "kept".
 func waitForTheWorker(t *testing.T, c *cdp, url string) {
 	t.Helper()
 	c.until(t, "the worker to be ready", `

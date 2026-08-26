@@ -2,23 +2,13 @@
 
 // What the screens look like, in a form a diff can read.
 //
-// Both critique passes over this product found visual drift by eye — a rule
-// redefined somewhere global, four screens quietly repainted, nobody the
-// wiser until a person went looking. The browser suite covers the hard part,
-// which is behaviour: the stamp, the keys, search answering as you type. It
-// has never covered what any of it looks like.
+// Both critique passes found visual drift by eye — a global rule redefined, four
+// screens quietly repainted, nobody the wiser. The browser suite covers
+// behaviour and has never covered what any of it looks like.
 //
-// The obvious answer is a screenshot diff, and it is the wrong one here. Font
-// rasterisation differs between this machine and the runner, so a committed
-// PNG fails on the first CI run for a reason that has nothing to do with the
-// change — and a check that cries wolf teaches you to re-run the job instead
-// of reading it. That lesson is fresh: a genuine flake in this suite failed a
-// branch that had not touched it, an hour before this file was written.
-//
-// So this records the *computed* values instead. They are what the cascade
-// actually settled on, they do not depend on how a glyph is rasterised, and
-// they diff as text — you can read what changed in the pull request rather
-// than squinting at two images.
+// Not a screenshot diff: font rasterisation differs between this machine and the
+// runner, so a committed PNG fails on the first CI run for a reason unrelated to
+// the change, and a check that cries wolf teaches you to re-run the job.
 package web
 
 import (
