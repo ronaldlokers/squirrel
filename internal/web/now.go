@@ -26,11 +26,9 @@ func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offe
 	}
 	o, found, err := s.PickNow(r.Context(), personID, now(), anyway)
 	if err != nil || !found {
-		// Nothing to hand over, and the coach is not asked. A model invited to
-		// find something when the rules found nothing would be answering a
-		// different question, and this region is absent rather than empty when
-		// there is nothing — which is a rule about the screen, not about who
-		// chose.
+		// Nothing to hand over, and the coach is not asked: a model invited to find
+		// something when the rules found nothing would be answering a different
+		// question.
 		return nil
 	}
 	o = judged(opts, r, personID, o, mayAsk)
@@ -47,12 +45,9 @@ func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offe
 	return v
 }
 
-// judged is the offer after a model has had a look at it, or the same offer.
-//
-// Same type in and out, so the card, its three buttons and the ladder beneath
-// it cannot tell which produced it. JudgementHelps is the core's own rule
-// about which kinds a model may touch, asked here rather than restated: a
-// running timer and a fixed point are not opinions to be revisited.
+// judged is the offer after a model has looked at it, or the same offer. Same
+// type in and out, so nothing downstream can tell which produced it.
+// JudgementHelps is the core's rule about which kinds a model may touch.
 func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer, mayAsk bool) squirrel.Offer {
 	if opts.Decide == nil || !squirrel.JudgementHelps(o.Kind) {
 		return o
@@ -64,12 +59,8 @@ func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer, may
 	return squirrel.Offer{Kind: squirrel.OfferKind(kind), RefID: refID, Text: text, Because: because}
 }
 
-// nowActHandler is the offer's three answers.
-//
-// Every one of them is a form POST answered with a 303, the same shape the
-// pile's and the chores' actions already use — so the whole region works with
-// no script at all, and a reload after pressing re-reads rather than repeating
-// the press.
+// nowActHandler is the offer's three answers, each a form POST answered with a
+// 303 — so the region works with no script and a reload re-reads.
 func nowActHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -116,13 +107,9 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// forgetOffer drops the decision a model made, and does nothing where no model
-// made one.
-//
-// Called after an answer rather than before it, and after the error check
-// rather than beside it: an answer that did not land is not an answer, and
-// throwing the decision away for it would swap the card underneath a press
-// that failed.
+// forgetOffer drops the decision a model made. Called after the error check: an
+// answer that did not land is not an answer, and throwing the decision away would
+// swap the card underneath a press that failed.
 func forgetOffer(opts Options, personID int64) {
 	if opts.ForgetOffer == nil {
 		return
@@ -130,13 +117,10 @@ func forgetOffer(opts Options, personID int64) {
 	opts.ForgetOffer(personID)
 }
 
-// nowStuckHandler is "I can't start", and it is the one branch of the offer
-// that can end without anything having been done to anything.
-//
-// It answers with a redirect carrying the answer in the address bar rather
-// than rendering here, so the response is a page you can reload, bookmark or
-// come back to — and so the ladder's words live in one place, in the core,
-// where the chat reads them too.
+// nowStuckHandler is "I can't start", the one branch that can end without
+// anything being done to anything. It redirects with the answer in the address
+// bar, so the response is a page you can reload and the ladder's words live in
+// the core where chat reads them too.
 func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -189,11 +173,8 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// unstuckFrom reads the ladder's answer back out of the address bar.
-//
-// It arrives from a redirect this package wrote, but it arrives through the
-// address bar, so it is read as though a stranger typed it: anything that is
-// not one of the four is no answer rather than a bad one.
+// unstuckFrom reads the ladder's answer out of the address bar, as though a
+// stranger typed it: anything that is not one of the four is no answer.
 func unstuckFrom(q url.Values) *unstuckView {
 	b, ok := squirrel.ParseBlocker(q.Get("stuck"))
 	if !ok {
@@ -228,12 +209,8 @@ var offerKinds = map[squirrel.OfferKind]bool{
 	squirrel.OfferTimer:  true,
 }
 
-// startFromOffer puts a timer on the thing being offered, and records that the
-// offer is what started it.
-//
-// The same row `!timer` and the chores screen's own buttons write, so a body
-// double started from home is the body double, not a second kind of one. The
-// label is the offer's own words rather than anything this handler invents.
+// startFromOffer puts a timer on the thing being offered, writing the same row
+// `!timer` does. The label is the offer's own words.
 func startFromOffer(s Store, r *http.Request, personID int64) error {
 	mins, err := strconv.Atoi(r.FormValue("minutes"))
 	if err != nil || mins < 1 || mins > 180 {

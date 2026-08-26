@@ -21,11 +21,9 @@ import (
 // remember/forget still writes the rolling window, because the next prompt is
 // built from it.
 
-// askBuddyChip is the way in, and it is on the live edge wherever that is.
-//
-// It has to be somewhere that always exists: the acorn was chrome and was
-// therefore on every screen, and a chip that hangs off a card is a chip that
-// disappears exactly when there is nothing to talk about.
+// askBuddyChip is the way in, on the live edge wherever that is. It has to be
+// somewhere that always exists: a chip hanging off a card disappears exactly when
+// there is nothing to talk about.
 func askBuddyChip() turnChip {
 	return turnChip{Label: "ask Buddy", Action: "/buddy/ask"}
 }
@@ -56,10 +54,8 @@ func findAskHandler(s Store, opts Options) http.HandlerFunc {
 // alwaysThere is the pair, for the live edge to carry.
 func alwaysThere() []turnChip { return []turnChip{askBuddyChip(), findChip()} }
 
-// askInWords is a question with a box under it, and the words to ask it.
-//
-// askForWords is the reword question and says so; this is the same shape with
-// its own sentence, because "How should it read?" is the wrong question to ask
+// askInWords is a question with a box under it. Its own sentence rather than
+// askForWords', because "How should it read?" is the wrong question to ask
 // somebody who pressed *ask Buddy*.
 func askInWords(question, action, does string, fields map[string]string) squirrel.Turn {
 	return askInWordsNamed(question, action, "said", does, fields)
@@ -79,26 +75,16 @@ func askInWordsNamed(question, action, field, does string, fields map[string]str
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: question, Shown: body}
 }
 
-// coachReply is what Buddy said, as a turn.
-//
-// The four blockers ride on it when there is nothing better to say — a chip is
-// the sentence you did not have to type, and somebody at the moment of least
-// capacity should not have to compose anything to be helped. "That went badly"
-// rides on any reply the model wrote, and on none that it did not: there is no
-// point telling us a fixed sentence landed badly when the fixed sentence is
-// the same one every time.
+// coachReply is what Buddy said, as a turn. The four blockers ride on it when
+// there is nothing better to say. "That went badly" rides on any reply the model
+// wrote and on none that it did not.
 func coachReply(words string, askWhich, fromModel bool, p *Proposal, step *stepView) squirrel.Turn {
 	return coachReplyCosting(words, "", askWhich, fromModel, p, step)
 }
 
-// coachReplyCosting is the same with what this has cost written on it.
-//
-// The sheet carried the spend in its own lid, and the rule it was protecting
-// is that a running cost must never be a number you meet before you have asked
-// for anything. The sheet is gone and the home screen is the only chrome left,
-// so the figure moves to the one place that still satisfies the rule: the
-// reply itself. You have asked by the time you can read it, and it is not on
-// screen at any other moment.
+// coachReplyCosting is the same with what this has cost written on it. A running
+// cost must never be a number you meet before you have asked for anything, and by
+// the time you can read this you have asked.
 func coachReplyCosting(words, cost string, askWhich, fromModel bool, p *Proposal, step *stepView) squirrel.Turn {
 	sh := drawn{Cost: cost}
 	if askWhich {
@@ -153,13 +139,9 @@ func stepCard(st *stepView) cardView {
 	}
 }
 
-// proposalCard is a thing Buddy wants permission for, as one press.
-//
-// Stored nowhere, exactly as it was: it travels in the form that renders it,
-// so a proposal in scrollback has lost its button by the live edge rule, and
-// nothing is applied by anything except a press. That is the same guarantee
-// the sheet gave, arrived at by the rule the whole conversation already runs
-// on rather than by a page that happens not to survive a reload.
+// proposalCard is a thing Buddy wants permission for, as one press. Stored
+// nowhere: it travels in the form that renders it, so a proposal in scrollback
+// has lost its button by the live edge rule.
 func proposalCard(p *Proposal) cardView {
 	fields := map[string]string{"do": p.Do, "text": p.Text}
 	if p.At != "" {
@@ -181,18 +163,12 @@ func proposalCard(p *Proposal) cardView {
 	}
 }
 
-// offerHint is what you would be handed right now, said rather than painted.
-//
-// The sheet drew the offer at the top so a conversation had something to be
-// about. In the thread the conversation already has whatever is above it, so
-// this is only asked for when Buddy is being opened cold — and it costs
-// nothing, because the picker is six rules and no model.
+// offerHint is what you would be handed right now, asked for only when Buddy is
+// opened cold — the conversation already has whatever is above it. It costs
+// nothing: the picker is six rules and no model.
 func offerHint(s Store, opts Options, r *http.Request) string {
-	// Through offerFor, which is the path that goes via the coach's cache. It
-	// may consult a decision that was already paid for and may never cause
-	// one: asking has to stay free, and the first version of this test only
-	// checked the conversational seam while the picker's seam paid for a tool
-	// loop on every press.
+	// Through offerFor, the path that goes via the coach's cache: it may consult a
+	// decision already paid for and may never cause one. Asking has to stay free.
 	o := offerFor(s, opts, r, true, false)
 	if o == nil {
 		return ""
