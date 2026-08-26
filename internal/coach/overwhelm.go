@@ -7,15 +7,14 @@ import "strings"
 // Someone lists five things at once, and the listing is the overwhelm — so the
 // answer must not reflect it back. One thing, one reason, and the rest is kept.
 //
-// The only routine turn that escalates to the expensive model: on an ordinary
-// "what now" the difference between tiers is a nicer sentence, and here it is the
-// difference between choosing well and reading a list back.
-
-// Detected by rules rather than by a model: asking one before every turn doubles
-// the calls to answer a question that costs nothing to answer badly.
+// The only routine turn that escalates to the expensive model: elsewhere the
+// difference between tiers is a nicer sentence, and here it is the difference
+// between choosing well and reading a list back.
 //
-// Conservative — three things before it counts — because escalating too eagerly
-// costs money and escalating too rarely costs a nicer sentence.
+// Detected by rules rather than by a model, because a model asked before every
+// turn doubles the calls to answer a question that costs nothing to answer
+// badly. Conservative, because escalating too eagerly costs money and escalating
+// too rarely costs a nicer sentence.
 
 // overwhelmParts is how many separate things have to be named. Three, not two:
 // "the tax thing and the vet" is a sentence people write when they are fine.
@@ -38,7 +37,7 @@ func listedIn(said string) []string {
 		return nil
 	}
 
-	if lines := meaningful(strings.Split(t, "\n")); len(lines) >= overwhelmParts {
+	if lines := listSized(strings.Split(t, "\n")); len(lines) >= overwhelmParts {
 		return lines
 	}
 
@@ -48,7 +47,7 @@ func listedIn(said string) []string {
 	for _, chunk := range strings.Split(t, ",") {
 		parts = append(parts, splitOnAnd(chunk)...)
 	}
-	return meaningful(parts)
+	return listSized(parts)
 }
 
 // splitOnAnd separates on the word, never on the letters. "and" inside
@@ -68,21 +67,21 @@ func splitOnAnd(chunk string) []string {
 	}
 }
 
-// listItemShortest and listItemLongest are what a listed thing looks like. The
-// floor of three keeps "vet" and drops the fragment a trailing comma leaves.
+// listItemShortest keeps "vet" and drops the fragment a trailing comma leaves.
 //
-// The ceiling earns its keep: "I have been trying to start this one thing all
-// morning and I keep opening the page and closing it again" splits into three on
-// "and" and is one thought told at length. Listed things are short, because
-// listing them is what you do instead of thinking about each one.
+// listItemLongest earns its keep: "I have been trying to start this one thing
+// all morning and I keep opening the page and closing it again" splits into
+// three on "and" and is one thought told at length. Listed things are short,
+// because listing them is what you do instead of thinking about each one.
 const (
 	listItemShortest = 3
 	listItemLongest  = 40
 )
 
-// meaningful keeps the parts that look like listed things. Deliberately crude: a
-// rule that judged whether something is a real task would be a model in disguise.
-func meaningful(parts []string) []string {
+// listSized keeps the parts short enough to be things somebody listed.
+// Deliberately crude: a rule that judged whether something is a real task would
+// be a model in disguise.
+func listSized(parts []string) []string {
 	out := make([]string, 0, len(parts))
 	for _, p := range parts {
 		t := strings.TrimSpace(p)

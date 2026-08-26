@@ -20,16 +20,23 @@ import (
 
 const CampfireName = "campfire"
 
-// The Campfire adapter, and every quirk below stays inside this file.
+// spooledReceipt says the spool write and its fsync completed, so the thought
+// survives a crash. The ✅ that follows comes from the applier once the drain has
+// reached Postgres; the gap between the two is the window this architecture is
+// built around.
+const spooledReceipt = "👀"
+
+// The Campfire adapter. Every quirk below is Campfire's, not ours:
 //
-// Campfire treats the HTTP response body as the bot's reply. A 200 with a
-// Content-Type is posted into the room; a non-200 that still carries one is
-// uploaded as an attachment; no Content-Type at all is the only silence. There
-// is a hard seven-second deadline after which Campfire posts its own failure
-// notice over the top. None of that is ours to choose.
+// It treats the HTTP response body as the bot's reply. A 200 carrying a
+// Content-Type is posted into the room; a non-200 carrying one is uploaded as an
+// attachment; no Content-Type at all is the only silence. A hard seven-second
+// deadline follows, after which Campfire posts its own failure notice over the
+// top.
 //
-// There is also no signature, no shared secret and no timestamp. The caller's
+// There is no signature, no shared secret and no timestamp. The caller's
 // identity is the callback URL, guarded by NetworkPolicy; the clock is ours.
+
 type campfirePayload struct {
 	Type string `json:"type"`
 	User *struct {
@@ -123,13 +130,11 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 	return c
 }
 
-// accept calls the sink and converts a panic into squirrel.Failed. Nothing
-// may escape the handler: Sink is an interface supplied by the caller of
-// NewCampfire, not written by this package, and a panic in someone else's
-// implementation must still answer Campfire rather than unwind into the
-// server's own recover — which replies with a bare 500 and no Content-Type,
-// the one response Campfire treats as silence, so the sender never learns
-// their thought was dropped.
+// accept converts a panic in somebody else's Sink into squirrel.Failed.
+//
+// Nothing may escape the handler: the server's own recover replies with a bare
+// 500 and no Content-Type, which Campfire treats as silence, so the sender never
+// learns their thought was dropped.
 func accept(ctx context.Context, sink Sink, c squirrel.Capture) (o squirrel.Outcome) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -140,35 +145,35 @@ func accept(ctx context.Context, sink Sink, c squirrel.Capture) (o squirrel.Outc
 	return sink.Accept(ctx, c)
 }
 
+// Respond says nothing unless something went wrong.
+//
+// The Content-Type is what speaks, not the status: carrying one posts the body
+// into the room, and omitting one posts nothing. So a stored or ignored capture
+// sets no header and writes no bytes — Go sniffs a type the moment there are
+// any — and only a failure says so out loud. The receipt for a stored capture is
+// a boost on the message, fired separately.
+//
+// A non-200 carrying a Content-Type would be uploaded as an attachment, which is
+// why the failure is still a 200.
 func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	switch o {
-	case squirrel.Stored:
-		// The receipt is a boost on the message itself, fired separately. A 200
-		// with no Content-Type is Campfire's "post nothing", same as Ignored.
-		w.WriteHeader(http.StatusOK)
-	case squirrel.Ignored:
-		// No body and no Content-Type: the one path that says nothing at all.
-		// Never call Write here — Go sniffs a type when there are bytes.
+	case squirrel.Stored, squirrel.Ignored:
 		w.WriteHeader(http.StatusOK)
 	case squirrel.Failed:
-		// Still a 200. A non-200 carrying a Content-Type becomes an attachment.
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		fmt.Fprint(w, "⚠️ couldn't save that — please resend")
 	}
 }
 
 // asRichText prepares a body for Campfire, whose Message declares
-// `has_rich_text :body`, so whatever arrives is treated as HTML. A newline
-// collapses the way any whitespace does inside an HTML block, which is how a
-// three-line digest arrived as one run-on sentence. The rich-text field decides,
-// not the content type.
+// `has_rich_text :body` — so whatever arrives is treated as HTML whatever the
+// content type says, and a newline collapses the way any whitespace does inside
+// an HTML block. That is how a three-line digest arrived as one run-on sentence.
 //
 // Escaping happens first and is not optional: the digest carries captured text
-// back verbatim, so a note containing "<b>" would turn ordinary words into
-// markup.
+// back verbatim, so a note containing "<b>" would turn words into markup.
 //
-// It lives in the transport because it is Campfire's quirk. render.go stays plain
-// text.
+// Campfire's quirk, so it lives in the transport. render.go stays plain text.
 func asRichText(text string) string {
 	return strings.ReplaceAll(html.EscapeString(text), "\n", "<br>")
 }
@@ -290,33 +295,31 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 		return res, isJSON, nil
 	}
 
-	// do is the phase 3 -> phase 2 degrade, made true by construction rather
-	// than by prose: DefinedMessage always carries a button and ListMessage
-	// carries one whenever anything is due, so those messages are always sent
-	// as JSON — but an upstream, unforked Campfire takes the raw request body
-	// as the message text and would post the JSON envelope itself into the
-	// room. A 4xx response to a JSON attempt is what an unforked instance
-	// looks like from here, so it is retried exactly once as the plain text
-	// phase 2 always sent. A non-4xx failure (5xx, a network error) is not
-	// retried: that is Campfire being unavailable, not a shape it refused.
+	// unforkedCampfire reports a server that refused the buttons envelope.
 	//
-	// The retry is gated to POST only. Update's caller, closePrevious, sends
-	// Text deliberately empty so the PATCH omits "body" and the room's
-	// existing text survives — that omission is itself a fix. Retrying a
-	// rejected PATCH as plain text would carry an explicit empty body, which
-	// wipes the previous digest's text on any endpoint that accepts a
-	// plain-text PATCH: exactly the bug the empty-body omission exists to
-	// prevent, and one a 2xx result from the retry would hide completely,
-	// since Update's caller reports failure only on a non-2xx response. Phase
-	// 2 also never had an Update to fall back to, so there is no phase 2
-	// behaviour here to degrade to in the first place.
+	// An unforked Campfire takes the raw request body as the message text, so it
+	// would post the JSON itself into the room; a 4xx to a JSON attempt is what
+	// that looks like from here. A 5xx or a network error is Campfire being
+	// unavailable rather than a shape it refused, so neither retries.
+	//
+	// POST only. Update always sends Text empty so the PATCH omits "body" and the
+	// room's existing text survives — retrying that as plain text would send an
+	// explicit empty body and wipe the message, which is the bug the omission
+	// exists to prevent, hidden by the retry's own 2xx.
+	unforkedCampfire := func(method string, isJSON bool, res *http.Response) bool {
+		return method == http.MethodPost && isJSON &&
+			res.StatusCode >= 400 && res.StatusCode < 500
+	}
+
+	// do sends m, and falls back to plain text against a Campfire that cannot
+	// take buttons.
 	do := func(ctx context.Context, method, dest string, m squirrel.Message, disabled bool) (*http.Response, error) {
 		res, isJSON, err := roundTrip(ctx, method, dest, m, disabled)
 		if err != nil {
 			return nil, err
 		}
 
-		if method == http.MethodPost && isJSON && res.StatusCode >= 400 && res.StatusCode < 500 {
+		if unforkedCampfire(method, isJSON, res) {
 			io.Copy(io.Discard, res.Body)
 			res.Body.Close()
 			slog.Warn("campfire: message with actions was rejected, retrying as plain text",
@@ -367,15 +370,13 @@ func chatVia(baseURL, botKey string) squirrel.Chat {
 	}
 }
 
-// stripURL removes the request URL from a *url.Error before it is logged or
-// otherwise surfaced. client.Do wraps a transport failure in a *url.Error
-// whose Error() method embeds the full request URL, and every outbound
-// Campfire URL — send and boost alike — carries the bot key as a path
-// segment: "Post \"http://.../rooms/7/<bot-key>/messages\": dial tcp ...".
-// The key is the most sensitive thing in this whole namespace, and this path
-// is exercised precisely during an outage, exactly when logs get shipped and
-// read. Only the operation and the underlying error survive; anything that
-// is not a *url.Error passes through unchanged.
+// stripURL keeps the bot key out of the logs.
+//
+// client.Do wraps a transport failure in a *url.Error whose Error() embeds the
+// full request URL, and every outbound Campfire URL carries the bot key as a
+// path segment: "Post \"http://.../rooms/7/<bot-key>/messages\": dial tcp ...".
+// This path runs during an outage, which is exactly when logs get shipped and
+// read.
 func stripURL(err error) error {
 	var urlErr *url.Error
 	if errors.As(err, &urlErr) {
@@ -393,54 +394,54 @@ var (
 	safeMessageID = regexp.MustCompile(`^[A-Za-z0-9._~-]+$`)
 )
 
-// BoostURL builds the reaction endpoint from what the payload already carries.
-// room.path is "/rooms/:id/:bot_key/messages", so the bot key needs no
-// configuration — it arrives with every message. Phase 1 rejected reusing
-// room.path for *initiating* a conversation, because outbound would then only
-// reach rooms we had recently heard from. Reacting to the message that just
-// arrived is the opposite case: the payload is the context.
-//
-// room.path is untrusted, so it is validated in two layers rather than
-// trusted and interpolated. First, the shape: the allowed character class
-// excludes "@" (and every other URL-special character) outright, so no
-// whitespace, no "//" (which would parse as a scheme-relative host), no ".."
-// segment (traversal), and the path must start with "/". Second — because a
-// regex is easy to loosen later without noticing what it re-admits — the
-// composed URL is re-parsed with a real URL parser and checked to still
-// address the configured scheme and host with no userinfo. That second check
-// is the one that would catch the classic bare "@" SSRF even if the character
-// class above stopped excluding it: a roomPath of "@evil.com/rooms" against
-// baseURL "http://campfire.internal" composes to
-// "http://campfire.internal@evil.com/rooms/42/boosts", which parses with host
-// evil.com and userinfo campfire.internal — a different destination entirely.
-//
-// A rejected input returns ok == false. That must mean no boost, silently —
-// exactly like a missing room.path already does — never a dropped capture
-// and never a request sent somewhere else.
-func BoostURL(baseURL, roomPath, messageID string) (built string, ok bool) {
+// shapedLikeAPath reports a room path safe to interpolate: absolute, no
+// scheme-relative "//", no ".." to climb with, and none of the URL-special
+// characters the class excludes.
+func shapedLikeAPath(roomPath string) bool {
 	if !safeRoomPath.MatchString(roomPath) || strings.Contains(roomPath, "//") {
-		return "", false
+		return false
 	}
 	for _, segment := range strings.Split(roomPath, "/") {
 		if segment == ".." {
-			return "", false
+			return false
 		}
 	}
-	if !safeMessageID.MatchString(messageID) {
-		return "", false
-	}
+	return true
+}
 
+// stillAddresses reports that the composed URL goes where baseURL goes.
+//
+// A regex is easy to loosen later without noticing what it re-admits, so the
+// composed URL is re-parsed and checked with a real parser. This is the layer
+// that catches the bare "@": a roomPath of "@evil.com/rooms" against
+// "http://campfire.internal" composes to
+// "http://campfire.internal@evil.com/rooms/42/boosts", which parses with host
+// evil.com and campfire.internal as userinfo — a different destination entirely.
+func stillAddresses(baseURL, built string) bool {
 	base, err := url.Parse(baseURL)
 	if err != nil {
-		return "", false
+		return false
 	}
-
-	built = fmt.Sprintf("%s%s/%s/boosts", strings.TrimRight(baseURL, "/"), roomPath, messageID)
 	composed, err := url.Parse(built)
 	if err != nil {
+		return false
+	}
+	return composed.Scheme == base.Scheme && composed.Host == base.Host && composed.User == nil
+}
+
+// BoostURL builds the reaction endpoint out of the payload, which carries
+// room.path as "/rooms/:id/:bot_key/messages" — so the bot key needs no
+// configuration. That path is attacker-controlled input and is validated in two
+// layers before it is interpolated.
+//
+// A rejected input returns ok == false, which must mean no boost, silently —
+// never a dropped capture and never a request sent somewhere else.
+func BoostURL(baseURL, roomPath, messageID string) (built string, ok bool) {
+	if !shapedLikeAPath(roomPath) || !safeMessageID.MatchString(messageID) {
 		return "", false
 	}
-	if composed.Scheme != base.Scheme || composed.Host != base.Host || composed.User != nil {
+	built = fmt.Sprintf("%s%s/%s/boosts", strings.TrimRight(baseURL, "/"), roomPath, messageID)
+	if !stillAddresses(baseURL, built) {
 		return "", false
 	}
 	return built, true
@@ -499,23 +500,17 @@ func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, ca
 		return
 	}
 
+	// Neither room.path nor dest ever goes into a log field: both embed the bot
+	// key. Errors from boost are stripped of it by stripURL.
 	dest, ok := BoostURL(cfg.BaseURL, p.Room.Path, *capture.ExternalID)
 	if !ok {
-		// room.path embeds the bot key, so it never goes into a log field.
 		slog.Warn("campfire: rejecting boost with an unsafe room path")
 		return
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		// 👀 means the spool write and its fsync completed — the thought
-		// survives a crash. The ✅ that follows it comes from the applier, once
-		// the drain has reached Postgres. The gap between the two is the window
-		// this whole architecture is built around, and until now nothing in the
-		// room could see it.
-		if err := boost(ctx, client, dest, "👀"); err != nil {
-			// dest carries the bot key, so it never goes into a log field —
-			// err is already stripped of it by stripURL inside boost.
+		if err := boost(ctx, client, dest, spooledReceipt); err != nil {
 			slog.Error("campfire: boost failed", "error", err)
 		}
 	}()

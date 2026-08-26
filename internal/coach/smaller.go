@@ -9,16 +9,12 @@ import (
 
 // Making a thing smaller.
 //
-// This is the one place in the product where a model returns a list, and it is
-// allowed because **the list never renders**. It is stored, and the
-// application hands back one step at a time. Pacing stays deterministic, which
-// is the guarantee that keeps this from becoming the twelve-step plan the rest
-// of the design spends its effort avoiding.
+// The one place in the product where a model returns a list, and it is allowed
+// because the list never renders: it is stored, and the application hands back
+// one step at a time.
 //
-// The distinction is worth being exact about, because it is subtle and it is
-// the whole safety argument: a model that *produces* a sequence is fine. A
-// surface that *shows* a sequence is not. Someone who has just said they
-// cannot start cannot read five steps; they can read one.
+// A model that produces a sequence is fine; a surface that shows one is not.
+// Somebody who has just said they cannot start cannot read five steps.
 
 // mostSteps is the ceiling. Five, because past five it stops being a way in
 // and becomes a project plan — and because a sequence you will not finish is
@@ -30,9 +26,9 @@ const mostSteps = 5
 // to keep a model away from.
 const fewestSteps = 2
 
-// stepLongest is how long one step may be. Forty-four characters is about what
-// fits on a phone without wrapping, and a step that needs two lines is a step
-// that needs breaking down itself.
+// stepLongest is how long one step may be: about what fits on a phone without
+// wrapping. A step that needs two lines is a step that needs breaking down
+// itself.
 const stepLongest = 60
 
 // smallerPreamble is what the model is told.

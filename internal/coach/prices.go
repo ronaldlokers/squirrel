@@ -3,20 +3,15 @@ package coach
 // What a model costs, so the budget can be counted in money rather than in
 // tokens.
 //
-// Tokens are the wrong unit for a ceiling. The ceiling is "about ten euros a
-// month", and two models whose token counts are identical can differ tenfold in
-// what they cost — so counting tokens would mean a budget that means something
-// different depending on which model answered.
+// Tokens are the wrong unit for a ceiling: two models with identical token
+// counts can differ tenfold in what they cost.
 //
-// The table is in code rather than in configuration on purpose: a price change
-// should show up in a diff and be reviewed, not arrive silently through an
-// environment variable nobody remembers setting. It was read from OpenAI's
-// pricing page on 20 August 2026, and the model ids were confirmed against
-// GET /v1/models on the same day rather than copied from prose.
+// In code rather than configuration, so a price change shows up in a diff and is
+// reviewed. Read from the pricing page on 20 August 2026, with the model ids
+// confirmed against GET /v1/models rather than copied from prose.
 //
-// Cents per million tokens, as integers. Dollars are treated as euros for
-// budgeting, which overstates the spend by whatever the rate is — erring
-// toward stopping early is the right direction for a ceiling.
+// Cents per million tokens, as integers. Dollars are treated as euros, which
+// overstates the spend — erring toward stopping early is the right direction.
 
 type price struct{ in, out int }
 
@@ -32,17 +27,12 @@ var prices = map[string]price{
 	"gpt-5.6-sol": {in: 500, out: 3000},
 }
 
-// Cost is what one answer cost, in **micro-euros** — millionths of a euro.
+// Cost is what one answer cost, in micro-euros — millionths of a euro. A routine
+// answer costs well under a tenth of a cent, so counting in cents would round
+// almost every call to zero.
 //
-// The unit matters. A single routine answer costs well under a tenth of a
-// cent, so counting in cents would round almost every call to zero and a
-// month of them would report a spend of nothing at all. Micro-euros keep the
-// arithmetic in integers with room to spare.
-//
-// An unknown model costs zero, which is a deliberate choice with a stated
-// consequence: pointing the configuration at a model this table does not know
-// means the budget stops protecting you. Boot warns about exactly that rather
-// than leaving it silent.
+// An unknown model costs zero, which means the budget stops protecting you.
+// Boot warns about exactly that rather than leaving it silent.
 func Cost(model string, in, out int) int64 {
 	p, ok := prices[model]
 	if !ok {

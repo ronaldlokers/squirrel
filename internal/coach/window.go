@@ -14,9 +14,8 @@ import (
 // second permanent record of bad moments — coach_answers is already that record
 // and already keeps everything.
 //
-// It is bounded on both axes, so it cannot grow: at most WindowSize exchanges
-// per person, and Trim drops anything past WindowAge on every read. One person
-// uses this product; even wrong by an order of magnitude it is a few kilobytes.
+// Bounded on both axes, so it cannot grow: at most WindowSize exchanges per
+// person, and Trim drops anything past WindowAge on every read.
 type Conversations struct {
 	mu sync.Mutex
 	by map[int64][]Exchange
