@@ -196,8 +196,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	s.offers = coach.NewOffers()
 	s.talk = coach.NewConversations()
 
-	// The owner is filled in by connectAndDrain once Postgres answers, which may be a
-	// while or never. Until then the screen answers 503.
+	// Nowhere to keep a photograph is a supported state and the default.
+	// Checked here rather than at the first press: the first photograph is the
+	// worst moment to discover the volume is not there.
 	var photos *squirrel.Photos
 	if config.PhotoDir != "" {
 		var err error
@@ -214,15 +215,14 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		slog.Info("no photo directory configured; the camera is not offered")
 	}
 
-	// The coach's three seams for the screen, converted here because boot is
-	// the only package that may know both shapes. All three are nil-safe: with
-	// no coach the acorn still opens, the four chips still answer, and the
-	// ladder behind them is what shipped before any of this existed.
+	// The coach's seams for the screen, converted here because boot is the only
+	// package that may know both shapes. All are nil-safe: with no coach the
+	// four chips still answer and the ladder behind them is what shipped before
+	// any of this existed.
 	webAsk, webRecent, webRemember, webForget := coachWeb(s.coach, store, s.talk)
-	// One decider, shared by the screen and the chat, so both see the same
-	// cached answer and asking twice costs once.
-	// The decision, and the way to drop it. One call, because they are only
-	// correct against the same cache — see deciding.
+	// The decision and the way to drop it, from one call because they are only
+	// correct against the same cache. Shared by the screen and the chat, so both
+	// see the same cached answer and asking twice costs once — see deciding.
 	decide, forgetOffer := deciding(s.coach, s.offers)
 	makeSmaller := breaker(s.coach)
 	split, splittable := splitter(s.coach)
@@ -236,10 +236,10 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// See readingWiring.
 	read := readingWiring(s.coach, store, s.house)
 
-	// The way in, built once at boot. Discovery is a network call to
-	// Authentik, and a Squirrel that cannot find its own way in is not a
-	// working Squirrel — so this fails the boot rather than mounting a screen
-	// nobody can reach.
+	// The way in, built once at boot and without touching the network:
+	// discovery is lazy and retried, so an unreachable Authentik costs the
+	// screen and never the boot. See NewAuthentik. What is refused here is
+	// configuration that cannot come right on its own.
 	var gate *web.Gate
 	if config.OIDC.Ready() {
 		var err error

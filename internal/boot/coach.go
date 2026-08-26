@@ -390,14 +390,21 @@ func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (
 	}
 }
 
+// The screen's half of the coach seam, in the screen's own types.
+type (
+	webAsker    func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error)
+	webRecenter func(personID int64) []web.Exchange
+	webRemember func(personID int64, said, replied string)
+	webForget   func(personID int64)
+)
+
 // coachWeb is the screen's half of the same seam. The screen declares its own
 // Exchange, Answer and Proposal for the reason it declares its own Store, so the
 // conversion lives here and boot stays the one place that knows both shapes.
 func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
-	func(context.Context, int64, string, string, string) (web.Answer, error),
-	func(int64) []web.Exchange, func(int64, string, string), func(int64)) {
+	ask webAsker, recent webRecenter, remember webRemember, forget webForget) {
 
-	recent := func(personID int64) []web.Exchange {
+	recent = func(personID int64) []web.Exchange {
 		fresh := talk.Recent(personID, time.Now())
 		out := make([]web.Exchange, 0, len(fresh))
 		for _, e := range fresh {
@@ -405,18 +412,18 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 		}
 		return out
 	}
-	remember := func(personID int64, said, replied string) {
+	remember = func(personID int64, said, replied string) {
 		talk.Add(personID, said, replied, time.Now())
 	}
-	forget := func(personID int64) { talk.Forget(personID) }
+	forget = func(personID int64) { talk.Forget(personID) }
 
-	ask := asker(c, store, talk, true)
-	if ask == nil {
+	turn := asker(c, store, talk, true)
+	if turn == nil {
 		return nil, recent, remember, forget
 	}
 
-	webAsk := func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error) {
-		reply, err := ask(ctx, personID, kind, said, subject)
+	ask = func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error) {
+		reply, err := turn(ctx, personID, kind, said, subject)
 		if err != nil {
 			return web.Answer{}, err
 		}
@@ -429,7 +436,7 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 		}
 		return a, nil
 	}
-	return webAsk, recent, remember, forget
+	return ask, recent, remember, forget
 }
 
 // coachChat is chat's half. It wants what was said and what changed, and it
