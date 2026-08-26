@@ -472,13 +472,15 @@ func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
 			// while ago, and the only two answers are picking it back up and
 			// not — there is nothing here to have done.
 			card.Acts = []actView{
-				{Label: "PICK IT UP", Action: "/now/act", Style: "go", Fields: with(with(row, "act", "start"), "minutes", "10")},
+				{Label: "PICK IT UP", Action: "/now/act", Style: "go",
+					Fields: with(row, "act", "start", "minutes", quickTimer)},
 				{Label: "not now", Action: "/now/act", Style: "later", Fields: with(row, "act", "later")},
 			}
 		default:
 			card.Acts = []actView{
 				{Label: did, Action: "/now/act", Style: "did", Fields: with(row, "act", "did")},
-				{Label: "10 MIN", Action: "/now/act", Style: "go", Fields: with(with(row, "act", "start"), "minutes", "10")},
+				{Label: quickTimer + " MIN", Action: "/now/act", Style: "go",
+					Fields: with(row, "act", "start", "minutes", quickTimer)},
 				{Label: "not now", Action: "/now/act", Style: "later", Fields: with(row, "act", "later")},
 			}
 		}
@@ -503,16 +505,25 @@ func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
 	}, true
 }
 
-// with is one field added to a row's own fields, copied rather than mutated —
-// three buttons share the row and each needs a different act.
-func with(fields map[string]string, name, value string) map[string]string {
-	out := make(map[string]string, len(fields)+1)
+// with is a row's own fields plus some more, copied rather than mutated: the
+// buttons on one card share the row and each needs a different act.
+//
+// Pairs, so a button that adds two fields reads as one call rather than as with
+// wrapped around with.
+func with(fields map[string]string, pairs ...string) map[string]string {
+	out := make(map[string]string, len(fields)+len(pairs)/2)
 	for k, v := range fields {
 		out[k] = v
 	}
-	out[name] = value
+	for i := 0; i+1 < len(pairs); i += 2 {
+		out[pairs[i]] = pairs[i+1]
+	}
 	return out
 }
+
+// quickTimer is what the offer's own timer button starts. Ten minutes, which is
+// the number on the button.
+const quickTimer = "10"
 
 // saidAboutTheOffer is what the two of you said when a press landed. Turning it
 // down is in the record beside doing it, and they do not read the same.

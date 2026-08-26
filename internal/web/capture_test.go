@@ -46,8 +46,15 @@ func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
 	post(t, mountedSpooling(t, f, &fakeSpool{}), "/capture", url.Values{"text": {"a thought"}})
 
 	require.Len(t, f.appended, 2)
+
+	// Against the pool, not the word: the wording is chosen from the day, and
+	// "kept" is only one of them. Asserting the literal failed on every day
+	// that picked "On the shelf." — the third saying-shaped flake in this
+	// suite, after the one that failed after 21:00 and the one that failed
+	// between midnight and two.
+	require.Contains(t, squirrel.Sayings(squirrel.SayingKept), f.appended[1].Words)
+
 	said := strings.ToLower(f.appended[1].Words)
-	require.Contains(t, said, "kept")
 	for _, total := range []string{"1 note", "added", "in the pile now", "to review"} {
 		require.NotContains(t, said, total)
 	}
