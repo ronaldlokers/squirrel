@@ -51,7 +51,3 @@ func TestTheFieldStartsFromWhatTheNoteSays(t *testing.T) {
 
 	require.Contains(t, body, `>the boler makes a noise</textarea>`)
 }
-
-// TestFixingReturnsToWhereYouWere went with the cursor it carried. Rewording
-// answers in the conversation and hands the note back — see
-// TestRewordingSaysItAndCarriesOn.

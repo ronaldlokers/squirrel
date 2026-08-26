@@ -344,10 +344,6 @@ func aLongConversation() *fakeCoach {
 // the code that shipped the bug. It is a guard on the sticky lid, not evidence
 // about a phone; the unit is guarded separately, in the stylesheet, below.
 
-// TestBrowserTheBackdropIsStillReachableOnAShortPhone was retired on 25 August
-// 2026 with the sheet it measured. Nothing is over anything else now, so there
-// is no backdrop to leave a strip of.
-
 // The sheet is measured in dvh, and this is the only check on it that means
 // anything.
 //

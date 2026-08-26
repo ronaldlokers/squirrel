@@ -32,8 +32,3 @@ func TestThereIsALiveRegionOutsideTheStage(t *testing.T) {
 //
 // The live edge's own keys are proved in chorekeys_test.go, which does press
 // them.
-
-// TestTheCardSaysWhatItIs went with the deck's card, whose region label named
-// the screen it was the whole of. A card in a turn is one thing among many in
-// a conversation, and what names it is the <h2> the turn carries — pinned by
-// TestATurnThatOpensAPlaceCarriesAHeading.

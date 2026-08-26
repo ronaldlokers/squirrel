@@ -66,17 +66,6 @@ func contrast(t *testing.T, c *cdp, sel, prop, against string) float64 {
 	return ratio
 }
 
-// TestBrowserTheSheetSaysSoWhenItCannotReachBuddy was retired on 25 August
-// 2026 with the sheet. What it pinned — a submit that fails must say so, keep
-// the words, and leave the way to try again usable — is the thread's rule now,
-// and thread.js falls back to an ordinary form submission on a failed fetch
-// rather than swallowing it. TestBrowserAFailedPressGoesThroughAnyway.
-
-// TestBrowserKeysDoNotReachTheCardBehindTheSheet was retired on 25 August 2026
-// with the sheet. There is nothing over anything else now, so a key cannot
-// reach a card behind a modal — and the carve-out in pile.js stays anyway,
-// because the rule is about any modal rather than about that one.
-
 // The focus ring is visible on every surface a key can reach, not only the
 // ones the override happened to name.
 //

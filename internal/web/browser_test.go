@@ -431,10 +431,6 @@ func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
 }
 
-// TestBrowserTypingAChoreNameIsNotAnAction was retired on 24 August 2026 with
-// the new-chore form it covered: making a chore from nothing is a sentence in
-// the dock now, and the dock's own keys are covered by the slot's tests.
-
 // The lid's field, on the thread. It posts and the answer arrives as a turn —
 // the deck's search-as-you-type would fetch a page and paste it over the
 // conversation, so it stands aside here.
@@ -504,18 +500,6 @@ func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
 	require.Empty(t, f.states, "a letter typed in the dock decided something")
 }
 
-// Retired with the deck on 25 August 2026.
-//
-// These pinned the card's own machinery: the tray of answers that opened
-// without a press, the stamp that leaned at the day's angle, the hold that gave
-// an undo somewhere to be, and the skip link a key pressed. None of it crosses
-// to a conversation, where the answer is a new turn and the way back travels
-// with it.
-//
-// What did cross is pinned elsewhere: the letters, by
-// TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
-// TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
-// TestLaterHandsYouTheNextAndDecidesNothing.
 //
 // TestBrowserSearchAnswersAsYouType went with search-as-you-type, which stands
 // aside on the thread: a search is a thing you asked, and the answer is a turn.

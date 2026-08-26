@@ -112,15 +112,3 @@ func TestMountRefusesWithoutAnOwner(t *testing.T) {
 		Login:    aTestLogin,
 	}))
 }
-
-// The deck came out on 24 August 2026 and what it did lives in the
-// conversation. What it was tested for lives there too — see thread_test.go for
-// one note at a time, the empty pile, and searching — except for these, which
-// went with the screen:
-//
-//   * TestPileHasNoCaptureBox. The deck had no slot because home had the only
-//     one. There is one dock now and it is on every view, so the rule it
-//     guarded is retired rather than moved.
-//   * TestSearchEscapesTheQuery. The query is not echoed into a page any
-//     more; it is a turn, and TestTheSlotEscapesWhatItGivesBack is what pins
-//     a turn's words being escaped.

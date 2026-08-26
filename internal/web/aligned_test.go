@@ -150,32 +150,3 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 		}
 	}
 }
-
-// TestBrowserBothLidPanelsEndWhereThePageEnds was retired on 25 August 2026.
-// It measured the search field's panel against the map's, and both came off
-// the lid the same day: search is a chip in the conversation and the map had
-// been empty since the deck came out. There are no panels to align.
-
-// Two lists of the same rows, one tab apart, inset their words by the same
-// amount. The set-aside card is quieter than a card in the deck on purpose —
-// less shadow, less weight — and it was also narrower, by four pixels nobody
-// chose.
-// TestBrowserTheSetAsideInsetsItsWordsLikeEveryOtherList was retired on
-// 25 August 2026. It measured `.rcard` on the shelf against `.aside` on the
-// set-aside page, and both pages went the same day: the two are cards in the
-// conversation now and draw from `.turncard`, which is one rule rather than
-// two that could drift apart. The appearance snapshot records it.
-
-// TestBrowserTheEndingIsNotTheNextThingUnderTheDoing was retired on 24 August
-// 2026. It measured STOP ASKING against the disclosure that used to sit beside
-// it in the chore card; the disclosure is a turn now, and the three buttons sit
-// in one row whose spacing the appearance snapshot records.
-
-// This compared two group labels — search's and the set-aside's — because they
-// were the same role in two places and had drifted apart. The conversation has
-// no group labels: results are cards, and a card's line is the card's own Meta
-// at 11.5px rather than a heading over a group at 12.5px.
-//
-// Retired rather than repointed. Forcing a card's line to match a group's
-// heading would be making two different roles the same size to keep a test,
-// which is the opposite of what it was for.

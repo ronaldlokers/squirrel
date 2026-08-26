@@ -747,10 +747,6 @@ func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "cannot reach the pile")
 }
 
-// TestTheDeckStillStands was true for exactly as long as it needed to be. The
-// deck came out once the conversation could do everything it did, which is what
-// that test was there to make safe.
-
 // The deck's undo travelled in the address bar and had to survive an empty
 // pile, a search and a page it could not read. The conversation's travels with
 // what Buddy said, and what was said does not move — so what is left to prove
@@ -797,24 +793,8 @@ func TestAnUndoThatWasNeverOfferedDoesNothing(t *testing.T) {
 // the DOM and Chrome still reports geometry for them, so a rect test says every
 // hidden answer is on screen.
 
-// Retired with the deck on 25 August 2026.
-//
-// These pinned the card's own machinery: the tray of answers that opened
-// without a press, the stamp that leaned at the day's angle, the hold that gave
-// an undo somewhere to be, and the skip link a key pressed. None of it crosses
-// to a conversation, where the answer is a new turn and the way back travels
-// with it.
-//
-// What did cross is pinned elsewhere: the letters, by
-// TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
-// TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
-// TestLaterHandsYouTheNextAndDecidesNothing.
-
-// Buddy's face, and where it goes.
-
-// Once per run. Consecutive turns are one utterance, and an acorn on every
-// bubble is wallpaper by the third day — which matters more here than usual,
-// because habituation is a documented risk for this user.
+// Once per run: consecutive turns are one utterance, and a face on every bubble
+// is wallpaper by the third day.
 func TestBuddyShowsHisFaceOncePerRun(t *testing.T) {
 	f := &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "dentist today."},
@@ -824,7 +804,7 @@ func TestBuddyShowsHisFaceOncePerRun(t *testing.T) {
 	}}
 
 	require.Equal(t, 2, strings.Count(thread(t, f), `class="buddyface"`),
-		"the acorn is on every bubble rather than where he starts speaking")
+		"his face is on every bubble rather than where he starts speaking")
 }
 
 // And never on your own words. There is one person using this and he knows

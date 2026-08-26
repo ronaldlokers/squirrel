@@ -93,7 +93,3 @@ func TestAClashIsSaidInTheConversation(t *testing.T) {
 	require.NotEmpty(t, f.appended)
 	require.Contains(t, f.appended[0].Words, "moved while you were looking at it")
 }
-
-// Both went with the deck. A clash is said in the conversation now — see
-// TestAClashIsSaidInTheConversation — and what the card was showing travels in
-// the press rather than on the card, which is what `was` has always been.

@@ -17,10 +17,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// fakeStore is an in-memory pile. The screen's own tests must not need
-// Postgres: what is under test here is routing, rendering and the refusal to
-// count, none of which is a database question. The store's own behaviour is
-// covered by the integration tests in internal/squirrel.
 // choreRhythm is one call to SetChoreRhythm.
 type choreRhythm struct {
 	ID    int64
@@ -28,6 +24,13 @@ type choreRhythm struct {
 	Weeks int
 }
 
+// fakeStore is an in-memory pile. The screen's own tests must not need
+// Postgres: what is under test here is routing, rendering and the refusal to
+// count, none of which is a database question. The store's own behaviour is
+// covered by the integration tests in internal/squirrel.
+//
+// The recorded fields — what was written, answered, refused, marked — are here
+// so a test can assert on the write rather than on a rendering of it.
 type fakeStore struct {
 	// The exit ramp, and what the screen did about it.
 	ramp        squirrel.Timer
@@ -43,13 +46,11 @@ type fakeStore struct {
 	hasQuiet bool
 	quietErr error
 	stilled  []int64
-	// Every rhythm the screen set, so a test can assert on the write rather
-	// than on a rendering of it — including the ones it refused, which are
-	// the interesting half.
+	// Every rhythm the screen set, including the ones it refused, which are the
+	// interesting half.
 	rhythms []choreRhythm
 	// Where you got to. hasRun is what RunFor answers; marked and ended are
-	// what the screen did, so a test can assert on the write rather than on a
-	// rendering of it.
+	// what the screen did.
 	run       squirrel.Run
 	hasRun    bool
 	runErr    error
@@ -62,7 +63,7 @@ type fakeStore struct {
 	items     []squirrel.Item
 	chores    []squirrel.Chore
 	checkin   *squirrel.Checkin
-	// readings is the fortnight the moods page reads, newest first.
+	// readings is what the moods page reads, newest first.
 	readings []squirrel.Checkin
 	timer    *squirrel.Timer
 	err      error
@@ -73,15 +74,13 @@ type fakeStore struct {
 	// until something asks anyway.
 	offer *squirrel.Offer
 	gated bool
-	// What the offer's buttons did, so a test can assert on the write rather
-	// than on a rendering of it.
+	// What the offer's buttons did.
 	answers    []string
 	refused    []int64
 	subscribed []string
 
-	// What was written, so a test can assert on the write rather than on a
-	// rendering of it. inserted is every note's words in the order they were
-	// stored; states is where each id ended up.
+	// inserted is every note's words in the order they were stored; states is
+	// where each id ended up.
 	inserted []string
 	states   map[int64]squirrel.ItemState
 

@@ -10,18 +10,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// On Buddy, the lid said where you were by taking something away.
-//
-// The menu marks the place you are standing by keeping it in the list, filled
-// violet and not a link. Buddy removed its icon instead — so it was the one
-// screen that answered "where am I" with an absence, and removing it shifted
-// the other two icons left, which moved the one piece of chrome that is meant
-// to be identical on all thirteen screens.
-// TestBuddyIsMarkedInTheLidRatherThanRemovedFromIt was retired on 25 August
-// 2026 with the acorn it was about. Buddy is not a place you can be standing
-// any more, so there is nothing in the lid to mark: `ask Buddy` is a chip on
-// the live edge, and TestTheWayToBuddyIsOnTheLiveEdge is where it is pinned.
-
 // Two different things were called by the same name on one screen.
 //
 // The mood history was "what you said before" and the pile's own door, one

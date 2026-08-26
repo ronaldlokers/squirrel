@@ -39,19 +39,6 @@ func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 		"t on home did not reach the slot")
 }
 
-// Retired on 24 August 2026, with the control they covered.
-//
-// The interval question was a `details.often` disclosure inside the chore card,
-// and these pinned its behaviour: that opening it replaced the row rather than
-// opening a modal, that 1-4 answered it, and that the arrows belonged to it
-// while it was open. It is a turn of its own now — see askHowOften — with two
-// radio rows and one submit, and none of those three facts has anything left to
-// be true of.
-//
-// What went with it and is not replaced: the digit keys that answered the
-// question without reaching for the mouse. Recorded in docs/roadmap.md rather
-// than quietly dropped.
-
 // Both were about the deck: a stamp on a card that is gone, and `t` meaning
 // two things on a screen that had both a slot and a deck. There is one dock and
 // no deck, so the collision cannot happen — TestBrowserAKeyInTheDockIsJustA
