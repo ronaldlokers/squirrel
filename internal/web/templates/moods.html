@@ -17,10 +17,16 @@
     <div class="weekrow">
       <span class="wl">{{.Week}}</span>
       <div class="dots">
-        {{/* The word is in the label, not only in a colour: five colours with
-             no words is a picture you have to already know how to read, and
-             this is the one screen Principle 5 was relaxed for. */}}
-        {{range .Days}}{{if .Ahead}}<i class="ahead" aria-hidden="true"></i>{{else if .Nought}}<i class="nought"><span class="offscreen">{{.Day}}, nothing said</span></i>{{else}}<i class="m{{.Mood}}"><span class="offscreen">{{.Day}}, {{.Word}}</span></i>{{end}}{{end}}
+        {{/* Each day is labelled, not only coloured: five colours with no
+             words is a picture you have to already know how to read, and this
+             is the one screen Principle 5 was relaxed for.
+
+             role="img" with the label on the cell itself, rather than text
+             hidden inside it. A cell is a small picture of a day, and an
+             offscreen span in here would be a word sitting on a coloured
+             ground it has no contrast against — which is what the contrast
+             check is for. */}}
+        {{range .Days}}{{if .Ahead}}<i class="ahead" aria-hidden="true"></i>{{else if .Nought}}<i class="nought" role="img" aria-label="{{.Day}}, nothing said"></i>{{else}}<i class="m{{.Mood}}" role="img" aria-label="{{.Day}}, {{.Word}}"></i>{{end}}{{end}}
       </div>
     </div>
     {{end}}

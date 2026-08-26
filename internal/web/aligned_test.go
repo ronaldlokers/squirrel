@@ -78,24 +78,25 @@ func aFortnight() *fakeStore {
 	}}
 }
 
-// The readings are a column, and a column that starts in a different place on
-// every row is a stagger.
+// The readings are a grid, and a grid whose rows start in different places is
+// not one.
 //
-// `.aday` was a flex row, so each day's name sized itself and pushed its own
-// face: "thursday 20 august" started its reading 47px further right than
-// "today" did. A `min-width` was stated where the row is built and a second,
-// smaller one later in the file outranked it — so the floor that was supposed
-// to hold the column together was 8em, and a date is wider than that.
-func TestBrowserEveryMoodReadingStartsInTheSameColumn(t *testing.T) {
+// The defect this pins outlived the shape it was written for. `.aday` was a
+// flex row, so each day's name sized itself and pushed its own face: "thursday
+// 20 august" started its reading 47px further right than "today" did. The week
+// labels can do exactly the same thing to the days beside them — "this week"
+// is wider than "21 jul" — which is why `.weekrow .wl` states a width and does
+// not flex.
+func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	srv := screen(t, aFortnight())
 	c := browserAt(t, srv, "/moods")
 
-	starts := numbers(t, c, "return ("+lefts+`)(".aday .saidwhat")`)
-	require.Len(t, starts, 4, "the screen did not draw four readings")
+	starts := numbers(t, c, "return ("+lefts+`)(".weekrow .dots")`)
+	require.Len(t, starts, 6, "the screen did not draw six weeks")
 
 	for i, at := range starts {
 		require.Equal(t, starts[0], at,
-			"reading %d starts at %vpx and the first starts at %vpx: the day names are setting the column",
+			"week %d starts at %vpx and the first starts at %vpx: the week labels are setting the column",
 			i+1, at, starts[0])
 	}
 }

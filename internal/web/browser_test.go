@@ -473,11 +473,20 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 	c.until(t, "the question", `!!document.querySelector(".wordbox")`)
 	c.eval(t, `const f = document.querySelector(".wordbox textarea");
 		f.value = "boiler"; f.form.requestSubmit(); return 1`)
+	// A hit, not a card: a result is a thing you went looking for rather than
+	// a thing you are deciding about, and it carries no verbs until you open
+	// it. See DESIGN.md, Results.
 	c.until(t, "the answer to arrive",
-		`!!document.querySelector("#thread .turn:last-child .turncard")`)
+		`!!document.querySelector("#thread .turn:last-child .hit")`)
 
 	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
 		"searching navigated")
+
+	// And tapping one turns it into the ordinary card, with the ordinary
+	// verbs, in the next turn.
+	c.eval(t, `document.querySelector("#thread .turn:last-child .hit button").click()`)
+	c.until(t, "the card to arrive",
+		`!!document.querySelector("#thread .turn:last-child .turncard .turnacts")`)
 }
 
 // Letters are actions, on the note Buddy is holding out.

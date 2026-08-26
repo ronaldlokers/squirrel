@@ -55,8 +55,8 @@ func TestTwoReadingsInADayShareTheDayOnScreen(t *testing.T) {
 
 	// One day, one cell: the last thing you said on it. The earlier answer is
 	// still in the table and this page is not where it is reported.
-	require.Equal(t, 1, strings.Count(body, `class="mgood"><span`))
-	require.NotContains(t, body, `class="mlow"><span`)
+	require.Equal(t, 1, strings.Count(body, `class="mgood" role="img"`))
+	require.NotContains(t, body, `class="mlow" role="img"`)
 }
 
 // No average, no streak, no count. The interpretation is yours.
@@ -120,7 +120,7 @@ func TestDaysYouSaidNothingAreDrawn(t *testing.T) {
 	// Six weeks less the one day answered, less the days of this week that
 	// have not happened yet.
 	ahead := 6 - int((time.Now().Weekday()+6)%7)
-	require.Equal(t, 41-ahead, strings.Count(body, `class="nought"><span`))
+	require.Equal(t, 41-ahead, strings.Count(body, `class="nought" role="img"`))
 }
 
 // A day that has not happened is not a gap. Drawing next Saturday as an empty

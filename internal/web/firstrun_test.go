@@ -44,6 +44,15 @@ func TestTheWorkedExampleHasNothingToPress(t *testing.T) {
 	require.NotContains(t, worked, "<a ")
 }
 
+// It sits outside the thread, because the script reads the live edge as the
+// last turn in the thread — and the live edge must never be a turn nobody
+// said.
+func TestTheWorkedExampleIsNotInTheThread(t *testing.T) {
+	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
+
+	require.Less(t, strings.Index(body, `class="worked"`), strings.Index(body, `id="thread"`))
+}
+
 // Anybody who has said one thing here never sees it again.
 func TestSayingAnythingEndsTheWorkedExample(t *testing.T) {
 	f := answered(nil)
