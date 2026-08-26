@@ -174,8 +174,10 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		cancel()
 		return nil, err
 	}
-	// Where the person is, for every question this store answers about which
-	// day it is. The same location the scheduler already takes — see #148.
+	// Where the person is, for every question about which day it is. Threaded
+	// rather than read off the process clock: a container's zone is an accident
+	// of its deployment. See issue #148, and everything else here that takes a
+	// location.
 	store.In(config.DigestLocation)
 	s.store = store
 
@@ -266,9 +268,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// the pool: internal/web states what it needs and nothing more.
 			Sessions: web.NewSessions(store),
 			Login:    store.PersonForLogin,
-			// The same location the scheduler's quiet hours and evening
-			// message already take. Threaded rather than read off the process
-			// clock — see issue #148.
+			// Where the person is, the same location the store already took.
 			Location: config.DigestLocation,
 			// Empty unless the *whole* pair plus the contact is configured,
 			// not merely the public half. A public key alone would mount the
@@ -332,9 +332,17 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 	go func() {
 		defer close(s.drained)
-		connectAndDrain(loopCtx, config, store, spool, transports, &s.wg, nudge, &webOwner,
+		connectAndDrain(loopCtx, draining{
+			config: config, store: store, spool: spool, transports: transports,
+			wg: &s.wg, nudge: nudge, webOwner: &webOwner,
 			// false: chat has no cards to draw a place with. See Turn.CanOpen.
-			coachChat(asker(s.coach, store, s.talk, false)), decide, makeSmaller, hold, learnBack, over)
+			ask:         coachChat(asker(s.coach, store, s.talk, false)),
+			decide:      decide,
+			makeSmaller: makeSmaller,
+			hold:        hold,
+			learnBack:   learnBack,
+			over:        over,
+		})
 	}()
 
 	return s, nil
@@ -346,10 +354,31 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 type Asker func(ctx context.Context, personID int64, kind, said, subject string) (
 	text string, did []string, err error)
 
+// draining is everything connectAndDrain needs. A struct rather than fourteen
+// parameters, so a call site cannot pass two of them the wrong way round and
+// still compile.
+type draining struct {
+	config     squirrel.Config
+	store      *squirrel.Store
+	spool      *squirrel.Spool
+	transports []transport.Transport
+	wg         *sync.WaitGroup
+	nudge      *nudgeRelay
+	webOwner   *atomic.Int64
+
+	// The coach's seams, every one of them nil when there is no coach.
+	ask         Asker
+	decide      squirrel.Decider
+	makeSmaller squirrel.Breaker
+	hold        squirrel.Interrupter
+	learnBack   squirrel.Learner
+	over        func(context.Context, int64) bool
+}
+
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
-func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirrel.Store, spool *squirrel.Spool, transports []transport.Transport, wg *sync.WaitGroup, nudge *nudgeRelay, webOwner *atomic.Int64, ask Asker, decide squirrel.Decider, makeSmaller squirrel.Breaker,
-	hold squirrel.Interrupter, learnBack squirrel.Learner, over func(context.Context, int64) bool) {
+func connectAndDrain(ctx context.Context, w draining) {
+	config, store, spool := w.config, w.store, w.spool
 	var personID int64
 	for {
 		var err error
@@ -386,14 +415,14 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 
 	// The screen's routes have been live since Listen; this is the moment they
 	// have something to read.
-	webOwner.Store(personID)
+	w.webOwner.Store(personID)
 
 	// The transport's Send, or nil when no bot key is configured, in which case the
 	// applier stays quiet rather than crashing. chat is the richer surface alongside
 	// it; both fall back to the plain sender when chat.Send is nil.
 	var send squirrel.Sender
 	var chat squirrel.Chat
-	for _, t := range transports {
+	for _, t := range w.transports {
 		if t.Name == transport.CampfireName && t.Send != nil {
 			send = squirrel.Sender(t.Send)
 		}
@@ -407,20 +436,18 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 		applier = squirrel.NewApplier(store, send, chat, func(err error) {
 			slog.Error("applying intent", "error", err)
 		})
-		// Where the person is. The same location the scheduler's quiet hours
-		// and evening message take, threaded rather than read off the process
-		// clock — see issue #148.
+		// Where the person is, the same location the store already took.
 		applier.In(config.DigestLocation)
 
 		// Nil when there is no coach, and the nil carries meaning: chat does
 		// not advertise `!coach` in help when there is nothing behind it. A
 		// command that only ever answers "there is no coach" is worse than one
 		// that was never offered.
-		applier.SetCoach(ask)
-		applier.SetDecider(decide)
-		applier.SetBreaker(makeSmaller)
-		applier.SetSpent(over)
-		squirrel.SetCoachHere(ask != nil)
+		applier.SetCoach(w.ask)
+		applier.SetDecider(w.decide)
+		applier.SetBreaker(w.makeSmaller)
+		applier.SetSpent(w.over)
+		squirrel.SetCoachHere(w.ask != nil)
 
 		if config.Campfire != nil {
 			scheduler := squirrel.NewScheduler(schedulerOptionsFor(schedulerWiring{
@@ -429,9 +456,9 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 				conversationID: config.Campfire.ConversationID,
 				// A veto, never a trigger: it is only ever asked about a
 				// chore the rules already chose to raise.
-				interrupt: hold,
+				interrupt: w.hold,
 				// Once a week, and only with a key. See KnowingTick.
-				learn: learnBack,
+				learn: w.learnBack,
 			}))
 
 			// A capture can carry a nudge back on the same message, and an
@@ -440,15 +467,15 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 			// once-a-day budget its unique index enforces is shared rather
 			// than split across two independent claimants.
 			applier.SetNudger(scheduler.Nudge)
-			nudge.set(scheduler.Nudge)
+			w.nudge.set(scheduler.Nudge)
 
 			// Joined by Stop before the store closes: the scheduler runs on
 			// the same ctx as the drain but is not nested inside it, so
 			// draining alone does not wait for an in-flight digest send to
 			// finish before the store is torn down.
-			wg.Add(1)
+			w.wg.Add(1)
 			go func() {
-				defer wg.Done()
+				defer w.wg.Done()
 				scheduler.Run(ctx)
 			}()
 		}
