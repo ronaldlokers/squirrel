@@ -2,6 +2,7 @@ package web
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -56,64 +57,61 @@ func TestEveryFieldStillClearsTheZoomFloorOnAPhone(t *testing.T) {
 	css, err := staticFS.ReadFile("static/pile.css")
 	require.NoError(t, err)
 
-	phone := phoneBlock(t, string(css))
-
-	// Each of these is a field a thumb puts a caret in.
-	for _, sel := range []string{
-		".slot textarea",
-		".reword textarea",
-		".newtask textarea",
-		".findbox .find input",
-	} {
-		size := fontSizeFor(phone, sel)
-		require.NotEmpty(t, size, "%s has no phone size, so it renders at its desktop one", sel)
+	// The two fields a thumb can put a caret in: the dock's slot, and the box
+	// Buddy draws when he asks for words. There are no others — a list here
+	// that names a field no screen has is a floor holding nothing up.
+	for _, sel := range []string{".slot textarea", ".wordbox textarea"} {
+		size := phoneSizeOf(t, string(css), sel)
 		require.GreaterOrEqual(t, size, 16.0,
 			"%s is %gpx on a phone; under 16px, focusing it zooms the page", sel, size)
 	}
 }
 
-// phoneBlock is everything inside a max-width: 620px media query, which is
-// where this stylesheet keeps its phone sizes.
-func phoneBlock(t *testing.T, css string) string {
+// phoneSizeOf is the size sel renders at on a phone: its size inside the phone
+// breakpoint, or its base size when it does not restate one. A field is allowed
+// to have no phone rule — it has to clear the floor, not to be listed twice.
+func phoneSizeOf(t *testing.T, css, sel string) float64 {
 	t.Helper()
-
-	var out strings.Builder
-	for _, chunk := range strings.Split(css, "@media (max-width: 620px)")[1:] {
-		out.WriteString(chunk)
+	base, phone := split620(t, css)
+	if size := fontSizeFor(phone, sel); size > 0 {
+		return size
 	}
-	require.NotEmpty(t, out.String(), "the stylesheet has no phone breakpoint")
-	return out.String()
+	size := fontSizeFor(base, sel)
+	require.NotZero(t, size, "%s declares no size anywhere, so nothing here is measuring it", sel)
+	return size
 }
 
-// fontSizeFor reads the last font-size declared for sel, in px. Last, because
-// a later rule of equal weight wins — which is the whole reason the search
-// field spent a release at 15px while a 16px rule for it sat in the file.
+// split620 is the stylesheet either side of its phone breakpoint. Phone rules
+// win at 620px and under, so a field's size there is the phone rule when it has
+// one and the base rule when it has not.
+func split620(t *testing.T, css string) (base, phone string) {
+	t.Helper()
+	parts := strings.Split(css, "@media (max-width: 620px)")
+	require.Greater(t, len(parts), 1, "the stylesheet has no phone breakpoint")
+	return parts[0], strings.Join(parts[1:], "")
+}
+
+// fontSizeFor reads the last size declared for sel, in px, from either
+// `font-size:` or the `font:` shorthand — both are in this stylesheet, and a
+// reader that saw only one of them measured half the fields it was given.
+//
+// Last, because a later rule of equal weight wins: that is the whole reason the
+// search field spent a release at 15px while a 16px rule for it sat in the file.
 func fontSizeFor(css, sel string) float64 {
 	rule := regexp.MustCompile(regexp.QuoteMeta(sel) + `\s*\{([^}]*)\}`)
-	size := regexp.MustCompile(`font-size:\s*([0-9.]+)px`)
+	longhand := regexp.MustCompile(`font-size:\s*([0-9.]+)px`)
+	shorthand := regexp.MustCompile(`(?:^|[;\s])font:[^;]*?([0-9.]+)px`)
 
 	var found float64
 	for _, block := range rule.FindAllStringSubmatch(css, -1) {
-		if m := size.FindStringSubmatch(block[1]); m != nil {
-			found = atof(m[1])
+		for _, at := range []*regexp.Regexp{longhand, shorthand} {
+			if m := at.FindStringSubmatch(block[1]); m != nil {
+				size, err := strconv.ParseFloat(m[1], 64)
+				if err == nil {
+					found = size
+				}
+			}
 		}
 	}
 	return found
-}
-
-func atof(s string) float64 {
-	var f float64
-	var frac float64 = 0
-	for _, r := range s {
-		switch {
-		case r == '.':
-			frac = 1
-		case frac > 0:
-			frac /= 10
-			f += float64(r-'0') * frac
-		default:
-			f = f*10 + float64(r-'0')
-		}
-	}
-	return f
 }

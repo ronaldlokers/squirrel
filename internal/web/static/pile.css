@@ -273,11 +273,8 @@
    * that overflows puts its own head above the scroll origin, where nothing
    * can reach it, and a long enough note lost its first line that way. */
   main { align-items: flex-start; padding-top: 40px; }
-  main:has(> .shoebox) { align-items: safe center; padding-top: 58px; }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
 
-  .shoebox { width: min(720px, 100%); }
-  .homebox { width: min(720px, 100%); }
   .deck { position: relative; }
 
   /* ---------- the two doors ---------- */
@@ -382,17 +379,6 @@
     100% { transform: perspective(1400px) rotateX(-70deg) translate3d(0, -118px, 10px) rotate(-3deg); opacity: 0; }
   }
 
-  .titlebar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 11px 16px;
-    background: var(--purple);
-    color: var(--paper);
-    border-bottom: var(--line) solid var(--outline);
-    border-radius: 11px 11px 0 0;
-    font-size: 12.5px;
-    font-variation-settings: var(--precise), "wght" 750;
-    letter-spacing: .09em;
-  }
   .titlebar .spacer { flex: 1; }
   /* The way past a note, for the screens that have no keyboard. It sits in the
      titlebar rather than the tray because it is not one of the ways out — the
@@ -461,28 +447,9 @@
   }
   .stamp .dot { width: 11px; height: 11px; border-radius: 3px; background: var(--sc); border: 2px solid var(--outline); }
 
-  /* ---------- the foot of the card ---------- */
-
-  .tray { padding: 22px 32px 26px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row[hidden] { display: none; }
 
-  /* The gate was here: one control that opened the four answers. It is gone —
-     used for a day and asked for back. The escapes it grouped stay grouped.
-     See card.html. */
-
-  .btn {
-    font: 700 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 830;
-    letter-spacing: .08em;
-    color: var(--outline); background: var(--paper);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    padding: 12px 18px; cursor: pointer; min-height: 44px;
-    display: flex; align-items: center; gap: 9px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-  }
-  .btn:hover { background: var(--paper-deep); }
   .btn:active, .btn.hit {
     transform: translateY(4px);
     box-shadow: 0 0 0 0 var(--outline);
@@ -494,12 +461,6 @@
     border: 2px solid currentColor; border-radius: 5px;
     padding: 2px 6px 1px; opacity: .72;
   }
-  .btn[data-act="done"] { --bc: var(--done); }
-  .btn[data-act="keep"] { --bc: var(--kept); }
-  .btn[data-act="drop"] { --bc: var(--dropped); }
-  /* Deciding sends it to the tasks, and violet is the pile's own colour rather
-     than an exit's — nothing ended here. */
-  .btn[data-act="task"] { --bc: var(--violet); }
 
   /* The one action that makes something instead of disposing of it. */
   /* Dark ink on the orange, not paper.
@@ -526,9 +487,6 @@
      full strength; it is still the smaller, boxed thing beside the word. */
   .btn.make .key { opacity: 1; }
 
-  /* Choosing an interval happens on the card, in the footprint the actions
-     just left. A modal would take the note off the screen to ask about it. */
-  .intervals { gap: 9px; }
   .intervals .lead {
     font-size: 13px; letter-spacing: .08em;
     font-variation-settings: var(--precise), "wght" 750;
@@ -579,20 +537,6 @@
     color: var(--brown);
   }
 
-  /* A row rather than a run of inline text, so the pill at the end of it is
-     set apart by a gap instead of by a separator it does not belong to. It
-     wraps on a narrow card, and with no keyboard the hints are gone and the
-     pill is the whole row — centred either way. */
-  .hint {
-    margin: 34px 0 0;
-    display: flex; align-items: center; justify-content: center;
-    gap: 8px 14px; flex-wrap: wrap;
-    text-align: center;
-    font-size: 13px;
-    font-variation-settings: var(--precise), "wght" 550;
-    color: var(--cream);
-  }
-
   /* Present for anything that reads the page aloud, absent for anything that
      draws it. Not display:none, which would take it out of both. */
   .offscreen {
@@ -601,9 +545,6 @@
     clip-path: inset(50%); overflow: hidden; white-space: nowrap;
   }
 
-  /* ---------- the chores: what comes back ---------- */
-
-  .chorebox { width: min(720px, 100%); }
   /* held and moods. They had no width rule at all, so as flex children of a
      centred main they shrank to their content: measured at 1280px, held
      rendered 440px at x=420 and moods 227px at x=526, against everyone else's
@@ -775,14 +716,6 @@
 
   .results { width: min(720px, 100%); }
 
-  .rcard {
-    position: relative;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    padding: 15px 20px 16px;
-    margin: 0 0 15px;
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-  }
   /* The page tab of the mascot's own notebook, one colour per state. */
   .rcard .tab {
     position: absolute; right: -13px; top: 20px;
@@ -799,44 +732,7 @@
   }
   .rcard .meta .state { color: var(--sct, var(--brown)); }
   .rcard .meta .sep { opacity: .8; }
-  .rcard p {
-    margin: 0; padding-right: 22px;
-    font-size: 18px; line-height: 1.4; max-width: 46ch;
-    font-variation-settings: var(--casual), "wght" 480;
-    text-wrap: pretty;
-  }
-  /* The tail's cream, deliberately not one of the four state colours - a
-     match is not a state. */
-  /* Why this result matched. Not a fill: a filled chip on cream reads as a
-     control, and every fill colour in this world already means a state. */
-  .rcard mark {
-    background: none; color: var(--outline);
-    text-decoration: underline;
-    text-decoration-color: var(--orange);
-    text-decoration-thickness: 3px;
-    text-underline-offset: 3px;
-    text-decoration-skip-ink: none;
-  }
 
-  /* Two views, one pile: a result is actionable where it sits. Notes still in
-     the pile get the full four; a note that already left gets the one action
-     that matters, which is coming back. */
-  .rcard .racts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
-  .rbtn {
-    font: 700 12.5px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 750;
-    letter-spacing: .05em;
-    color: var(--outline); background: var(--paper);
-    border: 2px solid var(--outline); border-radius: 999px;
-    /* 44px, like every other control that a thumb has to find. The search
-       results are the phone's main way back to a note, and these were the
-       smallest targets in the product at 38. */
-    padding: 11px 13px; cursor: pointer; min-height: 44px;
-    box-shadow: 0 3px 0 0 var(--outline);
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-  }
-  .rbtn:hover { background: var(--paper-deep); }
-  .rbtn:active { transform: translateY(3px); box-shadow: none; background: var(--sc); color: var(--paper); }
   .rbtn.back { background: var(--paper); }
   .rbtn.make { background: var(--orange); color: var(--outline); }
   .rbtn.make:hover { background: var(--orange-lit); }
@@ -847,15 +743,6 @@
     margin: 26px 0 0; text-align: center;
     font-size: 13px;
     font-variation-settings: var(--precise), "wght" 600;
-    color: var(--cream);
-  }
-
-  /* The product speaking, so it takes the Voice role rather than a size of
-     its own. */
-  .noHits {
-    margin: 0; padding: 30px 4px;
-    font-size: 17px;
-    font-variation-settings: var(--casual), "wght" 500;
     color: var(--cream);
   }
 
@@ -897,8 +784,6 @@
     font-variation-settings: var(--casual), "wght" 450;
     color: var(--cream);
   }
-
-
 
   /* ---------- the slot ---------- */
 
@@ -993,54 +878,6 @@
      that means "this needs you" stays on the one that does. */
   .slotsaid.bad { border-bottom: 3px solid var(--orange); }
 
-
-
-
-
-  /* ---------- the body double ---------- */
-
-  /* On the chore, because you time the thing you are looking at. Quiet: the
-     card's three answers are what it is for, and this is an offer beneath
-     them. */
-  /* Shut, this is one quiet line under the chore's answers; open, it is the
-     three lengths. The dashed rule is the divider between what you manage
-     about a chore and what you do about it, and it stays on the disclosure so
-     it reads the same shut as it did before. */
-  .gofor {
-    margin-top: 12px; padding-top: 12px;
-    border-top: 2px dashed rgba(28, 17, 11, .18);
-  }
-  .gofor > summary {
-    list-style: none; cursor: pointer;
-    display: inline-flex; align-items: center; min-height: 44px;
-    font-size: 12.5px; letter-spacing: .04em;
-    font-variation-settings: var(--precise), "wght" 620;
-    color: var(--brown);
-    text-decoration: underline; text-underline-offset: 4px;
-    text-decoration-color: rgba(28, 17, 11, .3);
-  }
-  .gofor > summary::-webkit-details-marker { display: none; }
-  .gofor > summary:hover { color: var(--outline); text-decoration: underline; text-underline-offset: 4px; }
-  .gofor .ifopen { display: none; }
-  .gofor[open] .ifshut { display: none; }
-  .gofor[open] .ifopen { display: inline; }
-
-  .timerRow {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    margin-top: 4px;
-  }
-  .tbtn {
-    padding: 9px 13px; min-height: 44px;
-    background: var(--paper); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 700;
-    cursor: pointer;
-  }
-  .tbtn:hover { background: var(--paper-deep); }
-  .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); color: var(--paper); }
-
   /* Running, in the lid, on every screen. */
   .running {
     display: flex; align-items: center; gap: 10px;
@@ -1067,53 +904,12 @@
   }
   .stopTimer:hover { color: var(--paper); }
 
-  /* ---------- making one from nothing ---------- */
-
-  /* The interval question's own mechanism, asked three times: a disclosure
-     that opens in place, so nothing is a modal and nothing is a second page.
-     Dashed and quiet when shut, because most visits are not about adding. */
-  .newchore {
-    margin-top: 18px;
-    border: var(--line) dashed rgba(254, 214, 167, .55);
-    border-radius: var(--r);
-    padding: 0 18px;
-  }
-  .newchore[open] { background: rgba(59, 37, 96, .45); padding-bottom: 20px; }
-  .newchore > summary {
-    list-style: none; cursor: pointer;
-    display: flex; align-items: center; gap: 10px; min-height: 52px;
-    color: var(--cream);
-    font-size: 14.5px;
-    font-variation-settings: var(--precise), "wght" 700;
-  }
-  .newchore > summary::-webkit-details-marker { display: none; }
-  .newchore .plus {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; flex: none;
-    border: var(--line) solid var(--cream); border-radius: 999px;
-    font-size: 17px; line-height: 1;
-  }
   .newchore .lead {
     margin: 14px 0 9px;
     font-size: 12px; letter-spacing: .09em;
     font-variation-settings: var(--precise), "wght" 720;
     color: var(--cream);
   }
-  .newchore .namefield {
-    display: flex; align-items: center;
-    padding: 10px 16px;
-    background: var(--paper);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 3px 0 0 var(--outline);
-  }
-  .newchore .namefield input {
-    flex: 1; min-width: 0; border: 0; background: transparent; padding: 0;
-    font: 400 17px/1.4 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 620;
-    color: var(--outline); caret-color: var(--orange);
-  }
-  .newchore .namefield input:focus { outline: none; }
-  .newchore .namefield input::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
   .newchore .chips { display: flex; gap: 8px; flex-wrap: wrap; }
   /* A chip is a label wrapping its radio, so the whole chip is the target and
      the choice survives with no script at all. The radio itself is not drawn:
@@ -1197,29 +993,7 @@
     caret-color: var(--orange);
   }
   .reword textarea:focus { outline: none; box-shadow: inset 0 3px 0 0 rgba(28, 17, 11, .14), 0 0 0 3px var(--orange-lit); }
-  .rewordSave {
-    padding: 11px 16px; min-height: 44px;
-    background: var(--paper); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 720;
-    letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
-  }
-  .rewordSave:hover { background: var(--paper-deep); }
-  .rewordSave:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--violet); color: var(--paper); }
 
-  /* ---------- a task ---------- */
-
-  /* The result card's stock and depth, with no page tab: a tab says what a
-     note ended up AS, and a task has no outcome until it has one. */
-  .tcard {
-    position: relative;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    padding: 15px 20px 16px; margin: 0 0 15px;
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-  }
   .tcard .meta {
     display: flex; align-items: center; gap: 8px;
     margin: 0 0 8px;
@@ -1227,42 +1001,6 @@
     font-variation-settings: var(--precise), "wght" 750;
     color: var(--brown);
   }
-  /* His words, in his voice — the same Result role a search hit takes, because
-     a task on this screen is being scanned rather than decided on. It was
-     decided on already; that is what put it here. */
-  .tcard p {
-    margin: 0;
-    font-size: 18px; line-height: 1.4;
-    font-variation-settings: var(--casual), "wght" 480;
-    text-wrap: pretty;
-  }
-  .tacts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
-  /* Coloured at rest, not only under the thumb — The Lifted Fill Rule: a
-     control that acts on something wears that thing's colour, lifted toward
-     white until the card's own dark ink reads on it. The chores screen's
-     controls have worked this way since they were built; these are the same
-     controls for the same kinds of change. */
-  /* Scoped to the tasks screen, and the scope is the whole point. This block
-     and the timer row's own .tbtn above were two unconditional rules with the
-     same specificity three hundred lines apart, so this one silently won and
-     painted the chores screen's 5/10/20 MIN buttons in done-green. Every chore
-     then showed four green pills, three of which started a timer.
-
-     DESIGN.md already argues this exactly once, about the offer's own timer:
-     it is paper "because orange means something was made and a timer makes
-     nothing". Green means a thing was finished, and the same argument holds. */
-  .tacts .tbtn {
-    padding: 10px 14px; min-height: 44px;
-    background: var(--done-lifted); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    font: 600 12.5px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 720;
-    letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
-  }
-  .tacts .tbtn:hover { background: var(--done-lifted-hover); }
-  /* The press drops to the base colour, so it still reads as a change. */
-  .tacts .tbtn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); background: var(--done); color: var(--paper); }
 
   /* Back to the pile is not an exit and must not wear an exit's colour. It
      wears the pile's own: Notebook Violet is what a note in the pile is
@@ -1271,25 +1009,6 @@
   .tacts .tbtn.back:hover { background: var(--open-lifted-hover); }
   .tacts .tbtn.back:active { background: var(--violet); color: var(--paper); }
 
-  /* The slot's own grammar, because a task is a sentence rather than a
-     configuration — the new-chore form asks three questions; this asks one. */
-  .newtask {
-    display: flex; align-items: flex-end; gap: 10px;
-    margin: 22px 0 0;
-    padding: 12px 12px 12px 18px;
-    background: var(--paper);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: inset 0 4px 0 0 rgba(28, 17, 11, .16), 0 2px 0 0 rgba(28, 17, 11, .35);
-  }
-  .newtask textarea {
-    flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0;
-    font: 400 18px/1.45 "Recursive", sans-serif;
-    font-variation-settings: var(--casual), "wght" 480;
-    color: var(--outline); caret-color: var(--orange);
-    min-height: 1.45em; max-height: 8.7em;
-  }
-  .newtask textarea:focus { outline: none; }
-  .newtask textarea::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
   .decide {
     flex: none;
     padding: 11px 18px; min-height: 44px;
@@ -1320,32 +1039,7 @@
      its own mark; the underline belongs to the bare links beside it. */
   .ends .quietpick { text-decoration: none; }
 
-  /* ---------- the archive ---------- */
-
-  /* Done, and quieter for it: the stock steps back to the cards-behind cream,
-     because these are underneath the ones that matter now. Still legible,
-     still reversible — never crossed out, which would be the product marking
-     your own words as spent. */
-  .acard { background: var(--card-deep); }
   .acard .meta .did { color: var(--done-ink); }
-
-
-  /* ---------- the check-in ---------- */
-
-  /* "How do you feel?" — asked plainly, and about now: the reading goes stale
-     after a few hours because a day is a thing you can have had a bad one of,
-     and the useful answer is about the minute you are in.
-
-     The five are not a scale and are never numbered: low and frazzled are
-     different states wanting different answers, which a one-to-five row cannot
-     say. Answered, the row collapses to the one you pressed. There is no
-     yesterday here and there never will be. */
-  .checkin { margin-top: 26px; }
-  /* The question moved above the doors, because it configures the page rather
-     than filing a diary entry: answered, this same region becomes the one
-     thing. So home has exactly one interactive thing above the doors, and it
-     is either the question or the answer to it. */
-  .homebox > .checkin:first-child { margin-top: 0; margin-bottom: 26px; }
 
   /* ---------- the one thing ---------- */
 
@@ -1385,19 +1079,6 @@
     font-variation-settings: var(--casual), "wght" 450;
     color: var(--brown);
   }
-  .oacts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-  .obtn {
-    min-height: 44px; padding: 11px 16px;
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    cursor: pointer;
-    font: 700 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 830;
-    letter-spacing: .08em; text-transform: uppercase;
-    color: var(--outline);
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-  }
-  .obtn:active { transform: translateY(4px); box-shadow: none; }
   /* The lifted done green the chores screen already uses for the same verb.
      One colour for "it happened", wherever it is said. */
   .obtn.did { background: var(--done-lifted); }
@@ -1432,25 +1113,6 @@
   .obtn.later:hover { background: var(--paper-deep); color: var(--outline); }
   .obtn.later:active { background: var(--dropped); color: var(--paper); }
 
-  /* ---------- I can't start ---------- */
-
-  /* Quieter than everything above it, and deliberately so: it has to be easy
-     to reach and must not read as the default. The disclosure grammar is the
-     chore picker's and the reword box's — the answer happens where the thing
-     is, and closing it changes nothing. */
-  .cantstart > summary {
-    list-style: none; cursor: pointer;
-    display: inline-flex; align-items: center; min-height: 44px;
-    color: var(--brown);
-    font-size: 14px; font-variation-settings: var(--precise), "wght" 620;
-    text-decoration: underline; text-underline-offset: 3px;
-  }
-  .cantstart > summary::-webkit-details-marker { display: none; }
-  .cantstart > summary:hover { color: var(--outline); }
-  .cantstart .ifopen { display: none; }
-  .cantstart[open] .ifshut { display: none; }
-  .cantstart[open] .ifopen { display: inline; }
-
   .whys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0 2px; }
   /* The fallback is for anywhere this ever stands outside the sheet; inside
      it, the sheet's own quiet ink is what makes it legible on either ground. */
@@ -1475,9 +1137,6 @@
   .why:hover { background: var(--paper-deep); }
   .why:active { transform: translateY(4px); box-shadow: none; }
 
-  /* The answer. One line and at most one control — there is nowhere here for a
-     second step, which is the whole point. */
-  .unstuck { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
   .unstuck .line {
     margin: 0;
     font-size: 17px; line-height: 1.35;
@@ -1531,43 +1190,6 @@
   /* Pressed, it goes down like everything else you push here. */
   .face:active { transform: translateY(3px); }
 
-  /* Answered: the one you pressed, the word, and a way to say something else.
-     Never a sentence about the person. */
-  /* The answer, as one chip.
-   *
-   * It was a centred row that sat flush against the offer — margin: 0 here and
-   * no margin-top there — so the one thing you said about yourself and the one
-   * thing you are being handed touched. It has room below it now, the same
-   * step the doors and the slot use, so home has one vertical rhythm rather
-   * than two.
-   *
-   * The face and the word are a single object rather than two things in a
-   * line, and the two ways to change your answer trail behind it. */
-  .noted {
-    display: flex; align-items: center; justify-content: flex-start;
-    gap: 8px 14px; flex-wrap: wrap; margin: 0 0 26px;
-    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 700;
-    color: var(--cream);
-  }
-  /* The one object in the world with no outline.
-     DESIGN.md's Shapes rule is that there are no borderless objects, and this
-     is the persistent thing reporting the owner's own reading — so of
-     everything on the field, it was the one that read as pasted in from
-     another app. A quiet pill in the tail's cream, which is what the two
-     controls trailing it already are. */
-  .noted > span {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 7px 13px 7px 7px;
-    background: rgba(28, 17, 11, .22);
-    border: 2px solid var(--cream); border-radius: 999px;
-  }
-  .noted img { height: 26px; width: auto; display: block; }
-  /* The tap target stays 44px and stops setting the row's height: as a box it
-     was eleven pixels taller than the text it wraps, which read as space that
-     was not there on purpose. */
-  .noted a { position: relative; min-height: 0; }
-  .noted a::after { content: ""; position: absolute; inset: -14px -8px; }
   .noted .again {
     color: var(--cream);
     text-decoration: underline; text-underline-offset: 3px;
@@ -1590,25 +1212,6 @@
     padding: 2px 6px 1px; opacity: .72;
   }
 
-  /* A chore that a search found. The Door's grammar at one line high — card
-     stock, the result card's depth, presses flush — because it is the same
-     kind of object: a place to go, not a thing to do. What can be done to a
-     chore lives on the chores screen, and one owner of that means the two
-     views cannot disagree. */
-  .choreHit {
-    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-    padding: 14px 18px; margin-bottom: 12px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-    text-decoration: none;
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-  }
-  .choreHit:hover { background: var(--paper); }
-  .choreHit:active {
-    transform: translateY(5px);
-    box-shadow: 0 0 0 0 var(--outline), 0 10px 18px -14px rgba(0, 0, 0, .6);
-  }
   .choreHit .name { font-size: 21px; font-variation-settings: var(--precise), "wght" 800; letter-spacing: -.01em; }
   .choreHit .meta {
     font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
@@ -1628,7 +1231,6 @@
     /* A thumb cannot press D, and the focus ring a tap leaves behind would
        otherwise reveal three keycaps nobody can use. */
     .chore:focus-within .key { display: none; }
-    .hint .keysonly { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1686,14 +1288,10 @@
        Sized by height they wrapped four-and-one, which reads as one of them
        being a different kind of answer. */
     .reword textarea { font-size: 18.5px; }
-    .tcard p { font-size: 18.5px; }
     .tcard .meta { font-size: 12px; }
-    .newtask { flex-direction: column; align-items: stretch; padding: 12px; }
-    .newtask textarea { font-size: 18.5px; }
     .decide { width: 100%; }
     /* Its own row on a phone, where the lid is already two rows deep. */
     .running { order: 6; flex: 1 1 100%; justify-content: center; }
-    .checkin { margin-top: 20px; }
     .faces { gap: 0; flex-wrap: nowrap; }
     /* Meta's own phone size, so the Step-Up Rule reads the way it says it
        does: 11.5 on the desktop, 12 here. It used to be 10.5 and 12, which
@@ -1719,8 +1317,6 @@
     .note { padding: 26px 22px 10px; }
     .note p { font-size: 23px; }
     .card { min-height: 284px; }
-    .titlebar { padding: 12px 16px; font-size: 13px; }
-    .tray { padding: 18px 22px 22px; }
     .row { gap: 8px; }
 
     /* Two by two, then the one that makes something across the full width
@@ -1734,7 +1330,6 @@
     .actions {
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
     }
-    .btn { padding: 14px 8px; min-height: 48px; justify-content: center; gap: 6px; font-size: 13.5px; }
     /* Its own row, and not the whole of it.
        Eighteen lines below, `.abtn.stop` is refused exactly this, with the
        reason written out: spanning the card made it the largest thing on it,
@@ -1745,13 +1340,10 @@
     .btn.make { grid-column: 1 / -1; justify-self: end; margin-left: 0; width: auto; }
 
     .results { padding-right: 14px; }
-    .rcard { padding: 16px 20px 17px; }
     .rcard .tab { right: -12px; }
     .rcard .meta { font-size: 12px; }
     .choreHit .name { font-size: 23px; }
     .choreHit .meta { font-size: 12px; }
-    .rcard p { font-size: 18.5px; }
-    .rbtn { padding: 11px 12px; min-height: 44px; letter-spacing: .03em; }
     .chore { padding: 17px 18px 18px; }
     .chore .name { font-size: 23px; }
     .chore .meta { font-size: 12px; }
@@ -1769,7 +1361,6 @@
     .often[open] { grid-column: 1 / -1; }
     .often[open] > summary { width: auto; padding: 11px 15px; min-height: 44px; font-size: 13.5px; }
 
-    .intervals { display: grid; grid-template-columns: 1fr 1fr; }
     .intervals .lead, .chip.back { grid-column: 1 / -1; }
     .chip { justify-content: center; }
     .empty h1 { font-size: 31px; }
@@ -1778,17 +1369,8 @@
     .behind:nth-of-type(3) { display: none; }
     .behind:nth-of-type(1) { transform: translate(var(--o), var(--o)) rotate(.7deg); }
     .behind:nth-of-type(2) { transform: translate(calc(var(--o) * 1.6), calc(var(--o) * 2.2)) rotate(-.9deg); }
-    .hint { margin-top: 26px; font-size: 12px; }
     .empty img { width: 150px; height: 113px; }
   }
-
-  /* A server-rendered result carries its state as a class; the comp set these
-     two custom properties from JavaScript, and a page that works without
-     JavaScript has nobody to do that. */
-  .rcard.state-open    { --sc: var(--violet);  --sct: var(--violet-ink); }
-  .rcard.state-done    { --sc: var(--done);    --sct: var(--done-ink); }
-  .rcard.state-kept    { --sc: var(--kept);    --sct: var(--kept-ink); }
-  .rcard.state-dropped { --sc: var(--dropped); --sct: var(--dropped-ink); }
 
   /* ---------- the scriptless additions ---------- */
 
@@ -1903,65 +1485,8 @@
     color: var(--sheet-quiet);
   }
 
-  /* Its own little lid, so the sheet is recognisably the same product without
-     repeating the real one's six elements. */
-  .sheetlid {
-    display: flex; align-items: center; gap: 10px;
-    margin: -4px -4px 0;
-  }
-  /* On the page this is the screen's title and is set like every other one —
-     the wordmark's own face at 21px on paper, which is The One Title Rule.
-     Inside the overlay it is the sheet's own small lid and stays 17px. */
-  .sheetname {
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 900; font-size: 21px; letter-spacing: -.01em;
-    color: var(--sheet-ink);
-  }
-  dialog.coachsheet .sheetname { font-size: 17px; }
   .sheetlid .spacer { flex: 1; }
-  /* The way out, as a control rather than a sentence: a 44px target in the
-     corner people already reach for. */
-  .shut {
-    flex: none;
-    width: 44px; height: 44px; padding: 0;
-    display: grid; place-items: center;
-    background: none; border: 0; border-radius: 999px;
-    color: var(--sheet-quiet); cursor: pointer;
-    transition: background-color 90ms ease-out, color 90ms ease-out;
-  }
-  .shut:hover { background: var(--sheet-wash); color: var(--sheet-ink); }
-  .shut:active { background: var(--sheet-wash); }
 
-  .talk { display: flex; flex-direction: column; gap: 12px; }
-
-  /* "That landed badly", under the last thing said. Quiet on purpose: it is
-     there when it is wanted and is not a thing the sheet is asking for. */
-  .badly { align-self: flex-start; margin-top: -4px; }
-  .badly .quietpick {
-    min-height: 44px; padding: 8px 2px;
-    background: none; border: 0;
-    color: var(--sheet-quiet);
-    font-size: 13px;
-    font-variation-settings: var(--casual), "wght" 450;
-    text-decoration: underline; text-underline-offset: 3px;
-    cursor: pointer;
-  }
-  .badly .quietpick:hover { color: var(--sheet-ink); }
-  /* Heard, and nothing else. */
-  .heard {
-    margin: 0;
-    font-size: 13px; color: var(--sheet-quiet);
-    font-variation-settings: var(--casual), "wght" 450;
-  }
-
-  /* What the picker would hand you, painted on open. Quieter than home's own
-     offer card, because here it is context for a conversation rather than the
-     thing being offered — it carries no buttons at all. */
-  .onscreen {
-    border-left: var(--line) solid var(--orange);
-    padding: 2px 0 2px 12px;
-    display: flex; flex-direction: column; gap: 4px;
-  }
   /* `.lead`, not `.head`: the markup has said `lead` since this block was
      written, so this rule matched nothing and RIGHT NOW rendered as a
      paragraph of body text above the thing it labels. */
@@ -1992,11 +1517,6 @@
     border: var(--line) solid var(--outline); border-radius: var(--r);
     font-size: 16px; line-height: 1.4;
   }
-  .mine {
-    align-self: flex-end;
-    background: var(--cream);
-    font-variation-settings: var(--casual), "wght" 500;
-  }
   .his {
     align-self: flex-start;
     background: var(--paper);
@@ -2006,15 +1526,7 @@
 
   .sheet .whys { padding-top: 0; }
   .sheet .slot { margin: 0; }
-  .withtimer { align-self: flex-start; }
 
-  /* Opened by pile.js. A real <dialog>, so Escape closes it and focus stays
-     inside it without this file or that one implementing either. */
-  dialog.coachsheet {
-    border: 0; padding: 0; background: none;
-    max-width: none; max-height: none;
-    color: var(--outline);
-  }
   /* Shut means gone, and it has to be said here because the rule below says
      display: flex unconditionally — an author display value beats the
      browser's own `dialog:not([open]) { display: none }`.
@@ -2031,18 +1543,6 @@
      bounding-rect check on the sticky lid. Three in one week: when a thing is
      meant to disappear, ask whether it is *visible*. */
   dialog.coachsheet:not([open]) { display: none; }
-  dialog.coachsheet::backdrop { background: rgba(28, 17, 11, .55); }
-  /* Nothing to ask while you are already asking, and on a wide screen the
-     acorn sits directly on top of the sheet's own send button. */
-
-  /* A right panel where there is room for one. The page stays visible and in
-     place: the conversation is about what is on the screen behind it. */
-  dialog.coachsheet {
-    position: fixed; inset: 0 0 0 auto;
-    width: min(440px, 100%); height: 100%;
-    display: flex; align-items: stretch; justify-content: flex-end;
-    margin: 0;
-  }
   /* The card, and only here. Everything the page version does without. */
   dialog.coachsheet .sheet {
     --sheet-ink: var(--outline);
@@ -2063,46 +1563,8 @@
     padding-top: 0;
     padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
-  dialog.coachsheet .talk { flex: 1; }
-
-  /* The way out does not scroll away.
-   *
-   * The sheet is what scrolls — a panel on a desktop, a bottom sheet on a
-   * phone — and the lid is its first child, so reading an answer of any length
-   * carried the close button off the top of it. What was left was Escape,
-   * which wants a keyboard, and the strip of backdrop above an 88vh sheet.
-   * That is what "I still can't close Buddy" was, and it only happens once
-   * there is a conversation to scroll — which is why every test of it passed.
-   *
-   * Its own background, because the conversation now travels underneath it. */
-  dialog.coachsheet .sheetlid {
-    position: sticky; top: 0; z-index: 2;
-    margin: 0 -18px 0; padding: 14px 18px 10px;
-    background: var(--card);
-    border-radius: var(--r) 0 0 0;
-  }
 
   @media (max-width: 620px) {
-    /* A bottom sheet on a phone, because that is where the thumb is. */
-    /* dvh, not vh, and that is the whole of "I still can't close Buddy".
-     *
-     * vh is the large viewport: the height the page would have if the
-     * browser's own chrome were hidden. With an address bar on screen — which
-     * is most of the time on a phone — an 88vh sheet anchored to the bottom
-     * reaches higher than the window actually shows, and the first thing to go
-     * over the top edge is the lid, which is where the close button lives. It
-     * looked pinned in a headless window at exactly 390x844 because there is
-     * no browser chrome there at all.
-     *
-     * dvh is the height that is really visible right now, so the sheet ends
-     * where the screen does.
-     */
-    dialog.coachsheet {
-      inset: auto 0 0 0;
-      width: 100%; height: auto;
-      max-height: 88vh;
-      max-height: 85dvh;
-    }
     dialog.coachsheet .sheet {
       height: auto;
       max-height: 88vh;
@@ -2112,8 +1574,6 @@
       border-bottom: 0;
       box-shadow: 0 -16px 30px -20px rgba(0, 0, 0, .8);
     }
-    /* Both top corners here, because the bottom sheet is rounded on both. */
-    dialog.coachsheet .sheetlid { border-radius: var(--r) var(--r) 0 0; }
   }
 
   /* One step of a breakdown. Never the sequence, and there is deliberately no
@@ -2139,7 +1599,6 @@
     font-variation-settings: var(--precise), "wght" 700;
     color: var(--brown);
   }
-  .stepacts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
   /* A proposal: what a note might be, before anything has been written. It
      sits under the words it came from, because the question is "is this what
@@ -2198,26 +1657,6 @@
     font-variation-settings: var(--casual), "wght" 500;
   }
 
-  /* What the coach has cost this month. Deliberately the quietest thing in the
-     sheet's lid: it is there to be findable, not to be watched. Tabular
-     figures so it does not shift as it climbs. */
-  .spend {
-    font-size: 12px;
-    font-variation-settings: var(--precise), "wght" 550;
-    font-variant-numeric: tabular-nums;
-    color: var(--sheet-quiet, var(--brown));
-  }
-
-  /* A fixed point, on its own screen.
-   *
-   * The card is the result card's material — cream stock, the 3px outline, the
-   * shallower offset — because it is a thing you read rather than a card in a
-   * deck you decide about.
-   */
-  /* The result card's own material, which .rcard already carries: cream stock,
-     the 3px outline, the shallower offset. It takes no page tab — a tab says
-     what a note ended up as, and a fixed point has no outcome, only a time. */
-  .atcard { margin-bottom: 18px; padding-right: 20px; }
   .atcard .when {
     margin: 0;
     font-size: 17px; line-height: 1.4;
@@ -2786,7 +2225,6 @@
   box-shadow: 0 5px 0 0 var(--outline), 0 18px 30px -18px rgba(0, 0, 0, .8);
 }
 
-.wherelist { display: flex; flex-direction: column; min-width: 190px; padding: 6px; }
 .wherelist a,
 .wherelist .here {
   display: flex; align-items: center;
@@ -2797,7 +2235,6 @@
   font-variation-settings: var(--precise), "wght" 640;
   white-space: nowrap;
 }
-.wherelist a:hover { background: var(--paper-deep); }
 /* Where you are is in the list and is not a link. Cap purple, which is already
    how this product says "this one" — it marks the interval a chore has. */
 .wherelist .here {
@@ -2849,7 +2286,6 @@
  */
 .homebox > .slot { margin-top: 0; margin-bottom: 4px; }
 .doors { margin-top: 26px; }
-
 
   /* The way back in, on an ending. Underlined text below the door out, so the
      screen has an opinion about which of the two it is for. */
@@ -2911,48 +2347,6 @@
   }
   .enough .leavehere:hover { background: var(--orange-lit); }
   .enough .leavehere:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline); }
-
-  /* A photograph on a row in a list. Bounded harder than the card's, because
-     here you are scanning rather than deciding: enough to recognise the thing,
-     not enough to push the next row off the screen. */
-  .rphoto { margin: 0 0 10px; }
-  .rphoto img {
-    display: block; width: 100%; max-width: 260px; max-height: 180px;
-    object-fit: cover;
-    background: var(--card-deep);
-    border: var(--line) solid var(--outline); border-radius: 10px;
-  }
-
-  /* Buddy, said out loud.
-   *
-   * It was an unlabelled acorn between two other unlabelled icons in the lid,
-   * so nothing on any screen said a conversation was available or what it would
-   * be about. This says both, on the screen it is about.
-   *
-   * Under the views row where there is one, and above the doors on home, which
-   * has no title. Never fixed and never floating: the floating acorn was tried
-   * and removed for sitting on top of live controls, and the rule that outlived
-   * it is that nothing floats over the content.
-   *
-   * A step quieter than a view — 13px against 13.5px, and the same tail cream —
-   * because the row above it is places you can go and this is not a place. The
-   * acorn is what actually distinguishes it, which is the second mark doing the
-   * job this document says it is available for.
-   */
-  .askline { margin: 0 0 18px; }
-  .askbuddy {
-    display: inline-flex; align-items: center; gap: 7px;
-    min-height: 44px; padding: 4px 0;
-    font-size: 13px;
-    font-variation-settings: var(--precise), "wght" 600;
-    color: var(--cream);
-    text-decoration: underline; text-underline-offset: 3px;
-    text-decoration-color: rgba(254, 214, 167, .45);
-  }
-  .askbuddy:hover { color: var(--paper); text-decoration-color: currentColor; }
-  /* On home it is the last thing before the doors, so it keeps their rhythm
-     rather than the title's. */
-  .homebox .askline { margin: 26px 0 0; }
 
 /* ---------------------------------------------------------------- */
 /* 8. The meta label, and three things measured against it.          */
@@ -3038,58 +2432,8 @@
     padding-bottom: var(--dockspace, 132px);
   }
 
-  /* ══ THE THREAD ══════════════════════════════════════════════════════════
-     The screen stopped being a set of pages on 24 August 2026 and became one
-     conversation. See docs/superpowers/specs/2026-08-24-the-thread-design.md.
-
-     THE RAIL. The four doors, pinned under the lid and never scrolled away.
-     They are still equals — one grid, four cells, the same stock, identical in
-     every state — and what changed is that they carry a number. */
-  .railwrap {
-    position: sticky; top: 0; z-index: 5;
-    background: var(--purple-dark);
-    border-bottom: var(--line) solid var(--outline);
-    box-shadow: 0 12px 24px -16px rgba(0, 0, 0, .85);
-  }
-  .rail {
-    width: min(720px, 100%); margin: 0 auto;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px;
-    padding: 10px 22px;
-  }
-  /* The door is the button; the form around it is not a box. */
-  .doorpress { display: contents; }
-  .rdoor {
-    display: flex; align-items: center; justify-content: center; gap: 9px;
-    min-height: 52px; padding: 8px 12px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    text-decoration: none; cursor: pointer;
-    /* Said outright because the door is a button now, and a button does not
-       inherit the page's face: it was left at the browser's own 13.33px, which
-       the appearance snapshot caught. */
-    font: 400 16px/1.55 "Recursive", sans-serif;
-    font-variation-settings: var(--precise);
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out;
-  }
-  .rdoor:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline); }
-  .rdoor img { height: 28px; width: auto; display: block; flex: none; }
-  .rname {
-    font-size: 14.5px; line-height: 1.05; white-space: nowrap;
-    font-variation-settings: var(--precise), "wght" 800;
-  }
   /* Where you are, in the mark's own orange. */
   .rdoor.here { background: var(--orange); }
-  /* What is waiting behind it. Absent at zero — a door reading "0" is a
-     scoreboard, and that is the thing Principle 2 was actually protecting
-     against when it was retired. */
-  .doorcount {
-    min-width: 22px; height: 22px; padding: 0 5px;
-    display: grid; place-items: center;
-    background: var(--outline); color: var(--paper);
-    border-radius: 999px;
-    font-size: 12px; font-variation-settings: var(--precise), "wght" 800;
-  }
 
   /* THE TRANSCRIPT. */
   .thread {
@@ -3234,31 +2578,12 @@
   }
   .turnacts, .turnchips { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
 
-  /* The two ways elsewhere, at the foot of the conversation. Quieter than a
-     chip on a turn: these are always there, and a thing that is always there
-     must not read as a thing that just arrived. */
-  /* The two ways elsewhere, at the foot of the conversation.
-     
-     On the thread's own left edge rather than centred: they were the only
-     centred thing on a surface where everything else hangs off one of two
-     margins, so they read as a footer belonging to the page instead of a
-     quiet offer belonging to the conversation.
-     
-     Quieter than a chip on a turn, too. These are always here, and a thing
-     that is always here must not read as a thing that just arrived — which is
-     what they did, at identical weight, directly under chips that had. */
-  .alsochips {
-    display: flex; flex-wrap: wrap; gap: 9px; align-items: center;
-    width: min(720px, 100%); margin: 6px auto 0; padding: 0 22px;
-    box-sizing: border-box;
-  }
   .alsochips .chip {
     background: none; color: var(--cream);
     border-color: var(--cream); border-width: 2px;
     box-shadow: none;
   }
   .alsochips .chip:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
-  .alsochips form { display: contents; }
   .turnacts form { display: contents; }
 
   /* THE DOCK. The slot, on every view of the app, because there is one view. */
@@ -3274,20 +2599,8 @@
   .dock .slot { width: min(676px, 100%); margin: 0 auto; }
 
   @media (max-width: 620px) {
-    /* Four across still, by turning each door on its side rather than by
-       dropping one. At 390px the frame gives each about 81px, which holds a
-       24px drawing over an 11px label. */
-    .rail { gap: 7px; padding: 9px 14px; }
-    .rdoor {
-      flex-direction: column; gap: 3px; min-height: 60px; padding: 7px 4px;
-      border-radius: 16px; position: relative;
-    }
-    .rdoor img { height: 24px; }
-    .rname { font-size: 11px; }
-    .doorcount { position: absolute; top: -7px; right: -3px; }
 
     .thread { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
-    .alsochips { padding: 0 14px; }
     .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
