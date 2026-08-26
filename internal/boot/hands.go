@@ -11,14 +11,13 @@ import (
 
 // The write tools, over the store.
 //
-// Every one of these calls a function the screen's own buttons already call.
-// Nothing here is a new way to change something — it is the same write, asked
-// for in words instead of pressed, which is the whole of what makes the
-// confirmation policy safe: the action existed, its undo existed, and the only
-// thing that changed is which finger pressed it.
+// Every one calls a function the screen's own buttons already call: the same
+// write, asked for in words instead of pressed. That is what makes the
+// confirmation policy safe — the action existed, its undo existed, and only the
+// finger changed.
 //
 // Each returns what it acted on, so the surface can say what happened in the
-// application's words rather than repeating the model's claim about it.
+// application's words rather than repeating the model's claim.
 type hands struct {
 	store *squirrel.Store
 	now   func() time.Time
@@ -77,16 +76,15 @@ func (h *hands) Refuse(ctx context.Context, personID int64, kind string, refID i
 	return h.store.Refuse(ctx, personID, k, refID, h.now())
 }
 
-// SnoozeChore is bounded here rather than in the prompt. A model asked not to
-// snooze something for a year is a model that can; a ceiling in code is one
-// that cannot.
+// A model asked not to snooze something for a year is a model that can; a
+// ceiling in code is one that cannot.
+const (
+	shortestSnooze = 1
+	longestSnooze  = 24 * 14
+)
+
 func (h *hands) SnoozeChore(ctx context.Context, personID, choreID int64, hours int) (string, error) {
-	if hours < 1 {
-		hours = 1
-	}
-	if hours > 24*14 {
-		hours = 24 * 14
-	}
+	hours = min(max(hours, shortestSnooze), longestSnooze)
 	name, err := h.choreName(ctx, personID, choreID)
 	if err != nil {
 		return "", err

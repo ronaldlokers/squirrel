@@ -109,7 +109,7 @@ func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(perso
 	}
 
 	decide := func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
-		mayAsk bool) (string, int64, string, string, bool) {
+		mayAsk bool) (kind string, refID int64, text, because string, ok bool) {
 
 		now := time.Now()
 		basis := squirrel.SuppressionKey(squirrel.OfferKind(pickedKind), pickedRef)
@@ -182,14 +182,16 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canO
 	}
 }
 
-// nowFor is the state of the day, as the four small facts the model is told.
+// badlyLandedShown is how many rejected replies the model is shown. Examples
+// rather than a record.
+const badlyLandedShown = 3
+
+// nowFor is the state of the day, as the small facts the model is told.
 //
-// Every read here fails soft. A missing capacity or an unreachable moment
-// costs the model a hint; it must not cost the person an answer, because the
-// alternative to a slightly less informed reply is no reply at all.
+// Every read here fails soft, including a nil store: a missing capacity or an
+// unreachable moment costs the model a hint and must not cost the person an
+// answer.
 func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time.Time) coach.Now {
-	// The softest failure of all, and the one this function's own rule asks
-	// for: no store is no hints, not no answer.
 	if store == nil {
 		return coach.Now{
 			Clock:     now.Format("15:04"),
@@ -206,18 +208,12 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 		Capacity: string(store.Capacity(ctx, personID, now)),
 	}
 
-	// What has not landed here, in the model's own words. Fails soft: a reply that
-	// cannot be read back costs the model a hint, never the person an answer.
-	//
-	// Three, because it is examples rather than a record.
-	if said, err := store.BadlyLanded(ctx, personID, 3); err == nil {
+	// What has not landed here, in the model's own words.
+	if said, err := store.BadlyLanded(ctx, personID, badlyLandedShown); err == nil {
 		n.LandedBadly = said
 	}
 
 	// What a weekly read of the record concluded about how this person works.
-	// Fails soft for the same reason as everything else here — and its absence
-	// is the state the product was in until 25 August 2026, so a Buddy without
-	// it is a Buddy that works.
 	if known, err := store.Knowing(ctx, personID); err == nil {
 		n.Knowing = known
 	}
@@ -251,13 +247,22 @@ func breaker(c coach.Coach) squirrel.Breaker {
 	}
 }
 
+// readsBox answers what was typed into the box: what to say back, whether the
+// words are a thought worth keeping, and a place to draw underneath the reply.
+type readsBox func(ctx context.Context, personID int64, said string) (
+	say string, keep bool, open string, err error)
+
+// asksAQuestion says whether the words are a question, and whether it managed to
+// answer at all. False for the second sends the caller back to the rule.
+type asksAQuestion func(ctx context.Context, said string) (question, answered bool)
+
 // reading is the three tiers the box judges with, as one value. Lifted out of an
 // inline literal for the reason schedulerOptionsFor was: a field set in one
 // cannot be checked by a test, and `AskedAQuestion` proved it by going missing
 // while the whole suite stayed green.
 type reading struct {
-	Reads          func(context.Context, int64, string) (string, bool, string, error)
-	AskedAQuestion func(context.Context, string) (bool, bool)
+	Reads          readsBox
+	AskedAQuestion asksAQuestion
 }
 
 // readingWiring is what the screen is given.
@@ -268,7 +273,7 @@ func readingWiring(c coach.Coach, store *squirrel.Store, h *coach.House) reading
 // housed is the model on the cluster, or nil. Its own seam rather than a method
 // on the coach: no key, no budget, no accounting, and it answers when the hosted
 // one is absent entirely.
-func housed(h *coach.House) func(context.Context, string) (bool, bool) {
+func housed(h *coach.House) asksAQuestion {
 	if h == nil {
 		return nil
 	}
@@ -281,7 +286,7 @@ func housed(h *coach.House) func(context.Context, string) (bool, bool) {
 // The state of the day goes in through nowFor, like every other turn: what
 // somebody types at eleven at night reads differently from the same words at
 // nine in the morning.
-func reader(c coach.Coach, store *squirrel.Store) func(context.Context, int64, string) (string, bool, string, error) {
+func reader(c coach.Coach, store *squirrel.Store) readsBox {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
 	}
