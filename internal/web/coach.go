@@ -73,8 +73,8 @@ func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		// What you would be handed right now, so the question is about
 		// something rather than about nothing. The picker is six rules and no
-		// model, so asking costs nothing — which is what let the acorn be
-		// pressed idly, and has to stay true of the chip.
+		// model, so asking costs nothing — which has to stay true of a chip
+		// somebody may press idly.
 		question := "What is going on?"
 		if about := offerHint(s, opts, r); about != "" {
 			question = "What is going on with " + about + "?"

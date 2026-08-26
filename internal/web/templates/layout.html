@@ -136,42 +136,21 @@
         <button type="submit">{{.Label}}{{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}</button>
       </form>
       {{end}}
-      {{/* The way out, last and under a rule. It is not a destination like the
-           others: it is the end of the evening, and Principle 3 says it must
-           never look like failure. Its own place at the bottom is what says
-           that without a louder word. */}}
-      {{/* Today's words for it, the same sentence the line at the foot of the
-           conversation used to carry. The wording moves with the day; where it
-           lives is what changed. */}}
+      {{/* The way out, last and under a rule. Not a destination like the
+           others: it is the end of the evening, and it must never look like
+           failure — its own place at the bottom says that without a louder
+           word. The wording moves with the day. */}}
       <a class="leaving" href="/enough">{{.SayStop}}</a>
     </nav>
   </details>
-  {{/* Three icons and nothing else. The lid was a row of words that cost most
-       of a phone screen before anything you came for; it is the mark, the way
-       into a conversation, the way to look something up, and the map.
+  {{/* The lid holds the mark, the menu, and the timer when one is running.
+       Nothing else: it was a row of words costing most of a phone screen
+       before anything you came for.
 
-       All three are disclosures or links that work with the script off, and
-       all three are 44px. The icons are drawn at the same 2.4 round-cap stroke
-       as the camera and the cross, because this product draws its icons and
-       does not borrow them from a font. */}}
-
-  {{/* The acorn was here, and the search disclosure and the map beside it.
-       All three came off on 25 August 2026.
-
-       The acorn opened a sheet over whatever you were looking at, because
-       Buddy had to bring a conversation with him when the rest of the product
-       was seven screens. He joins the one that is already here instead: `ask
-       Buddy` is a chip on the live edge, and the exchange is turns.
-
-       Search was a disclosure here for the same reason — it had to be reachable
-       from seven places. There is one place. It is a chip too.
-
-       The map was already empty: `elsewhere` has returned nothing since the
-       deck came out, so the hamburger opened onto a blank list. A control that
-       shows nothing is worse than one that was never drawn.
-
-       What is left is the mark, which is the way back to the conversation, and
-       the timer when one is running. */}}
+       The acorn, the search disclosure and the map beside them came off on
+       25 August 2026. Buddy joins the conversation that is already here rather
+       than bringing one, search is a chip for the same reason, and the map was
+       already opening onto a blank list. */}}
 
   <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
@@ -210,25 +189,6 @@
 {{end}}
 {{template "content" .}}
 </main>
-{{/* The acorn was here: fixed, bottom right, 62px, on every screen.
-
-     It is a lid icon now — see the top of this file — and outside the menu
-     rather than in it, because a conversation about what is in front of you
-     should be one tap from anywhere.
-
-     What it cost as a floating button was real: it sat on top of a chore's
-     timer row on a phone and on top of the sheet's own send button on a wide
-     screen, and a fixed control over live ones turns a mis-tap into the wrong
-     thing entirely.
-
-     Two of its rules outlived it and hold wherever Buddy goes next. It was
-     `.askacorn` and not `.acorn`, because the card's title bar had that name
-     first for the drawn badge — taking it turned every note's badge into a
-     62px circle in the corner of the screen, and pile.js then wired the badge
-     instead of the button, so the sheet never opened on the pile at all. Two
-     bugs from one word. And it never dimmed and never carried a badge: a badge
-     would be a count, and a dimmed acorn would be the product forming an
-     opinion out of how a button gets used. */}}
 <script src="/static/pile.js?v={{.V}}" defer></script>
 {{/* The thread's own script, and only on the thread. Required rather than an
      enhancement: see static/thread.js. */}}
