@@ -149,11 +149,8 @@ func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
 	require.Equal(t, 404, res.Code)
 }
 
-// The contrast walk cannot tell a clean screen from an empty one, so this says
-// the two new paths render something. Both were added to that walk's list, and
-// a page with nothing on it would have passed it silently.
-// The one screen the agenda still has. The list became a turn on 24 August
-// 2026; this is the page a notification lands on, and it stays until phase 4.
+// The one route the agenda still has: the list is a turn, and this is what a
+// notification opens.
 func TestTappingTheWarningOpensTheAppointment(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
 	one := landsInTheThread(t, f)
@@ -184,8 +181,7 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 	said := strings.ToLower(f.appended[1].Words)
 	drawn := strings.ToLower(string(f.appended[1].Shown))
 
-	// Buddy counts what is ahead — permitted since 24 August 2026 — and the
-	// counting is the only number here.
+	// Counting what is ahead is permitted, and is the only number here.
 	require.Contains(t, said, "2 things have a time")
 	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
 		require.NotContains(t, said, banned)

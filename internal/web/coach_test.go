@@ -12,7 +12,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Buddy, in the conversation. A page until 25 August 2026 and turns since.
+// Buddy, in the conversation.
 
 // asked is what Buddy said back, as the record kept it: the words and whatever
 // the turn drew.
@@ -238,13 +238,11 @@ func TestSayingNothingAsksNothing(t *testing.T) {
 	require.Empty(t, f.appended, "an empty press said something")
 }
 
-// Not a fifth door. The rail is four, and their equality is the whole
+// Not a fifth place. The menu holds four, and their equality is the whole
 // statement it makes.
 func TestBuddyDidNotBecomeADoor(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	// The four places are in the menu now, not a rail. What this test is
-	// really about is below: Buddy is not one of them.
 	require.Contains(t, body, "the pile")
 	require.NotContains(t, body, `value="buddy"`)
 }
