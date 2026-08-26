@@ -11,29 +11,14 @@ import (
 
 // The model in the house.
 //
-// Every capture typed into the box was being sent abroad to be read, which is
-// the architecture this product states and does not follow: "rules narrow, and
-// the model answers the few that survive" — the argument the interruption
-// pre-filter and the splitter are both built on. Reading every thought with a
-// hosted model is the opposite of that, and it shipped anyway on 25 August
-// 2026.
+// The reading is split by what each tier is good at. The judgement — thought or
+// question — is a small, high-volume, low-stakes classification that runs on
+// everything typed, so it happens here, on the cluster. The answer to a
+// question is rare and quality is the whole point, so that stays abroad. Under
+// both is LooksLikeAQuestion, which needs no model, no network and no cluster.
 //
-// So the reading is split by what each thing is actually good at.
-//
-// The judgement — is this a thought or a question — is a small, high-volume,
-// low-stakes classification that runs on everything typed. It happens in the
-// house, on the cluster, on a model small enough to answer in the time a press
-// takes. Being wrong costs a note in the pile, which is the failure this whole
-// design already accepts.
-//
-// The answer — what to actually say to a question — is rare, and it is the one
-// place quality is the whole point. That stays abroad.
-//
-// And underneath both is the rule. `LooksLikeAQuestion` needs no model, no
-// network and no cluster, and it is what answers when the house is asleep. The
-// three of them are the same ladder every other seam in this product has:
-// rules, then something cheap, then something good, and never the expensive
-// one for a job the cheap one does.
+// Rules narrow, then something cheap, then something good — the same ladder the
+// interruption pre-filter and the splitter are built on.
 
 // houseTimeout is how long the model in the house may take.
 //
