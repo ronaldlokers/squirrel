@@ -211,10 +211,6 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 	}), "/")
 }
 
-// Closing was a route. It is not one now: the sheet was a thing that could be
-// open, and a conversation is not — you stop talking. What closing also did
-// was forget the window, and the record is the window now.
-
 // coachBadlyHandler records that the last thing Buddy said did not land.
 //
 // One press, deliberately the smallest thing that could work: the moment it

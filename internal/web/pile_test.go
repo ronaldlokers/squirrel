@@ -79,10 +79,6 @@ func TestTheRouteTable(t *testing.T) {
 	require.Len(t, m.routes, 56, "a route was added without being pinned here")
 }
 
-// Both old addresses now answer with the conversation — see
-// TestTheOldCoachURLsRedirect in coach_test.go. The query string is dropped
-// rather than carried: it named the screen to come back to, and there is one.
-
 // The chores screen lived at /pile/chores for its whole life, and a bookmark
 // that dies quietly is worse than a redirect nobody notices.
 func TestTheOldChoresURLRedirects(t *testing.T) {

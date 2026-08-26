@@ -232,11 +232,6 @@ type unstuckView struct {
 	Step *stepView
 }
 
-// coachPanel was the sheet. It went with the page on 25 August 2026: Buddy is
-// turns in the conversation now, and the parts of it that do something —
-// the four blockers, the steps, the four proposals, "that went badly" and the
-// spend — are drawn by askbuddy.go from the same values.
-
 // chipView is one blocker as a press. Why is what the form sends; Word is what
 // it says, and they differ because "not today" is an answer and `not today` is
 // a value.

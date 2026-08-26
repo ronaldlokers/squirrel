@@ -39,16 +39,6 @@ func style(t *testing.T, c *cdp, sel, prop string) string {
 	return s
 }
 
-// A field under 16px makes iOS zoom the page the moment it takes focus, which
-// on a phone throws the lid, the panel and whatever you were reading around.
-//
-// Every other field in this product clears the floor by being large for the
-// Step-Up Rule's own reasons. The search field is small on purpose — it sits
-// in a 320px panel — so the floor is the only thing holding it up, and it
-// stopped applying without anything failing: the rule was written for
-// `.find input`, and when search moved behind an icon the field became
-// `.findbox .find input`, which outranks it.
-
 // The offer's three controls are one shape, and only colour separates them.
 // That is the whole argument for the row: it used to offer four choices in
 // four different kinds of object, so choosing meant comparing the objects

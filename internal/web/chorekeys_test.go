@@ -39,11 +39,6 @@ func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 		"t on home did not reach the slot")
 }
 
-// Both were about the deck: a stamp on a card that is gone, and `t` meaning
-// two things on a screen that had both a slot and a deck. There is one dock and
-// no deck, so the collision cannot happen — TestBrowserAKeyInTheDockIsJustA
-// Letter is what pins the remaining half.
-
 // The deck's digits went with its disclosure and roadmap v0.24.0 recorded that
 // as worth restoring. The question is a turn now, so the carve-out is about the
 // picker wherever it is: a digit is a count, a letter is a unit by its own first
