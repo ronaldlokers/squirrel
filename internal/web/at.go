@@ -193,14 +193,6 @@ func attachedViews(items []squirrel.Item) []noteView {
 	return out
 }
 
-func upcomingViews(ms []squirrel.Moment) []momentView {
-	out := make([]momentView, 0, len(ms))
-	for _, m := range ms {
-		out = append(out, *momentViewOf(m))
-	}
-	return out
-}
-
 // atOpenHandler draws one fixed point into the conversation.
 //
 // The same three things the page shows — when to leave, what to take, and the

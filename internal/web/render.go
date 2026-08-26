@@ -95,15 +95,11 @@ type view struct {
 	// centred card is the shoebox's own composition; a list that grows from
 	// the middle of the screen is just a list that is hard to read.
 	Scrolling bool
-	// Elsewhere is everywhere you are not, filled by render. It sits behind the
-	// lid's one control rather than beside it.
-	Elsewhere []linkView
 	// The four sentences met most often, in today's wording. Habituation is
 	// the documented enemy and the card stack was the only thing that moved;
 	// these are art-and-phrasing novelty, which is what the roadmap sanctions.
 	// Every control label is deliberately absent from this list.
 	SaySlot   string
-	SayOffer  string
 	SayStop   string
 	SayEnough string
 	// The two things that move without being read. The stamp's lean and where
@@ -115,10 +111,6 @@ type view struct {
 	// Place is where you are, in the menu's own words, so the shut control can
 	// say it without the template knowing the mapping.
 	Place string
-	// Views are the places belonging to the screen you are on — the pile's
-	// shelf, the tasks' archive and set-aside. Under the title, because that is
-	// what they are about.
-	Views []linkView
 	// Home is the front door, where the lid carries no cross-link at all —
 	// both doors are already the body of the page — and where the mark is not
 	// a link, because it is a link to here.
@@ -126,25 +118,13 @@ type view struct {
 	// Said carries words back to the slot when the write failed. A capture box
 	// that clears on failure is a capture box that eats thoughts.
 	Said string
-	// Kept and NoKeep are what the slot says back, and they are deliberately
-	// two booleans rather than one message: the failure is not the success
-	// with different words, and only one of them keeps the words.
-	Kept   bool
-	NoKeep bool
-	// NoPhoto is the photograph having been refused rather than the machine
-	// having failed, and it is separate because saying the wrong one of those
-	// is worse than saying nothing. "Squirrel cannot reach its memory" sends
-	// you to press the same button again; "that photograph is too big" tells
-	// you the one thing you can act on. The words are kept either way.
-	NoPhoto bool
 	// Held is the worker having taken the words because there was no network.
 	// A third state and not a flavour of the other two: the words are safe,
 	// which failure is not, and they are not in the pile yet, which kept is.
 	Held bool
 	// Mood is the latest reading when it still describes now, and empty
 	// otherwise. Never more than one, and never a date beside it.
-	Mood     string
-	MoodWord string
+	Mood string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
 	// Example is the worked example, on a conversation nobody has ever said
@@ -155,14 +135,6 @@ type view struct {
 	// Weeks is how you have been, as six weeks by seven days, and only the
 	// readings page fills it.
 	Weeks []moodWeekView
-	// Offer is the one thing, or nil. Nil renders nothing at all rather than
-	// an empty region: having nothing to be handed is a normal state, and a
-	// reassuring sentence in its place would be the product deciding you ought
-	// to be busy.
-	Offer *offerView
-	// Anyway is the capacity gate lifted for this render, from the address bar
-	// and stored nowhere.
-	Anyway bool
 	// Camera is whether a photograph can be kept at all. False draws no
 	// camera: a control that cannot work is worse than one never drawn.
 	Camera bool
@@ -174,17 +146,6 @@ type view struct {
 	// Path is the page the acorn is being drawn on, so closing the coach
 	// returns to it. renderWith fills it, so no handler can forget.
 	Path string
-	// Split is a proposal about the note on the card, or nil. It exists only
-	// for the render that answers the press — nothing stores it, which is what
-	// makes it impossible for one to be applied without a second press.
-	Split *splitView
-	// HeldChips is the three ways to set the card's note aside, offered on the
-	// pile. Filled by the pile handler alone.
-	HeldChips []chipView
-	// Splittable says the note on the card looks like several things, so the
-	// card can offer to ask. A free check, and it is what keeps the model off
-	// every note in the pile.
-	Splittable bool
 	// Coach is the sheet's contents, and only the coach page fills it. Every
 	// other page carries the acorn and nothing more — the sheet's markup
 	// arrives when it is opened, because a conversation nobody has started is
@@ -197,23 +158,9 @@ type view struct {
 	Also []turnChip
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
-	V string
-	// After is the note space moved past, carried so that a transition made
-	// while skipped comes back to the same place rather than to the top.
-	After   int64
-	Query   string
-	Note    *noteView
-	More    bool
-	Results []noteView
-	// Upcoming is what is still ahead, on /at. Never counted, and never
-	// anything that has already happened.
-	Upcoming []momentView
-	// Moment and Attached are one fixed point and the notes pointing at it,
-	// on /at/{id}.
-	Moment   *momentView
-	Attached []noteView
-	Chores   []choreView
-	Undo     *undoView
+	V     string
+	Query string
+	Undo  *undoView
 	// Turns is the conversation, oldest first. The screen is one page now;
 	// see internal/web/thread.go.
 	Turns []turnView
@@ -569,25 +516,15 @@ func render(w http.ResponseWriter, name string, v view) {
 		panic("no such page: " + name)
 	}
 	v.V = assetVersion
-	// The menu is on every screen now, home included. It used to be left off
-	// there on the argument that the three doors are already the body of that
-	// page — which was true and is the wrong trade: a frame with a hole in it
-	// on the one screen you open most is not a frame. The doors stay what they
-	// are, a richer way in; the menu stays where it always is.
 	// What the sentences say today. Chosen from the day, so both viewports
 	// agree and a reload is not a slot machine — see squirrel.Say.
 	v.SaySlot = squirrel.Say(squirrel.SayingSlot, now())
-	v.SayOffer = squirrel.Say(squirrel.SayingOffer, now())
 	v.SayStop = squirrel.Say(squirrel.SayingStop, now())
 	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
 	v.Tilt = squirrel.Tilt(now())
 	v.Light = squirrel.Light(now())
-	v.Elsewhere = elsewhere(v.Here)
 	v.Place = placeName(v.Here)
-	if !v.Home {
-		v.Views = views(v.Here)
-	}
-	v.Scrolling = v.Scrolling || v.Query != "" || len(v.Chores) > 0 ||
+	v.Scrolling = v.Scrolling || v.Query != "" ||
 		v.Here == "tasks" || v.Here == "archive" || v.Here == "kept"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Never cached. The pile is state, and a back button that showed a note you
