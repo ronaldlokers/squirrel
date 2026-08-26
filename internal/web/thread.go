@@ -24,11 +24,9 @@ import (
 // than a page: everything above it is still there and one press away.
 const threadLimit = 40
 
-// drawn is what a turn drew, as it was drawn.
-//
-// Decoded from the turn's own JSON and never re-read from another table. A turn
-// holding a chore id would show today's chore inside yesterday's sentence,
-// which is what "history is never rewritten" forbids.
+// drawn is what a turn drew, decoded from the turn's own JSON and never re-read
+// from another table: a turn holding a chore id would show today's chore inside
+// yesterday's sentence.
 type drawn struct {
 	// Cost is what the coach has spent, on the reply that spent it. Only ever
 	// there — see coachReplyCosting.
@@ -96,10 +94,8 @@ type turnView struct {
 
 type cardView struct {
 	// Kind is what sort of thing the card holds, or empty for an ordinary one.
-	//
-	// "chore" makes it render as `article.chore` — the same element the chores
-	// screen used — so pile.js's chore keys and the stylesheet's chore rules
-	// keep working on it. The screen went; the thing on it did not.
+	// "chore" renders as `article.chore`, which pile.js's chore keys and the
+	// stylesheet's chore rules already work on.
 	Kind  string `json:"kind,omitempty"`
 	Title string `json:"title"`
 	Meta  string `json:"meta,omitempty"`
@@ -113,12 +109,8 @@ type cardView struct {
 	Acts []actView `json:"acts,omitempty"`
 }
 
-// actView is one button on a card.
-//
-// Fields is a map rather than one name-and-value pair because the presses this
-// has to carry are not all one field wide: /now/act wants kind, id and act
-// together. A struct that can hold only one hidden input would be wrong again
-// the first time a second one is needed.
+// actView is one button on a card. Fields is a map because /now/act wants kind,
+// id and act together.
 type actView struct {
 	Label  string            `json:"label"`
 	Action string            `json:"action"`
@@ -126,11 +118,8 @@ type actView struct {
 	Style  string            `json:"style,omitempty"`
 }
 
-// turnChip is a choice offered in the conversation, as a link.
-//
-// Not chipView: that is the pile's three reasons for setting something aside,
-// and one type meaning two things is how a template ends up rendering the
-// wrong one.
+// turnChip is a choice offered in the conversation. Not chipView, which is the
+// pile's three reasons for setting something aside.
 type turnChip struct {
 	Label string `json:"label"`
 	// Href for somewhere to go; Action and Fields for something to do. A chip
@@ -179,47 +168,27 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		} else {
 			turns, more, err = s.RecentTurns(ctx, personID, threadLimit)
 		}
-		// A record that cannot be read is not a reason to take the screen
-		// away: the doors still work, and the dock still writes to the spool,
-		// which is the whole of what an unreachable database must not stop.
-		// Said out loud rather than rendered as an empty conversation, because
-		// an empty conversation looks like your history is gone.
+		// A record that cannot be read is not a reason to take the screen away: the dock
+		// still writes to the spool. Said out loud rather than rendered as an empty
+		// conversation, which looks like your history is gone.
 		unreadable := err != nil
 		if unreadable {
 			slog.Error("reading the conversation", "error", err)
 			turns, more = nil, false
 		}
 
-		// Nobody has ever said anything here. The worked example plays, once,
-		// and only now: it is decided before anything is appended, because
-		// every turn below this line is about to make the record non-empty and
-		// the question being asked is whether it was empty when you arrived.
+		// Whether this is a first run is decided before anything is appended, because
+		// every turn below is about to make the record non-empty.
 		//
-		// Never while walking back — a page of the past is not a first run,
-		// even when the page is empty — and never when the record could not be
-		// read, where an empty conversation means the opposite of a new one.
-		//
-		// An empty record is not quite the whole of the question: things
-		// arrive through Campfire without a word being said on this screen. So
-		// this is provisional, and anything Squirrel then finds to say about
-		// your own world puts it out — a person mid-sentence about their own
-		// things does not need the loop explained.
+		// Provisional: anything Squirrel then finds to say about your own world puts it
+		// out. Never while walking back, and never when the record could not be read.
 		first := !walkingBack && !unreadable && !more && len(turns) == 0
 
-		// The one thing Buddy opens with, and only while the last answer no
-		// longer describes now. Written rather than rendered, because a
-		// question that is not in the record is a question the record cannot
-		// show you answering.
+		// The check-in, written rather than rendered: a question that is not in the
+		// record is one the record cannot show you answering.
 		//
-		// Never while walking back: a page of the past is being read, and
-		// reading it must not add to it.
-		// And never twice over. A question you have not answered is still on
-		// the screen; asking it again does not make it easier to answer, it
-		// makes a column of the same question — which is what a phone showed
-		// on 25 August 2026, three deep.
-		//
-		// The reading going stale is what makes it worth asking. Having asked
-		// and been ignored is what makes it not worth asking again.
+		// Never while walking back — reading the past must not add to it — and never
+		// twice over, which put the same question on screen three deep.
 		asked := false
 		if !walkingBack && !unreadable && !alreadyAsking(turns) {
 			if t, ask := checkinTurn(ctx, s, personID, r.URL.Query().Get("ask") != ""); ask {
@@ -232,18 +201,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
-		// Only once the question has been answered. Asking how you are and
-		// then handing you a job in the same breath is the interruption this
-		// product exists to reduce — and the answer is what shapes the offer
-		// anyway.
-		// Where you were in a breakdown, if you were in one.
-		//
-		// The sheet drew this on every open, and coming back an hour later to
-		// find the step you were on is the entire reason the sequence is
-		// stored rather than held in a reply. The sheet is gone, so the
-		// conversation carries it — under the same rule as the offer, or it
-		// would append a copy of itself on every load and steal the live edge
-		// from whatever Buddy last said.
+		// Only once the question has been answered. Asking how you are and then handing
+		// you a job in the same breath is the interruption this product exists to
+		// reduce, and the answer shapes the offer anyway.
 		if !walkingBack && !unreadable && !endsOpen(turns) {
 			if st := stepFor(s, opts, r); st != nil {
 				t := coachReply("Where you were.", false, false, nil, st)
@@ -255,12 +215,8 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
-		// And the first thing, when there is a first thing worth saying.
-		//
-		// Before the offer, because the offer is Squirrel choosing one job for
-		// you and this is Squirrel saying what is actually happening — the
-		// order is the same one the ladder uses, world first and initiative
-		// second.
+		// The opening line, before the offer: what is happening, then what to do about
+		// it.
 		if !walkingBack && !unreadable && !endsAsking(turns) {
 			if t, has := openingTurn(ctx, s, opts, personID, turns); has {
 				// Squirrel has something to say about your world, so you have
@@ -318,14 +274,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 
 // endsOpen says the conversation already ends with something to act on.
 //
-// Without it the offer was appended on every single load: a reload put a second
-// copy in the record, and — worse — it stole the live edge from whatever Buddy
-// had just said, so pressing "too big" got you the way through with its timer
-// button already taken off it.
-//
-// The question it asks is deliberately about shape rather than about which
-// offer: anything Buddy has put on the table and you have not answered is a
-// reason not to put something else there.
+// Without it the offer was appended on every load, and it stole the live edge
+// from whatever Buddy had just said. The question is about shape rather than
+// about which offer: anything unanswered is a reason not to add another.
 func endsOpen(turns []squirrel.Turn) bool {
 	if len(turns) == 0 {
 		return false
@@ -340,18 +291,10 @@ func endsOpen(turns []squirrel.Turn) bool {
 		// nothing more is the safe direction: the other one talks over it.
 		return true
 	}
-	// An opening line is not something on the table.
-	//
-	// It says what is true and carries one way to the place it is about; it
-	// asks nothing and there is nothing in it to answer. Counting its chip as
-	// "open" meant that on any day with something on the agenda, a chore due,
-	// or notes in the pile — which is most days — Squirrel opened with a line
-	// and then said nothing about what to actually do. The offer is the
-	// product's whole argument, and it was off.
-	//
-	// Shipped in v0.33.0 and found the same night by asking the question
-	// directly rather than by reading the code: the offer's own test fixtures
-	// have no agenda, so nothing failed.
+	// An opening line is not something on the table: it says what is true and asks
+	// nothing. Counting its chip as open meant that on any day with an agenda, a due
+	// chore or a pile — most days — Squirrel opened with a line and then offered
+	// nothing.
 	if sh.Opened != "" {
 		return false
 	}
@@ -359,12 +302,9 @@ func endsOpen(turns []squirrel.Turn) bool {
 		sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
 }
 
-// turnViews decodes each turn's own record of what it drew, and marks the live
-// edge.
-//
-// The scan for the live edge runs backwards and stops at the first Buddy turn,
-// so a run of your own turns at the bottom does not leave the conversation with
-// nothing to press.
+// turnViews decodes each turn's record of what it drew and marks the live edge.
+// The scan runs backwards and stops at the first Buddy turn, so a run of your own
+// turns at the bottom leaves something to press.
 func turnViews(turns []squirrel.Turn) []turnView {
 	out := make([]turnView, 0, len(turns))
 	for _, t := range turns {
@@ -403,17 +343,9 @@ func turnViews(turns []squirrel.Turn) []turnView {
 	return out
 }
 
-// menuFor is everywhere else, behind the lid's one control.
-//
-// It holds what the rail, the always-on chip row and the stop link used to
-// occupy the conversation with. Eight things, which is the argument for a
-// menu existing at all: the one this product removed on 25 August held three,
-// and a menu of three is emptier than the space it costs.
-//
-// Order is by how often a thing is wanted rather than by kind — the four
-// places first, then the two things you can always do. Stopping is not in this
-// list; the template puts it last, under a rule, because it is the end of the
-// evening rather than a destination.
+// menuFor is everywhere else, behind the lid's one control. Order is by how
+// often a thing is wanted; stopping is not in it — the template puts it last,
+// under a rule.
 func menuFor(ctx context.Context, s Store, personID int64) []turnChip {
 	menu := []turnChip{
 		{Label: "the pile", Action: "/open", Fields: map[string]string{"where": "pile"}},
@@ -448,15 +380,8 @@ func theFaces() []faceView {
 	return out
 }
 
-// checkinTurn is Buddy's question, while the last answer no longer describes
-// now.
-//
-// It is a turn rather than a region, and that is the change: the answer used to
-// replace the question and the morning was gone. Both stay now, which is what a
-// record that is never rewritten buys.
-//
-// How is right now — right now, and not today. That rule is unchanged; what
-// changed is only where the question lives.
+// checkinTurn is Buddy's question, while the last answer no longer describes now.
+// A turn rather than a region, so the question and the answer both stay.
 func checkinTurn(ctx context.Context, s Store, personID int64, again bool) (squirrel.Turn, bool) {
 	c, found, err := s.LatestCheckin(ctx, personID)
 	if err != nil {
@@ -474,11 +399,9 @@ func checkinTurn(ctx context.Context, s Store, personID int64, again bool) (squi
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: body}, true
 }
 
-// threadMoodHandler is the answer to Buddy's question.
-//
-// The reading is recorded first and the turns after: an answer that reached the
-// conversation but not the readings would make /moods disagree with the thread,
-// and the readings are what the picker actually consults.
+// threadMoodHandler records the reading first and the turns after: an answer that
+// reached the conversation but not the readings would make /moods disagree with
+// the thread, and the readings are what the picker consults.
 func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -503,16 +426,10 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		// "Noted" is the word this screen has always answered with, and it is
-		// the whole of what it may say: this reports what you said and may
-		// never characterise you.
+		// This reports what you said and may never characterise you.
 		//
-		// The way to change your mind travels with it, because the answer is
-		// about to be scrollback and scrollback carries no controls. Changing
-		// your mind is not a special case; it is the same answer given twice.
-		// "how you felt before" and not "what you said before": the pile's own
-		// door is what you said, and the same words naming two different
-		// things on one screen is what the rename fixed.
+		// The way to change your mind travels with it, because the answer is about to be
+		// scrollback and scrollback carries no controls.
 		again, err := json.Marshal(drawn{Chips: []turnChip{
 			{Label: "say something else", Href: "/?ask=1"},
 			{Label: "how you felt before", Href: "/moods"},
@@ -527,25 +444,18 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// offerTurn is the one thing Squirrel picked, or nothing.
-//
-// Nothing renders nothing: being handed nothing is a normal state, and a
-// reassuring sentence in its place would be the product deciding you ought to
-// be busy. That was home's rule and it is unchanged by the move.
+// offerTurn is the one thing Squirrel picked, or nothing. Nothing renders
+// nothing: a reassuring sentence would be the product deciding you ought to be
+// busy.
 func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
-	// "Show me anyway" lifts the capacity gate for this render and nothing
-	// else. It lives in the address bar rather than in the database on
-	// purpose: a person who says they are wiped and then works anyway has not
-	// changed their answer, and storing it would make them re-decide tomorrow
-	// that they meant it.
+	// "Show me anyway" lifts the capacity gate for this render only, and lives in the
+	// address bar rather than the database: storing it would make somebody re-decide
+	// tomorrow that they meant it.
 	anyway := r.URL.Query().Get("anyway") != ""
 	o := offerFor(s, opts, r, anyway, true)
 	if o == nil {
-		// Nothing, or something being withheld because of how you said you
-		// were. Those are different and only the second has anything to say:
-		// having nothing to be handed is a normal state, and a reassuring
-		// sentence in its place would be the product deciding you ought to be
-		// busy.
+		// Nothing, or something withheld because of how you said you were. Only the
+		// second has anything to say.
 		if !anyway && offerFor(s, opts, r, true, false) != nil {
 			return wayThrough()
 		}
@@ -580,11 +490,9 @@ func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
 				{Label: "not now", Action: "/now/act", Style: "later", Fields: with(row, "act", "later")},
 			}
 		}
-		// The four ways of not being able to start. They are on the card
-		// rather than behind a disclosure because the card is about to be
-		// scrollback, and scrollback carries no controls — a ladder you can
-		// only reach by pressing something that has already gone is a ladder
-		// nobody reaches.
+		// The four ways of not being able to start, on the card rather than behind a
+		// disclosure: the card is about to be scrollback, and scrollback carries no
+		// controls.
 		for _, b := range blockersFor(o.Kind) {
 			card.Acts = append(card.Acts, actView{
 				Label: squirrel.BlockerWords[b], Action: "/now/stuck", Style: "why",
@@ -614,11 +522,8 @@ func with(fields map[string]string, name, value string) map[string]string {
 	return out
 }
 
-// saidAboutTheOffer is what the two of you said when a press landed.
-//
-// Turning it down is in the record beside doing it, and they do not read the
-// same: which answer you gave is the whole of what happened, and stopping
-// partway is a normal ending rather than an absence.
+// saidAboutTheOffer is what the two of you said when a press landed. Turning it
+// down is in the record beside doing it, and they do not read the same.
 func saidAboutTheOffer(act, label string) []squirrel.Turn {
 	if label == "" {
 		label = "that"
@@ -643,11 +548,9 @@ func saidAboutTheOffer(act, label string) []squirrel.Turn {
 	return nil
 }
 
-// keepSaid writes what was said, and says so in the log when it cannot.
-//
-// A press that changed the pile and failed to reach the conversation is a
-// conversation with a hole in it, which is recoverable; refusing the press
-// because the record could not be written would not be.
+// keepSaid writes what was said, and logs when it cannot. A press that changed
+// the pile and failed to reach the conversation is recoverable; refusing the
+// press because the record could not be written would not be.
 func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn) []squirrel.Turn {
 	out := make([]squirrel.Turn, 0, len(said))
 	for _, t := range said {
@@ -662,15 +565,6 @@ func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn
 }
 
 // saidAboutBeingStuck is the ladder, as two turns.
-//
-// It used to be a region under the offer, reached back through the address
-// bar. It is in the record now for the same reason everything else is: the
-// thing you could not start, and what was said about it, are part of the
-// conversation rather than a state the next render happens to be in.
-//
-// The line stays whatever the core says it is. One sentence, lower case, no
-// exclamation — and the step, when there is one, sits above it rather than
-// replacing it: the fixed answer is the floor, not a draft.
 func saidAboutBeingStuck(s Store, opts Options, r *http.Request, personID int64, b squirrel.Blocker) []squirrel.Turn {
 	u := squirrel.UnstuckFor(b)
 	if u.Refuse {
@@ -709,12 +603,8 @@ func saidAboutBeingStuck(s Store, opts Options, r *http.Request, personID int64,
 	}
 }
 
-// blockersFor is the four ways of not being able to start, on the things they
-// are about.
-//
-// Not on a breadcrumb: "I can't start" about a thing you were already doing is
-// a question about something else, and the answer to it is the breadcrumb's own
-// "not now".
+// blockersFor is the four blockers, on the things they are about. Not on a
+// breadcrumb: the answer there is the breadcrumb's own "not now".
 func blockersFor(kind string) []squirrel.Blocker {
 	if kind == string(squirrel.OfferAgain) {
 		return nil
@@ -722,11 +612,8 @@ func blockersFor(kind string) []squirrel.Blocker {
 	return squirrel.Blockers
 }
 
-// wayThrough is what a low day gets instead of a job.
-//
-// The gate is real and it is kept: nothing is handed to you. What is offered is
-// the way past it, once, in your own hands — because a person who says they are
-// wiped and then decides to work anyway has not changed their answer.
+// wayThrough is what a low day gets instead of a job: the gate holds, and what is
+// offered is the way past it, once, in your own hands.
 func wayThrough() (squirrel.Turn, bool) {
 	body, err := json.Marshal(drawn{Chips: []turnChip{
 		{Label: "show me something anyway", Href: "/?anyway=1"},
@@ -738,22 +625,12 @@ func wayThrough() (squirrel.Turn, bool) {
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Nothing from me today.", Shown: body}, true
 }
 
-// wantsFragment is a press made by the script rather than by the browser's own
-// form machinery.
-//
-// A header rather than a second route: one URL per action, one handler, one
-// write. A `/capture/fragment` twin would be a second place the write can drift
-// from the first.
+// wantsFragment is a press made by the script rather than the browser's own form
+// machinery. A header rather than a second route: one URL per action, one write.
 func wantsFragment(r *http.Request) bool { return r.Header.Get("X-Thread") == "fragment" }
 
-// answerWith is what a press gets back.
-//
-// The same HTML the page would have rendered for those turns, from the same
-// templates. There is no JSON here and no client-side template; a second
-// description of a card is how the two ends grow apart.
-//
-// The live edge moves to the last turn that came back, so the controls follow
-// the conversation rather than staying where the page was painted.
+// answerWith is what a press gets back: a fragment for the script, a redirect
+// for a browser posting a form.
 func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, back string) {
 	if !wantsFragment(r) {
 		http.Redirect(w, r, back, http.StatusSeeOther)
@@ -781,18 +658,8 @@ func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, ba
 	}
 }
 
-// listLimit is how many cards one turn draws.
-//
-// Five since 25 August 2026, down from twelve. Twelve was chosen as "enough
-// that the chip saying there is more is rare", which is the wrong thing to
-// optimise: a reply that arrives as twelve cards is a screen of list with a
-// sentence on top, and reading it is the work the conversation was supposed to
-// replace. Five is what fits on a phone under Buddy's line without scrolling,
-// and "the rest" is one press.
-//
-// A bound rather than a page, and it matters more here than anywhere else: a
-// turn is frozen the moment it is written, so a turn holding forty cards is
-// forty cards in the record forever.
+// listLimit is how many cards one turn draws. A bound rather than a page: what
+// is past it is one press away, and never a count.
 const listLimit = 5
 
 // doorNames is the vocabulary, as a map rather than a switch so an unknown door
@@ -806,15 +673,11 @@ var doorNames = map[string]string{
 	"kept": "the things you kept", "held": "what you set aside",
 }
 
-// openHandler is a door being pressed.
+// openHandler is a door being pressed. A POST because opening a place is an
+// utterance and goes into the record; a GET would write again on every reload.
 //
-// A POST, and not a link, because opening a place is an utterance: it goes into
-// the record like anything else you say. A GET that wrote to the record would
-// write again on every reload and on every walk back through the past.
-//
-// What it costs, stated rather than discovered: a door cannot be opened in a
-// new tab, and the back button does not step through doors. That is the
-// ordinary trade for one page, and it is the only thing the rail gave up.
+// The cost: a door cannot be opened in a new tab, and back does not step through
+// doors.
 func openHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -942,28 +805,14 @@ func choresTurn(ctx context.Context, s Store, opts Options, personID int64, name
 	}
 }
 
-// makeOne is how you make one from nothing.
+// makeOne is how you make one from nothing: a sentence, because the dock already
+// understands it and a chip would have nowhere better to lead.
 //
-// The new-chore form went with the screen, and what replaced it is the
-// sentence: the dock already understands this, and saying so is where you find
-// that out. A guided version is a multi-turn flow with state to keep, which is
-// a bigger thing than the interval picker and not what was asked for.
-//
-// It is a sentence rather than a chip because a chip would have to lead
-// somewhere, and there is nowhere for it to lead that the dock does not already
-// answer better.
-//
-// Said only when there is nothing there. Telling you how to make one every time
-// you look at the chores you already keep is nagging, and the empty list is
-// exactly when it is worth knowing.
+// Said only when there is nothing there.
 const makeOne = "Tell me another like every 2 weeks: descale the kettle."
 
-// choreCard is one chore, drawn the one way.
-//
-// Written once and used by both the list and the reply to making a new one: a
-// chore read back out of the store and a chore made from nothing must not look
-// different, which is the sort of difference nobody notices until one of them
-// grows a button the other has not.
+// choreCard is one chore, drawn the one way. Shared by the list and the reply to
+// making a new one, so the two cannot grow different buttons.
 func choreCard(v choreView) cardView {
 	row := map[string]string{"id": strconv.FormatInt(v.ID, 10), "label": v.Name}
 	return cardView{
@@ -1001,15 +850,11 @@ func choreLead(n int) string {
 	return fmt.Sprintf("%d come back.", n)
 }
 
-// saidAboutAChore is what the two of you said about one.
+// saidAboutAChore is its own function rather than the offer's: a chore comes back
+// whatever you do about it, and "stop asking" must not read like finishing it.
 //
-// Its own function rather than the offer's, because the answers are different
-// facts: an offer is a thing you were handed, and a chore is a thing that comes
-// back whatever you do about it. "Stop asking" especially — it is the one press
-// here that ends something, and it must not read like finishing it.
-//
-// The name comes from the stored chore rather than from the form, so what the
-// record says happened cannot be something the press claimed.
+// The name comes from the stored chore rather than the form, so the record cannot
+// say something the press only claimed.
 func saidAboutAChore(act, name string) []squirrel.Turn {
 	switch act {
 	case "done":
@@ -1038,11 +883,9 @@ func madeAChore(c squirrel.Chore) squirrel.Turn {
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Kept.", Shown: body}
 }
 
-// pickView is a question with its answers on it.
-//
-// One form and one submit, deliberately: a picker that wrote a turn every time
-// you pressed a number would fill a record that is never rewritten with the
-// sound of somebody deciding. You are asked once and you answer once.
+// pickView is a question with its answers on it. One form and one submit: a
+// picker that wrote a turn per press would fill the record with the sound of
+// somebody deciding.
 type pickView struct {
 	Action string            `json:"action"`
 	Fields map[string]string `json:"fields,omitempty"`
@@ -1059,24 +902,17 @@ type pickRow struct {
 	Chosen string `json:"chosen,omitempty"`
 }
 
-// pickNumbers and pickUnits are what the interval picker offers.
-//
-// Six numbers and three units, and no way to type one: six covers what anyone
-// reaches for, and `every 9 weeks` is a sentence rather than a control.
-// ParseEvery accepts fortnights, quarters and years too, and those stay
-// available through the sentence at no cost in buttons.
+// pickNumbers and pickUnits are what the interval picker offers. Six numbers and
+// three units, and no way to type one: `every 9 weeks` is a sentence, and
+// ParseEvery accepts fortnights, quarters and years through it.
 var (
 	pickNumbers = []string{"1", "2", "3", "4", "6", "8"}
 	pickUnits   = []string{"days", "weeks", "months"}
-	// The day a chore comes back on, when there is one.
+	// The day a chore comes back on. "any day" first and chosen by default, so
+	// naming a day is something you add rather than dismiss.
 	//
-	// "any day" first and chosen by default, so the question reads the way it
-	// always did — every 2 weeks, any day — and naming a day is something you
-	// add rather than something you have to dismiss.
-	//
-	// Only offered against weeks. A day is meaningless on "every 3 days" and
-	// wrong on "every 6 months", and a picker that let you say it would be a
-	// picker that quietly ignored you.
+	// Only offered against weeks: a day is meaningless on "every 3 days" and wrong on
+	// "every 6 months".
 	pickDays = []string{"any day", "mon", "tue", "wed", "thu", "fri", "sat", "sun"}
 )
 
@@ -1089,15 +925,9 @@ func askHowOften(action string, fields map[string]string, count, unit, day strin
 		Rows: []pickRow{
 			{Lead: "every", Name: "count", Options: pickNumbers, Chosen: count},
 			{Lead: "of these", Name: "unit", Options: pickUnits, Chosen: unit},
-			// The third row, added 26 August 2026. Chores were `every N` and
-			// almost nothing real is: the bins are alternating Thursdays, and
-			// an interval measured from the last completion slides a day every
-			// time you are a day late.
-			//
-			// Unmarked unless the chore actually has a day. "any day" is the
-			// first option rather than a chosen one, the same way an interval
-			// the picker cannot say leaves both its rows unmarked — a mark is
-			// a fact about this chore, not a default.
+			// The day a chore comes back on. Unmarked unless the chore actually has one:
+			// "any day" is the first option rather than a chosen one, because a mark is a
+			// fact about this chore and not a default.
 			{Lead: "on a", Name: "day", Options: pickDays, Chosen: day},
 		},
 	}})
@@ -1110,15 +940,10 @@ func askHowOften(action string, fields map[string]string, count, unit, day strin
 	}
 }
 
-// rhythmOf is the interval a chore has now, as the picker's own two answers, so
-// the question opens on what is true rather than on a blank form.
+// rhythmOf is the interval a chore has now, as the picker's own two answers.
 //
-// Anything that does not land on an offered pair — a fortnight, a quarter —
-// leaves both empty rather than rounding to the nearest offered thing.
-//
-// Units are tried largest first. Days last, deliberately: 14 days is two weeks
-// to a person, and trying days first would answer "14", which is not an offered
-// number and would then fall through to nothing at all.
+// Anything not landing on an offered pair leaves both empty rather than rounding.
+// Units are tried largest first: days last, or 14 days answers "14".
 func rhythmOf(every time.Duration) (count, unit string) {
 	for i := len(pickUnits) - 1; i >= 0; i-- {
 		u := pickUnits[i]
@@ -1134,11 +959,9 @@ func rhythmOf(every time.Duration) (count, unit string) {
 	return "", ""
 }
 
-// unitStep is how long each offered unit is.
-//
-// Thirty days for a month, exactly as the core reads it — this is a nudge, not
-// a calendar. See unitDurations in internal/squirrel/intent.go, and do not let
-// the two drift: TestThePickerAndTheSentenceAgree is what notices if they do.
+// unitStep is how long each offered unit is. Thirty days for a month, exactly as
+// the core reads it. See unitDurations in internal/squirrel/intent.go —
+// TestThePickerAndTheSentenceAgree notices if they drift.
 func unitStep(unit string) time.Duration {
 	switch unit {
 	case "days":
@@ -1151,13 +974,9 @@ func unitStep(unit string) time.Duration {
 	return 0
 }
 
-// composeEvery turns the picker's two answers into an interval, through the
-// same parser a typed sentence goes through.
-//
-// Not arithmetic here: ParseEvery is where "every 3 weeks" means something, and
-// a second place deciding what a week was would be a second place to be wrong.
-// Both answers are checked against what was offered first, because they arrive
-// from a form.
+// composeEvery turns the picker's two answers into an interval through the same
+// parser a typed sentence goes through. Both answers are checked against what was
+// offered, because they arrive from a form.
 func composeEvery(count, unit string) (time.Duration, bool) {
 	if !oneOf(pickNumbers, count) || !oneOf(pickUnits, unit) {
 		return 0, false
@@ -1215,12 +1034,8 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 			},
 		})
 	}
-	// The way to what you cannot act on. It hung off the tasks screen, and
-	// without it here /held is reachable from nowhere in the product — which
-	// is the bug the mood history had for an afternoon.
-	// A form rather than a link, now that what you set aside is a message and
-	// not a page. Same chip, same place — the tasks are where you look when
-	// you wonder what happened to something.
+	// The way to what you set aside. Without it here, /held is reachable from
+	// nowhere. A form rather than a link, now that it is a message and not a page.
 	sh.Chips = []turnChip{{Label: "what you set aside", Action: "/open",
 		Fields: map[string]string{"where": "held"}}}
 	if more {
@@ -1246,11 +1061,8 @@ func taskLead(n int) string {
 	return fmt.Sprintf("%d things you decided.", n)
 }
 
-// saidAboutATask is what the two of you said about one.
-//
-// "Not a task" is not a failure and must not read like one: it is a note that
-// went back to being a note, which is a decision reversed rather than a thing
-// given up on.
+// saidAboutATask is what the two of you said about one. "Not a task" is a note
+// that went back to being a note, and must not read as a failure.
 func saidAboutATask(act, text string) []squirrel.Turn {
 	if text == "" {
 		text = "that"
@@ -1275,12 +1087,8 @@ func saidAboutATask(act, text string) []squirrel.Turn {
 	return nil
 }
 
-// agendaTurn is what is still ahead, as cards.
-//
-// The list this product spent its whole life refusing, and what makes it
-// allowed is unchanged by its moving into a turn: it holds only what is still
-// coming. Nothing past, nothing done, and nothing here has been missed —
-// because a thing you have not reached yet is not a thing you are late for.
+// agendaTurn holds only what is still coming: nothing past, nothing done, and
+// nothing here has been missed.
 func agendaTurn(ctx context.Context, s Store, personID int64, name string, from int) squirrel.Turn {
 	coming, err := s.Upcoming(ctx, personID, now(), from+listLimit+1)
 	if err != nil {
@@ -1302,11 +1110,9 @@ func agendaTurn(ctx context.Context, s Store, personID int64, name string, from 
 	sh := drawn{Place: name}
 	for _, m := range page {
 		row := map[string]string{"id": strconv.FormatInt(m.ID, 10)}
-		// The core's own sentence, shared with chat and with the notification,
-		// so the three cannot drift apart about when to leave.
-		// A ticket, not a card. An appointment is the one thing in this product
-		// you can be *late* for, and it looked exactly like a note about a
-		// rattle until 26 August 2026 — see DESIGN.md, The Six Bodies.
+		// The core's own sentence, shared with chat and the notification, so the three
+		// cannot drift about when to leave. A ticket, not a card — see DESIGN.md, The Six
+		// Bodies.
 		card := cardView{Kind: "at", Title: m.Label, Meta: squirrel.LeaveWords(m)}
 		card.Acts = []actView{{Label: "OPEN", Action: "/at/open", Style: "go", Fields: row}}
 		if m.Open(now()) {
@@ -1345,12 +1151,8 @@ func comingLead(n int) string {
 	return fmt.Sprintf("%d things have a time.", n)
 }
 
-// fixedPointTurn is one appointment and what is pointing at it.
-//
-// What to take is its own line rather than a clause after a middot: it is the
-// thing you are standing in the hall without, so it gets to be a line rather
-// than a tail. Absent when there is nothing to take — an empty label is a row
-// that says nothing.
+// fixedPointTurn is one appointment and what is pointing at it. What to take is
+// its own line, and absent when there is nothing to take.
 func fixedPointTurn(m squirrel.Moment, notes []squirrel.Item) squirrel.Turn {
 	card := cardView{Title: m.Label, Meta: squirrel.LeaveWords(m)}
 	if m.Bring != "" {
@@ -1389,12 +1191,9 @@ func fixedPointTurn(m squirrel.Moment, notes []squirrel.Item) squirrel.Turn {
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.LeaveWords(m), Shown: body}
 }
 
-// calView is the day picker: a month to choose out of, and a time.
-//
-// One form and one submit, exactly as the interval picker. Turning to another
-// month is the one control that posts on its own — it is not an answer, it is
-// turning a page, and it re-asks rather than writing a second question into a
-// record that is never rewritten.
+// calView is the day picker. One form and one submit, like the interval picker;
+// turning to another month posts on its own and re-asks rather than writing a
+// second question into the record.
 type calView struct {
 	Action string            `json:"action"`
 	Fields map[string]string `json:"fields,omitempty"`
@@ -1423,19 +1222,12 @@ type calDay struct {
 	Gone bool   `json:"gone,omitempty"`
 }
 
-// pickTimes are the hours offered.
-//
-// Three and a way out, like the numbers on the interval picker: these are the
-// times most appointments actually are, and anything else is a sentence — the
-// dock already understands "at 08:15 dentist".
+// pickTimes are the hours offered: three and a way out. Anything else is a
+// sentence — the dock already understands "at 08:15 dentist".
 var pickTimes = []string{"09:00", "14:30", "18:00"}
 
-// askForADay is the question.
-//
-// Monday first, because that is how a week is read here. Days already gone are
-// drawn and not offered — a month with holes in it is harder to read than one
-// where some days cannot be pressed — and there is no way back past this month
-// for the same reason: the list may hold nothing you are already late for.
+// askForADay is the question. Monday first. Days already gone are drawn and not
+// offered, and there is no way back past this month.
 func askForADay(label string, month time.Time) squirrel.Turn {
 	first := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, month.Location())
 	// Monday is 0 here; Go's Sunday is 0.
@@ -1473,12 +1265,8 @@ func askForADay(label string, month time.Time) squirrel.Turn {
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Which day?", Shown: body}
 }
 
-// pileTurn is one note, with the four ways out of it.
-//
-// One at a time, exactly as the deck does it: the pile is a thing you decide
-// about, and a list of things to decide about is a list you are behind on.
-// What changes in a conversation is only that the next one arrives underneath
-// the last rather than replacing it.
+// pileTurn is one note, with the four ways out of it. One at a time: a list of
+// things to decide about is a list you are behind on.
 func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64, name string) squirrel.Turn {
 	items, _, err := s.OpenItemsAfter(ctx, personID, after, 1)
 	if err != nil {
@@ -1486,12 +1274,9 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot reach the pile just now."}
 	}
 	if len(items) == 0 {
-		// Nothing to decide about is exactly when the other two places are
-		// worth reaching, and it was the one branch that could not reach them:
-		// the chips hung off the drawn card, so an empty pile answered with a
-		// sentence and no way anywhere. The shelf was reachable from nowhere,
-		// which is the bug the comment below it had been warning about since
-		// the deck came out.
+		// An empty pile is exactly when the other two places are worth reaching, and it
+		// was the one branch that could not reach them: the chips hung off the drawn
+		// card.
 		words := "Nothing to decide about. Anything you tell me lands here."
 		if after != 0 {
 			// The bottom, reached by skipping. Not the same as an empty pile:
@@ -1514,17 +1299,8 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 				{Label: "KEEP", Action: "/pile/act", Style: "go", Fields: with(row, "act", "keep")},
 				{Label: "DROP", Action: "/pile/act", Style: "stop", Fields: with(row, "act", "drop")},
 				{Label: "A TASK", Action: "/pile/act", Style: "go", Fields: with(row, "act", "task")},
-				// Four, and only four.
-				//
-				// The three that ask a question rather than ending the note
-				// were here too until 26 August 2026, quieter and after these.
-				// Seven equally-shaped buttons is six too many on a screen
-				// whose premise is that deciding is the expensive part, and
-				// "quieter" was not enough to say that four of them end the
-				// card and three do not.
-				//
-				// They are behind `something else?` below, and they answer as
-				// a turn.
+				// Four, and only four. The three that ask a question rather than ending the note
+				// are behind `something else?` and answer as a turn.
 			},
 		}},
 		Chips: append([]turnChip{
@@ -1553,11 +1329,8 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: squirrel.Say(squirrel.SayingHere, now()), Shown: body}
 }
 
-// saidAboutANote is what the two of you said, and the way to change your mind.
-//
-// The way back travels with the answer because the card is about to be
-// scrollback, and scrollback carries no controls: an undo you can only reach by
-// pressing something that has already gone is an undo nobody reaches.
+// saidAboutANote carries the way back with the answer, because the card is about
+// to be scrollback and scrollback carries no controls.
 func saidAboutANote(act, text string, id int64, was string) []squirrel.Turn {
 	// The reply varies by the day, the way the slot's own line does. This is
 	// the most repeated exchange in the product — four sentences met several
@@ -1599,19 +1372,13 @@ func saidAboutANote(act, text string, id int64, was string) []squirrel.Turn {
 	}
 }
 
-// sayView is a question whose answer is words rather than a choice.
-//
-// Its own box in the turn rather than the dock, and that is the point: the dock
-// keeps everything you type, and these words are meant to replace something
-// rather than be kept. A dock that sometimes captured and sometimes edited
-// would be a dock you could not trust with a thought.
+// sayView is a question whose answer is words. Its own box rather than the dock:
+// the dock keeps everything you type, and these words replace something.
 type sayView struct {
 	Action string `json:"action"`
-	// Field is what the box is called when it is posted. Each route was
-	// written before this shape existed and they do not agree: rewording takes
-	// `text`, Buddy takes `said`, and search has always taken `q`. Renaming
-	// them to match would break the one URL in this product a person might
-	// have typed, for tidiness.
+	// Field is what the box is called when posted. The routes do not agree —
+	// rewording takes `text`, Buddy `said`, search `q` — and renaming them would
+	// break the one URL a person might have typed.
 	Field string `json:"field"`
 	// Label is what a screen reader calls the box. The question above it is a
 	// paragraph, not a label, so without this every box in the product is
@@ -1657,15 +1424,11 @@ func askWhyNot(id int64) squirrel.Turn {
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Why not?", Shown: body}
 }
 
-// cutView is a proposal to split a note into pieces.
+// cutView is a proposal to split a note into pieces, travelling as repeated
+// inputs because a card's fields are a map.
 //
-// Its own shape because the pieces are a list, and a card's fields are a map:
-// they travel as repeated inputs, exactly as the deck's proposal did.
-//
-// Nothing has been written when this is drawn. The pieces are words in a turn
-// until the press, and a proposal in scrollback has lost its button by the live
-// edge rule — so a stale proposal cannot be applied, which is what the deck got
-// by keeping it only as long as the page it was on.
+// Nothing is written when this is drawn, and a proposal in scrollback has lost
+// its button by the live edge rule, so a stale one cannot be applied.
 type cutView struct {
 	Action string   `json:"action"`
 	ID     int64    `json:"id"`
@@ -1692,17 +1455,9 @@ func proposeInThread(id int64, pieces []string) squirrel.Turn {
 	}
 }
 
-// searchTurn is what a word found, as cards.
-//
-// One search and both kinds of thing: the lid carries one field, and a person
-// typing a word has not first decided whether it belongs to a note or to a
-// chore. Every state is searched — a result says which one it is in, because
-// without that an open task reported itself as being in the pile and was
-// offered the pile's verbs.
-//
-// A result carries no verbs at all. It is a thing you went looking for rather
-// than a thing you are deciding about, and the deck's own results screen made
-// the same distinction: a chore found by searching is a link, not a control.
+// searchTurn is one search over both kinds of thing, in every state. A result
+// says which state it is in, because without that an open task reported itself as
+// being in the pile and was offered the pile's verbs.
 func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel.Turn {
 	items, more, err := s.SearchItems(ctx, personID, q, searchLimit)
 	if err != nil {
@@ -1717,14 +1472,9 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Nothing with that word in it."}
 	}
 
-	// Results are not cards. A card is something you act on; a hit is
-	// something you are *finding*, and making them the same object is why
-	// search felt like a second pile — six hits fit in the space three cards
-	// took, and every one of them arrived carrying verbs for a decision
-	// nobody had asked to make.
-	//
-	// One at a time opens into a real card with real buttons, which is the
-	// same one-thing-is-live rule the conversation already runs on.
+	// Results are not cards. A hit is something you are finding, not something you
+	// act on; one opens into a real card with real buttons, which is the same
+	// one-thing-is-live rule the conversation runs on.
 	sh := drawn{}
 	for _, c := range chores {
 		v := toChoreView(c)
@@ -1742,13 +1492,8 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		})
 	}
 	if more {
-		// That there is more, and not how much: what is further down a list of
-		// results is not a thing you can act on.
-		// It pointed at /pile?q= until 25 August 2026, which is a route the
-		// deck took with it — so the one chip that said there was more led
-		// nowhere at all. Narrowing the words is the honest offer: there is no
-		// second page of search, and inventing one to make a chip work would
-		// be building a feature to fix a link.
+		// That there is more, and not how much. Narrowing the words is the honest offer:
+		// there is no second page of search.
 		sh.Chips = []turnChip{{Label: "say it more exactly", Action: "/find/ask"}}
 	}
 
@@ -1777,12 +1522,8 @@ func foundLead(n int) string {
 	return fmt.Sprintf("%d things with that word in it.", n)
 }
 
-// findHandler is the lid's one field, answered in the conversation.
-//
-// A POST, like every other thing you say: a search is a thing you asked, and it
-// goes into the record. The result of it is regenerated on no schedule at all —
-// what is in the turn is what was found when you asked, which is the same rule
-// every other turn follows.
+// findHandler is a POST like every other thing you say: a search goes into the
+// record, and what is in the turn is what was found when you asked.
 func findHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -1806,16 +1547,8 @@ func findHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// findOpenHandler turns one search result into a card you can act on.
-//
-// A hit is quiet on purpose — it is a thing you are finding, not a thing you
-// are deciding about — and this is the moment it becomes the other. One at a
-// time, which is the same rule the conversation already runs on: the live edge
-// holds one thing.
-//
-// The card it draws is the ordinary one, with the ordinary four verbs, built
-// from the note's real state so that a dropped result offers to undo and an
-// open one offers to decide. Nothing about search gets its own vocabulary.
+// findOpenHandler turns one search result into a card you can act on, built from
+// the note's real state. Nothing about search gets its own vocabulary.
 func findOpenHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
