@@ -1,13 +1,5 @@
-// Applying what arrived, when what arrived is words.
-//
-// This file is the room's half: free text a person typed — `!at`, `!bring`,
-// `!leaving`, `!fix`, `done 2`, the numbered lists and the sentences that
-// answer them. All of it is shaped by Campfire, which is a place where you say
-// things and get told things back.
-//
-// The other half — resolving a *tap* — moved to `taps.go`, because a tap is
-// not a sentence and does not belong to any particular surface. See that file
-// for why the line is drawn there.
+// Applying what arrived, when what arrived is words: free text a person typed.
+// Resolving a *tap* is taps.go, because a tap is not a sentence.
 
 package squirrel
 
@@ -54,14 +46,11 @@ type Applier struct {
 	// construction via SetNudger, since the Applier and the Scheduler each
 	// need the other and boot builds them in that order.
 	nudger func(ctx context.Context, now time.Time, why NudgeReason) error
-	// asker optionally asks a model. A function rather than an interface for
-	// one reason: internal/coach must not be imported here — the core would
-	// then depend on a model being reachable — and a func of primitives is the
-	// one shape that crosses that line without either package knowing about
-	// the other's types. Set after construction via SetCoach, same as nudger.
+	// asker optionally asks a model. A func of primitives rather than an interface
+	// because internal/coach must not be imported here — the core must not depend
+	// on a model being reachable. Set after construction, like nudger.
 	//
-	// Nil is the normal state. Every caller of it has a fixed answer to fall
-	// back to, and that answer is what shipped before the coach existed.
+	// Nil is the normal state, and every caller has a fixed answer to fall back to.
 	asker func(ctx context.Context, personID int64, kind, said, subject string) (
 		text string, did []string, err error)
 	// decider optionally lets a model choose among what the picker found. Nil
@@ -93,16 +82,8 @@ func (a *Applier) SetDecider(d Decider) { a.decider = d }
 // SetBreaker supplies the callback that breaks a thing into steps, or nil.
 func (a *Applier) SetBreaker(b Breaker) { a.breaker = b }
 
-// SetSpent supplies "is this month's coach budget gone".
-//
-// A function rather than a number, and injected rather than read, for the same
-// reason the coach itself is: this package does not import internal/coach and
-// never will, because the core must not depend on a model being reachable.
-// Boot adapts, which is what boot is for.
-//
-// Nil is the ordinary state — no coach configured, or nobody wired it — and
-// means the same as "not spent": the message says only what it can stand
-// behind.
+// SetSpent supplies "is this month's coach budget gone". Injected for the same
+// reason asker is. Nil means the same as "not spent".
 func (a *Applier) SetSpent(f func(context.Context, int64) bool) { a.spent = f }
 
 // SetNudger supplies the callback that may attach a nudge to a capture. It is
@@ -123,17 +104,11 @@ func NewApplier(store *Store, send Sender, chat Chat, onError func(error)) *Appl
 }
 
 // Apply runs after a capture has landed in Postgres. The raw text is already
-// stored verbatim, so everything here is a derived view over it and nothing
-// here can lose a thought.
+// stored verbatim, so nothing here can lose a thought.
 //
-// A panic anywhere below is recovered and reported as an error rather than
-// left to propagate. It escaped once already — a byte-length bug in Match's
-// chore-name parsing — and rode out through Drain.one and Drain.Run to exit
-// the whole process. By then the spool file was already gone and the row
-// already committed, so there was nothing left to retry, and every later
-// digest attempt re-ran Match over that same row via CapturesSince and
-// panicked the scheduler too, forever. A derived view failing must never be
-// able to take capture down with it again.
+// A panic below is recovered rather than propagated. One escaped through
+// Drain.Run and killed the process; the spool file was already gone and every
+// later digest re-ran Match over the same row and panicked again, forever.
 func (a *Applier) Apply(ctx context.Context, item Item, personID *int64) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -158,16 +133,9 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 	// IntentCapture.
 	var kind IntentKind
 
-	// An action is not a thought and never reaches the matcher. It is checked
-	// first so that a tap can never be reinterpreted as text. ParseAction
-	// matches on text alone, so it cannot by itself tell a genuine tap from
-	// someone typing the same shape into the room — isActionPayload is what
-	// makes that distinction, from the payload the transport actually sent.
-	//
-	// Both branches below funnel into the same tail: tick runs once handling
-	// has succeeded, whether that handling was a tap resolved against a
-	// prompt or a plain capture that reached Postgres. tick itself is the one
-	// that knows a tap earns no ✅ — this join point does not need to.
+	// An action is checked first so a tap can never be reinterpreted as text.
+	// ParseAction matches on text alone, so isActionPayload is what tells a genuine
+	// tap from someone typing the same shape into the room.
 	if in, ok := ParseAction(item.RawText); ok && isActionPayload(item.Payload) {
 		if err := a.applyAction(ctx, in, *personID); err != nil {
 			return err
@@ -256,19 +224,10 @@ func (a *Applier) tick(ctx context.Context, item Item) {
 	}
 }
 
-// Reactions are what a completion earns. Small, immediate, non-cumulative and
-// unpredictable — intermittent reinforcement is the strongest schedule there
-// is, and it is the same mechanism that defeats habituation, so one change
-// serves both.
+// Reactions are small, immediate, non-cumulative and unpredictable. Nothing
+// accrues, so there is nothing to lose.
 //
-// What makes a streak punish is not the reward but the counter that resets:
-// loss aversion makes losing hurt about twice as much as the equivalent gain
-// pleases. Nothing here accrues, so there is nothing to lose.
-//
-// These are NOT the 👀/✅ receipt, which reports whether the thought is on disk
-// and whether it reached Postgres. That pair is information and must never
-// vary — randomising it would turn the one honest signal about durability into
-// decoration.
+// NOT the 👀/✅ receipt, which reports durability and must never vary.
 var Reactions = []string{"🎉", "✨", "🙌", "💫", "🌟"}
 
 // react acknowledges a completion on the message that asked for it. Fail-open:
@@ -416,12 +375,8 @@ const listCap = 10
 // it ever surfaces in an error.
 const intervalSentinel = "chore-name-placeholder"
 
-// command answers a ! command.
-//
-// Every branch that prints a numbered list records a prompt and sets pending,
-// which is what makes `done 2` resolve against it: apply() marks the prompt
-// delivered once the send succeeds and closes the previous numbered surface.
-// Getting that for free is the reason these lists are prompts at all.
+// command answers a ! command. Every branch that prints a numbered list records
+// a prompt and sets pending, which is what makes `done 2` resolve against it.
 func (a *Applier) command(ctx context.Context, in Intent, personID int64, conversationID string) (Message, error) {
 	switch in.Command {
 	case "notes":
@@ -553,18 +508,12 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 }
 
 // now hands you one thing: `!now`, or `!now anyway` on a day you said you were
-// wiped and then decided otherwise.
+// wiped.
 //
-// It records a prompt with exactly one line, so the buttons resolve and so a
-// typed `done 1` means the same thing the ✅ does. That line may be a chore or
-// a task — the picker is the first surface where a numbered line can be
-// either, which is what LineOnPrompt exists for.
+// It records a prompt with exactly one line, so a typed `done 1` means what the
+// ✅ does. That line may be a chore or a task — see LineOnPrompt.
 //
-// "anyway" is the whole of the escape from the capacity gate, and it is a word
-// rather than a second command because it is the same question asked twice.
-// Nothing about saying it is remembered: it lifts the gate for this answer and
-// not for the day, so a person who is genuinely wiped does not have to keep
-// re-deciding that they were.
+// "anyway" lifts the capacity gate for this answer and not for the day.
 func (a *Applier) now(ctx context.Context, arg string, personID int64, conversationID string) (Message, error) {
 	anyway := strings.EqualFold(strings.TrimSpace(arg), "anyway")
 
@@ -627,14 +576,8 @@ func (a *Applier) judged(ctx context.Context, personID int64, o Offer) Offer {
 
 // stuck is the ladder, in chat: `!stuck`, or `!stuck too big`.
 //
-// It acts on whatever the picker would hand you right now rather than asking
-// which thing you mean. Someone who has just said they cannot start is not the
-// person to ask a disambiguating question, and the answer is almost always the
-// thing they were just looking at.
-//
-// "Not today" turns that same thing down, which is the one branch that writes
-// anything — and it writes exactly what pressing "not now" writes, because
-// they are the same answer arrived at from two directions.
+// It acts on whatever the picker would hand you rather than asking which thing
+// you mean. "Not today" writes exactly what pressing "not now" writes.
 func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Message, error) {
 	b, ok := ParseBlocker(arg)
 	if !ok {
@@ -671,11 +614,9 @@ func (a *Applier) stuck(ctx context.Context, arg string, personID int64) (Messag
 	return StuckMessage(u, subject), nil
 }
 
-// smaller breaks the thing being offered into steps and hands back the first
-// one, or reports that the ladder's own line stands.
+// smaller breaks the thing being offered into steps and hands back the first.
 //
-// Only ever the first one. The sequence is stored and this returns a single
-// step, which is the whole safety argument: a model may produce a list, and
+// Only ever the first. The sequence is stored; a model may produce a list and
 // nothing here may show one.
 func (a *Applier) smaller(ctx context.Context, personID int64, b Blocker, o Offer, found bool) (Step, bool) {
 	if a.breaker == nil || !found || !BreakingHelps(b) {
@@ -729,16 +670,11 @@ func (a *Applier) next(ctx context.Context, personID int64) (Message, error) {
 	return StepMessage(after), nil
 }
 
-// hold sets something aside: `!waiting 3 on the vet`, `!blocked 2`,
-// `!someday 5`. With no number it lists what is already set aside.
-//
-// The number is a line on the last numbered surface, the same way `done 3` and
-// `!task 3` resolve — so this is the same gesture as every other thing you do
-// to a listed note, and it needs no new vocabulary to point at one.
+// hold sets something aside: `!waiting 3 on the vet`, `!blocked 2`, `!someday 5`.
+// With no number it lists what is already set aside.
 //
 // Everything after the number is what you are waiting on, with a leading "on"
-// dropped because that is how the sentence reads: `!waiting 3 on the vet`
-// stores "the vet".
+// dropped.
 func (a *Applier) hold(ctx context.Context, command, arg string, personID int64, conversationID string) (Message, error) {
 	state, ok := ParseHeld(command)
 	if !ok {
@@ -793,17 +729,11 @@ func (a *Applier) heldList(ctx context.Context, personID int64) (Message, error)
 
 // coach is the ladder's other half: `!buddy I can't face the tax thing`.
 //
-// `!stuck` wants you to name what is in the way, and its four answers are
-// good precisely because they are fixed. This is for the times you cannot
-// name it. It is the same moment reached from the other direction.
+// Every failure — no key, no network, budget spent, a reply the guard threw
+// away — ends in the same sentence, pointing at `!stuck`.
 //
-// Everything about it degrades to `!stuck`. No key, no network, the month's
-// budget spent, or a reply the guard threw away — all four end in the same
-// sentence, and that sentence points at the thing that always works.
-//
-// What is on screen goes with the question. The picker is asked with
-// showAnyway, because someone who has just typed a paragraph about being
-// stuck has already overridden the low-day quiet by asking.
+// The picker is asked with showAnyway: asking has already overridden the
+// low-day quiet.
 func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Message, error) {
 	said := strings.TrimSpace(arg)
 	if said == "" {
@@ -823,23 +753,12 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 
 	text, did, err := a.asker(ctx, personID, "chat", said, subject)
 	if err != nil {
-		// The floor, and it is the picker rather than an apology. Someone who
-		// has just typed out five things wants one of them chosen, and the
-		// product can choose one without a model — that is what PickNow is.
-		// Pointing at !stuck instead would be answering a pile with a
-		// question about a thing nobody has named yet.
-		// Why, when the why is worth knowing.
+		// The floor is the picker rather than an apology: PickNow can choose without a
+		// model.
 		//
-		// Every reason Buddy goes quiet gives the same behaviour on purpose —
-		// the picker chooses, the ladder answers, Rule 10 holds. But one of
-		// them is not "try again in a minute": a spent month is spent until
-		// the first, and typing the same thing four more times at eleven at
-		// night is the one outcome this can spare you. The screen shows the
-		// figure; a session that lives in the room never sees it.
-		//
-		// No number here, and that is deliberate. What it costs is on a
-		// surface you go to on purpose; what belongs in the room is only that
-		// asking again tonight will not help.
+		// A spent month is the one reason worth distinguishing, because it is not "try
+		// again in a minute". No number here — what it costs belongs on a surface you
+		// go to on purpose.
 		done := a.spent != nil && a.spent(ctx, personID)
 		switch {
 		case done && subject != "":
@@ -861,12 +780,8 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 	return Message{Text: text}, nil
 }
 
-// at keeps a fixed point: `!at 14:30 dentist`, `!at 14:30 dentist, 20 minutes
-// away`, `!at tomorrow 09:00 school run`.
-//
-// The reply says when to leave rather than repeating when it starts, because
-// the start time is the thing you already knew and the leaving time is the one
-// nobody works out until it is too late.
+// at keeps a fixed point: `!at 14:30 dentist, 20 minutes away`. The reply says
+// when to leave rather than repeating when it starts.
 func (a *Applier) at(ctx context.Context, arg string, personID int64) (Message, error) {
 	// The command name ate the word the parser looks for. `!at 14:30 dentist`
 	// leaves "14:30 dentist", which is deliberately not a fixed point on its
@@ -890,10 +805,6 @@ func (a *Applier) at(ctx context.Context, arg string, personID int64) (Message, 
 }
 
 // bring notes what to take, on the next fixed point: `!bring keys, wallet`.
-//
-// The next one rather than a named one, because it is only ever said a moment
-// after making it — and asking which appointment you mean, of the one you just
-// typed, is the tax this product exists to stop charging.
 func (a *Applier) bring(ctx context.Context, arg string, personID int64) (Message, error) {
 	arg = strings.TrimSpace(arg)
 	if arg == "" {
@@ -909,11 +820,9 @@ func (a *Applier) bring(ctx context.Context, arg string, personID int64) (Messag
 	return Message{Text: fmt.Sprintf("%s — %s.", m.Label, m.Bring)}, nil
 }
 
-// leaving closes the next fixed point: you went, or it is off.
-//
-// One word for both, and nothing anywhere records which it was. Whether you
-// actually went is not this product's business — the job was to get you out of
-// the door on time, and it is over either way.
+// leaving closes the next fixed point: you went, or it is off. One word for
+// both, and nothing records which — whether you went is not this product's
+// business.
 func (a *Applier) leaving(ctx context.Context, personID int64) (Message, error) {
 	m, found, err := a.store.NextMoment(ctx, personID, time.Now())
 	if err != nil {
@@ -928,22 +837,11 @@ func (a *Applier) leaving(ctx context.Context, personID int64) (Message, error) 
 	return Message{Text: "Go. I will stop mentioning it."}, nil
 }
 
-// andNext hands you one more thing, once, on the message that says you
-// finished something.
+// andNext hands you one more thing, once, on the message that says you finished
+// something. Never a queue, and it rides the completion's own message.
 //
-// The moment straight after a completion is the cheapest moment to start the
-// next thing: the decision has already been made once, the momentum is already
-// spent, and until now the product walked away from it — an acknowledgement,
-// and then silence. This is the whole of the hand-off.
-//
-// Once, and never a queue. It rides on the completion's own message rather
-// than arriving as a second notification, it carries the same two buttons
-// every other offer carries, and ignoring it does nothing at all.
-//
-// Deliberately not attached to triaging a note. Clearing the pile is a run of
-// small decisions about what things are, and a suggestion after each one would
-// be the interruption this product exists to reduce. This fires when you
-// finished a thing you had set out to do.
+// Deliberately not attached to triaging a note: a suggestion after each small
+// decision is the interruption this exists to reduce.
 func (a *Applier) andNext(ctx context.Context, m Message, personID int64, conversationID string) (Message, error) {
 	// The gate applies here as much as anywhere: on a low day, finishing one
 	// thing must not be read as evidence that you have more in you.
@@ -985,14 +883,10 @@ func (a *Applier) andNext(ctx context.Context, m Message, personID int64, conver
 	return m, nil
 }
 
-// promote turns note n into a recurring chore: `!chore 1 every 2 weeks`.
+// promote turns note n into a recurring chore: `!chore 1 every 2 weeks`. The
+// note's text becomes the name and the note becomes `done`.
 //
-// The note's own text becomes the chore's name, and the note becomes `done` —
-// it did its job by turning into something that comes back on its own.
-//
-// No column links the two. There is exactly one question that would read it
-// ("where did this chore come from") and no second, and the rule here is two
-// concrete cases before an interface. If a reason appears, it is a migration.
+// No column links the two. If a reason to link them appears, it is a migration.
 func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Message, error) {
 	position, rest, _ := strings.Cut(arg, " ")
 	n, err := strconv.Atoi(position)
@@ -1040,13 +934,10 @@ func (a *Applier) promote(ctx context.Context, arg string, personID int64) (Mess
 	return Message{Text: RenderDefined(c)}, nil
 }
 
-// snooze stops a chore asking for a while, without pretending it was done:
-// `!snooze bins out`, `!snooze 1`, `!snooze bins out for 3 days`.
+// snooze stops a chore asking for a while: `!snooze bins out for 3 days`.
 //
-// The chore's clock keeps running while it is quiet, so when the time is up it
-// is exactly as due as it was. That is the difference between this and `done`,
-// and it is the whole reason this exists rather than people typing `done` at
-// chores they have not done.
+// The chore's clock keeps running while it is quiet, so it is exactly as due
+// when the time is up. That is the difference between this and `done`.
 func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Message, error) {
 	arg = strings.TrimSpace(arg)
 
@@ -1087,11 +978,8 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 	if arg == "" {
 		return Message{Text: "Which one, and for how long? Try !snooze " + active[0].Name + " for 3 days."}, nil
 	}
-	// No default, deliberately. A default is a decision made in advance for a
-	// moment nobody can see, and the two obvious ones are both wrong somewhere:
-	// a day is nothing for a fortnightly chore, and an interval is retiring by
-	// another name. Asking costs one line and puts the decision where the
-	// information is.
+	// No default: a day is nothing for a fortnightly chore, and an interval is
+	// retiring by another name.
 	if how == 0 && said == "" {
 		return Message{Text: fmt.Sprintf("For how long? Try !snooze %s for 3 days, or a week, or a month.", arg)}, nil
 	}
@@ -1115,16 +1003,8 @@ func (a *Applier) snooze(ctx context.Context, arg string, personID int64) (Messa
 }
 
 // findChore turns what a person typed into one chore: a line number from the
-// last listing, or a name.
-//
-// Both, because both are how you already refer to one. A number is what `?`
-// just printed and a name is what you call it when you have not looked — and
-// asking a person to look first, so they can quote a number back, is the tax
-// this product exists to stop charging.
-//
-// When it cannot find one it returns nil and the message to send instead,
-// which always names what you do have: an error that lists the alternatives is
-// a recovery rather than a refusal.
+// last listing, or a name. When it finds none it returns nil and a message that
+// names what you do have.
 func (a *Applier) findChore(ctx context.Context, arg string, personID int64, active []Chore) (*Chore, Message, error) {
 	if n, err := strconv.Atoi(arg); err == nil {
 		line, ok, err := a.store.LineAtPosition(ctx, personID, n)
@@ -1170,15 +1050,8 @@ func (a *Applier) findChore(ctx context.Context, arg string, personID int64, act
 		arg, strings.Join(names, ", "))}, nil
 }
 
-// did records a chore as done by naming it: `did bins out`, `did 2`.
-//
-// It exists because completing a chore from chat took two steps and a number
-// held in your head — ask `?`, read the list, type `done 1`. The listing was
-// load-bearing for the wrong reason: it was where the number came from, not
-// where the decision was made.
-//
-// It records the same completion the tap does, through the same store call, so
-// the two ways of saying it cannot mean different things.
+// did records a chore as done by naming it: `did bins out`, `did 2`. It records
+// the same completion the tap does, through the same store call.
 func (a *Applier) did(ctx context.Context, arg string, personID int64, conversationID string) (Message, error) {
 	arg = strings.TrimSpace(arg)
 
@@ -1211,15 +1084,9 @@ func (a *Applier) did(ctx context.Context, arg string, personID int64, conversat
 		personID, conversationID)
 }
 
-// checkin asks how you are, or records the answer.
+// checkin asks how you are, or records the answer: `!mood`, `!mood low`.
 //
-// `!mood` asks; `!mood low` answers in one go. Both, because the moment you
-// know is not always the moment you were asked.
-//
-// It says nothing back about the person. "Noted" and the word you chose, and
-// that is the whole reply — no "sorry to hear that", which is a stranger's
-// sympathy from a program, and nothing at all about yesterday, which is the
-// series this feature is forbidden from drawing.
+// It says nothing back about the person and nothing at all about yesterday.
 func (a *Applier) checkin(ctx context.Context, arg string, personID int64) (Message, error) {
 	arg = strings.TrimSpace(arg)
 	if arg == "" {
@@ -1238,15 +1105,7 @@ func (a *Applier) checkin(ctx context.Context, arg string, personID int64) (Mess
 
 // fix changes what a note says: `!fix 2 the boiler makes a noise on tuesdays`.
 //
-// This was listed as explicitly undecided for a long time, and the hesitation
-// was worth having — a note is a record of what you said, and a record that
-// can be rewritten is a record you cannot lean on. What settles it is the
-// failure it fixes: a thought typed one-handed arrives half-written or
-// autocorrected into something else, and until now the only remedy was to drop
-// it and say it again, which costs the arrival time and the place in the pile.
-//
-// Only the words change. The arrival time, the state and the position stay,
-// because those are the facts about the note and only the words were wrong.
+// Only the words change. The arrival time, the state and the position stay.
 func (a *Applier) fix(ctx context.Context, arg string, personID int64) (Message, error) {
 	number, text, _ := strings.Cut(strings.TrimSpace(arg), " ")
 	text = strings.TrimSpace(text)
@@ -1284,12 +1143,8 @@ func (a *Applier) fix(ctx context.Context, arg string, personID int64) (Message,
 // number of minutes when they are not thinking about formats.
 var timerMinutes = regexp.MustCompile(`^(\d{1,3})\s*(?:m|min|mins|minute|minutes)?$`)
 
-// timer starts a body double: `!timer 10 the kitchen`.
-//
-// It says go and then says nothing until the end. Nothing is kept about it
-// afterwards, and starting a second one replaces the first rather than
-// complaining — the answer to "actually, twenty minutes" is to say twenty
-// minutes.
+// timer starts a body double: `!timer 10 the kitchen`. Nothing is kept about it
+// afterwards, and a second one replaces the first.
 func (a *Applier) timer(ctx context.Context, arg string, personID int64) (Message, error) {
 	number, label, _ := strings.Cut(strings.TrimSpace(arg), " ")
 	label = strings.TrimSpace(label)
@@ -1315,25 +1170,17 @@ func (a *Applier) timer(ctx context.Context, arg string, personID int64) (Messag
 	return Message{Text: fmt.Sprintf("%d minutes on %s. Go — I'll say when.", mins, t.Label)}, nil
 }
 
-// TimerUpMessage is the one thing a timer says, at the end.
-//
-// It asks nothing and reports nothing. Whether the thing got done is not the
-// timer's business, and "did you finish?" would turn a body double into a
-// supervisor.
+// TimerUpMessage is the one thing a timer says, at the end. It asks nothing:
+// "did you finish?" would turn a body double into a supervisor.
 func TimerUpMessage(t Timer) Message {
 	return Message{Text: fmt.Sprintf("That's %s. Stop wherever you are.", t.Label)}
 }
 
-// task is the third promotion, beside !chore: a note becomes a thing you
-// decided to do, once.
+// task is the third promotion, beside !chore: a note becomes a thing you decided
+// to do, once. A number promotes that line; words make one outright.
 //
-// A number promotes the note on that line; words make one outright — the same
-// number-or-name shape !did and !snooze already use, because a person refers to
-// a thing by whichever they have to hand.
-//
-// Promoting takes it out of the pile, and that is the point rather than a side
-// effect: the pile holds what you have not decided about, and this is the
-// deciding.
+// Promoting takes it out of the pile, which is the point: the pile holds what
+// you have not decided about.
 func (a *Applier) task(ctx context.Context, arg string, personID int64) (Message, error) {
 	arg = strings.TrimSpace(arg)
 	if arg == "" {
@@ -1396,18 +1243,11 @@ func (a *Applier) untask(ctx context.Context, arg string, personID int64) (Messa
 	return Message{Text: "Back in the pile — " + line.Item.RawText}, nil
 }
 
-// undoLast puts the most recently triaged note back in the pile.
+// undoLast puts the most recently triaged note back in the pile. Which note
+// comes from the store, so an undo typed in chat reverses a tap made on screen.
 //
-// Which note that is comes from the store rather than from anything this
-// applier remembers, so an undo typed in chat reverses a tap made on the
-// screen: two views, one pile. Said twice it walks back another step, and
-// nothing special happens on the second — an undo is a transition like any
-// other, and so is undoing it.
-//
-// A promotion is the one case worth knowing about: undoing it returns the note
-// and leaves the chore, because the chore is a separate thing that now exists.
-// !retire is how that goes away, and saying so here is cheaper than guessing
-// which chore a note became.
+// Undoing a promotion returns the note and leaves the chore; !retire is how the
+// chore goes away.
 func (a *Applier) undoLast(ctx context.Context, personID int64) (Message, error) {
 	it, ok, err := a.store.LastTriaged(ctx, personID)
 	if err != nil {
@@ -1422,18 +1262,11 @@ func (a *Applier) undoLast(ctx context.Context, personID int64) (Message, error)
 	return Message{Text: "Back in the pile — " + shorten(it.RawText)}, nil
 }
 
-// retire stops a chore coming back: `!retire bins out`, or `!retire 1` against
-// whatever line 1 currently is.
+// retire stops a chore coming back: `!retire bins out`, or `!retire 1`.
 //
-// Two ways in, deliberately. A number is only reachable while a numbered
-// surface is on screen, and the chore most worth retiring is the one that has
-// been quietly nagging for weeks — which may not be on any list you can see. A
-// name always works, and it is matched the way the unique index matches it, so
-// the case you typed is not what decides.
-//
-// Retiring is not deleting. `active` goes false, the chore's history stays, and
-// saying it again brings the same row back — which is what makes this safe to
-// do on a whim, and why the reply says so.
+// A name always works and is matched the way the unique index matches it. It is
+// not deleting: `active` goes false, the history stays, and saying it again
+// brings the same row back.
 func (a *Applier) retire(ctx context.Context, arg string, personID int64) (Message, error) {
 	arg = strings.TrimSpace(arg)
 
@@ -1526,12 +1359,10 @@ func noSuchLine(position int) Message {
 	return Message{Text: fmt.Sprintf("I don't have a line %d.", position)}
 }
 
-// triage moves a note that a numbered line named. `done`, `keep` and `drop`
-// differ only in the state they assert and what they say back.
+// triage moves a note a numbered line named. `done`, `keep` and `drop` differ
+// only in the state they assert.
 //
-// A position that turns out to name a chore is answered rather than silently
-// ignored: `keep 2` on a chore is a real mistake, and a bot that does nothing
-// looks broken in exactly the way that makes you stop trusting it.
+// A position naming a chore is answered rather than ignored.
 func (a *Applier) triage(ctx context.Context, position int, personID int64, state ItemState, said string) (Message, error) {
 	line, ok, err := a.store.LineAtPosition(ctx, personID, position)
 	if err != nil {
@@ -1644,9 +1475,6 @@ func (a *Applier) undo(ctx context.Context, personID int64) (Message, error) {
 	return Message{Text: "Dropped " + name + ". It's still in your captures."}, nil
 }
 
-// In sets where the person is, for everything this Applier books.
-//
-// A setter rather than a constructor argument for the same reason SetNudger is
-// one: the Applier and the Scheduler each need the other, and boot builds them
-// in an order that cannot pass both.
+// In sets where the person is. A setter because the Applier and the Scheduler
+// each need the other and boot cannot pass both.
 func (a *Applier) In(loc *time.Location) { a.where = loc }
