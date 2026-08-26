@@ -9,24 +9,18 @@ import (
 
 // The monthly ceiling.
 //
-// What this protects against, precisely: Squirrel's own bugs. A retry loop, a
-// context that grows without anyone noticing, a phase that turns out to call
-// the model far more often than the estimate said. It cannot protect against a
-// stolen key — nothing running inside this process can — which is why the hard
-// spend limit on the provider's own project is the control that matters, and
-// why the secret's comment says so.
+// What it protects against: Squirrel's own bugs — a retry loop, a context that
+// grows unnoticed, a phase that calls the model more than the estimate said. It
+// cannot protect against a stolen key, which is what the provider's own hard
+// spend limit is for.
 //
-// Crossing the ceiling is not an error state. It degrades to the deterministic
-// floor for the rest of the month: the picker chooses, the ladder answers, and
-// everything keeps working. That is what makes a ceiling safe to set low.
+// Crossing it is not an error state: it degrades to the deterministic floor for
+// the rest of the month, which is what makes a ceiling safe to set low.
 
-// Answer is one recorded call, for the log and the budget.
-//
-// The whole exchange is kept, indefinitely, by decision: it is what makes a bad
-// answer inspectable afterwards and what makes changing the model in
-// configuration evaluable at all. It is also a permanent record of bad moments
-// and what a machine said about them, kept on the same reasoning that keeps the
-// check-in history.
+// Answer is one recorded call, for the log and the budget. The whole exchange is
+// kept indefinitely: it is what makes a bad answer inspectable and a model change
+// evaluable. It is also a permanent record of bad moments and what a machine said
+// about them.
 type Answer struct {
 	Kind      string
 	Model     string
@@ -56,15 +50,12 @@ type Log interface {
 // Budget answers one question: is there room left this month.
 type Budget struct {
 	Log Log
-	// CeilingFor is the monthly ceiling in micro-euros for one person. Nil, or
-	// a function returning zero, means no ceiling — a supported choice, since
-	// the provider's own spend limit is the real backstop and someone may
-	// reasonably prefer only that.
+	// CeilingFor is the monthly ceiling in micro-euros for one person. Nil, or zero,
+	// means no ceiling.
 	//
-	// A function rather than a number because a demo account must not be able
-	// to spend a month's allowance. One process-wide ceiling applied to
-	// whoever asked would have made two demo accounts into two monthly
-	// ceilings, both of them yours to pay.
+	// A function rather than a number because a demo account must not spend a month's
+	// allowance: one process-wide ceiling would make two demo accounts into two
+	// monthly ceilings, both yours to pay.
 	CeilingFor func(personID int64) int64
 }
 
@@ -90,14 +81,11 @@ func MonthStart(now time.Time) time.Time {
 	return time.Date(y, m, 1, 0, 0, 0, 0, now.Location())
 }
 
-// Allows reports whether a call may be made, and what has been spent so far.
+// Allows reports whether a call may be made, and what has been spent.
 //
-// It fails **closed**: if the spend cannot be read, no call is made. That is
-// the opposite of how everything else in this product handles a database it
-// cannot reach, and the exception is deliberate — everywhere else the failure
-// costs a feature, and here it could cost money without limit. The coach needs
-// the database for its context anyway, so a read that fails would have
-// produced a poor answer regardless.
+// It fails closed: if the spend cannot be read, no call is made. The opposite of
+// everywhere else here, deliberately — elsewhere the failure costs a feature, and
+// this one could cost money without limit.
 func (b Budget) Allows(ctx context.Context, personID int64, now time.Time) (bool, int64) {
 	if b.Log == nil {
 		return false, 0
@@ -113,20 +101,13 @@ func (b Budget) Allows(ctx context.Context, personID int64, now time.Time) (bool
 	return spent < ceiling, spent
 }
 
-// Permit is proof that the month's ceiling was checked before a paid call was
-// made. It carries nothing and does nothing; its whole job is to be impossible
-// to produce without asking.
+// Permit is proof that the month's ceiling was checked before a paid call. It
+// carries nothing; its whole job is to be impossible to produce without asking.
 //
-// Rule 10 says the deterministic answer is never deleted and becomes the floor:
-// no key, no network, or a month's budget spent must leave a product that works
-// exactly as it did before the model existed. That was true, and it was true
-// because six methods each remembered an identical four-line check — correct in
-// all six, and enforced in none. The seventh was one plausible feature away,
-// and the roadmap has two of those planned.
-//
-// So the check is not remembered any more. `completionWithTools` will not
-// compile without one of these, which means the floor is a property of the
-// type system rather than of anyone's memory.
+// The floor used to hold because six methods each remembered an identical
+// four-line check — correct in all six, enforced in none.
+// completionWithTools will not compile without one of these, so the floor is a
+// property of the type system rather than of anyone's memory.
 type Permit struct {
 	// held says this permit is holding the gate, so releasing it means
 	// something. A permit issued after the wait expired holds nothing and
@@ -153,36 +134,23 @@ func (p *Permit) Release() {
 }
 
 // Ask answers with a Permit, or with ErrUnavailable and the reason already
-// logged. `instead` names what takes over when it does — the picker, the
-// ladder, the rules — because crossing the ceiling is the system working and
-// the log should read like it.
-// One paid call at a time.
+// logged. `instead` names what takes over, because crossing the ceiling is the
+// system working.
 //
-// The ceiling is checked before a call and the spend is recorded after it, so
-// two requests arriving together could both read "under ceiling" and both
-// spend — a webhook redelivery landing mid-answer is the
-// realistic version. The docstring at the top of this file names a retry loop
-// as the thing it guards against, and a plain check-then-act does not guard
-// against that at all.
+// One paid call at a time. The ceiling is checked before a call and the spend
+// recorded after, so two requests arriving together could both read "under
+// ceiling" and both spend.
 //
-// A channel rather than a mutex, because this one has to be able to give up.
-// The alternative designs each put a second obligation on six call sites —
-// reserve here, settle there — and a reservation that is never settled hangs
-// every future call, which is worse than the overshoot it prevents. This
-// cannot hang: if the holder takes longer than any real call could, the next
-// caller says so and goes anyway. The bad case degrades to the behaviour that
-// exists today rather than to a product that has stopped.
+// A channel rather than a mutex, because this one has to be able to give up: a
+// reservation that is never settled hangs every future call. If the holder takes
+// longer than any real call could, the next caller says so and goes anyway.
 //
-// Single replica, one person. Two pods would need this in the database, and
-// the day there are two pods this comment is where to start.
+// Single replica, one person. Two pods would need this in the database.
 var spending = make(chan struct{}, 1)
 
-// spendWait is longer than a model call and shorter than a person's patience.
-// A wait this long means something is genuinely wrong, and the log says so.
-// A var rather than a const so a test can make it short. The escape hatch is
-// the part of this design that stops a forgotten release becoming a hang, and
-// a ninety-second escape hatch is one no test would ever wait for — which
-// would leave the safety net itself unproven.
+// spendWait is longer than a model call and shorter than a person's patience. A
+// var rather than a const so a test can make it short: a ninety-second escape
+// hatch is one no test would wait for, leaving the safety net unproven.
 var spendWait = 90 * time.Second
 
 func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead string) (Permit, error) {
@@ -214,18 +182,14 @@ func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead 
 	return Permit{held: held}, nil
 }
 
-// Spent is what this month has cost so far and what the ceiling is, both in
-// micro-euros, and whether the question could be answered at all.
+// Spent is what this month has cost and what the ceiling is, in micro-euros, and
+// whether the question could be answered.
 //
-// It exists so one surface can show it. This is the only number in the product
-// that accrues and is allowed on a screen, and the exception is narrow on
-// purpose: it is money rather than a score, it is bounded by a ceiling you set
-// rather than open-ended, and it is a fact about a machine rather than about
-// you. Rule 2 bans the counter that counts what remains of *your* work. This
-// counts what a model has spent of *its* allowance.
+// The only accruing number allowed on a screen: money rather than a score,
+// bounded by a ceiling you set, and a fact about a machine.
 //
-// It fails quiet, not closed. A spend that cannot be read is a line that is
-// not drawn — unlike Allows, where the same failure has to stop a call.
+// It fails quiet, not closed — unlike Allows, where the same failure must stop a
+// call.
 func (b Budget) Spent(ctx context.Context, personID int64, now time.Time) (int64, int64, bool) {
 	if b.Log == nil {
 		return 0, 0, false
@@ -237,11 +201,8 @@ func (b Budget) Spent(ctx context.Context, personID int64, now time.Time) (int64
 	return spent, b.ceiling(personID), true
 }
 
-// Euros renders micro-euros the way money is written, to the cent.
-//
-// Rounded up rather than to nearest, so the figure never reads lower than what
-// was actually spent. Being told €0.00 after a month of calls would be worse
-// than being told €0.01.
+// Euros renders micro-euros to the cent, rounded up so the figure never reads
+// lower than what was spent.
 func Euros(micros int64) string {
 	cents := (micros + 9_999) / 10_000
 	return fmt.Sprintf("€%d.%02d", cents/100, cents%100)
