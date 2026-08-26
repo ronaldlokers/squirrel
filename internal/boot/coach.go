@@ -184,7 +184,7 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canO
 	return func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error) {
 		now := time.Now()
 
-		// The one place overwhelm is recognised, so the sheet and the chat
+		// The one place overwhelm is recognised, so the screen and the chat
 		// cannot disagree about what it is. The caller says which surface
 		// asked; whether this particular turn is a pile rather than a question
 		// is a property of the words, not of the surface.
@@ -397,14 +397,13 @@ func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
 
 // spentFor is what the coach has cost this month, already rendered as money.
 //
-// Nil when there is no coach: a line saying "€0.00 of €10" under a sheet that
-// cannot call anything would be reporting on a thing that is not there.
+// Nil when there is no coach: "€0.00 of €10" under something that cannot call
+// anything would be reporting on a thing that is not there.
 // overFor answers "is this month's coach budget gone", for the room.
 //
-// The screen has shown the figure in the sheet's lid since it was written, and
-// a session that lives in Campfire never sees it — so someone typing `!buddy`
-// at eleven at night could not tell "try again in a minute" from "not until
-// the first" and would try again four more times.
+// The screen shows the figure and a session that lives in Campfire never sees
+// it, so someone typing `!buddy` at eleven at night could not tell "try again
+// in a minute" from "not until the first" and would try four more times.
 //
 // A boolean rather than the figure. What it costs is on a surface you go to on
 // purpose; what belongs in the room is only that asking again tonight will not

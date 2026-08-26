@@ -31,7 +31,7 @@ const overwhelmParts = 3
 
 // Overwhelmed reports whether what was typed is a pile rather than a question.
 //
-// It lives here rather than in either caller so the sheet and the chat cannot
+// It lives here rather than in either caller so the screen and the chat cannot
 // disagree about what overwhelm is — the same reason Trim lives here.
 func Overwhelmed(said string) bool {
 	return len(listedIn(said)) >= overwhelmParts

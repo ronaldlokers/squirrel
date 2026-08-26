@@ -92,8 +92,6 @@ func (p *Provider) Smaller(ctx context.Context, personID int64, task, blocker st
 	if err != nil {
 		return nil, ErrUnavailable
 	}
-	// The gate is given back whichever way this returns. `defer` rather
-	// than a release at the end, because the end is not the only exit.
 	defer permit.Release()
 
 	said := "The thing is: " + task

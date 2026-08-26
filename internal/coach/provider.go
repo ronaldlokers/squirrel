@@ -100,8 +100,6 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 	if err != nil {
 		return Reply{}, ErrUnavailable
 	}
-	// The gate is given back whichever way this returns. `defer` rather
-	// than a release at the end, because the end is not the only exit.
 	defer permit.Release()
 
 	model := p.modelFor(t)

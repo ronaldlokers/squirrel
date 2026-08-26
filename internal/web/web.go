@@ -98,8 +98,8 @@ type Options struct {
 	// window worth having is that it is the conversation — not the part of it
 	// a model happened to produce.
 	Remember func(personID int64, said, replied string)
-	// Forget drops it. Closing the sheet has to mean the conversation is over,
-	// and it has to mean nothing else.
+	// Forget drops it. Ending a conversation has to mean it is over, and has to
+	// mean nothing else.
 	Forget func(personID int64)
 	// Decide lets a model choose among what the picker found, or is nil. The
 	// screen never calls it when the picker found nothing: absent rather than

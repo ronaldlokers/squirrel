@@ -138,6 +138,9 @@ type Permit struct {
 // that never held it, because the call sites use `defer` and a rule that only
 // works when six people remember it is the rule this file exists to stop
 // needing.
+//
+// Every call site defers it rather than releasing at the end: the end is not
+// the only exit.
 func (p *Permit) Release() {
 	if p == nil || !p.held {
 		return
@@ -157,7 +160,7 @@ func (p *Permit) Release() {
 //
 // The ceiling is checked before a call and the spend is recorded after it, so
 // two requests arriving together could both read "under ceiling" and both
-// spend — a webhook redelivery landing while the sheet is mid-answer is the
+// spend — a webhook redelivery landing mid-answer is the
 // realistic version. The docstring at the top of this file names a retry loop
 // as the thing it guards against, and a plain check-then-act does not guard
 // against that at all.

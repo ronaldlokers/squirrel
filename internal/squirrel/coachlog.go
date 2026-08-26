@@ -49,8 +49,7 @@ func (s *Store) RecordCoachAnswer(ctx context.Context, personID int64, a CoachAn
 	return nil
 }
 
-// LandedBadly marks one reply as having landed badly, by the id the sheet
-// carries.
+// LandedBadly marks one reply as having landed badly, by the id it carries.
 //
 // Idempotent on purpose: pressing it twice is pressing it, and a second press
 // on a bad night must not become an error to read. The timestamp is when you
@@ -69,10 +68,9 @@ func (s *Store) LandedBadly(ctx context.Context, personID, answerID int64, at ti
 
 // LandedBadlyLatest marks the most recent reply this person was actually shown.
 //
-// The sheet's conversation carries no row id — an exchange is two strings —
-// and threading one through the window, the provider and the budget in order
-// to point at a row would be a lot of machinery for a press that means "that
-// one, the one I just read".
+// The conversation carries no row id — an exchange is two strings — and
+// threading one through the window, the provider and the budget would be a lot
+// of machinery for a press that means "the one I just read".
 //
 // So: the newest reply that reached a human. That is what the control is
 // beside, and on the surface it lives on it is the only thing it can sensibly

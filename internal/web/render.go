@@ -143,15 +143,7 @@ type view struct {
 	PushKey string
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
-	// Path is the page the acorn is being drawn on, so closing the coach
-	// returns to it. renderWith fills it, so no handler can forget.
-	Path string
-	// Coach is the sheet's contents, and only the coach page fills it. Every
-	// other page carries the acorn and nothing more — the sheet's markup
-	// arrives when it is opened, because a conversation nobody has started is
-	// Menu is everywhere else, behind the lid's one control. It carries what
-	// the rail, the chip row and the stop link used to occupy the conversation
-	// with — see layout.html for why a hamburger came back.
+	// Menu is everywhere else, behind the lid's one control. See layout.html.
 	Menu []turnChip
 	// Also is the pair of chips at the foot of the conversation: asking Buddy
 	// and looking something up. See thread.html.
@@ -190,17 +182,6 @@ type choreView struct {
 	When  string
 }
 
-// linkView is one of the lid's cross-links.
-type linkView struct {
-	Href  string
-	Label string
-	// Here is the place you already are. It is still drawn, and it is not a
-	// link: a nav whose items move as you move is a nav you have to read every
-	// time, and the cheapest way to say where you are is to say it in the same
-	// row as everywhere else you could be.
-	Here bool
-}
-
 // placeName is where you are, in the words the menu uses for it.
 //
 // A screen that hangs off another one answers with its parent: the shelf is
@@ -220,45 +201,6 @@ func placeName(here string) string {
 		return "buddy"
 	}
 	return "home"
-}
-
-// elsewhere is the map: the three places, with the one you are in marked.
-//
-// Behind a hamburger now rather than beside the mark. The lid was a row of
-// words that cost most of a phone screen before anything you came for, and
-// what it said — where you can go — is the thing you need least often and can
-// always ask for.
-//
-// The place you are in is in the list and not a link. A menu that drops it
-// has items that move as you move, so "the second one" means a different
-// screen on every screen.
-//
-// Home is not in it: the mark is the way home and has been since the screen
-// existed. Buddy is not in it either — it is one tap in the lid, because a
-// conversation about what is in front of you should not be two.
-func elsewhere(here string) []linkView {
-	// One, since 24 August 2026. The tasks, the chores and the agenda stopped
-	// being pages and became messages, and a menu that offered them would be
-	// offering a link to somewhere that no longer exists. The way to them is
-	// the rail, on the one screen you reach them from; the way back to that
-	// screen is the mark, as it always was.
-	//
-	// None, since the deck came out. Every place is a message; the way to one
-	// is the rail, and the way to the rail is the mark. A menu of one item
-	// that is always where you are is furniture, and the lid has no room for
-	// furniture.
-	return nil
-}
-
-// views are the places that belong to the screen you are on, and nothing else
-// reaches them. The pile keeps a shelf; the tasks keep what is finished and
-// what is stalled. They sit under the title because that is what they are
-// about — a link to the archive means nothing next to the chores.
-func views(here string) []linkView {
-	// None, since the shelf and the set-aside came into the conversation on
-	// 25 August 2026. They were the last two screens with a view of their own,
-	// and a place that is a message has no page to hang one on.
-	return nil
 }
 
 // moodWeekView is one row of the readings grid: a label and seven days.
@@ -506,7 +448,6 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
 	v.Camera = opts.Photos != nil
-	v.Path = r.URL.Path
 	render(w, name, v)
 }
 

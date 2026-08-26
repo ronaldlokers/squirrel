@@ -8,25 +8,15 @@ import (
 
 // The one thing.
 //
-// This is the file that changes what Squirrel is. Everything before it stored
-// well and chose nothing: the pile is arrival order, the tasks are arrival
-// order, the chores are alphabetical, and the only thing in the product that
-// ever picked one thing out was the nudge — one chore, once a day, in chat.
-// So the person who opened Squirrel while overwhelmed was asked which of three
-// boxes they would like to open, which is three decisions charged to the
-// resource that is already short.
-//
-// The rules below are deterministic and fixed in order. That is the whole
-// design and not an implementation detail: when the picker is wrong you can
-// read six rules and see why it was wrong, which is a thing you cannot do with
-// anything that scores or learns or generates. It also means it works when
-// everything else is down, and that it can be explained in one clause — which
-// is a requirement, not a nicety. An offer nobody can account for is a
+// The rules below are deterministic and fixed in order, and that is the design
+// rather than an implementation detail: when the picker is wrong you can read
+// the rules and see why, which nothing that scores or learns or generates
+// allows. It also works when everything else is down, and it can be explained
+// in one clause — a requirement, because an offer nobody can account for is a
 // demand.
 //
 // It never changes what is true. A chore is exactly as due on a low day, and
-// nothing here hides anything from someone who goes looking; every screen the
-// product had before this still shows everything it did.
+// nothing here hides anything from someone who goes looking.
 
 // OfferKind is which rule produced an offer. It is also the suppression key's
 // first half, and the word the screen and the chat both use for it.

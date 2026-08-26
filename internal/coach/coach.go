@@ -182,7 +182,7 @@ type Reply struct {
 // Coach is the surface the product asks. Methods are added as the phases that
 // need them land; each one answers ErrUnavailable from NoCoach.
 type Coach interface {
-	// Answer is a conversational turn: the sheet, `!coach`, and the overwhelm
+	// Answer is a conversational turn: the screen, `!coach`, and the overwhelm
 	// turn.
 	Answer(ctx context.Context, t Turn) (Reply, error)
 	// Decide is what to do now. It reads through tools and hands back one

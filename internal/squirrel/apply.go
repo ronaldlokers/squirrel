@@ -834,9 +834,8 @@ func (a *Applier) coach(ctx context.Context, arg string, personID int64) (Messag
 		// the picker chooses, the ladder answers, Rule 10 holds. But one of
 		// them is not "try again in a minute": a spent month is spent until
 		// the first, and typing the same thing four more times at eleven at
-		// night is the one outcome this can spare you. The screen has shown
-		// the figure in the sheet's lid all along; a session that lives in the
-		// room never sees it.
+		// night is the one outcome this can spare you. The screen shows the
+		// figure; a session that lives in the room never sees it.
 		//
 		// No number here, and that is deliberate. What it costs is on a
 		// surface you go to on purpose; what belongs in the room is only that

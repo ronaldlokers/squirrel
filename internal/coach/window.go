@@ -63,10 +63,9 @@ func (c *Conversations) Add(personID int64, said, replied string, at time.Time) 
 
 // Forget drops the conversation.
 //
-// It exists because closing the sheet has to mean something. A widget that
-// remembers what you said the last time you opened it is a widget you have to
-// think about before opening, and thinking about it is the cost this product
-// spends everything else avoiding.
+// Ending one has to mean something. A surface that remembers what you said last
+// time is a surface you think about before opening, and thinking about it is
+// the cost this product spends everything else avoiding.
 func (c *Conversations) Forget(personID int64) {
 	if c == nil {
 		return

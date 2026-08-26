@@ -289,22 +289,15 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 
 	messageID, err := s.sendMessage(ctx, m)
 	if err != nil {
-		// The prompt row is already committed, so the numbering stands and
-		// the evening message will not be retried today. Reported rather
-		// than retried: re-sending risks two messages, and tomorrow's is
-		// hours away in the scheme of things. delivered_at stays null, so
-		// LastDigestSentAt will skip straight past this row rather than
-		// anchoring the next dated message's capture window to a message
-		// that never arrived.
+		// The prompt row is committed, so the numbering stands and the evening
+		// message will not be retried today: re-sending risks two messages.
+		// delivered_at stays null, so LastDigestSentAt skips this row rather
+		// than anchoring the next capture window to a message nobody received.
 		//
-		// When a nudge rode along, nudgeFor already committed its own row,
-		// claiming today's nudge slot in the unique index before it was known
-		// whether this send would even succeed — the same shape as Nudge()'s
-		// own cleanup below, and for the same reason: left in place, that
-		// claim survives the failure and every later trigger today —
-		// including a second 19:00 attempt — is refused by a message the
-		// room never received. Deleting it here gives the next trigger a
-		// real chance instead.
+		// A nudge that rode along already claimed today's slot in the unique
+		// index before this send was known to succeed. Left in place, that
+		// claim would refuse every later trigger today over a message the room
+		// never got.
 		if nudge != nil {
 			deleteUndeliveredNudge(ctx, s.opts.Store, s.opts.OnError, nudgePromptID)
 		}
@@ -321,32 +314,21 @@ func (s *Scheduler) once(ctx context.Context, now time.Time) error {
 	}
 
 	// A crash between here and either MarkPromptSent call below is a known,
-	// unfixed gap: the message has already reached the room with a real
-	// button on it, but no row in the database yet carries its
-	// external_message_id. PreviousNumberedPrompt requires that column to be
-	// non-null, so that button can never be found and disabled by any future
-	// closePrevious call — it stays live indefinitely, and whatever opens
-	// tomorrow becomes a second live surface alongside it, which is exactly
-	// the "exactly one live numbered surface" bound this whole mechanism
-	// exists to hold. The window is small and pre-existing — phase 2 and 3's
-	// digest had the identical shape — and closing it needs a reconciliation
-	// sweep (find delivered-looking sends with no recorded id and either
-	// confirm or retract them against Campfire) that is its own piece of
-	// work, not a fix that belongs inlined here.
+	// unfixed gap: the message is in the room with a real button on it, but no
+	// row yet carries its external_message_id. PreviousNumberedPrompt requires
+	// that column, so the button can never be found and disabled — it stays
+	// live, and tomorrow's surface becomes a second live one, breaking the
+	// "exactly one live numbered surface" bound. Closing it needs a
+	// reconciliation sweep against Campfire, which is its own piece of work.
 	//
-	// The message id belongs on whichever row owns the button: a tap
-	// resolves through PromptByMessageID, so external_message_id must point
-	// at the prompt whose prompt_lines the tap should land on. When a nudge
-	// rode along, that is the nudge row — the button is its button, named
-	// after its chore — not the evening row it happens to be printed inside.
-	// external_message_id is also unique per prompt
-	// (prompts_external_message_id_key), so only one of the two rows can
-	// hold it regardless.
+	// The message id belongs on whichever row owns the button, because a tap
+	// resolves through PromptByMessageID. When a nudge rode along that is the
+	// nudge row, not the evening row it printed inside. external_message_id is
+	// unique per prompt, so only one row can hold it anyway.
 	//
-	// The evening row still gets delivered_at, with no message id of its
-	// own: on a quiet day it carries no button of its own, and delivered_at
-	// alone is what LastDigestSentAt needs to anchor the next capture
-	// window.
+	// The evening row gets delivered_at with no message id: on a quiet day it
+	// carries no button, and delivered_at is what LastDigestSentAt needs to
+	// anchor the next capture window.
 	if nudge != nil {
 		if err := s.opts.Store.MarkPromptSent(ctx, nudgePromptID, messageID, now); err != nil {
 			// The message is already out, so this is reported rather than
@@ -604,25 +586,20 @@ func clockParts(d time.Duration) (hour, min, sec int) {
 }
 
 // closePrevious disables the buttons on the numbered prompt before current, so
-// there is exactly one live surface. That bound is what makes undo safe
-// without any date arithmetic — there is nothing old left to un-tap.
+// there is exactly one live surface. That bound is what makes undo safe without
+// date arithmetic — there is nothing old left to un-tap.
 //
-// The update rebuilds the exact action values the previous prompt was
-// originally sent with — done:1, done:2, … with the same chore names and
-// emoji — rather than sending a synthetic replacement. Two reasons: the
-// transport forces disabled on every action regardless of what the values
-// say, so reusing the real values is free; and because the values match,
-// Campfire's per-user retained selection on the old message survives the
-// update instead of being wiped by a button it does not recognise. Text is
-// left empty, which chatVia's omitempty then leaves off the request
-// entirely — the fork's controller only touches keys actually present, so an
-// update carrying no body leaves the room's existing text alone.
+// It rebuilds the exact action values the previous prompt was sent with rather
+// than sending a synthetic replacement. The transport forces disabled
+// regardless of the values, so reusing the real ones is free, and matching
+// values let Campfire's per-user retained selection survive the update. Text is
+// left empty, which chatVia's omitempty drops from the request entirely — the
+// fork's controller only touches keys present, so the room's text is untouched.
 //
-// Shared by the scheduler and the applier, the only two places that ever open
-// a new numbered surface. A failure here is reported and swallowed: the old
-// buttons staying live is a degraded surface, but failing to speak in the
-// present because closing the past went wrong is silence, and silence is the
-// failure this whole phase exists to remove.
+// Shared by the scheduler and the applier, the only two places that open a new
+// numbered surface. A failure is reported and swallowed: old buttons staying
+// live is degraded, but failing to speak now because closing the past went
+// wrong is silence.
 func closePrevious(ctx context.Context, store *Store, chat Chat, onError func(error), personID, current int64) {
 	if chat.Update == nil {
 		return
