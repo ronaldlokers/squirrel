@@ -7,22 +7,17 @@ import (
 
 // The guard is about shape, not content.
 //
-// Principle 5 was opened on 20 August 2026: the coach may evaluate, compare,
-// and mention counts and streaks. That decides *what* it may say, and nothing
-// here second-guesses it — there is no word list, no sentiment check, no
-// judgement about tone.
+// Principle 5 decides what the coach may say, and nothing here second-guesses it:
+// no word list, no sentiment check, no judgement about tone.
 //
-// What is still enforced is *form*, because form is where this product's whole
-// failure mode lives. The thing being prevented is the twelve-step plan: a
+// Form is enforced, because form is where this product's failure mode lives: a
 // wall of numbered steps handed to someone who said they were overwhelmed. A
-// model that returns one is not being unkind, it is being a chatbot, and the
-// difference between those is a list.
+// model that returns one is being a chatbot, and the difference is a list.
 //
 // A cheaper model needs this more, not less.
 //
-// Anything failing is discarded and the deterministic answer used. There is no
-// retry: a retry is a second chance to say something worse, and the fixed line
-// underneath is already acceptable.
+// Anything failing is discarded and the deterministic answer used. No retry: a
+// retry is a second chance to say something worse.
 
 // maxReply is the ceiling in characters. Two sentences of plain English fit in
 // far less; this is a backstop against a model that ignores the prompt

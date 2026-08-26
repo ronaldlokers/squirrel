@@ -83,27 +83,19 @@ func (s *Store) ResolvePerson(ctx context.Context, transport string, externalID 
 
 // PersonForLogin is who just signed in, creating them if this is the first time.
 //
-// It creates, and ResolvePerson deliberately does not. That difference is the
-// whole of the change on 25 August 2026, and the rule being overturned is
-// worth quoting rather than deleting:
-//
-//	An unknown identity is nil. It is never created: auto-vivifying a person
-//	on first sight would quietly re-admit anyone the guard had just turned
-//	away.
-//
-// That was correct when the guard was the only gate. Authentik's application
-// binding is the gate now, and it is a better one: it can be changed without a
-// deploy. ResolvePerson keeps its behaviour and its comment, because the drain
-// still needs a lookup that refuses strangers.
+// It creates and ResolvePerson deliberately does not: auto-vivifying a person on
+// first sight would once have re-admitted anyone the guard turned away. Authentik's
+// application binding is the gate now, and it can change without a deploy.
+// ResolvePerson keeps its behaviour, because the drain still needs a lookup that
+// refuses strangers.
 //
 // Two identities, always. A capture typed on the screen goes through the spool
-// with a sender string, and the drain resolves its owner from that — so a
-// person with only an oidc identity would spool notes belonging to nobody.
-// Both are keyed by the sub, because the sub is the only thing about an
-// account that does not change.
+// with a sender string and the drain resolves its owner from that, so a person
+// with only an oidc identity would spool notes belonging to nobody. Both keyed by
+// the sub, the only thing about an account that does not change.
 //
-// The handle is a display name and is never matched on. Two Authentik accounts
-// can share one, and usernames get reassigned; that is what the sub is for.
+// The handle is a display name and is never matched on: two accounts can share
+// one, and usernames get reassigned.
 func (s *Store) PersonForLogin(ctx context.Context, sub, handle string) (int64, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {

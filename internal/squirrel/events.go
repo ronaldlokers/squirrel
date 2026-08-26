@@ -29,31 +29,21 @@ func (s *Store) RecordCompletion(ctx context.Context, choreID, personID int64, s
 	return nil
 }
 
-// RetractCompletion undoes every live completion since a given prompt. Rows
-// stay; retracted_at is what the baseline query filters on, so the clock
-// moves back without the log losing anything.
+// RetractCompletion undoes every live completion since a given prompt. Rows stay;
+// retracted_at is what the baseline query filters on.
 //
-// It retracts all matching rows in one statement, not just the most recent
-// one. That is what makes it a state assertion rather than an increment:
-// "selected: false" means "there is no live completion from this prompt",
-// and the only way to make that idempotent is to describe the end state
-// directly. RecordCompletion is not itself idempotent, so a retried "done"
-// delivery can leave two live completions in one window — retracting only
-// the newest of those would undo the older one on a second call, landing in
-// a different place than the first call did. Retracting the whole window
-// every time means a second call finds nothing left live in it, affects
-// zero rows, and returns false: the same place as staying put.
+// It retracts all matching rows in one statement, which is what makes it a state
+// assertion rather than an increment. RecordCompletion is not idempotent, so a
+// retried "done" can leave two live completions in one window — retracting only
+// the newest would undo the older on a second call and land somewhere different.
+// Retracting the whole window means a second call affects zero rows and returns
+// false: the same place as staying put.
 //
-// The prompt lookup is joined to person_id, not just id, so a prompt
-// belonging to someone else cannot widen the window on the caller's own
-// chore. Ownership of the chore is already enforced by the join to chores,
-// so this is defence in depth today — but promptID will soon come from a
-// client-supplied message id, and "unreachable" should not depend on
-// remembering that the other predicate covers it.
+// The prompt lookup is joined to person_id, not just id, so a prompt belonging to
+// someone else cannot widen the window. Defence in depth today, but promptID will
+// come from a client-supplied message id.
 //
-// Returns false when there was nothing live to retract. That is a no-op
-// rather than an error — either nothing was ever completed since this
-// prompt, or a previous call already retracted the whole window.
+// Returns false when there was nothing live to retract, which is a no-op.
 func (s *Store) RetractCompletion(ctx context.Context, choreID, personID, promptID int64, at time.Time) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `
 		update events e

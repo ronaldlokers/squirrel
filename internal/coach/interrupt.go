@@ -9,23 +9,16 @@ import (
 
 // Deciding to interrupt.
 //
-// This is the only thing in the product that speaks without being spoken to,
-// and it is the last thing built for that reason.
+// The only thing in the product that speaks without being spoken to.
 //
 // The asymmetry is the whole safety argument, and it is enforced by where this
-// sits rather than by anything it is told: **the rules choose the candidates
-// and the model only ever gets a veto.** It is asked about something that is
-// already due, already inside its asking window, already inside the day's
-// budget and already past quiet hours. It can say no to that. There is no path
-// by which it can say yes to anything else, because nothing else is ever
-// passed to it.
+// sits rather than by anything it is told: the rules choose the candidates and
+// the model only ever gets a veto. It is asked about something already due,
+// already inside its asking window, its budget and past quiet hours. Nothing else
+// is ever passed to it, so it can only make Squirrel quieter.
 //
-// Which means it can only ever make Squirrel quieter than the rules permit,
-// never louder.
-//
-// The arithmetic that keeps it affordable is the same one: a model on every
-// scheduler tick is 1,440 calls a day. Rules narrow that to about five
-// candidates, and only those five are asked about.
+// The same arithmetic keeps it affordable: a model on every tick is 1,440 calls a
+// day, and the rules narrow that to about five.
 
 // interruptPreamble is what the model is told, and the last line is the one
 // that matters. Saying nothing is the answer that must be easy to give.

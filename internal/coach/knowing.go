@@ -9,22 +9,17 @@ import (
 
 // Coming to know somebody.
 //
-// Buddy read the last few things said and nothing else, so he could be helpful
-// about the sentence in front of him and never about the person typing it. The
-// turns table changed what is possible: it is a complete record of everything
-// that has happened on the screen, and reading it back is how a coach stops
-// being a chatbot with a good preamble.
+// The turns table is a complete record of everything that has happened on the
+// screen, and reading it back is how a coach stops being a chatbot with a good
+// preamble.
 //
-// This runs once a week, not once a turn. That is the whole of the cost
-// argument and most of the design one: an observation worth keeping is one
-// that survived a week of evidence, and a model asked "what have you noticed"
-// after every message will notice something after every message.
+// Once a week, not once a turn: an observation worth keeping is one that survived
+// a week of evidence, and a model asked "what have you noticed" after every
+// message will notice something after every message.
 //
-// What it may conclude is bounded hard, in three places. Here, in the
-// preamble, because asking for the right thing is cheaper than discarding the
-// wrong one. In knowingIn, because a preamble is a request. And in
-// squirrel.HoldToShape, because that is the only place every writer passes
-// through.
+// What it may conclude is bounded in three places: here, in knowingIn because a
+// preamble is a request, and in squirrel.HoldToShape because that is the only
+// place every writer passes through.
 
 // mostKnown is how many observations a pass may produce. Six — a model asked
 // for twenty things it has noticed will produce twenty, and the last fourteen

@@ -55,8 +55,6 @@ func TestTheKeptNoteAddsNoButtons(t *testing.T) {
 	require.Empty(t, m.Actions)
 }
 
-// Random rather than oldest-first: a queue would give the shelf a front, and a
-// front is a place to be behind.
 func TestTheShelfHandsBackOneOfWhatIsOnIt(t *testing.T) {
 	ctx := context.Background()
 	store := withStore(t)
