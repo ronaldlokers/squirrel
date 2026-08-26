@@ -24,15 +24,12 @@ const undoWindow = 10 * time.Minute
 
 type Applier struct {
 	store *Store
-	// where the person is. Zero means the process's own zone, which is what
-	// the tests that do not care get; boot sets it from the configured
-	// location. A container's zone is an accident of its deployment and a
-	// fixed point is the one thing here you can be late for — see #148.
+	// where the person is. Zero means the process's own zone. A container's zone is
+	// an accident of its deployment and a fixed point is the one thing here you can
+	// be late for — see #148.
 	where *time.Location
-	// send is the phase 2 plain-text surface. apply() no longer calls it —
-	// every reply is a Message now, sent through chat — but the field and
-	// NewApplier's parameter stay so boot.go (rewired in a later task) and
-	// phase 2 callers still compile.
+	// send is the plain-text surface. apply() no longer calls it — every reply is a
+	// Message through chat — but the field stays so plain-text callers compile.
 	send    Sender
 	chat    Chat
 	onError func(error)
@@ -42,9 +39,8 @@ type Applier struct {
 	// reason, so the id has to survive the few lines between the two. Reset
 	// to zero at the top of every apply().
 	pending int64
-	// nudger optionally attaches a nudge to a capture — set after
-	// construction via SetNudger, since the Applier and the Scheduler each
-	// need the other and boot builds them in that order.
+	// nudger optionally attaches a nudge to a capture. Set after construction: the
+	// Applier and the Scheduler each need the other, and boot builds them in order.
 	nudger func(ctx context.Context, now time.Time, why NudgeReason) error
 	// asker optionally asks a model. A func of primitives rather than an interface
 	// because internal/coach must not be imported here — the core must not depend
@@ -53,30 +49,26 @@ type Applier struct {
 	// Nil is the normal state, and every caller has a fixed answer to fall back to.
 	asker func(ctx context.Context, personID int64, kind, said, subject string) (
 		text string, did []string, err error)
-	// decider optionally lets a model choose among what the picker found. Nil
-	// is the normal state and PickNow is the whole answer then, which is what
-	// shipped before any of this existed.
+	// decider optionally lets a model choose among what the picker found. Nil is the
+	// normal state and PickNow is the whole answer then.
 	decider Decider
-	// breaker optionally breaks a thing into steps. Nil is the normal state
-	// and the ladder's fixed line is the whole answer then, which is what
-	// shipped before any of this existed.
+	// breaker optionally breaks a thing into steps. Nil is the normal state and the
+	// ladder's fixed line is the whole answer then.
 	breaker Breaker
 	// spent answers "is this month's coach budget gone", or is nil. See
 	// SetSpent for why it is a function rather than a number.
 	spent func(context.Context, int64) bool
 }
 
-// SetCoach supplies the callback that asks a model, or nil for no coach.
-//
-// Boot builds it because boot is the only package that may import both the
-// core and internal/coach. See internal/boot/coach.go.
+// SetCoach supplies the callback that asks a model, or nil. Boot builds it
+// because boot is the only package that may import both the core and
+// internal/coach.
 func (a *Applier) SetCoach(ask func(context.Context, int64, string, string, string) (string, []string, error)) {
 	a.asker = ask
 }
 
-// SetDecider supplies the callback that lets a model choose among what the
-// picker found, or nil for none. Set after construction for the same reason
-// SetCoach is: boot is the only package that may build it.
+// SetDecider supplies the callback that lets a model choose among what the picker
+// found, or nil.
 func (a *Applier) SetDecider(d Decider) { a.decider = d }
 
 // SetBreaker supplies the callback that breaks a thing into steps, or nil.
@@ -86,16 +78,13 @@ func (a *Applier) SetBreaker(b Breaker) { a.breaker = b }
 // reason asker is. Nil means the same as "not spent".
 func (a *Applier) SetSpent(f func(context.Context, int64) bool) { a.spent = f }
 
-// SetNudger supplies the callback that may attach a nudge to a capture. It is
-// set after construction because the Applier and the Scheduler each need the
-// other, and boot builds them in that order.
+// SetNudger supplies the callback that may attach a nudge to a capture.
 func (a *Applier) SetNudger(n func(context.Context, time.Time, NudgeReason) error) {
 	a.nudger = n
 }
 
-// NewApplier's send parameter is a vestige of phase 2, kept only so callers
-// built before Chat existed still compile — see the comment on Applier.send.
-// chat is what every reply and receipt actually goes through now.
+// NewApplier's send parameter is kept only so callers built before Chat existed
+// still compile — see Applier.send.
 func NewApplier(store *Store, send Sender, chat Chat, onError func(error)) *Applier {
 	if onError == nil {
 		onError = func(error) {}
@@ -127,10 +116,8 @@ func (a *Applier) apply(ctx context.Context, item Item, personID *int64) error {
 		return nil
 	}
 
-	// kind gates nudgeBack below: only a genuine capture ever carries a nudge
-	// back (see nudgeBack's own comment). A tap never sets it — see the
-	// action branch — so it stays its zero value, which is never
-	// IntentCapture.
+	// kind gates nudgeBack below: only a genuine capture carries one back. A tap
+	// never sets it, so it stays its zero value.
 	var kind IntentKind
 
 	// An action is checked first so a tap can never be reinterpreted as text.
