@@ -4,21 +4,15 @@ import "context"
 
 // What the coach may do, and what it may only ask for.
 //
-// The policy is not invented here. It is read off rules the product already
-// has, and the test is one question: **is this already a button the person
-// could have pressed, and does one press undo it?**
-//
-// If both are true, the model may do it. Nothing is being given away — the
-// action existed, the undo existed, and the only thing that changed is which
-// finger pressed it. If either is false, the model may only propose, and the
-// proposal renders as the control that already exists rather than as a dialog.
+// The test is one question: is this already a button the person could have
+// pressed, and does one press undo it? If both, the model may do it — the action
+// existed and the undo existed, and only the finger changed. If either is false
+// it may only propose, and the proposal renders as the control that already
+// exists.
 
-// Hands is the write surface. Six things, all of them reversible in one press.
-//
-// Declared here and implemented in internal/boot, like Facts and for the same
-// reason. Every method may fail, and a failure is reported to the model as
-// such — unlike a read, where a failure is silence: a model told nothing
-// happened must not tell someone it did.
+// Hands is the write surface: things reversible in one press, implemented in
+// internal/boot like Facts. Every method may fail, and a failure is reported to
+// the model — unlike a read, where a failure is silence.
 type Hands interface {
 	// Complete marks a task done. Reverses through the `open` transition,
 	// which is one press on the card.
@@ -40,17 +34,13 @@ type Hands interface {
 	CreateTask(ctx context.Context, personID int64, text string) error
 }
 
-// Proposal is a thing the coach wants to do and may not do on its own.
+// Proposal is a thing the coach wants to do and may not do on its own: a moment
+// interrupts you later, a chore comes back forever, a retirement stops something
+// recurring, a drop is disposal. None is undone by one press on a control already
+// on screen.
 //
-// Four kinds, and each one fails the test above in a way worth being explicit
-// about: a moment will interrupt you later, a chore comes back forever, a
-// retirement stops something recurring, and a drop is disposal. None of them
-// is undone by one press on a control that is already on screen.
-//
-// It carries no state and is stored nowhere. The caller renders it and it
-// travels in the form that renders it, exactly as a split does — so an
-// unanswered proposal lasts as long as the page it is on, and there is nothing
-// pending anywhere to expire.
+// Stored nowhere. It travels in the form that renders it, so an unanswered
+// proposal lasts as long as the page it is on.
 type Proposal struct {
 	// Do is which of the four: "moment", "chore", "retire", "drop".
 	Do string

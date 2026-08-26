@@ -5,45 +5,32 @@ import (
 	"time"
 )
 
-// The offer cache.
-//
-// Two reasons, and both were already written down in this codebase before a
-// model existed. The first is money: opening home is the most repeated action
-// in the product and most opens change nothing, so calling the deep model on
-// each of them pays over and over for the same answer. The second is
-// pick.go's own argument — an offer that changes on every reload "reads as the
-// product changing its mind", and a model asked the same question twice will
-// not answer it identically.
+// The offer cache. Two reasons, both written down here before a model existed:
+// opening home is the most repeated action in the product and most opens change
+// nothing, and an offer that changes on every reload reads as the product
+// changing its mind.
 
 // StaleAfter is the floor. Nothing is held longer, however unchanged the day
 // looks: half an hour is long enough that a run of opens costs one call, and
 // short enough that an answer never outlives the afternoon it was about.
 const StaleAfter = 30 * time.Minute
 
-// Offers holds the last decision per person.
-//
-// In memory, like the conversation window and for the same reason: a restart
-// costing one extra model call is not worth a table, a migration and a
-// retention rule.
+// Offers holds the last decision per person, in memory like the conversation
+// window: a restart costing one extra model call is not worth a table, a
+// migration and a retention rule.
 type Offers struct {
 	mu sync.Mutex
 	by map[int64]held
 }
 
 type held struct {
-	// basis is the picker's own answer at the time the decision was made,
-	// rendered as kind:id.
+	// basis is the picker's own answer when the decision was made, as kind:id, and it
+	// is what invalidation is built on.
 	//
-	// This is what invalidation is built on, and it is worth saying why rather
-	// than the list of events the design first proposed. PickNow already
-	// reflects every one of them — a check-in changes capacity, a timer
-	// changes rules 2 and 3, a completion or a refusal removes the row, a
-	// moment entering its leave-by window outranks everything else — so
-	// comparing its answer catches all five without a single hook at a single
-	// write site. Hooks are the version of this that gets forgotten when a
-	// seventh write path is added.
-	//
-	// It costs one PickNow per open, which every open already did.
+	// PickNow already reflects every invalidating event — a check-in changes
+	// capacity, a timer changes rules 2 and 3, a completion or refusal removes the
+	// row — so comparing its answer catches all of them without a hook at a single
+	// write site. It costs one PickNow per open, which every open already did.
 	basis string
 	d     Decision
 	at    time.Time
@@ -89,31 +76,14 @@ func (o *Offers) Put(personID int64, basis string, d Decision, now time.Time) {
 
 // Forget throws a person's decision away, whatever the picker says next.
 //
-// This used to be absent, and the absence was argued for: answering an offer —
-// done, not now, started — changes what the picker says next, so the basis
-// stops matching and the entry is dead the moment it is looked at. A second way
-// to invalidate would be a second thing to keep in step with the first.
+// It was absent, on the argument that answering an offer changes what the picker
+// says next so the basis stops matching. That holds only while the model agreed
+// with the picker. `judged` lets the model replace the picker's answer with a
+// different row, so "not now" records a refusal against that row while the
+// picker's suppression is keyed on its own — the picker goes on saying what it
+// said, and the same card comes back for up to StaleAfter. From outside, a button
+// that reloads the page. "Did it" was worse: the row really is done.
 //
-// The argument holds only while the model agreed with the picker, and it is
-// wrong whenever the model did not. `judged` in internal/web/now.go lets the
-// model replace the picker's answer with a different row, and the card then
-// carries the model's row in its own hidden fields — so "not now" records a
-// refusal against *that* row, while the picker's suppression set is keyed on
-// the row the picker chose. The picker goes on saying exactly what it said
-// before, the basis is unchanged, and the same card is served back for up to
-// StaleAfter. From the outside that is a button that reloads the page.
-//
-// "Did it" had it worse: the row really is marked done, and the card for it
-// comes back anyway.
-//
-// So the invalidator that was supposed to cover all five events covers them
-// only through the picker, and answering an offer is the one event that can
-// happen to something the picker was not pointing at. This is that event, said
-// once, at the one handler that answers offers.
-//
-// What it does not cover, and it is worth writing down rather than discovering:
-// marking the same row done from the tasks or chores screen instead of from the
-// card. The basis does not move there either. It is a narrower case — you are
-// looking at the row rather than at the offer — and closing it means the cache
-// checking whether what it showed is still offerable, which is a bigger change
-// than this bug earns.
+// Not covered, deliberately: marking the same row done from the tasks or chores
+// screen. Closing that means the cache checking whether what it showed is still
+// offerable, which is a bigger change than this bug earns.

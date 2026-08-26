@@ -23,11 +23,9 @@ type Mux interface {
 // misconfiguration to warn about and continue past: the pile is every thought
 // you have ever had at this bot.
 func Mount(m Mux, s Store, opts Options) error {
-	// Refused rather than defaulted, and it is the only value here that would
-	// be dangerous to default. Everything else missing degrades to less
-	// product — no coach, no camera, no push. An empty required group would
-	// degrade to more access, which is the one direction a default must never
-	// go.
+	// Refused rather than defaulted, and the only value here where a default would be
+	// dangerous: everything else missing degrades to less product, and an empty
+	// required group would degrade to more access.
 	if opts.RequiredGroup == "" {
 		return fmt.Errorf("refusing to mount the pile: WEB_REQUIRED_GROUP is empty")
 	}
@@ -143,11 +141,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// A proposal, applied because it was pressed. Four things and no more —
 	// see coachDoHandler for why it is a switch rather than a dispatcher.
 	m.Post("/buddy/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
-	// It was /coach, then /buddy, and now it is the conversation. A bookmark
-	// that dies quietly is worse than a redirect nobody notices — the same
-	// reasoning /pile/chores already gets, and the same status. The query
-	// string is dropped rather than carried: nothing at the other end reads
-	// one any more.
+	// It was /coach, then /buddy, and now it is the conversation. A bookmark that
+	// dies quietly is worse than a redirect nobody notices. The query string is
+	// dropped: nothing at the other end reads one any more.
 	for _, gone := range []string{"/coach", "/buddy"} {
 		m.Get(gone, guard(opts, func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusMovedPermanently)
@@ -190,20 +186,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 	}))
-	// Outside the guard, like the worker below and for the same reason: a
-	// browser fetches a manifest without the cookies that carry the identity,
-	// and one that answers 403 leaves an installed app with no icon and no
-	// explanation. It names the app and lists four PNGs — there is nothing in
-	// it to protect.
-	// The way in, and the three routes that work it. Outside the guard on
-	// purpose and necessarily: a person with no session has to be able to get
-	// one.
-	//
-	// Both writes still carry the origin check. It is a weaker claim here than
-	// elsewhere — there is no session yet to ride on — but a cross-site POST
-	// to /auth/in is a login started by somebody else's page, and a cross-site
-	// POST to /auth/out signs you out of your own notes from a page you were
-	// only reading.
+	// Outside the guard, like the worker below: a browser fetches a manifest without
+	// the cookies that carry the identity, and one that answers 403 leaves an
+	// installed app with no icon. There is nothing in it to protect.
 	m.Get("/auth", gateHandler())
 	m.Post("/auth/in", sameOrigin(beginHandler(opts)))
 	m.Get("/auth/callback", backHandler(opts))
@@ -218,11 +203,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	return nil
 }
 
-// splittable reports whether the note on the card is worth asking about.
-//
-// A free check, and it is what keeps a model off every note in the pile: the
-// press is only drawn on the ones that look like several things, so the
-// expensive part never happens for the ordinary ones.
+// splittable reports whether the note is worth asking about. A free check, and it
+// is what keeps a model off every note in the pile.
 func splittable(opts Options, text string) bool {
 	return opts.Split != nil && opts.Splittable != nil && opts.Splittable(text)
 }
