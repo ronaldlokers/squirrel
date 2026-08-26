@@ -21,14 +21,8 @@ func enoughHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
-		// Stopping ends the run. Choosing to stop is the clearest statement
-		// there is that there is nothing to come back to, and being offered
-		// your place back after pressing this would make the screen that says
-		// stopping is normal into one that argues with you about it.
-		//
-		// This is the one thing this route touches, and it is worth saying
-		// that the comment above about taking no store is now half true: it
-		// reads nothing and counts nothing. It forgets one row.
+		// Being offered your place back after pressing this would make the
+		// screen that says stopping is normal into one that argues about it.
 		if err := s.EndRun(r.Context(), personID); err != nil {
 			slog.Error("forgetting where you got to", "error", err)
 		}
