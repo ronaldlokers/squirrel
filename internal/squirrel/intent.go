@@ -27,13 +27,12 @@ var unitDurations = map[string]time.Duration{
 }
 
 // Anchored at the start: "i vacuum every 2 weeks" is a note, not a definition.
-// The colon is optional because requiring punctuation would be a command
-// language to memorise, which the principles forbid. Case-insensitive (the
-// (?i) flag) so it runs directly against the original string rather than a
-// lowercased copy: strings.ToLower is not byte-length-preserving (it grows
-// some runes and shrinks others), so a length measured on a lowercased copy
-// and then used to index the original string can go out of range or land
-// mid-rune.
+// The colon is optional because requiring punctuation would be a command language
+// to memorise.
+//
+// Case-insensitive via (?i) so it runs against the original string:
+// strings.ToLower is not byte-length-preserving, so a length measured on a
+// lowercased copy and used to index the original can land mid-rune.
 var everyPattern = regexp.MustCompile(`(?i)^every\s+(?:(\d+)\s+)?(?:(other)\s+)?([a-z]+)\s*:?\s+(.+)$`)
 
 // ParseEvery recognises a chore definition. ok is false for anything not
@@ -44,14 +43,9 @@ func ParseEvery(s string) (string, time.Duration, bool) {
 	return name, every, ok
 }
 
-// ParseEveryAsking is ParseEvery plus the preference the same sentence
-// sometimes carries.
-//
-// "Every other tuesday" is two facts, not one: a fortnightly rhythm, and a
-// preference for which day to raise it on. Reading it as a rhythm alone would
-// throw away the half the person cared enough to type, and reading it as a
-// calendar entry would make it a deadline. So both are kept, apart, and only
-// the first one decides when the chore is due.
+// ParseEveryAsking is ParseEvery plus the preference the same sentence sometimes
+// carries. "Every other tuesday" is two facts: a fortnightly rhythm, and a day to
+// raise it on. Both are kept, apart, and only the first decides when it is due.
 func ParseEveryAsking(s string) (string, time.Duration, Asking, bool) {
 	trimmed := strings.TrimSpace(s)
 	m := everyPattern.FindStringSubmatch(trimmed)
@@ -155,27 +149,21 @@ var (
 	// help message instead of being remembered.
 	commandName = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
 
-	// ParseEvery answers "does this have the shape"; Match decides policy, and
-	// Match is its only caller. ParseEvery deliberately makes both the count and
-	// the colon optional, which leaves `every <unit> <rest>` matching ordinary
-	// prose — "every day i think about leaving" parses as a daily chore named "i
-	// think about leaving". A count or a colon is the mark of a deliberate
-	// definition, so Match requires one. The cost is that a bare "every day meds"
-	// is filed as a note; the alternative is a chore that nags forever with a
-	// sentence that was only ever a thought.
-	// "other" is the one word allowed between "every" and the unit, so that
-	// "every other tuesday: bins out" is as deliberate as "every tuesday: bins
-	// out". It does not make the bare form deliberate — "every other tuesday i
-	// see my mum" is prose, and the colon is still what tells them apart.
+	// ParseEvery answers "does this have the shape"; Match decides policy.
+	//
+	// Both the count and the colon are optional here, which leaves `every <unit>
+	// <rest>` matching prose — "every day i think about leaving" parses as a daily
+	// chore. A count or a colon is the mark of a deliberate definition, so Match
+	// requires one.
+	//
+	// "other" is the one word allowed between "every" and the unit, so "every other
+	// tuesday: bins out" is as deliberate as "every tuesday: bins out".
 	deliberateDefine = regexp.MustCompile(`^every\s+(?:\d+\s|(?:other\s+)?[a-z]+\s*:)`)
 )
 
-// Match decides what a message is.
-//
-// An intent matches only if the ENTIRE trimmed message is one of its forms.
-// "done with the flux migration" is a thought about a migration, not a
-// completion, and losing it is the failure this whole system exists to prevent.
-// When in doubt the answer is always capture.
+// Match decides what a message is. An intent matches only if the entire trimmed
+// message is one of its forms: "done with the flux migration" is a thought. When
+// in doubt the answer is always capture.
 func Match(raw string) Intent {
 	trimmed := strings.TrimSpace(raw)
 
@@ -184,38 +172,26 @@ func Match(raw string) Intent {
 		return Intent{Kind: IntentCapture, Text: strings.TrimSpace(after)}
 	}
 
-	// A tap's own text begins with "!" as well: phase 3 encodes one as
-	// "!action <message id> <value> <selected>". Text of that shape reaches
-	// Match only when the payload proved it was NOT a genuine tap — someone
-	// typed it by hand — and phase 3 settled that such text is a thought.
-	// Without this it becomes an unknown command and is answered with a help
-	// message instead of being remembered, which is losing a thought: the one
-	// failure this system exists to prevent.
+	// A tap's own text begins with "!" as well. Text of that shape reaches Match only
+	// when the payload proved it was not a genuine tap, and such text is a thought —
+	// without this it becomes an unknown command answered with help, which is losing
+	// it.
 	//
-	// CapturesSince runs Match over stored rows for exactly this reason, so the
-	// two paths have to agree here or a typed tap vanishes from the evening
-	// list as well.
+	// CapturesSince runs Match over stored rows, so the two paths must agree or a
+	// typed tap vanishes from the evening list too.
 	if _, isAction := ParseAction(trimmed); isAction {
 		return Intent{Kind: IntentCapture, Text: raw}
 	}
 
-	// `!` is a prefix rather than a keyword, and that is load-bearing. Every
-	// bare word is a capture by design, so a keyword-triggered command would
-	// eat "find my keys" and "notes to self about the boiler" — both thoughts,
-	// and losing a thought is the failure this system exists to prevent. Phase
-	// 2 met the same trap with `every day i think about leaving` and answered
-	// it the same way: make the deliberate form unambiguous rather than guess
-	// at intent.
+	// `!` is a prefix rather than a keyword, and that is load-bearing: every bare word
+	// is a capture, so a keyword-triggered command would eat "find my keys".
 	//
-	// ".!find boiler" is still literal text, which is how a thought shaped like
-	// a command gets captured. That does not depend on the order of the two
-	// checks: ".!find" does not start with "!", so only one prefix can ever
-	// match. Moving this block above the escape hatch would change nothing,
-	// which is worth saying because the placement looks load-bearing and is not.
+	// ".!find boiler" is still literal text. That does not depend on the order of the
+	// two checks — ".!find" does not start with "!" — which is worth saying because
+	// the placement looks load-bearing and is not.
 	//
-	// An unknown command stays IntentCommand rather than falling through to
-	// capture. A typo answered with 👀 would be filed as a note, silently, and
-	// the correction with it.
+	// An unknown command stays IntentCommand rather than falling through to capture: a
+	// typo answered with 👀 would be filed as a note, silently.
 	if after, found := strings.CutPrefix(trimmed, "!"); found {
 		name, arg, _ := strings.Cut(strings.TrimSpace(after), " ")
 		// The name has to look like a word, or "!!!" parses as a command
@@ -265,17 +241,13 @@ func Match(raw string) Intent {
 		return Intent{Kind: IntentDefine, Name: name, Every: every, Ask: ask}
 	}
 
-	// A time the world imposed. The bar is the same one the chore definition
-	// above sets, and ParseMoment sets it high on purpose: "at" or "tomorrow"
-	// in front of a real clock time. A bare "14:30 dentist" stays a note,
-	// because someone writing a thought down should never have to escape it,
-	// and the cost of being wrong in this direction is one command to say it
-	// again rather than a warning that never comes.
+	// A time the world imposed. ParseMoment sets the bar high on purpose: "at" or
+	// "tomorrow" in front of a real clock time, so a bare "14:30 dentist" stays a
+	// note. The cost of being wrong this way is one command to say it again.
 	//
-	// The clock comes from time.Now rather than from a parameter, which is the
-	// one impurity in this function. Match is called on stored rows too — see
-	// CapturesSince — and there it only ever asks whether something was a
-	// capture, so the date it would resolve to is never read.
+	// The clock comes from time.Now rather than a parameter, the one impurity here.
+	// Match runs on stored rows too, where it only asks whether something was a
+	// capture, so the date is never read.
 	if m, ok := ParseMoment(trimmed, time.Now()); ok {
 		return Intent{Kind: IntentMoment, At: m}
 	}
@@ -289,9 +261,7 @@ func atoi(s string) int {
 	return n
 }
 
-// matchFn indirects every call Applier.Apply and CapturesSince make to Match,
-// so a test can substitute a stand-in that panics — otherwise there is no way
-// to exercise the recover added around Applier.Apply and Scheduler.Once,
-// since Match itself has no reachable panic once the byte-length bug above is
-// fixed. Production code never reassigns it.
+// matchFn indirects every call to Match so a test can substitute a stand-in that
+// panics — otherwise there is no way to exercise the recover around Applier.Apply
+// and Scheduler.Once. Production code never reassigns it.
 var matchFn = Match
