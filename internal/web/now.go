@@ -10,32 +10,15 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The one thing, on the screen.
+// The one thing, on the screen. The rules it holds to — never a list, never a
+// count, no state colour, absent rather than empty, refusable in one press —
+// are argued in DESIGN.md under The Offer.
 //
-// An earlier home screen showed the newest note — readable, not actionable,
-// chosen by arrival order — and it was cut on sight with seven prohibitions
-// written down. This breaks exactly one of them, "no action", and keeps the
-// other six. The difference is the whole argument: that preview greeted you
-// with a slice of your backlog, and this is one thing the product chose, with
-// one way to do it and a one-press way to refuse it.
+// offerFor answers nil for every failure. A picker that cannot answer must not
+// take down a page that rendered without one for the product's whole life.
 //
-// The six that hold, plus the two this adds:
-//
-//   - never more than one, and never a list;
-//   - never a count, a stack, or a "more";
-//   - no state colour and no urgency copy: it is never late, never red;
-//   - absent rather than empty when there is nothing to offer;
-//   - refusing costs one press, has no consequence, and asks nothing back;
-//   - it changes what is offered, never what is true;
-//   - it is chosen deterministically and explains itself in one clause.
-//
-// offerFor reads it, and answers nil for every failure. A picker that cannot
-// answer must not be able to take down a page that rendered without one for
-// the product's whole life.
-// mayAsk says whether this render is allowed to spend a model call. Home may;
-// the coach sheet may not, because opening it has to cost nothing — an acorn
-// that might be expensive is an acorn you think about before pressing, and
-// thinking about it is the cost this product spends everything else avoiding.
+// mayAsk says whether this render may spend a model call. Home may; a surface
+// that has to cost nothing to open may not.
 func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offerView {
 	personID, ok := personOf(r)
 	if !ok {

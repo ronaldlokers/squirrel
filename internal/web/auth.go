@@ -8,22 +8,15 @@ import (
 	"net/url"
 )
 
-// guard is this product's authentication, and it keeps its name and its
-// position while losing its body.
+// guard is this product's authentication.
 //
-// It was one comparison: Traefik called an Authentik forward-auth outpost,
-// Authentik decided, and Squirrel compared one header to one configured
-// string. That was the right size while there was one person and one pile. It
-// could only ever say "somebody Authentik likes" — never which somebody — so a
-// second person meant a redeploy.
+// It reads a session cookie and puts two things on the request: the person id,
+// which almost everything uses, and the sub, which only capture needs.
 //
-// It reads a session cookie now and puts two things on the request: the person
-// id, which almost everything uses, and the sub, which only capture needs.
-//
-// **A GET for a page redirects; nothing else does.** An unauthenticated POST,
-// and any request carrying X-Thread, gets 401 with no body. A redirect there
-// would swallow a form's words into a login screen, and thread.js would paste
-// the gate into the conversation as a turn.
+// A GET for a page redirects; nothing else does. An unauthenticated POST, and
+// any request carrying X-Thread, gets 401 with no body. A redirect there would
+// swallow a form's words into a login screen, and thread.js would paste the
+// gate into the conversation as a turn.
 func guard(opts Options, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		carried, err := r.Cookie(sessionCookie)

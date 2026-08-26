@@ -901,3 +901,19 @@ func TestOpeningSomebodyElsesResultFindsNothing(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, w.Code)
 	require.Empty(t, f.appended)
 }
+
+// Home counts what is waiting twice and no more: once for the opening line and
+// once for the menu's numbers.
+//
+// It was three until 26 August 2026. The rail came off the conversation in
+// v0.41.0 and `railFor` was left behind feeding a view field no template read,
+// so every open ran a third count and threw it away. Nothing failed, because
+// nothing was watching — which is what this test is for.
+func TestHomeCountsWhatIsWaitingOnceForEachThingThatShowsIt(t *testing.T) {
+	f := &fakeStore{checkin: fresh()}
+	mounted(t, f).call(t, "GET", "/", nil)
+
+	require.Equal(t, 2, f.waitingAsked,
+		"home read the counts %d times; the opening line and the menu are the only two that show them",
+		f.waitingAsked)
+}

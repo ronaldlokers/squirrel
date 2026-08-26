@@ -124,8 +124,11 @@ type fakeStore struct {
 	recorded squirrel.Mood
 	// What each door is holding, and a failure that belongs to the counting
 	// alone — the doors have to survive it while the rest of the page works.
-	waiting    squirrel.Waiting
-	waitingErr error
+	waiting squirrel.Waiting
+	// waitingAsked counts the reads, so a render that counts the same thing
+	// twice over is visible.
+	waitingAsked int
+	waitingErr   error
 	// A failure that belongs to reading the chores alone, so a test about the
 	// door can fail that read while the conversation itself still renders.
 	choresErr error
@@ -1064,6 +1067,7 @@ func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, before int64, limit 
 }
 
 func (f *fakeStore) Waiting(_ context.Context, _ int64, _ time.Time) (squirrel.Waiting, error) {
+	f.waitingAsked++
 	if f.waitingErr != nil {
 		return squirrel.Waiting{}, f.waitingErr
 	}

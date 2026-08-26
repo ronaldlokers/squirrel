@@ -2053,8 +2053,8 @@ the grid and every cell carries its day and its word for a screen reader.
 ### Results
 
 A result is not a card. It has no border, no shadow, no verbs — a full-bleed
-row with the name in the reading axis and, in the small caps, the one of the
-seven places it is in. Results are separated by a hairline and nothing else,
+row with the name in the reading axis and, in the small caps, which of the
+seven states it is in. Results are separated by a hairline and nothing else,
 which is what lets six of them sit in one turn without the turn becoming a
 wall of card stock.
 

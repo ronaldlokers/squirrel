@@ -12,21 +12,14 @@ import (
 
 // Asking Buddy, in the conversation.
 //
-// The acorn opened a sheet over whatever you were looking at, and the sheet
-// was its own conversation with its own window, its own scrollback and its own
-// way of being closed. That made sense when the rest of the product was seven
-// screens: Buddy had to bring a conversation with him because there was not
-// one to join.
+// The exchange is turns like any other, so closing is not a thing you do to it
+// — you stop talking. What is kept from the sheet that preceded it is every
+// part that does something: the four blockers, the steps a thing breaks into,
+// the four proposals he must ask permission for, and saying a reply landed
+// badly.
 //
-// There is one now. So the sheet is gone, the exchange is turns like every
-// other exchange, and closing is not a thing you do to it — you stop talking,
-// the same way you stop talking to anyone. What is kept is every part that
-// does something: the four blockers, the steps a thing breaks into, the four
-// proposals he must ask permission for, and saying that a reply landed badly.
-//
-// The window `remember`/`forget` maintained is not needed either: the record
-// of what was said is the record of what was said. It is still written, because
-// the next prompt is built from it.
+// remember/forget still writes the rolling window, because the next prompt is
+// built from it.
 
 // askBuddyChip is the way in, and it is on the live edge wherever that is.
 //

@@ -13,18 +13,12 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The thread: the whole of the screen.
-//
-// This replaced home on 24 August 2026. Home's argument was that a front door
-// showing what is waiting greets you with what is waiting; the owner retired
-// that along with Principle 2, and the doors carry numbers now. What survives
-// unchanged is that the doors are equals — one grid, four cells, the same stock
-// — and that the slot is the way in.
+// The thread: the whole of the screen. The slot is the way in.
 //
 // Only the newest Buddy turn carries controls. A card from this morning keeps
 // its words and loses its buttons, because pressing DID IT on a card from a
 // conversation three days old acts on a state nobody is looking at. See The
-// live edge in docs/superpowers/specs/2026-08-24-the-thread-design.md.
+// live edge in DESIGN.md.
 
 // threadLimit is how much of the conversation one render holds. A bound rather
 // than a page: everything above it is still there and one press away.
@@ -159,20 +153,6 @@ type hitView struct {
 	Meta   string            `json:"meta,omitempty"`
 	Action string            `json:"action"`
 	Fields map[string]string `json:"fields,omitempty"`
-}
-
-type doorView struct {
-	// Where is the door's own word, posted to /open. Not an href: a door is
-	// pressed rather than followed, and a field that could be used as one
-	// would invite exactly that.
-	Where string
-	Label string
-	Art   string
-	// Count is what is waiting behind the door. Zero renders no number at
-	// all — a door reading "0" is a scoreboard, and that is what the retired
-	// rule was actually protecting against.
-	Count int
-	Here  bool
 }
 
 func threadHandler(s Store, opts Options) http.HandlerFunc {
@@ -318,7 +298,6 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Scrolling: true,
 			Also:      alwaysThere(),
 			Turns:     turnViews(turns),
-			Rail:      railFor(ctx, s, personID, ""),
 			MoreAbove: more,
 		}
 		if first {
@@ -424,11 +403,6 @@ func turnViews(turns []squirrel.Turn) []turnView {
 	return out
 }
 
-// railFor is the four doors, with what is waiting behind each.
-//
-// A failed count is four doors and no numbers rather than an error page: the
-// doors are how you get anywhere, and a database that cannot count is not a
-// reason to take the navigation away.
 // menuFor is everywhere else, behind the lid's one control.
 //
 // It holds what the rail, the always-on chip row and the stop link used to
@@ -463,28 +437,6 @@ func menuFor(ctx context.Context, s Store, personID int64) []turnChip {
 	menu[2].Count = waiting.Tasks
 	menu[3].Count = waiting.Chores
 	return menu
-}
-
-func railFor(ctx context.Context, s Store, personID int64, here string) []doorView {
-	rail := []doorView{
-		{Where: "pile", Label: "the pile", Art: "door-pile.png"},
-		{Where: "tasks", Label: "the tasks", Art: "door-tasks.png"},
-		{Where: "chores", Label: "the chores", Art: "door-chores.png"},
-		{Where: "at", Label: "the agenda", Art: "door-at.png"},
-	}
-	for i := range rail {
-		rail[i].Here = rail[i].Label == here
-	}
-	waiting, err := s.Waiting(ctx, personID, now())
-	if err != nil {
-		slog.Error("counting what is waiting", "error", err)
-		return rail
-	}
-	rail[0].Count = waiting.Pile
-	rail[1].Count = waiting.Tasks
-	rail[2].Count = waiting.Chores
-	rail[3].Count = waiting.Agenda
-	return rail
 }
 
 // theFaces is the five, in the one order both surfaces use.

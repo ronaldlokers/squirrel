@@ -217,9 +217,6 @@ type view struct {
 	// Turns is the conversation, oldest first. The screen is one page now;
 	// see internal/web/thread.go.
 	Turns []turnView
-	// Rail is the four doors, pinned under the lid at every width, with what
-	// is waiting behind each.
-	Rail []doorView
 	// MoreAbove and Oldest are the page above this one. Oldest is the id the
 	// "earlier" control walks back from.
 	MoreAbove bool

@@ -14,18 +14,13 @@ import (
 
 // Buddy says the first thing.
 //
-// Every turn in this product was a reply. You arrived, and the conversation
-// sat there until you pressed something — which is not what a conversation is,
-// and is the reason the thread reads as a menu rendered in bubbles.
+// The bar is meaningfulness rather than a budget: something on today or
+// tomorrow, notes waiting to be decided about, a chore that is due. Nothing
+// worth saying means nothing said, which is the common case on a quiet
+// afternoon.
 //
-// The bar is meaningfulness rather than a budget. "Every visit, but only if it
-// is meaningful" is the whole rule: something on today or tomorrow, notes
-// waiting to be decided about, a chore that is due. Nothing worth saying means
-// nothing said, and that is the common case on a quiet afternoon.
-//
-// It is deliberately not a summary of everything. A line that reads out all
-// four numbers is the rail said twice, and the rail is already there — this
-// says the one thing that most wants attention, or it says nothing.
+// Deliberately not a summary of everything — it says the one thing that most
+// wants attention, or it says nothing.
 
 // openingLine is what Buddy would open with, and a fingerprint of the facts it
 // was built from.

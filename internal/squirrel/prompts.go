@@ -16,43 +16,21 @@ import (
 var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 
 // numberedKinds are the prompt kinds whose lines are numbered — the ones where
-// a position means something. A definition confirmation carries a button but is
-// a standalone surface: it names one chore and is never counted against.
+// a position means something.
 //
-// 'nudge' belongs here, not 'evening'. A nudge always carries its chosen
-// chore as its own line 1 and, when it is delivered standalone or claimed
-// fresh inside an evening send, the real message id too — see schedule.go's
-// once() and nudgeFor. 'evening' was added here briefly in an earlier round
-// and then taken back out: on a nudge day the evening row is stamped with
-// the same sent_at as the nudge row it rode in on, and ties break on id,
-// which the evening row always wins since it is recorded second. With
-// 'evening' numbered, that made the evening row — which carries no lines of
-// its own — win latestPrompt on the very day a nudge just opened a live
-// button, so a typed "done 1" or a bare "done" found nothing to resolve
-// against while the button on the very same message worked fine. Leaving
-// 'evening' out means the typed path always resolves through the nudge row,
-// which is the one that actually owns both the line and, when it has one,
-// the id — agreeing with the tapped path in every case rather than only
-// some.
+// The rule for adding one: it prints a list, and it carries no sent_for_date so
+// it cannot collide in the once-a-day unique index. Newest numbering wins, so a
+// bare `done 1` after `!notes` means line 1 of the pile rather than line 1 of
+// this morning's nudge.
 //
-// 'notes' and 'find' are numbered for the same reason 'query' is: they print a
-// list and the reply to a list is a number. They are safe to add here for a
-// different reason than they look, and the difference matters. They carry no
-// sent_for_date, so they cannot collide in the once-a-day unique index the way
-// 'evening' collided above — there is no tie for them to win. And they are
-// *meant* to shadow an older numbered surface: after `!notes`, a bare `done 1`
-// should mean line 1 of the pile, not line 1 of this morning's nudge. Newest
-// numbering wins, exactly as it already does for 'query'.
-// 'tasks' joins for exactly the reasons 'notes' and 'find' did: it prints a
-// list, the reply to a list is a number, it carries no sent_for_date so it
-// cannot collide in the once-a-day index, and it is *meant* to shadow an older
-// numbered surface — after `!tasks`, a bare `done 1` should mean the first
-// thing you decided rather than line 1 of this morning's nudge.
-// 'now' joins for the same reasons 'notes', 'find' and 'tasks' did, with one
-// addition worth writing down: it carries exactly one line, and that line may
-// be a chore or an item. Its buttons therefore resolve through LineOnPrompt
-// rather than ChoreOnPrompt — the picker is the first surface that can put a
-// task under a ✅.
+// 'evening' is deliberately absent, and putting it back reopens a fixed bug. On
+// a nudge day the evening row is stamped with the nudge's sent_at and ties
+// break on id, which the evening row wins — so a numbered 'evening' won
+// latestPrompt while carrying no lines of its own, and a typed "done 1" found
+// nothing to resolve against on the very day the button beside it worked.
+//
+// 'now' carries exactly one line, which may be a chore or an item, so its
+// buttons resolve through LineOnPrompt rather than ChoreOnPrompt.
 const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find', 'tasks', 'now')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.

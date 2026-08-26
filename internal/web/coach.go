@@ -14,26 +14,12 @@ import (
 //
 // The package and the types keep the word coach, which is what this is; Buddy
 // is what it is called.
-//
-// A widget on every screen rather than a fourth door. DESIGN.md's rule against
-// modals carries its own condition — "for anything that needs neither
-// interruption nor protected focus" — and this meets it: a coach conversation
-// happens when everything else on screen is noise, and protected focus is the
-// whole point of the surface. The chore picker was refused a modal because
-// choosing an interval needs neither. That reasoning is untouched.
-//
-// `/buddy` is a real page. The sheet is pile.js upgrading a real route, the
-// same progressive enhancement the chore picker's <details> already uses: it
-// works with scripting off, it deep-links, and it survives a reload. And
-// because it is chrome rather than a destination, the home screen still has
-// three doors.
 
 // Exchange is one round of the conversation, as the screen says it.
 //
-// Declared here rather than imported for the same reason Store is: this
-// package must not have to know that internal/coach exists, and internal/coach
-// must not know a screen does. internal/boot converts between the two, which is
-// the job it already does for the budget's log.
+// Declared here rather than imported for the same reason Store is: this package
+// must not have to know that internal/coach exists, and internal/coach must not
+// know a screen does. internal/boot converts between the two.
 type Exchange struct {
 	Said    string
 	Replied string
@@ -42,9 +28,9 @@ type Exchange struct {
 // Answer is one turn's result: what the coach said, what actually changed, and
 // what it wants permission for.
 //
-// Did is written by the application after a write succeeded, not by the model
-// — a model saying "done" is not evidence anything happened. Propose is a
-// thing it may not do on its own, rendered as one press.
+// Did is written by the application after a write succeeded, not by the model —
+// a model saying "done" is not evidence anything happened. Propose is a thing
+// it may not do on its own, rendered as one press.
 type Answer struct {
 	Text    string
 	Did     []string

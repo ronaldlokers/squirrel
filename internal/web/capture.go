@@ -21,32 +21,14 @@ const captureLimit = 4000
 
 // The slot in the lid of the box: you post a thought in without opening it.
 //
-// This screen refused to capture for its whole life, and the reasoning is
-// worth keeping rather than deleting: two capture surfaces means two places to
-// look for a thought, which is the problem this product exists to solve. The
-// owner overruled it on 20 August 2026, choosing a direct write over a relay
-// through Campfire. What makes that survivable is that both surfaces write the
-// same row to the same table, so there is one pile with two doors into it.
+// It writes through the same spool the room's captures do — fsynced and
+// renamed before anything says it was kept, with the drain moving it on. One
+// durability mechanism for both doors rather than two kept in step. For a
+// release there was no spool here, and a live network with an unhealthy
+// database meant a note that was never taken.
 //
-// What it cost was real, and for one release it was not paid: there was no
-// spool behind this write. The chat's 👀 means the words reached disk before
-// anything else could go wrong, and here there was no such stage — so a live
-// network and an unhealthy database was a note that was never taken. The
-// screen said so loudly and gave the words back, which is honest and is not
-// the same as durable, because a page is one reload from empty.
-//
-// It goes through the same spool the room's captures do now. Written, fsynced
-// and renamed before anything says it was kept; the drain moves it on, and the
-// drain has always known how to wait for a database. One durability mechanism
-// for both doors rather than two that have to be kept in step.
-//
-// What that costs, stated: a note is in the pile a moment later rather than
-// instantly — the drain runs every second by default. The slot is on home and
-// the pile is a different screen, so the gap is invisible in practice; and the
-// room has always worked this way.
-//
-// The Campfire room still stops being the complete record. That part of the
-// original bargain stands.
+// The cost, stated: a note reaches the pile a drain tick later rather than
+// instantly.
 func captureHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Still checked, and still refuses: the owner not being known yet means
@@ -347,26 +329,17 @@ func said(raw string) string {
 
 // whatBuddyMakesOfIt is the answer to what you typed.
 //
-// The box was a capture slot and said "Kept.", which is what a filing cabinet
-// says. Ronald asked on 25 August 2026 for typing to be talking, and chose the
-// version where Buddy decides what the words were — knowing, because it was
-// said at the time, that a model between you and the capture promise can be
-// wrong.
+// The order is the design, and it is what makes a model in this path safe. The
+// words are already spooled and already a note by the time this is called;
+// nothing here can stop that. All this can do is drop a note afterwards, which
+// the pile can reverse and which leaves the words in the database either way.
 //
-// The order is where that risk is managed, and it is the whole design. The
-// words are already spooled and already a note by the time this is called.
-// Nothing here can stop that. What this can do is drop a note afterwards,
-// which is a state the product already has, which the pile can reverse, and
-// which leaves the words in the database either way.
+// So every failure — no coach, a spent budget, an unreachable model, a reply
+// that fails its shape, a wrong judgement — costs a note you did not want in
+// the pile. None of them costs a thought.
 //
-// So the failures line up in the safe direction. No coach, a spent budget, an
-// unreachable model, a reply that fails its shape, a wrong judgement — every
-// one of them costs a note sitting in the pile that you did not want there.
-// None of them costs a thought.
-//
-// A photograph is always kept and never read. It is not words, there is
-// nothing to answer, and a model asked to judge a picture it cannot see would
-// be guessing about the one capture that is hardest to make again.
+// A photograph is always kept and never read: a model asked to judge a picture
+// it cannot see would be guessing about the capture hardest to make again.
 func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, photo bool) (string, string) {
 	ctx := r.Context()
 	kept := squirrel.Say(squirrel.SayingKept, now())
