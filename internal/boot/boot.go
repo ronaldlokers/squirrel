@@ -648,6 +648,13 @@ func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
 	}
 }
 
+// subscriptions is the half of the store this needs, named so the fan-out can
+// be exercised without a database. The concrete store satisfies it.
+type subscriptions interface {
+	LiveSubscriptions(ctx context.Context, personID int64) ([]squirrel.Subscription, error)
+	SubscriptionGone(ctx context.Context, id int64, at time.Time) error
+}
+
 // pusher builds the fast channel, or nil.
 //
 // Nil when there is no VAPID pair, which is a supported state rather than a
@@ -657,13 +664,6 @@ func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
 // Every failure here is swallowed by the caller. A push service being slow, a
 // browser having revoked its subscription, a laptop that is closed — none of
 // those may turn a message that has already arrived somewhere into an error.
-// subscriptions is the half of the store this needs, named so the fan-out can
-// be exercised without a database. The concrete store satisfies it.
-type subscriptions interface {
-	LiveSubscriptions(ctx context.Context, personID int64) ([]squirrel.Subscription, error)
-	SubscriptionGone(ctx context.Context, id int64, at time.Time) error
-}
-
 func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 	if !cfg.Enabled() {
 		slog.Warn("no push keys configured; only the room is told about leaving")

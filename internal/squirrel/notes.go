@@ -146,11 +146,12 @@ func (s *Store) Reword(ctx context.Context, personID, itemID int64, text string)
 	return tag.RowsAffected() > 0, nil
 }
 
-// OpenItems is the pile: untriaged notes, newest first — oldest-first is a
-// backlog you are behind on.
+// stillMine is the pile's clause about fixed points, written once because two
+// queries read the pile.
 //
-// At most limit rows and a bare boolean for whether more exist, never a count.
-// The signature is what enforces it: the caller cannot render a total.
+// A note pointing at an appointment still ahead has somewhere to be. Once the
+// appointment is over it is a thought again — a read rule, so nothing runs on a
+// schedule and a deleted appointment leaves its notes here by the same sentence.
 const stillMine = `(
 	moment_id is null
 	or not exists (
@@ -161,6 +162,11 @@ const stillMine = `(
 	)
 )`
 
+// OpenItems is the pile: untriaged notes, newest first — oldest-first is a
+// backlog you are behind on.
+//
+// At most limit rows and a bare boolean for whether more exist, never a count.
+// The signature is what enforces it: the caller cannot render a total.
 func (s *Store) OpenItems(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {
 	return s.itemsWhere(ctx,
 		`person_id = $1 and kind = 'note' and state = 'open' and `+stillMine, limit, personID)

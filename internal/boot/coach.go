@@ -395,10 +395,6 @@ func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
 	}
 }
 
-// spentFor is what the coach has cost this month, already rendered as money.
-//
-// Nil when there is no coach: "€0.00 of €10" under something that cannot call
-// anything would be reporting on a thing that is not there.
 // overFor answers "is this month's coach budget gone", for the room.
 //
 // The screen shows the figure and a session that lives in Campfire never sees
@@ -422,6 +418,10 @@ func overFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) bo
 	}
 }
 
+// spentFor is what the coach has cost this month, already rendered as money.
+//
+// Nil when there is no coach: "€0.00 of €10" under something that cannot call
+// anything would be reporting on a thing that is not there.
 func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (string, string, bool) {
 	if _, none := c.(coach.NoCoach); none {
 		return nil

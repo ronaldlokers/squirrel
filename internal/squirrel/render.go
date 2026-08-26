@@ -496,7 +496,6 @@ var MoodEmoji = map[Mood]string{
 	MoodWiped:    "😴",
 }
 
-// screenLine is the way in, when there is one to give.
 // OnTheScreen is what chat says when Buddy suggested something chat cannot offer
 // a press for. Chat's buttons resolve against recorded lines and cannot carry a
 // proposal's four fields, so the honest answer names the place that can.
@@ -509,6 +508,7 @@ func OnTheScreen() string {
 	return " There is something to say yes to on the screen: " + screenURL
 }
 
+// screenLine is the way in, when there is one to give.
 func screenLine() string {
 	if screenURL == "" {
 		return ""

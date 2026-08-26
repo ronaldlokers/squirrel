@@ -70,13 +70,6 @@ type Proposal struct {
 // typing a sentence gets the four chips back instead of an answer.
 func coachAvailable(opts Options) bool { return opts.Ask != nil }
 
-// coachSayHandler is one turn.
-//
-// Two ways in, and they are the same route on purpose: a chip is the sentence
-// you did not have to type. Someone at the moment of least capacity should not
-// have to compose anything to be helped, which is what the four blockers are
-// for — one press, and the answer still comes back about this task rather than
-// in general.
 // coachAskHandler is the chip: it asks for words and nothing else. The reply
 // comes back through coachSayHandler, which is the same route the four
 // blockers press.
@@ -102,6 +95,13 @@ func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
+// coachSayHandler is one turn.
+//
+// Two ways in, and they are the same route on purpose: a chip is the sentence
+// you did not have to type. Someone at the moment of least capacity should not
+// have to compose anything to be helped, which is what the four blockers are
+// for — one press, and the answer still comes back about this task rather than
+// in general.
 func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -235,11 +235,6 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 // open, and a conversation is not — you stop talking. What closing also did
 // was forget the window, and the record is the window now.
 
-// backTolerant is where a form's "from" may send you.
-//
-// Only a path this screen serves, and only ever a path: the value arrives from
-// a form field and a form field is a place a stranger can type. An open
-// redirect from a page behind forward-auth is still an open redirect.
 // coachBadlyHandler records that the last thing Buddy said did not land.
 //
 // Principle 5 was opened on 20 August so the coach could be useful at the only
@@ -283,6 +278,11 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
+// backTolerant is where a form's "from" may send you.
+//
+// Only a path this screen serves, and only ever a path: the value arrives from
+// a form field and a form field is a place a stranger can type. An open
+// redirect from a page behind forward-auth is still an open redirect.
 func backTolerant(from string) string {
 	if !strings.HasPrefix(from, "/") || strings.HasPrefix(from, "//") {
 		return "/"

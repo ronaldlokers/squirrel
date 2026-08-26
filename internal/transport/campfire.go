@@ -161,13 +161,6 @@ func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	}
 }
 
-// sendVia is outbound, used when the system initiates rather than answers.
-//
-// Reusing room.path from a stored payload would need no credential at all,
-// since that path already embeds a bot key. It is rejected on purpose:
-// outbound would then only reach rooms Squirrel had recently heard from, and a
-// morning nudge would depend on the capture history. That works in testing and
-// fails on a quiet Monday.
 // asRichText prepares a message body for Campfire, whose Message declares
 // `has_rich_text :body` — so whatever arrives is treated as HTML rather than as
 // text. A newline collapses the way any whitespace does inside an HTML block,
@@ -187,6 +180,13 @@ func asRichText(text string) string {
 	return strings.ReplaceAll(html.EscapeString(text), "\n", "<br>")
 }
 
+// sendVia is outbound, used when the system initiates rather than answers.
+//
+// Reusing room.path from a stored payload would need no credential at all,
+// since that path already embeds a bot key. It is rejected on purpose:
+// outbound would then only reach rooms Squirrel had recently heard from, and a
+// morning nudge would depend on the capture history. That works in testing and
+// fails on a quiet Monday.
 func sendVia(baseURL, botKey string) func(context.Context, string, string) error {
 	base := strings.TrimRight(baseURL, "/")
 	client := &http.Client{Timeout: 10 * time.Second}
