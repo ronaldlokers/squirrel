@@ -58,18 +58,12 @@ func (m Moment) Open(now time.Time) bool {
 	return !now.Before(m.WarnAt()) && now.Before(m.Starts)
 }
 
-// momentPattern is deliberately narrow.
+// momentPattern is deliberately narrow: when in doubt, capture.
 //
-// The bar is the same one ParseEvery's `deliberateDefine` sets: when in doubt,
-// capture. A bare "14:30 dentist" is a note, because a person writing a
-// thought down should never have to escape it. The marks of a deliberate
-// fixed point are the word "at" or the word "tomorrow" — both of which someone
-// writing prose about an appointment would still write, but which a stray
-// thought almost never opens with in front of a clock time.
-// The prefix is mandatory, and that is the whole of the bar: one of "at" or
-// "tomorrow" has to be there. Without it "14:30 dentist" parsed as a fixed
-// point, which is a note somebody wrote quickly, silently turned into a thing
-// that will interrupt them.
+// The prefix is mandatory and is the whole of the bar — one of "at" or "tomorrow"
+// has to be there. Without it "14:30 dentist" parsed as a fixed point, which is a
+// note somebody wrote quickly, silently turned into something that interrupts
+// them.
 var momentPattern = regexp.MustCompile(
 	`(?i)^(?:(tomorrow)\s+(?:at\s+)?|at\s+)(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+(.+)$`)
 
@@ -77,20 +71,15 @@ var momentPattern = regexp.MustCompile(
 // with commas in it.
 var travelSuffix = regexp.MustCompile(`(?i)^(.*?)[,\s]+(\d{1,3})\s*(?:m|min|mins|minute|minutes)\s+away$`)
 
-// ParseMoment reads a fixed point out of a sentence, or reports that there is
-// not one.
+// ParseMoment reads a fixed point out of a sentence, in the process's own zone.
 //
-// It never guesses a date beyond tomorrow. "Thursday" is a calendar and a
-// calendar is a thing you are behind on; the two answers this takes are today
-// and tomorrow, and a time that has already passed today means tomorrow —
-// which is what a person means when they type it.
-// ParseMoment reads one out of a sentence, in the process's own zone.
+// It never guesses a date beyond tomorrow: a calendar is a thing you are behind
+// on. A time that has already passed today means tomorrow, which is what a person
+// means when they type it.
 //
-// Kept for callers that only ask whether a message *has the shape* of a fixed
-// point — Match does, on stored rows, where the date it would resolve to is
-// never read. Anything that books one calls ParseMomentIn: a container's zone
-// is an accident of its deployment, and a fixed point is the one thing this
-// product holds that you can be late for. See issue #148.
+// Kept for callers that only ask whether a message has the shape of a fixed point
+// — Match does, on stored rows. Anything that books one calls ParseMomentIn: a
+// container's zone is an accident of its deployment. See issue #148.
 func ParseMoment(s string, now time.Time) (Moment, bool) {
 	return ParseMomentIn(now.Location(), s, now)
 }
@@ -103,14 +92,10 @@ func ParseMomentIn(loc *time.Location, s string, now time.Time) (Moment, bool) {
 	return MomentOn(loc, now.In(loc), s, now)
 }
 
-// MomentOn is the same sentence, anchored to a day you chose.
-//
-// One parser and one definition of what "14:30" means. The alternative was a
-// grammar that takes dates — which would widen the bar momentPattern
-// deliberately sets, and that bar is why a stray thought is never silently
-// turned into something that will interrupt you — or a second place in the web
-// package that built a time of its own, which is what composeEvery exists not
-// to be.
+// MomentOn is the same sentence, anchored to a day you chose. One parser and one
+// definition of what "14:30" means: a grammar that takes dates would widen the
+// bar momentPattern sets, and a second builder in the web package is what
+// composeEvery exists not to be.
 func MomentOn(loc *time.Location, day time.Time, s string, now time.Time) (Moment, bool) {
 	if loc == nil {
 		loc = now.Location()
@@ -166,13 +151,9 @@ func MomentOn(loc *time.Location, day time.Time, s string, now time.Time) (Momen
 	}
 
 	starts := time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, loc)
-	// Tomorrow if it was said, and tomorrow if the time has already gone —
-	// which is what someone means when they type a time that has passed.
-	//
-	// This needs no carve-out for a chosen day, and one was written and taken
-	// out again: a day later than today is always after now whatever hour was
-	// picked, so the second clause cannot fire on one. The picker offers no day
-	// in the past, which is what makes that true.
+	// Tomorrow if it was said, and tomorrow if the time has already gone. No
+	// carve-out is needed for a chosen day: a day later than today is always after
+	// now, and the picker offers no day in the past.
 	if m[1] != "" || !starts.After(now) {
 		starts = starts.AddDate(0, 0, 1)
 	}
@@ -227,25 +208,17 @@ func (s *Store) NextMoment(ctx context.Context, personID int64, now time.Time) (
 }
 
 // DueMoment is the next one whose warning has not been given and is due to be.
-// The scheduler reads it once a minute.
 //
-// Its own query rather than NextMoment's, and the difference is the whole point.
-// NextMoment answers "what is the next fixed point" — which six callers want,
-// said or not, because that is the one you are being told about. This asks a
-// different question: "is there anything I still owe a warning for". Answering
-// the second with the first meant a fixed point that had already been warned
-// about sat at the head of the queue until it started, and every later one was
-// invisible for those twenty-five minutes.
+// Its own query rather than NextMoment's, which answers "what is the next fixed
+// point". Answering this with that left an already-warned moment at the head of
+// the queue and every later one invisible until it started.
 //
-// The cost was not a missed test. A moment blocked past its own warn point is
-// never warned about at all, because the scheduler deliberately refuses to send
-// one late — so two appointments less than half an hour apart meant the second
-// arrived in silence, on the one feature whose job is getting somebody out of
-// the door.
+// The cost was not a missed test: a moment blocked past its own warn point is
+// never warned about at all, because the scheduler refuses to send one late — so
+// two appointments half an hour apart meant the second arrived in silence.
 //
-// `said_at is null` is what makes it a queue rather than a peek. The upper
-// bound stays `starts_at > $2`: once a thing has started, its warning is over
-// rather than overdue.
+// `said_at is null` is what makes it a queue rather than a peek. The upper bound
+// stays `starts_at > $2`: once a thing has started, its warning is over.
 func (s *Store) DueMoment(ctx context.Context, personID int64, now time.Time) (Moment, bool, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,
@@ -361,13 +334,9 @@ func (s *Store) SetMomentBring(ctx context.Context, personID int64, bring string
 	return m, true, nil
 }
 
-// pickMoment is rule 1: a fixed point, inside the window where leaving
-// matters.
-//
-// Ahead of everything, including a running timer, and untouched by the
-// capacity gate. The world's appointment outranks anything you or Squirrel
-// chose, and a low day is exactly the day you most need telling that you have
-// to leave in ten minutes.
+// pickMoment is rule 1: a fixed point, inside the window where leaving matters.
+// Ahead of everything including a running timer, and untouched by the capacity
+// gate — a low day is exactly the day you most need telling to leave.
 func (s *Store) pickMoment(ctx context.Context, personID int64, now time.Time) (Offer, bool, error) {
 	m, found, err := s.NextMoment(ctx, personID, now)
 	if err != nil || !found || !m.Open(now) {
@@ -388,12 +357,8 @@ func (s *Store) pickMoment(ctx context.Context, personID int64, now time.Time) (
 	}, true, nil
 }
 
-// LeaveWords is the one sentence a fixed point says, in both surfaces.
-//
-// It says the time it starts and the time to leave, and when the travel time
-// was a guess it says that too. Never "you are late", never "hurry", and never
-// a countdown: the useful fact is a clock time you can act on, and everything
-// else is pressure.
+// LeaveWords says the start time and the leaving time, and says so when the
+// travel time was a guess. Never "you are late", never a countdown.
 func LeaveWords(m Moment) string {
 	at := m.Starts.Format("15:04")
 	leave := m.LeaveAt().Format("15:04")
@@ -403,14 +368,9 @@ func LeaveWords(m Moment) string {
 	return fmt.Sprintf("at %s — leave about %s", at, leave)
 }
 
-// AttachNote points a note at a fixed point, and answers whether it was yours
-// to point.
-//
-// The person is in the where clause rather than checked first, so there is no
-// window between reading a row and writing it, and no way for a caller to
-// forget the check. The moment is checked the same way and in the same
-// statement: pointing your note at somebody else's appointment is the same
-// mistake as pointing somebody else's note anywhere.
+// AttachNote points a note at a fixed point. The person is in the where clause
+// rather than checked first, so there is no window between read and write and no
+// way to forget the check. The moment is checked in the same statement.
 func (s *Store) AttachNote(ctx context.Context, personID, itemID, momentID int64) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `
 		update items set moment_id = $3
@@ -423,12 +383,8 @@ func (s *Store) AttachNote(ctx context.Context, personID, itemID, momentID int64
 	return tag.RowsAffected() == 1, nil
 }
 
-// DetachNote puts it back in the pile.
-//
-// Every transition in this product reverses, and this is the reversal. There is
-// no previous value to remember because the pointer was the whole of the
-// change — which is the argument for the pointer over an eighth state, made
-// concrete.
+// DetachNote puts it back in the pile. There is no previous value to remember
+// because the pointer was the whole of the change.
 func (s *Store) DetachNote(ctx context.Context, personID, itemID int64) (bool, error) {
 	tag, err := s.pool.Exec(ctx,
 		`update items set moment_id = null where id = $2 and person_id = $1`,
@@ -451,15 +407,11 @@ func (s *Store) NotesFor(ctx context.Context, personID, momentID int64) ([]Item,
 // are, and a limit nothing reaches in practice is a limit nobody sees.
 const notesForLimit = 50
 
-// Upcoming is what is still ahead, soonest first.
+// Upcoming is what is still ahead, soonest first. What makes a list of
+// appointments allowed here is that it holds nothing you can be behind on —
+// `starts_at > $2` and `done_at is null`.
 //
-// The list this product spent its whole life refusing, and the refusal is worth
-// keeping in view: a browsable set of your appointments is a calendar, and a
-// calendar is a thing you are behind on. What makes this one allowed is that it
-// holds nothing you can be behind on — `starts_at > $2` and `done_at is null`,
-// so everything in it is still ahead of you.
-//
-// It returns rows and never a total. Nothing above it may count them.
+// It returns rows and never a total.
 func (s *Store) Upcoming(ctx context.Context, personID int64, now time.Time, limit int) ([]Moment, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,

@@ -106,17 +106,12 @@ func (s *Store) RecordPromptLines(ctx context.Context, personID int64, conversat
 	return promptID, nil
 }
 
-// DeletePrompt removes a prompt row (and, via the cascading foreign key on
-// prompt_lines, its lines) that was claimed by RecordPrompt but never
-// delivered. Nudge uses it when Chat.Send fails: RecordPrompt commits the
-// dated row before the send is attempted, the same ordering the evening
-// message uses and for the same reason, so a transport error leaves a row
-// that claims the day's nudge slot in the unique index on
-// (person_id, kind, sent_for_date) without ever having reached the room.
-// Nothing depends on an undelivered row — the message never went out — so
-// deleting it gives a later trigger the same day, including the 19:00
-// fallback, a real chance to claim the slot instead of being refused by a
-// send that never happened.
+// DeletePrompt removes a prompt row, and its lines by cascade, that RecordPrompt
+// claimed but which was never delivered.
+//
+// Nudge uses it when Chat.Send fails: the dated row is committed before the send
+// is attempted, so a transport error otherwise leaves a row claiming the day's
+// slot in the unique index without having reached the room.
 func (s *Store) DeletePrompt(ctx context.Context, promptID int64) error {
 	if _, err := s.pool.Exec(ctx, `delete from prompts where id = $1`, promptID); err != nil {
 		return fmt.Errorf("deleting prompt: %w", err)
@@ -194,19 +189,13 @@ const latestPrompt = `
 	   and delivered_at is not null
 	 order by sent_at desc, id desc limit 1`
 
-// ChoreAtPosition resolves a numbered line — "done 2" — back to the chore it
-// named. Scoped by personID so one person's number can never resolve to
-// another person's chore, and pinned to that one person's single most recent
-// prompt so the number is only ever read against the list that printed it,
-// never against some other prompt that happens to share a position.
+// ChoreAtPosition resolves a numbered line back to the chore it named. Scoped by
+// personID, and pinned to that person's single most recent prompt so a number is
+// only read against the list that printed it.
 //
-// delivered_at is not null, matching latestPrompt: replyFor commits a query
-// prompt before the message carrying its buttons is sent, so a failed send
-// leaves a numbered row with no message ever in the room. Without this
-// predicate that phantom row would become "current" for a typed position
-// even though the room's actual buttons still point at the last prompt that
-// really went out — a typed "done 1" and a tap on button 1 resolving to two
-// different chores.
+// delivered_at is not null, matching latestPrompt: a failed send otherwise leaves
+// a phantom numbered row that becomes "current" for a typed position while the
+// room's buttons still point at the last prompt that went out.
 func (s *Store) ChoreAtPosition(ctx context.Context, personID int64, position int) (Chore, bool, error) {
 	const q = `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds
@@ -235,18 +224,11 @@ func (s *Store) ChoreAtPosition(ctx context.Context, personID int64, position in
 	return c, true, nil
 }
 
-// LineAtPosition resolves a numbered line to whatever it named — a chore or a
-// note. It is ChoreAtPosition generalised, and carries every one of that
-// method's predicates for the same reasons: scoped by personID so one person's
-// number cannot resolve to another's row, pinned to that person's single most
-// recent numbered prompt so a number is only read against the list that printed
-// it, and requiring delivered_at so a prompt whose send failed can never become
-// "current" for a typed position while the room's real buttons still point at
-// the last list that actually went out.
+// LineAtPosition is ChoreAtPosition generalised to a chore or a note, carrying
+// every one of its predicates for the same reasons.
 //
-// Exactly one of Line.Chore and Line.Item is non-nil. The check constraint on
-// prompt_lines is what makes that true; the left joins here are what make it
-// observable.
+// Exactly one of Line.Chore and Line.Item is non-nil: the check constraint on
+// prompt_lines makes that true, and the left joins make it observable.
 func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int) (Line, bool, error) {
 	const q = `
 		select l.position,
@@ -312,17 +294,13 @@ func (s *Store) LineAtPosition(ctx context.Context, personID int64, position int
 // latestChorePrompt is the most recent delivered numbered prompt that actually
 // named a chore.
 //
-// Not latestPrompt, and the difference is the whole of a real bug. Since phase
-// 5a a numbered prompt can be a list of notes carrying no chore at all, and
-// with latestPrompt a `!notes` between the nudge and the answer made
-// OutstandingLines return nothing — so a bare `done` replied "Nothing
-// outstanding." while the morning's chore sat unmet. Squirrel asserting that
-// nothing is outstanding when something is is worse than any dead button:
-// every other surface depends on believing what it says.
+// Not latestPrompt: a numbered prompt can be a list of notes carrying no chore, so
+// a `!notes` between the nudge and the answer made OutstandingLines return
+// nothing and a bare `done` replied "Nothing outstanding." while the morning's
+// chore sat unmet.
 //
 // Positions still resolve against latestPrompt — a typed number must mean the
-// list that printed it. Only "the one thing outstanding" reaches back past a
-// buttonless list, because that question was never about the newest message.
+// list that printed it.
 const latestChorePrompt = `
 	select p.id, p.sent_at from prompts p
 	 where p.person_id = $1 and p.kind in ` + numberedKinds + `
@@ -356,30 +334,17 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 	return s.scanChores(ctx, q, personID)
 }
 
-// LastDigestSentAt is the sent_at of the person's most recent evening
-// message — a digest, in the old naming this method keeps. The scheduler
-// anchors its capture window to this instant rather than to a fixed
-// "yesterday midnight" offset.
+// LastDigestSentAt is the sent_at of the most recent evening message. The
+// scheduler anchors its capture window to it rather than to a fixed offset.
 //
-// kind is filtered to ('digest', 'evening') rather than just "sent_for_date
-// is not null", because a nudge carries a date too — it has to, to get its
-// own slot in the per-day index — and a nudge is the newest dated prompt on
-// most days while showing no captures at all. Anchoring to it instead of the
-// last real evening message would skip the capture window forward past
-// everything captured between the two, silently and permanently: gone from
-// every future evening message, since each one's window starts from the
-// last one's sent_at. 'digest' stays in the list so the first evening
-// message after this kind was renamed still anchors off the last digest
-// that actually sent, rather than jumping backwards over however many days
-// of captures came before the rename.
+// kind is filtered to ('digest', 'evening') because a nudge carries a date too
+// and is the newest dated prompt on most days while showing no captures.
+// Anchoring to it would skip the window past everything captured between the two,
+// permanently. 'digest' stays for rows predating the rename.
 //
-// delivered_at is not null is required too. RecordPrompt commits a dated
-// prompt's row before Send is attempted, so a row can exist for a date whose
-// message never reached Campfire. Anchoring to that row anyway would skip
-// the capture window right past every capture made on the day the send
-// failed — gone from every evening message forever, since the next
-// successful one's window starts from the (wrongly early) failed row's
-// sent_at, not from the last time a message actually arrived.
+// delivered_at is not null is required too: a row can exist for a date whose
+// message never reached Campfire, and anchoring to it would skip every capture
+// made that day, forever.
 func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time, bool, error) {
 	const q = `
 		select sent_at from prompts
@@ -397,19 +362,13 @@ func (s *Store) LastDigestSentAt(ctx context.Context, personID int64) (time.Time
 	return sentAt, true, nil
 }
 
-// EveningDeliveredFor reports whether a delivered evening message already
-// exists for the given date. once() checks this before nudgeFor claims a
-// nudge slot: without it, a process that delivered today's evening message
-// and then restarted — losing its in-memory sentDate guard in the process —
-// would still let nudgeFor claim and commit a nudge row on its way to a
-// doomed RecordPrompt("evening", ...) collision, spending today's nudge slot
-// on a chore that is never shown for it.
+// EveningDeliveredFor reports whether a delivered evening message already exists
+// for a date. once() checks it before nudgeFor claims a slot: a process that
+// delivered today's message and then restarted would otherwise spend today's
+// nudge on a chore never shown.
 //
-// This is a plain read, not a lock: a genuinely concurrent second process can
-// still race between this check and the writes that follow it in once(), and
-// when it does, RecordPrompt's unique index is what actually decides,
-// same as always — this closes the deterministic restart case, not the rare
-// concurrent one.
+// A plain read, not a lock. RecordPrompt's unique index is what actually decides;
+// this closes the deterministic restart case, not the rare concurrent one.
 func (s *Store) EveningDeliveredFor(ctx context.Context, personID int64, forDate time.Time) (bool, error) {
 	const q = `
 		select exists (
@@ -452,18 +411,11 @@ func (s *Store) ChoreOnPrompt(ctx context.Context, promptID int64, position int)
 	return c, true, nil
 }
 
-// LineOnPrompt resolves a position against one specific prompt, whatever that
-// line turned out to name.
+// LineOnPrompt resolves a position against one specific prompt, whatever the line
+// named. A tap names the message it came from, so it resolves against that
+// message even if a newer prompt has since been sent.
 //
-// It is ChoreOnPrompt generalised the way LineAtPosition generalises
-// ChoreAtPosition, and it exists for the same reason: since the picker, a
-// numbered line under a button can be a task. A tap names the message it came
-// from, so it resolves against that message even if a newer prompt has since
-// been sent — that is what ChoreOnPrompt was already for and none of it
-// changes here.
-//
-// Exactly one of Line.Chore and Line.Item is non-nil. The check constraint on
-// prompt_lines makes that true; the left joins make it observable.
+// Exactly one of Line.Chore and Line.Item is non-nil.
 func (s *Store) LineOnPrompt(ctx context.Context, promptID int64, position int) (Line, bool, error) {
 	const q = `
 		select l.position,
