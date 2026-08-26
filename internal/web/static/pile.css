@@ -57,6 +57,12 @@
        others needed 18% — it is much the darkest of the four, and at 18% it
        measures 3.17:1 against the outline ink, which fails. 40% is 5.46:1. */
     --done-lifted: #71a73e;  --done-lifted-hover: #89b65f;
+    /* The five answers, on the readings grid and nowhere else. Held apart
+       from the state colours on purpose: see .mgood in the readings block. */
+    --mood-good: #3fa08a;     --mood-calm: #6f9fd8;
+    --mood-low: #8a5b8f;      --mood-frazzled: #d94f2b;
+    --mood-wiped: #7a7f8a;
+
     --open-lifted: #9e7bd0;  --open-lifted-hover: #b295da;
 
     --line: 3px;               /* the outline weight of the mark */
@@ -2283,33 +2289,71 @@
   .cantact[open] .ifshut { display: none; }
   .cantact[open] .ifopen { display: inline; }
 
-  /* One day's readings. The faces are the same five drawings the check-in
-     offers, small: what you said, in the language you said it in.
-
-     A grid rather than a row, because the day names are not the same length
-     and a row let each one set where its own reading started: "thursday 20
-     august" pushed its face 47px further right than "today" did, and readings
-     that should read as a column read as a stagger. */
-  .aday {
-    display: grid; grid-template-columns: 13.5em minmax(0, 1fr);
-    align-items: center; gap: 14px;
-    width: min(720px, 100%); margin-bottom: 10px;
-  }
-  .aday .when {
-    margin: 0;
-    font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 680;
+  /* The readings: six weeks by seven days, and the only grid in the product.
+     
+     A grid rather than the list of answered days this screen used to be,
+     because the days you said nothing on are most of what is here and a list
+     can only ever show the days you answered. They are drawn as dotted
+     outlines. The gaps are the honest part.
+     
+     No height, no axis, no trend line, no number. Nothing on this page can be
+     compared to anything else on it, which is what keeps it a record rather
+     than a score. */
+  .readings { width: min(720px, 100%); }
+  .weekrow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .weekrow .wl {
+    width: 5.4em; flex: none;
+    font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
     color: var(--cream);
   }
-  .aday .saidwhat { margin: 0; display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
-  .aday .saidwhat img { width: 44px; height: auto; display: block; }
-  /* The face and the word it means, as one thing. */
-  .areading {
-    display: inline-flex; align-items: center; gap: 7px;
-    font-size: 14px; letter-spacing: .04em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 700;
-    color: var(--paper);
+  .dots { display: flex; gap: 8px; flex: 1; min-width: 0; }
+  /* Square, outlined in the one outline colour every drawn thing here shares,
+     so five fills read as five answers rather than five materials. */
+  .dots i {
+    flex: 1; min-width: 0; aspect-ratio: 1;
+    border: var(--line) solid var(--outline); border-radius: 7px;
+    display: block; position: relative;
   }
+  /* A day you said nothing on: the outline and nothing in it. Dotted, so it
+     cannot be mistaken for a fill this palette happens not to have — and it is
+     never faded out, because the days you did not answer are not lesser data.
+     
+     Opacity would be the page's own opinion about them. */
+  .dots i.nought { background: transparent; border-style: dashed; }
+  /* A day that has not happened. No outline at all: an empty Friday next week
+     is not a gap in the record, and drawing it as one says you are already
+     behind. */
+  .dots i.ahead { border-color: transparent; }
+
+  /* The five answers, and their own five colours.
+     
+     Not the state colours. Every fill in this product means an outcome — done,
+     kept, dropped — and lending green to `good` would make one colour mean two
+     things the first time a note and a reading ever shared a screen. These are
+     five hues of the same weight, in no order, and none of them is the good
+     one: `low` and `frazzled` are different states wanting different answers,
+     which a scale from green to red cannot say. */
+  .mgood     { background: var(--mood-good); }
+  .mcalm     { background: var(--mood-calm); }
+  .mlow      { background: var(--mood-low); }
+  .mfrazzled { background: var(--mood-frazzled); }
+  .mwiped    { background: var(--mood-wiped); }
+
+  /* A colour that means something has to say what it means. The key is the
+     whole of the reading instruction and there is no other. */
+  .moodkey {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0 0;
+    font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 660;
+    color: var(--cream);
+  }
+  .moodkey span { display: inline-flex; align-items: center; gap: 6px; }
+  .moodkey b {
+    width: 13px; height: 13px; border-radius: 4px;
+    border: 2px solid var(--outline); display: inline-block;
+  }
+  .moodkey b.nought { background: transparent; border-style: dashed; }
 
   /* Every screen's title, and the only one.
    *
@@ -3115,10 +3159,31 @@
      sat *on* the stock; a bubble on the purple field is the stock. What let it
      drift is that the fill was doing the work of saying who spoke, and the
      face does that now. */
-  .frombuddy .bub {
-    background: var(--card); color: var(--outline);
-    box-shadow: 0 4px 0 0 var(--outline);
+  /* Buddy has no bubble. See DESIGN.md, The Conversation.
+   *
+   * `.frombuddy .bub` was card stock with a hard shadow until 26 August 2026.
+   * The rule it broke is that two kinds of thing wore one costume: a sentence
+   * and an object were both cream rectangles with a 3px outline, so a
+   * conversation read as one column of beige rather than as an exchange.
+   *
+   * Taking the bubble off makes every remaining rectangle a *thing* — a note,
+   * an appointment, a chore, or something you said. The same conversation goes
+   * from seven outlined boxes to three.
+   *
+   * Paper rather than cream, with the outline as a text shadow rather than a
+   * border: on the purple field, cream measured 4.8:1 and paper measures
+   * 8.9:1, and this text has no stock behind it to sit on. The shadow is one
+   * pixel of the outline ink, which is what every other object here uses to
+   * lift off the field. */
+  .said {
+    margin: 0; font-size: 16px; line-height: 1.45;
+    color: var(--paper);
+    font-variation-settings: var(--casual), "wght" 500;
+    text-shadow: 0 1px 0 rgba(28, 17, 11, .45);
   }
+  /* Yours keeps its bubble, and it is the cream one. There is one person here
+     and he knows which words are his — what the bubble now says is not "you
+     said this" but "this is a thing rather than a sentence". */
   .fromyou .bub { background: var(--cream); color: var(--outline); }
   /* The place's name, when a turn opens one. The thread has no title of its
      own — home's exemption — so these are what heading navigation walks. */
@@ -3135,7 +3200,7 @@
   .earlier a { color: var(--cream); }
 
   /* A card inside a turn. Same stock as a door, because it is the same box. */
-  .turncard {
+  .turncard, .workedcard {
     width: 100%; padding: 14px 16px;
     background: var(--card); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: var(--r);
@@ -3161,8 +3226,8 @@
     border: var(--line) solid var(--outline); border-radius: 10px;
   }
 
-  .turnname { margin: 0; font-size: 21px; font-variation-settings: var(--casual), "wght" 520; }
-  .turnmeta {
+  .turnname, .workedname { margin: 0; font-size: 21px; font-variation-settings: var(--casual), "wght" 520; }
+  .turnmeta, .workedmeta {
     margin: 5px 0 11px; font-size: 11.5px;
     letter-spacing: .1em; text-transform: uppercase; color: var(--brown);
     font-variation-settings: var(--precise), "wght" 750;
@@ -3458,4 +3523,217 @@
   .letmein:active {
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
     background: var(--purple); color: var(--paper);
+  }
+
+  /* The menu, and it is the whole of this product's navigation.
+   *
+   * The rail of four doors, the always-on chip row and the stop link were all
+   * permanent fixtures in the conversation, together about 45% of a phone
+   * screen before a word was said. They are here, behind one 44px control.
+   *
+   * A <details>, so it opens with the script off. */
+  .menu > summary {
+    list-style: none; cursor: pointer;
+    width: 44px; height: 44px; flex: none;
+    display: grid; place-items: center;
+    color: var(--cream); border-radius: 11px;
+  }
+  .menu > summary::-webkit-details-marker { display: none; }
+  .menu > summary svg { width: 22px; height: 22px; display: block; }
+  .menu[open] > summary { background: rgba(255, 251, 243, .16); }
+
+  /* Over the conversation rather than pushing it down: a menu that reflowed
+     the screen would move the thing you were reading in order to show you a
+     way somewhere else. */
+  .menupanel {
+    position: absolute; top: 58px; right: 12px; z-index: 20;
+    width: min(260px, calc(100vw - 24px));
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 8px 0 0 var(--outline), 0 20px 34px -18px rgba(0, 0, 0, .8);
+    overflow: hidden;
+  }
+  .menupanel form { margin: 0; }
+  .menupanel button,
+  .menupanel .leaving {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 12px 14px; text-align: left;
+    background: none; border: 0; border-bottom: 2px solid rgba(28, 17, 11, .14);
+    color: var(--outline); font: inherit; font-size: 15px;
+    font-variation-settings: var(--casual), "wght" 600;
+    text-decoration: none; cursor: pointer;
+  }
+  .menupanel button:hover,
+  .menupanel .leaving:hover { background: var(--paper); }
+  /* The way out is last and under a rule of its own. It is not a destination
+     like the others: it is the end of the evening, and its place at the bottom
+     is what says so without a louder word. Principle 3 — leaving must never
+     look like failure — is why it is not smaller or greyer, only elsewhere. */
+  .menupanel .leaving {
+    border-bottom: 0; border-top: var(--line) solid var(--outline);
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+  /* Zero is no number and not a nought. A door reading "0" is a scoreboard,
+     which is the rule the four doors carried and this inherited with them. */
+  .menupanel .cnt {
+    margin-left: auto; min-width: 22px; height: 22px; border-radius: 999px;
+    background: var(--orange); border: 2px solid var(--outline);
+    font-size: 12px; line-height: 18px; text-align: center;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+
+  /* The six bodies. See DESIGN.md, The Six Bodies.
+   *
+   * A note, a task, a chore, an appointment, a photograph and something set
+   * aside were one cream rectangle with different words in it until 26 August
+   * 2026. Nothing new is invented here: the notch, the page tab, the dashed
+   * edge and the hard shadow are all devices this system already owns. They
+   * are applied per kind instead of uniformly. */
+
+  /* A note is the plain body, and it sits very slightly askew. Enough to read
+     as a piece of paper somebody put down rather than a row in a table, and
+     not enough to look broken — the same half-degree the stamp leans by. */
+  .turncard:not([class*=" k"]) { transform: rotate(-.35deg); }
+
+  /* A task wears the notebook's page tab, in the kept amber the tab already
+     uses for a row that was decided on. */
+  .turncard.ktask { position: relative; }
+  .turncard.ktask .pagetab {
+    position: absolute; top: calc(var(--line) * -1 - 12px); right: 18px;
+    width: 34px; height: 15px;
+    background: var(--kept); border: var(--line) solid var(--outline);
+    border-bottom: none; border-radius: 6px 6px 0 0;
+  }
+
+  /* An appointment is a ticket: notched on the left, and its time set large.
+     It is the one thing here you can be *late* for, and it looked exactly like
+     a note about a rattle. */
+  .turncard.kat { position: relative; margin-left: 8px; }
+  .turncard.kat .notch {
+    position: absolute; left: calc(var(--line) * -1 - 9px); top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px; border-radius: 999px;
+    background: var(--purple-deep); border: var(--line) solid var(--outline);
+  }
+  /* The meta carries the time and the leave-by, so it is the loud line on this
+     body rather than the quiet one — the only place in the product where meta
+     outranks the name. */
+  .turncard.kat .turnmeta {
+    font-family: "Inter", sans-serif; font-weight: 900; font-size: 19px;
+    letter-spacing: -.02em; color: var(--outline); text-transform: none;
+    margin: 0 0 2px; order: -1;
+  }
+  .turncard.kat .turnname {
+    font-size: 15px; font-variation-settings: var(--casual), "wght" 500;
+  }
+  .turncard.kat { display: flex; flex-direction: column; }
+  /* What to bring, below a perforation. It is the thing you are standing in
+     the hall without. */
+  .turncard.kat .takeline {
+    margin-top: 9px; padding-top: 9px;
+    border-top: 2.5px dashed rgba(28, 17, 11, .35);
+  }
+
+  /* Something set aside is recessed rather than raised: present, and not a
+     thing you can pick up.
+     
+     This is the one body that bends "cream card stock, never white" by not
+     being stock at all. Deliberate, and the only one — a parked note that
+     looked like every other object would be a parked note you keep trying to
+     act on. */
+  .turncard.kheld {
+    background: rgba(28, 17, 11, .16);
+    border: 2.5px dashed rgba(254, 214, 167, .5);
+    box-shadow: none;
+    color: var(--cream);
+  }
+  .turncard.kheld .turnname { color: var(--cream); }
+  .turncard.kheld .turnmeta { color: rgba(254, 214, 167, .8); }
+
+  /* A photograph is a polaroid, and it needs no kind: a card that carries one
+     *is* one. White border, the picture, and the words underneath as a
+     caption — which is what a note with a photograph has always been, the
+     picture being the note and the words beside it the caption. */
+  .turncard:has(> .cardphoto) {
+    background: var(--paper); padding: 9px 9px 0;
+    transform: rotate(-1deg);
+  }
+  .turncard:has(> .cardphoto) .cardphoto { margin: 0; }
+  .turncard:has(> .cardphoto) .turnname,
+  .turncard:has(> .cardphoto) .turnmeta { padding: 0 4px; }
+  .turncard:has(> .cardphoto) .turnacts { padding: 0 4px 10px; }
+
+  /* A search result. See DESIGN.md, Results.
+   *
+   * Not a card, and the difference is the whole of it: a card is something you
+   * act on, a hit is something you are finding. They were the same object until
+   * 26 August 2026, which is why search felt like a second pile — six of these
+   * fit where three cards did, and every card arrived carrying verbs for a
+   * decision nobody had asked to make.
+   *
+   * On the field rather than on stock, because it is not an object yet. It
+   * becomes one when you pick it. */
+  .hit { width: 100%; margin: 0; }
+  .hit button {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    padding: 9px 12px; border-radius: 11px;
+    background: rgba(255, 251, 243, .12);
+    border: 2px solid rgba(254, 214, 167, .4);
+    color: var(--paper); font: inherit;
+  }
+  .hit button:hover { background: rgba(255, 251, 243, .2); }
+  .hitname {
+    display: block; font-size: 14.5px; line-height: 1.35;
+    font-variation-settings: var(--casual), "wght" 600;
+  }
+  /* Which of the seven it is in, in the machine's axis: a result read without
+     it is a note whose verbs would be wrong. */
+  .hitwhere {
+    display: block; margin-top: 3px;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--cream);
+    font-variation-settings: var(--precise), "wght" 700;
+  }
+
+  /* ---------- the worked example ---------- */
+
+  /* The first thing anybody ever sees. Buddy plays the loop through once,
+     dimmed, and then rules a line under it and hands over.
+     
+     Dimmed rather than labelled, because the whole point is that you recognise
+     the shape before you read a word about it — and dimmed rather than greyed,
+     because the colours are the grammar being taught. .72 is far enough back
+     that nothing here reads as live and near enough that the bubble, the
+     unbubbled reply and the card stock are all still legible.
+     
+     It carries its own classes rather than the conversation's. It looks the
+     same, which is the teaching, but a picture of a card is not a card: they
+     share the rules above and nothing else. */
+  .worked { opacity: .72; }
+  .workedsays {
+    margin: 0 0 14px; font-size: 13px;
+    letter-spacing: .05em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 680;
+    color: var(--cream);
+  }
+  /* The verbs, as words. There is no form here and no route they could reach —
+     a worked example wired to real controls is a trap. Drawn as the outlined
+     buttons are drawn so the shape is learnt, and flat, so that a finger that
+     lands on one finds nothing to press rather than something that fails. */
+  .workedacts { display: flex; flex-wrap: wrap; gap: 9px; margin: 0; }
+  .workedacts span {
+    padding: 9px 14px; border: var(--line) solid var(--outline); border-radius: 10px;
+    font-size: 13px; letter-spacing: .06em;
+    font-variation-settings: var(--precise), "wght" 800;
+    color: var(--outline); background: var(--paper);
+  }
+  /* The line under it, and the handover. Ruled rather than spaced, because the
+     one thing the visitor has to understand is that everything above it is
+     nobody's and everything below it is theirs. */
+  .workedends {
+    margin: 0 0 22px; padding-top: 14px;
+    border-top: 2px dashed var(--cream);
+    font-size: 13px; letter-spacing: .05em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
+    color: var(--cream);
   }

@@ -55,6 +55,10 @@ type drawn struct {
 	Say *sayView `json:"say,omitempty"`
 	// Cut is a proposal to split a note. See proposeInThread.
 	Cut *cutView `json:"cut,omitempty"`
+	// Hits are search results, which are deliberately not cards. A card is
+	// something you act on; a hit is something you are finding, and making
+	// them one object is why search felt like a second pile. See searchTurn.
+	Hits []hitView `json:"hits,omitempty"`
 	// Faces is the check-in's five drawings. A flag rather than five chips
 	// because they are the product's own faces and the markup for them
 	// already exists; rendering them as words would be a different control
@@ -79,6 +83,9 @@ type turnView struct {
 	// navigation walks.
 	Place string
 	Cards []cardView
+	// Hits are search results, which are not cards. See searchTurn and
+	// DESIGN.md, Results.
+	Hits  []hitView
 	Chips []turnChip
 	Faces []faceView
 	Pick  *pickView
@@ -138,6 +145,20 @@ type turnChip struct {
 	Href   string            `json:"href,omitempty"`
 	Action string            `json:"action,omitempty"`
 	Fields map[string]string `json:"fields,omitempty"`
+	// Count is a number beside the label, in the menu only. Zero is no number
+	// and not a nought — a door reading "0" is a scoreboard, which is the rule
+	// the four doors carried and the menu inherited with them.
+	Count int `json:"-"`
+}
+
+// hitView is one search result: a quiet line that opens into a card.
+type hitView struct {
+	Title string `json:"title"`
+	// Meta is which of the seven it is in, because a result read without it is
+	// a note whose verbs would be wrong.
+	Meta   string            `json:"meta,omitempty"`
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields,omitempty"`
 }
 
 type doorView struct {
@@ -188,6 +209,22 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			slog.Error("reading the conversation", "error", err)
 			turns, more = nil, false
 		}
+
+		// Nobody has ever said anything here. The worked example plays, once,
+		// and only now: it is decided before anything is appended, because
+		// every turn below this line is about to make the record non-empty and
+		// the question being asked is whether it was empty when you arrived.
+		//
+		// Never while walking back — a page of the past is not a first run,
+		// even when the page is empty — and never when the record could not be
+		// read, where an empty conversation means the opposite of a new one.
+		//
+		// An empty record is not quite the whole of the question: things
+		// arrive through Campfire without a word being said on this screen. So
+		// this is provisional, and anything Squirrel then finds to say about
+		// your own world puts it out — a person mid-sentence about their own
+		// things does not need the loop explained.
+		first := !walkingBack && !unreadable && !more && len(turns) == 0
 
 		// The one thing Buddy opens with, and only while the last answer no
 		// longer describes now. Written rather than rendered, because a
@@ -246,6 +283,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// second.
 		if !walkingBack && !unreadable && !endsAsking(turns) {
 			if t, has := openingTurn(ctx, s, opts, personID, turns); has {
+				// Squirrel has something to say about your world, so you have
+				// one.
+				first = false
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
 					turns = append(turns, saved)
 				} else {
@@ -256,6 +296,10 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 
 		if !walkingBack && !asked && !unreadable && !endsOpen(turns) {
 			if t, has := offerTurn(s, opts, r); has {
+				// Something to hand you is something you already have. A
+				// worked example above it would be explaining a product that
+				// is mid-sentence about your own things.
+				first = false
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
 					turns = append(turns, saved)
 				} else {
@@ -276,6 +320,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Turns:     turnViews(turns),
 			Rail:      railFor(ctx, s, personID, ""),
 			MoreAbove: more,
+		}
+		if first {
+			v.Example = worked()
 		}
 		if len(turns) > 0 {
 			v.Oldest = turns[0].ID
@@ -352,6 +399,7 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
 				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
+				v.Hits = sh.Hits
 				v.Cost = sh.Cost
 				v.Pick, v.Cal, v.Say, v.Cut = sh.Pick, sh.Cal, sh.Say, sh.Cut
 				if sh.Faces {
@@ -381,6 +429,42 @@ func turnViews(turns []squirrel.Turn) []turnView {
 // A failed count is four doors and no numbers rather than an error page: the
 // doors are how you get anywhere, and a database that cannot count is not a
 // reason to take the navigation away.
+// menuFor is everywhere else, behind the lid's one control.
+//
+// It holds what the rail, the always-on chip row and the stop link used to
+// occupy the conversation with. Eight things, which is the argument for a
+// menu existing at all: the one this product removed on 25 August held three,
+// and a menu of three is emptier than the space it costs.
+//
+// Order is by how often a thing is wanted rather than by kind — the four
+// places first, then the two things you can always do. Stopping is not in this
+// list; the template puts it last, under a rule, because it is the end of the
+// evening rather than a destination.
+func menuFor(ctx context.Context, s Store, personID int64) []turnChip {
+	menu := []turnChip{
+		{Label: "the pile", Action: "/open", Fields: map[string]string{"where": "pile"}},
+		{Label: "the agenda", Action: "/open", Fields: map[string]string{"where": "at"}},
+		{Label: "the tasks", Action: "/open", Fields: map[string]string{"where": "tasks"}},
+		{Label: "the chores", Action: "/open", Fields: map[string]string{"where": "chores"}},
+		{Label: "what you set aside", Action: "/open", Fields: map[string]string{"where": "held"}},
+		{Label: "the things you kept", Action: "/open", Fields: map[string]string{"where": "kept"}},
+		{Label: "ask Buddy", Action: "/buddy/ask"},
+		{Label: "look something up", Action: "/find/ask"},
+	}
+	waiting, err := s.Waiting(ctx, personID, now())
+	if err != nil {
+		// A count that cannot be read is a menu with no numbers on it, which is
+		// what this was before 24 August. Everything still goes where it goes.
+		slog.Error("counting what is waiting, for the menu", "error", err)
+		return menu
+	}
+	menu[0].Count = waiting.Pile
+	menu[1].Count = waiting.Agenda
+	menu[2].Count = waiting.Tasks
+	menu[3].Count = waiting.Chores
+	return menu
+}
+
 func railFor(ctx context.Context, s Store, personID int64, here string) []doorView {
 	rail := []doorView{
 		{Where: "pile", Label: "the pile", Art: "door-pile.png"},
@@ -1150,7 +1234,9 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 		v := toView(it)
 		row := map[string]string{"id": strconv.FormatInt(v.ID, 10)}
 		sh.Cards = append(sh.Cards, cardView{
-			Title: v.Text, Meta: "decided " + v.When, Photo: v.Photo,
+			// A task wears the notebook's page tab, which is the device this
+			// system already owns for "this row was decided on".
+			Kind: "task", Title: v.Text, Meta: "decided " + v.When, Photo: v.Photo,
 			Acts: []actView{
 				{Label: "did it", Action: "/tasks/act", Style: "did", Fields: with(row, "act", "done")},
 				// "back" rather than "later": this is not a deferral, it is a
@@ -1249,7 +1335,10 @@ func agendaTurn(ctx context.Context, s Store, personID int64, name string, from 
 		row := map[string]string{"id": strconv.FormatInt(m.ID, 10)}
 		// The core's own sentence, shared with chat and with the notification,
 		// so the three cannot drift apart about when to leave.
-		card := cardView{Title: m.Label, Meta: squirrel.LeaveWords(m)}
+		// A ticket, not a card. An appointment is the one thing in this product
+		// you can be *late* for, and it looked exactly like a note about a
+		// rattle until 26 August 2026 — see DESIGN.md, The Six Bodies.
+		card := cardView{Kind: "at", Title: m.Label, Meta: squirrel.LeaveWords(m)}
 		card.Acts = []actView{{Label: "OPEN", Action: "/at/open", Style: "go", Fields: row}}
 		if m.Open(now()) {
 			// Only inside the window. Outside it the appointment is not yet
@@ -1456,15 +1545,17 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 				{Label: "KEEP", Action: "/pile/act", Style: "go", Fields: with(row, "act", "keep")},
 				{Label: "DROP", Action: "/pile/act", Style: "stop", Fields: with(row, "act", "drop")},
 				{Label: "A TASK", Action: "/pile/act", Style: "go", Fields: with(row, "act", "task")},
-				// The three that are not disposals. They ask a question rather
-				// than ending the note, so they are quieter than the four
-				// above them and sit after them.
-				{Label: "make a chore", Action: "/pile/often", Style: "why",
-					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
-				{Label: "say it another way", Action: "/pile/reword", Style: "why",
-					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
-				{Label: "i can't act on this", Action: "/pile/why", Style: "why",
-					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
+				// Four, and only four.
+				//
+				// The three that ask a question rather than ending the note
+				// were here too until 26 August 2026, quieter and after these.
+				// Seven equally-shaped buttons is six too many on a screen
+				// whose premise is that deciding is the expensive part, and
+				// "quieter" was not enough to say that four of them end the
+				// card and three do not.
+				//
+				// They are behind `something else?` below, and they answer as
+				// a turn.
 			},
 		}},
 		Chips: append([]turnChip{
@@ -1474,18 +1565,15 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 				Label: "later", Action: "/pile/later",
 				Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
 			},
-		}, elsewhereFromThePile()...),
-	}
-
-	// Only when the note looks like several things. A free check, and it is
-	// what keeps the model off every note in the pile.
-	if splittable(opts, v.Text) {
-		sh.Cards[0].Acts = append(sh.Cards[0].Acts, actView{
-			Label: "this is more than one thing", Action: "/pile/split", Style: "why",
-			Fields: map[string]string{
-				"id": strconv.FormatInt(v.ID, 10), "act": "propose", "from": "thread",
+			// The three questions, behind one press. A chip rather than a
+			// button on the card, because it is a thing you say about the note
+			// rather than a thing you do to it — the same reason `later` is a
+			// chip and DONE is not.
+			{
+				Label: "something else?", Action: "/pile/more",
+				Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)},
 			},
-		})
+		}, elsewhereFromThePile()...),
 	}
 
 	body, err := json.Marshal(sh)
@@ -1660,14 +1748,29 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Nothing with that word in it."}
 	}
 
+	// Results are not cards. A card is something you act on; a hit is
+	// something you are *finding*, and making them the same object is why
+	// search felt like a second pile — six hits fit in the space three cards
+	// took, and every one of them arrived carrying verbs for a decision
+	// nobody had asked to make.
+	//
+	// One at a time opens into a real card with real buttons, which is the
+	// same one-thing-is-live rule the conversation already runs on.
 	sh := drawn{}
 	for _, c := range chores {
 		v := toChoreView(c)
-		sh.Cards = append(sh.Cards, cardView{Kind: "chore", Title: v.Name, Meta: choreMeta(v)})
+		sh.Hits = append(sh.Hits, hitView{
+			Title: v.Name, Meta: "chore · " + choreMeta(v),
+			Action: "/open", Fields: map[string]string{"where": "chores"},
+		})
 	}
 	for _, it := range items {
 		v := toView(it)
-		sh.Cards = append(sh.Cards, cardView{Title: v.Text, Photo: v.Photo, Meta: whereItIs(v)})
+		sh.Hits = append(sh.Hits, hitView{
+			Title: v.Text, Meta: whereItIs(v),
+			Action: "/find/open",
+			Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)},
+		})
 	}
 	if more {
 		// That there is more, and not how much: what is further down a list of
@@ -1685,7 +1788,7 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		slog.Error("drawing the results", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw what I found."}
 	}
-	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: foundLead(len(sh.Cards)), Shown: body}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: foundLead(len(sh.Hits)), Shown: body}
 }
 
 // whereItIs says which of the seven a result is in, because a result read
@@ -1730,6 +1833,68 @@ func findHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: q},
 			searchTurn(r.Context(), s, personID, q),
+		}), "/")
+	}
+}
+
+// findOpenHandler turns one search result into a card you can act on.
+//
+// A hit is quiet on purpose — it is a thing you are finding, not a thing you
+// are deciding about — and this is the moment it becomes the other. One at a
+// time, which is the same rule the conversation already runs on: the live edge
+// holds one thing.
+//
+// The card it draws is the ordinary one, with the ordinary four verbs, built
+// from the note's real state so that a dropped result offers to undo and an
+// open one offers to decide. Nothing about search gets its own vocabulary.
+func findOpenHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil || id < 1 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		v := toView(it)
+		row := map[string]string{
+			"id": strconv.FormatInt(v.ID, 10), "was": v.State, "from": "thread",
+		}
+		card := cardView{Title: v.Text, Photo: v.Photo, Meta: whereItIs(v)}
+		if v.Task {
+			card.Kind = "task"
+		}
+		card.Acts = []actView{
+			{Label: "DONE", Action: "/pile/act", Style: "did", Fields: with(row, "act", "done")},
+			{Label: "KEEP", Action: "/pile/act", Style: "go", Fields: with(row, "act", "keep")},
+			{Label: "DROP", Action: "/pile/act", Style: "stop", Fields: with(row, "act", "drop")},
+		}
+		body, err := json.Marshal(drawn{Cards: []cardView{card}})
+		if err != nil {
+			slog.Error("drawing a result", "error", err)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: v.Text},
+			{Who: squirrel.SpeakerBuddy, Words: "That one.", Shown: body},
 		}), "/")
 	}
 }

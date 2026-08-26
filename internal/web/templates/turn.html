@@ -39,11 +39,45 @@
   </span>
   {{end}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
-  <p class="bub">{{.Words}}</p>
+  {{/* Buddy's words are not in a bubble, and yours are.
+
+       Two kinds of thing wore one costume until 26 August 2026: a sentence and
+       an object were both cream rectangles with a 3px outline, so a
+       conversation read as one column of beige rather than as an exchange.
+
+       Taking the bubble off Buddy makes every remaining rectangle on the screen
+       a *thing* — a note, an appointment, a chore, or something you said. The
+       same conversation goes from seven outlined boxes to three.
+
+       What it costs is the chat convention: his words no longer read as
+       "received". The first-run example is what teaches the grammar to somebody
+       who has never seen it. See DESIGN.md, The Conversation. */}}
+  <p class="{{if .Buddy}}said{{else}}bub{{end}}">{{.Words}}</p>
   {{/* What this cost, on the reply that cost it and nowhere else. A running
        total anywhere else would be a number you meet before you have asked for
        anything, which is the rule the sheet's own lid was protecting. */}}
   {{if .Cost}}<p class="cost">{{.Cost}}</p>{{end}}
+
+  {{/* Search results, which are not cards.
+
+       A card is something you act on; a hit is something you are finding, and
+       making them the same object is why search felt like a second pile. Six
+       hits fit in the space three cards took, and every one of them used to
+       arrive carrying verbs for a decision nobody had asked to make.
+
+       The match itself is underlined in orange by the stylesheet — this
+       product's own "why this matched" device — and one at a time opens into a
+       real card, which is the same one-thing-is-live rule the conversation runs
+       on. */}}
+  {{range .Hits}}
+  <form class="hit" method="post" action="{{.Action}}">
+    {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+    <button type="submit">
+      <span class="hitname">{{.Title}}</span>
+      {{if .Meta}}<span class="hitwhere">{{.Meta}}</span>{{end}}
+    </button>
+  </form>
+  {{end}}
 
   {{range .Cards}}
   {{/* A chore renders as the element the chores screen used, so the keys
@@ -53,7 +87,19 @@
        put an action in a tag name, and the version that tried rendered nothing
        at all. `article.chore` is what pile.js binds the chore keys to, so a
        chore keeps them without the screen it used to be on. */}}
-  <article class="turncard{{if eq .Kind "chore"}} chore{{end}}">
+  {{/* Six kinds, six bodies. A note, a task, a chore, an appointment, a
+       photograph and something set aside were one cream rectangle with
+       different words in it until 26 August 2026, so the kind was only knowable
+       by reading — which is the one thing a glance does not do.
+
+       The kind is a class rather than a tag: html/template cannot put an action
+       in a tag name, and the version that tried rendered nothing at all.
+       `article.chore` is also what pile.js binds the chore keys to. */}}
+  <article class="turncard{{if .Kind}} k{{.Kind}}{{end}}{{if eq .Kind "chore"}} chore{{end}}">
+    {{/* A task's page tab, and a ticket's notch. Both are drawn rather than
+         bordered, because a shape is what tells them apart at arm's length. */}}
+    {{if eq .Kind "task"}}<span class="pagetab" aria-hidden="true"></span>{{end}}
+    {{if eq .Kind "at"}}<span class="notch" aria-hidden="true"></span>{{end}}
     {{/* The photograph is the note, and the words beside it are the caption —
          the same order the pile's card draws them in. */}}
     {{/* The card asks for the smaller copy and links to the whole one. A card

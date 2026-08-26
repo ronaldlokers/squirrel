@@ -152,8 +152,14 @@ func TestSettingThingsAsideDidNotBecomeADoor(t *testing.T) {
 	}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.NotContains(t, body, `value="held"`, "it is on the rail")
-	require.NotContains(t, body, "ring the vet")
+	// What this was protecting is unchanged and is the second line: the things
+	// you set aside are not *on* the conversation. Where you reach them from
+	// did change — it was "not a fifth door on the rail" until 26 August 2026,
+	// and there is no rail now, so it is a line in the menu like everywhere
+	// else.
+	require.Contains(t, body, "what you set aside", "there is no way to it at all")
+	require.NotContains(t, body, "ring the vet",
+		"what you set aside is on the conversation rather than behind a door")
 }
 
 // Reached from the tasks, which is where you look when you wonder what

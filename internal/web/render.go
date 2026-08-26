@@ -147,9 +147,14 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
-	// Days is how you have been, grouped, and only the moods page fills it.
-	// Nothing else on any screen reads the readings back.
-	Days []moodDayView
+	// Example is the worked example, on a conversation nobody has ever said
+	// anything in, and empty every other time. It is drawn and never stored —
+	// see internal/web/firstrun.go.
+	Example []exampleTurn
+
+	// Weeks is how you have been, as six weeks by seven days, and only the
+	// readings page fills it.
+	Weeks []moodWeekView
 	// Offer is the one thing, or nil. Nil renders nothing at all rather than
 	// an empty region: having nothing to be handed is a normal state, and a
 	// reassuring sentence in its place would be the product deciding you ought
@@ -183,6 +188,10 @@ type view struct {
 	// Coach is the sheet's contents, and only the coach page fills it. Every
 	// other page carries the acorn and nothing more — the sheet's markup
 	// arrives when it is opened, because a conversation nobody has started is
+	// Menu is everywhere else, behind the lid's one control. It carries what
+	// the rail, the chip row and the stop link used to occupy the conversation
+	// with — see layout.html for why a hamburger came back.
+	Menu []turnChip
 	// Also is the pair of chips at the foot of the conversation: asking Buddy
 	// and looking something up. See thread.html.
 	Also []turnChip
@@ -308,11 +317,25 @@ func views(here string) []linkView {
 	return nil
 }
 
-// moodDayView is one day's readings. No count on it and no judgement about
-// it: what is here is what you said, and what it means is yours.
-type moodDayView struct {
-	Day   string
-	Moods []faceView
+// moodWeekView is one row of the readings grid: a label and seven days.
+type moodWeekView struct {
+	Week string
+	Days []moodCellView
+}
+
+// moodCellView is one day on the grid. It carries no number and no position,
+// for the same reason a face does not: these are not a scale.
+//
+// Nought is a day you said nothing on, which is drawn rather than skipped —
+// the gaps are most of what is there and hiding them would be the flattery
+// this page exists to avoid. Ahead is a day that has not happened, which is
+// drawn as nothing at all: an empty Saturday next week is not a gap.
+type moodCellView struct {
+	Day    string
+	Mood   string
+	Word   string
+	Nought bool
+	Ahead  bool
 }
 
 // faceView is one of the five drawn answers. It carries no number and no
@@ -530,6 +553,12 @@ func toView(it squirrel.Item) noteView {
 // what it is about: the timer, if one is running. Threading it through each
 // handler would mean five places to forget it.
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
+	// The menu, on every screen that has a store to build it from. It carries
+	// the counts, so it is filled here rather than in render() — which takes
+	// neither a store nor a person and never could.
+	if personID, ok := personOf(r); ok {
+		v.Menu = menuFor(r.Context(), s, personID)
+	}
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
 	v.Camera = opts.Photos != nil

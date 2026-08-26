@@ -63,7 +63,7 @@ func TestBrowserTheAnswerArrivesAsATurn(t *testing.T) {
 	// rather than an acknowledgement at all — what this pins is that the
 	// answer arrives as a turn rather than as a word inside the box.
 	require.NotEmpty(t, c.eval(t,
-		`return document.querySelector("#thread .turn:last-child .bub").textContent.trim()`))
+		`return document.querySelector("#thread .turn:last-child .bub, #thread .turn:last-child .said").textContent.trim()`))
 	require.Equal(t, "", c.eval(t, `return document.querySelector(".slot textarea").value`),
 		"the box kept the words after they were kept")
 }
@@ -102,10 +102,10 @@ func TestBrowserAFailedCaptureKeepsWhatYouTyped(t *testing.T) {
 	c.until(t, "the preview", `(`+visible+`)(".slot .gotphoto")`)
 	c.eval(t, `document.querySelector(".slot .post").click()`)
 	c.until(t, "Buddy to say what happened",
-		`/not kept/i.test(document.querySelector("#thread .turn:last-child .bub")?.textContent || "")`)
+		`/not kept/i.test(document.querySelector("#thread .turn:last-child .bub, #thread .turn:last-child .said")?.textContent || "")`)
 
 	require.Contains(t, c.eval(t,
-		`return document.querySelector("#thread .turn:last-child .bub").textContent`),
+		`return document.querySelector("#thread .turn:last-child .bub, #thread .turn:last-child .said").textContent`),
 		"photograph")
 	require.Equal(t, "the tax letter", c.eval(t,
 		`return document.querySelector(".slot textarea").value`),
@@ -131,4 +131,30 @@ func TestBrowserAnEmptySlotSaysNothing(t *testing.T) {
 		"an empty capture claimed something happened")
 	require.Empty(t, sp.written)
 	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`))
+}
+
+// The live region says what Buddy said, and the mechanism that makes it do so
+// is easy to break silently.
+//
+// thread.js announces the newest turn by reading it out of the DOM. Buddy's
+// words stopped being a bubble on 26 August 2026, and the selector was left
+// reading `.bub` alone for one commit — which found nothing for every turn
+// Buddy appends, so the screen went quiet for exactly the person who cannot see
+// it change. Nothing else in the suite noticed: the markup was right, the turn
+// was there, and only the announcement was gone.
+func TestBrowserTheLiveRegionSaysWhatBuddySaid(t *testing.T) {
+	sp, ph := &fakeSpool{}, &fakePhotos{}
+	c, _ := openCamera(t, sp, ph)
+
+	c.eval(t, `const t = document.querySelector(".slot textarea");
+		t.value = "kaas"; t.dispatchEvent(new Event("input")); return 1`)
+	c.eval(t, marking)
+	c.eval(t, `document.querySelector(".slot .post").click()`)
+	c.until(t, "Buddy to say it landed", landed)
+
+	said := c.eval(t,
+		`return document.querySelector("#thread .turn:last-child .said").textContent.trim()`)
+	require.NotEmpty(t, said)
+	require.Equal(t, said, c.eval(t, `return document.getElementById("threadsay").textContent.trim()`),
+		"the newest turn was not announced; the screen is silent for a screen reader")
 }

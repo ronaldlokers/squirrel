@@ -45,6 +45,8 @@ func enoughHandler(s Store, opts Options) http.HandlerFunc {
 		if err := s.EndRun(r.Context(), personID); err != nil {
 			slog.Error("forgetting where you got to", "error", err)
 		}
-		render(w, "enough", view{Here: "enough"})
+		// renderWith, not render: the menu needs a store to count with, and
+		// this screen is reachable from the menu so it must carry one back.
+		renderWith(w, r, s, opts, "enough", view{Here: "enough"})
 	}
 }

@@ -172,3 +172,26 @@ func (s *Store) LatestCheckin(ctx context.Context, personID int64) (Checkin, boo
 	c.Mood = Mood(mood)
 	return c, true, nil
 }
+
+// MoodCalendarWeeks is how many rows the readings page draws, and the reason
+// the page asks for more than the fortnight the command does.
+//
+// Six weeks is the smallest window in which a pattern is visible at all, and a
+// pattern is the only reason to keep these rows. A fortnight read as a list is
+// a fortnight; a fortnight drawn as a grid is two short rows and a lot of
+// white, which says nothing.
+//
+// It stops at six because the point of the window is still that this is not a
+// record of your year.
+const MoodCalendarWeeks = 6
+
+// MoodCalendarStart is the Monday the grid opens on: the Monday of this week,
+// less five more weeks.
+//
+// Weeks begin on Monday and the last row is the week you are in, so today
+// always has a cell and the row it is in is never full. Reading a calendar
+// means knowing where you are on it without being told.
+func MoodCalendarStart(now time.Time) time.Time {
+	back := (int(now.Weekday()) + 6) % 7 // Sunday is 0 in Go and 6 here.
+	return startOfDay(now).AddDate(0, 0, -back-7*(MoodCalendarWeeks-1))
+}

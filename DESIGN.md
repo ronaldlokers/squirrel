@@ -1889,6 +1889,201 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### The First Run
+
+What somebody who has never seen this sees. Added 26 August 2026, replacing an
+empty conversation with a box in it saying *put it down here*.
+
+**That box asks a stranger to trust the product with something before showing
+them what it will do with it** — and what it asks for, the contents of
+somebody's head, is the one thing they have most reason not to hand over first.
+
+So Buddy plays the loop through once, dimmed, and then rules a line under it
+and hands over. Three turns, because three is the whole loop: you say
+something, it is kept and named, and later it comes back to you. A fourth would
+be teaching the product rather than showing it.
+
+**Seeing your own bubble beside Buddy's unbubbled words teaches the grammar of
+the screen in one look**, which no sentence about it can do. That is the reason
+it is dimmed rather than greyed: the colours are part of what is being taught.
+
+- **It is never stored.** These are not turns, they are not written, and they
+  are gone the moment there is one real turn. The first thing this product does
+  must not be to write a false memory into a record whose whole value is that
+  you made all of it.
+- **It is inert by construction.** The verbs are spans, not forms, and there is
+  no route they could reach if they were pressed. A worked example wired to
+  real controls is a trap: the one thing worse than not knowing what DONE does
+  is finding out on somebody else's note.
+- **It carries its own classes, not the conversation's.** It looks the same —
+  that is the teaching — but a picture of a card is not a card, and sharing the
+  class would let a screen that must have no controls on it report one. The
+  look is shared in the stylesheet, which is what a stylesheet is for.
+- **It says what it is, in Buddy's voice**: *Here is what this is. None of it
+  is yours.* A dimmed thing nobody has explained is a thing that looks broken.
+- **It ends on a dashed rule and two words**: *now yours.* Everything above the
+  line is nobody's and everything below it is theirs, and that is the one thing
+  the visitor has to understand.
+
+**It goes the moment there is anything of yours.** One turn in the record ends
+it; so does anything Squirrel finds to say about your own world — an opening
+line, or something to be handed. Things arrive through Campfire without a word
+being said on this screen, and a person mid-sentence about their own things
+does not need the loop explained.
+
+**The example is ordinary and small on purpose.** `post the parcel back` is the
+kind of thing this is for. An example built out of impressive things would be a
+demonstration of the product rather than a picture of your Tuesday.
+
+### The Readings
+
+Six weeks by seven days, in five colours, with **the days you said nothing
+drawn as dashed outlines**. Added 26 August 2026, replacing a list of the days
+you had answered.
+
+**The gaps are the honest part, and they are why this shape won.** You check in
+on some days and not others, and the days you did not answer are most of what
+is there. A list of answered days can only ever show answered days. A bar chart
+hides the gaps more thoroughly still, by making them look like zero.
+
+- **Six weeks, not the fortnight the command reads.** A fortnight drawn as a
+  grid is two short rows and a lot of nothing; six weeks is the smallest window
+  in which a pattern is visible at all, and a pattern is the only reason to
+  keep these rows. It stops at six because this is still not a record of your
+  year.
+- **Weeks begin on Monday and the last row is the week you are in**, so today
+  always has a cell and the bottom row is never full. You should be able to
+  find where you are without being told.
+- **A day that has not happened is drawn as nothing**, not as a gap. An empty
+  Friday next week outlined like a missed day says you are already behind.
+- **A day you answered twice shows what the day came to** — the last thing you
+  said on it. One day is one square; the earlier answers are still in the table
+  and this is not the page that reports them.
+- **Nothing said at all draws no grid.** Six weeks of empty outlines is a
+  picture of forty-two days you did not check in, which is the one judgement
+  this page could still make by accident. The sentence stands in its place.
+
+**No trend line, no average, no count, no number anywhere.** You read it; the
+product does not. Buddy summarising it in a sentence was rejected: *mostly
+calm* is a small judgement about a person, and it is still a judgement.
+
+**The five mood colours are not the state colours.** Every fill in this world
+means an outcome — done, kept, dropped — and lending green to *good* would make
+one colour mean two things the first time a note and a reading shared a screen.
+They are five hues of the same weight in no order, and none of them is the good
+one: *low* and *frazzled* are different states wanting different answers, which
+a scale from green to red cannot say.
+
+| | good | calm | low | frazzled | wiped |
+| --- | --- | --- | --- | --- | --- |
+| | `#3fa08a` | `#6f9fd8` | `#8a5b8f` | `#d94f2b` | `#7a7f8a` |
+
+A colour that means something has to say what it means, so the key sits under
+the grid and every cell carries its day and its word for a screen reader.
+
+### Results
+
+A result is not a card. It has no border, no shadow, no verbs — a full-bleed
+row with the name in the reading axis and, in the small caps, the one of the
+seven places it is in. Results are separated by a hairline and nothing else,
+which is what lets six of them sit in one turn without the turn becoming a
+wall of card stock.
+
+**The reason it looks like this is that a result is not a decision.** You went
+looking for a thing; you have not yet said anything about it. Every card in
+this world is a thing you are being asked about, and dressing a search result
+as one asks a question nobody posed.
+
+**Tapping a result opens the ordinary card, in the next turn.** The quiet row
+and the deciding card are two states of one note, and the tap is the step
+between them. Nothing about search gets its own verbs: what opens is the same
+card with the same DONE / KEEP / DROP the pile draws, built from the note's
+real state. One at a time, which is the rule the whole conversation runs on —
+the live edge holds one thing.
+
+### The Conversation
+
+**Buddy's words are not in a bubble. Yours are.**
+
+Two kinds of thing wore one costume until 26 August 2026: a sentence and an
+object were both cream rectangles with a 3px outline, so a conversation read as
+one column of beige rather than as an exchange between two parties.
+
+- **Buddy:** paper on the field, casual axis at `wght` 500, with a 1px outline
+  text-shadow and the 40px face in the gutter. No stock, no border, no shadow.
+- **You:** the cream bubble, unchanged, right-aligned.
+
+What the bubble now means is not "somebody said this" but **"this is a thing
+rather than a sentence"**. Every remaining rectangle on the screen is a note, an
+appointment, a chore, or something you said. The same conversation goes from
+seven outlined boxes to three.
+
+Paper and not cream: on the purple field cream measures 4.8:1 and paper 8.9:1,
+and this text has no stock behind it to sit on.
+
+**What it costs:** the chat convention. Buddy's words no longer read as
+"received", which is a real loss for somebody arriving for the first time. The
+first-run worked example is what teaches the grammar in one look.
+
+### The Six Bodies
+
+A note, a task, a chore, an appointment, a photograph and something set aside
+were one cream rectangle with different words in it until 26 August 2026. The
+kind was knowable only by reading, which is the one thing a glance does not do.
+
+Nothing new is invented. The notch, the page tab, the dashed edge and the hard
+shadow are devices this system already owns; they are applied **per kind**
+instead of uniformly.
+
+| Kind | Body |
+| --- | --- |
+| note | plain stock, rotated `-.35deg` — a piece of paper somebody put down, not a row in a table |
+| task | the notebook's page tab, in the kept amber the tab already uses |
+| chore | its rhythm carried on the card, and `article.chore` as before |
+| appointment | a **ticket**: notched on the left, time set large in Inter, what to bring below a perforation |
+| photograph | a **polaroid** — paper border, the picture, the words underneath as a caption |
+| set aside | recessed and dashed rather than raised |
+
+**The appointment justifies the work on its own.** It is the only thing in this
+product you can be *late* for, and it looked exactly like a note about a rattle.
+It is also the one body where the meta line outranks the name: the time and the
+leave-by are what you came for, and the label is the caption.
+
+**The photograph needs no kind.** A card that carries one *is* one — which is
+already true of the content, the picture being the note and the words beside it
+the caption.
+
+**Set aside bends "cream card stock, never white" by not being stock at all.**
+That is deliberate and it is the only one. A parked note that looked like every
+other object would be a parked note you keep trying to act on.
+
+### The Menu
+
+One 44px control in the lid, and the whole of this product's navigation.
+
+The rail of four doors, the always-on `ask Buddy` / `look something up` chips
+and the `stop whenever you like` line were all permanent fixtures in the
+conversation, together about **45% of a phone screen before a word was said**.
+
+- **Stock and depth:** card fill, 3px outline, 14px radius, the raised object's
+  hard shadow. Positioned over the conversation rather than pushing it down — a
+  menu that reflowed the screen would move the thing you were reading in order
+  to show you a way somewhere else.
+- **A `<details>`,** so it opens with the script off, like every other
+  disclosure here.
+- **Counts** on the places that earn one. Zero is no number and not a nought: a
+  door reading "0" is a scoreboard, which is the rule the four doors carried and
+  this inherited with them.
+- **The way out is last, under a rule of its own,** in today's words. It is not
+  a destination like the others; it is the end of the evening, and its place at
+  the bottom says so without a louder word. Principle 3 is why it is not smaller
+  or greyer — only elsewhere.
+
+**This is a hamburger, and this product deliberately removed one on 25 August.**
+Bringing it back is a decision rather than a drift: it held three things then and
+holds eight now, and the argument against it — that a menu of three is emptier
+than the space it costs — stops applying at eight.
+
 ### The Gate
 
 The screen you sign in through, and the first thing anybody ever sees of this

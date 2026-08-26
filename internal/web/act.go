@@ -348,3 +348,64 @@ func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) h
 		}), "/")
 	}
 }
+
+// moreHandler is `something else?` — the three questions a note can be asked,
+// arriving as a turn rather than as a panel expanding.
+//
+// A turn, and that is the design rather than a convenience. The card above
+// stays where it is and keeps its place in the record, so you can see which
+// note is being discussed; and the press itself goes into the conversation,
+// which is a true thing about the afternoon — you paused on that one.
+//
+// Room appears here for `break it up`, which on the card could only be offered
+// when a free check guessed it was worth offering. Behind a press it can always
+// be there, because the press is the person saying they want more.
+func moreHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil || id < 1 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		// Checked against what this person actually has, rather than trusted:
+		// the id arrives from a form, and the same check every other handler
+		// here makes.
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		of := map[string]string{"id": strconv.FormatInt(id, 10)}
+		chips := []turnChip{
+			{Label: "make it a chore", Action: "/pile/often", Fields: of},
+			{Label: "say it another way", Action: "/pile/reword", Fields: of},
+			{Label: "i can't act on this", Action: "/pile/why", Fields: of},
+		}
+		if splittable(opts, it.RawText) {
+			chips = append(chips, turnChip{
+				Label: "break it up", Action: "/pile/split",
+				Fields: map[string]string{
+					"id": strconv.FormatInt(id, 10), "act": "propose", "from": "thread",
+				},
+			})
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: "something else?"},
+			sayWithChips("about that one:", chips),
+		}), "/")
+	}
+}

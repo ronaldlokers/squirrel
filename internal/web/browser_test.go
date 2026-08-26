@@ -439,7 +439,7 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 func atChores(t *testing.T, srv *httptest.Server) *cdp {
 	t.Helper()
 	c := browserAt(t, srv, "/")
-	c.eval(t, `document.querySelector('.doorpress input[value="chores"]').form
+	c.eval(t, `document.querySelector('.menupanel input[value="chores"]').form
 		.querySelector("button").click()`)
 	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
 	return c
@@ -449,7 +449,7 @@ func atChores(t *testing.T, srv *httptest.Server) *cdp {
 func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 	t.Helper()
 	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector('.doorpress input[value="chores"]').form
+	c.eval(t, `document.querySelector('.menupanel input[value="chores"]').form
 		.querySelector("button").click()`)
 	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
 }
@@ -473,11 +473,20 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 	c.until(t, "the question", `!!document.querySelector(".wordbox")`)
 	c.eval(t, `const f = document.querySelector(".wordbox textarea");
 		f.value = "boiler"; f.form.requestSubmit(); return 1`)
+	// A hit, not a card: a result is a thing you went looking for rather than
+	// a thing you are deciding about, and it carries no verbs until you open
+	// it. See DESIGN.md, Results.
 	c.until(t, "the answer to arrive",
-		`!!document.querySelector("#thread .turn:last-child .turncard")`)
+		`!!document.querySelector("#thread .turn:last-child .hit")`)
 
 	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
 		"searching navigated")
+
+	// And tapping one turns it into the ordinary card, with the ordinary
+	// verbs, in the next turn.
+	c.eval(t, `document.querySelector("#thread .turn:last-child .hit button").click()`)
+	c.until(t, "the card to arrive",
+		`!!document.querySelector("#thread .turn:last-child .turncard .turnacts")`)
 }
 
 // Letters are actions, on the note Buddy is holding out.
@@ -491,7 +500,7 @@ func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
 	}
 	c, srv := open(t, f)
 	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector('.doorpress input[value="pile"]').form
+	c.eval(t, `document.querySelector('.menupanel input[value="pile"]').form
 		.querySelector("button").click()`)
 	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
 
@@ -509,7 +518,7 @@ func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
 	}
 	c, srv := open(t, f)
 	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector('.doorpress input[value="pile"]').form
+	c.eval(t, `document.querySelector('.menupanel input[value="pile"]').form
 		.querySelector("button").click()`)
 	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
 
@@ -590,7 +599,11 @@ func atTheBottomOfAPhone(t *testing.T) *cdp {
 func TestBrowserTheEndOfThePageClearsTheDock(t *testing.T) {
 	c := atTheBottomOfAPhone(t)
 
-	for _, what := range []string{".alsochips", ".ends"} {
+	// The last turn in the conversation, since `.alsochips` and `.ends` both
+	// left the thread on 26 August 2026. What is being measured is unchanged
+	// and is the whole point: the last thing on the screen must not be
+	// underneath the box you type into. Reported from a phone.
+	for _, what := range []string{"#thread .turn:last-child"} {
 		gap := c.eval(t, `
 			const it = document.querySelector("`+what+`").getBoundingClientRect();
 			const dock = document.querySelector(".dock").getBoundingClientRect();
@@ -626,7 +639,7 @@ func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 	c.eval(t, `return new Promise(r => setTimeout(r, 250))`)
 
 	gap := c.eval(t, `
-		const it = document.querySelector(".ends").getBoundingClientRect();
+		const it = document.querySelector("#thread .turn:last-child").getBoundingClientRect();
 		const dock = document.querySelector(".dock").getBoundingClientRect();
 		return Math.round(dock.top - it.bottom);`)
 	require.GreaterOrEqual(t, gap, float64(0),

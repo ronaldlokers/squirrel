@@ -243,7 +243,9 @@ func TestSayingNothingAsksNothing(t *testing.T) {
 func TestBuddyDidNotBecomeADoor(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	require.Equal(t, 4, strings.Count(body, `class="rdoor`))
+	// The four places are in the menu now, not a rail. What this test is
+	// really about is below: Buddy is not one of them.
+	require.Contains(t, body, "the pile")
 	require.NotContains(t, body, `value="buddy"`)
 }
 

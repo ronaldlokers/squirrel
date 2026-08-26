@@ -76,16 +76,23 @@
     retire();
     thread.insertAdjacentHTML("beforeend", html);
     toTheEnd();
-    const last = thread.querySelector(".turn:last-child .bub");
+    // `.said` as well as `.bub`, and this is not a tidy-up.
+    //
+    // Buddy's words stopped being a bubble on 26 August 2026 and this line
+    // announces the newest turn. Left reading `.bub` alone it found nothing
+    // for every turn Buddy appends, so the live region said nothing — the
+    // screen would have gone silent for exactly the person who cannot see it
+    // change, which is the failure this whole function exists to prevent.
+    const last = thread.querySelector(".turn:last-child .bub, .turn:last-child .said");
     announce(last ? last.textContent : "");
   };
   window.__threadSay = what => {
     retire();
     thread.insertAdjacentHTML("beforeend",
-      '<div class="turn frombuddy"><p class="bub"></p></div>');
+      '<div class="turn frombuddy"><p class="said"></p></div>');
     // textContent, not markup: this is the only place a word reaches the page
     // without having come back from the server, and it is written as text.
-    thread.lastElementChild.querySelector(".bub").textContent = what;
+    thread.lastElementChild.querySelector(".said").textContent = what;
     toTheEnd();
     announce(what);
   };
@@ -139,7 +146,7 @@
         if (box) { box.value = ""; box.style.height = "auto"; }
         if (file && file.files?.length) file.value = "";
         toTheEnd();
-        const last = thread.querySelector(".turn:last-child .bub");
+        const last = thread.querySelector(".turn:last-child .bub, .turn:last-child .said");
         announce(last ? last.textContent : "");
       }
     } catch {

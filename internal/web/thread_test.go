@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -54,16 +55,36 @@ func TestOnlyTheNewestBuddyTurnHasControls(t *testing.T) {
 		"a card in scrollback keeps its words and loses its buttons")
 }
 
-func TestRailShowsFourDoorsWithTheirNumbers(t *testing.T) {
+// The four places, and the two things you can always do, in the menu.
+//
+// This asserted a rail of four doors pinned under the lid until 26 August 2026.
+// The rail is gone — it was a fixture taking a fifth of a phone screen — and
+// what it guaranteed did not go with it: every place is still reachable, and
+// the ones worth a number still carry one.
+func TestTheMenuHoldsEverywhereElse(t *testing.T) {
 	body := thread(t, &fakeStore{
 		waiting: squirrel.Waiting{Pile: 3, Tasks: 1, Chores: 2, Agenda: 1},
 	})
 
-	for _, name := range []string{"the pile", "the tasks", "the chores", "the agenda"} {
-		require.Contains(t, body, name)
+	for _, name := range []string{
+		"the pile", "the tasks", "the chores", "the agenda",
+		"what you set aside", "the things you kept",
+		"ask Buddy", "look something up",
+	} {
+		require.Contains(t, body, name, "the menu lost %s", name)
 	}
-	require.Contains(t, body, `class="doorcount">3<`)
-	require.Contains(t, body, `class="doorcount">2<`)
+	require.Contains(t, body, `class="cnt">3<`)
+	require.Contains(t, body, `class="cnt">2<`)
+}
+
+// And the conversation itself carries none of it. The rail, the chip row and
+// the stop link were about 45% of a phone screen before a word was said.
+func TestTheConversationCarriesNoFrame(t *testing.T) {
+	body := thread(t, &fakeStore{waiting: squirrel.Waiting{Pile: 3}})
+
+	for _, gone := range []string{"railwrap", "alsochips", "rdoor", "doorcount"} {
+		require.NotContains(t, body, gone, "%s is still in the conversation", gone)
+	}
 }
 
 // Zero is no number, not a nought. A door reading "0" is the scoreboard the
@@ -72,7 +93,7 @@ func TestADoorWithNothingWaitingShowsNoNumber(t *testing.T) {
 	body := thread(t, &fakeStore{waiting: squirrel.Waiting{}})
 
 	require.Contains(t, body, "the pile")
-	require.NotContains(t, body, "doorcount")
+	require.NotContains(t, body, `class="cnt"`)
 }
 
 // A door that has something shows it while a door that has nothing stays bare,
@@ -81,8 +102,8 @@ func TestADoorWithNothingWaitingShowsNoNumber(t *testing.T) {
 func TestOnlyTheDoorsWithSomethingWaitingCarryANumber(t *testing.T) {
 	body := thread(t, &fakeStore{waiting: squirrel.Waiting{Chores: 2}})
 
-	require.Equal(t, 1, strings.Count(body, "doorcount"))
-	require.Contains(t, body, `class="doorcount">2<`)
+	require.Equal(t, 1, strings.Count(body, `class="cnt"`))
+	require.Contains(t, body, `class="cnt">2<`)
 }
 
 // The thread has no <h1> — home's own exemption — but a turn that opens a place
@@ -134,8 +155,12 @@ func TestThreadWalksBackwardsWhenAsked(t *testing.T) {
 func TestTheDoorsSurviveACountThatFails(t *testing.T) {
 	body := thread(t, &fakeStore{waitingErr: errTest})
 
-	require.Equal(t, 4, strings.Count(body, `class="rdoor`))
-	require.NotContains(t, body, "doorcount")
+	// Everywhere still goes where it goes; only the numbers are missing, which
+	// is what the menu was before 24 August.
+	for _, name := range []string{"the pile", "the tasks", "the chores", "the agenda"} {
+		require.Contains(t, body, name)
+	}
+	require.NotContains(t, body, `class="cnt"`)
 }
 
 // Two turns for one press: what you said, and what Buddy said back. A test
@@ -390,8 +415,11 @@ func TestAFragmentAndAPageRenderTheSameTurn(t *testing.T) {
 	f := &fakeStore{}
 	fragment := routed(t, f).callFragment(t, "/capture", "text=milk").Body.String()
 
-	require.Contains(t, page, `<p class="bub">`+kept+`</p>`)
-	require.Contains(t, fragment, `<p class="bub">`+kept+`</p>`)
+	// `said`, not `bub`: Buddy's words are not in a bubble as of 26 August
+	// 2026, and yours are. The point of this test is that a fragment and a page
+	// render a turn identically, which is unchanged.
+	require.Contains(t, page, `<p class="said">`+kept+`</p>`)
+	require.Contains(t, fragment, `<p class="said">`+kept+`</p>`)
 	require.NotContains(t, fragment, "<html", "a fragment is turns and nothing else")
 	require.NotContains(t, fragment, "railwrap")
 }
@@ -847,4 +875,29 @@ func TestBuddysFaceDoesNotTakeTheMoodButtonsName(t *testing.T) {
 	require.Contains(t, string(css), "  .face {", "the mood button lost its own rule")
 	// And nothing is drawn around the artwork, which already has an outline.
 	require.NotContains(t, string(css), ".buddyface {\n    grid-column: 1; grid-row: 1;\n    box-sizing: border-box;")
+}
+
+// A result carries no verbs, but tapping it opens the ordinary card, with the
+// ordinary verbs. That is the whole of the search change: the quiet form and
+// the deciding form are two states of one thing, and the tap is the step
+// between them.
+func TestOpeningAResultDrawsACardYouCanActOn(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler makes a noise", squirrel.ItemKept)}}
+	routed(t, f).call(t, "POST", "/find/open", strings.NewReader("id=9"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "the boiler makes a noise")
+	require.Contains(t, shown, `"acts"`, "the opened result is a control")
+	require.Contains(t, shown, "DONE")
+}
+
+// A result that is not yours does not open. Search already refuses to find it;
+// this is the same refusal one route later.
+func TestOpeningSomebodyElsesResultFindsNothing(t *testing.T) {
+	f := &fakeStore{}
+	w := routed(t, f).call(t, "POST", "/find/open", strings.NewReader("id=9"))
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Empty(t, f.appended)
 }
