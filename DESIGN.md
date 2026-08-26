@@ -1889,6 +1889,52 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### The Readings
+
+Six weeks by seven days, in five colours, with **the days you said nothing
+drawn as dashed outlines**. Added 26 August 2026, replacing a list of the days
+you had answered.
+
+**The gaps are the honest part, and they are why this shape won.** You check in
+on some days and not others, and the days you did not answer are most of what
+is there. A list of answered days can only ever show answered days. A bar chart
+hides the gaps more thoroughly still, by making them look like zero.
+
+- **Six weeks, not the fortnight the command reads.** A fortnight drawn as a
+  grid is two short rows and a lot of nothing; six weeks is the smallest window
+  in which a pattern is visible at all, and a pattern is the only reason to
+  keep these rows. It stops at six because this is still not a record of your
+  year.
+- **Weeks begin on Monday and the last row is the week you are in**, so today
+  always has a cell and the bottom row is never full. You should be able to
+  find where you are without being told.
+- **A day that has not happened is drawn as nothing**, not as a gap. An empty
+  Friday next week outlined like a missed day says you are already behind.
+- **A day you answered twice shows what the day came to** — the last thing you
+  said on it. One day is one square; the earlier answers are still in the table
+  and this is not the page that reports them.
+- **Nothing said at all draws no grid.** Six weeks of empty outlines is a
+  picture of forty-two days you did not check in, which is the one judgement
+  this page could still make by accident. The sentence stands in its place.
+
+**No trend line, no average, no count, no number anywhere.** You read it; the
+product does not. Buddy summarising it in a sentence was rejected: *mostly
+calm* is a small judgement about a person, and it is still a judgement.
+
+**The five mood colours are not the state colours.** Every fill in this world
+means an outcome — done, kept, dropped — and lending green to *good* would make
+one colour mean two things the first time a note and a reading shared a screen.
+They are five hues of the same weight in no order, and none of them is the good
+one: *low* and *frazzled* are different states wanting different answers, which
+a scale from green to red cannot say.
+
+| | good | calm | low | frazzled | wiped |
+| --- | --- | --- | --- | --- | --- |
+| | `#3fa08a` | `#6f9fd8` | `#8a5b8f` | `#d94f2b` | `#7a7f8a` |
+
+A colour that means something has to say what it means, so the key sits under
+the grid and every cell carries its day and its word for a screen reader.
+
 ### Results
 
 A result is not a card. It has no border, no shadow, no verbs — a full-bleed

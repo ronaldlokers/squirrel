@@ -2,35 +2,45 @@
 <section class="every">
   <h1 class="deckhead">how you felt before</h1>
 
-  {{/* The readings and their days, and nothing else. No average, no streak, no
-       "you have been low three days" — the interpretation is yours, and a
-       product that offered one would be doing the thing the rule against
-       reading this table existed to prevent.
+  {{/* Six weeks by seven days, and nothing else. No average, no streak, no
+       trend line, no "you have been low three days" — the interpretation is
+       yours, and a product that offered one would be doing the thing the rule
+       against reading this table existed to prevent.
 
-       Grouped by day, because two answers on one Tuesday is a Tuesday you
-       checked in twice, not two facts about you. */}}
-  {{range .Days}}
-  <article class="aday">
-    <p class="when">{{.Day}}</p>
-    {{/* The word beside the face, not only inside it. The word lived in `alt`
-         and `title` alone, which means a screen reader had it and nobody
-         looking at the page did — `title` needs a hover and this page is read
-         on a phone. It made the one screen Principle 5 was relaxed for into
-         three small pictures you had to already know how to read. */}}
-    <p class="saidwhat">
-      {{range .Moods}}<span class="areading"><img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">{{.Word}}</span>{{end}}
-    </p>
-  </article>
-  {{end}}
+       A grid rather than a list because the gaps are the honest part: the days
+       you said nothing are most of what is here, and they are drawn as empty
+       outlines rather than left out. A list of the days you answered can only
+       ever show the days you answered. */}}
+  {{if .Weeks}}
+  <div class="readings">
+    {{range .Weeks}}
+    <div class="weekrow">
+      <span class="wl">{{.Week}}</span>
+      <div class="dots">
+        {{/* The word is in the label, not only in a colour: five colours with
+             no words is a picture you have to already know how to read, and
+             this is the one screen Principle 5 was relaxed for. */}}
+        {{range .Days}}{{if .Ahead}}<i class="ahead" aria-hidden="true"></i>{{else if .Nought}}<i class="nought"><span class="offscreen">{{.Day}}, nothing said</span></i>{{else}}<i class="m{{.Mood}}"><span class="offscreen">{{.Day}}, {{.Word}}</span></i>{{end}}{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
 
-  {{if not .Days}}
+  {{/* The key, because a colour that means something must say what. */}}
+  <p class="moodkey">
+    <span><b class="mgood"></b>good</span>
+    <span><b class="mcalm"></b>calm</span>
+    <span><b class="mlow"></b>low</span>
+    <span><b class="mfrazzled"></b>frazzled</span>
+    <span><b class="mwiped"></b>wiped</span>
+    <span><b class="nought"></b>nothing said</span>
+  </p>
+  {{else}}
   <p class="nothing">you have not said how you are lately.</p>
   {{end}}
 
-  {{/* A fortnight, and the page says so rather than leaving you wondering
-       whether it is everything. It is not a total — it is the window. */}}
   {{/* A fact about the window, not a total, and no link home: the mark has
        been the way home on every other screen since the screen existed. */}}
-  <p class="ends">the last two weeks</p>
+  <p class="ends">the last six weeks</p>
 </section>
 {{end}}

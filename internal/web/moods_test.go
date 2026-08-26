@@ -23,10 +23,11 @@ func TestTheMoodsPageShowsWhatYouSaidAndWhen(t *testing.T) {
 	}}
 	body := mounted(t, f).call(t, "GET", "/moods", nil).Body.String()
 
-	require.Contains(t, body, "today")
-	require.Contains(t, body, "yesterday")
-	require.Contains(t, body, "mood-good.png")
-	require.Contains(t, body, "mood-wiped.png")
+	require.Contains(t, body, "this week")
+	require.Contains(t, body, "mgood")
+	require.Contains(t, body, "mwiped")
+	// Six rows of seven, always, whatever you said.
+	require.Equal(t, 6, strings.Count(body, `class="weekrow"`))
 }
 
 // midday is today, in the middle of it. The page says "today" and "yesterday"
@@ -38,7 +39,8 @@ func midday() time.Time {
 }
 
 // Two answers on one day is a day you checked in twice, not two facts about
-// you, so they share a day.
+// you, so they share a day — and on a grid a day is one square, showing what
+// the day came to.
 func TestTwoReadingsInADayShareTheDayOnScreen(t *testing.T) {
 	// Midday, and not time.Now(): two readings two hours apart are only on the
 	// same day if the first one is not within two hours of midnight. This
@@ -51,8 +53,10 @@ func TestTwoReadingsInADayShareTheDayOnScreen(t *testing.T) {
 	}}
 	body := mounted(t, f).call(t, "GET", "/moods", nil).Body.String()
 
-	require.Equal(t, 1, strings.Count(body, `class="when"`))
-	require.Equal(t, 2, strings.Count(body, "mood-"))
+	// One day, one cell: the last thing you said on it. The earlier answer is
+	// still in the table and this page is not where it is reported.
+	require.Equal(t, 1, strings.Count(body, `class="mgood"><span`))
+	require.NotContains(t, body, `class="mlow"><span`)
 }
 
 // No average, no streak, no count. The interpretation is yours.
@@ -104,4 +108,27 @@ func TestTheMoodsPageIsNotInTheLid(t *testing.T) {
 		body := mounted(t, f).call(t, "GET", path, nil).Body.String()
 		require.NotContains(t, body, `href="/moods"`, "reachable from %s", path)
 	}
+}
+
+// The gaps are the honest part, and the reason this is a grid. A day you said
+// nothing on is drawn, not left out.
+func TestDaysYouSaidNothingAreDrawn(t *testing.T) {
+	f := &fakeStore{readings: []squirrel.Checkin{reading(squirrel.MoodGood, midday())}}
+	body := mounted(t, f).call(t, "GET", "/moods", nil).Body.String()
+
+	require.Contains(t, body, "nothing said")
+	// Six weeks less the one day answered, less the days of this week that
+	// have not happened yet.
+	ahead := 6 - int((time.Now().Weekday()+6)%7)
+	require.Equal(t, 41-ahead, strings.Count(body, `class="nought"><span`))
+}
+
+// A day that has not happened is not a gap. Drawing next Saturday as an empty
+// outline says you failed to check in on it.
+func TestDaysThatHaveNotHappenedAreNotGaps(t *testing.T) {
+	f := &fakeStore{readings: []squirrel.Checkin{reading(squirrel.MoodGood, midday())}}
+	body := mounted(t, f).call(t, "GET", "/moods", nil).Body.String()
+
+	ahead := 6 - int((time.Now().Weekday()+6)%7)
+	require.Equal(t, ahead, strings.Count(body, `class="ahead"`))
 }

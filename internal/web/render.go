@@ -147,9 +147,9 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
-	// Days is how you have been, grouped, and only the moods page fills it.
-	// Nothing else on any screen reads the readings back.
-	Days []moodDayView
+	// Weeks is how you have been, as six weeks by seven days, and only the
+	// readings page fills it.
+	Weeks []moodWeekView
 	// Offer is the one thing, or nil. Nil renders nothing at all rather than
 	// an empty region: having nothing to be handed is a normal state, and a
 	// reassuring sentence in its place would be the product deciding you ought
@@ -312,11 +312,25 @@ func views(here string) []linkView {
 	return nil
 }
 
-// moodDayView is one day's readings. No count on it and no judgement about
-// it: what is here is what you said, and what it means is yours.
-type moodDayView struct {
-	Day   string
-	Moods []faceView
+// moodWeekView is one row of the readings grid: a label and seven days.
+type moodWeekView struct {
+	Week string
+	Days []moodCellView
+}
+
+// moodCellView is one day on the grid. It carries no number and no position,
+// for the same reason a face does not: these are not a scale.
+//
+// Nought is a day you said nothing on, which is drawn rather than skipped —
+// the gaps are most of what is there and hiding them would be the flattery
+// this page exists to avoid. Ahead is a day that has not happened, which is
+// drawn as nothing at all: an empty Saturday next week is not a gap.
+type moodCellView struct {
+	Day    string
+	Mood   string
+	Word   string
+	Nought bool
+	Ahead  bool
 }
 
 // faceView is one of the five drawn answers. It carries no number and no

@@ -57,6 +57,12 @@
        others needed 18% — it is much the darkest of the four, and at 18% it
        measures 3.17:1 against the outline ink, which fails. 40% is 5.46:1. */
     --done-lifted: #71a73e;  --done-lifted-hover: #89b65f;
+    /* The five answers, on the readings grid and nowhere else. Held apart
+       from the state colours on purpose: see .mgood in the readings block. */
+    --mood-good: #3fa08a;     --mood-calm: #6f9fd8;
+    --mood-low: #8a5b8f;      --mood-frazzled: #d94f2b;
+    --mood-wiped: #7a7f8a;
+
     --open-lifted: #9e7bd0;  --open-lifted-hover: #b295da;
 
     --line: 3px;               /* the outline weight of the mark */
@@ -2283,33 +2289,71 @@
   .cantact[open] .ifshut { display: none; }
   .cantact[open] .ifopen { display: inline; }
 
-  /* One day's readings. The faces are the same five drawings the check-in
-     offers, small: what you said, in the language you said it in.
-
-     A grid rather than a row, because the day names are not the same length
-     and a row let each one set where its own reading started: "thursday 20
-     august" pushed its face 47px further right than "today" did, and readings
-     that should read as a column read as a stagger. */
-  .aday {
-    display: grid; grid-template-columns: 13.5em minmax(0, 1fr);
-    align-items: center; gap: 14px;
-    width: min(720px, 100%); margin-bottom: 10px;
-  }
-  .aday .when {
-    margin: 0;
-    font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 680;
+  /* The readings: six weeks by seven days, and the only grid in the product.
+     
+     A grid rather than the list of answered days this screen used to be,
+     because the days you said nothing on are most of what is here and a list
+     can only ever show the days you answered. They are drawn as dotted
+     outlines. The gaps are the honest part.
+     
+     No height, no axis, no trend line, no number. Nothing on this page can be
+     compared to anything else on it, which is what keeps it a record rather
+     than a score. */
+  .readings { width: min(720px, 100%); }
+  .weekrow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .weekrow .wl {
+    width: 5.4em; flex: none;
+    font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 700;
     color: var(--cream);
   }
-  .aday .saidwhat { margin: 0; display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
-  .aday .saidwhat img { width: 44px; height: auto; display: block; }
-  /* The face and the word it means, as one thing. */
-  .areading {
-    display: inline-flex; align-items: center; gap: 7px;
-    font-size: 14px; letter-spacing: .04em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 700;
-    color: var(--paper);
+  .dots { display: flex; gap: 8px; flex: 1; min-width: 0; }
+  /* Square, outlined in the one outline colour every drawn thing here shares,
+     so five fills read as five answers rather than five materials. */
+  .dots i {
+    flex: 1; min-width: 0; aspect-ratio: 1;
+    border: var(--line) solid var(--outline); border-radius: 7px;
+    display: block; position: relative;
   }
+  /* A day you said nothing on: the outline and nothing in it. Dotted, so it
+     cannot be mistaken for a fill this palette happens not to have — and it is
+     never faded out, because the days you did not answer are not lesser data.
+     
+     Opacity would be the page's own opinion about them. */
+  .dots i.nought { background: transparent; border-style: dashed; }
+  /* A day that has not happened. No outline at all: an empty Friday next week
+     is not a gap in the record, and drawing it as one says you are already
+     behind. */
+  .dots i.ahead { border-color: transparent; }
+
+  /* The five answers, and their own five colours.
+     
+     Not the state colours. Every fill in this product means an outcome — done,
+     kept, dropped — and lending green to `good` would make one colour mean two
+     things the first time a note and a reading ever shared a screen. These are
+     five hues of the same weight, in no order, and none of them is the good
+     one: `low` and `frazzled` are different states wanting different answers,
+     which a scale from green to red cannot say. */
+  .mgood     { background: var(--mood-good); }
+  .mcalm     { background: var(--mood-calm); }
+  .mlow      { background: var(--mood-low); }
+  .mfrazzled { background: var(--mood-frazzled); }
+  .mwiped    { background: var(--mood-wiped); }
+
+  /* A colour that means something has to say what it means. The key is the
+     whole of the reading instruction and there is no other. */
+  .moodkey {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0 0;
+    font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 660;
+    color: var(--cream);
+  }
+  .moodkey span { display: inline-flex; align-items: center; gap: 6px; }
+  .moodkey b {
+    width: 13px; height: 13px; border-radius: 4px;
+    border: 2px solid var(--outline); display: inline-block;
+  }
+  .moodkey b.nought { background: transparent; border-style: dashed; }
 
   /* Every screen's title, and the only one.
    *

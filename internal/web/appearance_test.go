@@ -71,7 +71,7 @@ var appearanceScreens = map[string][]string{
 	"/?ask=1": {".faces", ".face", ".face img", ".face span"},
 	// `.ends .quietpick` as well as `.ends`: the underline is on the link, and
 	// the paragraph around it cannot report what the link is wearing.
-	"/moods": {".deckhead", ".aday", ".aday .when", ".areading", ".ends"},
+	"/moods": {".deckhead", ".weekrow", ".weekrow .wl", ".dots i", ".dots i.nought", ".moodkey", ".moodkey b", ".ends"},
 	// `.empty img` is here and nowhere else because /enough is the one screen
 	// that overrides it. The size is the difference between a different drawing
 	// and the same one shrunk, and the HTML attribute cannot hold it — the
