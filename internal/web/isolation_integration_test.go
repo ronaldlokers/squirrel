@@ -122,6 +122,10 @@ func aWholePile(t *testing.T, store *squirrel.Store, handle, sub, mark string) i
 	require.NoError(t, store.RecordCheckin(ctx, personID, squirrel.MoodLow, "screen", now))
 	require.NoError(t, store.SaveSteps(ctx, personID, nil, mark+" a thing in steps",
 		[]string{mark + " the first step", mark + " the second step"}))
+	// A run in progress. It carries no text of its own, so the marker cannot
+	// leak through it — what would leak is being offered somebody else's place
+	// back, which TestARunBelongsToOnePerson pins at the store.
+	require.NoError(t, store.MarkRun(ctx, personID, squirrel.RunPile, now))
 
 	return personID
 }
@@ -211,6 +215,7 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 			url.Values{"id": {theirNote}, "act": {"done"}}},
 		{"the one thing", "POST", "/now/act", url.Values{"act": {"later"}}},
 		{"a step", "POST", "/steps", url.Values{"act": {"done"}}},
+		{"starting fresh", "POST", "/place/fresh", nil},
 		{"a timer", "POST", "/timer", url.Values{"minutes": {"5"}}},
 	} {
 		var body string

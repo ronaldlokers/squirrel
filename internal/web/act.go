@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -251,6 +252,17 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	// You are part way through something, and this is the only place that
+	// knows it. Marked on every answer rather than once at the start, so the
+	// clock measures silence: a long afternoon of triage never goes stale, and
+	// one you walked away from ages out.
+	//
+	// Best-effort. Failing to remember where you got to must not fail the
+	// decision you just made — the note has already moved.
+	if err := s.MarkRun(r.Context(), personID, squirrel.RunPile, now()); err != nil {
+		slog.Error("keeping your place", "error", err)
+	}
+
 	said = append(said, pileTurn(r.Context(), s, opts, personID, 0, ""))
 	answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
 }

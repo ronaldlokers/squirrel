@@ -22,6 +22,14 @@ import (
 // count, none of which is a database question. The store's own behaviour is
 // covered by the integration tests in internal/squirrel.
 type fakeStore struct {
+	// Where you got to. hasRun is what RunFor answers; marked and ended are
+	// what the screen did, so a test can assert on the write rather than on a
+	// rendering of it.
+	run       squirrel.Run
+	hasRun    bool
+	runErr    error
+	marked    []string
+	ended     int
 	reads     func(string) (string, bool, error)
 	readAsked []string
 	knowing   []string
@@ -1143,3 +1151,29 @@ func signedInOptions() Options {
 // aTestLogin is what a login resolves to in a test that is not about logging
 // in: the one person these tests are about.
 func aTestLogin(context.Context, string, string) (int64, error) { return 1, nil }
+
+// Where you got to, faked. The expiry and the one-row-per-person rule are
+// proved against Postgres in internal/squirrel; what the screen has to be
+// tested for is whether it offers the run back and what it does with the
+// answers.
+func (f *fakeStore) MarkRun(_ context.Context, _ int64, place string, at time.Time) error {
+	f.marked = append(f.marked, place)
+	if f.err != nil {
+		return f.err
+	}
+	f.run, f.hasRun = squirrel.Run{Place: place}, true
+	return nil
+}
+
+func (f *fakeStore) RunFor(_ context.Context, _ int64, _ time.Time) (squirrel.Run, bool, error) {
+	if f.runErr != nil {
+		return squirrel.Run{}, false, f.runErr
+	}
+	return f.run, f.hasRun, nil
+}
+
+func (f *fakeStore) EndRun(_ context.Context, _ int64) error {
+	f.ended++
+	f.hasRun = false
+	return nil
+}
