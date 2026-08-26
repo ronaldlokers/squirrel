@@ -17,8 +17,6 @@ import (
 //go:embed templates/*.html
 var templateFS embed.FS
 
-// Each page parses layout, card and exactly one content template: Go's templates
-// are a flat namespace, so two files defining "content" cannot share a set.
 var helpers = template.FuncMap{
 	// add exists for one thing: telling the last item in a range from the
 	// rest, so a control can sit on the newest reply and nowhere else.
@@ -33,6 +31,8 @@ var helpers = template.FuncMap{
 	},
 }
 
+// page parses layout and exactly one content template: Go's templates are a flat
+// namespace, so two files defining "content" cannot share a set.
 func page(files ...string) *template.Template {
 	return template.Must(template.New("layout.html").Funcs(helpers).ParseFS(templateFS, files...))
 }
@@ -83,17 +83,14 @@ type momentView struct {
 }
 
 type view struct {
-	// Here is which of the two screens this is, so the lid can offer the other
-	// one. A link that points at the page you are on is furniture.
+	// Here is which screen this is, so the menu can say where you are.
 	Here string
 	// Scrolling is a list rather than a single card, so the field is
-	// top-aligned. The deck centres because it holds exactly one thing and a
-	// centred card is the shoebox's own composition; a list that grows from
-	// the middle of the screen is just a list that is hard to read.
+	// top-aligned: a list that grows from the middle of the screen is a list
+	// that is hard to read.
 	Scrolling bool
-	// The four sentences met most often, in today's wording. Habituation is
-	// the documented enemy and the card stack was the only thing that moved;
-	// these are art-and-phrasing novelty, which is what the roadmap sanctions.
+	// The sentences met most often, in today's wording: habituation is the
+	// documented enemy, and phrasing is one of the two things allowed to move.
 	// Every control label is deliberately absent from this list.
 	SaySlot   string
 	SayStop   string
@@ -104,12 +101,8 @@ type view struct {
 	// file cannot know what day it is. See squirrel.Tilt and squirrel.Light.
 	Tilt  int
 	Light int
-	// Place is where you are, in the menu's own words, so the shut control can
-	// say it without the template knowing the mapping.
-	Place string
-	// Home is the front door, where the lid carries no cross-link at all —
-	// both doors are already the body of the page — and where the mark is not
-	// a link, because it is a link to here.
+	// Home is the front door, where the mark is not a link because it would be
+	// a link to here.
 	Home bool
 	// Said carries words back to the slot when the write failed. A capture box
 	// that clears on failure is a capture box that eats thoughts.
@@ -176,27 +169,6 @@ type choreView struct {
 	Chip  string
 	Last  string
 	When  string
-}
-
-// placeName is where you are, in the words the menu uses for it.
-//
-// A screen that hangs off another one answers with its parent: the shelf is
-// somewhere in the pile, the archive and the set-aside are somewhere in the
-// tasks. The menu says which room you are in, and `views` says which corner.
-func placeName(here string) string {
-	switch here {
-	case "pile", "kept", "bottom", "enough":
-		return "the pile"
-	case "tasks", "archive", "held":
-		return "the tasks"
-	case "chores":
-		return "the chores"
-	case "at":
-		return "the agenda"
-	case "buddy", "coach":
-		return "buddy"
-	}
-	return "home"
 }
 
 // moodWeekView is one row of the readings grid: a label and seven days.
@@ -452,7 +424,6 @@ func render(w http.ResponseWriter, name string, v view) {
 	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
 	v.Tilt = squirrel.Tilt(now())
 	v.Light = squirrel.Light(now())
-	v.Place = placeName(v.Here)
 	v.Scrolling = v.Scrolling || v.Query != "" ||
 		v.Here == "tasks" || v.Here == "archive" || v.Here == "kept"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

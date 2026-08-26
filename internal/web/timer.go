@@ -54,7 +54,7 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 		}
 
 		mins, err := strconv.Atoi(r.FormValue("minutes"))
-		if err != nil || mins < 1 || mins > 180 {
+		if err != nil || mins < shortestTimer || mins > longestTimer {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -72,9 +72,9 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		// The exit ramp, opted in on here and nowhere else. StartTimer clears
-		// the flag, so this is an arming rather than a toggle: a timer with no
-		// box ticked is a timer nothing watches, which is what every timer was
-		// before this existed and what every timer the chat starts still is.
+		// the flag, so this arms rather than toggles: a timer with no box
+		// ticked is a timer nothing watches, which is what every timer the chat
+		// starts still is.
 		if r.FormValue("ramp") != "" {
 			if err := s.ArmRamp(r.Context(), personID, true); err != nil {
 				fail(w, err)
@@ -84,6 +84,13 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 		http.Redirect(w, r, backFrom(r), http.StatusSeeOther)
 	}
 }
+
+// shortestTimer and longestTimer bound what the form may ask for. Three hours
+// is not a body double, it is an afternoon.
+const (
+	shortestTimer = 1
+	longestTimer  = 180
+)
 
 // backFrom returns to the screen the button was on, so stopping a timer from
 // the pile does not land you on the chores.
