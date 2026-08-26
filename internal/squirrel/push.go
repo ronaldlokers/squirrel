@@ -119,8 +119,9 @@ func (s *Store) SubscriptionGone(ctx context.Context, id int64, at time.Time) er
 }
 
 // Push is what a message looks like on the other side. Two lines, because a
-// notification is read at arm's length in one glance and a third line is one
-// nobody reads.
+// notification is read at arm's length in one glance and a third is one nobody
+// reads.
+//
 // The tags are the contract with `sw.js`, which reads `said.title` and
 // `said.body` after spreading this object over its own defaults. Without them
 // Go marshals `Title` and `Body`, the spread adds two keys nobody reads, and
@@ -143,6 +144,16 @@ type Push struct {
 	// expects.
 	URL string `json:"url"`
 }
+
+// pushRecordSize is the aes128gcm record size, in bytes. One record is all this
+// ever sends: the payload is two short lines.
+const pushRecordSize = 4096
+
+// pushTTL is how long a push service may hold a message, in seconds. Long
+// enough to survive a phone asleep in a pocket, short enough that a warning
+// about leaving never arrives after the thing it was about — a leave-by message
+// that shows up tomorrow morning is the one failure worse than silence.
+const pushTTL = "600"
 
 // Pusher sends to every live browser. It is a func rather than an interface so
 // boot can hand one in without this package learning about HTTP clients.
@@ -169,7 +180,7 @@ func SendPush(ctx context.Context, client *http.Client, cfg PushConfig, sub Subs
 	// without any prior arrangement. See RFC 8188 §2.1.
 	var payload bytes.Buffer
 	payload.Write(salt)
-	_ = binary.Write(&payload, binary.BigEndian, uint32(4096))
+	_ = binary.Write(&payload, binary.BigEndian, uint32(pushRecordSize))
 	payload.WriteByte(byte(len(asPublic)))
 	payload.Write(asPublic)
 	payload.Write(encrypted)
@@ -185,11 +196,7 @@ func SendPush(ctx context.Context, client *http.Client, cfg PushConfig, sub Subs
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Content-Encoding", "aes128gcm")
 	req.Header.Set("Content-Type", "application/octet-stream")
-	// Long enough to survive a phone asleep in a pocket, short enough that a
-	// warning about leaving never arrives after the thing it was about. A
-	// leave-by message that shows up tomorrow morning is the one failure worse
-	// than silence.
-	req.Header.Set("TTL", "600")
+	req.Header.Set("TTL", pushTTL)
 	req.Header.Set("Urgency", "high")
 
 	resp, err := client.Do(req)

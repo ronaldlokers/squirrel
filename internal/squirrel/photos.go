@@ -62,21 +62,24 @@ var kinds = map[string]string{
 	"image/heif": ".heif",
 }
 
+// baseKind is the content type without its parameters: browsers send
+// "image/jpeg", and a few append something after a semicolon.
+func baseKind(contentType string) string {
+	base, _, _ := strings.Cut(contentType, ";")
+	return strings.ToLower(strings.TrimSpace(base))
+}
+
 // KnownKind reports whether this is something we will keep, and what it is
 // called on disk.
-func KnownKind(contentType string) (string, bool) {
-	// Browsers send "image/jpeg" but a few append parameters.
-	base, _, _ := strings.Cut(contentType, ";")
-	ext, ok := kinds[strings.ToLower(strings.TrimSpace(base))]
+func KnownKind(contentType string) (ext string, ok bool) {
+	ext, ok = kinds[baseKind(contentType)]
 	return ext, ok
 }
 
-// PhotoKind is the stored type for what a browser claimed, normalised to the
-// list this keeps. What goes in the row is chosen here rather than copied from
-// the request, so the serving side can hand it straight back.
+// PhotoKind is the stored type, chosen from the list here rather than copied
+// from the request — so the serving side can hand it straight back.
 func PhotoKind(contentType string) string {
-	base, _, _ := strings.Cut(contentType, ";")
-	base = strings.ToLower(strings.TrimSpace(base))
+	base := baseKind(contentType)
 	if _, ok := kinds[base]; ok {
 		return base
 	}
