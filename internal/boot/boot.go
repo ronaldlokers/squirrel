@@ -20,28 +20,21 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/web"
 )
 
-// presenceDebounce is not configuration — see PresenceOptions' own doc
-// comment for what it does. It absorbs the rapid re-arrivals a flapping
-// wifi/cellular handoff produces (Home Assistant fires on every one), and
-// matches the value presence_test.go itself exercises. Unlike Delay, its
-// value does not need to differ between production and the integration
-// suite, so it stays a constant rather than joining config.PresenceDelay.
+// presenceDebounce absorbs the rapid re-arrivals a flapping wifi/cellular
+// handoff produces. Unlike Delay its value need not differ between production and
+// the integration suite, so it stays a constant.
 const presenceDebounce = 10 * time.Minute
 
 // nudgeFunc matches Scheduler.Nudge's signature exactly, which is also what
 // Applier.SetNudger expects.
 type nudgeFunc = func(context.Context, time.Time, squirrel.NudgeReason) error
 
-// nudgeRelay lets the presence route be mounted synchronously in Boot, on the
-// same Server the Campfire webhook uses, before the scheduler that actually
-// performs a nudge exists. The route has to be registered before Listen the
-// same way every transport's route is; the scheduler can only be built once
-// connectAndDrain reaches a live Postgres and learns the owner's person id,
-// which may not have happened yet — or, with the database down, may not
-// happen for a while. An arrival in that window is absorbed rather than
-// queued, the same tradeoff MountPresence's own doc comment describes: a
-// presence ping is not a thought, and losing one costs a nudge that the
-// evening message still catches.
+// nudgeRelay lets the presence route be mounted synchronously in Boot, before the
+// scheduler that performs a nudge exists: routes must be registered before
+// Listen, and the scheduler needs a live Postgres and the owner's person id.
+//
+// An arrival in that window is absorbed rather than queued — a presence ping is
+// not a thought, and losing one costs a nudge the evening message still catches.
 type nudgeRelay struct {
 	fn atomic.Pointer[nudgeFunc]
 }
@@ -77,23 +70,17 @@ type Squirrel struct {
 	offers  *coach.Offers
 	cancel  context.CancelFunc
 	drained chan struct{}
-	// wg tracks background goroutines that touch the store outside the
-	// drain's own goroutine — the digest scheduler, and each presence
-	// arrival's delayed nudge — so Stop can join all of them before closing
-	// the store. drained alone is not enough: it only covers connectAndDrain's
-	// own goroutine, and both of these run concurrently with the drain loop
-	// on a shared ctx, not nested inside it.
+	// wg tracks background goroutines that touch the store outside the drain's own —
+	// the scheduler, and each arrival's delayed nudge — so Stop can join them before
+	// closing the store. drained alone covers only connectAndDrain's goroutine.
 	wg sync.WaitGroup
 }
 
 func (s *Squirrel) Port() int { return s.port }
 
 // Boot binds the HTTP server and starts transports BEFORE touching Postgres.
-//
-// Migrating first would mean a database outage during a pod restart produces a
-// service that refuses connections, and every message sent in that window is
-// gone — Campfire does not retry. That is the failure the spool exists to
-// prevent, so it must not be reintroduced at boot.
+// Migrating first would mean a database outage during a restart produces a
+// service that refuses connections, and Campfire does not retry.
 func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	config, err := squirrel.LoadConfig(env)
 	if err != nil {
@@ -154,17 +141,10 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 					slog.Error("nudge", "error", err)
 				}
 			},
-			// Registers the delayed OnArrive call with s.wg instead of
-			// leaving it a bare goroutine, the same guarantee wg already
-			// gives the digest scheduler: Stop joins it before closing the
-			// store, so an arrival caught mid-Delay or mid-Nudge at
-			// shutdown finishes against a live pool rather than one Close
-			// has already torn down. Add runs synchronously inside the HTTP
-			// handler, before it returns — see presence.go's own comment on
-			// Go — so it is guaranteed to have registered before
-			// Shutdown's wait for in-flight handlers to return can be
-			// satisfied, closing the same window a plain `go fn()` leaves
-			// open between an arrival landing and Stop being called.
+			// Registered with s.wg rather than left a bare goroutine, so Stop joins it and an
+			// arrival caught mid-Delay finishes against a live pool. Add runs synchronously
+			// inside the handler, so it is registered before Shutdown's wait can be
+			// satisfied.
 			Go: func(fn func()) {
 				s.wg.Add(1)
 				go func() {
@@ -172,24 +152,15 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 					fn()
 				}()
 			},
-			// Ctx is loopCtx, the same context Stop cancels (via s.cancel,
-			// see below) before it joins s.wg. Without this, an arrival
-			// caught mid-Delay only ever wakes on its own timer — up to
-			// PresenceDelay, a couple of minutes in production — so a
-			// rollout in that window blocks Stop past main's 15s shutdown
-			// budget and the default 30s grace period, and the pod is
-			// SIGKILLed rather than stopped cleanly. Threading loopCtx here
-			// lets cancellation wake it immediately instead.
+			// Ctx is loopCtx, which Stop cancels before joining s.wg. Without it an arrival
+			// mid-Delay only wakes on its own timer — minutes — so a rollout blocks Stop past
+			// the shutdown budget and the pod is SIGKILLed.
 			Ctx: loopCtx,
 		})
 	} else {
-		// MountPresence's own "refusing to mount" log only fires when it is
-		// actually called — a mis-wired secretKeyRef that leaves
-		// PRESENCE_SECRET empty otherwise produces no log line at all, and a
-		// bot with no arrival trigger looks exactly like one working
-		// normally, since the evening message still runs on schedule. Same
-		// precedent as the "no sender configured" warning below for a
-		// missing bot key.
+		// MountPresence's "refusing to mount" log only fires when it is called, so a
+		// mis-wired secretKeyRef produces no line at all — and a bot with no arrival
+		// trigger looks exactly like one working normally.
 		slog.Warn("no presence secret configured; the arrival trigger is inactive")
 	}
 
@@ -208,15 +179,12 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	store.In(config.DigestLocation)
 	s.store = store
 
-	// After the store, because the budget reads through it; before the screen,
-	// because the screen will ask for the coach in the phase that adds the
-	// sheet. Neither one connecting to anything yet is the point: a coach that
-	// is not there must be an ordinary state at boot, not an error path.
-	// Declared here rather than beside the screen it feeds because the budget
-	// needs it too: the owner's monthly ceiling and a guest's are two numbers,
-	// and telling them apart means knowing who the owner is. It is zero until
-	// connectAndDrain fills it in, and a ceiling lookup that runs before then
-	// sees a guest — which is the safe way round.
+	// After the store, because the budget reads through it. A coach that is not
+	// there must be an ordinary state at boot, not an error path.
+	//
+	// The owner id is declared here because the budget needs it too: the owner's
+	// ceiling and a guest's are two numbers. It is zero until connectAndDrain fills
+	// it in, and a lookup before then sees a guest, which is the safe way round.
 	var webOwner atomic.Int64
 	s.budget = budgetFor(config.Coach, store, webOwner.Load)
 	s.coach = coachFor(config.Coach, s.budget, store)
@@ -228,16 +196,8 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	s.offers = coach.NewOffers()
 	s.talk = coach.NewConversations()
 
-	// The owner is filled in by connectAndDrain once Postgres answers, which
-	// may be a while after boot or never. Same shape and same reason as
-	// nudgeRelay above: the route is registered here, before Listen, and the
-	// thing it needs arrives later. Until it does, the screen answers 503 —
-	// the pile is unreadable because its memory is unreachable, which is what
-	// that status already means on this screen.
-	// Nowhere to keep a photograph is a supported state and the default. It is
-	// checked at boot rather than at the first press, for the reason the spool
-	// is: the first photograph is the worst moment to discover the volume is
-	// not there.
+	// The owner is filled in by connectAndDrain once Postgres answers, which may be a
+	// while or never. Until then the screen answers 503.
 	var photos *squirrel.Photos
 	if config.PhotoDir != "" {
 		var err error
@@ -329,15 +289,12 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// What the box is answered by. Nil with no key, and the nil is
 			// what captureHandler checks — see reader.
 			Reads: read.Reads,
-			// The small model on the cluster, asked about everything typed.
-			// Nil falls through to squirrel.LooksLikeAQuestion, which needs
-			// nothing running — see whatBuddyMakesOfIt.
+			// The small model on the cluster, asked about everything typed. Nil falls through
+			// to squirrel.LooksLikeAQuestion.
 			//
-			// This line was written, lost to a stray edit, and only found
-			// because a mutation went looking for it. A field in an inline
-			// literal cannot be checked by a test, which is the whole of what
-			// `Push` cost three releases — so readingWiring exists and
-			// TestTheBoxIsGivenItsThreeTiers asserts all three.
+			// This line was written, lost to a stray edit, and found only because a mutation
+			// went looking. A field in an inline literal cannot be checked by a test, so
+			// readingWiring exists and TestTheBoxIsGivenItsThreeTiers asserts all three.
 			AskedAQuestion: read.AskedAQuestion,
 			Recent:         webRecent,
 
@@ -397,13 +354,9 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 	for {
 		var err error
 		if err = store.Migrate(ctx); err != nil {
-			// Two very different failures used to share this line, and the
-			// wrong one of them was the default reading: "database
-			// unavailable" sends you to look at Postgres, and a migration that
-			// will not apply is a bug in the migration with Postgres answering
-			// perfectly well. They retry identically and for the same reason —
-			// nothing here may block a capture being accepted — but they do
-			// not get diagnosed identically, so they no longer read the same.
+			// Two very different failures used to share this line: "database unavailable"
+			// sends you to look at Postgres, and a migration that will not apply is a bug in
+			// the migration. They retry identically and are not diagnosed identically.
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				return
 			}
@@ -435,13 +388,9 @@ func connectAndDrain(ctx context.Context, config squirrel.Config, store *squirre
 	// have something to read.
 	webOwner.Store(personID)
 
-	// The transport's Send, or nil when no bot key is configured. A nil sender
-	// means the applier stays quiet rather than crashing: phase 1's property
-	// that this pod holds no Campfire credential is still a supported state.
-	// chat is the richer surface alongside it — buttons on a message, and the
-	// update that closes them — zero-valued the same way when it is absent.
-	// Both the applier and the scheduler fall back to the plain-text sender
-	// whenever chat.Send is nil, so wiring an empty Chat here is always safe.
+	// The transport's Send, or nil when no bot key is configured, in which case the
+	// applier stays quiet rather than crashing. chat is the richer surface alongside
+	// it; both fall back to the plain sender when chat.Send is nil.
 	var send squirrel.Sender
 	var chat squirrel.Chat
 	for _, t := range transports {
@@ -557,27 +506,21 @@ func allowsFrom(c squirrel.Config) []squirrel.Allow {
 }
 
 func seedsFrom(c squirrel.Config) []squirrel.IdentitySeed {
-	// The screen is an identity like any other transport's.
-	//
-	// It has to be, now that the slot spools rather than writing straight to
-	// Postgres: the drain resolves a capture's owner from its sender, and a
-	// capture whose sender resolves to nobody lands as a row belonging to no
-	// one. Seeding this is what keeps a note typed on the screen yours.
+	// The screen is an identity like any other transport's, now that the slot spools:
+	// the drain resolves a capture's owner from its sender, and one that resolves to
+	// nobody lands as a row belonging to no one.
 	var seeds []squirrel.IdentitySeed
 	if c.WebIdentity != "" {
 		seeds = append(seeds, squirrel.IdentitySeed{
 			Transport: squirrel.ScreenTransport, ExternalID: c.WebIdentity,
 		})
 	}
-	// The owner's sub, so that logging in resolves to the person who already
-	// owns the pile rather than making a second one beside it.
+	// The owner's sub, so logging in resolves to the person who already owns the pile
+	// rather than making a second one.
 	//
-	// Both transports, and the screen one is why WEB_IDENTITY is still here:
-	// the drain resolves a spooled capture's owner from its sender string, so
-	// the owner needs a `screen` identity under the sub as well as under
-	// whatever the header used to say. Two rows rather than one is what keeps
-	// a note typed before the deploy and a note typed after it the same
-	// person's.
+	// Both transports: the drain resolves a spooled capture's owner from its sender,
+	// so the owner needs a `screen` identity under the sub as well as under whatever
+	// the header used to say.
 	if c.WebOwnerSub != "" {
 		seeds = append(seeds,
 			squirrel.IdentitySeed{Transport: squirrel.OIDCTransport, ExternalID: c.WebOwnerSub},
@@ -622,19 +565,13 @@ type schedulerWiring struct {
 	learn squirrel.Learner
 }
 
-// schedulerOptionsFor is the struct literal boot used to write inline, lifted
-// out so that what it carries can be asserted.
+// schedulerOptionsFor is the struct literal boot wrote inline, lifted out so what
+// it carries can be asserted.
 //
-// It exists because one field was missing from that literal and nothing could
-// see it. `Push` was never set, so `MomentTick`'s own `if s.opts.Push != nil`
-// was false on every tick since the feature shipped, and `pusher` — written,
-// commented and unit-tested — was never called by anything but its test. Go
-// does not warn about an unused package-level function, and the symptom is a
-// notification that does not arrive, which is indistinguishable from every
-// other reason a notification might not arrive.
-//
-// A field set in an inline literal cannot be checked by a test. A field set
-// here can, and pushwired_test.go does.
+// One field was missing from that literal and nothing could see it: `Push` was
+// never set, so MomentTick's nil check was false on every tick since the feature
+// shipped. Go does not warn about an unused package-level function, and the
+// symptom is a notification that does not arrive.
 func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
 	return squirrel.SchedulerOptions{
 		Store: w.store, Send: w.send, Chat: w.chat, PersonID: w.personID,
@@ -655,15 +592,11 @@ type subscriptions interface {
 	SubscriptionGone(ctx context.Context, id int64, at time.Time) error
 }
 
-// pusher builds the fast channel, or nil.
+// pusher builds the fast channel, or nil when there is no VAPID pair — a
+// supported state, because every message this carries still reaches the room.
 //
-// Nil when there is no VAPID pair, which is a supported state rather than a
-// degraded one: every message this would carry still reaches the room, and the
-// room is the channel that always works.
-//
-// Every failure here is swallowed by the caller. A push service being slow, a
-// browser having revoked its subscription, a laptop that is closed — none of
-// those may turn a message that has already arrived somewhere into an error.
+// Every failure here is swallowed by the caller: none of them may turn a message
+// that has already arrived somewhere into an error.
 func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 	if !cfg.Enabled() {
 		slog.Warn("no push keys configured; only the room is told about leaving")
@@ -680,17 +613,10 @@ func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 		if err != nil {
 			return err
 		}
-		// Saying there is nobody is the whole point of this line.
-		//
-		// This path used to say nothing at all: no line when it sent, none for
-		// how many browsers it found, none on success. Only a failure spoke. So
-		// a send to an empty list and a send that worked produced identical
-		// logs — which is how this feature ran in production for weeks with
-		// zero subscribers and no way to notice, and why finding that out took
-		// four rounds of guessing.
-		//
-		// A channel that cannot report having no listeners cannot be trusted to
-		// report anything.
+		// Saying there is nobody is the whole point of this line. This path used to log
+		// only failures, so a send to an empty list and a send that worked produced
+		// identical logs — which is how it ran in production for weeks with zero
+		// subscribers and no way to notice.
 		if len(subs) == 0 {
 			slog.Warn("nobody to push to; only the room was told", "person_id", personID)
 			return nil

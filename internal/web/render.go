@@ -17,12 +17,8 @@ import (
 //go:embed templates/*.html
 var templateFS embed.FS
 
-// Each page parses layout, card and exactly one content template. Go's
-// templates are a flat namespace, so two files both defining "content" cannot
-// live in one set — the set is the page.
-// dict lets one template be handed two values, which Go's templates otherwise
-// cannot do. Only "step" needs it, and only because a step is drawn on two
-// screens that disagree about where its buttons should come back to.
+// Each page parses layout, card and exactly one content template: Go's templates
+// are a flat namespace, so two files defining "content" cannot share a set.
 var helpers = template.FuncMap{
 	// add exists for one thing: telling the last item in a range from the
 	// rest, so a control can sit on the newest reply and nowhere else.
@@ -209,13 +205,11 @@ type moodWeekView struct {
 	Days []moodCellView
 }
 
-// moodCellView is one day on the grid. It carries no number and no position,
-// for the same reason a face does not: these are not a scale.
+// moodCellView is one day on the grid, carrying no number and no position.
 //
-// Nought is a day you said nothing on, which is drawn rather than skipped —
-// the gaps are most of what is there and hiding them would be the flattery
-// this page exists to avoid. Ahead is a day that has not happened, which is
-// drawn as nothing at all: an empty Saturday next week is not a gap.
+// Nought is a day you said nothing on, drawn rather than skipped: the gaps are
+// most of what is there. Ahead is a day that has not happened, drawn as nothing —
+// an empty Saturday next week is not a gap.
 type moodCellView struct {
 	Day    string
 	Mood   string
@@ -328,12 +322,9 @@ var backTo = map[squirrel.ItemState]string{
 	squirrel.ItemDropped: "drop",
 }
 
-// undoFrom reads the way back out of the query string, or answers nil.
-//
-// The parameters arrive from a redirect this package wrote, but they arrive
-// through the address bar, so they are read as though a stranger typed them:
-// an id that is not a number, or a state that is not one of the four, is no
-// undo rather than a bad one.
+// undoFrom reads the way back out of the query string. The parameters arrive
+// through the address bar, so an id that is not a number, or a state that is not
+// one of the four, is no undo rather than a bad one.
 func undoFrom(q url.Values) *undoView {
 	id, err := strconv.ParseInt(q.Get("undo"), 10, 64)
 	if err != nil || id == 0 {
@@ -381,12 +372,9 @@ func cursorFrom(q url.Values) int64 {
 	return id
 }
 
-// stateWords is the screen's half of the shared vocabulary. `open` is
-// deliberately present: a search result still in the pile says so, and it wears
-// Notebook Violet rather than one of the three exit colours.
-// stateWords is what a row says it is. `open` is deliberately present: a
-// search result still in the pile says so, and it wears Notebook Violet rather
-// than one of the three exit colours.
+// stateWords is what a row says it is. `open` is deliberately present: a search
+// result still in the pile says so, and wears Notebook Violet rather than one of
+// the three exit colours.
 //
 // A task is open too, and is not in the pile — see taskWords.
 var stateWords = map[squirrel.ItemState]string{
@@ -491,12 +479,10 @@ func fail(w http.ResponseWriter, err error) {
 	_, _ = w.Write([]byte(`<!doctype html><html lang="en"><head><meta charset="utf-8">` +
 		`<title>Squirrel</title></head><body style="background:#58388a;color:#fffbf3;font:16px system-ui;padding:3rem">` +
 		`<p>Squirrel cannot reach its memory right now. Nothing has been lost — everything you said is still there.</p>` +
-		// The way on. The screen is down and chat is not: the room writes
-		// through the same spool this does, so capture still works while this
-		// page is what the screen can offer. The service worker's offline page
-		// has said so since it was written; this one, which fires on the same
-		// failure from the other side, said nothing and left you on a page
-		// with no way forward.
+		// The way on. The screen is down and chat is not: the room writes through the
+		// same spool, so capture still works. The service worker's offline page has said
+		// so since it was written; this one said nothing and left you with no way
+		// forward.
 		`<p style="opacity:.75">Notes are still kept by talking to Squirrel in Campfire.</p>` +
 		`</body></html>`))
 }
