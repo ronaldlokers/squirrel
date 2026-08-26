@@ -345,6 +345,49 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.43.0 — 26 August 2026
+
+**The box can show you a place, and a request to see one is not a note.** Two
+defects, found by using the product an hour after v0.42.0 shipped.
+
+**The fix shipped on the wrong surface.** v0.42.0 gave Buddy an `open` tool on
+`/buddy/say` — the route behind *ask Buddy* in the menu. The dock is a different
+path entirely: what you type goes through `Reads`, a deliberately cheap one-shot
+call carrying a single `answer` tool with `say` and `keep`, no facts and no
+places. It could not see the chores and said so, which was true. The dock is, in
+its own preamble's words, "the one box this product has", so the capability had
+landed on the route almost nobody presses.
+
+`open` joins `say` and `keep` on that same call rather than arriving as a second
+tool, because they are one judgement: *this was a request to see the chores* and
+*here is what to say about it* are the same sentence being written.
+
+*The wider version was measured and deferred rather than skipped.* Handing the
+dock the full toolset costs five to six times as much per question — affordable
+against a €10 ceiling — but it is two or three sequential calls on the most-used
+input in the product, and it would mean typing "done with the vet" completes a
+task. That is a change to what the box is rather than a fix for this, and it
+gets its own study.
+
+**A request to be shown something was being filed as a thought.** `show chores`
+has no question mark and no asking opening, so the rule kept it — twice in one
+minute, for somebody trying to look at their chores. The product answered a
+request to look at something by writing it down. The rule now recognises a verb
+of showing followed by the name of a place and takes both: `show mum the photos`
+is still a thought, and so is `open the compiler`, which is why the place has to
+be a whole word rather than a substring. That case is in the table because the
+unbounded version survived the first mutation round.
+
+**One of the new tests was vacuous, and a mutation caught it.** The thought case
+used words that never reach the reading path at all, so it passed with the
+behaviour reverted. It now uses words the gate lets through and asserts the path
+was reached — which is the case that actually happens: the rule sent it to be
+answered and the model read the whole sentence and disagreed. Seventh time this
+shape has been caught in this project, and the first time it was in a test
+written the same hour as the fix it covered.
+
+Seven mutations. No migrations.
+
 ### v0.42.0 — 26 August 2026
 
 **Buddy can open a place.** Asked *can you show me the tasks?*, he answered that
