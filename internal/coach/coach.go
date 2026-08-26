@@ -133,6 +133,15 @@ type Turn struct {
 	// Recent is the last few exchanges, oldest first, and it is bounded by the
 	// caller rather than by this package. See Window.
 	Recent []Exchange
+	// CanOpen says the surface that asked can draw one of the places. The
+	// screen can — a place is cards in a turn there, which is exactly what the
+	// menu draws. Chat cannot: a place there would be the list the guard
+	// exists to refuse.
+	//
+	// The surface states it rather than this package inferring it from Kind,
+	// because what a surface can draw is a fact about the surface and nothing
+	// here can know it.
+	CanOpen bool
 }
 
 // Exchange is one round of a conversation, for the rolling window.
@@ -170,6 +179,14 @@ type Reply struct {
 	// Propose is a thing the coach wants to do and may not do on its own, or
 	// nil. The caller renders it as one press and applies it only if pressed.
 	Propose *Proposal
+	// Open is one of the places, when the coach asked for it to be shown, and
+	// empty otherwise. The caller draws it; this package neither knows nor
+	// cares what a place looks like.
+	//
+	// It needs no permission because it changes nothing. Opening the tasks is
+	// the same act as pressing the menu, and the worst a wrong one costs is a
+	// scroll.
+	Open string
 }
 
 // Coach is the surface the product asks. Methods are added as the phases that

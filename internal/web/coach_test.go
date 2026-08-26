@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	htmlpkg "html"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -372,4 +373,50 @@ func TestThereIsNoWayToCloseAConversation(t *testing.T) {
 	m := mounted(t, &fakeStore{})
 
 	require.NotContains(t, m.routes, "POST /buddy/close")
+}
+
+// Asking Buddy to show you a place opens it, as cards, in his own turn.
+//
+// He could not before: Guard refuses a list and the brief is two sentences, so
+// the one thing he could honestly say was that he could not — while the menu
+// beside him did it in one press.
+func TestBuddyOpensAPlaceWhenAskedFor(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		{ID: 9, RawText: "ring the vet", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
+	}}
+	c := &fakeCoach{reply: "Here they are.", opens: "tasks"}
+	m := mountedWith(t, f, c)
+	post(t, m, "/buddy/say", url.Values{"said": {"can you show me the tasks"}})
+
+	require.Len(t, f.appended, 3)
+	require.Equal(t, "can you show me the tasks", f.appended[0].Words)
+	require.Equal(t, "Here they are.", f.appended[1].Words)
+	// His turn, not yours: the record must not invent a sentence you never
+	// typed.
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[2].Who)
+	require.Contains(t, string(f.appended[2].Shown), "ring the vet")
+}
+
+// And says nothing extra when he did not ask for one, which is nearly every
+// turn.
+func TestAnOrdinaryReplyOpensNothing(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		{ID: 9, RawText: "ring the vet", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
+	}}
+	c := &fakeCoach{reply: "That one first."}
+	m := mountedWith(t, f, c)
+	post(t, m, "/buddy/say", url.Values{"said": {"what should I do"}})
+
+	require.Len(t, f.appended, 2)
+}
+
+// A place that does not exist draws nothing rather than an empty turn. The
+// screen holds the vocabulary and the lookup miss is the refusal.
+func TestAPlaceBuddyInventedDrawsNothing(t *testing.T) {
+	f := &fakeStore{}
+	c := &fakeCoach{reply: "Here you go.", opens: "inbox"}
+	m := mountedWith(t, f, c)
+	post(t, m, "/buddy/say", url.Values{"said": {"show me the inbox"}})
+
+	require.Len(t, f.appended, 2)
 }

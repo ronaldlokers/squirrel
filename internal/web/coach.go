@@ -49,6 +49,14 @@ type Answer struct {
 	Text    string
 	Did     []string
 	Propose *Proposal
+	// Open is one of the places, when Buddy asked for it to be shown, and
+	// empty otherwise.
+	//
+	// Buddy is forbidden to recite a list — the guard refuses bullets and the
+	// brief is two sentences — so asking to see your tasks used to get an
+	// honest "I cannot", while the menu did it in one press. This is that
+	// press. It changes nothing, which is why it needs no confirming.
+	Open string
 }
 
 // Proposal is the four things the coach must ask about: a fixed point, because
@@ -171,11 +179,24 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 		// renders it, so a press is still the only thing that can apply one —
 		// and in scrollback it has lost its button by the live edge rule,
 		// which is the same guarantee the page gave by not surviving a reload.
-		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+		turns := []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: said},
 			coachReplyCosting(withDid(answer), costLine(r.Context(), opts, personID),
 				false, true, answer.Propose, stepFor(s, opts, r)),
-		}), "/")
+		}
+
+		// And the place, when he was asked for one. It is his answer rather
+		// than something you said, so it arrives as a turn of his and the
+		// record does not invent a sentence you never typed.
+		//
+		// Last, so the live edge is the cards: what you asked to see is the
+		// thing you are now looking at, and the reply above it has said its
+		// piece.
+		if place, ok := placeSaid(r.Context(), s, opts, personID, answer.Open, 0); ok {
+			turns = append(turns, alsoOffer(place, newChipFor(answer.Open)...))
+		}
+
+		answerWith(w, r, keepSaid(r.Context(), s, personID, turns), "/")
 	}
 }
 

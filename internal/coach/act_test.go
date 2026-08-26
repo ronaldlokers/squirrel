@@ -300,3 +300,73 @@ func TestTheRefusedToolsAreNotOffered(t *testing.T) {
 		require.True(t, named[allowed], "%q is missing", allowed)
 	}
 }
+
+// Asking to *see* something is not asking about it, and the coach could not do
+// it: Guard refuses a list and the brief is two sentences, so "show me the
+// tasks" got an honest "I cannot" while the menu did it in one press. It can
+// press the same thing now.
+func TestAskingToSeeAPlaceOpensIt(t *testing.T) {
+	api := newToolAPI(t,
+		turnOf(
+			call("a", "open", map[string]any{"where": "tasks"}),
+			call("b", "say", map[string]any{"text": "Here they are."}),
+		),
+	)
+	turn := aTurn()
+	turn.CanOpen = true
+	turn.Said = "can you show me the tasks"
+
+	reply, err := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{}).
+		Answer(context.Background(), turn)
+	require.NoError(t, err)
+	require.Equal(t, "tasks", reply.Open)
+	require.Equal(t, "Here they are.", reply.Text)
+	require.True(t, offers(t, api.sent[0])["open"], "the tool was not offered")
+}
+
+// Only where there is something to draw it on. Chat has no cards: a place
+// there would be the list the guard exists to refuse, so the tool is not even
+// offered and a model that names it anyway is refused.
+func TestASurfaceThatCannotDrawAPlaceIsNotOfferedOne(t *testing.T) {
+	api := newToolAPI(t,
+		turnOf(call("a", "open", map[string]any{"where": "tasks"})),
+		turnOf(call("b", "say", map[string]any{"text": "I cannot show you that here."})),
+	)
+
+	reply, err := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{}).
+		Answer(context.Background(), aTurn())
+	require.NoError(t, err)
+	require.Empty(t, reply.Open)
+
+	// And the tool was never on the table.
+	require.False(t, offers(t, api.sent[0])["open"], "the tool was offered where it cannot be drawn")
+}
+
+// offers is which tools a request put on the table.
+func offers(t *testing.T, sent map[string]any) map[string]bool {
+	t.Helper()
+	tools, ok := sent["tools"].([]any)
+	require.True(t, ok)
+	named := map[string]bool{}
+	for _, tool := range tools {
+		fn, _ := tool.(map[string]any)["function"].(map[string]any)
+		name, _ := fn["name"].(string)
+		named[name] = true
+	}
+	return named
+}
+
+// A name that is not one of the six is a lookup miss, not a default branch.
+func TestAPlaceThatDoesNotExistIsRefused(t *testing.T) {
+	api := newToolAPI(t,
+		turnOf(call("a", "open", map[string]any{"where": "inbox"})),
+		turnOf(call("b", "say", map[string]any{"text": "You have no inbox."})),
+	)
+	turn := aTurn()
+	turn.CanOpen = true
+
+	reply, err := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{}).
+		Answer(context.Background(), turn)
+	require.NoError(t, err)
+	require.Empty(t, reply.Open)
+}

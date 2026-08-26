@@ -863,6 +863,8 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 type fakeCoach struct {
 	reply string
 	err   error
+	// opens is the place the coach asked to be shown, or empty.
+	opens string
 	// asked is every turn it was handed, so a test can assert on what the
 	// model was told rather than on a rendering of it.
 	asked []struct{ kind, said, subject string }
@@ -914,7 +916,7 @@ func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) 
 	if c.err != nil {
 		return Answer{}, c.err
 	}
-	return Answer{Text: c.reply, Did: c.did, Propose: c.propose}, nil
+	return Answer{Text: c.reply, Did: c.did, Propose: c.propose, Open: c.opens}, nil
 }
 
 // decided is what the model chooses instead, when a test says it chooses

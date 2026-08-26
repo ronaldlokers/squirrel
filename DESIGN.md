@@ -1889,6 +1889,40 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### Buddy Opens a Place
+
+Buddy can show you one of the six places, whole, as cards. Added 26 August
+2026, after being asked *can you show me the tasks?* and answering that he
+could not.
+
+**He was right, and that was the bug.** Three rules met: the guard refuses any
+reply containing a list, the brief is two sentences at most, and he had no tool
+that opens anything. He could read your tasks and was forbidden to recite them,
+so the only honest thing left to say was *no*. The menu, four inches above him,
+did it in one press.
+
+**When the places became messages, the menu learnt to open them and Buddy did
+not.** This is that press, given to him.
+
+- **He opens it; he does not offer it.** A chip would be a press on the most
+  ordinary request in the product. Opening a place changes nothing, so the
+  worst a wrong one costs is a scroll — and it needs no confirming, which is
+  the whole reason it is not a proposal.
+- **It arrives as his turn, not yours.** Pressing the menu is an utterance and
+  goes into the record as one; Buddy opening a place because you asked is his
+  answer. Putting *the tasks* in your mouth would be the record inventing a
+  sentence you never typed.
+- **Last in the turn, so the live edge is the cards.** What you asked to see is
+  what you are now looking at.
+- **He says something as well.** The place is drawn, not explained, and a
+  screenful of cards with no sentence above it is a press that landed silently.
+- **The same six the menu offers**, checked against the same vocabulary twice —
+  once in the tool's enum and once as a lookup on the way in. A name that is
+  not one of them is refused rather than drawn as an empty turn.
+- **The screen only.** Chat has no cards; a place there would be the list the
+  guard exists to refuse. The surface states what it can draw, because what a
+  surface can draw is a fact about the surface.
+
 ### The First Run
 
 What somebody who has never seen this sees. Added 26 August 2026, replacing an
