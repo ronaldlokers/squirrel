@@ -55,6 +55,10 @@ type drawn struct {
 	Say *sayView `json:"say,omitempty"`
 	// Cut is a proposal to split a note. See proposeInThread.
 	Cut *cutView `json:"cut,omitempty"`
+	// Hits are search results, which are deliberately not cards. A card is
+	// something you act on; a hit is something you are finding, and making
+	// them one object is why search felt like a second pile. See searchTurn.
+	Hits []hitView `json:"hits,omitempty"`
 	// Faces is the check-in's five drawings. A flag rather than five chips
 	// because they are the product's own faces and the markup for them
 	// already exists; rendering them as words would be a different control
@@ -79,6 +83,9 @@ type turnView struct {
 	// navigation walks.
 	Place string
 	Cards []cardView
+	// Hits are search results, which are not cards. See searchTurn and
+	// DESIGN.md, Results.
+	Hits  []hitView
 	Chips []turnChip
 	Faces []faceView
 	Pick  *pickView
@@ -142,6 +149,16 @@ type turnChip struct {
 	// and not a nought — a door reading "0" is a scoreboard, which is the rule
 	// the four doors carried and the menu inherited with them.
 	Count int `json:"-"`
+}
+
+// hitView is one search result: a quiet line that opens into a card.
+type hitView struct {
+	Title string `json:"title"`
+	// Meta is which of the seven it is in, because a result read without it is
+	// a note whose verbs would be wrong.
+	Meta   string            `json:"meta,omitempty"`
+	Action string            `json:"action"`
+	Fields map[string]string `json:"fields,omitempty"`
 }
 
 type doorView struct {
@@ -356,6 +373,7 @@ func turnViews(turns []squirrel.Turn) []turnView {
 				slog.Error("reading what a turn drew", "turn", t.ID, "error", err)
 			} else {
 				v.Place, v.Cards, v.Chips = sh.Place, sh.Cards, sh.Chips
+				v.Hits = sh.Hits
 				v.Cost = sh.Cost
 				v.Pick, v.Cal, v.Say, v.Cut = sh.Pick, sh.Cal, sh.Say, sh.Cut
 				if sh.Faces {
@@ -1704,14 +1722,29 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Nothing with that word in it."}
 	}
 
+	// Results are not cards. A card is something you act on; a hit is
+	// something you are *finding*, and making them the same object is why
+	// search felt like a second pile — six hits fit in the space three cards
+	// took, and every one of them arrived carrying verbs for a decision
+	// nobody had asked to make.
+	//
+	// One at a time opens into a real card with real buttons, which is the
+	// same one-thing-is-live rule the conversation already runs on.
 	sh := drawn{}
 	for _, c := range chores {
 		v := toChoreView(c)
-		sh.Cards = append(sh.Cards, cardView{Kind: "chore", Title: v.Name, Meta: choreMeta(v)})
+		sh.Hits = append(sh.Hits, hitView{
+			Title: v.Name, Meta: "chore · " + choreMeta(v),
+			Action: "/open", Fields: map[string]string{"where": "chores"},
+		})
 	}
 	for _, it := range items {
 		v := toView(it)
-		sh.Cards = append(sh.Cards, cardView{Title: v.Text, Photo: v.Photo, Meta: whereItIs(v)})
+		sh.Hits = append(sh.Hits, hitView{
+			Title: v.Text, Meta: whereItIs(v),
+			Action: "/find/open",
+			Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)},
+		})
 	}
 	if more {
 		// That there is more, and not how much: what is further down a list of
@@ -1729,7 +1762,7 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		slog.Error("drawing the results", "error", err)
 		return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "I cannot draw what I found."}
 	}
-	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: foundLead(len(sh.Cards)), Shown: body}
+	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: foundLead(len(sh.Hits)), Shown: body}
 }
 
 // whereItIs says which of the seven a result is in, because a result read
@@ -1774,6 +1807,68 @@ func findHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: q},
 			searchTurn(r.Context(), s, personID, q),
+		}), "/")
+	}
+}
+
+// findOpenHandler turns one search result into a card you can act on.
+//
+// A hit is quiet on purpose — it is a thing you are finding, not a thing you
+// are deciding about — and this is the moment it becomes the other. One at a
+// time, which is the same rule the conversation already runs on: the live edge
+// holds one thing.
+//
+// The card it draws is the ordinary one, with the ordinary four verbs, built
+// from the note's real state so that a dropped result offers to undo and an
+// open one offers to decide. Nothing about search gets its own vocabulary.
+func findOpenHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil || id < 1 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		v := toView(it)
+		row := map[string]string{
+			"id": strconv.FormatInt(v.ID, 10), "was": v.State, "from": "thread",
+		}
+		card := cardView{Title: v.Text, Photo: v.Photo, Meta: whereItIs(v)}
+		if v.Task {
+			card.Kind = "task"
+		}
+		card.Acts = []actView{
+			{Label: "DONE", Action: "/pile/act", Style: "did", Fields: with(row, "act", "done")},
+			{Label: "KEEP", Action: "/pile/act", Style: "go", Fields: with(row, "act", "keep")},
+			{Label: "DROP", Action: "/pile/act", Style: "stop", Fields: with(row, "act", "drop")},
+		}
+		body, err := json.Marshal(drawn{Cards: []cardView{card}})
+		if err != nil {
+			slog.Error("drawing a result", "error", err)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: v.Text},
+			{Who: squirrel.SpeakerBuddy, Words: "That one.", Shown: body},
 		}), "/")
 	}
 }

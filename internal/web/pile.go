@@ -99,6 +99,10 @@ func Mount(m Mux, s Store, opts Options) error {
 			it.RawText, "say it this way")
 	}))))
 	m.Post("/find", guard(opts, sameOrigin(findHandler(s, opts))))
+	// One result, opened into a card you can act on. A hit is quiet because it
+	// is a thing you are finding; this is the moment it becomes a thing you are
+	// deciding about. See findOpenHandler.
+	m.Post("/find/open", guard(opts, sameOrigin(findOpenHandler(s, opts))))
 	// The three questions a note can be asked, behind one press. See
 	// moreHandler for why they are a turn rather than a panel.
 	m.Post("/pile/more", guard(opts, sameOrigin(moreHandler(s, opts))))

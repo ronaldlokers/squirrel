@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -874,4 +875,29 @@ func TestBuddysFaceDoesNotTakeTheMoodButtonsName(t *testing.T) {
 	require.Contains(t, string(css), "  .face {", "the mood button lost its own rule")
 	// And nothing is drawn around the artwork, which already has an outline.
 	require.NotContains(t, string(css), ".buddyface {\n    grid-column: 1; grid-row: 1;\n    box-sizing: border-box;")
+}
+
+// A result carries no verbs, but tapping it opens the ordinary card, with the
+// ordinary verbs. That is the whole of the search change: the quiet form and
+// the deciding form are two states of one thing, and the tap is the step
+// between them.
+func TestOpeningAResultDrawsACardYouCanActOn(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler makes a noise", squirrel.ItemKept)}}
+	routed(t, f).call(t, "POST", "/find/open", strings.NewReader("id=9"))
+
+	require.Len(t, f.appended, 2)
+	shown := string(f.appended[1].Shown)
+	require.Contains(t, shown, "the boiler makes a noise")
+	require.Contains(t, shown, `"acts"`, "the opened result is a control")
+	require.Contains(t, shown, "DONE")
+}
+
+// A result that is not yours does not open. Search already refuses to find it;
+// this is the same refusal one route later.
+func TestOpeningSomebodyElsesResultFindsNothing(t *testing.T) {
+	f := &fakeStore{}
+	w := routed(t, f).call(t, "POST", "/find/open", strings.NewReader("id=9"))
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Empty(t, f.appended)
 }

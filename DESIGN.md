@@ -1889,6 +1889,26 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### Results
+
+A result is not a card. It has no border, no shadow, no verbs — a full-bleed
+row with the name in the reading axis and, in the small caps, the one of the
+seven places it is in. Results are separated by a hairline and nothing else,
+which is what lets six of them sit in one turn without the turn becoming a
+wall of card stock.
+
+**The reason it looks like this is that a result is not a decision.** You went
+looking for a thing; you have not yet said anything about it. Every card in
+this world is a thing you are being asked about, and dressing a search result
+as one asks a question nobody posed.
+
+**Tapping a result opens the ordinary card, in the next turn.** The quiet row
+and the deciding card are two states of one note, and the tap is the step
+between them. Nothing about search gets its own verbs: what opens is the same
+card with the same DONE / KEEP / DROP the pile draws, built from the note's
+real state. One at a time, which is the rule the whole conversation runs on —
+the live edge holds one thing.
+
 ### The Conversation
 
 **Buddy's words are not in a bubble. Yours are.**

@@ -193,6 +193,8 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 		{"searching for their words", "POST", "/find", url.Values{"q": {notMine}}},
 		{"searching for their chore", "POST", "/find", url.Values{"q": {"chore"}}},
 		{"asking to search", "POST", "/find/ask", nil},
+		{"their note, opened from a result", "POST", "/find/open",
+			url.Values{"id": {theirNote}}},
 		{"what Squirrel knows", "POST", "/knowing", nil},
 		{"the readings", "GET", "/moods", nil},
 		{"stopping", "GET", "/enough", nil},

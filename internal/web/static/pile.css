@@ -3618,3 +3618,35 @@
   .turncard:has(> .cardphoto) .turnname,
   .turncard:has(> .cardphoto) .turnmeta { padding: 0 4px; }
   .turncard:has(> .cardphoto) .turnacts { padding: 0 4px 10px; }
+
+  /* A search result. See DESIGN.md, Results.
+   *
+   * Not a card, and the difference is the whole of it: a card is something you
+   * act on, a hit is something you are finding. They were the same object until
+   * 26 August 2026, which is why search felt like a second pile — six of these
+   * fit where three cards did, and every card arrived carrying verbs for a
+   * decision nobody had asked to make.
+   *
+   * On the field rather than on stock, because it is not an object yet. It
+   * becomes one when you pick it. */
+  .hit { width: 100%; margin: 0; }
+  .hit button {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    padding: 9px 12px; border-radius: 11px;
+    background: rgba(255, 251, 243, .12);
+    border: 2px solid rgba(254, 214, 167, .4);
+    color: var(--paper); font: inherit;
+  }
+  .hit button:hover { background: rgba(255, 251, 243, .2); }
+  .hitname {
+    display: block; font-size: 14.5px; line-height: 1.35;
+    font-variation-settings: var(--casual), "wght" 600;
+  }
+  /* Which of the seven it is in, in the machine's axis: a result read without
+     it is a note whose verbs would be wrong. */
+  .hitwhere {
+    display: block; margin-top: 3px;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--cream);
+    font-variation-settings: var(--precise), "wght" 700;
+  }
