@@ -21,7 +21,18 @@ import (
 // Postgres: what is under test here is routing, rendering and the refusal to
 // count, none of which is a database question. The store's own behaviour is
 // covered by the integration tests in internal/squirrel.
+// choreRhythm is one call to SetChoreRhythm.
+type choreRhythm struct {
+	ID    int64
+	Day   time.Weekday
+	Weeks int
+}
+
 type fakeStore struct {
+	// Every rhythm the screen set, so a test can assert on the write rather
+	// than on a rendering of it — including the ones it refused, which are
+	// the interesting half.
+	rhythms []choreRhythm
 	// Where you got to. hasRun is what RunFor answers; marked and ended are
 	// what the screen did, so a test can assert on the write rather than on a
 	// rendering of it.
@@ -1175,5 +1186,21 @@ func (f *fakeStore) RunFor(_ context.Context, _ int64, _ time.Time) (squirrel.Ru
 func (f *fakeStore) EndRun(_ context.Context, _ int64) error {
 	f.ended++
 	f.hasRun = false
+	return nil
+}
+
+// A chore's day, faked. The due rule itself is proved against Postgres in
+// internal/squirrel; what the screen has to be tested for is whether it reads
+// the picker's third row and what it refuses.
+func (f *fakeStore) SetChoreRhythm(_ context.Context, _, choreID int64, day time.Weekday, weeks int) error {
+	f.rhythms = append(f.rhythms, choreRhythm{ID: choreID, Day: day, Weeks: weeks})
+	if f.err != nil {
+		return f.err
+	}
+	for i := range f.chores {
+		if f.chores[i].ID == choreID {
+			f.chores[i].Weekday, f.chores[i].Weeks = day, weeks
+		}
+	}
 	return nil
 }

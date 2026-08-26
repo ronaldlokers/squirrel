@@ -365,7 +365,7 @@ func (s *Store) OutstandingLines(ctx context.Context, personID int64) ([]Chore, 
 		-- for the same reason the others are not: nothing here raises a chore,
 		-- it only names ones already raised.
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds, 0::bigint, false,
-		       c.ask_days, c.ask_part
+		       c.ask_days, c.ask_part, c.on_weekday, c.every_weeks
 		  from prompt_lines l
 		  join latest p on p.id = l.prompt_id
 		  join chores c on c.id = l.chore_id

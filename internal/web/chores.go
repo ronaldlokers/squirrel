@@ -64,11 +64,35 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 				http.Redirect(w, r, "/", http.StatusSeeOther)
 				return
 			}
-			if _, err := s.UpsertChore(r.Context(), personID, c.Name, d, squirrel.DefaultTolerance(d)); err != nil {
+			made, err := s.UpsertChore(r.Context(), personID, c.Name, d, squirrel.DefaultTolerance(d))
+			if err != nil {
 				fail(w, err)
 				return
 			}
 			said := "every " + count + " " + unit
+			// And the day, if one was named. Applied after the interval and
+			// never instead of it: SetChoreRhythm writes the equivalent
+			// interval too, so everything that renders "how often" keeps
+			// working and only the *due* rule changes.
+			if day, weeks, ok := dayAnswered(r.FormValue("day"), unit, count); ok {
+				if err := s.SetChoreRhythm(r.Context(), personID, made.ID, day, weeks); err != nil {
+					fail(w, err)
+					return
+				}
+				said = saidOnADay(day, weeks)
+			} else if c.OnADay() {
+				// A day was named once and is not any more. Put it back on an
+				// interval rather than leaving a rhythm nobody asked for.
+				//
+				// `c` and not `made`: UpsertChore's RETURNING clause does not
+				// carry the two rhythm columns, so the chore it hands back
+				// always looks like an interval one. `c` came from
+				// ActiveChores at the top of this handler and knows.
+				if err := s.SetChoreRhythm(r.Context(), personID, made.ID, 0, 0); err != nil {
+					fail(w, err)
+					return
+				}
+			}
 			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 				{Who: squirrel.SpeakerYou, Words: said},
 				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + said + " now."},
@@ -233,6 +257,14 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
+		if day, weeks, ok := dayAnswered(r.FormValue("day"),
+			r.FormValue("unit"), r.FormValue("count")); ok {
+			if err := s.SetChoreRhythm(r.Context(), personID, c.ID, day, weeks); err != nil {
+				fail(w, err)
+				return
+			}
+			c.Weekday, c.Weeks = day, weeks
+		}
 		// The chore you just made, as a card, so it is on the screen rather
 		// than somewhere you have to go and look at.
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
@@ -314,7 +346,59 @@ func oftenHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "how often — " + c.Name},
 			askHowOften("/chores/act",
-				map[string]string{"id": strconv.FormatInt(c.ID, 10)}, count, unit),
+				map[string]string{"id": strconv.FormatInt(c.ID, 10)}, count, unit, dayChosen(c)),
 		}), "/")
 	}
+}
+
+// dayChosen is the day a chore already comes back on, in the picker's own
+// words, so the question opens on what is true rather than on a blank form.
+//
+// The same device rhythmOf uses for the interval, and for the same reason: a
+// question that forgets the answer you gave it last time is a question you
+// have to answer twice.
+func dayChosen(c squirrel.Chore) string {
+	if !c.OnADay() {
+		return ""
+	}
+	return strings.ToLower(c.Weekday.String())[:3]
+}
+
+// dayAnswered reads the picker's third row, and refuses it unless the rest of
+// the answer makes a day mean anything.
+//
+// Only against weeks, and only one or two of them. A day is meaningless on
+// "every 3 days" — it would be due every third day *and* on a Thursday, which
+// is a rhythm nobody has — and on "every 6 months" it would silently become
+// fortnightly. A picker that accepted either would be a picker that quietly
+// ignored half of what you said.
+//
+// Refusing is not a failure here: the interval was already written, so what
+// happens is exactly what happened before this feature existed.
+func dayAnswered(said, unit, count string) (time.Weekday, int, bool) {
+	if unit != "weeks" {
+		return 0, 0, false
+	}
+	weeks, err := strconv.Atoi(count)
+	if err != nil || weeks < 1 || weeks > 2 {
+		return 0, 0, false
+	}
+	day, ok := squirrel.DayNamed(said)
+	if !ok {
+		return 0, 0, false
+	}
+	return day, weeks, true
+}
+
+// saidOnADay is the rhythm in the words a person would use for it.
+//
+// "every other thursday", not "every 2 weeks on thursday". The whole point of
+// the feature is that the bins have a rhythm somebody can say out loud, and
+// saying it back in the machine's vocabulary would lose exactly that.
+func saidOnADay(day time.Weekday, weeks int) string {
+	name := strings.ToLower(day.String())
+	if weeks == 2 {
+		return "every other " + name
+	}
+	return "every " + name
 }

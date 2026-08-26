@@ -30,7 +30,24 @@ type Chore struct {
 	// Ask is when raising it is worth doing. It never changes when the chore
 	// is due — see asking.go for why those are deliberately two questions.
 	Ask Asking
+	// Weekday and Weeks are a chore that comes back on a day rather than after
+	// an interval — alternating Thursdays, and the reason the bins never fitted.
+	//
+	// Weeks is 0 for the interval rhythm, which is every chore that existed
+	// before 26 August 2026 and every one where a day would be nonsense. When
+	// it is 1 or 2, Weekday is the day and Every still carries the equivalent
+	// interval so that everything which asks "how often" keeps working.
+	//
+	// The difference that matters is that an interval measured from the last
+	// completion *slides*: do the bins a day late once and every reminder after
+	// it is a day late too. A weekday does not slide.
+	Weekday time.Weekday
+	Weeks   int
 }
+
+// OnADay reports whether this chore comes back on a weekday rather than after
+// an interval.
+func (c Chore) OnADay() bool { return c.Weeks > 0 }
 
 // DefaultTolerance is used when a definition does not carry one: a quarter of
 // the interval, never less than a day. A weekly chore then reappears every
@@ -174,14 +191,29 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		       extract(epoch from ($2::timestamptz - b.since))::bigint,
 		       exists (select 1 from events e
 		                where e.chore_id = c.id and e.retracted_at is null),
-		       c.ask_days, c.ask_part
+		       c.ask_days, c.ask_part, c.on_weekday, c.every_weeks
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		   -- Snoozed is not done: the baseline above is untouched, so the chore
 		   -- is exactly as due as it was when the clock comes back round. This
 		   -- only stops the asking.
 		   and (c.snoozed_until is null or $2::timestamptz >= c.snoozed_until)
-		   and $2::timestamptz >= b.since + make_interval(secs => c.interval_seconds)
+		   and case when c.on_weekday is null then
+		            -- The interval rhythm, unchanged since 0002.
+		            $2::timestamptz >= b.since + make_interval(secs => c.interval_seconds)
+		       else
+		            -- A day, not an interval. Due when today *is* the day, the
+		            -- week lines up, and it has not already been done today.
+		            --
+		            -- The parity is counted in whole weeks from the chore's own
+		            -- creation rather than from an ISO week number, which wraps
+		            -- at the turn of the year and would flip every alternating
+		            -- chore in the house on 1 January.
+		            extract(dow from $2::timestamptz)::int = c.on_weekday
+		            and (($2::timestamptz)::date - c.created_at::date) / 7
+		                    % c.every_weeks = 0
+		            and b.since::date < ($2::timestamptz)::date
+		       end
 		   and (b.last_shown is null
 		        or $2::timestamptz >= b.last_shown
 		               + make_interval(secs => c.tolerance_seconds) - interval '2 hours')
@@ -208,7 +240,7 @@ func (s *Store) SearchChores(ctx context.Context, personID int64, query string, 
 		       extract(epoch from (now() - b.since))::bigint,
 		       exists (select 1 from events e
 		                where e.chore_id = c.id and e.retracted_at is null),
-		       c.ask_days, c.ask_part
+		       c.ask_days, c.ask_part, c.on_weekday, c.every_weeks
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		   and lower(c.name) like $2 escape '\'
@@ -225,7 +257,7 @@ func (s *Store) ActiveChores(ctx context.Context, personID int64) ([]Chore, erro
 		       extract(epoch from (now() - b.since))::bigint,
 		       exists (select 1 from events e
 		                where e.chore_id = c.id and e.retracted_at is null),
-		       c.ask_days, c.ask_part
+		       c.ask_days, c.ask_part, c.on_weekday, c.every_weeks
 		  from chores c join baseline b on b.id = c.id
 		 where c.person_id = $1 and c.active
 		 order by c.name`
@@ -248,9 +280,16 @@ func (s *Store) scanChores(ctx context.Context, q string, args ...any) ([]Chore,
 		// for nothing.
 		var askDays *int16
 		var askPart *string
+		// Both null together, or both set: the schema has a constraint saying
+		// so, because a weekday with no period would fall back to the interval
+		// silently.
+		var onWeekday, everyWeeks *int16
 		if err := rows.Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec, &sinceSec,
-			&c.EverDone, &askDays, &askPart); err != nil {
+			&c.EverDone, &askDays, &askPart, &onWeekday, &everyWeeks); err != nil {
 			return nil, fmt.Errorf("scanning chore: %w", err)
+		}
+		if onWeekday != nil && everyWeeks != nil {
+			c.Weekday, c.Weeks = time.Weekday(*onWeekday), int(*everyWeeks)
 		}
 		if askDays != nil {
 			c.Ask.Days = Days(*askDays)
@@ -402,4 +441,71 @@ func (s *Store) CompletedToday(ctx context.Context, personID int64, since time.T
 		names = append(names, name)
 	}
 	return names, rows.Err()
+}
+
+// SetChoreRhythm makes a chore come back on a day rather than after an
+// interval, or puts it back on an interval.
+//
+// Separate from UpsertChore rather than another pair of parameters on it,
+// because the two writes answer different questions and almost every caller
+// only ever asks the first. The screen asks how often; only if a day was named
+// does it then say which.
+//
+// It writes interval_seconds too, and that is the point of the whole design:
+// everything that renders "how often", every asking window and the tolerance
+// gate keep reading the column they always read. What the weekday adds is only
+// when the chore is *due*.
+//
+// weeks of 0 clears the rhythm, which is how a chore goes back to an interval
+// without being recreated.
+func (s *Store) SetChoreRhythm(ctx context.Context, personID, choreID int64, day time.Weekday, weeks int) error {
+	if weeks < 0 || weeks > 2 {
+		return fmt.Errorf("not a rhythm this product has: every %d weeks", weeks)
+	}
+	if weeks == 0 {
+		_, err := s.pool.Exec(ctx, `
+			update chores set on_weekday = null, every_weeks = null, updated_at = now()
+			 where id = $1 and person_id = $2`, choreID, personID)
+		if err != nil {
+			return fmt.Errorf("putting a chore back on an interval: %w", err)
+		}
+		return nil
+	}
+	if day < time.Sunday || day > time.Saturday {
+		return fmt.Errorf("not a day: %d", day)
+	}
+
+	every := time.Duration(weeks) * 7 * 24 * time.Hour
+	_, err := s.pool.Exec(ctx, `
+		update chores
+		   set on_weekday = $3, every_weeks = $4,
+		       interval_seconds = $5,
+		       tolerance_seconds = $6,
+		       updated_at = now()
+		 where id = $1 and person_id = $2`,
+		choreID, personID, int16(day), int16(weeks),
+		int64(every/time.Second), int64(DefaultTolerance(every)/time.Second))
+	if err != nil {
+		return fmt.Errorf("giving a chore a day: %w", err)
+	}
+	return nil
+}
+
+// DayNamed is a weekday from what somebody typed, and whether it was one.
+//
+// Three letters is enough and the whole word is accepted, because a picker
+// sends "thursday" and a person types "thu". Nothing here is localised: the
+// screen offers the days it knows and this reads them back.
+func DayNamed(said string) (time.Weekday, bool) {
+	said = strings.ToLower(strings.TrimSpace(said))
+	if len(said) < 3 {
+		return 0, false
+	}
+	for d := time.Sunday; d <= time.Saturday; d++ {
+		name := strings.ToLower(d.String())
+		if said == name || said == name[:3] {
+			return d, true
+		}
+	}
+	return 0, false
 }

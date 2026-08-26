@@ -91,7 +91,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// that end it. Each reuses the shape the chores already have.
 	m.Post("/pile/often", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askHowOften("/pile/chore",
-			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"}, "", "")
+			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"}, "", "", "")
 	}))))
 	m.Post("/pile/reword", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askForWords("/pile/fix",
