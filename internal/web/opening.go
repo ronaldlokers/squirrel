@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -119,6 +120,16 @@ func endsAsking(turns []squirrel.Turn) bool {
 // A conversation that needs a second store to know what it said is two records
 // that can disagree.
 func openingTurn(ctx context.Context, s Store, opts Options, personID int64, turns []squirrel.Turn) (squirrel.Turn, bool) {
+	// Where you got to comes first, before anything about what is waiting.
+	//
+	// If you were part way through the pile forty minutes ago, that is the most
+	// useful sentence this screen has — more useful than the dentist, because
+	// the dentist will still be there after you have been told. Everything
+	// below is what Buddy opens with when there is no run to come back to.
+	if turn, ok := whereYouGotTo(ctx, s, personID); ok {
+		return turn, true
+	}
+
 	waiting, err := s.Waiting(ctx, personID, now())
 	if err != nil {
 		// A count that cannot be read is a line not drawn. Nothing here is
@@ -167,6 +178,83 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 		return squirrel.Turn{}, false
 	}
 	return squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: words, Shown: body}, true
+}
+
+// whereYouGotTo offers you back the run you were part way through.
+//
+// Not `placeTurn` — that is taken, by the thing that draws a door. The fourth
+// name collision in this package (`.face`, `.say`, `.tcard` were the others),
+// and the reason to keep saying so is that each one compiled somewhere before
+// it failed somewhere else.
+//
+// It is not a question about the pile, and the difference matters: `carry on`
+// and `start fresh` are both answers about *you* rather than about a note, so
+// they are chips rather than buttons on a card. After an interruption either
+// one can be the honest answer, which is why neither is drawn louder.
+//
+// A run that has aged out is not mentioned at all — see squirrel.KeepingPlace.
+// The silence is the feature.
+func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn, bool) {
+	run, found, err := s.RunFor(ctx, personID, now())
+	if err != nil {
+		// The same failure as any other read here: a line not drawn. You came
+		// to talk, not to be told the database is unwell.
+		slog.Error("reading where you got to", "error", err)
+		return squirrel.Turn{}, false
+	}
+	if !found {
+		return squirrel.Turn{}, false
+	}
+
+	sh := drawn{
+		// Marked like any other opening, so it is said once rather than every
+		// time the page is drawn.
+		Opened: "place:" + run.Place,
+		Chips: []turnChip{
+			{Label: "carry on", Action: "/open", Fields: map[string]string{"where": run.Place}},
+			{Label: "start fresh", Action: "/place/fresh"},
+		},
+	}
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing where you got to", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{
+		Who:   squirrel.SpeakerBuddy,
+		Words: "You were part way through " + placeCalled(run.Place) + ", " + agoInWords(run.Since) + ".",
+		Shown: body,
+	}, true
+}
+
+// placeCalled is the door in the words the menu uses for it.
+func placeCalled(place string) string {
+	switch place {
+	case squirrel.RunPile:
+		return "the pile"
+	case "chores":
+		return "the chores"
+	case "tasks":
+		return "the tasks"
+	}
+	return "something"
+}
+
+// agoInWords is how long ago, rounded to something a person would say.
+//
+// Never a clock time. "40 minutes ago" is a fact about the gap; "you stopped at
+// 14:12" is a record of your afternoon, which is the thing this table exists
+// not to keep.
+func agoInWords(since time.Duration) string {
+	switch {
+	case since < 2*time.Minute:
+		return "a moment ago"
+	case since < time.Hour:
+		return fmt.Sprintf("%d minutes ago", int(since.Minutes()))
+	case since < 2*time.Hour:
+		return "about an hour ago"
+	}
+	return fmt.Sprintf("about %d hours ago", int(since.Hours()))
 }
 
 // withinADay is what is close enough to be worth mentioning unprompted.

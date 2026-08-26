@@ -266,6 +266,16 @@ type Store interface {
 	// nowhere, which is what makes the decision that allowed them reversible.
 	Waiting(ctx context.Context, personID int64, now time.Time) (squirrel.Waiting, error)
 
+	// Where you got to, when something interrupted you.
+	//
+	// Losing your place is the failure this product is built around, and until
+	// 26 August 2026 it kept no memory of a run in progress. There is
+	// deliberately no function here that returns a history of runs: one row per
+	// person, replaced, so this cannot become a record of your afternoons.
+	MarkRun(ctx context.Context, personID int64, place string, at time.Time) error
+	RunFor(ctx context.Context, personID int64, at time.Time) (squirrel.Run, bool, error)
+	EndRun(ctx context.Context, personID int64) error
+
 	SaveSteps(ctx context.Context, personID int64, itemID *int64, label string, steps []string) error
 	NextStep(ctx context.Context, personID int64) (squirrel.Step, bool, error)
 	StepDone(ctx context.Context, personID, stepID int64, at time.Time) error

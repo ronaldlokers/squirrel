@@ -80,6 +80,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Both writes carry the origin check as well as the identity one: the
 	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
+	// Starting fresh, when Buddy offers you back a run you were part way
+	// through. Its other answer — carry on — is an ordinary door press and
+	// needs no route of its own.
+	m.Post("/place/fresh", guard(opts, sameOrigin(freshHandler(s, opts))))
 	// Triage, in the conversation: skipping one, and changing your mind.
 	m.Post("/pile/later", guard(opts, sameOrigin(laterHandler(s, opts))))
 	m.Post("/pile/undo", guard(opts, sameOrigin(undoHandler(s, opts))))
@@ -166,7 +170,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
 	// Stopping. No store, on purpose: a route that cannot read cannot start
 	// keeping score of how much you did before you pressed it.
-	m.Get("/enough", guard(opts, enoughHandler(opts)))
+	m.Get("/enough", guard(opts, enoughHandler(s, opts)))
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
 	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
