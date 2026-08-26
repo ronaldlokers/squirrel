@@ -5,21 +5,16 @@ import (
 	"strings"
 )
 
-// What the model is told, and nothing else.
-//
-// The preamble is short because its job is narrow, and because a short prefix
-// is a cheap cached prefix. Every line in it earns its place:
+// What the model is told, and nothing else. Short because its job is narrow, and
+// because a short prefix is a cheap cached prefix.
 //
 //   - "one manageable thing at a time" is the product in a sentence.
-//   - The ban on plans is the failure mode this whole thing exists to avoid.
-//     It is said here as well as enforced in the guard, because a model that
-//     is asked not to is cheaper than a model whose answer gets thrown away.
-//   - "should", "just" and "simply" are the three words that turn help into a
-//     reprimand. Unlike the plan ban, nothing enforces this — it is a matter
-//     of tone, and a shape guard cannot judge tone.
-//   - The last line matters most. A model allowed to decline produces silence,
-//     and silence is the deterministic answer taking over, which is the floor
-//     everything here stands on.
+//   - The ban on plans is said here as well as enforced in the guard: a model
+//     asked not to is cheaper than one whose answer gets thrown away.
+//   - "should", "just" and "simply" turn help into a reprimand. Nothing enforces
+//     this — a shape guard cannot judge tone.
+//   - A model allowed to decline produces silence, and silence is the
+//     deterministic answer taking over.
 const preamble = `You are Buddy. You help one person with ADHD by handing them one
 manageable thing at a time.
 
@@ -28,22 +23,17 @@ One thing. Two sentences at most. Plain words.
 Never say "should", "just", or "simply".
 If you cannot answer usefully, say nothing rather than something generic.`
 
-// lowVoice is appended when capacity is low.
-//
-// Worth knowing what it implies: a plainer voice is itself legible. When
-// Squirrel goes flat, that is a visible sign it noticed something. That is
-// allowed — Principle 5 was opened on 20 August 2026 — but it is a signal
-// rather than a neutral setting, and it will be read as one.
+// lowVoice is appended when capacity is low. A plainer voice is itself legible:
+// when Squirrel goes flat, that is a visible sign it noticed something. Allowed,
+// but it is a signal rather than a neutral setting and will be read as one.
 const lowVoice = `
 
 When capacity is "low", drop warmth and character. Shorter sentences,
 plainer words, no turns of phrase. Say the thing and stop.`
 
-// System is the preamble plus the parts that vary with the turn.
-//
-// Both additions are appended rather than substituted, and they compose: an
-// overwhelm turn on a low day gets the ordering rule and the plainer voice,
-// which is exactly the turn where both matter most.
+// System is the preamble plus what varies with the turn. Both additions are
+// appended rather than substituted and they compose: an overwhelm turn on a low
+// day gets both.
 func System(n Now, kind string) string {
 	var b strings.Builder
 	b.WriteString(preamble)
@@ -58,23 +48,13 @@ func System(n Now, kind string) string {
 	return b.String()
 }
 
-// badlyLanded shows the model what has not landed here, in its own words.
+// badlyLanded shows the model what has not landed here, in its own words. An
+// instruction nobody can check is a wish; these are the actual sentences.
 //
-// Principle 5 lets the coach evaluate and compare, and the cost recorded when
-// it was opened is that it can say something that lands badly on a bad day.
-// The answer to that is not another instruction — an instruction nobody can
-// check is a wish — but the actual sentences, handed back.
-//
-// Three rules hold this to what it is for:
-//
-//   - **Examples, never a count.** "You have been told this four times" is a
-//     fact about the person and rule 2 forbids it on any surface, including
-//     this one, which the person never sees.
-//   - **What, not who.** The lines are shown as things that did not land, not
-//     as a record of somebody's bad nights.
-//   - **Silence when there is nothing.** An empty list adds no sentence at
-//     all, rather than "nothing has landed badly", which would invite the
-//     model to congratulate itself.
+//   - Examples, never a count.
+//   - What, not who: lines that did not land, not a record of bad nights.
+//   - Silence when there is nothing, rather than "nothing has landed badly",
+//     which would invite the model to congratulate itself.
 func badlyLanded(said []string) string {
 	if len(said) == 0 {
 		return ""
@@ -88,16 +68,11 @@ func badlyLanded(said []string) string {
 	return b.String()
 }
 
-// Context is the state of now, as one short line.
+// Context is the state of now, as one line rather than a block: a block reads as
+// a document being handed over. Roughly thirty tokens.
 //
-// A line rather than a block, because it is prepended to what the person said
-// and a block would read as a document being handed over. Roughly thirty
-// tokens, which is the whole of what the model is told about the day when no
-// tool has been called.
-//
-// What is deliberately absent: any mood word, any history, any count. Capacity
-// is already derived to "ok" or "low" before it reaches here — the model gets a
-// signal, never a diagnosis.
+// Deliberately absent: any mood word, any history, any count. Capacity is derived
+// to "ok" or "low" before it reaches here.
 func Context(n Now) string {
 	parts := make([]string, 0, 4)
 	if n.Clock != "" {

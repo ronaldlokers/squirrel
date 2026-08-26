@@ -12,18 +12,13 @@ import (
 
 // How you are right now, and what Squirrel is allowed to do with it.
 //
-// This is the sharpest thing in the product. A record of how someone felt is
-// data about the person, and the rule here is that nothing accrues that can be
-// destroyed — a fortnight of your own bad days rendered as a row of faces is
-// the counter this project refuses, wearing a face.
+// A record of how someone felt is data about the person. The owner's decision:
+// keep the history, never show it — a nudge that knows you have been flat can be
+// gentler, and that is the entire reason for asking.
 //
-// The owner's decision, made deliberately: keep the history, never show it.
-// The rows accumulate because a nudge that knows you have been flat can be
-// gentler, and that is the entire reason for asking. Nothing may render more
-// than the latest one — not a series, not a count, not a trend, and never a
-// sentence about the person. That is enforced by what this file exports rather
-// than by a comment: LatestCheckin returns one, and there is no function here
-// that returns many.
+// Nothing may render more than the latest one. That is enforced by what this file
+// exports: LatestCheckin returns one, and there is no function here returning
+// many.
 
 // Mood is one of the five drawn answers. They are not a scale and must never be
 // numbered: "low" and "frazzled" are different states wanting different
@@ -70,33 +65,21 @@ type Checkin struct {
 	SaidAt time.Time
 }
 
-// Fresh reports whether this reading still describes now.
-//
-// Six hours, because the question is "how is right now" and this morning is not
-// now. A stale reading is not a bad one — it is simply not an answer to the
-// question being asked, and treating it as one would let a rough Tuesday
-// quietly govern a fine Thursday.
+// Fresh reports whether this reading still describes now. Six hours: a stale
+// reading is not a bad one, it is simply not an answer to the question being
+// asked, and treating it as one lets a rough Tuesday govern a fine Thursday.
 func (c Checkin) Fresh(now time.Time) bool {
 	return now.Sub(c.SaidAt) < 6*time.Hour
 }
 
-// moodWindow is how far back the readings go when you ask for them.
-//
-// A fortnight: long enough to see whether a bad week was a bad week, short
-// enough that it is not a record of your year. It is a window rather than a
-// count, because "the last thirty readings" means something different
-// depending on how often you answered, and the question being asked is about
-// time.
+// moodWindow is how far back the readings go: a fortnight, long enough to see
+// whether a bad week was a bad week and short enough not to be a record of your
+// year. A window rather than a count, because the question is about time.
 const moodWindow = 14 * 24 * time.Hour
 
 // CheckinsSince is the readings, newest first, for the one screen and the one
-// command that ask.
-//
-// What it deliberately does not do: total anything, average anything, count
-// anything, or say a word about what the readings mean. It hands back what you
-// said, when you said it, and nothing else — the interpretation is yours, and
-// a product that offered one would be doing the thing the original rule
-// existed to prevent.
+// command that ask. It totals nothing, averages nothing and says nothing about
+// what they mean.
 func (s *Store) CheckinsSince(ctx context.Context, personID int64, since time.Time) ([]Checkin, error) {
 	rows, err := s.pool.Query(ctx, `
 		select mood, said_at from checkins
@@ -141,20 +124,13 @@ func (s *Store) RecordCheckin(ctx context.Context, personID int64, m Mood, sourc
 // LatestCheckin is how everything except one screen reads this table, and it
 // returns one row on purpose.
 //
-// It used to be the *only* way, and the comment here said so: a caller cannot
-// render a series it cannot obtain, which is a stronger guarantee than a rule
-// someone has to remember. That guarantee is gone as of 20 August 2026, and
-// what replaced it is narrower and worth stating exactly.
+// It used to be the only way, which was a stronger guarantee than a rule somebody
+// has to remember. CheckinsSince now exists and is reachable from exactly two
+// places, both asked for by name — not home, not the evening message, not the
+// picker, and not Buddy, who is handed a derived "ok" or "low".
 //
-// CheckinsSince below exists, and is reachable from precisely two places, both
-// of which you have to ask for by name. Nothing reads it on its own: not home,
-// not the evening message, not the picker, and not Buddy — the coach is handed
-// a capacity of "ok" or "low" derived from this one reading and has no way to
-// ask for more.
-//
-// So the rule is no longer enforced by the absence of a function. It is
-// enforced by there being exactly two callers, and by this paragraph telling
-// the next person why a third would be a different product.
+// So the rule is enforced by there being exactly two callers, and by this
+// paragraph telling the next person why a third would be a different product.
 func (s *Store) LatestCheckin(ctx context.Context, personID int64) (Checkin, bool, error) {
 	var c Checkin
 	var mood string
@@ -173,24 +149,16 @@ func (s *Store) LatestCheckin(ctx context.Context, personID int64) (Checkin, boo
 	return c, true, nil
 }
 
-// MoodCalendarWeeks is how many rows the readings page draws, and the reason
-// the page asks for more than the fortnight the command does.
-//
-// Six weeks is the smallest window in which a pattern is visible at all, and a
-// pattern is the only reason to keep these rows. A fortnight read as a list is
-// a fortnight; a fortnight drawn as a grid is two short rows and a lot of
-// white, which says nothing.
-//
-// It stops at six because the point of the window is still that this is not a
-// record of your year.
+// MoodCalendarWeeks is how many rows the readings page draws, and why it asks for
+// more than the fortnight the command does: six weeks is the smallest window in
+// which a pattern is visible, and a fortnight drawn as a grid is two short rows
+// and a lot of white. It stops at six because this is still not a record of your
+// year.
 const MoodCalendarWeeks = 6
 
-// MoodCalendarStart is the Monday the grid opens on: the Monday of this week,
-// less five more weeks.
-//
-// Weeks begin on Monday and the last row is the week you are in, so today
-// always has a cell and the row it is in is never full. Reading a calendar
-// means knowing where you are on it without being told.
+// MoodCalendarStart is the Monday the grid opens on. Weeks begin on Monday and
+// the last row is the week you are in, so today always has a cell and its row is
+// never full.
 func MoodCalendarStart(now time.Time) time.Time {
 	back := (int(now.Weekday()) + 6) % 7 // Sunday is 0 in Go and 6 here.
 	return startOfDay(now).AddDate(0, 0, -back-7*(MoodCalendarWeeks-1))

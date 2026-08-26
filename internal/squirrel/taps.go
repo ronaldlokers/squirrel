@@ -2,24 +2,13 @@ package squirrel
 
 // What a tap is, kept apart from what a sentence is.
 //
-// `apply.go` is two jobs wearing one struct. Most of it parses free text a
-// person typed into a room — `!at`, `!bring`, `!leaving`, `!fix`, the numbered
-// lists and their replies — and all of that is Campfire's shape: a room, a
-// message, a sentence to answer with.
+// A tap carries no words to parse and earns no reply — the boost is the receipt —
+// and what it does is turn a press into a state assertion against a row. Nothing
+// here knows which surface delivered the press, and nothing here should learn.
 //
-// This file is the other job, and it is the one that survives the room
-// becoming secondary. A tap is not a sentence. It carries no words to parse
-// and earns no reply — the boost is the receipt — and what it does is turn a
-// press into a state assertion against a row. Nothing here knows which surface
-// delivered the press, and nothing here should learn.
-//
-// They were adjacent in one file, which made it look as though resolving a tap
-// were more of the same command handling. It is not, and the difference
-// matters now rather than later: the roadmap's next structural move is the
-// screen becoming primary and the room becoming best-effort, and this is the
-// half that has to keep working exactly as it does.
-//
-// Same package, same behaviour, same tests. The boundary is the point.
+// Adjacent to apply.go's command handling, it looked like more of the same. It is
+// not, and this is the half that has to keep working unchanged as the room
+// becomes best-effort.
 
 import (
 	"context"
@@ -27,13 +16,11 @@ import (
 	"time"
 )
 
-// isActionPayload reports whether the payload the transport stored alongside
-// this text really came from an action webhook. ParseAction matches on text
-// alone, and a person typing "!action 451 done:2 true" into the room produces
-// text byte-identical to a genuine tap — the payload's "type" field is the
-// only thing that tells them apart. Anything that fails to unmarshal or
-// carries a different type is treated as not an action, which sends the
-// message down the normal matcher: a thought is never rejected.
+// isActionPayload reports whether the payload really came from an action webhook.
+// ParseAction matches on text alone, and someone typing "!action 451 done:2 true"
+// produces byte-identical text — the payload's "type" is the only thing telling
+// them apart. Anything that fails to unmarshal goes down the normal matcher, so a
+// thought is never rejected.
 func isActionPayload(payload json.RawMessage) bool {
 	var p struct {
 		Type string `json:"type"`
@@ -44,24 +31,20 @@ func isActionPayload(payload json.RawMessage) bool {
 	return p.Type == "action"
 }
 
-// isTap reports whether item is a genuine tap rather than a lookalike
-// message — see isActionPayload. Text alone (ParseAction) is never enough on
-// its own: someone can type "!action 5 done:1 true" into the room and
-// produce text byte-identical to a real tap, so every caller that needs to
-// tell the two apart must check both.
+// isTap reports whether item is a genuine tap rather than a lookalike message.
+// Text alone is never enough — see isActionPayload — so every caller that must
+// tell the two apart checks both.
 func isTap(item Item) bool {
 	_, ok := ParseAction(item.RawText)
 	return ok && isActionPayload(item.Payload)
 }
 
-// applyAction resolves a tap and applies it as a state assertion rather than a
-// delta: "selected" means the completion should exist, "not selected" means it
-// should not. Applying either twice lands in the same place, which is what
-// makes a retried delivery harmless — the payload carries no event id, so a
-// retry and a genuine second tap are indistinguishable.
+// applyAction applies a tap as a state assertion rather than a delta: applying
+// either twice lands in the same place, which is what makes a retried delivery
+// harmless — the payload carries no event id.
 //
-// Every path here is silent. The boost is the receipt; a reply per tap would
-// make the room unreadable.
+// Every path here is silent. The boost is the receipt; a reply per tap would make
+// the room unreadable.
 func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int64) error {
 	// A mood is answered before anything is looked up: it is not about a chore,
 	// so there is no prompt line to resolve and no position to mean anything.
@@ -88,11 +71,9 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 		return nil
 	}
 
-	// Resolved as a line rather than as a chore, because since the picker a
-	// button can sit over a task. Every branch below that is about a chore
-	// checks for one first — a `snooze` on a task is not a thing that can
-	// happen from any surface Squirrel prints, so it is a no-op rather than an
-	// error.
+	// Resolved as a line rather than a chore, because since the picker a button can
+	// sit over a task. A `snooze` on a task cannot happen from any surface Squirrel
+	// prints, so it is a no-op rather than an error.
 	line, ok, err := a.store.LineOnPrompt(ctx, prompt.ID, in.Position)
 	if err != nil || !ok {
 		return err
@@ -104,24 +85,18 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 
 	switch in.Kind {
 	case "undefine":
-		// DefinedMessage uses selection_mode "single", so deselecting the
-		// button — or Campfire clearing the retained selection — delivers
-		// "selected: false" for this same value. Only a selected tap is the
-		// correction being asked for; anything else must be a no-op, the same
-		// as an unselected "done" is for a completion.
+		// DefinedMessage uses selection_mode "single", so deselecting delivers
+		// "selected: false" for the same value. Only a selected tap is the correction
+		// being asked for.
 		if !in.Selected {
 			return nil
 		}
 		return a.store.DeactivateChore(ctx, c.ID)
 
 	case "snooze":
-		// "Not today", pressed. Tomorrow rather than a duration, because the
-		// label is the duration: a button cannot ask how long, and the honest
-		// answer is the one already written on it.
-		//
-		// Untapping clears it, which is the same shape as an unselected done
-		// retracting a completion — "actually, ask me now" is the same write
-		// with a time in the past rather than a second command.
+		// "Not today", pressed. Tomorrow rather than a duration, because the label is the
+		// duration. Untapping clears it, the same shape as an unselected done retracting
+		// a completion.
 		when := tomorrow(time.Now())
 		if !in.Selected {
 			when = time.Now().Add(-time.Minute)
@@ -157,13 +132,9 @@ func (a *Applier) applyAction(ctx context.Context, in ActionIntent, personID int
 	return nil
 }
 
-// applyItemAction is a tap that landed on a note or a task rather than a
-// chore.
-//
-// It exists because the picker can put a ✅ over something you decided to do,
-// and that button has to mean the same thing the tasks screen's own "did it"
-// means — the same store call, the same reversal. Silent like every other tap
-// path: the boost is the receipt.
+// applyItemAction is a tap that landed on a note or a task rather than a chore,
+// because the picker can put a ✅ over something you decided to do. Same store
+// call and same reversal as the tasks screen's own "did it".
 func (a *Applier) applyItemAction(ctx context.Context, in ActionIntent, personID int64, prompt Prompt, it Item) error {
 	switch in.Kind {
 	case "later":
@@ -173,19 +144,14 @@ func (a *Applier) applyItemAction(ctx context.Context, in ActionIntent, personID
 		return a.store.Refuse(ctx, personID, OfferTask, it.ID, time.Now())
 
 	case "done":
-		// A state assertion rather than a delta, exactly as it is for a chore:
-		// "selected" means it is done, unselected means it is not, and applying
-		// either twice lands in the same place. Untapping returns it to the
-		// pile's own `open`, which for a task is the tasks screen — the kind is
-		// untouched, because undoing a completion is not undoing the decision.
+		// A state assertion rather than a delta, as for a chore. Untapping returns it to
+		// `open`; the kind is untouched, because undoing a completion is not undoing the
+		// decision.
 		if !in.Selected {
 			return a.store.SetItemState(ctx, it.ID, ItemOpen, time.Now())
 		}
-		// Did is what completing an offer means, and this is completing one:
-		// the row was offered, it was tapped, and both halves of that — the
-		// state and the answer — belong together or they drift apart. They
-		// were written out here as well, which is two places that had to agree
-		// about one transition and no reason for the second to keep agreeing.
+		// Did is what completing an offer means, and this is completing one: the state
+		// and the answer belong together or they drift apart.
 		if err := a.store.Did(ctx, personID, Offer{Kind: OfferTask, RefID: it.ID}, time.Now()); err != nil {
 			return err
 		}
