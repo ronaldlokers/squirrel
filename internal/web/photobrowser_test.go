@@ -14,7 +14,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -302,34 +301,3 @@ func TestBrowserAnExistingPhotographCanBeChosen(t *testing.T) {
 	require.Equal(t, "image/*", c.eval(t,
 		`return document.querySelector(".slot input[name=photo]").getAttribute("accept")`))
 }
-
-// The sheet is measured in dvh, and this is the only check on it that means
-// anything.
-//
-// vh is the *large* viewport — the height the page would have if the browser's
-// own chrome were hidden. With an address bar on screen, which is most of the
-// time on a phone, a sheet anchored to the bottom at 88vh reaches higher than
-// the window actually shows, and the first thing over the top edge is the lid,
-// where the close button lives.
-//
-// It cannot be caught by driving a browser here: the emulator has no chrome to
-// retract, so both units agree and every geometric test passes either way.
-// That is exactly how this shipped twice. So the assertion is on the source —
-// blunt, and honest about being blunt.
-func TestTheSheetIsMeasuredInDynamicViewportHeight(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
-	require.NoError(t, err)
-
-	// Comments stripped first. The prose above this rule explains dvh at
-	// length, so a check on the raw bytes passes whatever the code does — which
-	// is what the first version of this test did.
-	naked := comments.ReplaceAllString(string(css), "")
-	require.Regexp(t, `max-height:\s*[0-9.]+dvh`, naked,
-		"the sheet went back to vh, which is not the height a phone shows")
-	require.NotRegexp(t, `dialog\.coachsheet[^}]*max-height:\s*[0-9.]+vh\s*;\s*}`, naked,
-		"a vh max-height is the last word on the sheet's height")
-}
-
-// CSS comments, for the check above. /* ... */ only; this stylesheet has no
-// other kind.
-var comments = regexp.MustCompile(`(?s)/\*.*?\*/`)
