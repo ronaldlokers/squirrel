@@ -221,6 +221,13 @@ type Store interface {
 	StartTimer(ctx context.Context, personID int64, label string, d time.Duration, now time.Time) (squirrel.Timer, error)
 	CurrentTimer(ctx context.Context, personID int64) (squirrel.Timer, bool, error)
 	StopTimer(ctx context.Context, personID int64) error
+	// The hyperfocus exit ramp. Opted in on at the moment a timer is started,
+	// on the screen and nowhere else — the chat, the coach and the nudge all
+	// start timers nobody ticked a box for.
+	ArmRamp(ctx context.Context, personID int64, on bool) error
+	RampDue(ctx context.Context, personID int64, at time.Time) (squirrel.Timer, bool, error)
+	RampSaid(ctx context.Context, personID int64, at time.Time) error
+	HushRamp(ctx context.Context, personID int64, at time.Time) error
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	// MoveItemState is the same write for a caller that knows what the note

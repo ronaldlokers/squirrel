@@ -33,6 +33,10 @@ type Timer struct {
 	// Ended is when it finished or was stopped, and the zero value means it is
 	// still running.
 	Ended time.Time
+	// Ramp says the exit ramp was opted in on when this timer was started.
+	// Only ever true for a timer somebody started on the screen and ticked the
+	// box for — never for one the chat, the coach or a nudge began.
+	Ramp bool
 }
 
 // Left is how much of it remains, never negative.
@@ -52,6 +56,16 @@ func (s *Store) StartTimer(ctx context.Context, personID int64, label string, d 
 	// ended_at is cleared as well as the rest: starting a timer replaces
 	// whatever was there, running or finished, and a new one must not inherit
 	// the last one's ending.
+	//
+	// `ramp` is cleared for a stronger version of the same reason. It is an
+	// opt-in made about one timer, and six things start timers — the chat's
+	// !timer, the coach's own hand, a nudge — none of which can have been
+	// opted in on. Left set, a timer the chat started would inherit the last
+	// screen-started one's box and interrupt somebody who never asked. The
+	// screen arms it again immediately afterwards; nothing else does.
+	//
+	// ramp_hushed_until is deliberately *not* cleared: "leave me alone" is
+	// about today, not about the timer that was running when it was said.
 	if _, err := s.pool.Exec(ctx, `
 		insert into timers (person_id, label, started_at, ends_at, said_at, ended_at)
 		values ($1, $2, $3, $4, null, null)
@@ -60,7 +74,9 @@ func (s *Store) StartTimer(ctx context.Context, personID int64, label string, d 
 		      started_at = excluded.started_at,
 		      ends_at = excluded.ends_at,
 		      said_at = null,
-		      ended_at = null`,
+		      ended_at = null,
+		      ramp = false,
+		      ramp_said_at = null`,
 		personID, label, t.Started, t.Ends); err != nil {
 		return Timer{}, fmt.Errorf("starting timer: %w", err)
 	}
@@ -207,4 +223,81 @@ func (s *Store) LastFocus(ctx context.Context, personID int64, now time.Time) (T
 		return Timer{}, false, fmt.Errorf("reading what you were on: %w", err)
 	}
 	return t, true, nil
+}
+
+// RampAfter is how long past a timer's end counts as "long past".
+//
+// Half an hour, flat, rather than a multiple of the timer. A multiple sounds
+// tidier and is wrong in both directions: it lets a two-hour session run four
+// hours before saying anything, and it interrupts a ten-minute one at twenty.
+// The number that matters is how long you have been gone, not what you
+// originally said.
+const RampAfter = 30 * time.Minute
+
+// ArmRamp turns the exit ramp on or off for the timer that is running.
+//
+// Separate from StartTimer rather than another parameter on it, because six
+// callers start timers and only one of them — the screen, where the checkbox
+// is — can possibly know the answer. The chat's `!timer`, the coach's own hand
+// and the nudge all start timers nobody opted in on, and they should.
+func (s *Store) ArmRamp(ctx context.Context, personID int64, on bool) error {
+	_, err := s.pool.Exec(ctx, `
+		update timers set ramp = $2, ramp_said_at = null where person_id = $1`,
+		personID, on)
+	if err != nil {
+		return fmt.Errorf("arming the exit ramp: %w", err)
+	}
+	return nil
+}
+
+// RampDue is a timer that ran out a while ago and was opted in, if it has not
+// been spoken about and today has not been hushed.
+//
+// Every one of those four conditions is doing work, and the query holds all of
+// them so that no caller can forget one.
+func (s *Store) RampDue(ctx context.Context, personID int64, at time.Time) (Timer, bool, error) {
+	var t Timer
+	err := s.pool.QueryRow(ctx, `
+		select label, started_at, ends_at from timers
+		 where person_id = $1
+		   and ramp
+		   and ended_at is null
+		   and ramp_said_at is null
+		   and (ramp_hushed_until is null or $2::timestamptz >= ramp_hushed_until)
+		   and $2::timestamptz >= ends_at + make_interval(secs => $3::double precision)`,
+		personID, at, int64(RampAfter/time.Second)).
+		Scan(&t.Label, &t.Started, &t.Ends)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Timer{}, false, nil
+	}
+	if err != nil {
+		return Timer{}, false, fmt.Errorf("reading the exit ramp: %w", err)
+	}
+	t.Started, t.Ends = s.here(t.Started), s.here(t.Ends)
+	return t, true, nil
+}
+
+// RampSaid marks it spoken, so it says it once and not once per page draw.
+func (s *Store) RampSaid(ctx context.Context, personID int64, at time.Time) error {
+	if _, err := s.pool.Exec(ctx,
+		`update timers set ramp_said_at = $2 where person_id = $1`, personID, at); err != nil {
+		return fmt.Errorf("marking the exit ramp said: %w", err)
+	}
+	return nil
+}
+
+// HushRamp is "leave me alone", and it means today rather than this timer.
+//
+// Until the end of the day in the person's own zone, not twenty-four hours:
+// somebody who says this at four in the afternoon is talking about this
+// afternoon, and a rolling day would silence tomorrow morning as well.
+func (s *Store) HushRamp(ctx context.Context, personID int64, at time.Time) error {
+	until := s.today(at).AddDate(0, 0, 1)
+	if _, err := s.pool.Exec(ctx,
+		`update timers set ramp_hushed_until = $2, ramp_said_at = $3 where person_id = $1`,
+		personID, until, at); err != nil {
+		return fmt.Errorf("hushing the exit ramp: %w", err)
+	}
+	return nil
 }

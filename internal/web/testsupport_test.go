@@ -29,6 +29,14 @@ type choreRhythm struct {
 }
 
 type fakeStore struct {
+	// The exit ramp, and what the screen did about it.
+	ramp        squirrel.Timer
+	hasRamp     bool
+	rampErr     error
+	rampSaidErr error
+	rampSaid    int
+	hushed      int
+	armed       []bool
 	// Something set aside that has gone quiet, and what the screen did about
 	// it.
 	quiet    squirrel.HeldItem
@@ -1225,4 +1233,30 @@ func (f *fakeStore) GoneQuiet(_ context.Context, _ int64, _ time.Time) (squirrel
 func (f *fakeStore) StillHolding(_ context.Context, _, itemID int64, _ time.Time) (bool, error) {
 	f.stilled = append(f.stilled, itemID)
 	return true, nil
+}
+
+// The exit ramp, faked. The four conditions on it are proved against Postgres
+// in internal/squirrel; what the screen has to be tested for is that it speaks
+// once, what it says, and what the three answers do.
+func (f *fakeStore) ArmRamp(_ context.Context, _ int64, on bool) error {
+	f.armed = append(f.armed, on)
+	return nil
+}
+
+func (f *fakeStore) RampDue(_ context.Context, _ int64, _ time.Time) (squirrel.Timer, bool, error) {
+	if f.rampErr != nil {
+		return squirrel.Timer{}, false, f.rampErr
+	}
+	return f.ramp, f.hasRamp, nil
+}
+
+func (f *fakeStore) RampSaid(_ context.Context, _ int64, _ time.Time) error {
+	f.rampSaid++
+	f.hasRamp = false
+	return f.rampSaidErr
+}
+
+func (f *fakeStore) HushRamp(_ context.Context, _ int64, _ time.Time) error {
+	f.hushed++
+	return nil
 }
