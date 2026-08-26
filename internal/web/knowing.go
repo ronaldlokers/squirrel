@@ -17,9 +17,8 @@ import (
 // the model's own words rather than a summary of them, and one press to throw
 // away.
 //
-// Deliberately not on the rail and not at the foot of the thread. It is not a
-// place you go; it is a thing you check when you wonder, and Buddy's own turn
-// is where wondering about Buddy happens.
+// Not a place you go. It is a thing you check when you wonder, so it hangs off
+// Buddy's own turn, which is where wondering about Buddy happens.
 
 // knowingChip hangs off Buddy's reply. It says what it is rather than naming a
 // feature: "what you know about me" is the question somebody actually has.

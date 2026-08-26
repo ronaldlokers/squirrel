@@ -8,8 +8,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// taskLimit caps both lists. The cap is what makes "there is more" truthful,
-// the same device the deck and the shelf use.
+// taskLimit caps both lists, which is what makes "there is more" truthful.
 const taskLimit = 30
 
 // Two ways out of a task, and only two.

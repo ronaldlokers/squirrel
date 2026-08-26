@@ -46,12 +46,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
 <link rel="stylesheet" href="/static/pile.css?v={{.V}}">
-{{/* crossorigin="use-credentials" is load-bearing and looks like noise.
-     A browser fetches a manifest with credentials *omitted* by default — even
-     same-origin — so behind forward-auth it gets Authentik's redirect and a
-     page of HTML instead of JSON. It cannot parse that, so it silently falls
-     back to a letter tile: the installed app shows an "S". Nothing logs, and
-     the icons are never even requested. */}}
+{{/* crossorigin="use-credentials" looks like noise and is kept deliberately.
+     A browser fetches a manifest with credentials *omitted* by default, even
+     same-origin — so any guard in front of this route answers with a redirect
+     and a page of HTML instead of JSON. The browser cannot parse that and
+     silently falls back to a letter tile: the installed app shows an "S",
+     nothing logs, and the icons are never requested.
+
+     The route is mounted outside the guard today, so this is belt and braces.
+     It costs one attribute and it is the failure nobody would diagnose. */}}
 <link rel="manifest" href="/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
 <meta name="theme-color" content="#3b2560">

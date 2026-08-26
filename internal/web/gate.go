@@ -47,8 +47,8 @@ type gateView struct {
 // The refusal names no group. Which group an account lacks is a fact about the
 // Authentik rather than about them, and saying it tells a stranger exactly
 // what to ask for.
-func saidAt(said string) (string, string) {
-	switch said {
+func saidAt(arrival string) (said, button string) {
+	switch arrival {
 	case "out":
 		return "you are signed out", "LET ME IN"
 	case "no":

@@ -10,19 +10,15 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The two places that are not doors.
+// The shelf and the set-aside.
 //
-// The shelf holds what you kept rather than did or dropped; the set-aside
-// holds what you cannot act on yet. Neither is on the rail, and that is
-// deliberate: the rail is four and its equality is the whole statement it
-// makes, and a door for the things you explicitly set aside would put them
-// back in front of you, which is the one thing setting them aside was for.
+// The shelf holds what you kept rather than did or dropped; the set-aside holds
+// what you cannot act on yet.
 //
-// They were pages until 25 August 2026 — `/kept` and `/held`, the last two
-// screens in a product whose every place is a message. What made it a defect
-// rather than an untidiness is that the only way to the shelf hung off the
-// drawn card in the pile's turn, so the moment there was nothing to decide
-// about, it was reachable from nowhere at all.
+// The way to the shelf used to hang off the drawn card in the pile's turn, so
+// the moment there was nothing to decide about it was reachable from nowhere at
+// all. Both are in the menu now, and elsewhereFromThePile puts them on every
+// branch of the pile's turn.
 
 // elsewhereFromThePile is the way to both, and it is on every branch of the
 // pile's turn — the one that hands you a note, the one that says there is

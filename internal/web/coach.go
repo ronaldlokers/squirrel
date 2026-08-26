@@ -254,8 +254,8 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 // backTolerant is where a form's "from" may send you.
 //
 // Only a path this screen serves, and only ever a path: the value arrives from
-// a form field and a form field is a place a stranger can type. An open
-// redirect from a page behind forward-auth is still an open redirect.
+// a form field, and a form field is a place a stranger can type. An open
+// redirect from a page behind a session is still an open redirect.
 func backTolerant(from string) string {
 	if !strings.HasPrefix(from, "/") || strings.HasPrefix(from, "//") {
 		return "/"
