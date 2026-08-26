@@ -26,19 +26,16 @@ import (
 // will be invented.
 const mostKnown = 6
 
-// knowingPreamble is what the model is told.
+// knowingPreamble is what the model is told, and every line of it is a refusal.
 //
-// Every line of it is a refusal, and the refusals are what make the result
-// usable. The ban on counting is rule 2 reaching a surface the person never
-// sees. The ban on "always" and "never" is the same ban written out, because
-// an absolute claim about somebody is a count with the number taken off.
+// The ban on "always" and "never" is the ban on counting written out: an
+// absolute claim about somebody is a count with the number taken off.
 //
 // "How they work" rather than "what they are like" is the load-bearing
 // distinction. The first produces "phone calls get done, forms get put off",
 // which changes what Buddy offers on a Tuesday. The second produces
-// "disorganised but well-meaning", which is a diagnosis nobody asked for and
-// the kind of sentence that would be genuinely upsetting to find written down
-// about you.
+// "disorganised but well-meaning" — a diagnosis nobody asked for, and upsetting
+// to find written down about you.
 const knowingPreamble = `You are Buddy. You are reading back a record of your own conversations
 with one person, to learn how they actually work.
 
@@ -126,11 +123,10 @@ func (p *Provider) Learn(ctx context.Context, personID int64, record []string) (
 // knowingIn reads the observations out of the tool call and holds them to
 // their shape.
 //
-// One bad observation does not take the others with it, which is the opposite
-// of what stepsIn does — and the difference is worth stating. Half a breakdown
-// is worse than none, because the half you keep is the half that fitted. Half
-// a set of observations is half a set of observations: they are independent
-// facts, and dropping one loses nothing the others depended on.
+// One bad observation does not take the others with it, unlike stepsIn: these
+// are independent facts, and dropping one loses nothing the others depended on.
+// Half a breakdown is worse than none; half a set of observations is half a set
+// of observations.
 func knowingIn(calls []toolCall) []string {
 	for _, call := range calls {
 		if call.Function.Name != "noticed" {
