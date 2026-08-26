@@ -24,7 +24,6 @@ func started(t *testing.T, store *squirrel.Store, p int64, ago time.Duration, ra
 	}
 }
 
-// A timer half an hour past its end, opted in, speaks.
 func TestATimerLongPastItsEndSpeaks(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
@@ -61,7 +60,6 @@ func TestATimerNobodyOptedInOnNeverSpeaks(t *testing.T) {
 	require.False(t, found, "it interrupted a timer nobody asked it to watch")
 }
 
-// It says it once.
 func TestItSpeaksOnce(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -79,8 +77,6 @@ func TestItSpeaksOnce(t *testing.T) {
 	require.False(t, found, "it said it twice about one timer")
 }
 
-// A new timer is a new decision, so it may speak again — but only if the box
-// was ticked again.
 func TestANewTimerMaySpeakAgain(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

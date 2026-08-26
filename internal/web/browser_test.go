@@ -489,8 +489,6 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 		`!!document.querySelector("#thread .turn:last-child .turncard .turnacts")`)
 }
 
-// Letters are actions, on the note Buddy is holding out.
-//
 // The deck's keys came with a machine for stamping a card and holding it still;
 // none of that crosses, because the answer here is a new turn. The letters do.
 func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {

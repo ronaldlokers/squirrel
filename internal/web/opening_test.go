@@ -93,8 +93,6 @@ func TestWhatCameBackIsSaidBeforeThePile(t *testing.T) {
 	require.NotContains(t, body, "not decided about")
 }
 
-// And the same sentence is not said twice.
-//
 // This is the defect the offer had for an afternoon: appended on every load,
 // so a reload put a second copy in the record. The offer refuses to talk over
 // an open turn, which is not enough here — this speaks when nothing is open.
@@ -168,8 +166,6 @@ func TestTheOpeningLineIsOneThing(t *testing.T) {
 	require.Less(t, len(said), 90, "it is a paragraph, not an opening")
 }
 
-// A count that cannot be read is a line not drawn. You came to talk, not to be
-// told the database is unwell.
 func TestAStoreThatCannotCountOpensWithNothing(t *testing.T) {
 	f := &fakeStore{checkin: fresh(), err: errTest}
 	m := routed(t, f)
@@ -199,8 +195,6 @@ func TestTheOpeningLineUsesThePersonsDay(t *testing.T) {
 	require.Contains(t, said, "00:30", "it printed the time in the wrong clock")
 }
 
-// The opening line does not swallow the offer.
-//
 // The offer is the product's whole argument — one thing, chosen for you — and
 // tonight's opening line turned it off on every day it spoke, which is most
 // days. An opening says what is true and asks nothing; it is not something on

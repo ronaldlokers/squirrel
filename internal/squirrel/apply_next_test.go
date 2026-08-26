@@ -69,7 +69,6 @@ func TestTheHandOffCanBeDoneStraightAway(t *testing.T) {
 	require.Equal(t, "done", stateOf(t, store, second))
 }
 
-// Ignoring it does nothing at all.
 func TestIgnoringTheHandOffChangesNothing(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
@@ -116,8 +115,6 @@ func TestNoHandOffWhileATimerIsRunning(t *testing.T) {
 	require.NotContains(t, reply, "the kitchen")
 }
 
-// Clearing the pile is a run of small decisions about what things are, and a
-// suggestion after each one would be the interruption this exists to reduce.
 func TestTriagingANoteHandsYouNothing(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)

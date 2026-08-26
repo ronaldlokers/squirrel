@@ -10,8 +10,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The scheduler is given a way to learn.
-//
 // The same check `Push` earned the hard way: `SchedulerOptions` has a `Learn`
 // field, `KnowingTick` returns immediately when it is nil, and a field left
 // unset in a struct literal is invisible — the symptom is Squirrel simply not
@@ -67,8 +65,6 @@ func TestWhatIsKnownReachesTheModel(t *testing.T) {
 
 var _ = squirrel.Learner(nil)
 
-// The screen is given a way to read the box.
-//
 // The third field to earn this check. `captureHandler` returns the old
 // behaviour when `Reads` is nil, so a field left unset in the options literal
 // is a box that silently goes back to being a filing cabinet — and the symptom
@@ -79,8 +75,6 @@ func TestTheScreenIsGivenAWayToReadTheBox(t *testing.T) {
 	require.NotNil(t, reader(stubCoach{}, nil))
 }
 
-// The screen is given the model in the house.
-//
 // The fourth field to earn this check. `whatBuddyMakesOfIt` falls back to the
 // rule when it is nil, so a field left unset is every capture going abroad
 // again — which is the defect this whole seam exists to fix, and it would be
@@ -95,8 +89,6 @@ func TestNoAddressMeansNoHouse(t *testing.T) {
 	require.Nil(t, coach.NewHouse("", "a small one"))
 }
 
-// The box is given all three of its tiers.
-//
 // The rule is compiled in and needs nothing. The other two are fields, and a
 // field in an inline struct literal is exactly what `Push` cost three releases
 // to learn about: nothing warns, nothing fails, and the symptom is a product
@@ -132,8 +124,6 @@ func (c *sayingCoach) Answer(_ context.Context, t coach.Turn) (coach.Reply, erro
 	return c.reply, nil
 }
 
-// The screen is given the place the coach asked to open.
-//
 // The fourth field to earn this check, and it is the same shape as the other
 // three: `Open` is a field in an inline literal in `coachWeb`, nothing warns if
 // it is dropped, and the symptom is Buddy saying "here they are" above nothing

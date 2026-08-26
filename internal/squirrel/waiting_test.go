@@ -102,7 +102,6 @@ func TestWaitingCountsOnlyTodaysFixedPoints(t *testing.T) {
 	require.Equal(t, 1, w.Agenda)
 }
 
-// A fixed point that has already started is over, not waiting.
 func TestWaitingIgnoresFixedPointsAlreadyPast(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

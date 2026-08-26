@@ -70,7 +70,6 @@ func TestWhereYouGotToWinsOverWhatHasGoneQuiet(t *testing.T) {
 	require.NotContains(t, body, "gone quiet")
 }
 
-// Nothing quiet, nothing said. This is the ordinary case.
 func TestWithNothingQuietNothingIsSaid(t *testing.T) {
 	f := quietPile()
 	f.hasQuiet = false
@@ -89,7 +88,6 @@ func TestAQuietReadThatFailsIsNotAnErrorPage(t *testing.T) {
 	require.NotContains(t, body, "cannot reach its memory")
 }
 
-// "still waiting" moves the clock and does not move the note.
 func TestStillWaitingMovesTheClockOnly(t *testing.T) {
 	f := quietPile()
 	f.items = []squirrel.Item{note(9, "the referral", squirrel.ItemWaiting)}

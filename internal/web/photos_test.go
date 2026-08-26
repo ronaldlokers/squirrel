@@ -14,8 +14,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// A photograph of the thing, instead of typing what it says.
-
 // photographed builds the multipart body a phone's camera actually sends.
 func photographed(t *testing.T, words, kind string, bytesIn []byte) (string, *bytes.Buffer) {
 	t.Helper()
@@ -130,7 +128,6 @@ func TestAVolumeThatRefusesKeepsTheWords(t *testing.T) {
 	require.Empty(t, sp.written)
 }
 
-// Words alone still post, with or without a camera on the page.
 func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	m := mountedWithCamera(t, &fakeStore{}, sp, ph)
@@ -292,8 +289,6 @@ func TestAnEmptyFilePartIsJustWords(t *testing.T) {
 	require.Empty(t, sp.written[0].PhotoName)
 }
 
-// A card prints the date the note carries, and does not reach for a clock.
-//
 // `toView` called `.Local()` on it until 25 August 2026 — the *process* clock,
 // and the pods run in UTC on purpose since #148. So anything captured after
 // ten in the evening wore the previous day's date. The store hands rows back

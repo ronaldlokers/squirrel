@@ -210,7 +210,6 @@ func TestRetiringAChoreSaysSomethingElse(t *testing.T) {
 	require.NotEqual(t, did.appended[1].Words, stopped.appended[1].Words)
 }
 
-// An act nobody offered does nothing and says nothing.
 func TestAChoreActThatWasNeverOfferedDoesNothing(t *testing.T) {
 	f := &fakeStore{chores: aChore()}
 	routed(t, f).call(t, "POST", "/chores/act", strings.NewReader("id=1&act=burn"))

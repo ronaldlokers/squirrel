@@ -116,7 +116,6 @@ func TestRespondIgnoredSendsNoContentType(t *testing.T) {
 	require.Empty(t, rec.Body.String())
 }
 
-// Still a 200. A non-200 carrying a Content-Type becomes an attachment.
 func TestRespondFailedIsStill200(t *testing.T) {
 	rec := httptest.NewRecorder()
 	transport.Respond(rec, squirrel.Failed)

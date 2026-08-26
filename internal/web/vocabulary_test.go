@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The two capture paths say the same words.
-//
 // pile.js carried a comment asserting exactly this — "the outcome is read out
 // of the URL it redirects to, in exactly the vocabulary the scriptless path
 // uses, so there is one set of answers rather than two that can disagree" —

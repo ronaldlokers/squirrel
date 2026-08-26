@@ -40,8 +40,6 @@ func TestChatSaysWhenTheMonthIsSpent(t *testing.T) {
 	require.Contains(t, (*got)[0].text, "done for this month",
 		"the room could not tell a spent month from a bad minute")
 
-	// No figure. What it costs is on a surface you go to on purpose; what
-	// belongs in the room is only that asking again tonight will not help.
 	for _, money := range []string{"€", "0.0", "spent", "ceiling", "budget"} {
 		require.NotContains(t, (*got)[0].text, money,
 			"the room was handed a number about money")

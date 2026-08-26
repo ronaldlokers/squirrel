@@ -101,8 +101,6 @@ func TestAFixedPointOutsideItsWindowIsNotDue(t *testing.T) {
 	require.False(t, found, "hours out, there is nothing to say yet")
 }
 
-// The leave-by push names where to go, and where to go is the fixed point.
-//
 // Nothing tested this payload at all: removing the URL only broke the build,
 // on an unused import, which is not proof of anything. A field nothing asserts
 // is a field that can quietly go back to being empty — and `Push.URL` already

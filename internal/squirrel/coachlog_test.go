@@ -57,7 +57,6 @@ func TestCoachSpendIsZeroBeforeAnythingIsSaid(t *testing.T) {
 	require.Equal(t, int64(0), spent)
 }
 
-// One person's spend is not another's.
 func TestCoachSpendIsPerPerson(t *testing.T) {
 	ctx := context.Background()
 	store := withStore(t)

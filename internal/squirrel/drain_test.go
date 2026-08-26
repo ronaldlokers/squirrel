@@ -360,8 +360,6 @@ func TestDrainRunStopsWithTheContext(t *testing.T) {
 	}
 }
 
-// A capture with no conversation is not applied at all.
-//
 // The rule is about what the applier is for: every branch of it ends in
 // something said back, so with nowhere to say it there is nothing to run. The
 // screen's slot is the case that made it matter — it spools like the room now,

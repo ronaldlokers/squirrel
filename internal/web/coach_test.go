@@ -287,8 +287,6 @@ func onlyWords(markup string) string {
 	return htmlpkg.UnescapeString(out.String())
 }
 
-// What the coach has cost, on the reply that cost it.
-//
 // The sheet carried this in its own lid, and the rule it protects is that a
 // running cost must never be a number you meet before you have asked for
 // anything. The sheet is gone; the reply is the one place left that satisfies
@@ -322,7 +320,6 @@ func TestASpendThatCannotBeReadIsNotShown(t *testing.T) {
 	require.NotContains(t, asked(t, m, f, "said=what+now"), "€")
 }
 
-// With no coach there is nothing to report on, so nothing reports.
 func TestWithNoCoachThereIsNoSpendLine(t *testing.T) {
 	f := withOffer(nil)
 	m := mounted(t, f)
@@ -355,8 +352,6 @@ func TestOnlyAModelsWordsOfferTheWayToSayTheyLandedBadly(t *testing.T) {
 		"that went badly")
 }
 
-// The old addresses still answer. A bookmark that dies quietly is worse than a
-// redirect nobody notices.
 func TestTheOldCoachURLsRedirect(t *testing.T) {
 	m := mounted(t, &fakeStore{})
 

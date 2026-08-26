@@ -52,7 +52,6 @@ func TestBoringIsJustTheBodyDouble(t *testing.T) {
 	require.False(t, u.Ask)
 }
 
-// Not today is not an obstacle, it is a no.
 func TestNotTodayRefusesAndSaysNothingElse(t *testing.T) {
 	u := squirrel.UnstuckFor(squirrel.BlockerNotToday)
 	require.True(t, u.Refuse)

@@ -91,8 +91,6 @@ func TestBrowserTappingANotificationDoesNotReloadTheFrontDoor(t *testing.T) {
 	require.Equal(t, float64(1), got["focused"])
 }
 
-// And with nothing open at all it still opens the front door, which is what it
-// always did.
 func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.T) {
 	c, _ := open(t, aPile())
 
@@ -101,9 +99,6 @@ func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.
 	require.Equal(t, []any{"opened /"}, got["went"])
 }
 
-// A leave-by notification lands on the fixed point it is about, not on the
-// front door.
-//
 // The front door was right while there was nowhere better to go, and its
 // reasoning is kept: a link to something already done is worse than a page
 // saying what is true now. A fixed point inside its leave-by window is the one

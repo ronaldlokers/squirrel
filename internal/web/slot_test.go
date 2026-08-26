@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Keeping something does not take the page away.
-//
 // It used to mean the page did not move at all, because the slot was in the
 // middle of a screen and posting it navigated you to the top of a fresh one.
 // The dock is pinned and the answer arrives at the end of the conversation, so
@@ -133,9 +131,6 @@ func TestBrowserAnEmptySlotSaysNothing(t *testing.T) {
 	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`))
 }
 
-// The live region says what Buddy said, and the mechanism that makes it do so
-// is easy to break silently.
-//
 // thread.js announces the newest turn by reading it out of the DOM. Buddy's
 // words stopped being a bubble on 26 August 2026, and the selector was left
 // reading `.bub` alone for one commit — which found nothing for every turn

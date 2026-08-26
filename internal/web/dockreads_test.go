@@ -31,8 +31,6 @@ func aQuestion(reply string) func(string) (string, bool, string, error) {
 	return func(string) (string, bool, string, error) { return reply, false, "", nil }
 }
 
-// A thought never reaches a model at all.
-//
 // This is the architecture the product states and briefly stopped following:
 // rules narrow, and the model answers the few that survive. Almost everything
 // typed into this box is a thought, so almost everything costs nothing.
@@ -156,7 +154,6 @@ func TestAPhotographIsNeverJudged(t *testing.T) {
 	require.Empty(t, f.states)
 }
 
-// An empty box is still nothing at all, and costs nothing.
 func TestAnEmptyBoxAsksNothing(t *testing.T) {
 	f := &fakeStore{}
 	m := mountedReading(t, f, aThought("should not be called"))
@@ -220,7 +217,6 @@ func TestTheHouseOverrulesTheRule(t *testing.T) {
 	require.Equal(t, squirrel.ItemDropped, f.states[7])
 }
 
-// A house that does not answer falls through to the rule rather than guessing.
 func TestAHouseThatDoesNotAnswerFallsThroughToTheRule(t *testing.T) {
 	f := &fakeStore{}
 	m := newTestMux()
@@ -280,8 +276,6 @@ func TestAnAnswerDoesNotOfferToBeAnswered(t *testing.T) {
 	require.NotContains(t, string(f.appended[1].Shown), "answer this")
 }
 
-// And never when there is nobody to ask. A control that cannot work is worse
-// than one that was never drawn.
 func TestWithNoCoachThereIsNoWayToBeAnswered(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/capture", strings.NewReader("text=the+boiler+again"))

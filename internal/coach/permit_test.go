@@ -93,7 +93,6 @@ func TestOnlyOneCallHoldsTheGate(t *testing.T) {
 	third.Release()
 }
 
-// Releasing twice is not releasing somebody else's turn.
 func TestReleasingTwiceFreesOneTurn(t *testing.T) {
 	freshGate(t)
 	b := Budget{Log: gateLog{}}

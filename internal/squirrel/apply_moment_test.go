@@ -44,7 +44,6 @@ func TestAFixedPointIsKeptFromAPlainMessage(t *testing.T) {
 	require.True(t, found)
 }
 
-// And the note that merely mentions a time is still a note.
 func TestAThoughtWithATimeInItIsStillANote(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

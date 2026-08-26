@@ -247,7 +247,6 @@ func withUpcoming(ms ...squirrel.Moment) *fakeStore {
 	return &fakeStore{upcoming: ms}
 }
 
-// Opening one draws it with what to take and the notes pointing at it.
 func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
 	f.attached = []squirrel.Item{
@@ -262,7 +261,6 @@ func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
 	require.Contains(t, shown, "the referral letter")
 }
 
-// A fixed point that is not yours draws nothing and says nothing.
 func TestAFixedPointThatIsNotYoursDrawsNothing(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=99"))
@@ -308,8 +306,6 @@ func TestAnsweringMakesItOnThatDay(t *testing.T) {
 	require.Equal(t, 30, f.moments[0].Starts.Minute())
 }
 
-// The picker and a typed sentence agree about what a time is. Asserted on the
-// hour and minute, not on a string.
 func TestThePickerAndTheSentenceAgreeAboutTheTime(t *testing.T) {
 	typed, ok := squirrel.ParseMoment("at 14:30 dentist", now())
 	require.True(t, ok)

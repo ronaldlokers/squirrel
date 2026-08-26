@@ -33,8 +33,6 @@ func TestPromotingANoteSaysItBecameATask(t *testing.T) {
 	require.NotContains(t, f.appended[1].Words, "done")
 }
 
-// And the way back is its own verb.
-//
 // The note's state never moved — what changed was its kind — so `act=open`
 // undoes nothing at all. Putting it back means making it a note again, which
 // is the same lesson setting-aside landed on: some transitions come back by

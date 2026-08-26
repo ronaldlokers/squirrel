@@ -12,8 +12,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// A fixed point comes back in the person's clock, not the driver's.
-//
 // A timestamptz is an instant and carries no zone, so pgx hands it back in
 // UTC. Every one of these times is then printed — "at 14:30", "leave about
 // 14:05" — and printing the right instant with the wrong digits on it is a

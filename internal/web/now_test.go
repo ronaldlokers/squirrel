@@ -65,8 +65,6 @@ func TestWithNoFreshReadingTheRegionAsksInstead(t *testing.T) {
 	require.NotContains(t, body, `class="offer"`)
 }
 
-// A picker that cannot answer must not take down a page that rendered without
-// one for the product's whole life.
 func TestTheOfferFailingLeavesHomeStanding(t *testing.T) {
 	s := answered(aTask)
 	s.err = errTest

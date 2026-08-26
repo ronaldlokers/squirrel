@@ -34,8 +34,6 @@ func TestTheExitRampSaysHowLong(t *testing.T) {
 	require.NotContains(t, body, "160 minutes")
 }
 
-// It offers a place to stop rather than telling you to. "after this bit" is
-// the difference between a suggestion and an alarm.
 func TestItOffersAPlaceToStopRatherThanTellingYouTo(t *testing.T) {
 	f := rampingPile()
 	body := thread(t, f)
@@ -48,7 +46,6 @@ func TestItOffersAPlaceToStopRatherThanTellingYouTo(t *testing.T) {
 	}
 }
 
-// Three answers, and leaving is not the only one.
 func TestTheExitRampOffersThreeAnswers(t *testing.T) {
 	body := thread(t, rampingPile())
 
@@ -67,7 +64,6 @@ func TestDrawingItMarksItSaid(t *testing.T) {
 	require.Equal(t, 1, f.rampSaid, "it was shown without being marked said")
 }
 
-// And if it cannot be marked, it is not said at all. Not said beats said twice.
 func TestIfItCannotBeMarkedItIsNotSaid(t *testing.T) {
 	f := rampingPile()
 	f.rampSaidErr = errors.New("the database is unwell")
@@ -108,7 +104,6 @@ func TestARampReadThatFailsIsNotAnErrorPage(t *testing.T) {
 	require.Contains(t, body, `id="thread"`)
 }
 
-// The box is what arms it, and only the screen has one.
 func TestTickingTheBoxArmsTheRamp(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)

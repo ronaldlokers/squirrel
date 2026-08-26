@@ -32,7 +32,6 @@ func setAside(t *testing.T, store *squirrel.Store, p int64, text string,
 	return id
 }
 
-// Something waiting three weeks has gone quiet, and comes back.
 func TestSomethingWaitingLongEnoughComesBack(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
@@ -46,7 +45,6 @@ func TestSomethingWaitingLongEnoughComesBack(t *testing.T) {
 	require.InDelta(t, (22 * 24 * time.Hour).Hours(), got.Since.Hours(), 2)
 }
 
-// Something parked last week has not.
 func TestSomethingParkedRecentlyStaysQuiet(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
@@ -105,7 +103,6 @@ func TestTheOldestOneComesBack(t *testing.T) {
 	require.Equal(t, "the older one", got.Text)
 }
 
-// "still waiting" moves the clock and touches nothing else.
 func TestStillWaitingMovesTheClockAndNothingElse(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

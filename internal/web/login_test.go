@@ -51,8 +51,6 @@ func (f *fakeSessions) EndSession(_ context.Context, token []byte) error {
 	return nil
 }
 
-// A GET for a page with no session goes to the gate, carrying where it was
-// going.
 func TestAPageWithNoSessionGoesToTheGate(t *testing.T) {
 	m := mounted(t, &fakeStore{})
 	w := m.callAnonymously(t, "GET", "/moods", nil)
@@ -93,7 +91,6 @@ func TestTheGateIsOutsideTheGuard(t *testing.T) {
 	require.Equal(t, http.StatusOK, m.callAnonymously(t, "GET", "/auth", nil).Code)
 }
 
-// A good callback opens a session and puts you back where you were going.
 func TestAGoodCallbackOpensASessionAndSendsYouOn(t *testing.T) {
 	sess := newFakeSessions()
 	m, idp := mountedWithAGate(t, &fakeStore{}, sess)
@@ -201,7 +198,6 @@ func TestASessionThatCannotBeWrittenIsNotALogin(t *testing.T) {
 		"a cookie was set for a session that was never opened")
 }
 
-// Starting a login sets state and a verifier and sends you to Authentik.
 func TestStartingALoginSendsYouToAuthentik(t *testing.T) {
 	sess := newFakeSessions()
 	m, idp := mountedWithAGate(t, &fakeStore{}, sess)
@@ -217,8 +213,6 @@ func TestStartingALoginSendsYouToAuthentik(t *testing.T) {
 	require.NotNil(t, cookieNamed(w, stateCookie))
 }
 
-// Signing out ends the session and lands somewhere that does not bounce
-// straight back in.
 func TestSigningOutEndsTheSessionAndLandsOnTheGate(t *testing.T) {
 	sess := newFakeSessions()
 	m, _ := mountedWithAGate(t, &fakeStore{}, sess)
@@ -252,7 +246,6 @@ func TestSigningOutWithNoSessionIsFine(t *testing.T) {
 	require.Equal(t, "/auth?said=out", w.Header().Get("Location"))
 }
 
-// A session resolves to its person for every request afterwards.
 func TestASessionIsWhoYouAreForEveryRequestAfterwards(t *testing.T) {
 	sess := newFakeSessions()
 	m, _ := mountedWithAGate(t, &fakeStore{}, sess)

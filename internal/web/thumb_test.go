@@ -64,8 +64,6 @@ func storeWithPhoto(id int64) *fakeStore {
 	}}}
 }
 
-// The card asks for the smaller copy, not the photograph.
-//
 // This is the bandwidth half of the fix: the card is 260 pixels wide and the
 // original is a photograph from a phone.
 func TestACardAsksForTheSmallerCopy(t *testing.T) {
@@ -80,7 +78,6 @@ func TestACardAsksForTheSmallerCopy(t *testing.T) {
 	require.Contains(t, body, `href="/photo/7"`, "there is no way to the whole picture")
 }
 
-// And the smaller copy is what that route hands back.
 func TestTheThumbRouteServesTheSmallerCopy(t *testing.T) {
 	ph := photosOnDisk(t)
 	w := askForThumb(t, storeWithPhoto(7), ph, "7")

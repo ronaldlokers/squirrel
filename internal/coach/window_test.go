@@ -41,9 +41,6 @@ func TestConversationsKeepOnlyTheNewestFew(t *testing.T) {
 	require.Equal(t, "three", recent[0].Said)
 }
 
-// Trimming on read rather than only on write is what makes the age bound real.
-// A conversation that stopped an hour ago is dropped when it is next asked
-// for, not left waiting for a write that may never come.
 func TestConversationsForgetAnOldConversationOnRead(t *testing.T) {
 	c := coach.NewConversations()
 	c.Add(1, "this morning", "ok", august.Add(-3*time.Hour))

@@ -39,8 +39,6 @@ func TestThePileOffersTheWayToStop(t *testing.T) {
 	require.Contains(t, body, squirrel.Say(squirrel.SayingStop, time.Now()))
 }
 
-// Nothing about how much you did. Not a count, not a word for one, not a
-// judgement about the size of it.
 func TestStoppingSaysNothingAboutHowMuchYouDid(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String()
 

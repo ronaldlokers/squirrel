@@ -26,8 +26,6 @@ func TestFixingANoteChangesOnlyTheWords(t *testing.T) {
 	require.Equal(t, was.State, f.items[0].State, "and it is where it was")
 }
 
-// A note cannot be emptied into nothing. That is what dropping is for, and
-// dropping is reversible.
 func TestANoteCannotBeFixedIntoNothing(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
 

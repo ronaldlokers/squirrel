@@ -12,7 +12,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// A weekday chore is due on its day and on no other.
 func TestAWeekdayChoreIsDueOnItsDay(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -39,7 +38,6 @@ func TestAWeekdayChoreIsDueOnItsDay(t *testing.T) {
 	}
 }
 
-// Alternating skips a week, which is the whole reason this exists.
 func TestAnAlternatingChoreSkipsAWeek(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

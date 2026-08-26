@@ -60,7 +60,6 @@ func TestATaskCanBecomeANoteAgain(t *testing.T) {
 	require.Equal(t, items[0].ID, pile[0].ID)
 }
 
-// Done archives it, and the archive holds only tasks — never a done note.
 func TestTheArchiveHoldsOnlyTasksThatAreDone(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

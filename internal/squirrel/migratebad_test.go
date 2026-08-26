@@ -26,8 +26,6 @@ func storeForMigrations(t *testing.T) *Store {
 	return store
 }
 
-// A migration that will not apply says so, against a real database.
-//
 // Boot retries a bad migration and an unreachable database identically — on
 // purpose, because nothing there may block a capture being accepted — so the
 // log is the only thing that tells them apart, and it used to call both

@@ -169,8 +169,6 @@ func agedTimer(t *testing.T, store *squirrel.Store, personID int64, by time.Dura
 	require.NoError(t, err)
 }
 
-// "Not now" turns the breadcrumb down, like it turns everything else down.
-//
 // Reported live on 23 August: the button on home does nothing. It renders for
 // this offer, it posts, the refusal is written, and the picker hands the same
 // breadcrumb straight back — because rule 3 was the one rule that never read

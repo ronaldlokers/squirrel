@@ -261,7 +261,6 @@ func TestWalkingBackDoesNotAsk(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// Answering records the reading and writes both turns.
 func TestAnsweringTheCheckinWritesTurnsAndRecords(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/mood", strings.NewReader("mood=good"))
@@ -424,7 +423,6 @@ func TestAFragmentAndAPageRenderTheSameTurn(t *testing.T) {
 	require.NotContains(t, fragment, "railwrap")
 }
 
-// A fragment press answers with the new turns rather than a redirect.
 func TestAFragmentPressAnswersWithTheNewTurns(t *testing.T) {
 	w := routed(t, &fakeStore{}).callFragment(t, "/capture", "text=milk")
 
@@ -529,7 +527,6 @@ func TestNothingIsOfferedOverAnUnansweredQuestion(t *testing.T) {
 	require.Contains(t, body, `class="pick"`, "the question keeps its answers")
 }
 
-// The pile hands you one note, with the four ways out of it.
 func TestOpeningThePileHandsYouOneNote(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(9, "the boiler makes a noise", squirrel.ItemOpen),
@@ -617,7 +614,6 @@ func TestANoteCanBeAskedTheThreeQuestions(t *testing.T) {
 	}
 }
 
-// A note that is not yours cannot be asked about either.
 func TestANoteThatIsNotYoursIsNotAskedAbout(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/pile/reword", strings.NewReader("id=99"))
@@ -636,7 +632,6 @@ func TestRewordingSaysItAndCarriesOn(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "what it says now")
 }
 
-// Setting one aside says so, and hands you the next.
 func TestSettingOneAsideSaysSoAndCarriesOn(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(9, "the boiler", squirrel.ItemOpen),
@@ -747,7 +742,6 @@ func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
 	}
 }
 
-// A pile it cannot read says so rather than reading as empty.
 func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
 	f := &fakeStore{itemsErr: errTest}
 	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
@@ -778,7 +772,6 @@ func TestPressingTheWayBackPutsItBack(t *testing.T) {
 	require.Equal(t, squirrel.ItemOpen, f.states[9], "the way back did not reverse it")
 }
 
-// An undo that names something that was never offered does nothing.
 func TestAnUndoThatWasNeverOfferedDoesNothing(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
 	routed(t, f).call(t, "POST", "/pile/undo", strings.NewReader("id=9&act=unburn&was=open"))

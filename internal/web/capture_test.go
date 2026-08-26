@@ -155,8 +155,6 @@ func (signedInAs) OpenSession(context.Context, int64, string, []byte, time.Time,
 }
 func (signedInAs) EndSession(context.Context, []byte) error { return nil }
 
-// A capture is spooled under the sub of whoever typed it.
-//
 // This is the trap the design's section 4 names. The screen does not write to
 // Postgres — it spools, with a sender string, and the drain resolves the
 // owner from that string rather than from the session. So the sender has to be

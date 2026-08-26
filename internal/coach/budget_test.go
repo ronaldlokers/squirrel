@@ -131,8 +131,6 @@ func TestSpentReportsTheMonthAndTheCeiling(t *testing.T) {
 	require.Equal(t, int64(10_000_000), ceiling)
 }
 
-// It fails quiet, not closed. A spend that cannot be read is a line that is
-// not drawn — unlike Allows, where the same failure has to stop a call.
 func TestSpentFailsQuietRatherThanClosed(t *testing.T) {
 	b := coach.Budget{Log: &fakeLog{err: errors.New("no database")}, CeilingFor: coach.FlatCeiling(10_000_000)}
 
@@ -150,9 +148,6 @@ func TestSpentWithNoLogSaysNothing(t *testing.T) {
 	require.False(t, ok)
 }
 
-// Rounded up rather than to nearest, so the figure never reads lower than what
-// was actually spent. Being told €0.00 after a month of calls would be worse
-// than being told €0.01.
 func TestEurosNeverReadsLowerThanWhatWasSpent(t *testing.T) {
 	require.Equal(t, "€0.00", coach.Euros(0))
 	require.Equal(t, "€0.01", coach.Euros(1))

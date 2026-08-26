@@ -117,8 +117,6 @@ func TestNextWalksTheSequenceAndThenStops(t *testing.T) {
 
 	end := breaking(t, store, p, "!next", nil)
 	require.Contains(t, end, "the tax thing")
-	// Nothing is celebrated and nothing is totalled. Finishing a breakdown is
-	// a normal ending.
 	require.NotContains(t, end, "2")
 	require.NotContains(t, end, "well done")
 }

@@ -60,7 +60,6 @@ func TestRedeliveredTapEarnsOnlyOneReaction(t *testing.T) {
 	require.Len(t, *boosts, 1, "a redelivered tap must not earn a second reaction")
 }
 
-// Un-tapping is a correction, not an achievement.
 func TestUnTappingEarnsNothing(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

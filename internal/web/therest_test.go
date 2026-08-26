@@ -148,8 +148,6 @@ func TestNoChipInTheConversationIsALink(t *testing.T) {
 	require.NotContains(t, body, `href="/pile`)
 }
 
-// The dock covers the end of the page unless the page leaves room for it.
-//
 // The clearance was on `.thread`, and `.thread` is not the last thing on the
 // page: the two chips and the way out sit below it, outside its padding. On a
 // phone they were behind the dock with no way to scroll them clear — reported

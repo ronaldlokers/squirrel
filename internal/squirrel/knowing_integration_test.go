@@ -13,8 +13,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// What Squirrel has come to know about how you work.
-
 func TestWhatIsKnownIsReplacedRatherThanAccumulated(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -94,7 +92,6 @@ func TestAnEmptyPassLeavesNoMarker(t *testing.T) {
 	require.True(t, at.Year() < 2000)
 }
 
-// One press throws it all away.
 func TestForgettingThrowsItAllAway(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -148,7 +145,6 @@ func TestNothingCountableIsKept(t *testing.T) {
 	require.Equal(t, []string{"Phone calls get done; forms get put off."}, known)
 }
 
-// A paragraph about somebody is a paragraph the model wrote to itself.
 func TestAParagraphIsNotAnObservation(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -179,7 +175,6 @@ func TestANumberedObservationLosesItsNumber(t *testing.T) {
 	require.Equal(t, []string{"Phone calls get done."}, known)
 }
 
-// The same observation twice is one observation.
 func TestTheSameObservationTwiceIsKeptOnce(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

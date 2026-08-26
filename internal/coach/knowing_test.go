@@ -8,8 +8,6 @@ import (
 
 // Coming to know somebody.
 
-// The model is told what is known and told never to say it back.
-//
 // Without the last line a model handed a list of observations will demonstrate
 // that it has them — "I know forms are hard for you" — which is being told
 // what a machine has concluded about you, mid-sentence, when you asked about
@@ -83,7 +81,6 @@ func TestNoMoreThanSixAreKept(t *testing.T) {
 	require.NotEmpty(t, many)
 }
 
-// An answer that is not this tool is not an answer.
 func TestAnotherToolIsNotAnObservation(t *testing.T) {
 	calls := noticedCall("steps", `{"steps":["open the letter"]}`)
 

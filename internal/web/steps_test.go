@@ -135,7 +135,6 @@ func TestFinishingAStepWillNotSendYouSomewhereElse(t *testing.T) {
 	require.Equal(t, "/", w.Header().Get("Location"))
 }
 
-// A step is never a count of what is left.
 func TestAStepOnTheScreenNeverSaysHowManyAreLeft(t *testing.T) {
 	f := withOffer(nil)
 	f.steps = []squirrel.Step{{ID: 1, Body: "open the letter"}}

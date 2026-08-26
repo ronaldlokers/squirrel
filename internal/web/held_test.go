@@ -71,8 +71,6 @@ func TestNothingSetAsideReadsAsNothing(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "Nothing set aside")
 }
 
-// No count anywhere, in either direction. A number beside stalled work is a
-// reproach, and the point of setting it aside was to stop being asked about it.
 func TestWhatYouSetAsideNeverEmitsACount(t *testing.T) {
 	held := []squirrel.HeldItem{}
 	for i := int64(1); i <= 7; i++ {
@@ -85,7 +83,6 @@ func TestWhatYouSetAsideNeverEmitsACount(t *testing.T) {
 	}
 }
 
-// That there is more, never how much more.
 func TestWhatYouSetAsideSaysThereIsMoreWithoutSayingHowMuch(t *testing.T) {
 	held := []squirrel.HeldItem{}
 	for i := int64(1); i <= 25; i++ {

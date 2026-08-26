@@ -169,7 +169,6 @@ func TestATokenSignedByTheWrongKeyIsRefused(t *testing.T) {
 	require.NotErrorIs(t, err, ErrNotAllowed, "a forged token was refused as a group problem")
 }
 
-// An expired token is not a login either.
 func TestAnExpiredTokenIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	idp.claims["exp"] = time.Now().Add(-time.Hour).Unix()
@@ -206,7 +205,6 @@ func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
 	require.NotContains(t, away.RawQuery, "the-verifier", "the verifier went out in the URL")
 }
 
-// The challenge is the hash of the verifier, not the verifier renamed.
 func TestTheChallengeIsTheHashOfTheVerifier(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
@@ -231,8 +229,6 @@ func TestAGateWithNoRequiredGroupIsRefused(t *testing.T) {
 	require.Error(t, err, "a gate was built that would let anybody in")
 }
 
-// A gate whose authentik cannot be reached still builds.
-//
 // This is the test that would have prevented the outage on 25 August 2026.
 // Discovery ran at boot and a failure was a boot that failed — which took down
 // capture, the drain and the Campfire webhook, none of which have anything to

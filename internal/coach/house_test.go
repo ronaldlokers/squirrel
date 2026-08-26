@@ -100,7 +100,6 @@ func TestAnythingElseIsNoAnswer(t *testing.T) {
 	}
 }
 
-// Asleep, unreachable, or thinking for longer than a press takes.
 func TestAHouseThatIsSlowIsAHouseThatDidNotAnswer(t *testing.T) {
 	h := housed(t, "QUESTION", 200, houseTimeout+300*time.Millisecond)
 

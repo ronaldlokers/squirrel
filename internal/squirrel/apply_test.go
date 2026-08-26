@@ -197,7 +197,6 @@ func TestApplyBareDoneUsesSingularDayForADailyChore(t *testing.T) {
 	require.NotContains(t, reply, "1 days")
 }
 
-// With several outstanding it lists rather than guessing.
 func TestApplyBareDoneWithSeveralOutstandingLists(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

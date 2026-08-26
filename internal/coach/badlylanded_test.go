@@ -7,9 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Principle 5 lets the coach evaluate and compare, and the cost recorded when
-// it was opened is that it can say something that lands badly on a bad day.
-//
 // The answer to that is not another instruction. An instruction nobody can
 // check is a wish; what changes behaviour is the sentences themselves, handed
 // back as things that did not work here.

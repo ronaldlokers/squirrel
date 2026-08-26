@@ -96,7 +96,6 @@ func TestDropAgainstANoteLineDropsIt(t *testing.T) {
 	require.Equal(t, "dropped", stateOf(t, store, id))
 }
 
-// A triaged note leaves the pile. That is the entire point.
 func TestATriagedNoteLeavesThePile(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
