@@ -10,16 +10,10 @@ import (
 
 // How you have been, on the screen, and only when asked for by name.
 //
-// This table was unreadable by construction for the product's whole life: the
-// store returned one reading and there was no function that could return more,
-// which is a stronger guarantee than a rule somebody has to remember. That
-// guarantee was given up deliberately on 20 August 2026, and what replaced it
-// is narrower — there is one page and one command, both of which you have to
-// go to, and nothing reads the readings on its own.
-//
-// So this file is the whole of the screen's half of the exception. Home shows
-// today's answer and a link; the link is where the series lives; and the
-// series is what you said with no arithmetic done to it.
+// This table was unreadable by construction until 20 August 2026 — the store
+// returned one reading and no function could return more, which is stronger than
+// a rule somebody has to remember. What replaced it is narrower: one page and one
+// command, both asked for by name, and nothing reads the readings on its own.
 
 func moodsHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

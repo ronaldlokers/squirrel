@@ -5,15 +5,11 @@ import "strings"
 // How a chore is spoken about, in one place, because there are two views of it
 // and they must agree.
 //
-// The screen said "a while back" while the chat said "20 days, usually 14" —
-// the same chore, the same moment, two different claims, and the harsher one
-// was the one that arrives unasked. That is not a wording slip: the reason the
-// screen stopped printing the number is a reason about the product, and a rule
-// that only one surface follows is a rule that will drift back.
+// The screen said "a while back" while the chat said "20 days, usually 14" — the
+// same chore, two claims, and the harsher one arrived unasked.
 //
-// So the words live here, below both transports. internal/web imports this
-// package and the reverse would be an import cycle, which is what makes the
-// agreement structural rather than a promise.
+// The words live below both transports: internal/web imports this package and the
+// reverse would be an import cycle, which makes the agreement structural.
 
 // SinceWords says roughly when a chore was last done, and never how long ago.
 //

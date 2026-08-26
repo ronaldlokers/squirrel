@@ -12,11 +12,8 @@ import (
 
 // Things you cannot act on, and why. See migration 0023.
 //
-// What is deliberately absent here, as everywhere else in this store: anything
-// that counts them. There is no function that answers how many things you are
-// waiting on, or how long one has been waiting, and there will not be. A
-// number beside a list of stalled work is a reproach, and the whole point of
-// setting something aside is to stop being asked about it.
+// Deliberately absent: anything that counts them. No function answers how many
+// things you are waiting on, or how long one has waited, and none will.
 
 // HeldItem is one thing you cannot act on, and what would unstick it.
 type HeldItem struct {
