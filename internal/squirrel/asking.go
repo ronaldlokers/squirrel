@@ -108,7 +108,7 @@ var weekdayNames = map[string]time.Weekday{
 	"saturday": time.Saturday, "saturdays": time.Saturday, "sat": time.Saturday,
 }
 
-// DaysWords says a day preference the way a person would.
+// Words says a day preference the way a person would.
 func (d Days) Words() string {
 	switch d {
 	case AnyDay:
