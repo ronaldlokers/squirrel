@@ -95,7 +95,6 @@ func TestDoingItLateDoesNotMoveTheDay(t *testing.T) {
 	require.Empty(t, got)
 }
 
-// Done today means not due again today, however many times the digest runs.
 func TestAWeekdayChoreDoneTodayIsNotDueAgainToday(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

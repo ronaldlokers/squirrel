@@ -84,7 +84,6 @@ func TestTheScreenIsGivenTheHouse(t *testing.T) {
 	require.NotNil(t, housed(coach.NewHouse("http://the-house", "a small one")))
 }
 
-// And no address is no house rather than a house that cannot work.
 func TestNoAddressMeansNoHouse(t *testing.T) {
 	require.Nil(t, coach.NewHouse("", "a small one"))
 }

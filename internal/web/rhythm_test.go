@@ -89,7 +89,6 @@ func TestTakingTheDayOffPutsItBackOnAnInterval(t *testing.T) {
 	require.Equal(t, 0, f.rhythms[0].Weeks, "the chore kept a day nobody asked for")
 }
 
-// The question opens on the day the chore already has.
 func TestTheQuestionRemembersTheDay(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 3, Name: "the bins", Every: 14 * 24 * time.Hour, Weekday: time.Thursday, Weeks: 2},

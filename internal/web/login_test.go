@@ -232,7 +232,6 @@ func TestSigningOutEndsTheSessionAndLandsOnTheGate(t *testing.T) {
 	require.Empty(t, cleared.Value, "signing out left the cookie in place")
 }
 
-// And signing out twice is not a failure page.
 func TestSigningOutWithNoSessionIsFine(t *testing.T) {
 	sess := newFakeSessions()
 	m, _ := mountedWithAGate(t, &fakeStore{}, sess)

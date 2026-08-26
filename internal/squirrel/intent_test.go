@@ -59,7 +59,6 @@ func TestMatchTreatsTheseAsCaptures(t *testing.T) {
 	}
 }
 
-// The dot forces capture even when the rest is an exact command.
 func TestMatchDotForcesCapture(t *testing.T) {
 	got := squirrel.Match(". done")
 	require.Equal(t, squirrel.IntentCapture, got.Kind)

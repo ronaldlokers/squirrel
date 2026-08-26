@@ -81,7 +81,6 @@ func TestSplitForgivesCaseAndPunctuation(t *testing.T) {
 	require.Len(t, pieces, 3)
 }
 
-// One piece is not a split, it is the note with the punctuation moved.
 func TestSplitRefusesASinglePiece(t *testing.T) {
 	api := newToolAPI(t, piecesTurn("ring the vet"))
 	_, err := deciderFor(api, &fakeFacts{}, &fakeLog{}).Split(context.Background(), 1, dump)

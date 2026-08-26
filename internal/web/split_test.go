@@ -138,7 +138,6 @@ func TestKeepingASplitInTheThread(t *testing.T) {
 	require.Contains(t, string(f.appended[2].Shown), `"cards"`)
 }
 
-// A note it reads as one thing says so rather than answering with silence.
 func TestANoteThatIsOneThingSaysSo(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(9, "milk", squirrel.ItemOpen)}}
 	m := routed(t, f) // no splitter configured

@@ -65,7 +65,6 @@ func TestAQuestionIsAnsweredAndNotLeftInThePile(t *testing.T) {
 // The one that matters. Every failure leaves the words in the pile, because
 // they were kept before Buddy was asked anything.
 
-// No coach at all: the box does exactly what it always did.
 func TestWithNoCoachTheBoxKeepsAndSaysSo(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/capture", strings.NewReader("text=the+boiler"))

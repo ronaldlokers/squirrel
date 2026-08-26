@@ -25,7 +25,6 @@ func rampingPile() *fakeStore {
 	}
 }
 
-// It says how long you have been at it, in a person's units.
 func TestTheExitRampSaysHowLong(t *testing.T) {
 	body := thread(t, rampingPile())
 
@@ -94,7 +93,6 @@ func TestWithNoRampNothingIsSaid(t *testing.T) {
 	require.NotContains(t, thread(t, f), "a good place to stop")
 }
 
-// A read that fails costs the sentence and nothing else.
 func TestARampReadThatFailsIsNotAnErrorPage(t *testing.T) {
 	f := rampingPile()
 	f.hasRamp, f.rampErr = false, errors.New("the database is unwell")

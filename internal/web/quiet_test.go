@@ -77,7 +77,6 @@ func TestWithNothingQuietNothingIsSaid(t *testing.T) {
 	require.NotContains(t, thread(t, f), "gone quiet")
 }
 
-// A read that fails costs the sentence and nothing else.
 func TestAQuietReadThatFailsIsNotAnErrorPage(t *testing.T) {
 	f := quietPile()
 	f.hasQuiet, f.quietErr = false, errors.New("the database is unwell")

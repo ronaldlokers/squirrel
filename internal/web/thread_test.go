@@ -272,7 +272,6 @@ func TestAnsweringTheCheckinWritesTurnsAndRecords(t *testing.T) {
 	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
 }
 
-// Not one of the five is no answer rather than a wrong one, and no turn at all.
 func TestAnAnswerThatIsNotOneOfTheFiveWritesNothing(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/mood", strings.NewReader("mood=splendid"))
@@ -450,7 +449,6 @@ func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
 	require.Contains(t, body, `href="/moods"`, "the newest turn keeps its chips")
 }
 
-// Pressing a door says its name, and Buddy answers with what is behind it.
 func TestOpeningADoorSaysItsName(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour,

@@ -46,7 +46,6 @@ func TestTheIdentityHeaderIsNotASession(t *testing.T) {
 	require.Equal(t, http.StatusSeeOther, w.Code)
 }
 
-// A cookie the store does not know is nobody.
 func TestGuardRefusesACookieNobodyOpened(t *testing.T) {
 	opts := testOptions()
 	opts.Sessions = newSessions(&nobodyEver{}, cacheFor, cacheMost)

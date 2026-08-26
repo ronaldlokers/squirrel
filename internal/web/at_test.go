@@ -144,7 +144,6 @@ func TestAFixedPointNeverCountsAnything(t *testing.T) {
 	require.NotContains(t, body, "three notes")
 }
 
-// A fixed point that is not yours is one that does not exist.
 func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
 	res := routed(t, withMoment(aMoment(3*time.Hour, ""))).call(t, "GET", "/at/99", nil)
 	require.Equal(t, 404, res.Code)
@@ -279,7 +278,6 @@ func TestDetachingANoteIsSaid(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "pile")
 }
 
-// The question offers a month to pick a day out of, and a time.
 func TestAskingForADayOffersAMonthAndTimes(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/at/new", strings.NewReader("label=dentist"))

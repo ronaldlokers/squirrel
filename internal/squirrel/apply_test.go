@@ -143,7 +143,6 @@ func TestApplyCompletesByPositionUsesSingularDayForADailyChore(t *testing.T) {
 	require.NotContains(t, reply, "1 days")
 }
 
-// A bare `done` with exactly one line outstanding needs no number.
 func TestApplyBareDoneWithOneOutstanding(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

@@ -114,7 +114,6 @@ func TestBrowserAFailedCaptureKeepsWhatYouTyped(t *testing.T) {
 	require.Empty(t, sp.written)
 }
 
-// An empty box, pressed, does nothing and says nothing. It did nothing.
 func TestBrowserAnEmptySlotSaysNothing(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	c, _ := openCamera(t, sp, ph)

@@ -58,7 +58,6 @@ func TestNoCeilingIsASupportedChoice(t *testing.T) {
 	require.NotContains(t, said.String(), "filling")
 }
 
-// Used counts what is there and ignores what is not a photograph.
 func TestUsedCountsOnlyWhatWasKept(t *testing.T) {
 	p, err := OpenPhotos(t.TempDir())
 	require.NoError(t, err)

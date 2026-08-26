@@ -228,7 +228,6 @@ func TestNotTodayTurnsTheThingDownAndEndsTheConversation(t *testing.T) {
 	require.Equal(t, 1, c.forgot, "turning something down left the conversation open")
 }
 
-// Saying nothing does nothing, and costs nothing.
 func TestSayingNothingAsksNothing(t *testing.T) {
 	c := &fakeCoach{reply: "should not be called"}
 	f := &fakeStore{}

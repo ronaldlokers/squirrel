@@ -233,7 +233,6 @@ func TestANewChoreComesBackAsACard(t *testing.T) {
 	require.Contains(t, string(f.appended[1].Shown), "/chores/act")
 }
 
-// Asking how often puts the question on the table with both rows on it.
 func TestAskingHowOftenOffersNumbersAndUnits(t *testing.T) {
 	f := &fakeStore{chores: aChore()}
 	routed(t, f).call(t, "POST", "/chores/often", strings.NewReader("id=1"))

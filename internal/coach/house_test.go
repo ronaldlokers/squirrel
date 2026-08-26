@@ -113,7 +113,6 @@ func TestAHouseThatRefusesIsAHouseThatDidNotAnswer(t *testing.T) {
 	require.False(t, answered)
 }
 
-// No address is no house, rather than a house that cannot work.
 func TestNoAddressIsNoHouse(t *testing.T) {
 	require.Nil(t, NewHouse("", "a small one"))
 	require.Nil(t, NewHouse("http://the-house", ""))
