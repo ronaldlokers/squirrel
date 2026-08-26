@@ -1015,10 +1015,20 @@ type pickRow struct {
 var (
 	pickNumbers = []string{"1", "2", "3", "4", "6", "8"}
 	pickUnits   = []string{"days", "weeks", "months"}
+	// The day a chore comes back on, when there is one.
+	//
+	// "any day" first and chosen by default, so the question reads the way it
+	// always did — every 2 weeks, any day — and naming a day is something you
+	// add rather than something you have to dismiss.
+	//
+	// Only offered against weeks. A day is meaningless on "every 3 days" and
+	// wrong on "every 6 months", and a picker that let you say it would be a
+	// picker that quietly ignored you.
+	pickDays = []string{"any day", "mon", "tue", "wed", "thu", "fri", "sat", "sun"}
 )
 
 // askHowOften is the question, as one form with two rows.
-func askHowOften(action string, fields map[string]string, count, unit string) squirrel.Turn {
+func askHowOften(action string, fields map[string]string, count, unit, day string) squirrel.Turn {
 	body, err := json.Marshal(drawn{Pick: &pickView{
 		Action: action,
 		Fields: fields,
@@ -1026,6 +1036,16 @@ func askHowOften(action string, fields map[string]string, count, unit string) sq
 		Rows: []pickRow{
 			{Lead: "every", Name: "count", Options: pickNumbers, Chosen: count},
 			{Lead: "of these", Name: "unit", Options: pickUnits, Chosen: unit},
+			// The third row, added 26 August 2026. Chores were `every N` and
+			// almost nothing real is: the bins are alternating Thursdays, and
+			// an interval measured from the last completion slides a day every
+			// time you are a day late.
+			//
+			// Unmarked unless the chore actually has a day. "any day" is the
+			// first option rather than a chosen one, the same way an interval
+			// the picker cannot say leaves both its rows unmarked — a mark is
+			// a fact about this chore, not a default.
+			{Lead: "on a", Name: "day", Options: pickDays, Chosen: day},
 		},
 	}})
 	if err != nil {

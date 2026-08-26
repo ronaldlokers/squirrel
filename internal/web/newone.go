@@ -133,7 +133,7 @@ func choreNameHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: name},
-			askHowOften("/chores/new", map[string]string{"name": name}, "", ""),
+			askHowOften("/chores/new", map[string]string{"name": name}, "", "", ""),
 		}), "/")
 	}
 }
