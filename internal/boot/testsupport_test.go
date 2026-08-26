@@ -33,11 +33,10 @@ func testDatabaseURL(t *testing.T) string {
 	return url
 }
 
-// campfireRequest is one HTTP call the stub received, kept for assertions
-// about what the transport actually sent rather than just that it sent
-// something. Content-Type is what tells apart a Chat.Send (JSON, carrying
-// whatever buttons the message had) from a boost or a phase-2 plain-text
-// Sender call (text/plain).
+// campfireRequest is one HTTP call the stub received, kept so a test can assert
+// what the transport sent rather than that it sent something. Content-Type is
+// what tells a Chat.Send carrying buttons (JSON) from a boost or the plain-text
+// Sender (text/plain).
 type campfireRequest struct {
 	method      string
 	path        string
@@ -45,13 +44,9 @@ type campfireRequest struct {
 	body        []byte
 }
 
-// campfireStub is somewhere harmless for the applier and scheduler to post:
-// it accepts anything and answers 201, same as a real Campfire boost/message
-// endpoint would on success. The returned requests func hands back everything
-// received so far, so a test can inspect the shape of an outbound body —
-// whether the confirmation went out through Chat as JSON carrying an actions
-// array, or fell back to the plain-text Sender — rather than only knowing a
-// request arrived.
+// campfireStub is somewhere harmless for the applier and scheduler to post: it
+// accepts anything and answers 201, as a real endpoint would on success. The
+// returned func hands back everything received so far.
 func campfireStub(t *testing.T) (baseURL string, requests func() []campfireRequest) {
 	t.Helper()
 
@@ -80,13 +75,9 @@ func campfireStub(t *testing.T) (baseURL string, requests func() []campfireReque
 		return out
 	}
 
-	// Tracked so campfireStubSawText can reach a stub's traffic even for a
-	// test (bootWithStore's callers, mainly) that never sees this func
-	// itself — envFor stands the stub up internally and only ever hands its
-	// URL down into the environment. Tests in this package never run in
-	// parallel (make test-integration passes -p 1 deliberately, see the
-	// Makefile), so the single most-recently-created stub is unambiguous for
-	// whichever test is currently running.
+	// Tracked so campfireStubSawText can reach it. Tests here never run in
+	// parallel — make test-integration passes -p 1 — so the most recently
+	// created stub is unambiguous for whichever test is running.
 	lastCampfireStubMu.Lock()
 	lastCampfireStubRequests = requests
 	lastCampfireStubMu.Unlock()
@@ -99,12 +90,12 @@ var (
 	lastCampfireStubRequests func() []campfireRequest
 )
 
-// campfireStubSawText reports whether any request the most recently created
-// campfire stub received so far carries text somewhere in its body — JSON or
-// plain text, matching however sendMessage happened to have serialized it.
-// It exists because tests built on bootWithStore never see the stub's
-// requests func directly: envFor stands the stub up itself and only threads
-// its URL through CAMPFIRE_BASE_URL.
+// campfireStubSawText reports whether any request the newest stub received
+// carries text in its body, JSON or plain, however sendMessage serialised it.
+//
+// It exists because tests built on bootWithStore never see the requests func:
+// envFor stands the stub up itself and only threads its URL through
+// CAMPFIRE_BASE_URL.
 func campfireStubSawText(t *testing.T, text string) bool {
 	t.Helper()
 	lastCampfireStubMu.Lock()
@@ -142,43 +133,6 @@ func truncateAll(t *testing.T, store *squirrel.Store) {
 	require.NoError(t, err)
 }
 
-// bootWithStore boots a real Squirrel over a real socket, and hands back the
-// store used to seed and assert against it. The two are opened separately —
-// withStore migrates and truncates before Boot ever touches Postgres — but
-// both point at the same TEST_DATABASE_URL, so what one seeds the other's
-// server can see once its own connectAndDrain reaches the database.
-//
-// The conversation id is overridden to "9" — the room seedSentPrompt records
-// its prompt against, following internal/squirrel's own apply_action_test.go
-// convention — so a tap arriving from that room is not silently dropped by
-// the sink's Allow check before it ever reaches the applier.
-//
-// PRESENCE_SECRET is set here too, so every test built on this helper gets a
-// live arrival route at presenceURL(s) without asking for it — a nudge test
-// is the only reason bootWithStore needed this, but its one other caller,
-// TestBootAppliesATap, still boots exactly the same server it did before
-// this task, just with one extra mounted route it never touches.
-//
-// EVENING_AT is pinned to 23:59 for the same reason: Scheduler.Run calls
-// Once synchronously before its first tick, and Once makes its own "last
-// attempt at today's nudge" whenever the wall clock is already past
-// EVENING_AT — true for any test run late enough in the day, and always true
-// once EVENING_AT is pinned earlier than that for some other reason. Left
-// unpinned, that startup Once can win the race against seedOverdueChore and
-// claim the day's nudge slot for the same chore a nudge test seeds, sending
-// it independently of whatever the arrival webhook does. Confirmed by trial:
-// with the presence route wired to a no-op OnArrive, TestBootNudgesOnArrival
-// still passed 1 run in 5 — campfireStubSawText found "vacuum" from that
-// startup send, not from the arrival. Pinning EVENING_AT past any wall-clock
-// time a test could run at keeps Once's own local.Before(threshold) guard
-// skipping it for the whole test, so a nudge landing in the stub can only be
-// the one the test itself triggered.
-//
-// PRESENCE_DELAY is pinned short: config.PresenceDelay now defaults to two
-// minutes in production (the "you have a coat on" delay PresenceOptions'
-// doc comment describes), which would blow TestBootNudgesOnArrival's 15s
-// Eventually budget many times over. One second keeps the arrival-to-nudge
-// gap real without making the test slow.
 // daytimeZone is a real timezone in which it is currently the middle of the
 // day.
 //
@@ -208,6 +162,31 @@ func daytimeZone(t *testing.T) string {
 	return ""
 }
 
+// bootWithStore boots a real Squirrel over a real socket, and hands back the
+// store used to seed and assert against it. The two are opened separately —
+// withStore migrates and truncates before Boot ever touches Postgres — but
+// both point at the same TEST_DATABASE_URL, so what one seeds the other's
+// server can see once its own connectAndDrain reaches the database.
+//
+// The conversation id is overridden to "9" — the room seedSentPrompt records
+// its prompt against, following internal/squirrel's own apply_action_test.go
+// convention — so a tap arriving from that room is not silently dropped by
+// the sink's Allow check before it ever reaches the applier.
+//
+// PRESENCE_SECRET is set here, so every test built on this helper gets a live
+// arrival route without asking for it.
+//
+// EVENING_AT is pinned to 23:59. Scheduler.Run calls Once synchronously before
+// its first tick, and Once makes its own last attempt at today's nudge whenever
+// the wall clock is past EVENING_AT — so that startup Once can claim the day's
+// nudge slot for the very chore a nudge test seeded, and send it independently
+// of the arrival webhook. With the presence route wired to a no-op OnArrive,
+// TestBootNudgesOnArrival still passed one run in five: the text in the stub
+// came from the startup send. Pinning it past any hour a test could run at
+// keeps Once skipping itself for the whole test.
+//
+// PRESENCE_DELAY is pinned short: two minutes in production would blow the 15s
+// Eventually budget many times over.
 func bootWithStore(t *testing.T) (*boot.Squirrel, *squirrel.Store) {
 	t.Helper()
 	store := withStore(t)

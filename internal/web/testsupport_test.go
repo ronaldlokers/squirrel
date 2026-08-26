@@ -26,8 +26,12 @@ type choreRhythm struct {
 
 // fakeStore is an in-memory pile. The screen's own tests must not need
 // Postgres: what is under test here is routing, rendering and the refusal to
-// count, none of which is a database question. The store's own behaviour is
-// covered by the integration tests in internal/squirrel.
+// count, none of which is a database question.
+//
+// That is the rule for every fake in this file. Whatever internal/squirrel
+// already proves — the picker's rules, a spool's durability, how a moment
+// parses — is not proved again here; these stand in for it and record what the
+// screen did with the answer.
 //
 // The recorded fields — what was written, answered, refused, marked — are here
 // so a test can assert on the write rather than on a rendering of it.
@@ -87,9 +91,8 @@ type fakeStore struct {
 	// Fixed points created by a proposal that was pressed.
 	moments []squirrel.Moment
 
-	// Every press of "that landed badly", so a test can assert on the record
-	// rather than on a rendering of it. noReplyToMark stands for a sheet with
-	// nothing behind it to mark.
+	// Every press of "that landed badly". noReplyToMark stands for a
+	// conversation with nothing behind it to mark.
 	landedBadly   []time.Time
 	noReplyToMark bool
 
@@ -118,8 +121,7 @@ type fakeStore struct {
 	appended    []squirrel.Turn
 	moreTurns   bool
 	pagedBefore int64
-	// The reading this render wrote, so a test can assert on the write rather
-	// than on a rendering of it.
+	// The reading this render wrote.
 	recorded squirrel.Mood
 	// What each door is holding, and a failure that belongs to the counting
 	// alone — the doors have to survive it while the rest of the page works.
@@ -128,15 +130,12 @@ type fakeStore struct {
 	// twice over is visible.
 	waitingAsked int
 	waitingErr   error
-	// A failure that belongs to reading the chores alone, so a test about the
-	// door can fail that read while the conversation itself still renders.
+	// Failures that belong to one read alone, so a test can break the chores or
+	// the notes while the conversation itself still renders.
 	choresErr error
-	// A failure that belongs to reading the notes alone, so a test about the
-	// pile can fail that read while the conversation itself still renders.
-	itemsErr error
+	itemsErr  error
 
-	// What the chore handlers did, so a test can assert on the write rather
-	// than on a rendering of it.
+	// What the chore handlers did.
 	completed  []int64
 	retired    []int64
 	reinterval struct {
@@ -336,10 +335,9 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 	return true, nil
 }
 
-// The picker, faked. The rules themselves are proved against a real database
-// in internal/squirrel; what the screen has to be tested for is what it does
-// with an offer and with the absence of one, so this hands back whatever the
-// test set and records the answers.
+// The picker, faked: it hands back whatever the test set and records the
+// answers, because what the screen has to be tested for is what it does with an
+// offer and with the absence of one.
 func (f *fakeStore) PickNow(_ context.Context, _ int64, _ time.Time, showAnyway bool) (squirrel.Offer, bool, error) {
 	if f.err != nil {
 		return squirrel.Offer{}, false, f.err
@@ -758,10 +756,8 @@ func (f *fakeStore) ClearSteps(_ context.Context, _ int64) error {
 	return nil
 }
 
-// fakePhotos stands in for the volume. The durability — write, fsync, rename,
-// fsync the directory — is proved in internal/squirrel; what the screen has to
-// be tested for is that it offers a camera only when there is somewhere to put
-// a photograph, and what it stores when there is.
+// fakePhotos stands in for the volume: the screen has to offer a camera only
+// when there is somewhere to put a photograph, and store what it is given.
 type fakePhotos struct {
 	kept []string
 	err  error
@@ -800,10 +796,8 @@ func (p *fakePhotos) Thumb(name string) (*os.File, error) {
 	return os.Open(filepath.Join(p.dir, squirrel.ThumbName(name)))
 }
 
-// fakeSpool stands in for the durable half of capture. The spool's own
-// durability — write, fsync, rename, fsync the directory — is proved in
-// internal/squirrel; what the screen has to be tested for is that it goes
-// through one at all, and what it does when it cannot.
+// fakeSpool stands in for the durable half of capture: the screen has to go
+// through one at all, and say something honest when it cannot.
 type fakeSpool struct {
 	written  []squirrel.Capture
 	err      error
@@ -866,8 +860,8 @@ type fakeCoach struct {
 	err   error
 	// opens is the place the coach asked to be shown, or empty.
 	opens string
-	// asked is every turn it was handed, so a test can assert on what the
-	// model was told rather than on a rendering of it.
+	// asked is every turn it was handed, so a test can assert on what the model
+	// was told.
 	asked []struct{ kind, said, subject string }
 	// talk is the window, which the real one keeps in memory too.
 	talk   []Exchange
@@ -899,8 +893,8 @@ type fakeCoach struct {
 	did     []string
 	propose *Proposal
 
-	// spent and ceiling are what the sheet reports. Empty spent stands in for
-	// a sum that could not be read, which must draw no line at all.
+	// spent and ceiling are what the reply reports. Empty spent stands in for a
+	// sum that could not be read, which must draw no line at all.
 	spent   string
 	ceiling string
 }
