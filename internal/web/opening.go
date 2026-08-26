@@ -266,7 +266,7 @@ func goneQuietTurn(ctx context.Context, s Store, personID int64, turns []squirre
 		Opened: mark,
 		Cards: []cardView{{
 			Title: held.Text,
-			Photo: heldPhoto(held),
+			Photo: parkedPhoto(held),
 			// The reason and how long, in the card's own quiet line. Elapsed
 			// time on a thing somebody else owes you is a fact, not a score —
 			// it is the countdown pointed backwards.
@@ -294,10 +294,15 @@ func goneQuietTurn(ctx context.Context, s Store, personID int64, turns []squirre
 	}, true
 }
 
-// heldPhoto is the picture a parked note carries, or empty. A note with no
+// parkedPhoto is the picture a parked note carries, or empty. A note with no
 // words and only a photograph is a perfectly good note, and a card that
 // dropped the picture would show an empty row.
-func heldPhoto(h squirrel.HeldItem) string {
+//
+// Not `heldPhoto`: that is taken by a helper in photobrowser_test.go, which
+// only builds under the browser tag — so the collision was invisible to `go
+// build` and to the ordinary suite. Fifth in this package after .face, .say,
+// .tcard and placeTurn, and the first one that needed a build tag to see.
+func parkedPhoto(h squirrel.HeldItem) string {
 	if h.PhotoName == "" {
 		return ""
 	}
