@@ -23,12 +23,3 @@ func TestThereIsALiveRegionOutsideTheStage(t *testing.T) {
 	stage := body[strings.Index(body, `<main`):]
 	require.NotContains(t, stage, `id="say"`, "inside the stage it would be swapped away")
 }
-
-// The key badges and the stack behind the card were tested here. Both were
-// the deck's markup and neither renders anywhere since it came out, so both
-// assertions had been comparing zero to zero. Deleted on 25 August 2026 rather
-// than retargeted: a test that cannot fail is worse than no test, because it
-// reads like cover.
-//
-// The live edge's own keys are proved in chorekeys_test.go, which does press
-// them.

@@ -98,8 +98,3 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	require.GreaterOrEqual(t, onSlot, 3.0,
 		"the ring in the dock measures %.2f:1 against the slot it sits in", onSlot)
 }
-
-// Three about the deck's card: a decision pending inside its hold, the chore
-// disclosure's width on a phone, and the way out being shut while a stamp ran.
-// The conversation has no hold and no disclosure, so none of the three has
-// anything left to be true of.

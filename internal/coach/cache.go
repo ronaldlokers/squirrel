@@ -38,8 +38,21 @@ type held struct {
 
 func NewOffers() *Offers { return &Offers{by: make(map[int64]held)} }
 
-// Forget is the answer to that: one call, from the one handler that answers an
-// offer, and the entry is gone whether or not the picker noticed.
+// Forget throws a person's decision away, whatever the picker says next: one
+// call, from the one handler that answers an offer, and the entry is gone
+// whether or not the picker noticed.
+//
+// It was absent, on the argument that answering an offer changes what the picker
+// says next so the basis stops matching. That holds only while the model agreed
+// with the picker. `judged` lets the model replace the picker's answer with a
+// different row, so "not now" records a refusal against that row while the
+// picker's suppression is keyed on its own — the picker goes on saying what it
+// said, and the same card comes back for up to StaleAfter. From outside, a
+// button that reloads the page. "Did it" was worse: the row really is done.
+//
+// Not covered, deliberately: marking the same row done from the tasks or chores
+// screen. Closing that means the cache checking whether what it showed is still
+// offerable, which is a bigger change than this bug earns.
 func (o *Offers) Forget(personID int64) {
 	if o == nil {
 		return
@@ -73,17 +86,3 @@ func (o *Offers) Put(personID int64, basis string, d Decision, now time.Time) {
 	defer o.mu.Unlock()
 	o.by[personID] = held{basis: basis, d: d, at: now}
 }
-
-// Forget throws a person's decision away, whatever the picker says next.
-//
-// It was absent, on the argument that answering an offer changes what the picker
-// says next so the basis stops matching. That holds only while the model agreed
-// with the picker. `judged` lets the model replace the picker's answer with a
-// different row, so "not now" records a refusal against that row while the
-// picker's suppression is keyed on its own — the picker goes on saying what it
-// said, and the same card comes back for up to StaleAfter. From outside, a button
-// that reloads the page. "Did it" was worse: the row really is done.
-//
-// Not covered, deliberately: marking the same row done from the tasks or chores
-// screen. Closing that means the cache checking whether what it showed is still
-// offerable, which is a bigger change than this bug earns.

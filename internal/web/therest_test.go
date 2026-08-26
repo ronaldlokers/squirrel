@@ -164,7 +164,3 @@ func TestThePageLeavesRoomForTheDock(t *testing.T) {
 		"the clearance is back on .thread, which is not the last thing on the page")
 	require.NotContains(t, sheet, "padding: 18px 14px 128px")
 }
-
-// That the reserve follows the slot as it grows is measured in a browser —
-// see TestBrowserTheReserveFollowsTheSlot. A source-text assertion passed with
-// the observer disabled, because the word was still in the file.

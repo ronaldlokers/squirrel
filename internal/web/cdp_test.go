@@ -224,11 +224,10 @@ func (c *cdp) send(t *testing.T, method string, params map[string]any) map[strin
 	}
 }
 
-// eval runs an expression in the page and returns its value. The expressions
-// are literals written in this package — this is a browser these tests
-// launched, driving a server these tests started, with no input from anywhere
-// else. The expression is
-// wrapped so that `await` works and so a thrown error fails the test where it
+// eval runs an expression in the page and returns its value. The expressions are
+// literals written in this package — this is a browser these tests launched,
+// driving a server these tests started, with no input from anywhere else. Each
+// is wrapped so that `await` works and so a thrown error fails the test where it
 // happened rather than as a mystery null three assertions later.
 func (c *cdp) eval(t *testing.T, expression string) any {
 	t.Helper()
@@ -263,9 +262,6 @@ func (c *cdp) navigate(t *testing.T, url string) {
 	}
 }
 
-// key dispatches a real key event through the browser's input pipeline, rather
-// than a synthetic one from a script. What the page sees is what a keyboard
-// would have produced.
 // virtualKeys are the codes for the named keys this suite presses.
 //
 // A key event with no virtual code reaches JavaScript perfectly well, which is
@@ -283,6 +279,9 @@ var virtualKeys = map[string]int{
 	"ArrowDown":  40,
 }
 
+// key dispatches a real key event through the browser's input pipeline, rather
+// than a synthetic one from a script. What the page sees is what a keyboard
+// would have produced.
 func (c *cdp) key(t *testing.T, k string) {
 	t.Helper()
 	for _, kind := range []string{"keyDown", "keyUp"} {

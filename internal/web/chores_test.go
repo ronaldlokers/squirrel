@@ -317,7 +317,3 @@ func TestThePickerAndTheSentenceAgree(t *testing.T) {
 
 	require.Equal(t, typed, f.reinterval.every)
 }
-
-// The lid's menu is empty since the deck came out: every place is a message,
-// the way to one is the rail, and the way to the rail is the mark. A menu of
-// one item that is always where you are is furniture.

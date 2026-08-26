@@ -62,7 +62,3 @@ func TestEverySessionScreenOffersAWayToStop(t *testing.T) {
 		require.Contains(t, body, said, "%s does not say the way out in today's words", screen)
 	}
 }
-
-// Setting one aside is said in the conversation now, and the way back is on
-// /held where it always was — see TestSettingOneAsideSaysSoAndCarriesOn. What
-// these pinned was the deck's redirect carrying an undo, and the deck is gone.

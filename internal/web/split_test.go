@@ -145,7 +145,3 @@ func TestANoteThatIsOneThingSaysSo(t *testing.T) {
 
 	require.Empty(t, f.appended, "with no splitter there is nothing to say")
 }
-
-// Both are pinned in the conversation now: the press is drawn only on a note
-// that looks like several things, and nothing is written when a split is
-// proposed — see TestProposingASplitInTheThread.

@@ -111,7 +111,3 @@ func TestAStoreThatCannotBeReadSaysSo(t *testing.T) {
 
 	require.Equal(t, 303, w.Code)
 }
-
-// That the model is told never to say any of this back is pinned in
-// internal/coach, where the sentence lives — see TestTheModelIsToldNotToSayIt
-// Back in knowing_test.go there.
