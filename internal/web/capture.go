@@ -91,7 +91,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// went wrong was the sentence the person reading it could not
 			// act on.
 			slog.Warn("a capture was refused", "error", err)
-			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err)), "/")
+			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), "/")
 			return
 		}
 
@@ -139,15 +139,15 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// This means the disk is unwritable, which is a different and much
 			// louder problem than a database being briefly unreachable.
 			slog.Warn("a capture could not be spooled", "error", err)
-			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err)), "/")
+			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), "/")
 			return
 		}
 		// Says which it was, so the script knows whether to empty the box. The
 		// turns alone cannot answer that: a failure is two turns as well, and
 		// clearing on one of them is a capture box that eats thoughts.
 		w.Header().Set("X-Kept", "1")
-		answerWith(w, r, saidInThread(r, s, opts, text,
-			whatBuddyMakesOfIt(r, s, opts, text, photo != "")), "/")
+		reply, open := whatBuddyMakesOfIt(r, s, opts, text, photo != "")
+		answerWith(w, r, saidInThread(r, s, opts, text, reply, open), "/")
 	}
 }
 
@@ -179,7 +179,7 @@ func refusalOf(err error) string {
 //
 // A capture with no words is a photograph, and it says so rather than putting
 // an empty bubble in a record that is never rewritten.
-func saidInThread(r *http.Request, s Store, opts Options, text, reply string) []squirrel.Turn {
+func saidInThread(r *http.Request, s Store, opts Options, text, reply, open string) []squirrel.Turn {
 	ctx := r.Context()
 	personID, ok := personOf(r)
 	if !ok {
@@ -189,10 +189,17 @@ func saidInThread(r *http.Request, s Store, opts Options, text, reply string) []
 	if yours == "" {
 		yours = "a photograph"
 	}
-	return keepSaid(ctx, s, personID, []squirrel.Turn{
+	turns := []squirrel.Turn{
 		{Who: squirrel.SpeakerYou, Words: yours},
 		answerable(opts, text, reply),
-	})
+	}
+	// And the place, when what you typed asked to see one. The same draw the
+	// menu makes and the same one Buddy makes from the other box — one way of
+	// showing a place, reached three ways.
+	if place, ok := placeSaid(ctx, s, opts, personID, open, 0); ok {
+		turns = append(turns, alsoOffer(place, newChipFor(open)...))
+	}
+	return keepSaid(ctx, s, personID, turns)
 }
 
 // answerable is Buddy's reply, with the way to say he read it wrong.
@@ -360,15 +367,15 @@ func said(raw string) string {
 // A photograph is always kept and never read. It is not words, there is
 // nothing to answer, and a model asked to judge a picture it cannot see would
 // be guessing about the one capture that is hardest to make again.
-func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, photo bool) string {
+func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, photo bool) (string, string) {
 	ctx := r.Context()
 	kept := squirrel.Say(squirrel.SayingKept, now())
 	if photo || strings.TrimSpace(text) == "" {
-		return kept
+		return kept, ""
 	}
 	personID, ok := personOf(r)
 	if !ok {
-		return kept
+		return kept, ""
 	}
 
 	// Was that a question? Three tiers, cheapest first.
@@ -388,26 +395,29 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 		// A thought, which is almost everything typed into this box. Kept, and
 		// answered in the product's own words — no call, no network, and the
 		// same reply it gave for a month.
-		return kept
+		return kept, ""
 	}
 
 	if opts.Reads == nil {
 		// It reads as a question and there is nobody to answer it. Keeping it
 		// is the honest outcome: a question nobody answered is a note you will
 		// want to see again.
-		return kept
+		return kept, ""
 	}
 
-	say, keep, err := opts.Reads(ctx, personID, text)
+	say, keep, open, err := opts.Reads(ctx, personID, text)
 	if err != nil {
 		// The floor, and it is the box exactly as it was before any of this:
 		// kept, and said so.
-		return kept
+		return kept, ""
 	}
 	if keep {
 		// It read the whole sentence and disagrees with the one-word
 		// judgement that got it here. Its answer wins.
-		return say
+		//
+		// And it is a thought, so there is no place to draw: a note being
+		// filed is not a request to look at something.
+		return say, ""
 	}
 
 	// A question, answered. The note is dropped rather than deleted — the
@@ -419,7 +429,7 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 		// is a smaller problem than an answer you did not get.
 		slog.Warn("a question stayed in the pile", "error", err)
 	}
-	return say
+	return say, open
 }
 
 // dropWhatWasAQuestion finds the note that was just made and drops it.

@@ -42,6 +42,11 @@ and real about it. Never just "noted".
 A question is asked of you and answered by you. Only the answer matters
 afterwards, so it is not kept.
 
+When they ask to *see* something — their chores, their tasks, the pile,
+the agenda, what they set aside, what they kept — set open to that place
+and say one short line. The place itself is drawn for you underneath; do
+not list it, and never say you cannot see it. You can.
+
 One thing. Two sentences at most. Plain words.
 Never say "should", "just", or "simply".
 Never produce a plan, a checklist, or numbered steps.
@@ -65,6 +70,15 @@ var readsTool = []map[string]any{
 					"keep": map[string]any{
 						"type":        "boolean",
 						"description": "True for a thought. False only for a question you have just answered.",
+					},
+					// A field on the same call rather than a second tool, for
+					// the reason the tool is one call in the first place: "this
+					// was a request to see the chores" and "here is what to say
+					// about it" are the same judgement being written once.
+					"open": map[string]any{
+						"type":        "string",
+						"enum":        []string{"", "pile", "tasks", "chores", "at", "held", "kept"},
+						"description": "A place to show them, when they asked to see one rather than asking about it. Empty otherwise.",
 					},
 				},
 				"required":             []string{"say", "keep"},
@@ -91,15 +105,15 @@ var readsTool = []map[string]any{
 // kept, and the kept wording said back. That is the floor, and it is the
 // reason this can be built at all — every failure lands on the old guarantee
 // rather than on a lost thought.
-func (p *Provider) Reads(ctx context.Context, personID int64, said string, n Now) (string, bool, error) {
+func (p *Provider) Reads(ctx context.Context, personID int64, said string, n Now) (string, bool, string, error) {
 	said = strings.TrimSpace(said)
 	if said == "" {
-		return "", true, ErrUnavailable
+		return "", true, "", ErrUnavailable
 	}
 	now := p.now()
 	permit, err := p.Budget.Ask(ctx, personID, now, "reading the box")
 	if err != nil {
-		return "", true, ErrUnavailable
+		return "", true, "", ErrUnavailable
 	}
 	defer permit.Release()
 
@@ -130,14 +144,14 @@ func (p *Provider) Reads(ctx context.Context, personID int64, said string, n Now
 	}
 	if err != nil {
 		slog.Error("the coach reading the box", "error", err)
-		return "", true, err
+		return "", true, "", err
 	}
 
-	say, keep, ok := answerIn(calls)
+	say, keep, open, ok := answerIn(calls)
 	if !ok {
-		return "", true, ErrUnavailable
+		return "", true, "", ErrUnavailable
 	}
-	return say, keep, nil
+	return say, keep, open, nil
 }
 
 // answerIn reads the reply out of the tool call and holds it to its shape.
@@ -146,7 +160,7 @@ func (p *Provider) Reads(ctx context.Context, personID int64, said string, n Now
 // which is the direction every uncertainty in this file resolves in. The one
 // thing that must never happen is a thought being thrown away because a model
 // wrote a paragraph.
-func answerIn(calls []toolCall) (say string, keep, ok bool) {
+func answerIn(calls []toolCall) (say string, keep bool, open string, ok bool) {
 	for _, call := range calls {
 		if call.Function.Name != "answer" {
 			continue
@@ -154,15 +168,22 @@ func answerIn(calls []toolCall) (say string, keep, ok bool) {
 		var args struct {
 			Say  string `json:"say"`
 			Keep bool   `json:"keep"`
+			Open string `json:"open"`
 		}
 		if err := json.Unmarshal([]byte(call.Function.Arguments), &args); err != nil {
-			return "", true, false
+			return "", true, "", false
 		}
 		say = strings.TrimSpace(args.Say)
 		if say == "" || isListOrHeading(say) {
-			return "", true, false
+			return "", true, "", false
 		}
-		return say, args.Keep, true
+		// A place that is not one of them is no place. The same lookup the
+		// acting path uses, for the same reason: a name nobody recognises
+		// should be a miss here rather than an empty turn on the screen.
+		if !places[args.Open] {
+			return say, args.Keep, "", true
+		}
+		return say, args.Keep, args.Open, true
 	}
-	return "", true, false
+	return "", true, "", false
 }

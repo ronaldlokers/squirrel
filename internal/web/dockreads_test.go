@@ -23,12 +23,12 @@ import (
 // already a note before Buddy is asked anything, so the worst any failure can
 // do is leave a note in the pile you did not want.
 
-func aThought(reply string) func(string) (string, bool, error) {
-	return func(string) (string, bool, error) { return reply, true, nil }
+func aThought(reply string) func(string) (string, bool, string, error) {
+	return func(string) (string, bool, string, error) { return reply, true, "", nil }
 }
 
-func aQuestion(reply string) func(string) (string, bool, error) {
-	return func(string) (string, bool, error) { return reply, false, nil }
+func aQuestion(reply string) func(string) (string, bool, string, error) {
+	return func(string) (string, bool, string, error) { return reply, false, "", nil }
 }
 
 // A thought never reaches a model at all.
@@ -81,8 +81,8 @@ func TestWithNoCoachTheBoxKeepsAndSaysSo(t *testing.T) {
 func TestAnUnreachableModelKeepsTheWords(t *testing.T) {
 	f := &fakeStore{}
 	f.items = []squirrel.Item{note(7, "what now?", squirrel.ItemOpen)}
-	m := mountedReading(t, f, func(string) (string, bool, error) {
-		return "", true, errors.New("no coach")
+	m := mountedReading(t, f, func(string) (string, bool, string, error) {
+		return "", true, "", errors.New("no coach")
 	})
 
 	m.call(t, "POST", "/capture", strings.NewReader("text=what+now%3F"))
@@ -103,9 +103,9 @@ func TestTheWordsAreSpooledBeforeBuddyIsAsked(t *testing.T) {
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		Spool:    sp,
-		Reads: func(_ context.Context, _ int64, said string) (string, bool, error) {
+		Reads: func(_ context.Context, _ int64, said string) (string, bool, string, error) {
 			spooledFirst = len(sp.written) == 1
-			return "answered", false, nil
+			return "answered", false, "", nil
 		},
 	}))
 
@@ -141,9 +141,9 @@ func TestAPhotographIsNeverJudged(t *testing.T) {
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		Spool:    &fakeSpool{}, Photos: ph,
-		Reads: func(context.Context, int64, string) (string, bool, error) {
+		Reads: func(context.Context, int64, string) (string, bool, string, error) {
 			asked = true
-			return "", false, nil
+			return "", false, "", nil
 		},
 	}))
 
@@ -207,8 +207,8 @@ func TestTheHouseOverrulesTheRule(t *testing.T) {
 			housed = append(housed, said)
 			return true, true
 		},
-		Reads: func(context.Context, int64, string) (string, bool, error) {
-			return "4471.", false, nil
+		Reads: func(context.Context, int64, string) (string, bool, string, error) {
+			return "4471.", false, "", nil
 		},
 	}))
 
@@ -233,8 +233,8 @@ func TestAHouseThatDoesNotAnswerFallsThroughToTheRule(t *testing.T) {
 		// checking the second would send a thought abroad — which is what the
 		// mutation that caught this test being weak actually did.
 		AskedAQuestion: func(context.Context, string) (bool, bool) { return true, false },
-		Reads: func(context.Context, int64, string) (string, bool, error) {
-			return "should not be called", false, nil
+		Reads: func(context.Context, int64, string) (string, bool, string, error) {
+			return "should not be called", false, "", nil
 		},
 	}))
 
@@ -296,4 +296,43 @@ func TestACommandIsNeverAQuestion(t *testing.T) {
 	for _, command := range []string{"!find boiler", "!at 14:30 dentist", "!notes"} {
 		require.False(t, squirrel.LooksLikeAQuestion(command), "%q read as a question", command)
 	}
+}
+
+// The box can show you a place. This is the bug from the screenshot: asking to
+// see the chores in the one box this product has got "I can't see your chores
+// from here", because the dock's reading path carried no tools at all and the
+// fix in v0.42.0 had landed on the menu's route instead.
+func TestTheDockCanShowYouAPlace(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, Name: "bleed the boiler", Active: true, EveryDays: 30},
+	}}
+	m := mountedReading(t, f, func(string) (string, bool, string, error) {
+		return "Here they are.", false, "chores", nil
+	})
+	m.call(t, "POST", "/capture", strings.NewReader("text=show+me+the+chores"))
+
+	require.Len(t, f.appended, 3)
+	require.Equal(t, "Here they are.", f.appended[1].Words)
+	require.Equal(t, squirrel.SpeakerBuddy, f.appended[2].Who)
+	require.Contains(t, string(f.appended[2].Shown), "bleed the boiler")
+}
+
+// A thought is a thought. Nothing is drawn under one, whatever the model says
+// about a place — a note being filed is not a request to look at something.
+//
+// The words have to be ones the gate lets through, or this proves nothing: a
+// thought that never reaches the reading path never had a place to draw. What
+// this pins is the case that does happen — the rule sent it to be answered,
+// and the model read the whole sentence and disagreed.
+func TestAThoughtNeverDrawsAPlace(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, Name: "bleed the boiler", Active: true, EveryDays: 30},
+	}}
+	m := mountedReading(t, f, func(string) (string, bool, string, error) {
+		return "Kept.", true, "chores", nil
+	})
+	m.call(t, "POST", "/capture", strings.NewReader("text=show+me+the+chores"))
+
+	require.NotEmpty(t, f.readAsked, "the reading path was never reached")
+	require.Len(t, f.appended, 2)
 }

@@ -31,6 +31,54 @@ var asking = []string{
 	"remind me how", "tell me how",
 }
 
+// showing are the ways somebody asks to be shown one of their places without
+// asking a question at all.
+//
+// "show chores" has no question mark and no asking opening, so it read as a
+// thought and was filed as one — twice, in the same minute, by somebody trying
+// to see their chores. The note that came back said "Kept.", which is the
+// product answering a request to look at something by writing it down.
+//
+// Narrow on purpose, and narrower than the openings above: this fires only
+// when a verb of showing is followed by the name of a place that exists. "show
+// me the chores" is a request; "show mum the photos" is a thought, and stays
+// one.
+var showing = []string{"show", "open", "list", "see", "view"}
+
+// somewhere are the words that name a place, as somebody would say them rather
+// than as the routes spell them.
+//
+// It is deliberately not doorNames: this is a rule about English, and the
+// screen's vocabulary is a rule about routes. They agree today and they are
+// allowed to stop agreeing — a place renamed on screen should not silently
+// change what sentence reaches Buddy.
+var somewhere = []string{
+	"pile", "task", "tasks", "chore", "chores", "agenda", "diary",
+	"kept", "set aside", "aside", "held", "calendar",
+}
+
+// asksToBeShown reports a request to look at one of the places.
+func asksToBeShown(t string) bool {
+	verb := false
+	for _, opening := range showing {
+		if strings.HasPrefix(t, opening+" ") {
+			verb = true
+			break
+		}
+	}
+	if !verb {
+		return false
+	}
+	for _, place := range somewhere {
+		// Bounded, so "taskmaster" is not "task": the place has to be a word
+		// of its own or the end of the sentence.
+		if strings.Contains(t, " "+place+" ") || strings.HasSuffix(t, " "+place) {
+			return true
+		}
+	}
+	return false
+}
+
 // LooksLikeAQuestion is the rule.
 func LooksLikeAQuestion(text string) bool {
 	t := strings.ToLower(strings.TrimSpace(text))
@@ -70,5 +118,8 @@ func LooksLikeAQuestion(text string) bool {
 			return true
 		}
 	}
-	return false
+
+	// And a request to be shown one of the places, which is asked of Buddy
+	// just as surely as a question is, and was being filed as a note.
+	return asksToBeShown(t)
 }

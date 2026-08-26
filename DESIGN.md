@@ -1889,6 +1889,41 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### The Box Opens a Place
+
+The one box this product has can show you a place too. Added 26 August 2026,
+the same evening the menu route learnt it, after *can you show me the chores?*
+typed into the dock got *I can't see your chores from here.*
+
+**Buddy opening a place shipped on the wrong surface first.** The tool went to
+the route behind *ask Buddy* in the menu, which almost nobody presses. The dock
+— the box you type into without thinking — reads what you typed through a
+separate, deliberately cheap call that carried one tool and no facts at all. It
+genuinely could not see the chores, and said so.
+
+**One field on the call that already runs**, rather than the full toolset. The
+reading path is a classifier — *thought or question, and what to say* — and it
+stays one. Adding `open` alongside `say` and `keep` costs about 140 tokens and
+one hundredth of a penny per question, and keeps the box a single call: what
+you typed comes back in one round trip, as it always has.
+
+Handing the dock the whole toolset was measured and rejected for now: five to
+six times the cost is affordable, but it is two or three sequential calls on
+the most-used input in the product, and it would mean typing *done with the
+vet* completes a task. **That is a change to what the box is, not a fix**, and
+it belongs in its own study.
+
+**A request to be shown something is not a thought.** `show chores` has no
+question mark and no asking opening, so the rule filed it — twice in one
+minute, for somebody trying to look at their chores. The product answered a
+request to look at something by writing it down. The rule now recognises a verb
+of showing followed by the name of a place, and it takes **both**: `show mum the
+photos` is still a thought, and so is `open the compiler`, which is why the
+place has to be a whole word rather than a substring.
+
+**One way of showing a place, reached three ways** — the menu, Buddy, and now
+the box. All three draw the same turn from the same function.
+
 ### Buddy Opens a Place
 
 Buddy can show you one of the six places, whole, as cards. Added 26 August
