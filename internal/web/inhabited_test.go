@@ -60,9 +60,15 @@ func TestNoControlRenamesItself(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	// The deck's five answers and the slot's button: the words a hand learns.
+	// The four answers and the slot's button: the words a hand learns.
+	//
+	// It was five until 26 August 2026, "make a chore" being the fifth. That
+	// one is not on the card any more — the three questions moved behind
+	// `something else?`, because seven equally-shaped buttons is six too many
+	// on a screen whose premise is that deciding is expensive. What a hand
+	// learns is now four verbs and one chip, and the chip is pinned below.
 	deck := opened(t, f, "pile")
-	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "make a chore"} {
+	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "something else?"} {
 		require.Contains(t, deck, label, "the pile stopped saying %q", label)
 	}
 	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), ">Tell it<")

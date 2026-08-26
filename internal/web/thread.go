@@ -1501,15 +1501,17 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 				{Label: "KEEP", Action: "/pile/act", Style: "go", Fields: with(row, "act", "keep")},
 				{Label: "DROP", Action: "/pile/act", Style: "stop", Fields: with(row, "act", "drop")},
 				{Label: "A TASK", Action: "/pile/act", Style: "go", Fields: with(row, "act", "task")},
-				// The three that are not disposals. They ask a question rather
-				// than ending the note, so they are quieter than the four
-				// above them and sit after them.
-				{Label: "make a chore", Action: "/pile/often", Style: "why",
-					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
-				{Label: "say it another way", Action: "/pile/reword", Style: "why",
-					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
-				{Label: "i can't act on this", Action: "/pile/why", Style: "why",
-					Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)}},
+				// Four, and only four.
+				//
+				// The three that ask a question rather than ending the note
+				// were here too until 26 August 2026, quieter and after these.
+				// Seven equally-shaped buttons is six too many on a screen
+				// whose premise is that deciding is the expensive part, and
+				// "quieter" was not enough to say that four of them end the
+				// card and three do not.
+				//
+				// They are behind `something else?` below, and they answer as
+				// a turn.
 			},
 		}},
 		Chips: append([]turnChip{
@@ -1519,18 +1521,15 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 				Label: "later", Action: "/pile/later",
 				Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},
 			},
-		}, elsewhereFromThePile()...),
-	}
-
-	// Only when the note looks like several things. A free check, and it is
-	// what keeps the model off every note in the pile.
-	if splittable(opts, v.Text) {
-		sh.Cards[0].Acts = append(sh.Cards[0].Acts, actView{
-			Label: "this is more than one thing", Action: "/pile/split", Style: "why",
-			Fields: map[string]string{
-				"id": strconv.FormatInt(v.ID, 10), "act": "propose", "from": "thread",
+			// The three questions, behind one press. A chip rather than a
+			// button on the card, because it is a thing you say about the note
+			// rather than a thing you do to it — the same reason `later` is a
+			// chip and DONE is not.
+			{
+				Label: "something else?", Action: "/pile/more",
+				Fields: map[string]string{"id": strconv.FormatInt(v.ID, 10)},
 			},
-		})
+		}, elsewhereFromThePile()...),
 	}
 
 	body, err := json.Marshal(sh)

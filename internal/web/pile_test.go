@@ -26,6 +26,7 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /pile/often",
 		"POST /pile/reword",
 		"POST /pile/why",
+		"POST /pile/more",
 		"POST /pile/undo",
 		"POST /timer",
 		"POST /pile/chore",
@@ -74,7 +75,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 54, "a route was added without being pinned here")
+	require.Len(t, m.routes, 55, "a route was added without being pinned here")
 }
 
 // Both old addresses now answer with the conversation — see
