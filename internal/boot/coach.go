@@ -103,28 +103,18 @@ func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Sto
 	return p
 }
 
-// decider is the seam both surfaces choose through, or nil.
+// deciding is the seam both surfaces choose through, or nil, and the way to drop
+// a decision. Both halves come back together because they are only correct
+// against the same cache: two lines naming different ones compile, run, and
+// reproduce the exact bug this pair exists to fix.
 //
-// The cache is the reason this is worth having at all. Opening home is the
-// most repeated action in the product and most opens change nothing, so
-// without it the deep model is paid over and over for the same answer — and
-// pick.go's own argument applies too: an offer that changes on every reload
-// reads as the product changing its mind, and a model asked twice will not
-// answer identically.
+// The cache is what makes it worth having: opening home is the most repeated
+// action in the product and most opens change nothing.
 //
-// What it is keyed on is the picker's own answer. PickNow already reflects
-// every event the design listed as an invalidator — a check-in changes
-// capacity, a timer changes rules 2 and 3, a completion or a refusal removes
-// the row, a moment entering its leave-by window outranks everything — so
-// comparing its answer catches all of them without a hook at a single write
-// site. Hooks are the version of this that gets forgotten when a seventh write
-// path is added.
-// Both halves come back together, and that is the point rather than tidiness:
-// they are only correct against the same cache. Two adjacent lines reading
-// `decider(c, s.offers)` and `s.offers.Forget` are two chances to name a
-// different one, and a decider that caches into one place while the forget
-// clears another compiles, runs, and reproduces the exact bug this pair exists
-// to fix — silently, because nothing downstream can tell.
+// Keyed on the picker's own answer, which already reflects every invalidator the
+// design listed — a check-in changes capacity, a timer changes rules 2 and 3, a
+// completion removes the row. Hooks are the version of this that gets forgotten
+// when a seventh write path is added.
 func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(personID int64)) {
 	if _, none := c.(coach.NoCoach); none {
 		// No coach, no decision, and nothing to forget. Both nil, so the

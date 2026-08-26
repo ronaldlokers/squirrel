@@ -821,8 +821,6 @@ func (s *fakeSpool) Write(c squirrel.Capture) (string, error) {
 
 func (s *fakeSpool) Writable() bool { return !s.readonly }
 
-// mountedSpooling is mounted with a spool the test can inspect, for the two
-// things that are about capture itself rather than about the pile.
 // mountedWithCamera is mounted plus somewhere to keep a photograph.
 func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *testMux {
 	t.Helper()
@@ -836,6 +834,7 @@ func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos
 	return m
 }
 
+// mountedSpooling is mounted with a spool the test can inspect.
 func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
 	t.Helper()
 	m := newTestMux()
