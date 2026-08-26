@@ -460,9 +460,7 @@ func (s *Store) LineOnPrompt(ctx context.Context, promptID int64, position int) 
 		c.EveryDays = int(c.Every.Hours() / 24)
 		line.Chore = &c
 	case itemID != nil:
-		// The kind comes with it because the caller needs to tell a note from
-		// a task: only a task earns the hand-off after it is completed, and
-		// without this that check silently compares against an empty string.
+		// The kind comes with it — see LineAtPosition.
 		line.Item = &Item{ID: *itemID, RawText: *itemText, ReceivedAt: *itemAt,
 			Kind: itemKindOf(itemKind)}
 	default:

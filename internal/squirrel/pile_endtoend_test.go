@@ -115,11 +115,6 @@ func TestThePileEndToEnd(t *testing.T) {
 func TestPromotionEndToEnd(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
-	// Seeded with an identity, not just a handle: the drain resolves a person
-	// from (transport, sender id), and without that the capture still lands but
-	// personID is nil and Apply returns before replying to anything. That is
-	// correct behaviour — a chore belongs to a person — and it is also exactly
-	// how an end-to-end test comes to assert nothing at all.
 	p, err := store.SeedOwner(ctx, "ronald",
 		[]squirrel.IdentitySeed{{Transport: "campfire", ExternalID: "s1"}})
 	require.NoError(t, err)

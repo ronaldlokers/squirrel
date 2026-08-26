@@ -147,8 +147,6 @@ func TestBootServesWithTheDatabaseUnreachable(t *testing.T) {
 	res := post(t, s, payload)
 	body, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
-	// Since the boost, the receipt is a reaction on the message rather than a
-	// reply, so the response posts nothing.
 	require.Empty(t, res.Header.Get("Content-Type"))
 	require.Empty(t, string(body))
 
