@@ -1889,6 +1889,52 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### The First Run
+
+What somebody who has never seen this sees. Added 26 August 2026, replacing an
+empty conversation with a box in it saying *put it down here*.
+
+**That box asks a stranger to trust the product with something before showing
+them what it will do with it** — and what it asks for, the contents of
+somebody's head, is the one thing they have most reason not to hand over first.
+
+So Buddy plays the loop through once, dimmed, and then rules a line under it
+and hands over. Three turns, because three is the whole loop: you say
+something, it is kept and named, and later it comes back to you. A fourth would
+be teaching the product rather than showing it.
+
+**Seeing your own bubble beside Buddy's unbubbled words teaches the grammar of
+the screen in one look**, which no sentence about it can do. That is the reason
+it is dimmed rather than greyed: the colours are part of what is being taught.
+
+- **It is never stored.** These are not turns, they are not written, and they
+  are gone the moment there is one real turn. The first thing this product does
+  must not be to write a false memory into a record whose whole value is that
+  you made all of it.
+- **It is inert by construction.** The verbs are spans, not forms, and there is
+  no route they could reach if they were pressed. A worked example wired to
+  real controls is a trap: the one thing worse than not knowing what DONE does
+  is finding out on somebody else's note.
+- **It carries its own classes, not the conversation's.** It looks the same —
+  that is the teaching — but a picture of a card is not a card, and sharing the
+  class would let a screen that must have no controls on it report one. The
+  look is shared in the stylesheet, which is what a stylesheet is for.
+- **It says what it is, in Buddy's voice**: *Here is what this is. None of it
+  is yours.* A dimmed thing nobody has explained is a thing that looks broken.
+- **It ends on a dashed rule and two words**: *now yours.* Everything above the
+  line is nobody's and everything below it is theirs, and that is the one thing
+  the visitor has to understand.
+
+**It goes the moment there is anything of yours.** One turn in the record ends
+it; so does anything Squirrel finds to say about your own world — an opening
+line, or something to be handed. Things arrive through Campfire without a word
+being said on this screen, and a person mid-sentence about their own things
+does not need the loop explained.
+
+**The example is ordinary and small on purpose.** `post the parcel back` is the
+kind of thing this is for. An example built out of impressive things would be a
+demonstration of the product rather than a picture of your Tuesday.
+
 ### The Readings
 
 Six weeks by seven days, in five colours, with **the days you said nothing

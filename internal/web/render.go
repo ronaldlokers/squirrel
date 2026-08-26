@@ -147,6 +147,11 @@ type view struct {
 	MoodWord string
 	// Faces are the five, in the one order both surfaces use.
 	Faces []faceView
+	// Example is the worked example, on a conversation nobody has ever said
+	// anything in, and empty every other time. It is drawn and never stored —
+	// see internal/web/firstrun.go.
+	Example []exampleTurn
+
 	// Weeks is how you have been, as six weeks by seven days, and only the
 	// readings page fills it.
 	Weeks []moodWeekView

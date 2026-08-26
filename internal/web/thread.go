@@ -210,6 +210,22 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			turns, more = nil, false
 		}
 
+		// Nobody has ever said anything here. The worked example plays, once,
+		// and only now: it is decided before anything is appended, because
+		// every turn below this line is about to make the record non-empty and
+		// the question being asked is whether it was empty when you arrived.
+		//
+		// Never while walking back — a page of the past is not a first run,
+		// even when the page is empty — and never when the record could not be
+		// read, where an empty conversation means the opposite of a new one.
+		//
+		// An empty record is not quite the whole of the question: things
+		// arrive through Campfire without a word being said on this screen. So
+		// this is provisional, and anything Squirrel then finds to say about
+		// your own world puts it out — a person mid-sentence about their own
+		// things does not need the loop explained.
+		first := !walkingBack && !unreadable && !more && len(turns) == 0
+
 		// The one thing Buddy opens with, and only while the last answer no
 		// longer describes now. Written rather than rendered, because a
 		// question that is not in the record is a question the record cannot
@@ -267,6 +283,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// second.
 		if !walkingBack && !unreadable && !endsAsking(turns) {
 			if t, has := openingTurn(ctx, s, opts, personID, turns); has {
+				// Squirrel has something to say about your world, so you have
+				// one.
+				first = false
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
 					turns = append(turns, saved)
 				} else {
@@ -277,6 +296,10 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 
 		if !walkingBack && !asked && !unreadable && !endsOpen(turns) {
 			if t, has := offerTurn(s, opts, r); has {
+				// Something to hand you is something you already have. A
+				// worked example above it would be explaining a product that
+				// is mid-sentence about your own things.
+				first = false
 				if saved, err := s.AppendTurn(ctx, personID, t); err == nil {
 					turns = append(turns, saved)
 				} else {
@@ -297,6 +320,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Turns:     turnViews(turns),
 			Rail:      railFor(ctx, s, personID, ""),
 			MoreAbove: more,
+		}
+		if first {
+			v.Example = worked()
 		}
 		if len(turns) > 0 {
 			v.Oldest = turns[0].ID

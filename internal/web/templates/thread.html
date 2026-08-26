@@ -15,6 +15,38 @@
        much more — not because a count is forbidden any longer, but because the
        number above you is not a thing you can act on. */}}
   {{if .MoreAbove}}<p class="earlier"><a href="/?before={{.Oldest}}">earlier</a></p>{{end}}
+  {{/* The worked example, on a conversation nobody has ever said anything in.
+
+       Dimmed, ruled off, and drawn rather than remembered: these are not turns
+       and they are never written. The verbs are spans, because a worked example
+       wired to real controls is a trap — the one thing worse than not knowing
+       what DONE does is finding out on somebody else's note.
+
+       It says what it is at the top, in Buddy's voice, because a dimmed thing
+       you have not been told about is a thing that looks broken. */}}
+  {{if .Example}}
+  <div class="worked">
+    <p class="workedsays">Here is what this is. None of it is yours.</p>
+    {{range .Example}}
+    {{/* Its own classes, not the conversation's. It looks the same — that is
+         the whole teaching value — but a picture of a card is not a card, and
+         sharing the class would let a screen that must have no controls on it
+         report one. The look is shared in the stylesheet, where sharing a look
+         is what the file is for. */}}
+    <div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}">
+      <p class="{{if .Buddy}}said{{else}}bub{{end}}">{{.Words}}</p>
+      {{with .Card}}
+      <article class="workedcard">
+        <p class="workedname">{{.Name}}</p>
+        <p class="workedmeta">{{.Meta}}</p>
+        <p class="workedacts">{{range .Acts}}<span>{{.}}</span>{{end}}</p>
+      </article>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+  <p class="workedends">now yours.</p>
+  {{end}}
   {{range .Turns}}{{template "turn" .}}{{end}}
 </div>
 
