@@ -343,6 +343,7 @@ func goneQuietTurn(ctx context.Context, s Store, personID int64, turns []squirre
 	sh := drawn{
 		Opened: mark,
 		Cards: []cardView{{
+			Kind:  "held",
 			Title: held.Text,
 			Photo: parkedPhoto(held),
 			// The reason and how long, in the card's own quiet line. Elapsed

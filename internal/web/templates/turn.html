@@ -66,7 +66,19 @@
        put an action in a tag name, and the version that tried rendered nothing
        at all. `article.chore` is what pile.js binds the chore keys to, so a
        chore keeps them without the screen it used to be on. */}}
-  <article class="turncard{{if eq .Kind "chore"}} chore{{end}}">
+  {{/* Six kinds, six bodies. A note, a task, a chore, an appointment, a
+       photograph and something set aside were one cream rectangle with
+       different words in it until 26 August 2026, so the kind was only knowable
+       by reading — which is the one thing a glance does not do.
+
+       The kind is a class rather than a tag: html/template cannot put an action
+       in a tag name, and the version that tried rendered nothing at all.
+       `article.chore` is also what pile.js binds the chore keys to. */}}
+  <article class="turncard{{if .Kind}} k{{.Kind}}{{end}}{{if eq .Kind "chore"}} chore{{end}}">
+    {{/* A task's page tab, and a ticket's notch. Both are drawn rather than
+         bordered, because a shape is what tells them apart at arm's length. */}}
+    {{if eq .Kind "task"}}<span class="pagetab" aria-hidden="true"></span>{{end}}
+    {{if eq .Kind "at"}}<span class="notch" aria-hidden="true"></span>{{end}}
     {{/* The photograph is the note, and the words beside it are the caption —
          the same order the pile's card draws them in. */}}
     {{/* The card asks for the smaller copy and links to the whole one. A card

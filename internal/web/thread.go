@@ -1190,7 +1190,9 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 		v := toView(it)
 		row := map[string]string{"id": strconv.FormatInt(v.ID, 10)}
 		sh.Cards = append(sh.Cards, cardView{
-			Title: v.Text, Meta: "decided " + v.When, Photo: v.Photo,
+			// A task wears the notebook's page tab, which is the device this
+			// system already owns for "this row was decided on".
+			Kind: "task", Title: v.Text, Meta: "decided " + v.When, Photo: v.Photo,
 			Acts: []actView{
 				{Label: "did it", Action: "/tasks/act", Style: "did", Fields: with(row, "act", "done")},
 				// "back" rather than "later": this is not a deferral, it is a
@@ -1289,7 +1291,10 @@ func agendaTurn(ctx context.Context, s Store, personID int64, name string, from 
 		row := map[string]string{"id": strconv.FormatInt(m.ID, 10)}
 		// The core's own sentence, shared with chat and with the notification,
 		// so the three cannot drift apart about when to leave.
-		card := cardView{Title: m.Label, Meta: squirrel.LeaveWords(m)}
+		// A ticket, not a card. An appointment is the one thing in this product
+		// you can be *late* for, and it looked exactly like a note about a
+		// rattle until 26 August 2026 — see DESIGN.md, The Six Bodies.
+		card := cardView{Kind: "at", Title: m.Label, Meta: squirrel.LeaveWords(m)}
 		card.Acts = []actView{{Label: "OPEN", Action: "/at/open", Style: "go", Fields: row}}
 		if m.Open(now()) {
 			// Only inside the window. Outside it the appointment is not yet

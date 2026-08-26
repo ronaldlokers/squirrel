@@ -1913,6 +1913,38 @@ and this text has no stock behind it to sit on.
 "received", which is a real loss for somebody arriving for the first time. The
 first-run worked example is what teaches the grammar in one look.
 
+### The Six Bodies
+
+A note, a task, a chore, an appointment, a photograph and something set aside
+were one cream rectangle with different words in it until 26 August 2026. The
+kind was knowable only by reading, which is the one thing a glance does not do.
+
+Nothing new is invented. The notch, the page tab, the dashed edge and the hard
+shadow are devices this system already owns; they are applied **per kind**
+instead of uniformly.
+
+| Kind | Body |
+| --- | --- |
+| note | plain stock, rotated `-.35deg` — a piece of paper somebody put down, not a row in a table |
+| task | the notebook's page tab, in the kept amber the tab already uses |
+| chore | its rhythm carried on the card, and `article.chore` as before |
+| appointment | a **ticket**: notched on the left, time set large in Inter, what to bring below a perforation |
+| photograph | a **polaroid** — paper border, the picture, the words underneath as a caption |
+| set aside | recessed and dashed rather than raised |
+
+**The appointment justifies the work on its own.** It is the only thing in this
+product you can be *late* for, and it looked exactly like a note about a rattle.
+It is also the one body where the meta line outranks the name: the time and the
+leave-by are what you came for, and the label is the caption.
+
+**The photograph needs no kind.** A card that carries one *is* one — which is
+already true of the content, the picture being the note and the words beside it
+the caption.
+
+**Set aside bends "cream card stock, never white" by not being stock at all.**
+That is deliberate and it is the only one. A parked note that looked like every
+other object would be a parked note you keep trying to act on.
+
 ### The Menu
 
 One 44px control in the lid, and the whole of this product's navigation.

@@ -3537,3 +3537,84 @@
     font-size: 12px; line-height: 18px; text-align: center;
     font-variation-settings: var(--precise), "wght" 800;
   }
+
+  /* The six bodies. See DESIGN.md, The Six Bodies.
+   *
+   * A note, a task, a chore, an appointment, a photograph and something set
+   * aside were one cream rectangle with different words in it until 26 August
+   * 2026. Nothing new is invented here: the notch, the page tab, the dashed
+   * edge and the hard shadow are all devices this system already owns. They
+   * are applied per kind instead of uniformly. */
+
+  /* A note is the plain body, and it sits very slightly askew. Enough to read
+     as a piece of paper somebody put down rather than a row in a table, and
+     not enough to look broken — the same half-degree the stamp leans by. */
+  .turncard:not([class*=" k"]) { transform: rotate(-.35deg); }
+
+  /* A task wears the notebook's page tab, in the kept amber the tab already
+     uses for a row that was decided on. */
+  .turncard.ktask { position: relative; }
+  .turncard.ktask .pagetab {
+    position: absolute; top: calc(var(--line) * -1 - 12px); right: 18px;
+    width: 34px; height: 15px;
+    background: var(--kept); border: var(--line) solid var(--outline);
+    border-bottom: none; border-radius: 6px 6px 0 0;
+  }
+
+  /* An appointment is a ticket: notched on the left, and its time set large.
+     It is the one thing here you can be *late* for, and it looked exactly like
+     a note about a rattle. */
+  .turncard.kat { position: relative; margin-left: 8px; }
+  .turncard.kat .notch {
+    position: absolute; left: calc(var(--line) * -1 - 9px); top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px; border-radius: 999px;
+    background: var(--purple-deep); border: var(--line) solid var(--outline);
+  }
+  /* The meta carries the time and the leave-by, so it is the loud line on this
+     body rather than the quiet one — the only place in the product where meta
+     outranks the name. */
+  .turncard.kat .turnmeta {
+    font-family: "Inter", sans-serif; font-weight: 900; font-size: 19px;
+    letter-spacing: -.02em; color: var(--outline); text-transform: none;
+    margin: 0 0 2px; order: -1;
+  }
+  .turncard.kat .turnname {
+    font-size: 15px; font-variation-settings: var(--casual), "wght" 500;
+  }
+  .turncard.kat { display: flex; flex-direction: column; }
+  /* What to bring, below a perforation. It is the thing you are standing in
+     the hall without. */
+  .turncard.kat .takeline {
+    margin-top: 9px; padding-top: 9px;
+    border-top: 2.5px dashed rgba(28, 17, 11, .35);
+  }
+
+  /* Something set aside is recessed rather than raised: present, and not a
+     thing you can pick up.
+     
+     This is the one body that bends "cream card stock, never white" by not
+     being stock at all. Deliberate, and the only one — a parked note that
+     looked like every other object would be a parked note you keep trying to
+     act on. */
+  .turncard.kheld {
+    background: rgba(28, 17, 11, .16);
+    border: 2.5px dashed rgba(254, 214, 167, .5);
+    box-shadow: none;
+    color: var(--cream);
+  }
+  .turncard.kheld .turnname { color: var(--cream); }
+  .turncard.kheld .turnmeta { color: rgba(254, 214, 167, .8); }
+
+  /* A photograph is a polaroid, and it needs no kind: a card that carries one
+     *is* one. White border, the picture, and the words underneath as a
+     caption — which is what a note with a photograph has always been, the
+     picture being the note and the words beside it the caption. */
+  .turncard:has(> .cardphoto) {
+    background: var(--paper); padding: 9px 9px 0;
+    transform: rotate(-1deg);
+  }
+  .turncard:has(> .cardphoto) .cardphoto { margin: 0; }
+  .turncard:has(> .cardphoto) .turnname,
+  .turncard:has(> .cardphoto) .turnmeta { padding: 0 4px; }
+  .turncard:has(> .cardphoto) .turnacts { padding: 0 4px 10px; }

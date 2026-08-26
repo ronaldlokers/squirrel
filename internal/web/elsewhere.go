@@ -131,7 +131,10 @@ func heldTurn(ctx context.Context, s Store, personID int64, name string) squirre
 			photo = "/photo/" + strconv.FormatInt(h.ID, 10)
 		}
 		sh.Cards = append(sh.Cards, cardView{
-			Title: h.Text, Photo: photo, Meta: heldMeta(h),
+			// Recessed and dashed rather than raised: something set aside is
+			// present, and is not a thing you can pick up. It is the one body
+			// that bends "cream card stock, never white" by not being stock.
+			Kind: "held", Title: h.Text, Photo: photo, Meta: heldMeta(h),
 			Acts: []actView{
 				// Picking it back up is `open`, which is the transition
 				// everything else in this product reverses through — so undo
