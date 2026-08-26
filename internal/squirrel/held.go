@@ -2,9 +2,12 @@ package squirrel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // Things you cannot act on, and why. See migration 0023.
@@ -35,6 +38,33 @@ type HeldItem struct {
 	// and only a photograph is a perfectly good note, and a screen that drops
 	// the picture shows an empty row.
 	PhotoName string
+	// Since is how long it has been in this state, at the moment it was read.
+	// Only filled by GoneQuiet; the list does not carry it, because a list of
+	// elapsed times is a list of reproaches.
+	Since time.Duration
+}
+
+// QuietAfter is how long each state may go unmentioned.
+//
+// Three weeks is right for a referral and absurd for a text message, so it is a
+// property of the state rather than one number. Blocked is shorter because a
+// thing you are blocked on is usually something you can unblock; waiting is
+// somebody else's move.
+//
+// **someday is absent, and that is the design.** Someday is the state that
+// means "not now, and do not ask me" — a product that came back to it in three
+// weeks would have taken the one place you can put something down and turned it
+// into a delayed nag.
+var QuietAfter = map[ItemState]time.Duration{
+	ItemWaiting: 21 * 24 * time.Hour,
+	ItemBlocked: 14 * 24 * time.Hour,
+}
+
+// rowsToHeld finishes a scanned row. Shared so that the list and the single
+// read cannot disagree about what a kind is.
+func rowsToHeld(h *HeldItem, kind string) error {
+	h.Kind = ItemKind(kind)
+	return nil
 }
 
 // Words is the whole reason in one phrase — "waiting on the vet" — or just the
@@ -136,4 +166,69 @@ func (s *Store) Unhold(ctx context.Context, personID, itemID int64, at time.Time
 		return false, fmt.Errorf("picking it back up: %w", err)
 	}
 	return tag.RowsAffected() == 1, nil
+}
+
+// GoneQuiet is something you set aside that nobody has mentioned since, if it
+// has been long enough to be worth mentioning.
+//
+// The three states shipped in August as a one-way door: you park something
+// waiting on the surgery precisely so that you do not have to hold it, and that
+// only works if something else is holding it. Nothing was.
+//
+// The oldest one, not all of them. This is a sentence in the opening turn, not
+// a list to work through — a screen that handed back everything you had ever
+// parked would be a second pile wearing a different word.
+func (s *Store) GoneQuiet(ctx context.Context, personID int64, at time.Time) (HeldItem, bool, error) {
+	var h HeldItem
+	var kind string
+	var since time.Time
+	err := s.pool.QueryRow(ctx, `
+		select id, raw_text, state, coalesce(held_because, ''), kind,
+		       coalesce(attachment_path, ''), state_at
+		  from items
+		 where person_id = $1 and has_content
+		   and state in ('waiting', 'blocked')
+		   and state_at is not null
+		   -- Cast, because a parameter inside a case arm is inferred from the
+		   -- arm and make_interval takes a double. Without it Postgres decides
+		   -- both are text and refuses the statement outright — the same trap
+		   -- this codebase hit three times during the OIDC work.
+		   and state_at <= $2::timestamptz - make_interval(secs =>
+		         case state when 'waiting' then $3::double precision
+		                    else $4::double precision end)
+		 order by state_at
+		 limit 1`,
+		personID, at,
+		int64(QuietAfter[ItemWaiting]/time.Second),
+		int64(QuietAfter[ItemBlocked]/time.Second)).
+		Scan(&h.ID, &h.Text, &h.State, &h.Because, &kind, &h.PhotoName, &since)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return HeldItem{}, false, nil
+	}
+	if err != nil {
+		return HeldItem{}, false, fmt.Errorf("reading what has gone quiet: %w", err)
+	}
+	if err := rowsToHeld(&h, kind); err != nil {
+		return HeldItem{}, false, err
+	}
+	h.Since = at.Sub(s.here(since))
+	return h, true, nil
+}
+
+// StillHolding is "still waiting" — the answer that costs nothing.
+//
+// It moves the clock and touches nothing else: the state is unchanged, the
+// reason is unchanged, and the note does not come back to the pile. Being able
+// to say "yes, still" without it becoming a task is the whole reason this is
+// safe to mention at all.
+func (s *Store) StillHolding(ctx context.Context, personID, itemID int64, at time.Time) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		update items set state_at = $3
+		 where id = $1 and person_id = $2 and state in ('waiting', 'blocked', 'someday')`,
+		itemID, personID, at)
+	if err != nil {
+		return false, fmt.Errorf("keeping something waiting: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -129,6 +130,12 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 	if turn, ok := whereYouGotTo(ctx, s, personID); ok {
 		return turn, true
 	}
+	// Then something you set aside that has gone quiet. After where you got
+	// to, because a run in progress is a thing you were doing a minute ago and
+	// this is a thing nobody has touched for three weeks.
+	if turn, ok := goneQuietTurn(ctx, s, personID, turns); ok {
+		return turn, true
+	}
 
 	waiting, err := s.Waiting(ctx, personID, now())
 	if err != nil {
@@ -225,6 +232,99 @@ func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn,
 		Words: "You were part way through " + placeCalled(run.Place) + ", " + agoInWords(run.Since) + ".",
 		Shown: body,
 	}, true
+}
+
+// goneQuietTurn mentions something you set aside and nobody has touched since.
+//
+// **It is a mention, not a task.** The three answers are deliberately unequal
+// in effort and equal in standing: `still waiting` costs one press and moves
+// the clock, `chase it` puts the note back in the pile, and `let it go` drops
+// it. If saying "still" were harder than the other two, this would be a screen
+// that pushes you to close things, which is the opposite of what parking
+// something is for.
+//
+// Marked like every other opening, so it is said once in a conversation rather
+// than on every draw. If it is ignored entirely it will come back another day,
+// and that is correct: three weeks of silence is a fact that does not stop
+// being true because you scrolled past it.
+func goneQuietTurn(ctx context.Context, s Store, personID int64, turns []squirrel.Turn) (squirrel.Turn, bool) {
+	held, found, err := s.GoneQuiet(ctx, personID, now())
+	if err != nil {
+		slog.Error("reading what has gone quiet", "error", err)
+		return squirrel.Turn{}, false
+	}
+	if !found {
+		return squirrel.Turn{}, false
+	}
+	mark := "quiet:" + strconv.FormatInt(held.ID, 10)
+	if saidAlready(turns, mark) {
+		return squirrel.Turn{}, false
+	}
+
+	id := strconv.FormatInt(held.ID, 10)
+	sh := drawn{
+		Opened: mark,
+		Cards: []cardView{{
+			Title: held.Text,
+			Photo: parkedPhoto(held),
+			// The reason and how long, in the card's own quiet line. Elapsed
+			// time on a thing somebody else owes you is a fact, not a score —
+			// it is the countdown pointed backwards.
+			Meta: held.Words() + " · " + waitedInWords(held.Since),
+		}},
+		Chips: []turnChip{
+			{Label: "still waiting", Action: "/held/act",
+				Fields: map[string]string{"id": id, "act": "still"}},
+			{Label: "chase it", Action: "/held/act",
+				Fields: map[string]string{"id": id, "act": "back"}},
+			{Label: "let it go", Action: "/pile/act",
+				Fields: map[string]string{"id": id, "act": "drop", "was": string(held.State)}},
+		},
+	}
+	body, err := json.Marshal(sh)
+	if err != nil {
+		slog.Error("drawing what has gone quiet", "error", err)
+		return squirrel.Turn{}, false
+	}
+	return squirrel.Turn{
+		Who: squirrel.SpeakerBuddy,
+		// No question mark, and no "should you". It says the fact and stops.
+		Words: "Something you set aside has gone quiet.",
+		Shown: body,
+	}, true
+}
+
+// parkedPhoto is the picture a parked note carries, or empty. A note with no
+// words and only a photograph is a perfectly good note, and a card that
+// dropped the picture would show an empty row.
+//
+// Not `heldPhoto`: that is taken by a helper in photobrowser_test.go, which
+// only builds under the browser tag — so the collision was invisible to `go
+// build` and to the ordinary suite. Fifth in this package after .face, .say,
+// .tcard and placeTurn, and the first one that needed a build tag to see.
+func parkedPhoto(h squirrel.HeldItem) string {
+	if h.PhotoName == "" {
+		return ""
+	}
+	return "/photo/" + strconv.FormatInt(h.ID, 10)
+}
+
+// waitedInWords is how long, rounded the way somebody would say it.
+//
+// Weeks and months, never days past a fortnight: "23 days" is a measurement and
+// "about three weeks" is a remark. The difference matters on a line about a
+// thing you have not done.
+func waitedInWords(since time.Duration) string {
+	days := int(since.Hours() / 24)
+	switch {
+	case days >= 60:
+		return "about " + strconv.Itoa(days/30) + " months"
+	case days >= 14:
+		return "about " + strconv.Itoa(days/7) + " weeks"
+	case days >= 7:
+		return "over a week"
+	}
+	return strconv.Itoa(days) + " days"
 }
 
 // placeCalled is the door in the words the menu uses for it.

@@ -37,6 +37,24 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		back := backTolerant(r.FormValue("from"))
 
+		// "still waiting" — the answer that costs nothing.
+		//
+		// It moves the clock and touches nothing else: same state, same
+		// reason, and the note does not come back to the pile. Being able to
+		// say "yes, still" without it becoming work is the whole reason
+		// mentioning it is safe.
+		if r.FormValue("act") == "still" {
+			if _, err := s.StillHolding(r.Context(), personID, id, now()); err != nil {
+				fail(w, err)
+				return
+			}
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: "still waiting"},
+				{Who: squirrel.SpeakerBuddy, Words: "Right. I will leave it."},
+			}), back)
+			return
+		}
+
 		if r.FormValue("act") == "back" {
 			if _, err := s.Unhold(r.Context(), personID, id, now()); err != nil {
 				fail(w, err)
