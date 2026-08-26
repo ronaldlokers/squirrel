@@ -183,6 +183,10 @@ type view struct {
 	// Coach is the sheet's contents, and only the coach page fills it. Every
 	// other page carries the acorn and nothing more — the sheet's markup
 	// arrives when it is opened, because a conversation nobody has started is
+	// Menu is everywhere else, behind the lid's one control. It carries what
+	// the rail, the chip row and the stop link used to occupy the conversation
+	// with — see layout.html for why a hamburger came back.
+	Menu []turnChip
 	// Also is the pair of chips at the foot of the conversation: asking Buddy
 	// and looking something up. See thread.html.
 	Also []turnChip
@@ -530,6 +534,12 @@ func toView(it squirrel.Item) noteView {
 // what it is about: the timer, if one is running. Threading it through each
 // handler would mean five places to forget it.
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
+	// The menu, on every screen that has a store to build it from. It carries
+	// the counts, so it is filled here rather than in render() — which takes
+	// neither a store nor a person and never could.
+	if personID, ok := personOf(r); ok {
+		v.Menu = menuFor(r.Context(), s, personID)
+	}
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
 	v.Camera = opts.Photos != nil

@@ -138,6 +138,10 @@ type turnChip struct {
 	Href   string            `json:"href,omitempty"`
 	Action string            `json:"action,omitempty"`
 	Fields map[string]string `json:"fields,omitempty"`
+	// Count is a number beside the label, in the menu only. Zero is no number
+	// and not a nought — a door reading "0" is a scoreboard, which is the rule
+	// the four doors carried and the menu inherited with them.
+	Count int `json:"-"`
 }
 
 type doorView struct {
@@ -381,6 +385,42 @@ func turnViews(turns []squirrel.Turn) []turnView {
 // A failed count is four doors and no numbers rather than an error page: the
 // doors are how you get anywhere, and a database that cannot count is not a
 // reason to take the navigation away.
+// menuFor is everywhere else, behind the lid's one control.
+//
+// It holds what the rail, the always-on chip row and the stop link used to
+// occupy the conversation with. Eight things, which is the argument for a
+// menu existing at all: the one this product removed on 25 August held three,
+// and a menu of three is emptier than the space it costs.
+//
+// Order is by how often a thing is wanted rather than by kind — the four
+// places first, then the two things you can always do. Stopping is not in this
+// list; the template puts it last, under a rule, because it is the end of the
+// evening rather than a destination.
+func menuFor(ctx context.Context, s Store, personID int64) []turnChip {
+	menu := []turnChip{
+		{Label: "the pile", Action: "/open", Fields: map[string]string{"where": "pile"}},
+		{Label: "the agenda", Action: "/open", Fields: map[string]string{"where": "at"}},
+		{Label: "the tasks", Action: "/open", Fields: map[string]string{"where": "tasks"}},
+		{Label: "the chores", Action: "/open", Fields: map[string]string{"where": "chores"}},
+		{Label: "what you set aside", Action: "/open", Fields: map[string]string{"where": "held"}},
+		{Label: "the things you kept", Action: "/open", Fields: map[string]string{"where": "kept"}},
+		{Label: "ask Buddy", Action: "/buddy/ask"},
+		{Label: "look something up", Action: "/find/ask"},
+	}
+	waiting, err := s.Waiting(ctx, personID, now())
+	if err != nil {
+		// A count that cannot be read is a menu with no numbers on it, which is
+		// what this was before 24 August. Everything still goes where it goes.
+		slog.Error("counting what is waiting, for the menu", "error", err)
+		return menu
+	}
+	menu[0].Count = waiting.Pile
+	menu[1].Count = waiting.Agenda
+	menu[2].Count = waiting.Tasks
+	menu[3].Count = waiting.Chores
+	return menu
+}
+
 func railFor(ctx context.Context, s Store, personID int64, here string) []doorView {
 	rail := []doorView{
 		{Where: "pile", Label: "the pile", Art: "door-pile.png"},

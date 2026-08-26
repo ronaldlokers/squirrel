@@ -3115,10 +3115,31 @@
      sat *on* the stock; a bubble on the purple field is the stock. What let it
      drift is that the fill was doing the work of saying who spoke, and the
      face does that now. */
-  .frombuddy .bub {
-    background: var(--card); color: var(--outline);
-    box-shadow: 0 4px 0 0 var(--outline);
+  /* Buddy has no bubble. See DESIGN.md, The Conversation.
+   *
+   * `.frombuddy .bub` was card stock with a hard shadow until 26 August 2026.
+   * The rule it broke is that two kinds of thing wore one costume: a sentence
+   * and an object were both cream rectangles with a 3px outline, so a
+   * conversation read as one column of beige rather than as an exchange.
+   *
+   * Taking the bubble off makes every remaining rectangle a *thing* — a note,
+   * an appointment, a chore, or something you said. The same conversation goes
+   * from seven outlined boxes to three.
+   *
+   * Paper rather than cream, with the outline as a text shadow rather than a
+   * border: on the purple field, cream measured 4.8:1 and paper measures
+   * 8.9:1, and this text has no stock behind it to sit on. The shadow is one
+   * pixel of the outline ink, which is what every other object here uses to
+   * lift off the field. */
+  .said {
+    margin: 0; font-size: 16px; line-height: 1.45;
+    color: var(--paper);
+    font-variation-settings: var(--casual), "wght" 500;
+    text-shadow: 0 1px 0 rgba(28, 17, 11, .45);
   }
+  /* Yours keeps its bubble, and it is the cream one. There is one person here
+     and he knows which words are his — what the bubble now says is not "you
+     said this" but "this is a thing rather than a sentence". */
   .fromyou .bub { background: var(--cream); color: var(--outline); }
   /* The place's name, when a turn opens one. The thread has no title of its
      own — home's exemption — so these are what heading navigation walks. */
@@ -3458,4 +3479,61 @@
   .letmein:active {
     transform: translateY(4px); box-shadow: 0 0 0 0 var(--outline);
     background: var(--purple); color: var(--paper);
+  }
+
+  /* The menu, and it is the whole of this product's navigation.
+   *
+   * The rail of four doors, the always-on chip row and the stop link were all
+   * permanent fixtures in the conversation, together about 45% of a phone
+   * screen before a word was said. They are here, behind one 44px control.
+   *
+   * A <details>, so it opens with the script off. */
+  .menu > summary {
+    list-style: none; cursor: pointer;
+    width: 44px; height: 44px; flex: none;
+    display: grid; place-items: center;
+    color: var(--cream); border-radius: 11px;
+  }
+  .menu > summary::-webkit-details-marker { display: none; }
+  .menu > summary svg { width: 22px; height: 22px; display: block; }
+  .menu[open] > summary { background: rgba(255, 251, 243, .16); }
+
+  /* Over the conversation rather than pushing it down: a menu that reflowed
+     the screen would move the thing you were reading in order to show you a
+     way somewhere else. */
+  .menupanel {
+    position: absolute; top: 58px; right: 12px; z-index: 20;
+    width: min(260px, calc(100vw - 24px));
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 8px 0 0 var(--outline), 0 20px 34px -18px rgba(0, 0, 0, .8);
+    overflow: hidden;
+  }
+  .menupanel form { margin: 0; }
+  .menupanel button,
+  .menupanel .leaving {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 12px 14px; text-align: left;
+    background: none; border: 0; border-bottom: 2px solid rgba(28, 17, 11, .14);
+    color: var(--outline); font: inherit; font-size: 15px;
+    font-variation-settings: var(--casual), "wght" 600;
+    text-decoration: none; cursor: pointer;
+  }
+  .menupanel button:hover,
+  .menupanel .leaving:hover { background: var(--paper); }
+  /* The way out is last and under a rule of its own. It is not a destination
+     like the others: it is the end of the evening, and its place at the bottom
+     is what says so without a louder word. Principle 3 — leaving must never
+     look like failure — is why it is not smaller or greyer, only elsewhere. */
+  .menupanel .leaving {
+    border-bottom: 0; border-top: var(--line) solid var(--outline);
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+  /* Zero is no number and not a nought. A door reading "0" is a scoreboard,
+     which is the rule the four doors carried and this inherited with them. */
+  .menupanel .cnt {
+    margin-left: auto; min-width: 22px; height: 22px; border-radius: 999px;
+    background: var(--orange); border: 2px solid var(--outline);
+    font-size: 12px; line-height: 18px; text-align: center;
+    font-variation-settings: var(--precise), "wght" 800;
   }

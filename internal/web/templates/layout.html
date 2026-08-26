@@ -99,6 +99,50 @@
 
        Not on home: both doors are already the body of that page, and a third
        copy of a door is furniture. */}}
+  {{/* The menu, and it is the whole of this product's navigation as of
+       26 August 2026.
+
+       The rail of four doors, the `ask Buddy` and `look something up` chips and
+       the `stop whenever you like` line were all permanent fixtures in the
+       conversation, together taking about 45% of a phone screen before a word
+       was said. They are here now, behind one 44px control.
+
+       This is a hamburger, and this product deliberately removed one on
+       25 August. Bringing it back is a decision rather than a drift: it held
+       three things then and it holds eight now, and the argument against it —
+       that a menu of three is emptier than the space it costs — stops applying
+       at eight.
+
+       A <details> rather than a script: it opens with JavaScript off, which
+       every other disclosure here already does.
+
+       Counts on the two that earn one. Zero is no number and not a nought — a
+       door reading "0" is a scoreboard, which is the rule the four doors
+       carried and this inherits along with them. */}}
+  <details class="menu">
+    <summary aria-label="Everywhere else">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg>
+    </summary>
+    <nav class="menupanel" aria-label="Everywhere else">
+      {{range .Menu}}
+      <form method="post" action="{{.Action}}">
+        {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+        <button type="submit">{{.Label}}{{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}</button>
+      </form>
+      {{end}}
+      {{/* The way out, last and under a rule. It is not a destination like the
+           others: it is the end of the evening, and Principle 3 says it must
+           never look like failure. Its own place at the bottom is what says
+           that without a louder word. */}}
+      {{/* Today's words for it, the same sentence the line at the foot of the
+           conversation used to carry. The wording moves with the day; where it
+           lives is what changed. */}}
+      <a class="leaving" href="/enough">{{.SayStop}}</a>
+    </nav>
+  </details>
   {{/* Three icons and nothing else. The lid was a row of words that cost most
        of a phone screen before anything you came for; it is the mark, the way
        into a conversation, the way to look something up, and the map.

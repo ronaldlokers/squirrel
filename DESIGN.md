@@ -1889,6 +1889,57 @@ An orange underline at 3px with `text-decoration-skip-ink: none`, never a fill.
 A filled chip on cream reads as a control, and every fill colour in this world
 already means a state — a match is not a state.
 
+### The Conversation
+
+**Buddy's words are not in a bubble. Yours are.**
+
+Two kinds of thing wore one costume until 26 August 2026: a sentence and an
+object were both cream rectangles with a 3px outline, so a conversation read as
+one column of beige rather than as an exchange between two parties.
+
+- **Buddy:** paper on the field, casual axis at `wght` 500, with a 1px outline
+  text-shadow and the 40px face in the gutter. No stock, no border, no shadow.
+- **You:** the cream bubble, unchanged, right-aligned.
+
+What the bubble now means is not "somebody said this" but **"this is a thing
+rather than a sentence"**. Every remaining rectangle on the screen is a note, an
+appointment, a chore, or something you said. The same conversation goes from
+seven outlined boxes to three.
+
+Paper and not cream: on the purple field cream measures 4.8:1 and paper 8.9:1,
+and this text has no stock behind it to sit on.
+
+**What it costs:** the chat convention. Buddy's words no longer read as
+"received", which is a real loss for somebody arriving for the first time. The
+first-run worked example is what teaches the grammar in one look.
+
+### The Menu
+
+One 44px control in the lid, and the whole of this product's navigation.
+
+The rail of four doors, the always-on `ask Buddy` / `look something up` chips
+and the `stop whenever you like` line were all permanent fixtures in the
+conversation, together about **45% of a phone screen before a word was said**.
+
+- **Stock and depth:** card fill, 3px outline, 14px radius, the raised object's
+  hard shadow. Positioned over the conversation rather than pushing it down — a
+  menu that reflowed the screen would move the thing you were reading in order
+  to show you a way somewhere else.
+- **A `<details>`,** so it opens with the script off, like every other
+  disclosure here.
+- **Counts** on the places that earn one. Zero is no number and not a nought: a
+  door reading "0" is a scoreboard, which is the rule the four doors carried and
+  this inherited with them.
+- **The way out is last, under a rule of its own,** in today's words. It is not
+  a destination like the others; it is the end of the evening, and its place at
+  the bottom says so without a louder word. Principle 3 is why it is not smaller
+  or greyer — only elsewhere.
+
+**This is a hamburger, and this product deliberately removed one on 25 August.**
+Bringing it back is a decision rather than a drift: it held three things then and
+holds eight now, and the argument against it — that a menu of three is emptier
+than the space it costs — stops applying at eight.
+
 ### The Gate
 
 The screen you sign in through, and the first thing anybody ever sees of this

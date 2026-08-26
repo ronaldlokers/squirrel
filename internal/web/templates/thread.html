@@ -1,28 +1,15 @@
 {{define "content"}}
-{{/* The doors, pinned under the lid and never scrolled away. Four equals: one
-     grid, four cells, the same stock, rendering identically in every state.
-     What changed on 24 August 2026 is that they carry numbers — see
-     squirrel.Waiting for what that decision cost and how it reverses. */}}
-<nav class="railwrap" aria-label="The four things the box holds">
-  <div class="rail">
-    {{range .Rail}}
-    {{/* A form rather than a link: opening a place is something you said, and
-         it goes into the record. See openHandler for what that costs. */}}
-    <form class="doorpress" method="post" action="/open">
-      <input type="hidden" name="where" value="{{.Where}}">
-      <button class="rdoor{{if .Here}} here{{end}}" type="submit">
-        <img alt="" src="/static/{{.Art}}?v={{$.V}}">
-        <span class="rname">{{.Label}}</span>
-        {{/* Zero is no number, not a nought: a door reading "0" is a
-             scoreboard, and that is what the retired rule was protecting
-             against. */}}
-        {{if .Count}}<span class="doorcount">{{.Count}}</span>{{end}}
-      </button>
-    </form>
-    {{end}}
-  </div>
-</nav>
+{{/* The rail of four doors was here until 26 August 2026.
 
+     It was a permanent fixture taking about a fifth of a phone screen before a
+     word was said, and together with the chip row and the stop link below it
+     the frame was louder than the room. All three came off together.
+
+     The doors did not go anywhere: they are in the menu, which holds every
+     destination permanently, and Buddy mentions one in a sentence when there is
+     something in it. Those are two different jobs — navigation and copy — and
+     doing only the second makes the product unnavigable ten turns in. The
+     counts moved to the menu with them. */}}
 <div class="thread" id="thread">
   {{/* The way up the conversation. It says that there is more and never how
        much more — not because a count is forbidden any longer, but because the
@@ -36,36 +23,20 @@
      change. */}}
 <p class="offscreen" id="threadsay" role="status" aria-live="polite"></p>
 
-{{/* The two that have to be reachable from anywhere.
+{{/* `ask Buddy` and `look something up` were a permanent row here until
+     26 August 2026, under every conversation whether or not either was wanted.
+     Both are in the menu now, which is where a thing you can always do belongs.
 
-     The acorn and the search field were chrome, so they were on every screen
-     by being outside all of them. There is one screen, so they are here — at
-     the foot of the conversation, above the way out and the dock.
+     What is left in their place is nothing at all, and that is the point: the
+     conversation ends where the conversation ends. */}}
 
-     Not on the live edge, which was tried first: the live edge is the newest
-     Buddy turn and there is not always one. A brand new conversation has no
-     turns at all, and a way to Buddy that appears once Buddy has spoken is a
-     way to Buddy you cannot use to start. */}}
-<div class="alsochips">
-  {{range .Also}}
-  <form method="post" action="{{.Action}}">
-    {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
-    <button class="chip" type="submit">{{.Label}}</button>
-  </form>
-  {{end}}
-</div>
+{{/* The way out was a whole line here until 26 August 2026, on every draw of
+     a screen you take once an evening. It is in the menu now, last, under a
+     rule — still one press from anywhere, and no longer occupying the
+     conversation to say so.
 
-{{/* The way out.
-     
-     It was on the shelf and the set-aside and nowhere else, so when those two
-     stopped being screens on 25 August 2026 the product lost its only exit —
-     found by a test that had been asserting it on one of them. It belongs
-     here: the conversation is where the evening actually goes, and Principle 3
-     says leaving one must never look like failure.
-
-     Under the transcript and above the dock, at the same volume as the line it
-     replaces. A louder one would be an instruction. */}}
-{{template "stopping" .}}
+     Principle 3 still holds: leaving must never look like failure. What
+     changed is where the offer lives, not that it exists. */}}
 
 {{/* The one thing that may interrupt you, and it has to ask before it can.
      Hidden until the script has established that there is a key, that the

@@ -39,7 +39,20 @@
   </span>
   {{end}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
-  <p class="bub">{{.Words}}</p>
+  {{/* Buddy's words are not in a bubble, and yours are.
+
+       Two kinds of thing wore one costume until 26 August 2026: a sentence and
+       an object were both cream rectangles with a 3px outline, so a
+       conversation read as one column of beige rather than as an exchange.
+
+       Taking the bubble off Buddy makes every remaining rectangle on the screen
+       a *thing* — a note, an appointment, a chore, or something you said. The
+       same conversation goes from seven outlined boxes to three.
+
+       What it costs is the chat convention: his words no longer read as
+       "received". The first-run example is what teaches the grammar to somebody
+       who has never seen it. See DESIGN.md, The Conversation. */}}
+  <p class="{{if .Buddy}}said{{else}}bub{{end}}">{{.Words}}</p>
   {{/* What this cost, on the reply that cost it and nowhere else. A running
        total anywhere else would be a number you meet before you have asked for
        anything, which is the rule the sheet's own lid was protecting. */}}
