@@ -105,17 +105,13 @@ func CaptureFrom(body []byte, receivedAt time.Time) squirrel.Capture {
 		c.SenderID = identifier(p.User.ID)
 	}
 
-	// An action is input like anything else: spooled, acknowledged, applied
-	// after the drain. Its text is a stable encoding rather than the raw JSON so
-	// that the matcher has one thing to recognise and CapturesSince can filter
-	// it out of the digest via ParseAction, the same function that recognises
-	// it everywhere else.
+	// An action is input like anything else: spooled, acknowledged, applied after the
+	// drain. Its text is a stable encoding rather than raw JSON so the matcher has
+	// one thing to recognise and CapturesSince can filter it out via ParseAction.
 	//
-	// The external id carries the receive instant because the payload has no
-	// event id and no timestamp of its own: without it, tapping a button off and
-	// then on again would collide with the first tap and be silently dropped by
-	// InsertItem's conflict clause. A background-job retry inside the same
-	// nanosecond still collapses, which is the behaviour we want.
+	// The external id carries the receive instant because the payload has no event id
+	// and no timestamp: without it, tapping a button off and on again collides with
+	// the first tap and is dropped by InsertItem's conflict clause.
 	if p.Type == "action" && p.Message != nil && p.Action != nil {
 		id := fmt.Sprintf("action:%s:%s:%s:%t:%d",
 			derefOr(identifier(p.Message.ID)), derefOr(c.SenderID),
@@ -161,32 +157,26 @@ func Respond(w http.ResponseWriter, o squirrel.Outcome) {
 	}
 }
 
-// asRichText prepares a message body for Campfire, whose Message declares
-// `has_rich_text :body` — so whatever arrives is treated as HTML rather than as
-// text. A newline collapses the way any whitespace does inside an HTML block,
-// which is how a three-line digest arrived in the room as one run-on sentence.
-// It applies to a plain-text post exactly as much as to a JSON one: the
-// rich-text field decides, not the content type.
+// asRichText prepares a body for Campfire, whose Message declares
+// `has_rich_text :body`, so whatever arrives is treated as HTML. A newline
+// collapses the way any whitespace does inside an HTML block, which is how a
+// three-line digest arrived as one run-on sentence. The rich-text field decides,
+// not the content type.
 //
-// Escaping happens first and is not optional. The digest carries captured text
-// back verbatim — anything ever typed at the bot — so a note containing "<b>"
-// or "&" would otherwise turn ordinary words into markup, in a system whose
-// first rule is that a capture is kept as it was written.
+// Escaping happens first and is not optional: the digest carries captured text
+// back verbatim, so a note containing "<b>" would turn ordinary words into
+// markup.
 //
-// This lives in the transport because Campfire's body being rich text is
-// Campfire's quirk. render.go stays plain text: that is what every test asserts
-// against, and what a transport with no HTML would want.
+// It lives in the transport because it is Campfire's quirk. render.go stays plain
+// text.
 func asRichText(text string) string {
 	return strings.ReplaceAll(html.EscapeString(text), "\n", "<br>")
 }
 
-// sendVia is outbound, used when the system initiates rather than answers.
-//
-// Reusing room.path from a stored payload would need no credential at all,
-// since that path already embeds a bot key. It is rejected on purpose:
-// outbound would then only reach rooms Squirrel had recently heard from, and a
-// morning nudge would depend on the capture history. That works in testing and
-// fails on a quiet Monday.
+// sendVia is outbound, used when the system initiates. Reusing room.path from a
+// stored payload would need no credential, since that path embeds a bot key — and
+// is rejected on purpose: outbound would then only reach rooms Squirrel had
+// recently heard from, which works in testing and fails on a quiet Monday.
 func sendVia(baseURL, botKey string) func(context.Context, string, string) error {
 	base := strings.TrimRight(baseURL, "/")
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -456,12 +446,10 @@ func BoostURL(baseURL, roomPath, messageID string) (built string, ok bool) {
 	return built, true
 }
 
-// boost reacts to a message. It is fired after the capture is durable and never
-// blocks the response: Campfire is waiting on us with a seven-second deadline,
-// and making it wait on a second call to Campfire is a shape to avoid.
+// boost reacts to a message, fired after the capture is durable and never
+// blocking the response: Campfire is waiting on us with a seven-second deadline.
 //
-// Two retries, then give up. A missing receipt is cosmetic — the capture is on
-// disk either way, and the daily digest lists it regardless.
+// Two retries, then give up. A missing receipt is cosmetic.
 func boost(ctx context.Context, client *http.Client, dest, content string) error {
 	var lastErr error
 	for attempt := range 3 {
