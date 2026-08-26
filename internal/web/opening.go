@@ -12,24 +12,13 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Buddy says the first thing.
-//
-// The bar is meaningfulness rather than a budget: something on today or
-// tomorrow, notes waiting to be decided about, a chore that is due. Nothing
-// worth saying means nothing said, which is the common case on a quiet
-// afternoon.
-//
-// Deliberately not a summary of everything — it says the one thing that most
-// wants attention, or it says nothing.
+// Buddy says the first thing. The bar is meaningfulness rather than a budget:
+// something on today or tomorrow, notes waiting, a chore due. Nothing worth
+// saying means nothing said.
 
 // openingLine is what Buddy would open with, and a fingerprint of the facts it
-// was built from.
-//
-// The fingerprint is what stops the record filling with the same sentence.
-// Appending on every load is the defect the offer had for an afternoon; the
-// offer solved it by refusing to talk over an open turn, which is not enough
-// here because this speaks when nothing is open at all. So it speaks when what
-// it would say has actually changed.
+// was built from. The fingerprint is what stops the record filling with the same
+// sentence: it speaks when what it would say has changed.
 func openingLine(loc *time.Location, w squirrel.Waiting, soon []squirrel.Moment, on time.Time) (words, mark string) {
 	// Ordered by how little of your choosing it is. A fixed point will happen
 	// whether or not you look; a chore came back on its own; the pile is
@@ -62,13 +51,9 @@ func openingLine(loc *time.Location, w squirrel.Waiting, soon []squirrel.Moment,
 }
 
 // sameDayIn is whether two instants fall on the same day where the person is.
-//
-// Both are moved into one location first, and that location is given rather
-// than assumed. YearDay reads whatever zone the value happens to carry, so
-// comparing a row straight out of the database — UTC — against a local clock
-// answers about two different days. An appointment at half past midnight is
-// "today" for two hours either side of the boundary if you get this wrong,
-// which is the one way this line could make somebody leave the house.
+// Both are moved into one location first, and that location is given rather than
+// assumed: YearDay reads whatever zone the value carries, so a row straight out
+// of the database is UTC and answers about a different day.
 func sameDayIn(loc *time.Location, a, b time.Time) bool {
 	if loc != nil {
 		a, b = a.In(loc), b.In(loc)
@@ -76,17 +61,10 @@ func sameDayIn(loc *time.Location, a, b time.Time) bool {
 	return a.YearDay() == b.YearDay() && a.Year() == b.Year()
 }
 
-// endsAsking is whether the conversation is waiting for an answer.
-//
-// Narrower than endsOpen on purpose. endsOpen refuses to put anything down
-// while there is anything at all on the table, which is right for the offer —
-// it hands you a job, and two jobs is one too many. The opening line is not a
-// job: it says what is true. What it must not do is talk over a question, and
-// its own guard against repeating itself is the fingerprint rather than this.
-//
-// Using endsOpen here would have made the line a one-off: the opening carries
-// a chip to the place it is about, so it ends open by its own hand and would
-// never speak again.
+// endsAsking is whether the conversation is waiting for an answer. Narrower than
+// endsOpen, which refuses to put anything down while there is anything on the
+// table — right for the offer, wrong here: the opening line carries a chip, so it
+// ends open by its own hand and would never speak again.
 func endsAsking(turns []squirrel.Turn) bool {
 	if len(turns) == 0 {
 		return false
@@ -101,30 +79,21 @@ func endsAsking(turns []squirrel.Turn) bool {
 		// is the safe direction; the other one talks over it.
 		return true
 	}
-	// Faces counts. The check-in is a question with its answers drawn on it,
-	// exactly like the picker, and it was left out when this was written —
-	// so the opening line landed on top of "how do you feel?" and the two of
-	// them alternated down the screen. Reported from a phone with three
-	// unanswered check-ins on it.
+	// Faces counts: the check-in is a question with its answers drawn on it. Left out
+	// when this was written, so the opening line landed on top of "how do you feel?"
+	// and the two alternated down the screen.
 	return sh.Faces || sh.Pick != nil || sh.Cal != nil || sh.Say != nil || sh.Cut != nil
 }
 
-// openingTurn is that line as a turn, or nothing at all.
-//
-// The mark travels in the turn's own record, so "have I said this already" is
-// answered by reading the conversation rather than by keeping state beside it.
-// A conversation that needs a second store to know what it said is two records
-// that can disagree.
+// openingTurn is that line as a turn, or nothing. The mark travels in the turn's
+// own record, so "have I said this" is answered by reading the conversation
+// rather than by keeping state beside it.
 func openingTurn(ctx context.Context, s Store, opts Options, personID int64, turns []squirrel.Turn) (squirrel.Turn, bool) {
-	// Where you got to comes first, before anything about what is waiting.
+	// Where you got to comes first: if you were part way through the pile forty
+	// minutes ago, that is the most useful sentence this screen has.
 	//
-	// If you were part way through the pile forty minutes ago, that is the most
-	// useful sentence this screen has — more useful than the dentist, because
-	// the dentist will still be there after you have been told. Everything
-	// below is what Buddy opens with when there is no run to come back to.
-	// The exit ramp first of all, because it is the only one of these about
-	// something happening *now*. Where you got to is a thing you were doing;
-	// this is a thing you are still doing and have been for hours.
+	// The exit ramp before even that, because it is the only one about something
+	// happening now.
 	if turn, ok := exitRampTurn(ctx, s, personID); ok {
 		return turn, true
 	}
@@ -190,18 +159,10 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 
 // whereYouGotTo offers you back the run you were part way through.
 //
-// Not `placeTurn` — that is taken, by the thing that draws a door. The fourth
-// name collision in this package (`.face`, `.say`, `.tcard` were the others),
-// and the reason to keep saying so is that each one compiled somewhere before
-// it failed somewhere else.
-//
-// It is not a question about the pile, and the difference matters: `carry on`
-// and `start fresh` are both answers about *you* rather than about a note, so
-// they are chips rather than buttons on a card. After an interruption either
-// one can be the honest answer, which is why neither is drawn louder.
+// `carry on` and `start fresh` are answers about you rather than about a note, so
+// they are chips rather than buttons on a card, and neither is drawn louder.
 //
 // A run that has aged out is not mentioned at all — see squirrel.KeepingPlace.
-// The silence is the feature.
 func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn, bool) {
 	run, found, err := s.RunFor(ctx, personID, now())
 	if err != nil {
@@ -235,22 +196,14 @@ func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn,
 	}, true
 }
 
-// exitRampTurn is the one interruption this product allows itself, and it only
-// happens because you asked for it.
+// exitRampTurn is the one interruption this product allows itself, and only
+// because you asked for it.
 //
-// The thing about hyperfocus is not that you cannot stop. It is that the
-// decision to stop never arrives — there is no moment at which you notice, so
-// there is no moment at which you choose. This is that moment, arriving from
-// outside, once.
+// It says how long rather than that the timer ran out, and offers a place to stop
+// rather than telling you to.
 //
-// It says how long rather than that the timer ran out, because the useful fact
-// is the elapsed time and not the broken promise. And it offers a place to stop
-// rather than telling you to: "after this bit" is the difference between a
-// suggestion and an alarm.
-//
-// Marked said in the same breath as being drawn. Everything else in this
-// opening is idempotent — it reads state and says it — and this one writes,
-// because "once" is the entire safety property.
+// Marked said in the same breath as being drawn. Everything else in this opening
+// is idempotent; this one writes, because "once" is the entire safety property.
 func exitRampTurn(ctx context.Context, s Store, personID int64) (squirrel.Turn, bool) {
 	t, found, err := s.RampDue(ctx, personID, now())
 	if err != nil {
@@ -294,11 +247,8 @@ func exitRampTurn(ctx context.Context, s Store, personID int64) (squirrel.Turn, 
 	}, true
 }
 
-// onItInWords is how long you have been at it, in a person's units.
-//
-// Hours and minutes, never a decimal and never seconds: this is a sentence
-// somebody reads while deep in something else, and "2h 40m" is read at a glance
-// where "160 minutes" has to be converted.
+// onItInWords is hours and minutes, never a decimal and never seconds: "2h 40m"
+// is read at a glance where "160 minutes" has to be converted.
 func onItInWords(d time.Duration) string {
 	mins := int(d.Minutes())
 	if mins < 60 {
@@ -307,19 +257,14 @@ func onItInWords(d time.Duration) string {
 	return strconv.Itoa(mins/60) + "h " + strconv.Itoa(mins%60) + "m"
 }
 
-// goneQuietTurn mentions something you set aside and nobody has touched since.
+// goneQuietTurn mentions something you set aside that nobody has touched since.
 //
-// **It is a mention, not a task.** The three answers are deliberately unequal
-// in effort and equal in standing: `still waiting` costs one press and moves
-// the clock, `chase it` puts the note back in the pile, and `let it go` drops
-// it. If saying "still" were harder than the other two, this would be a screen
-// that pushes you to close things, which is the opposite of what parking
-// something is for.
+// A mention, not a task. The three answers are unequal in effort and equal in
+// standing: `still waiting` costs one press and moves the clock. If saying
+// "still" were harder, this would push you to close things.
 //
-// Marked like every other opening, so it is said once in a conversation rather
-// than on every draw. If it is ignored entirely it will come back another day,
-// and that is correct: three weeks of silence is a fact that does not stop
-// being true because you scrolled past it.
+// Marked like every other opening, so it is said once per conversation. Ignored
+// entirely it comes back another day.
 func goneQuietTurn(ctx context.Context, s Store, personID int64, turns []squirrel.Turn) (squirrel.Turn, bool) {
 	held, found, err := s.GoneQuiet(ctx, personID, now())
 	if err != nil {
@@ -368,14 +313,11 @@ func goneQuietTurn(ctx context.Context, s Store, personID int64, turns []squirre
 	}, true
 }
 
-// parkedPhoto is the picture a parked note carries, or empty. A note with no
-// words and only a photograph is a perfectly good note, and a card that
-// dropped the picture would show an empty row.
+// parkedPhoto is the picture a parked note carries, or empty: a note with only a
+// photograph is a good note, and a card that dropped it would show an empty row.
 //
-// Not `heldPhoto`: that is taken by a helper in photobrowser_test.go, which
-// only builds under the browser tag — so the collision was invisible to `go
-// build` and to the ordinary suite. Fifth in this package after .face, .say,
-// .tcard and placeTurn, and the first one that needed a build tag to see.
+// Not `heldPhoto`, which is taken by a helper that only builds under the browser
+// tag — so that collision was invisible to `go build`.
 func parkedPhoto(h squirrel.HeldItem) string {
 	if h.PhotoName == "" {
 		return ""
@@ -383,11 +325,8 @@ func parkedPhoto(h squirrel.HeldItem) string {
 	return "/photo/" + strconv.FormatInt(h.ID, 10)
 }
 
-// waitedInWords is how long, rounded the way somebody would say it.
-//
-// Weeks and months, never days past a fortnight: "23 days" is a measurement and
-// "about three weeks" is a remark. The difference matters on a line about a
-// thing you have not done.
+// waitedInWords is weeks and months, never days past a fortnight: "23 days" is a
+// measurement and "about three weeks" is a remark.
 func waitedInWords(since time.Duration) string {
 	days := int(since.Hours() / 24)
 	switch {
@@ -414,11 +353,8 @@ func placeCalled(place string) string {
 	return "something"
 }
 
-// agoInWords is how long ago, rounded to something a person would say.
-//
-// Never a clock time. "40 minutes ago" is a fact about the gap; "you stopped at
-// 14:12" is a record of your afternoon, which is the thing this table exists
-// not to keep.
+// agoInWords never gives a clock time. "40 minutes ago" is a fact about the gap;
+// "you stopped at 14:12" is a record of your afternoon.
 func agoInWords(since time.Duration) string {
 	switch {
 	case since < 2*time.Minute:
@@ -447,12 +383,8 @@ func withinADay(soon []squirrel.Moment, on time.Time) []squirrel.Moment {
 // second has nothing to add.
 func fingerprint(words string) string { return strings.TrimSpace(words) }
 
-// saidAlready walks back for an opening with the same mark.
-//
-// The whole conversation that is on screen, not only the last turn: you talk
-// to it in between, so the opening is rarely the newest thing by the time you
-// come back. What it must not do is say the same sentence twice in a row with
-// three of your own turns in between.
+// saidAlready walks back through the whole conversation on screen, not only the
+// last turn: you talk in between, so the opening is rarely the newest thing.
 func saidAlready(turns []squirrel.Turn, mark string) bool {
 	for i := len(turns) - 1; i >= 0; i-- {
 		if turns[i].Who != squirrel.SpeakerBuddy || len(turns[i].Shown) == 0 {
@@ -472,18 +404,13 @@ func saidAlready(turns []squirrel.Turn, mark string) bool {
 	return false
 }
 
-// alreadyAsking is whether the conversation already holds a check-in nobody
-// has answered.
+// alreadyAsking is whether the conversation already holds an unanswered check-in.
 //
-// The whole conversation on screen, not only the last turn: Buddy says other
-// things after asking — the opening line, what a door drew — so by the time
-// you come back the question is rarely the newest thing. What stops it being
-// asked forever is that answering writes a reading, and a fresh reading is
-// what checkinTurn already refuses on.
+// The whole conversation on screen, not only the last turn. What stops it being
+// asked forever is that answering writes a reading, which checkinTurn refuses on.
 //
-// Bounded to the turns in hand, which is the page. A question older than the
-// page you are looking at is one you have scrolled past and will not answer,
-// and asking again there is a new question rather than a repeat.
+// Bounded to the turns in hand: a question older than the page is one you have
+// scrolled past, and asking again there is a new question rather than a repeat.
 func alreadyAsking(turns []squirrel.Turn) bool {
 	for _, t := range turns {
 		if t.Who != squirrel.SpeakerBuddy || len(t.Shown) == 0 {
