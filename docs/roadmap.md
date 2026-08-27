@@ -394,12 +394,15 @@ was Wednesday's chore between midnight and 02:00 Amsterdam — the hours this
 product is most likely to be open. The scan now reads the day where the person
 is, and the test pins 00:30 Thursday in Amsterdam, which is Wednesday in UTC.
 
-The pods run in UTC on purpose (#148), and this is the same shape of defect that
-has landed twice before: a surface reading a day off the process rather than off
-the person. `Store.zone()` is the answer this time — the name a query hands to
-`at time zone` — and the SQL falls back to the session's own zone when nowhere
-is configured, because `time.Local` stringifies to "Local", which Postgres does
-not recognise.
+The zone that was wrong here is the *database session's*, which is `Etc/UTC`,
+and it is a different clock from either of the two the pod carries: `TZ` and
+`DIGEST_TZ` are both Europe/Amsterdam, and neither reaches a query. So the SQL
+has to be told — `Store.zone()` is the name it hands to `at time zone`, falling
+back to `current_setting('TimeZone')` when nowhere is configured, because
+`time.Local` stringifies to "Local" and Postgres does not recognise that.
+
+Same family as #148 and the two after it, and a different clock again: those
+were the process's, this one is the connection's.
 
 **The deck's stylesheet and script outlived its markup, and kept each other
 alive.** The one-card triage screen came out in v0.41.0 when the conversation
@@ -871,9 +874,14 @@ found by looking for the same shape somewhere else rather than by waiting for
 it to be reported.
 
 `ReceivedAt` came back from the driver in UTC and `toView` called `.Local()` on
-it — the *process* clock, and the pods run in UTC on purpose since #148. So
+it — the *process* clock, which is a different thing from the person's. So
 anything captured after ten in the evening wore the previous day's date on the
 corner of its card.
+
+*(Corrected 27 August 2026: this said "the pods run in UTC on purpose since
+#148", which is backwards. #148 is what gave the pods a timezone — `TZ` and
+`DIGEST_TZ` are both Europe/Amsterdam. The clock that is UTC is the database
+session's, which is what v0.43.0's weekday defect turned out to be about.)*
 
 The conversion moved to `Store.here`, which now serves both tables, and it is
 applied where a row comes out of the database rather than where it is printed —
