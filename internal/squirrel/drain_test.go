@@ -247,8 +247,8 @@ func (f *flakyStore) snapshot() []time.Time {
 	return out
 }
 
-// The only drain mechanism that had no coverage in the Go port: Run must back
-// off while the database is unreachable, and reset once it recovers, rather
+// Run must back off while the database is unreachable, and reset once it
+// recovers, rather
 // than either hammering Postgres on every tick or staying slow forever after
 // one blip. flakyStore forces exactly two deferred passes before letting real
 // ones through, so growth and reset both happen on one Drain instance.

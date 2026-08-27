@@ -163,11 +163,12 @@ func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// atOpenHandler draws one fixed point into the conversation.
+// atOpenHandler draws one fixed point into the conversation: when to leave,
+// what to take, and the notes pointing at it.
 //
-// The same three things the page shows — when to leave, what to take, and the
-// notes pointing at it — said rather than navigated to. `/at/{id}` stays a real
-// page until phase 4: a notification sent yesterday is still on a lock screen.
+// `/at/{id}` stays a route because a notification sent yesterday is still on a
+// lock screen — it writes the same turn and redirects here, so the tap and the
+// press arrive at the same place. See TestTheNotificationsURLLandsInTheConversation.
 func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
