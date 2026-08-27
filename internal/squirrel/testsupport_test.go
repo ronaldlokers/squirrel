@@ -44,7 +44,7 @@ func withStore(t *testing.T) *squirrel.Store {
 // people, items or chores, so emptying those empties them all.
 //
 // That is a property of the schema rather than of this list, which is why
-// TestTruncatingLeavesNothingBehind checks it: a table added without such a key
+// TestTruncateAllReachesEveryTable checks it: a table added without such a key
 // would survive this and leak one test's rows into the next, and the symptom
 // would be a test that passes alone and fails in the suite.
 func truncateAll(t *testing.T, store *squirrel.Store) {
