@@ -1,6 +1,6 @@
 //go:build browser
 
-// The chores screen's own picker, and the keys it was not given.
+// The chores' own picker, and the keys it was not given.
 package web
 
 import (
@@ -21,12 +21,9 @@ func twoChores() *fakeStore {
 	return f
 }
 
-// Looking something up had a keyboard path and keeping a thought did not.
-//
-// `/` has focused the lid's search since it was written. Nothing focused the
-// slot, so on the deliberate-desktop scene the first thing home asked of a
-// keyboard user was to reach for the mouse — for the one act this product
-// calls sacred.
+// Looking something up had a keyboard path and keeping a thought did not, so
+// the first thing home asked of a keyboard user was to reach for the mouse —
+// for the one act this product calls sacred.
 func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 	f := aPile()
 	srv := screen(t, f)
@@ -39,10 +36,9 @@ func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 		"t on home did not reach the slot")
 }
 
-// The deck's digits went with its disclosure and roadmap v0.24.0 recorded that
-// as worth restoring. The question is a turn now, so the carve-out is about the
-// picker wherever it is: a digit is a count, a letter is a unit by its own first
-// letter, and Enter answers.
+// The question is a turn, so the carve-out is about the picker wherever it is:
+// a digit is a count, a letter is a unit by its own first letter, and Enter
+// answers.
 func TestBrowserTheIntervalQuestionAnswersToKeys(t *testing.T) {
 	f := &fakeStore{
 		chores: []squirrel.Chore{{ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
