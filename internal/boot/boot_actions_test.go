@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -72,7 +73,7 @@ func TestBootSendsChoreConfirmationWithButtons(t *testing.T) {
 
 	body := strings.Replace(payload, `"plain": "buy milk"`, `"plain": "every 2 weeks: vacuum"`, 1)
 	res, err := http.Post(
-		"http://127.0.0.1:"+itoa(s.Port())+"/transports/campfire",
+		"http://127.0.0.1:"+strconv.Itoa(s.Port())+"/transports/campfire",
 		"application/json", strings.NewReader(body))
 	require.NoError(t, err)
 	res.Body.Close()

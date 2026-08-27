@@ -256,6 +256,9 @@ func Match(raw string) Intent {
 	return Intent{Kind: IntentCapture, Text: raw}
 }
 
+// atoi reads a number a person typed. The error is dropped on purpose: every
+// caller has already decided that "not a number" means zero, and zero is a
+// position no line has.
 func atoi(s string) int {
 	n, _ := strconv.Atoi(s)
 	return n
