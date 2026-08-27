@@ -244,7 +244,6 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Held:      r.URL.Query().Get("held") != "",
 			Here:      "thread",
 			Scrolling: true,
-			Also:      alwaysThere(),
 			Turns:     turnViews(turns),
 			MoreAbove: more,
 		}

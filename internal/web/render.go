@@ -134,13 +134,9 @@ type view struct {
 	Timer *timerView
 	// Menu is everywhere else, behind the lid's one control. See layout.html.
 	Menu []turnChip
-	// Also is the pair of chips at the foot of the conversation: asking Buddy
-	// and looking something up. See thread.html.
-	Also []turnChip
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
-	V     string
-	Query string
+	V string
 	// Turns is the conversation, oldest first. The screen is one page now;
 	// see internal/web/thread.go.
 	Turns []turnView
@@ -338,8 +334,6 @@ func render(w http.ResponseWriter, name string, v view) {
 	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
 	v.Tilt = squirrel.Tilt(now())
 	v.Light = squirrel.Light(now())
-	v.Scrolling = v.Scrolling || v.Query != "" ||
-		v.Here == "tasks" || v.Here == "archive" || v.Here == "kept"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Never cached. The pile is state, and a back button that showed a note you
 	// already triaged would be the two views disagreeing with themselves.

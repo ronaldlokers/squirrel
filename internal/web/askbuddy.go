@@ -51,9 +51,6 @@ func findAskHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// alwaysThere is the pair, for the live edge to carry.
-func alwaysThere() []turnChip { return []turnChip{askBuddyChip(), findChip()} }
-
 // askInWords is a question with a box under it. Its own sentence rather than
 // askForWords', because "How should it read?" is the wrong question to ask
 // somebody who pressed *ask Buddy*.

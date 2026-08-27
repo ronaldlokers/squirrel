@@ -147,25 +147,17 @@
        Nothing else: it was a row of words costing most of a phone screen
        before anything you came for.
 
-       The acorn, the search disclosure and the map beside them came off on
-       25 August 2026. Buddy joins the conversation that is already here rather
-       than bringing one, search is a chip for the same reason, and the map was
-       already opening onto a blank list. */}}
+       The acorn, the search disclosure and the map beside them came off:
+       Buddy joins the conversation that is already here rather than bringing
+       one, search is a chip for the same reason, and the map was already
+       opening onto a blank list. */}}
 
   <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
     <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
   </svg>
 </div>
-{{/* Outside the stage on purpose: live search replaces everything inside it,
-     and a region that is replaced announces nothing. pile.js writes here when
-     it changes what is on screen without a navigation. */}}
-<p id="say" class="offscreen" role="status" aria-live="polite"></p>
 <main id="stage" class="{{if .Home}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
-{{/* The undo lives here rather than on the card, because by the time this
-     page is drawn the card it undoes has gone. pile.js shows the card's own
-     row during the hold; this is the same offer once the write has landed,
-     and it is what the scriptless path has instead. */}}
 {{/* The pile moved while this card was on the screen. Not an error and not a
      failure: the note is where the room put it, and this says so rather than
      letting the two views disagree in silence. There is nothing to undo —
