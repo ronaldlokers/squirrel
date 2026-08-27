@@ -411,10 +411,6 @@ func MoodsMessage(readings []Checkin, now time.Time) Message {
 	return Message{Text: b.String()}
 }
 
-// MoodDay is moodDay, for the screen. Both surfaces name a day identically or
-// they are two products.
-func MoodDay(at, now time.Time) string { return moodDay(at, now) }
-
 // moodDay names a day the way you would say it. Two names and then the date:
 // past "yesterday" a weekday alone is ambiguous within a fortnight.
 func moodDay(at, now time.Time) string {

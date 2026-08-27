@@ -30,7 +30,7 @@ var ErrDigestAlreadySent = errors.New("digest already sent for this date")
 // nothing to resolve against on the very day the button beside it worked.
 //
 // 'now' carries exactly one line, which may be a chore or an item, so its
-// buttons resolve through LineOnPrompt rather than ChoreOnPrompt.
+// buttons resolve through LineOnPrompt, which answers for either.
 const numberedKinds = `('digest', 'query', 'nudge', 'notes', 'find', 'tasks', 'now')`
 
 // Prompt is a sent prompt, as much of it as anything outside this file needs.
@@ -382,33 +382,6 @@ func (s *Store) EveningDeliveredFor(ctx context.Context, personID int64, forDate
 		return false, fmt.Errorf("checking evening delivery: %w", err)
 	}
 	return exists, nil
-}
-
-// ChoreOnPrompt resolves a position against one specific prompt, rather than
-// against whichever prompt is currently newest. A tap names the message it came
-// from, so it must resolve against that message even if a newer prompt has
-// since been sent.
-func (s *Store) ChoreOnPrompt(ctx context.Context, promptID int64, position int) (Chore, bool, error) {
-	const q = `
-		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds
-		  from prompt_lines l join chores c on c.id = l.chore_id
-		 where l.prompt_id = $1 and l.position = $2`
-
-	var c Chore
-	var everySec, tolSec int64
-	err := s.pool.QueryRow(ctx, q, promptID, position).
-		Scan(&c.ID, &c.PersonID, &c.Name, &everySec, &tolSec)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Chore{}, false, nil
-	}
-	if err != nil {
-		return Chore{}, false, fmt.Errorf("reading prompt line: %w", err)
-	}
-	c.Active = true
-	c.Every = time.Duration(everySec) * time.Second
-	c.Tolerance = time.Duration(tolSec) * time.Second
-	c.EveryDays = int(c.Every.Hours() / 24)
-	return c, true, nil
 }
 
 // LineOnPrompt resolves a position against one specific prompt, whatever the line
