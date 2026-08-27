@@ -1364,8 +1364,7 @@
    * state is not a screen with a hole in it. */
   main.gate h1 + form { margin-top: 26px; }
   /* One control, and it is the orange one: this is the make-something button
-   * of this screen. Dark ink on the fill, the Fill-and-Ink Rule holding as it
-   * does on .btn.make. */
+   * of this screen. Dark ink on the fill, by the Fill-and-Ink Rule. */
   .letmein {
     font: inherit; cursor: pointer;
     padding: 14px 28px;
@@ -1430,8 +1429,7 @@
     border-bottom: 0; border-top: var(--line) solid var(--outline);
     font-variation-settings: var(--casual), "wght" 500;
   }
-  /* Zero is no number and not a nought. A door reading "0" is a scoreboard,
-     which is the rule the four doors carried and this inherited with them. */
+  /* Zero is no number and not a nought: a row reading "0" is a scoreboard. */
   .menupanel .cnt {
     margin-left: auto; min-width: 22px; height: 22px; border-radius: 999px;
     background: var(--orange); border: 2px solid var(--outline);
@@ -1442,10 +1440,10 @@
   /* The six bodies. See DESIGN.md, The Six Bodies.
    *
    * A note, a task, a chore, an appointment, a photograph and something set
-   * aside were one cream rectangle with different words in it until 26 August
-   * 2026. Nothing new is invented here: the notch, the page tab, the dashed
-   * edge and the hard shadow are all devices this system already owns. They
-   * are applied per kind instead of uniformly. */
+   * aside were one cream rectangle with different words in it. Nothing new is
+   * invented here: the notch, the page tab, the dashed edge and the hard
+   * shadow are all devices this system already owns, applied per kind instead
+   * of uniformly. */
 
   /* A note is the plain body, and it sits very slightly askew. Enough to read
      as a piece of paper somebody put down rather than a row in a table, and
@@ -1465,7 +1463,10 @@
   /* An appointment is a ticket: notched on the left, and its time set large.
      It is the one thing here you can be *late* for, and it looked exactly like
      a note about a rattle. */
-  .turncard.kat { position: relative; margin-left: 8px; }
+  .turncard.kat {
+    position: relative; margin-left: 8px;
+    display: flex; flex-direction: column;
+  }
   .turncard.kat .notch {
     position: absolute; left: calc(var(--line) * -1 - 9px); top: 50%;
     transform: translateY(-50%);
@@ -1483,7 +1484,6 @@
   .turncard.kat .turnname {
     font-size: 15px; font-variation-settings: var(--casual), "wght" 500;
   }
-  .turncard.kat { display: flex; flex-direction: column; }
   /* What to bring, below a perforation. It is the thing you are standing in
      the hall without. */
   .turncard.kat .takeline {
@@ -1523,10 +1523,10 @@
   /* A search result. See DESIGN.md, Results.
    *
    * Not a card, and the difference is the whole of it: a card is something you
-   * act on, a hit is something you are finding. They were the same object until
-   * 26 August 2026, which is why search felt like a second pile — six of these
-   * fit where three cards did, and every card arrived carrying verbs for a
-   * decision nobody had asked to make.
+   * act on, a hit is something you are finding. They were the same object, which
+   * is why search felt like a second pile — six of these fit where three cards
+   * did, and every card arrived carrying verbs for a decision nobody had asked
+   * to make.
    *
    * On the field rather than on stock, because it is not an object yet. It
    * becomes one when you pick it. */
