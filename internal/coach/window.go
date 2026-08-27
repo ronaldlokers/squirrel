@@ -14,8 +14,15 @@ import (
 // second permanent record of bad moments — coach_answers is already that record
 // and already keeps everything.
 //
-// Bounded on both axes, so it cannot grow: at most WindowSize exchanges per
-// person, and Trim drops anything past WindowAge on every read.
+// Bounded per person: at most WindowSize exchanges, and Trim drops anything
+// past WindowAge on every read.
+//
+// Not bounded by people. An entry is dropped when that person next reads and
+// finds nothing fresh, so somebody who stops talking to Buddy and never comes
+// back leaves three exchanges behind until the process restarts. That is
+// bounded by who can sign in at all, which the required group decides — the
+// door cache and the session cache are both keyed by things a stranger can
+// invent, and both needed a real bottom for exactly that reason.
 type Conversations struct {
 	mu sync.Mutex
 	by map[int64][]Exchange

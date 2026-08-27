@@ -29,8 +29,9 @@ func TestConversationsAreNotShared(t *testing.T) {
 	require.Empty(t, c.Recent(2, august))
 }
 
-// Bounded on both axes, which is what makes holding this in memory safe: at
-// most WindowSize exchanges per person, and nothing past WindowAge.
+// Bounded per person, which is what makes holding this in memory safe: at most
+// WindowSize exchanges, and nothing past WindowAge. See window.go for the axis
+// this is not bounded on.
 func TestConversationsKeepOnlyTheNewestFew(t *testing.T) {
 	c := coach.NewConversations()
 	for i, said := range []string{"one", "two", "three", "four", "five"} {
