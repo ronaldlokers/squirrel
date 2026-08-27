@@ -19,13 +19,13 @@
     --purple: #6c4da9;
     --purple-deep: #58388a;
     --purple-dark: #3b2560;
-    --violet: #5e23b1;   --violet-ink: #56209f;
+    --violet: #5e23b1;
     --orange: #e66d0d;
     --orange-lit: #ff8a2b;
     --outline: #1c110b;
     --cream: #fed6a7;          /* the tail */
     --card: #fdecd4;           /* card stock: the tail's cream, lightened */
-    --card-deep: #f6d5ab;      /* the cards underneath it */
+    --card-deep: #f6d5ab;      /* the stock, one shade down */
     --paper: #fffbf3;          /* the raised things sat on the stock */
     --paper-deep: #f7e9d4;     /* those things, pressed */
     --brown: #58413d;          /* the headphones */
@@ -37,33 +37,16 @@
        makes room for. */
     --placeholder: #7e6857;
 
-    /* The notebook's page tabs, one per state. Each has a fill for the tab and
-       a darker sibling for type, because the tab colours are chosen to be seen
-       at a glance and type has to be read. */
-    --done: #529414;      --done-ink: #37640d;
-    --kept: #ffb300;      --kept-ink: #8a5c00;
-    --dropped: #8a6a55;   --dropped-ink: #6a4f3e;
-    --chore: var(--orange); --chore-ink: #b0530a;
-    /* Set aside is not a fifth page tab. The four state colours are the
-       notebook's tabs and stay four; a note you cannot act on is a thing at
-       rest, and it wears the brown the held capture message already wears for
-       exactly that reason. One pair for all three, because which of the three
-       is a fact about why, not about what happened. */
-    --held: var(--brown); --held-ink: var(--brown);
+    /* The notebook's page tabs, one per state. */
+    --done: #529414;
+    --kept: #ffb300;
+    --dropped: #8a6a55;
 
-    --o: 8px;                  /* stack offset */
-    /* Lifted fills: a state colour raised toward white until the card's dark
-       ink reads on it. See The Lifted Fill Rule. Violet needed 40% where the
-       others needed 18% — it is much the darkest of the four, and at 18% it
-       measures 3.17:1 against the outline ink, which fails. 40% is 5.46:1. */
-    --done-lifted: #71a73e;  --done-lifted-hover: #89b65f;
     /* The five answers, on the readings grid and nowhere else. Held apart
        from the state colours on purpose: see .mgood in the readings block. */
     --mood-good: #3fa08a;     --mood-calm: #6f9fd8;
     --mood-low: #8a5b8f;      --mood-frazzled: #d94f2b;
     --mood-wiped: #7a7f8a;
-
-    --open-lifted: #9e7bd0;  --open-lifted-hover: #b295da;
 
     --line: 3px;               /* the outline weight of the mark */
     --r: 14px;
@@ -94,12 +77,11 @@
   html, body { overflow-x: clip; }
   /* The scrollbar is there whether or not the screen scrolls.
    *
-   * Without this a classic scrollbar appears on the long screens and not on
-   * the short ones, so the 720px column — every title, every card, every
-   * button — sat five pixels further right on `/moods` and `/kept` than on
-   * `/chores` and the deck. Walking between two screens moved the whole page
-   * sideways, which on a surface built for someone who loses their place is
-   * not a subtlety.
+   * Without this a classic scrollbar appears on the screens long enough to
+   * scroll and not on the short ones, so the 720px column — every title, every
+   * card, every button — sits five pixels further right on one than on the
+   * other. Walking between two screens moved the whole page sideways, which on
+   * a surface built for someone who loses their place is not a subtlety.
    *
    * `overflow-y: scroll` rather than `scrollbar-gutter: stable`, and the
    * difference is what stands in the reserved strip. A stable gutter reserves
@@ -176,10 +158,7 @@
      moment measured 2.33:1 for the whole life of the dock. Nothing said so,
      because the only test that measured this measured a surface that was in
      the list. */
-  .card :focus-visible,
-  .chore :focus-visible,
-  .turncard :focus-visible,
-  .dock :focus-visible { outline-color: var(--violet); }
+  .chore :focus-visible, .turncard :focus-visible, .dock :focus-visible { outline-color: var(--violet); }
 
   /* ---------- the lid: the mascot's cap ---------- */
 
@@ -224,27 +203,6 @@
        this world's shapes, and the mark itself has no gradients. */
   }
 
-  .find {
-    flex: 0 1 280px; min-width: 0;
-    display: flex; align-items: center; gap: 8px;
-    /* The one control on every screen, so it clears 44 like the rest. */
-    padding: 12px 14px; min-height: 44px;
-    background: var(--paper);
-    border: var(--line) solid var(--outline);
-    border-radius: 999px;
-    box-shadow: 0 3px 0 0 var(--outline);
-  }
-  .find:focus-within { box-shadow: 0 3px 0 0 var(--outline), 0 0 0 3px var(--orange-lit); }
-  .find svg { flex: none; }
-  .find input {
-    flex: 1; min-width: 4ch; border: 0; background: transparent;
-    font: 500 14.5px/1.4 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 600;
-    color: var(--outline); caret-color: var(--orange); padding: 0;
-  }
-  .find input::placeholder { color: var(--placeholder); font-variation-settings: var(--precise), "wght" 500; }
-  .find input:focus { outline: none; }
-
   /* ---------- the field ---------- */
 
   main {
@@ -267,20 +225,6 @@
   main { align-items: flex-start; padding-top: 40px; }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
 
-  .card {
-    position: relative;
-    background: var(--card);
-    border: var(--line) solid var(--outline);
-    border-radius: var(--r);
-    display: flex; flex-direction: column;
-    min-height: 296px;
-    color: var(--outline);
-    transform-origin: 50% 8%;
-    /* The sticker's own depth: a solid offset in the outline colour, which is
-       what this world does, plus a real cast shadow underneath it. */
-    box-shadow: 0 6px 0 0 var(--outline), 0 26px 40px -18px rgba(0, 0, 0, .75);
-  }
-  .card.leaving { animation: leave 470ms cubic-bezier(.16, .86, .26, 1) forwards; }
   @keyframes leave {
     0%   { transform: perspective(1400px) rotateX(0) translate3d(0, 0, 0) rotate(0); opacity: 1; }
     30%  { transform: perspective(1400px) rotateX(-6deg) translate3d(0, -26px, 60px) rotate(-1deg); opacity: 1; }
@@ -302,24 +246,6 @@
     border-radius: 0 11px 0 0;
   }
   .later:hover, .later:focus-visible { opacity: 1; background: rgba(0, 0, 0, .16); }
-
-  /* A column, and it has to be one now that a note can carry a photograph.
-     As a row, the photograph became a sibling of the words and landed beside
-     them — about seventy pixels wide on a phone, which is not a picture of a
-     letter, it is a swatch. The template has always said the opposite: the
-     photograph is the note and the words are its caption. */
-  .note {
-    padding: 30px 32px 12px; flex: 1; position: relative;
-    display: flex; flex-direction: column; justify-content: center;
-    align-items: flex-start; gap: 4px;
-  }
-  .note p {
-    margin: 0;
-    font-size: clamp(21px, 2.2vw, 27px);
-    line-height: 1.4; max-width: 34ch; letter-spacing: -.008em;
-    font-variation-settings: var(--casual), "wght" 520;
-    text-wrap: pretty;
-  }
 
   @keyframes slap {
     0%   { transform: rotate(-22deg) scale(1.7); opacity: 0; }
@@ -346,14 +272,6 @@
   .chip:active, .chip.hit {
     transform: translateY(4px); box-shadow: none;
     background: var(--orange); color: var(--paper);
-  }
-  /* Same keycap as the action buttons. It drifted to 10.5px/.7 for no reason
-     and a key is a key wherever it appears. */
-  .chip .key {
-    font-size: 11px;
-    font-variation-settings: var(--precise), "wght" 800;
-    border: 2px solid currentColor; border-radius: 5px;
-    padding: 2px 5px 1px; opacity: .72;
   }
   .chip.back { box-shadow: none; border-style: dashed; }
 
@@ -474,14 +392,6 @@
   .chip.current { background: var(--purple); color: var(--paper); }
   .chip.current:hover { background: var(--purple); }
 
-  /* Says that there is more. Never how much more. */
-  .more {
-    margin: 26px 0 0; text-align: center;
-    font-size: 13px;
-    font-variation-settings: var(--precise), "wght" 600;
-    color: var(--cream);
-  }
-
   /* ---------- the empty pile ---------- */
 
   .empty { width: min(560px, 100%); text-align: center; }
@@ -599,8 +509,7 @@
      It is also the truer shape. "kept" is a status you glance at and these are
      messages you have to read and act on, so they are objects on the field
      rather than more of it. */
-  .slotsaid.held,
-  .slotsaid.bad {
+  .slotsaid.held {
     text-transform: none; letter-spacing: .01em;
     font-size: 13.5px; font-variation-settings: var(--precise), "wght" 560;
     max-width: 46ch;
@@ -609,10 +518,6 @@
     box-shadow: 0 3px 0 0 var(--outline);
     padding: 10px 13px; margin: 12px 2px 0;
   }
-  /* Held is not failure. The words are somewhere; only the pile has not seen
-     them yet — so it carries the brown of a thing at rest, and the orange bar
-     that means "this needs you" stays on the one that does. */
-  .slotsaid.bad { border-bottom: 3px solid var(--orange); }
 
   /* Running, in the lid, on every screen. */
   .running {
@@ -723,19 +628,6 @@
   /* Pressed, it goes down like everything else you push here. */
   .face:active { transform: translateY(3px); }
 
-  /* Keycaps on the chores screen appear on the chore you are focused in, and
-     nowhere else. Three sets of caps on every card is a poster; one set, on
-     the thing a key would actually act on, is an answer. */
-  .chore .key { display: none; }
-  .chore:focus-within .key {
-    display: inline-flex;
-    margin-left: 7px;
-    font-size: 11px;
-    font-variation-settings: var(--precise), "wght" 800;
-    border: 2px solid currentColor; border-radius: 5px;
-    padding: 2px 6px 1px; opacity: .72;
-  }
-
   /* The two things worth doing when there is nothing left to triage. Quiet,
      because the page they sit on is a full stop rather than a prompt. */
   .ends { margin: 20px auto 0; font-size: 13.5px; font-variation-settings: var(--precise), "wght" 560; }
@@ -744,15 +636,8 @@
 
   /* No keyboard, no keycaps. The hint keeps its last clause, because
      'stop whenever you like' is the product's line, not the keyboard's. */
-  @media (pointer: coarse) {
-    .chip .key { display: none; }
-    /* A thumb cannot press D, and the focus ring a tap leaves behind would
-       otherwise reveal three keycaps nobody can use. */
-    .chore:focus-within .key { display: none; }
-  }
 
   @media (prefers-reduced-motion: reduce) {
-    .card.leaving { animation-duration: 1ms; }
     * { transition-duration: 1ms !important; }
   }
 
@@ -811,9 +696,6 @@
     .face { flex: 1 1 0; min-width: 0; padding: 4px 0 6px; gap: 2px; font-size: 12px; letter-spacing: .1em; }
     .face img { width: 100%; height: auto; }
 
-    .note { padding: 26px 22px 10px; }
-    .note p { font-size: 23px; }
-    .card { min-height: 284px; }
     .row { gap: 8px; }
 
     .chore { padding: 17px 18px 18px; }
@@ -835,7 +717,6 @@
     .empty p { font-size: 18px; }
     .empty img { width: 150px; height: 113px; }
   }
-
 
   .landed {
     display: flex; align-items: center; justify-content: center;
@@ -868,32 +749,6 @@
     text-decoration: underline; text-underline-offset: 3px;
   }
   .askpush:hover { color: var(--paper); }
-
-  /* One step of a breakdown. Never the sequence, and there is deliberately no
-     room here for a second one — the same argument the offer's own answer
-     makes, at the scale of a block. */
-  .step {
-    display: flex; flex-direction: column; gap: 8px;
-    background: var(--paper); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 4px 0 0 var(--outline);
-    padding: 12px 14px;
-  }
-
-  /* A thing the coach wants permission for. Quiet, and it carries exactly one
-     press: the four things that need asking are the four that one press on
-     something already on screen would not undo. */
-  .asking {
-    display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
-    padding: 12px 14px;
-    background: var(--paper);
-    border: var(--line) dashed var(--outline); border-radius: var(--r);
-  }
-  .asking .said {
-    margin: 0;
-    font-size: 16px; line-height: 1.4;
-    font-variation-settings: var(--casual), "wght" 500;
-  }
 
   /* The readings: six weeks by seven days, and the only grid in the product.
      
@@ -1039,16 +894,6 @@
   }
   .unphoto:hover { color: var(--outline); }
 
-  /* The photograph on a note. Above the words, because when there is one it is
-     the note and the words are the caption. Bounded so a portrait photo cannot
-     push the actions off a phone screen. */
-  .photo { margin: 0 0 10px; }
-  .photo img {
-    display: block; width: 100%; max-height: 46vh; object-fit: contain;
-    background: var(--card-deep);
-    border: var(--line) solid var(--outline); border-radius: 10px;
-  }
-
 /* ---------------------------------------------------------------- */
 /* 2. One frame: title, content, the way onward.                     */
 /* ---------------------------------------------------------------- */
@@ -1086,7 +931,7 @@
  * Underline now means one thing only, everywhere: you are going somewhere
  * else to look at something.
  */
-.later, .again {
+.later {
   flex: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 44px; padding: 10px 16px;
@@ -1102,62 +947,11 @@
 
 /* On the purple field and on the card's purple title bar: cream, which is the
    secondary voice on this ground everywhere else. */
-.later, .again {
+.later {
   color: var(--cream); opacity: 1;
   margin: 0;
 }
-.later:hover, .again:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
-
-/* Inside a cream card the same control takes the card's own ink. `not now`
-   and `never mind` both live there. */
-.card .later, .asking .later {
-  color: var(--brown);
-  /* Every one of these is spelled out because the rule this overrides zeroes
-     the border and adds an underline: `not now` is a <button> that has been
-     drawn as a link since the day it was written, which is the clearest single
-     example of the thing being fixed here. */
-  border: 2px solid currentColor;
-  background: none;
-  box-shadow: none;
-  padding: 10px 16px;
-  margin-left: auto;
-  text-decoration: none;
-  text-transform: uppercase; letter-spacing: .07em;
-  font-size: 12.5px; font-variation-settings: var(--precise), "wght" 700;
-}
-.card .later:hover, .asking .later:hover { background: var(--paper-deep); color: var(--outline); }
-
-/* ---------------------------------------------------------------- */
-/* 6. The lid: a mark and three icons.                               */
-/* ---------------------------------------------------------------- */
-/*
- * It was a row of words and a search field that ran to three rows on a phone
- * — about a hundred and eighty pixels of lid before anything you came for. It
- * is one row now: the mark, and the three things you can do from anywhere.
- *
- * Buddy is one of them and is outside the menu, because a conversation about
- * what is in front of you should be one tap. It is no longer a button floating
- * over the content, which is what it was and what put it on top of a chore's
- * timer row and of the sheet's own send button.
- *
- * All three work with the script off. Two are disclosures, which is the same
- * grammar as the card's one question and the chore's interval.
- */
-.where > summary {
-  list-style: none; cursor: pointer;
-  flex: none;
-  display: grid; place-items: center;
-  width: 44px; height: 44px;
-  border-radius: 999px;
-  background: none; border: 0;
-  color: var(--cream);
-  transition: background-color 90ms ease-out, color 90ms ease-out;
-}
-.where > summary::-webkit-details-marker { display: none; }
-.where > summary:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
-.where[open] > summary { background: var(--violet); color: var(--paper); }
-
-.where { position: relative; flex: none; }
+.later:hover { background: rgba(254, 214, 167, .16); color: var(--paper); }
 
 /* The 16px floor, on the selector that actually wins.
  *
