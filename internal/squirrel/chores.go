@@ -321,8 +321,8 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 	return texts, rows.Err()
 }
 
-// HandledToday is everything that happened today worth saying back: the chores
-// and tasks named, the notes counted.
+// Handled is everything that happened today worth saying back: the chores and
+// tasks named, the notes counted.
 //
 // The count is the one number in this product. The banned counter counts what
 // remains — it grows unwatched, sits beside an implied zero, and can be lost.

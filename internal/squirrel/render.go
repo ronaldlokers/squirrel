@@ -48,8 +48,6 @@ func TasksMessage(items []Item, more bool) Message {
 	return Message{Text: strings.TrimRight(b.String(), "\n")}
 }
 
-// HelpMessage is the vocabulary. The capture rule comes first: if you remember
-// nothing else, typing a thought stores the thought.
 var screenURL string
 
 // SetScreenURL is called once at boot.
@@ -67,6 +65,8 @@ const stuckHelp = "!stuck — I can't start. Four answers, and one of them helps
 // SetCoachHere is called once at boot.
 func SetCoachHere(here bool) { coachHere = here }
 
+// HelpMessage is the vocabulary. The capture rule comes first: if you remember
+// nothing else, typing a thought stores the thought.
 func HelpMessage() Message {
 	lines := []string{
 		"Anything you type is a note. That is the default and it always wins.",

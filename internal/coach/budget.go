@@ -133,13 +133,9 @@ func (p *Permit) Release() {
 	}
 }
 
-// Ask answers with a Permit, or with ErrUnavailable and the reason already
-// logged. `instead` names what takes over, because crossing the ceiling is the
-// system working.
-//
-// One paid call at a time. The ceiling is checked before a call and the spend
-// recorded after, so two requests arriving together could both read "under
-// ceiling" and both spend.
+// spending is the one paid call at a time. The ceiling is checked before a call
+// and the spend recorded after, so two requests arriving together could both
+// read "under ceiling" and both spend.
 //
 // A channel rather than a mutex, because this one has to be able to give up: a
 // reservation that is never settled hangs every future call. If the holder takes
@@ -153,6 +149,9 @@ var spending = make(chan struct{}, 1)
 // hatch is one no test would wait for, leaving the safety net unproven.
 var spendWait = 90 * time.Second
 
+// Ask answers with a Permit, or with ErrUnavailable and the reason already
+// logged. `instead` names what takes over, because crossing the ceiling is the
+// system working.
 func (b Budget) Ask(ctx context.Context, personID int64, now time.Time, instead string) (Permit, error) {
 	held := false
 	select {
