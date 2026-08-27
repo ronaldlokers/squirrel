@@ -68,7 +68,12 @@ func TestNilConversationsAreSafe(t *testing.T) {
 }
 
 // Two surfaces can ask at once — chat drains on its own goroutine while the
-// screen serves a request. Run with -race, which CI does.
+// screen serves a request.
+//
+// The detector is this test's only assertion, so it is worth nothing unless
+// the suite runs with -race. It did not: the Makefile's own comment now says
+// why the flag is there, because a flag nobody can see the reason for is a
+// flag somebody removes.
 func TestConversationsSurviveConcurrentUse(t *testing.T) {
 	c := coach.NewConversations()
 	var wg sync.WaitGroup
