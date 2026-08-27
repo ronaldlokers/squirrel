@@ -29,7 +29,9 @@ The forks answered in this order, and every one of them chose against chat:
   model call classifies it, which is the saving.
 - **Buddy's own room stores nothing.** It is where you talk; the other rooms
   are where things live.
-- Six of the seven rooms are therefore filing surfaces. One is a conversation.
+- Four of the seven rooms are filing surfaces, two are shelves, and one is a
+  conversation. See section 3 — the split is not even, and pretending it is
+  would design a dock for rooms that have nothing to file.
 
 A product where typing files a thing into the room you are standing in is a
 cabinet, not a chat. What was wanted was **partitioning**; "chat platform" was
@@ -69,15 +71,34 @@ That puts the whole weight of "what will typing do here" on one control, and a
 grey placeholder cannot carry it: it is invisible by the third day. So **the
 submit button names the consequence** rather than the act.
 
-| room | placeholder | button |
-| --- | --- | --- |
-| the chores | what comes back? | Make a chore |
-| the pile | what is it | Put it in the pile |
-| the tasks | what did you decide? | Make a task |
-| Buddy | what's going on? | Tell it |
+| room | placeholder | button | where the words go |
+| --- | --- | --- | --- |
+| the pile | what is it | Put it in the pile | `/capture` — the spool, then the drain |
+| the chores | what comes back? | Make a chore | the words, then the how-often picker |
+| the tasks | what did you decide? | Make a task | `/tasks/new` |
+| the agenda | what is happening? | Put it in the agenda | the words, then the day picker |
+| the things you kept | what is it | Put it in the pile | `/capture` |
+| what you set aside | what is it | Put it in the pile | `/capture` |
+| Buddy | what's going on? | Tell it | `/capture`, and Buddy answers |
 
 You read what is about to happen at the moment you commit to it. That is the
 confirmation, without a press.
+
+Three of these are already two-step and stay two-step. A chore needs a rhythm
+and an appointment needs a day, and both pickers exist — the room's dock
+replaces the *first* step of `/chores/ask` and `/at/new`, which is a box asking
+for exactly the words you have already typed.
+
+**The two shelves file into the pile, and say so.** Nothing is *kept* or *set
+aside* by being typed — both states are reached by deciding about a note that
+already exists. A shelf with no dock would be the one screen where the thumb
+has nowhere to go, and a shelf whose dock lies about its destination is worse
+than either. So the room still decides; a shelf's decision is the pile.
+
+**Buddy's room files into the pile too**, and this is not an exception to
+"Buddy's room stores nothing". No *turn* of Buddy's is kept as a turn anywhere
+else; what a capture there produces is a pile note, exactly as the single dock
+produces one today. That is the behaviour shipping now, unchanged.
 
 ## 4. The rail carries counts
 
