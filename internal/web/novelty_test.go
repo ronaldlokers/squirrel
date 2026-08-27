@@ -10,8 +10,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// What the day is doing reaches the page.
-//
 // pile.css is a static file behind a long cache and cannot know what day it
 // is, so the two things that move without being read — the stamp's lean and
 // where the room's light falls — arrive as custom properties on the body.
@@ -34,8 +32,6 @@ func TestTheDayReachesTheStylesheet(t *testing.T) {
 		"the light never left the server")
 }
 
-// It reaches every screen, not only the one with a stamp on it.
-//
 // The light is the field, which is behind all thirteen, and the properties are
 // set once on the body for that reason. A screen that got the sentences but
 // not these would be lit differently from the screen beside it.

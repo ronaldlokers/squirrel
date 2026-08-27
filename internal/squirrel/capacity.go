@@ -43,14 +43,11 @@ var lowMoods = map[Mood]bool{
 
 // CapacityOf reads the one check-in the store will hand out.
 //
-// A stale reading is not a low reading. Fresh() is six hours, because the
-// question asked is "how is right now" and this morning is not now — and
-// letting a rough Tuesday quietly govern a fine Thursday is exactly the
-// accumulating shape this product exists without.
+// A stale reading is not a low reading: Fresh() is six hours, because the
+// question is "how is right now".
 //
-// No reading at all is CapacityOK. The absence of an answer is not an answer,
-// and a person who has never once used the check-in must not silently get a
-// smaller product than one who has.
+// No reading at all is CapacityOK. The absence of an answer is not an answer, and
+// somebody who has never used the check-in must not get a smaller product.
 func CapacityOf(c Checkin, found bool, now time.Time) Capacity {
 	if !found || !c.Fresh(now) {
 		return CapacityOK

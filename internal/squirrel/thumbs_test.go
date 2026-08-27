@@ -71,7 +71,6 @@ func TestShrinkAveragesRatherThanPicks(t *testing.T) {
 	require.InDelta(t, 4.5, float64(r>>8), 1.0, "it sampled instead of averaging")
 }
 
-// The copy lands beside the original, and it is very much smaller.
 func TestAThumbnailIsMadeBesideTheOriginalAndIsSmaller(t *testing.T) {
 	p := photoDir(t)
 	name := keptPhoto(t, p, aPhotograph(2400, 1800))

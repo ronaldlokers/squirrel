@@ -26,8 +26,8 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// browser finds something to drive. GitHub's runners ship Chrome; this machine
-// has chromium; both answer to the same flags.
+// browserBinary finds something to drive. GitHub's runners ship Chrome; this
+// machine has chromium; both answer to the same flags.
 func browserBinary(t *testing.T) string {
 	t.Helper()
 	if set := os.Getenv("BROWSER"); set != "" {
@@ -49,10 +49,10 @@ type serveMux struct{ mux *http.ServeMux }
 func (m *serveMux) Get(pattern string, h http.HandlerFunc)  { m.mux.HandleFunc("GET "+pattern, h) }
 func (m *serveMux) Post(pattern string, h http.HandlerFunc) { m.mux.HandleFunc("POST "+pattern, h) }
 
-// screen stands the whole thing up over a real socket, with the identity
-// header added on the way in the way the forward-auth middleware adds it. No
-// Postgres: what is under test is the script, and the fake store is the same
-// one the rest of this package's tests use.
+// screen stands the whole thing up over a real socket, signed in the way the
+// session middleware signs a request in. No Postgres: what is under test is the
+// script, and the fake store is the same one the rest of this package's tests
+// use.
 func screen(t *testing.T, f *fakeStore) *httptest.Server {
 	return screenWith(t, f, nil)
 }
@@ -281,35 +281,12 @@ func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
 		})`), "every label fits its own cell")
 }
 
-// The screen writes straight to the pile and there is no spool behind that, so
-// a capture typed with no network would simply be lost. The worker holding it
-// is the nearest honest substitute — and this is the test that it actually
-// holds, rather than that the code reads as though it would.
+// The worker holding a capture is the nearest honest substitute for a spool, and
+// this is the test that it actually holds.
 //
-// The server is closed rather than the network emulated: CDP's offline
-// emulation applies to the page's network stack and not to the worker's own,
-// so the first version of this test passed while the POST reached the server
-// and came back "kept". A closed socket is offline for both.
-// waitForTheWorker waits for a worker that is actually driving the page.
-//
-// Registration, install, activate and `clients.claim()` are four steps, and a
-// page that loaded before the last of them is not controlled — so waiting on
-// `controller` alone is waiting on a race, which this machine wins every time
-// and a loaded runner does not. It failed CI twice on branches that had not
-// touched the worker, which is the way a flake does its real damage: it
-// teaches you to re-run the job instead of reading it.
-//
-// So this waits for the registration to be ready first, and then, if the page
-// still is not controlled, navigates once more. A worker that has activated
-// controls the next navigation by definition, so the second visit is a
-// guarantee rather than another roll.
-//
-// What that costs, and it is worth naming rather than discovering later: these
-// tests no longer notice `clients.claim()` going missing. Claiming is what
-// makes the *first* visit controlled without a reload, and the only way to
-// assert it is to race activation — which is the race that was flaking. The
-// property is real and remains untested here on purpose; a test of it would be
-// a test that fails on a busy machine for a reason unrelated to the change.
+// The server is closed rather than the network emulated: CDP's offline emulation
+// applies to the page's network stack and not the worker's, so the first version
+// passed while the POST reached the server and came back "kept".
 func waitForTheWorker(t *testing.T, c *cdp, url string) {
 	t.Helper()
 	c.until(t, "the worker to be ready", `
@@ -352,38 +329,6 @@ func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
 		});`), "the words are held")
 }
 
-// Closing the coach, reported broken from production. The sheet never opened
-// on the pile at all: `.acorn` was the card's drawn badge as well as the
-// button, and pile.js wired the badge — so the acorn navigated away instead,
-// and what looked like "closing does not work" was "this was never a sheet".
-
-// Escape, which the platform gives us and which nothing here implements.
-
-// The acorn opens a sheet over the page rather than going anywhere. This is
-// the half of the bug above that was invisible: it did navigate, and the page
-// it landed on worked, so nothing looked broken until you tried to get out.
-
-// The same rule in the coach's own box, which is reachable from every screen
-// and so meets the deck's keys as well as the chores'.
-
-// Sending from the sheet. Reported: you cannot send a message to the coach
-// from the app. Enter is the send affordance — it is how the slot works and
-// how the room this product lives in works — and the sheet's box never had it,
-// because the slot's handler is bound once at load to the page's own box and
-// the sheet arrives later.
-
-// Shift+Enter is the newline, for a thought with two parts. Same rule as the
-// slot, because it is the same interaction.
-
-// The chips send too, and they carry which one was pressed. Same path as the
-// box, so the same bug hit both: a chip press reached the server with no
-// answer in it and bounced straight back.
-
-// What the sheet puts on the wire, pinned. It is not a detail: a FormData body
-// goes out as multipart, Go's ParseForm reads only urlencoded, and the
-// mismatch is silent at both ends — the server finds no words and answers as
-// though nothing was said.
-
 // degreesOf resolves an angle the way the browser will, so the test compares
 // degrees rather than the strings they were written as.
 func degreesOf(t *testing.T, c *cdp, angle any) any {
@@ -413,29 +358,11 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 		"the field's highlight is not where the day put it")
 }
 
-// Buddy, as a screen, is legible on the field.
-//
-// The page route and the overlay are the same markup, and until this the same
-// stylesheet gave both the card's dark-on-cream inks. That is right inside the
-// overlay and wrong on the page, where there is no cream — the sheet now
-// stands directly on the field like every other screen's content.
-//
-// The failure mode is not subtle and it is not visible to Go: a `--brown`
-// label on a purple field is dark ink on a dark ground. So this walks every
-// piece of text that ends up standing on the field itself — anything inside an
-// object with its own fill is that object's problem, and already tested — and
-// checks it is light enough to read.
-
-// And the overlay keeps the card it is supposed to be.
-//
-// The same markup, so this is the half that a fix to the page could quietly
-// take away. It has taken three releases to notice a sheet regression before.
-
 // atChores opens the thread and presses the chores door.
 //
-// The chores stopped being a page on 24 August 2026, so a browser test that
-// wants them presses the door and waits for the cards — which is what a person
-// does, and what makes these tests exercise the swap as well as the cards.
+// The chores are not a page, so a browser test that wants them presses the door
+// and waits for the cards — which is what a person does, and what makes these
+// tests exercise the swap as well as the cards.
 func atChores(t *testing.T, srv *httptest.Server) *cdp {
 	t.Helper()
 	c := browserAt(t, srv, "/")
@@ -454,10 +381,6 @@ func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
 }
 
-// TestBrowserTypingAChoreNameIsNotAnAction was retired on 24 August 2026 with
-// the new-chore form it covered: making a chore from nothing is a sentence in
-// the dock now, and the dock's own keys are covered by the slot's tests.
-
 // The lid's field, on the thread. It posts and the answer arrives as a turn —
 // the deck's search-as-you-type would fetch a page and paste it over the
 // conversation, so it stands aside here.
@@ -467,8 +390,8 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 	c, srv := open(t, f)
 	c.navigate(t, srv.URL+"/")
 
-	// A chip on the live edge since 25 August 2026, rather than a field in the
-	// lid: it asks for words, and /find answers them.
+	// A chip on the live edge rather than a field in the lid: it asks for
+	// words, and /find answers them.
 	c.eval(t, `document.querySelector('form[action="/find/ask"] button').click()`)
 	c.until(t, "the question", `!!document.querySelector(".wordbox")`)
 	c.eval(t, `const f = document.querySelector(".wordbox textarea");
@@ -489,8 +412,6 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 		`!!document.querySelector("#thread .turn:last-child .turncard .turnacts")`)
 }
 
-// Letters are actions, on the note Buddy is holding out.
-//
 // The deck's keys came with a machine for stamping a card and holding it still;
 // none of that crosses, because the answer here is a new turn. The letters do.
 func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
@@ -529,26 +450,9 @@ func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
 	require.Empty(t, f.states, "a letter typed in the dock decided something")
 }
 
-// Retired with the deck on 25 August 2026.
-//
-// These pinned the card's own machinery: the tray of answers that opened
-// without a press, the stamp that leaned at the day's angle, the hold that gave
-// an undo somewhere to be, and the skip link a key pressed. None of it crosses
-// to a conversation, where the answer is a new turn and the way back travels
-// with it.
-//
-// What did cross is pinned elsewhere: the letters, by
-// TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
-// TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
-// TestLaterHandsYouTheNextAndDecidesNothing.
-//
-// TestBrowserSearchAnswersAsYouType went with search-as-you-type, which stands
-// aside on the thread: a search is a thing you asked, and the answer is a turn.
-
-// visible is whether an element is actually shown, rather than merely present.
-//
-// It lived in answers_test.go, which was the deck's card and went with it. The
-// helper outlived the file: the lid's panels and the sheet still ask this.
+// visible is whether an element is actually shown, rather than merely present:
+// checkVisibility, because a hidden element keeps its geometry and a bounding
+// rect says every one of them is on screen.
 const visible = `(sel) => {
 	const el = document.querySelector(sel);
 	return !!el && el.checkVisibility({
@@ -556,16 +460,10 @@ const visible = `(sel) => {
 	});
 }`
 
-// Nothing at the foot of the conversation hides behind the dock.
-//
-// The reported bug, measured the way a phone meets it: a conversation long
-// enough to scroll, scrolled to the very bottom, with the last two things on
-// the page checked against the top of the box.
-//
-// The first version of this test had no turns in its fixture at all, so the
-// page did not scroll and nothing could overlap — it passed with the defect
-// deliberately put back. A test that cannot reproduce the bug it is named
-// after is worse than none.
+// A conversation long enough to scroll, which is what the tests below need to
+// be able to reproduce anything: the first version of them had no turns at all,
+// so the page did not scroll, nothing could overlap, and they passed with the
+// defect deliberately put back.
 func aScrollingThread() *fakeStore {
 	f := aPile()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
@@ -596,21 +494,17 @@ func atTheBottomOfAPhone(t *testing.T) *cdp {
 	return c
 }
 
+// The last thing on the screen must not be underneath the box you type into.
+// Reported from a phone.
 func TestBrowserTheEndOfThePageClearsTheDock(t *testing.T) {
 	c := atTheBottomOfAPhone(t)
 
-	// The last turn in the conversation, since `.alsochips` and `.ends` both
-	// left the thread on 26 August 2026. What is being measured is unchanged
-	// and is the whole point: the last thing on the screen must not be
-	// underneath the box you type into. Reported from a phone.
-	for _, what := range []string{"#thread .turn:last-child"} {
-		gap := c.eval(t, `
-			const it = document.querySelector("`+what+`").getBoundingClientRect();
-			const dock = document.querySelector(".dock").getBoundingClientRect();
-			return Math.round(dock.top - it.bottom);`)
-		require.GreaterOrEqual(t, gap, float64(0),
-			"%s sits %v pixels under the dock", what, gap)
-	}
+	gap := c.eval(t, `
+		const it = document.querySelector("#thread .turn:last-child").getBoundingClientRect();
+		const dock = document.querySelector(".dock").getBoundingClientRect();
+		return Math.round(dock.top - it.bottom);`)
+	require.GreaterOrEqual(t, gap, float64(0),
+		"the last turn sits %v pixels under the dock", gap)
 }
 
 // And the reserve follows the slot as it grows. At four lines a static reserve

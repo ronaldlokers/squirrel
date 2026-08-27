@@ -31,19 +31,14 @@ var actionStates = map[string]squirrel.ItemState{
 	string(squirrel.ItemDropped): squirrel.ItemDropped,
 }
 
-// intervalSentinel stands in for a chore name while an interval is parsed.
-//
-// The literal is copied from apply.go rather than exported from it: it is an
-// internal detail of how ParseEvery is reused, and two callers agreeing on a
+// intervalSentinel stands in for a chore name while an interval is parsed. The
+// literal is copied from apply.go rather than exported: two callers agreeing on a
 // word is cheaper than a package's API growing to say it.
 const intervalSentinel = "chore-name-placeholder"
 
-// back sends the browser to the pile with a 303. See Other and not 302: the
-// method must become GET, so that a reload after triaging re-reads the pile
-// instead of re-submitting the transition.
-//
-// The undo hint travels in the query string rather than a session, because
-// this binary has no sessions and the screen is stateless by construction.
+// back sends the browser to the pile with a 303, so a reload after triaging
+// re-reads rather than re-submitting. The undo hint travels in the query string,
+// because this binary has no sessions.
 func actHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -65,12 +60,8 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 		// disposals end a note; this moves it, and it stays open because
 		// deciding to do a thing is not doing it.
 		if act := r.FormValue("act"); act == "task" || act == "note" {
-			// Deciding is not disposing, so it takes its own branch rather
-			// than joining a map of states and pretending to be one — and the
-			// way back out of it is its own verb for the same reason. The
-			// note's state never moved, so `act=open` would undo nothing;
-			// what changed was its kind, and putting it back means making it
-			// a note again.
+			// Deciding is not disposing, so it takes its own branch. The note's state never
+			// moved, so `act=open` would undo nothing: what changed was its kind.
 			kind := squirrel.ItemTask
 			if act == "note" {
 				kind = squirrel.ItemNote
@@ -112,16 +103,11 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		// What the card said the note was when the press happened, if it said.
-		// The deck sends it; a form written before this did not, and chat has
-		// no stale window to protect, so an absent one means the old
-		// unconditional write.
+		// What the card said the note was when the press happened, if it said. An absent
+		// one means the old unconditional write.
 		//
-		// Writing the state a note already holds is a no-op rather than an
-		// error; SetItemState says so itself, and this handler must not add a
-		// check that turns a retry into a failure. MoveItemState keeps that
-		// property on purpose — it refuses only a note that went somewhere
-		// else.
+		// Writing the state a note already holds is a no-op rather than an error, and
+		// this handler must not add a check that turns a retry into a failure.
 		from, decided := actionStates[r.FormValue("was")]
 		if decided {
 			moved, err := s.MoveItemState(r.Context(), it.ID, from, state, time.Now())
@@ -166,14 +152,9 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// ParseEvery wants "every <interval> <name>" and returns the name from
-		// the same string. Here the name is the note, so a word that is not a
-		// unit is appended and only the duration is kept — the same sentinel
-		// trick apply.go documents, and for the same reason: without it,
-		// "every" alone borrows the next word as its unit and silently creates
-		// a chore nobody asked for.
-		// The four the deck offers, and only those — see offered() for why
-		// parsing a button's value is looser than it looks.
+		// ParseEvery returns the name out of the same string, so here a sentinel word is
+		// appended and only the duration kept — without it, "every" alone borrows the
+		// next word as its unit and silently creates a chore nobody asked for.
 		every, ok := offered(r.FormValue("every"))
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
@@ -198,12 +179,8 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// fixHandler changes what a note says, and nothing else about it.
-//
-// The same write the chat's !fix makes, through the same store call, so the
-// two ways of correcting a thought cannot come to mean different things. It
-// returns to where you were — a correction made three notes down comes back to
-// the same place, like every other transition here.
+// fixHandler changes what a note says and nothing else, through the same store
+// call the chat's !fix makes.
 func fixHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -240,11 +217,8 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// answerInThread says what happened and hands you the next note.
-//
-// Triage is a loop: the whole reason the deck replaces one card with another is
-// that having decided is the moment you are most able to decide again. The
-// conversation keeps that and stops throwing the last one away.
+// answerInThread says what happened and hands you the next note: having decided
+// is the moment you are most able to decide again.
 func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Options,
 	personID int64, act, text string, id int64, was string) {
 	said := saidAboutANote(act, text, id, was)
@@ -252,13 +226,12 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	// You are part way through something, and this is the only place that
-	// knows it. Marked on every answer rather than once at the start, so the
-	// clock measures silence: a long afternoon of triage never goes stale, and
-	// one you walked away from ages out.
+	// Marked on every answer rather than once at the start, so the clock measures
+	// silence: a long afternoon of triage never goes stale, and one you walked away
+	// from ages out.
 	//
-	// Best-effort. Failing to remember where you got to must not fail the
-	// decision you just made — the note has already moved.
+	// Best-effort: failing to remember where you got to must not fail the decision
+	// you just made.
 	if err := s.MarkRun(r.Context(), personID, squirrel.RunPile, now()); err != nil {
 		slog.Error("keeping your place", "error", err)
 	}
@@ -267,11 +240,9 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 	answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
 }
 
-// laterHandler is skipping one, which is not a decision.
-//
-// It leaves the note where it was and hands you the next, which is the deck's
-// own LATER. Your half is said too — skipping is a thing you did, and a record
-// that only kept the decisions would be a record of a different afternoon.
+// laterHandler is skipping one, which is not a decision: the note stays where it
+// was. Your half is said too — a record that only kept the decisions would be a
+// record of a different afternoon.
 func laterHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -296,11 +267,8 @@ func laterHandler(s Store, opts Options) http.HandlerFunc {
 }
 
 // undoHandler is changing your mind, from the chip that travelled with the
-// answer.
-//
-// It is the same write as any other act — putting a note back is `act=open`,
-// and undoing a decision is making it a note again — so it goes through the
-// same handler rather than growing a second way to move a note.
+// answer. The same write as any other act, so there is no second way to move a
+// note.
 func undoHandler(s Store, opts Options) http.HandlerFunc {
 	act := actHandler(s, opts)
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -350,16 +318,13 @@ func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) h
 }
 
 // moreHandler is `something else?` — the three questions a note can be asked,
-// arriving as a turn rather than as a panel expanding.
+// arriving as a turn rather than a panel expanding.
 //
-// A turn, and that is the design rather than a convenience. The card above
-// stays where it is and keeps its place in the record, so you can see which
-// note is being discussed; and the press itself goes into the conversation,
-// which is a true thing about the afternoon — you paused on that one.
+// The card above keeps its place, so you can see which note is being discussed,
+// and the press goes into the conversation: you paused on that one.
 //
 // Room appears here for `break it up`, which on the card could only be offered
-// when a free check guessed it was worth offering. Behind a press it can always
-// be there, because the press is the person saying they want more.
+// when a free check guessed it was worth it.
 func moreHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)

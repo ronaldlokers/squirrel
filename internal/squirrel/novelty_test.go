@@ -147,8 +147,6 @@ func TestTheStampLeansWithinAFewDegrees(t *testing.T) {
 		"the stamp used %d of its %d angles in a year", len(seen), TiltTo-TiltFrom+1)
 }
 
-// The room's light moves across, and only across.
-//
 // The vertical and the alpha are not here to be tested because they are not
 // variables: .35 is a measured contrast result, and this is the shape of the
 // change that cannot touch it.
@@ -176,8 +174,6 @@ func TestTheDayHoldsTheAngleAndTheLight(t *testing.T) {
 	require.Equal(t, Light(morning), Light(night))
 }
 
-// The salt is mixed in, so two things chosen from the same day disagree.
-//
 // pick is one implementation shared by the stamp, the light and anything added
 // later. Without the salt every caller over the same band would return the
 // same number on the same day — the stamp and the light happen not to show it

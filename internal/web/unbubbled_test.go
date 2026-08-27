@@ -48,7 +48,6 @@ func TestTheConversationHasFewerObjectsInIt(t *testing.T) {
 	require.Positive(t, strings.Count(body, "frombuddy"))
 }
 
-// The way out is still one press from anywhere. It moved; it did not go.
 func TestTheWayOutIsStillOnePress(t *testing.T) {
 	body := thread(t, &fakeStore{})
 
@@ -56,7 +55,6 @@ func TestTheWayOutIsStillOnePress(t *testing.T) {
 	require.Contains(t, body, `class="leaving"`)
 }
 
-// The menu opens with the script off, which every other disclosure here does.
 func TestTheMenuOpensWithoutScript(t *testing.T) {
 	body := thread(t, &fakeStore{})
 

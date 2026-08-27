@@ -42,7 +42,6 @@ func TestChoreNameUniquenessIsCaseInsensitive(t *testing.T) {
 	require.Error(t, err)
 }
 
-// Only one digest per person per day can exist, whatever the process does.
 func TestOneDigestPerDay(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

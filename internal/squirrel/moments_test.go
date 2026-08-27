@@ -87,8 +87,6 @@ func TestTheLeaveSentenceNeverPushes(t *testing.T) {
 	}
 }
 
-// A guess says it is a guess. A default that presents itself as a fact is how
-// someone ends up late while trusting the machine.
 func TestAGuessedTravelTimeSaysSo(t *testing.T) {
 	m, _ := squirrel.ParseMoment("at 14:30 dentist", at(9, 0))
 	require.Contains(t, squirrel.LeaveWords(m), "if it is")

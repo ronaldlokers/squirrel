@@ -14,59 +14,39 @@ import (
 //
 // The package and the types keep the word coach, which is what this is; Buddy
 // is what it is called.
-//
-// A widget on every screen rather than a fourth door. DESIGN.md's rule against
-// modals carries its own condition — "for anything that needs neither
-// interruption nor protected focus" — and this meets it: a coach conversation
-// happens when everything else on screen is noise, and protected focus is the
-// whole point of the surface. The chore picker was refused a modal because
-// choosing an interval needs neither. That reasoning is untouched.
-//
-// `/buddy` is a real page. The sheet is pile.js upgrading a real route, the
-// same progressive enhancement the chore picker's <details> already uses: it
-// works with scripting off, it deep-links, and it survives a reload. And
-// because it is chrome rather than a destination, the home screen still has
-// three doors.
 
 // Exchange is one round of the conversation, as the screen says it.
 //
-// Declared here rather than imported for the same reason Store is: this
-// package must not have to know that internal/coach exists, and internal/coach
-// must not know a screen does. internal/boot converts between the two, which is
-// the job it already does for the budget's log.
+// Declared here rather than imported for the same reason Store is: this package
+// must not have to know that internal/coach exists, and internal/coach must not
+// know a screen does. internal/boot converts between the two.
 type Exchange struct {
 	Said    string
 	Replied string
 }
 
-// Answer is one turn's result: what the coach said, what actually changed, and
-// what it wants permission for.
+// Answer is one turn's result: what the coach said, what changed, and what it
+// wants permission for.
 //
-// Did is written by the application after a write succeeded, not by the model
-// — a model saying "done" is not evidence anything happened. Propose is a
-// thing it may not do on its own, rendered as one press.
+// Did is written by the application after a write succeeded — a model saying
+// "done" is not evidence anything happened.
 type Answer struct {
 	Text    string
 	Did     []string
 	Propose *Proposal
-	// Open is one of the places, when Buddy asked for it to be shown, and
-	// empty otherwise.
-	//
-	// Buddy is forbidden to recite a list — the guard refuses bullets and the
-	// brief is two sentences — so asking to see your tasks used to get an
-	// honest "I cannot", while the menu did it in one press. This is that
-	// press. It changes nothing, which is why it needs no confirming.
+	// Open is one of the places, when Buddy asked for it to be shown. He is forbidden
+	// to recite a list, so asking to see your tasks used to get an honest "I cannot"
+	// while the menu did it in one press. It changes nothing, so it needs no
+	// confirming.
 	Open string
 }
 
-// Proposal is the four things the coach must ask about: a fixed point, because
-// it will interrupt you later; a chore, because it comes back forever; a
-// retirement, because it stops something recurring; and a drop, because it is
-// disposal. None is undone by one press on a control already on screen, which
-// is the whole of the test.
+// Proposal is the four things the coach must ask about: a fixed point, a chore, a
+// retirement and a drop. None is undone by one press on a control already on
+// screen, which is the whole of the test.
 //
-// Stored nowhere. It travels in the form that renders it, exactly as a split
-// does, so an unanswered proposal lasts as long as the page it is on.
+// Stored nowhere: it travels in the form that renders it, so an unanswered
+// proposal lasts as long as the page it is on.
 type Proposal struct {
 	Do    string
 	Said  string
@@ -76,21 +56,11 @@ type Proposal struct {
 	RefID int64
 }
 
-// coachAvailable reports whether there is anything behind the acorn.
-//
-// When there is not, the acorn is still drawn and `/buddy` still answers: the
-// four chips are deterministic and the ladder behind them is what shipped
-// before any of this existed. The only difference a missing key makes is that
-// typing a sentence gets the four chips back instead of an answer.
+// coachAvailable reports whether there is a model to ask. When there is not, the
+// four chips are deterministic and the ladder behind them is what shipped before
+// any of this: typing a sentence gets the chips back instead of an answer.
 func coachAvailable(opts Options) bool { return opts.Ask != nil }
 
-// coachSayHandler is one turn.
-//
-// Two ways in, and they are the same route on purpose: a chip is the sentence
-// you did not have to type. Someone at the moment of least capacity should not
-// have to compose anything to be helped, which is what the four blockers are
-// for — one press, and the answer still comes back about this task rather than
-// in general.
 // coachAskHandler is the chip: it asks for words and nothing else. The reply
 // comes back through coachSayHandler, which is the same route the four
 // blockers press.
@@ -103,8 +73,8 @@ func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		// What you would be handed right now, so the question is about
 		// something rather than about nothing. The picker is six rules and no
-		// model, so asking costs nothing — which is what let the acorn be
-		// pressed idly, and has to stay true of the chip.
+		// model, so asking costs nothing — which has to stay true of a chip
+		// somebody may press idly.
 		question := "What is going on?"
 		if about := offerHint(s, opts, r); about != "" {
 			question = "What is going on with " + about + "?"
@@ -116,6 +86,9 @@ func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
+// coachSayHandler is one turn. A chip and a typed sentence are the same route on
+// purpose: a chip is the sentence you did not have to type, and the answer still
+// comes back about this task rather than in general.
 func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -185,13 +158,9 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 				false, true, answer.Propose, stepFor(s, opts, r)),
 		}
 
-		// And the place, when he was asked for one. It is his answer rather
-		// than something you said, so it arrives as a turn of his and the
-		// record does not invent a sentence you never typed.
-		//
-		// Last, so the live edge is the cards: what you asked to see is the
-		// thing you are now looking at, and the reply above it has said its
-		// piece.
+		// And the place, when he was asked for one: his answer rather than something you
+		// said, so the record does not invent a sentence you never typed. Last, so the
+		// live edge is the cards.
 		if place, ok := placeSaid(r.Context(), s, opts, personID, answer.Open, 0); ok {
 			turns = append(turns, alsoOffer(place, newChipFor(answer.Open)...))
 		}
@@ -200,12 +169,9 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// answerBlocker is a chip, answered by the ladder.
-//
-// Deterministic, and it stays deterministic: the four fixed answers are good
-// precisely because they are fixed, and the worst case of having a coach at
-// all should be that you press a chip and read the same sentence you would
-// have read anyway.
+// answerBlocker is a chip, answered by the ladder, and it stays deterministic:
+// the worst case of having a coach at all should be reading the same sentence you
+// would have read anyway.
 func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options, personID int64, b squirrel.Blocker) {
 	// "Not today" is not an obstacle, it is a no — and it is the same no that
 	// "not now" writes on the home screen, arrived at from another direction.
@@ -245,30 +211,14 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 	}), "/")
 }
 
-// Closing was a route. It is not one now: the sheet was a thing that could be
-// open, and a conversation is not — you stop talking. What closing also did
-// was forget the window, and the record is the window now.
-
-// backTolerant is where a form's "from" may send you.
-//
-// Only a path this screen serves, and only ever a path: the value arrives from
-// a form field and a form field is a place a stranger can type. An open
-// redirect from a page behind forward-auth is still an open redirect.
 // coachBadlyHandler records that the last thing Buddy said did not land.
 //
-// Principle 5 was opened on 20 August so the coach could be useful at the only
-// thing a coach is for, and the cost was written down at the time: it can now
-// say something that lands badly on a bad day. Every exchange has been kept
-// since, for exactly that reason — and nothing has ever read one back.
+// One press, deliberately the smallest thing that could work: the moment it
+// serves is the moment there is least to spend on it. A comment box would be a
+// form to fill in at the worst possible time.
 //
-// This is one press, and it is deliberately the smallest thing that could
-// work. The moment it exists to serve is the moment there is least to spend on
-// it: a bad reply, late, on a night that is already going badly. A comment box
-// would be a form to fill in at the worst possible time.
-//
-// Nothing is rendered back except that it was heard. No count, no list, no
-// history — what it feeds is the next prompt, where the model is shown the
-// words that did not land rather than told about them.
+// Nothing is rendered back except that it was heard. What it feeds is the next
+// prompt, where the model is shown the words that did not land.
 func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -297,6 +247,11 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
+// backTolerant is where a form's "from" may send you.
+//
+// Only a path this screen serves, and only ever a path: the value arrives from
+// a form field, and a form field is a place a stranger can type. An open
+// redirect from a page behind a session is still an open redirect.
 func backTolerant(from string) string {
 	if !strings.HasPrefix(from, "/") || strings.HasPrefix(from, "//") {
 		return "/"
@@ -351,16 +306,6 @@ func costLine(ctx context.Context, opts Options, personID int64) string {
 	return spent + " of " + ceiling
 }
 
-// blockerChips is the four, in the order the ladder already uses. One press,
-// no typing.
-func blockerChips() []chipView {
-	out := make([]chipView, 0, len(squirrel.Blockers))
-	for _, b := range squirrel.Blockers {
-		out = append(out, chipView{Why: string(b), Word: squirrel.BlockerWords[b]})
-	}
-	return out
-}
-
 // withDid is the reply plus what actually changed, as one thing said.
 func withDid(a Answer) string {
 	if len(a.Did) == 0 {
@@ -371,14 +316,12 @@ func withDid(a Answer) string {
 
 // coachDoHandler applies a proposal, and only ever one that was pressed.
 //
-// Everything arrives back through the form, so everything is read the way a
-// stranger's typing is read: the kind is checked against the four, the time and
-// the rhythm go through the core's own parsers rather than being trusted, and
-// anything that does not parse does nothing at all.
+// Everything arrives through the form and is read as a stranger's typing: the
+// kind is checked against the four, times and rhythms go through the core's
+// parsers, and anything that does not parse does nothing.
 //
-// Deliberately not a general "do what the model said" route. There are four
-// things it can apply and they are named here, in a switch, so adding a fifth
-// is a code change someone reviews.
+// Not a general "do what the model said" route: the four are named in a switch,
+// so a fifth is a code change someone reviews.
 func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)

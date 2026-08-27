@@ -13,22 +13,12 @@ import (
 
 // A new one, at every door.
 //
-// Making a thing from nothing went with the screens: each had a form at the
-// foot of it, and when the screen became a message the form had nowhere to be.
-// The roadmap recorded that for the chores in v0.24.0 — "making one from
-// nothing is a sentence in the dock" — which is true of a note and is not true
-// of a chore or an appointment, because neither is a thought you had. You
-// decide to have them.
+// A note is a thought you had; a chore or an appointment is one you decided to
+// have. So each door's turn carries one chip, and pressing it asks.
 //
-// So each door's turn carries one chip, and pressing it asks. The handlers
-// underneath are the ones the screens posted to; only their answers changed,
-// from a redirect to a page to a turn in the conversation.
-//
-// The pile's chip is the odd one and it is deliberate: everything you type
-// lands in the pile, so the chip is a way to say the same thing without
-// reaching for the dock. It posts to the same capture route, which is the
-// offline durability promise — a second way in with weaker guarantees would be
-// a second way in nobody could tell apart.
+// The pile's chip posts to the same capture route as the dock, deliberately:
+// everything typed lands in the pile, and a second way in with weaker
+// durability guarantees would be a second way in nobody could tell apart.
 
 // newChipFor is the chip a door's turn carries, or nothing.
 func newChipFor(where string) []turnChip {

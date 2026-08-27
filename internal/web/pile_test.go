@@ -2,6 +2,9 @@ package web
 
 import (
 	"net/http"
+	"os"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,6 +48,7 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /buddy/badly",
 		"POST /buddy/do",
 		"GET /coach",
+		"GET /buddy",
 		"POST /steps",
 		"GET /moods",
 		"POST /held/act",
@@ -79,9 +83,37 @@ func TestTheRouteTable(t *testing.T) {
 	require.Len(t, m.routes, 56, "a route was added without being pinned here")
 }
 
-// Both old addresses now answer with the conversation — see
-// TestTheOldCoachURLsRedirect in coach_test.go. The query string is dropped
-// rather than carried: it named the screen to come back to, and there is one.
+// And the count above is the whole table rather than a number somebody bumped.
+// GET /buddy was mounted, unlisted, and paid for by raising the total.
+func TestTheRouteTableNamesEveryRoute(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+	named := map[string]bool{}
+	for _, route := range routesPinned(t) {
+		named[route] = true
+	}
+	for route := range m.routes {
+		require.True(t, named[route], "%s is mounted and not in the table above", route)
+	}
+}
+
+// routesPinned reads the table above out of this file's own source, so the
+// check below cannot drift from the list a person reads.
+func routesPinned(t *testing.T) []string {
+	t.Helper()
+	src, err := os.ReadFile("pile_test.go")
+	require.NoError(t, err)
+	body := string(src)
+	from := strings.Index(body, "for _, route := range []string{")
+	require.Positive(t, from)
+	to := strings.Index(body[from:], "\n\t} {")
+	require.Positive(t, to)
+
+	var out []string
+	for _, m := range regexp.MustCompile(`"((?:GET|POST) [^"]+)"`).FindAllStringSubmatch(body[from:from+to], -1) {
+		out = append(out, m[1])
+	}
+	return out
+}
 
 // The chores screen lived at /pile/chores for its whole life, and a bookmark
 // that dies quietly is worse than a redirect nobody notices.
@@ -89,38 +121,50 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/chores", nil)
 
 	require.Equal(t, http.StatusMovedPermanently, w.Code)
-	// Home, since the chores stopped being a page on 24 August 2026. The
-	// redirect stays because the URL is in somebody's history.
+	// Home, since the chores are a message rather than a page. The redirect
+	// stays because the URL is in somebody's history.
 	require.Equal(t, "/", w.Header().Get("Location"))
 }
 
-// A screen that captures with nowhere durable to put the words is the gap
-// this closes, so it refuses at mount rather than at the first capture — which
-// is the worst possible moment to find out.
-func TestMountRefusesWithoutASpool(t *testing.T) {
-	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
-		RequiredGroup: "squirrel-users", Gate: &Gate{},
-		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
-		Login:    aTestLogin,
-	}))
-}
-
-func TestMountRefusesWithoutAnOwner(t *testing.T) {
-	require.Error(t, Mount(newTestMux(), &fakeStore{}, Options{
-		RequiredGroup: "squirrel-users", Gate: &Gate{},
-		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
-		Login:    aTestLogin,
-	}))
-}
-
-// The deck came out on 24 August 2026 and what it did lives in the
-// conversation. What it was tested for lives there too — see thread_test.go for
-// one note at a time, the empty pile, and searching — except for these, which
-// went with the screen:
+// Everything Mount refuses to start without, and the refusal each one gives.
 //
-//   * TestPileHasNoCaptureBox. The deck had no slot because home had the only
-//     one. There is one dock now and it is on every view, so the rule it
-//     guarded is retired rather than moved.
-//   * TestSearchEscapesTheQuery. The query is not echoed into a page any
-//     more; it is a turn, and TestTheSlotEscapesWhatItGivesBack is what pins
-//     a turn's words being escaped.
+// Asserted on which refusal fires rather than on there being one: these were
+// two tests with identical bodies, so the second passed on the first's check
+// and neither the gate nor the login had a test at all. A missing dependency
+// that fails as a different missing dependency is a test that passes for a
+// reason nobody chose.
+//
+// Refused at mount rather than at first use, because first use is the worst
+// moment to find out — a capture with nowhere durable to go is the whole gap
+// this product exists to close.
+func TestMountRefusesWithoutWhatItNeeds(t *testing.T) {
+	whole := func() Options {
+		return Options{
+			RequiredGroup: "squirrel-users", Gate: &Gate{},
+			Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
+			Login:    aTestLogin,
+			Spool:    &fakeSpool{},
+		}
+	}
+	require.NoError(t, Mount(newTestMux(), &fakeStore{}, whole()),
+		"the whole set does not mount, so nothing below is testing what it says")
+
+	for _, missing := range []struct {
+		what string
+		drop func(*Options)
+		says string
+	}{
+		{"the required group", func(o *Options) { o.RequiredGroup = "" }, "WEB_REQUIRED_GROUP is empty"},
+		{"the way in", func(o *Options) { o.Gate = nil }, "no way in"},
+		{"the sessions", func(o *Options) { o.Sessions = nil }, "no sessions"},
+		{"the login", func(o *Options) { o.Login = nil }, "turns a login into a person"},
+		{"the spool", func(o *Options) { o.Spool = nil }, "no spool"},
+	} {
+		opts := whole()
+		missing.drop(&opts)
+		err := Mount(newTestMux(), &fakeStore{}, opts)
+		require.Error(t, err, "it mounted without %s", missing.what)
+		require.Contains(t, err.Error(), missing.says,
+			"without %s it refused for some other reason", missing.what)
+	}
+}

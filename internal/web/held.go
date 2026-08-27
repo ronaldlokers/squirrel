@@ -7,11 +7,9 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Things you cannot act on.
-//
-// A page until 25 August 2026, and a message since: the screen is gone and
-// heldTurn draws the same rows in the conversation. What stayed here is the
-// pair of writes — setting one aside, and picking it back up.
+// Things you cannot act on. heldTurn draws them in the conversation; what lives
+// here are the writes — setting one aside, picking it back up, and saying it is
+// still waiting.
 
 // heldActHandler is the two things you can do: set something aside, and pick it
 // back up.
@@ -64,14 +62,12 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		// Setting one aside carries its own field rather than another `act`,
-		// the same way the ladder's four chips carry `why`. It keeps "an
-		// action button submits an act the server understands" true as a
-		// countable invariant, which render_test.go leans on.
+		// Its own field rather than another `act`, the way the ladder's chips
+		// carry `why`: it keeps "an action button submits an act the server
+		// understands" a countable invariant, which render_test.go leans on.
 		//
-		// Checked against the three anyway: the value arrives from a button
-		// this screen drew, and a value that was never offered is read the way
-		// a stranger's typing is read.
+		// Checked against the three anyway — a value that was never offered is
+		// read the way a stranger's typing is read.
 		state, ok := squirrel.ParseHeld(r.FormValue("aside"))
 		if !ok {
 			http.Redirect(w, r, back, http.StatusSeeOther)
@@ -82,13 +78,10 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		// The same way back the other four dispositions have always had.
-		//
-		// This route redirected with nothing at all, so a note set aside left
-		// the screen with no stamp, no hold and no offer to put it back — the
-		// one transition in the product where undo was not one press away, on
-		// a card that had simply gone. It was recoverable from /held all
-		// along; it did not look it.
+		// The same way back the other four dispositions have. This route used
+		// to redirect with nothing at all, so a note set aside left the screen
+		// with no offer to put it back — recoverable from the set-aside all
+		// along, and it did not look it.
 		answerWith(w, r, keepSaid(r.Context(), s, personID, append(
 			[]squirrel.Turn{
 				{Who: squirrel.SpeakerYou, Words: squirrel.HeldWords[state]},
@@ -97,15 +90,4 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 			pileTurn(r.Context(), s, opts, personID, 0, ""),
 		)), "/")
 	}
-}
-
-// heldChips is the three, for the card that offers them. The order is the
-// core's own: the two something outside you will end, then the one only you
-// can.
-func heldChips() []chipView {
-	out := make([]chipView, 0, len(squirrel.Held))
-	for _, state := range squirrel.Held {
-		out = append(out, chipView{Why: string(state), Word: squirrel.HeldWords[state]})
-	}
-	return out
 }

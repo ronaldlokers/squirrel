@@ -47,13 +47,9 @@ type CampfireConfig struct {
 	BotKey         string
 }
 
-// CoachConfig is the model layer's settings, gathered so that swapping
-// provider is a configuration change rather than an edit spread across the
-// codebase.
-//
-// BaseURL exists even though only one provider is used today. It is what makes
-// "gateway-shaped internally" true rather than aspirational: pointing this at a
-// gateway is a deployment change, not a code change.
+// CoachConfig is the model layer's settings, gathered so swapping provider is a
+// configuration change rather than an edit spread across the codebase. BaseURL
+// exists so pointing at a gateway is a deployment change, not a code change.
 type CoachConfig struct {
 	APIKey  string
 	BaseURL string
@@ -70,15 +66,12 @@ type CoachConfig struct {
 	// owner. Zero means a guest may not spend at all, which is also a
 	// reasonable choice.
 	GuestBudgetMicros int64
-	// HouseURL and HouseModel are the small model on the cluster, or empty for
-	// none. An OpenAI-shaped endpoint with no key, which is what ollama and
-	// llama.cpp both serve.
+	// HouseURL and HouseModel are the small model on the cluster, or empty. An
+	// OpenAI-shaped endpoint with no key, which ollama and llama.cpp both serve.
 	//
-	// It reads everything typed into the box and answers one question about
-	// it, which is a job worth doing in the house: it costs electricity in a
-	// cupboard rather than money abroad, so it may run on every capture where
-	// the hosted model may not. Empty is supported and is what shipped — the
-	// rule underneath needs nothing running at all.
+	// It reads everything typed into the box, which is worth doing in the house: it
+	// costs electricity rather than money, so it may run on every capture where the
+	// hosted model may not. Empty is supported.
 	HouseURL   string
 	HouseModel string
 }
@@ -97,13 +90,11 @@ type Config struct {
 	Postgres      PostgresConfig
 	Campfire      *CampfireConfig
 	// EveningAt is the time since local midnight the evening message and its
-	// once-a-day nudge fallback fire at — see schedule.go's once(). Named for
-	// what it now is: EVENING_AT is load-bearing twice, as both the clock
-	// trigger and the evening capture slot, and the quiet-day merge in once()
-	// exists because they are the same instant. It used to default to 08:00
-	// under the name DIGEST_AT, left over from the phase 2/3 morning digest
-	// this phase replaced with an evening message — deployed under that
-	// default, the evening message fired at breakfast.
+	// once-a-day nudge fallback fire at. Load-bearing twice — the clock trigger and
+	// the evening capture slot — which is why once() merges them on a quiet day.
+	//
+	// It used to default to 08:00 under the name DIGEST_AT, so the evening message
+	// fired at breakfast.
 	EveningAt      time.Duration
 	DigestLocation *time.Location
 	// PresenceSecret authenticates the arrival webhook. Empty means the route
@@ -113,34 +104,23 @@ type Config struct {
 	PresenceSecret string
 	// PresencePath is where the arrival webhook is mounted.
 	PresencePath string
-	// PresenceDelay is how long an arrival waits before nudging — "you have
-	// a coat on" — see PresenceOptions' own doc comment. Configurable rather
-	// than a boot.go constant because production and the integration suite
-	// genuinely want different values here: a couple of minutes is the
-	// point for a real arrival, but that would blow any test budget built to
-	// wait one out over a real socket.
+	// PresenceDelay is how long an arrival waits before nudging. Configurable rather
+	// than a constant because production and the integration suite want different
+	// values: a couple of minutes would blow any test budget.
 	PresenceDelay time.Duration
-	// WebIdentity is the screen's own sender string, and it is no longer an
-	// identity anybody authenticates with.
+	// WebIdentity is the screen's own sender string, and no longer an identity
+	// anybody authenticates with — the application does OIDC itself.
 	//
-	// It was: Authentik's forward-auth outpost filled a header, and the screen
-	// compared it to this. The application does OIDC itself since 25 August
-	// 2026, so what is left of this value is the one job the header never did
-	// — it is seeded as a `screen` identity so that captures already sitting
-	// in the spool at deploy time still resolve to their person when the drain
-	// picks them up.
-	//
-	// Empty means the screen is not mounted. Kept as that refusal because
-	// nothing already spooled may be orphaned by this change.
+	// What is left is the one job the header never did: it is seeded as a `screen`
+	// identity so captures already in the spool at deploy time still resolve to their
+	// person. Empty means the screen is not mounted.
 	WebIdentity string
 	// OIDC is the way in, or the zero value. Every field is required together;
 	// see OIDCConfig.
 	OIDC OIDCConfig
-	// WebOwnerSub is the owner's OIDC subject, seeded so that the first login
-	// lands on the person who already owns the pile rather than making a
-	// second one beside it. Empty is supported: without it the owner's first
-	// login creates a new person, which is correct for a fresh deployment and
-	// wrong for this one.
+	// WebOwnerSub is the owner's OIDC subject, seeded so the first login lands on the
+	// person who already owns the pile. Empty is supported: without it the first
+	// login creates a new person, correct for a fresh deployment.
 	WebOwnerSub string
 	// WebRequiredGroup is the Authentik group an account must be in to use
 	// Squirrel. Empty refuses the mount, and it is the only value in this
@@ -151,11 +131,9 @@ type Config struct {
 	// state and the default: with nowhere to put them the screen never offers
 	// a camera, exactly as it never offers to subscribe without a push key.
 	PhotoDir string
-	// PhotoCeilingBytes is where "the volume is filling" starts, in bytes, or
-	// zero for no ceiling — which is the default. Nothing is ever deleted on
-	// the strength of it: it exists so the volume stops filling in silence
-	// until a write fails, which is what it did before. The number is the
-	// volume's size, and only the person who provisioned it knows that.
+	// PhotoCeilingBytes is where "the volume is filling" starts, or zero for no
+	// ceiling. Nothing is ever deleted on the strength of it: it exists so the volume
+	// stops filling in silence until a write fails.
 	PhotoCeilingBytes int
 	// Coach is what the model layer needs, or empty. Empty is the default and a
 	// supported state: with no key the coach is never built, and the picker and

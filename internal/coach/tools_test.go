@@ -174,9 +174,6 @@ func TestDecideReadsThenChooses(t *testing.T) {
 	require.Equal(t, 3000, log.recorded[0].InTokens)
 }
 
-// The check the whole design rests on. A model that names a task it was never
-// shown has invented one, and inventing work is the failure this product
-// cannot ship.
 func TestDecideRefusesAThingItWasNeverShown(t *testing.T) {
 	f := &fakeFacts{work: []coach.Work{{ID: 7, Kind: "task", Text: "ring the vet"}}}
 	api := newToolAPI(t,
@@ -319,8 +316,6 @@ func TestTypicallyHandsBackAMeasuredDuration(t *testing.T) {
 	require.Equal(t, `{"minutes":10}`, told)
 }
 
-// Absent rather than zero. Zero is a measurement and this is the absence of
-// one, and a model told "0 minutes" will believe it.
 func TestTooFewRunsReachTheModelAsAnAbsence(t *testing.T) {
 	api := newToolAPI(t,
 		turnOf(call("a", "typically", map[string]any{"label": "put the bins out"})),

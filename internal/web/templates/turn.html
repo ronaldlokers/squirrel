@@ -1,43 +1,32 @@
 {{/* One turn, and the same markup whether it arrives with the page or as a
      fragment after a press. That sameness is the single rendering path, and it
      is the only thing keeping the server and the browser from growing two
-     descriptions of a card. */}}
+     descriptions of a card.
+
+     Everything you can press is behind `.Live`: a question from this morning is
+     a thing that was asked, not a thing to answer now. */}}
 {{define "turn"}}
 <div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal .Say .Cut}} wide{{end}}" id="turn-{{.ID}}">
-  {{/* The place's name, when this turn opens one. The thread has no <h1>, so
-       these are what heading navigation walks — see The One Title Rule. */}}
-  {{/* Buddy's face, where he starts speaking.
-       
-       Only Buddy has one. There is one person using this and he knows which
-       words are his; a profile picture on your own messages is furniture, and
-       the alignment and the fill already say it. What the conversation was
-       missing is not two avatars, it is one presence — the product is built
-       around a mascot who appeared nowhere in the conversation he was having.
-
-       The acorn rather than the whole mascot: this is the size DESIGN.md says
-       the acorn exists for, where the face is mush.
+  {{/* Buddy's face, where he starts speaking, and only his: a profile picture
+       on your own messages is furniture, and the alignment and the fill
+       already say whose words they are.
 
        Once per run, so consecutive turns read as one utterance. Hidden from
        the accessibility tree — a screen reader gets the speaker from the
-       turn's own words, and "acorn, acorn, acorn" down a conversation is the
-       poster on the wall being read out. */}}
-  {{if .Opens}}
-  {{/* Nothing drawn around it.
-       
-       The artwork carries the same heavy outline this system draws around
-       everything, so a disc behind it was a second outline on top of the
-       first — and side by side that read as a black mass beside bubbles made
-       of light cream. It is also the world's own language: DESIGN.md calls
-       this the mascot's sticker drawing, and a sticker has no plate under it.
+       words, and one repeated per turn is the poster on the wall read out.
 
-       The head-only artwork rather than the full character. An avatar is a
-       portrait, and artwork whose centre of mass is the head crops to a
-       portrait by itself; the version with a tail needed the crop to fight
-       its own composition. */}}
+       The head-only artwork, with nothing drawn around it: an avatar is a
+       portrait, and this drawing already carries the heavy outline everything
+       here has, so a disc behind it was a second outline on top of the first.
+       DESIGN.md calls it the mascot's sticker drawing, and a sticker has no
+       plate under it. */}}
+  {{if .Opens}}
   <span class="buddyface" aria-hidden="true">
     <img src="/static/buddy.png?v={{$.V}}" alt="" width="40" height="41">
   </span>
   {{end}}
+  {{/* The place's name, when this turn opens one. The thread has no <h1>, so
+       these are what heading navigation walks — see The One Title Rule. */}}
   {{if .Place}}<h2 class="turnplace">{{.Place}}</h2>{{end}}
   {{/* Buddy's words are not in a bubble, and yours are.
 
@@ -53,9 +42,9 @@
        "received". The first-run example is what teaches the grammar to somebody
        who has never seen it. See DESIGN.md, The Conversation. */}}
   <p class="{{if .Buddy}}said{{else}}bub{{end}}">{{.Words}}</p>
-  {{/* What this cost, on the reply that cost it and nowhere else. A running
-       total anywhere else would be a number you meet before you have asked for
-       anything, which is the rule the sheet's own lid was protecting. */}}
+  {{/* What this cost, on the reply that cost it and nowhere else: a running
+       total anywhere else is a number you meet before you have asked for
+       anything. */}}
   {{if .Cost}}<p class="cost">{{.Cost}}</p>{{end}}
 
   {{/* Search results, which are not cards.
@@ -80,17 +69,10 @@
   {{end}}
 
   {{range .Cards}}
-  {{/* A chore renders as the element the chores screen used, so the keys
-       pile.js binds and the rules the stylesheet already carries keep working
-       on it. The screen went; the thing on it did not. */}}
-  {{/* Always an article, and the chore-ness is a class: html/template cannot
-       put an action in a tag name, and the version that tried rendered nothing
-       at all. `article.chore` is what pile.js binds the chore keys to, so a
-       chore keeps them without the screen it used to be on. */}}
   {{/* Six kinds, six bodies. A note, a task, a chore, an appointment, a
        photograph and something set aside were one cream rectangle with
-       different words in it until 26 August 2026, so the kind was only knowable
-       by reading — which is the one thing a glance does not do.
+       different words in it, so the kind was knowable only by reading — which
+       is the one thing a glance does not do.
 
        The kind is a class rather than a tag: html/template cannot put an action
        in a tag name, and the version that tried rendered nothing at all.
@@ -100,9 +82,10 @@
          bordered, because a shape is what tells them apart at arm's length. */}}
     {{if eq .Kind "task"}}<span class="pagetab" aria-hidden="true"></span>{{end}}
     {{if eq .Kind "at"}}<span class="notch" aria-hidden="true"></span>{{end}}
-    {{/* The photograph is the note, and the words beside it are the caption —
-         the same order the pile's card draws them in. */}}
-    {{/* The card asks for the smaller copy and links to the whole one. A card
+    {{/* The photograph is the note and the words beside it are the caption, so
+         it draws first.
+
+         The card asks for the smaller copy and links to the whole one. A card
          is 260 pixels wide and the original is a photograph from a phone, so
          the card was downloading megabytes to draw a thumbnail; tapping it is
          how you get the real thing, which is also the only way to read
@@ -223,9 +206,6 @@
   </div>
   {{end}}
 
-  {{/* The five drawings. Only on the live edge, like every other control: a
-       question from this morning is a thing that was asked, not a thing to
-       answer now. */}}
   {{if and .Live .Faces}}
   <form class="faces" method="post" action="/mood">
     {{range .Faces}}

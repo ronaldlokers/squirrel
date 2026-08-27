@@ -5,17 +5,10 @@ import "strings"
 // Does this read as a question asked of Buddy?
 //
 // The floor under the whole reading path: no model, no network, no cluster.
-// It answers when there is no house model running and no key configured, which
-// is the configuration this product shipped with and still supports.
 //
-// It is deliberately narrow. Match's own rule applies here word for word —
-// "when in doubt the answer is always capture" — because the two failures are
-// not the same size. A question read as a thought is a note in the pile you
-// could have had answered, and there is a chip on the answer to fix it. A
-// thought read as a question is a thought dropped out of the pile, which is
-// the one failure this product does not have.
-//
-// So it says yes only when the sentence is doing nothing else.
+// Deliberately narrow, because the two failures are not the same size. A question
+// read as a thought is a note in the pile with a chip on the answer to fix it. A
+// thought read as a question is a thought dropped out of the pile.
 
 // asking are the openings that make a sentence a question without a question
 // mark. Every one of them is a thing you say to somebody rather than about
@@ -31,27 +24,18 @@ var asking = []string{
 	"remind me how", "tell me how",
 }
 
-// showing are the ways somebody asks to be shown one of their places without
-// asking a question at all.
+// showing are the ways somebody asks to be shown a place without asking a
+// question. "show chores" has no question mark and no asking opening, so it was
+// filed as a thought — twice in one minute, by somebody trying to see their
+// chores.
 //
-// "show chores" has no question mark and no asking opening, so it read as a
-// thought and was filed as one — twice, in the same minute, by somebody trying
-// to see their chores. The note that came back said "Kept.", which is the
-// product answering a request to look at something by writing it down.
-//
-// Narrow on purpose, and narrower than the openings above: this fires only
-// when a verb of showing is followed by the name of a place that exists. "show
-// me the chores" is a request; "show mum the photos" is a thought, and stays
-// one.
+// It fires only when a verb of showing is followed by a place that exists: "show
+// mum the photos" is a thought and stays one.
 var showing = []string{"show", "open", "list", "see", "view"}
 
-// somewhere are the words that name a place, as somebody would say them rather
-// than as the routes spell them.
-//
-// It is deliberately not doorNames: this is a rule about English, and the
-// screen's vocabulary is a rule about routes. They agree today and they are
-// allowed to stop agreeing — a place renamed on screen should not silently
-// change what sentence reaches Buddy.
+// somewhere are the words that name a place as somebody would say them.
+// Deliberately not doorNames: this is a rule about English and that is a rule
+// about routes, and they are allowed to stop agreeing.
 var somewhere = []string{
 	"pile", "task", "tasks", "chore", "chores", "agenda", "diary",
 	"kept", "set aside", "aside", "held", "calendar",
@@ -86,13 +70,9 @@ func LooksLikeAQuestion(text string) bool {
 		return false
 	}
 
-	// The escape hatch wins over everything, including this.
-	//
-	// A leading dot means "keep exactly this", and Match honours it by
-	// returning a capture — which is why asking Match alone is not enough
-	// here: a dotted question is a capture *and* ends in a question mark, so
-	// it fell through and was sent to be answered. Found by the test that says
-	// so, which is the only reason this line exists.
+	// The escape hatch wins over everything. A leading dot means "keep exactly this",
+	// and Match honours it by returning a capture — so asking Match alone is not
+	// enough: a dotted question is a capture and ends in a question mark.
 	if strings.HasPrefix(t, ".") {
 		return false
 	}
@@ -104,11 +84,8 @@ func LooksLikeAQuestion(text string) bool {
 		return false
 	}
 
-	// A question mark at the end, which is how most people ask one.
-	//
-	// At the end and not anywhere: "ring the vet? no, the dentist" is somebody
-	// thinking on the page, and the mark in the middle of it is punctuation
-	// rather than a request.
+	// A question mark at the end and not anywhere: "ring the vet? no, the dentist" is
+	// somebody thinking on the page.
 	if strings.HasSuffix(t, "?") {
 		return true
 	}

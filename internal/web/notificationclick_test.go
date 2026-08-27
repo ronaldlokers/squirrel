@@ -12,9 +12,9 @@ import (
 //
 // The worker has always meant to send you to the front door, and its comment
 // says so — but it only managed it when nothing was open. `focus()` raises a
-// window exactly as it was left, so a screen already open put you back on a
-// Buddy sheet from this morning or a card halfway through being triaged, which
-// is the opposite of "a page that says what is true now".
+// window exactly as it was left, so a screen already open put you back wherever
+// you last were — halfway up this morning's conversation — which is the
+// opposite of "a page that says what is true now".
 //
 // The handler is lifted out of sw.js and run in the page with the two things
 // it touches faked, because the alternative — a registered worker, a real push
@@ -70,7 +70,7 @@ func notificationClick(t *testing.T, c *cdp, at string, open bool) map[string]an
 func TestBrowserTappingANotificationReachesTheFrontDoor(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	got := notificationClick(t, c, "/pile?q=bins", true)
+	got := notificationClick(t, c, "/moods", true)
 
 	require.Equal(t, "/", got["ended"],
 		"the tap raised a window still sitting on %v", got["ended"])
@@ -91,19 +91,14 @@ func TestBrowserTappingANotificationDoesNotReloadTheFrontDoor(t *testing.T) {
 	require.Equal(t, float64(1), got["focused"])
 }
 
-// And with nothing open at all it still opens the front door, which is what it
-// always did.
 func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	got := notificationClick(t, c, "/pile", false)
+	got := notificationClick(t, c, "/moods", false)
 
 	require.Equal(t, []any{"opened /"}, got["went"])
 }
 
-// A leave-by notification lands on the fixed point it is about, not on the
-// front door.
-//
 // The front door was right while there was nowhere better to go, and its
 // reasoning is kept: a link to something already done is worse than a page
 // saying what is true now. A fixed point inside its leave-by window is the one
@@ -112,7 +107,7 @@ func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.
 func TestBrowserTappingALeaveByNotificationLandsOnTheFixedPoint(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	setup := `const DATA = { url: "/at/4" }; const AT = "/pile"; const OPEN = true;`
+	setup := `const DATA = { url: "/at/4" }; const AT = "/moods"; const OPEN = true;`
 	got, ok := c.eval(t, setup+runNotificationClick).(map[string]any)
 	require.True(t, ok)
 
@@ -121,8 +116,11 @@ func TestBrowserTappingALeaveByNotificationLandsOnTheFixedPoint(t *testing.T) {
 	require.Equal(t, float64(1), got["focused"])
 }
 
-// And a window already on that fixed point is left alone, exactly as the front
-// door is: navigating would reload it, and the slot on it may be half-typed.
+// And a window already on that URL is left alone, exactly as the front door is.
+//
+// The rule is about the URL rather than about "/", which is what this pins that
+// its sibling above cannot: the two are the same comparison, and a special case
+// for the front door would pass that one and fail this.
 func TestBrowserTappingItAgainDoesNotReloadTheFixedPoint(t *testing.T) {
 	c, _ := open(t, aPile())
 

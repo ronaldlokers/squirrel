@@ -64,28 +64,17 @@ func TestANewChoreNeedsAnIntervalItWasOffered(t *testing.T) {
 	require.Empty(t, f.chores)
 }
 
-// The form is last on the screen, after what you already have — the opposite
-// of an app that opens on an empty form.
+// How to make one is said when there is nothing there, which is when it is
+// worth knowing. Said over a list you already keep, it is nagging.
 func TestAnEmptyListSaysHowToMakeOne(t *testing.T) {
 	full := opened(t, &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "bins out", Active: true, Every: 14 * 24 * time.Hour, EveryDays: 14},
 	}}, "chores")
 	empty := opened(t, &fakeStore{}, "chores")
 
-	// The form went with the screen. What replaced it is the sentence — the
-	// dock already understands "every 2 weeks: descale the kettle" — and it is
-	// said when there is nothing there, which is when it is worth knowing.
-	// Saying it over a list you already keep is nagging.
+	// The sentence rather than a form: the dock already understands
+	// "every 2 weeks: descale the kettle".
 	require.Contains(t, empty, "every 2 weeks: descale the kettle")
 	require.NotContains(t, full, "descale the kettle")
 	require.Contains(t, full, "bins out")
-}
-
-func indexOf(body, sub string) int {
-	for i := 0; i+len(sub) <= len(body); i++ {
-		if body[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }

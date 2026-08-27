@@ -15,14 +15,8 @@ import (
 // produces is a **proposal**, never a rewrite. Nothing here can change a word
 // you typed.
 //
-// Which is decision 8 stated as a property rather than an intention: Split
-// returns strings to a caller that must render them and wait for a press. It
-// has no way to write anything.
-
-// Whether a note is worth asking about is not a model's question. Overwhelmed()
-// already answers it — a brain dump and an overwhelm turn are the same shape,
-// which is the point — so the same rule gates both and there is one definition
-// of "this is several things" in the product.
+// It is a property rather than an intention: Split returns strings to a caller
+// that must render them and wait for a press, and has no way to write anything.
 
 // mostPieces is the ceiling. Four, because a note that is really six things is
 // a note where the splitting is the smaller problem, and because four presses
@@ -71,15 +65,15 @@ var splitTool = []map[string]any{
 
 // Split proposes the separate things in one note, or says it cannot.
 //
-// Luna, not Terra. Finding the seams in a sentence someone already wrote is
-// not a judgement call — the judgement was theirs, when they typed it — and
-// the routing matrix says so at the call site rather than through a classifier.
+// The fast tier: finding the seams in a sentence somebody already wrote is not a
+// judgement call, because the judgement was theirs when they typed it.
 func (p *Provider) Split(ctx context.Context, personID int64, text string) ([]string, error) {
 	text = strings.TrimSpace(text)
+	// The same rule that recognises the overwhelm turn: a brain dump and an
+	// overwhelm turn are the same shape, so there is one definition of "this is
+	// several things". Free, which is what keeps this off the capture path's
+	// cost curve entirely.
 	if !Overwhelmed(text) {
-		// The same rule that recognises the overwhelm turn, because a brain
-		// dump and an overwhelm turn are the same shape. Free, and it is what
-		// keeps this off the capture path's cost curve entirely.
 		return nil, ErrUnavailable
 	}
 	now := p.now()
@@ -87,8 +81,6 @@ func (p *Provider) Split(ctx context.Context, personID int64, text string) ([]st
 	if err != nil {
 		return nil, ErrUnavailable
 	}
-	// The gate is given back whichever way this returns. `defer` rather
-	// than a release at the end, because the end is not the only exit.
 	defer permit.Release()
 
 	_, calls, in, out, err := p.completionWithTools(ctx, permit, p.Fast, []chatMessage{

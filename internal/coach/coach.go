@@ -1,29 +1,19 @@
 // Package coach is the one place a model is allowed to speak.
 //
-// On screen it is called **Buddy**, and the line is worth stating because it
-// is a line about authorship rather than about features: **anything a model
-// wrote is Buddy's, and anything the rules produced is Squirrel's.** The
-// picker's own clause, the ladder's fixed sentences, the nudge that fires
-// because a chore is due — those are Squirrel. The clause a model chose, the
-// steps it broke a thing into, the wording it gave a nudge, and every word in
-// the sheet are Buddy.
+// On screen it is called Buddy, and the line is about authorship: anything a
+// model wrote is Buddy's, anything the rules produced is Squirrel's. The
+// picker's clause, the ladder's fixed sentences, the nudge that fires because a
+// chore is due — those are Squirrel.
 //
-// The package keeps its name. `internal/coach` is what this *is* — the seam a
-// model reaches the product through — and Buddy is what it is *called*.
+// Deliberately small and deliberately optional. Everything here has a
+// deterministic answer underneath it, and the zero value is NoCoach, which
+// answers "not available" to everything: with no key, no network, or a spent
+// budget the product works as it did before this package existed. Every caller
+// must be written so that is true.
 //
-// It is deliberately small and deliberately optional. Everything it does has a
-// deterministic answer underneath it — the picker chooses, the ladder answers
-// "I can't start", the asking windows decide when to interrupt — and those
-// answers are not replaced by this package. They are the floor it stands on.
-//
-// The zero value is NoCoach, which answers "not available" to everything. That
-// is not a degraded mode to apologise for: with no key configured, no network,
-// or a month's budget spent, the product works exactly as it did before this
-// package existed. Every caller must be written so that is true.
-//
-// Nothing here imports internal/squirrel, and internal/squirrel does not import
-// this. The wiring happens in internal/boot, the same way transports are wired,
-// so the core cannot grow a dependency on a model being reachable.
+// Nothing here imports internal/squirrel and internal/squirrel does not import
+// this; internal/boot wires them, so the core cannot grow a dependency on a
+// model being reachable.
 package coach
 
 import (
@@ -32,24 +22,15 @@ import (
 	"time"
 )
 
-// ErrUnavailable is what every method returns when there is no coach: no key,
-// no network, the budget spent, or the answer failed its shape check.
-//
-// Callers do not distinguish between those. The question a caller asks is "did
-// I get something usable", and the answer is either a reply or this — which is
-// why it is one error rather than a taxonomy nobody would branch on.
+// ErrUnavailable is what every method returns when there is no coach: no key, no
+// network, the budget spent, or an answer that failed its shape check. One error
+// rather than a taxonomy, because the caller's only question is "did I get
+// something usable".
 var ErrUnavailable = errors.New("no coach available")
 
-// And these say which, for the log and for nobody else.
-//
-// The single sentinel above is right and stays: a caller's question is "did I
-// get something usable", and a taxonomy nobody branches on is a taxonomy
-// nobody should carry. But the person who runs this does branch on it, at
-// three in the morning, and every reason collapsing to one line is how Buddy
-// stays broken for a fortnight while its replies quietly get blander.
-//
-// A model id that has been retired reads exactly like a network blip
-// otherwise, and the two want opposite things done about them.
+// And these say which, for the log and for nobody else. A retired model id reads
+// exactly like a network blip otherwise, and the two want opposite things done
+// about them.
 var (
 	// ErrProviderRefused is the provider answering, and saying no: a status
 	// that is not 200. A retired model, a revoked key, a rate limit.
@@ -77,11 +58,9 @@ func Why(err error) string {
 	}
 }
 
-// Now is the only context sent on every call, and it is small on purpose.
-//
-// Capacity is derived rather than raw: the model is told "ok" or "low", never
-// "wiped" and never a history. That is the difference between a signal and a
-// diagnosis, and it is the line the check-in's own migration draws.
+// Now is the only context sent on every call. Capacity is derived: the model is
+// told "ok" or "low", never "wiped" and never a history — a signal rather than a
+// diagnosis.
 type Now struct {
 	// Clock is wall time, "15:04". The model has no clock of its own.
 	Clock string
@@ -92,21 +71,14 @@ type Now struct {
 	// FreeUntil is minutes until the next fixed point, or nil when nothing is
 	// coming. Nil is not "plenty of time" — it is "nothing was typed".
 	FreeUntil *int
-	// LandedBadly is the last few answers this person said did not land, in
-	// the model's own words, so it can be shown what does not work here rather
-	// than told in an instruction nobody can check.
-	//
-	// Examples, never a count: how often is a fact about the person, and rule
-	// 2 forbids one on any surface — including this one, which the person
-	// never reads.
+	// LandedBadly is the last few answers this person said did not land, in the
+	// model's own words. Examples, never a count.
 	LandedBadly []string
-	// Knowing is what a weekly read of the record concluded about how this
-	// person works. Shown to the model and never to the person mid-sentence —
-	// see knowsYou.
+	// Knowing is what a weekly read of the record concluded about how this person
+	// works. Shown to the model and never to the person mid-sentence — see knowsYou.
 	//
-	// Sentences rather than fields, for the reason the table gives: a schema
-	// decides in advance what is worth knowing about somebody, and the useful
-	// observations are the ones nobody thought to add a column for.
+	// Sentences rather than fields: a schema decides in advance what is worth knowing
+	// about somebody.
 	Knowing []string
 }
 
@@ -133,14 +105,11 @@ type Turn struct {
 	// Recent is the last few exchanges, oldest first, and it is bounded by the
 	// caller rather than by this package. See Window.
 	Recent []Exchange
-	// CanOpen says the surface that asked can draw one of the places. The
-	// screen can — a place is cards in a turn there, which is exactly what the
-	// menu draws. Chat cannot: a place there would be the list the guard
-	// exists to refuse.
+	// CanOpen says the surface that asked can draw one of the places. Chat cannot: a
+	// place there would be the list the guard exists to refuse.
 	//
-	// The surface states it rather than this package inferring it from Kind,
-	// because what a surface can draw is a fact about the surface and nothing
-	// here can know it.
+	// The surface states it rather than this package inferring it from Kind, because
+	// what a surface can draw is a fact about the surface.
 	CanOpen bool
 }
 
@@ -152,12 +121,9 @@ type Exchange struct {
 }
 
 // Window is how much conversation is carried between calls, and how long it
-// survives.
-//
-// Three exchanges and half an hour, both small deliberately. A coach that
-// remembers the whole day grows a prompt through the day, which is the cost
-// curve this architecture exists to avoid — and a coach that remembers nothing
-// cannot hear "no, something else".
+// survives. Three exchanges and half an hour: a coach that remembers the whole
+// day grows a prompt through the day, and one that remembers nothing cannot hear
+// "no, something else".
 const (
 	WindowSize = 3
 	WindowAge  = 30 * time.Minute
@@ -179,20 +145,16 @@ type Reply struct {
 	// Propose is a thing the coach wants to do and may not do on its own, or
 	// nil. The caller renders it as one press and applies it only if pressed.
 	Propose *Proposal
-	// Open is one of the places, when the coach asked for it to be shown, and
-	// empty otherwise. The caller draws it; this package neither knows nor
-	// cares what a place looks like.
-	//
-	// It needs no permission because it changes nothing. Opening the tasks is
-	// the same act as pressing the menu, and the worst a wrong one costs is a
-	// scroll.
+	// Open is one of the places, when the coach asked for it to be shown. The caller
+	// draws it. It needs no permission because it changes nothing — the worst a wrong
+	// one costs is a scroll.
 	Open string
 }
 
 // Coach is the surface the product asks. Methods are added as the phases that
 // need them land; each one answers ErrUnavailable from NoCoach.
 type Coach interface {
-	// Answer is a conversational turn: the sheet, `!coach`, and the overwhelm
+	// Answer is a conversational turn: the screen, `!coach`, and the overwhelm
 	// turn.
 	Answer(ctx context.Context, t Turn) (Reply, error)
 	// Decide is what to do now. It reads through tools and hands back one

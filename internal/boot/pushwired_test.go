@@ -8,8 +8,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The scheduler is given a way to push.
-//
 // It was not. `pusher` was written, tested, and never called: `SchedulerOptions`
 // has a `Push` field, nothing in boot ever set it, and `MomentTick`'s
 // `if s.opts.Push != nil` was therefore false on every tick since the feature

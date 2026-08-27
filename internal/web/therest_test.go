@@ -1,6 +1,7 @@
 package web
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -144,29 +145,47 @@ func TestNoChipInTheConversationIsALink(t *testing.T) {
 	f.checkin = fresh()
 	body := opened(t, f, "tasks")
 
-	require.NotContains(t, body, `class="chip" href="/?open`)
-	require.NotContains(t, body, `href="/pile`)
+	// Positively, and by the tag each chip is written with. Asserted as an
+	// absence of two dead URLs until now, which is a check that passes because
+	// the strings no longer exist anywhere rather than because the rule holds.
+	tags := regexp.MustCompile(`<([a-z]+) class="chip`).FindAllStringSubmatch(body, -1)
+	require.NotEmpty(t, tags, "no chips rendered, so this measured nothing")
+	for _, tag := range tags {
+		// A label is the picker's own radio, which is a press too.
+		require.Contains(t, []string{"button", "label"}, tag[1],
+			"a chip in the conversation is a <%s> rather than a press", tag[1])
+	}
 }
 
-// The dock covers the end of the page unless the page leaves room for it.
+// The room for the dock is reserved on the column and not on `.thread`.
 //
-// The clearance was on `.thread`, and `.thread` is not the last thing on the
-// page: the two chips and the way out sit below it, outside its padding. On a
-// phone they were behind the dock with no way to scroll them clear — reported
-// from a phone, and invisible on a laptop where the page is short enough that
-// nothing needs scrolling at all.
-func TestThePageLeavesRoomForTheDock(t *testing.T) {
+// `.thread` is not the last thing on the page — whatever sits below it is
+// outside its padding, and on a phone that means behind the dock with no way
+// to scroll it clear. Reported from a phone, and invisible on a laptop where
+// the page is short enough that nothing needs scrolling at all.
+//
+// The measurement is TestBrowserTheEndOfThePageClearsTheDock. This is the
+// narrower claim that browser cannot make: which element carries the reserve.
+func TestTheDockClearanceIsOnTheColumnAndNotTheThread(t *testing.T) {
 	css, err := staticFS.ReadFile("static/pile.css")
 	require.NoError(t, err)
 	sheet := string(css)
 
 	require.Contains(t, sheet, "padding-bottom: var(--dockspace",
-		"the column reserves no room for the dock")
-	require.NotContains(t, sheet, "padding: 22px 22px 132px",
-		"the clearance is back on .thread, which is not the last thing on the page")
-	require.NotContains(t, sheet, "padding: 18px 14px 128px")
+		"nothing reserves room for the dock")
+	require.Contains(t, ruleFor(t, sheet, "main.threadpage"), "--dockspace",
+		"the column does not carry the reserve")
+	require.NotContains(t, ruleFor(t, sheet, ".thread"), "--dockspace",
+		"the reserve is back on .thread, which is not the last thing on the page")
 }
 
-// That the reserve follows the slot as it grows is measured in a browser —
-// see TestBrowserTheReserveFollowsTheSlot. A source-text assertion passed with
-// the observer disabled, because the word was still in the file.
+// ruleFor is one selector's declarations. The whole sheet is the wrong thing
+// to search: a check that only asks whether some string is absent from 1600
+// lines passes for every reason including the one where the rule moved.
+func ruleFor(t *testing.T, css, selector string) string {
+	t.Helper()
+	at := strings.Index(css, "\n  "+selector+" {")
+	require.Positive(t, at, "%s has no rule at all", selector)
+	body := css[at+len(selector)+5:]
+	return body[:strings.Index(body, "}")]
+}

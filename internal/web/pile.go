@@ -1,16 +1,15 @@
 package web
 
 import (
+	"fmt"
+	"net/http"
 	"strconv"
 
-	"fmt"
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
-	"net/http"
 )
 
-// The deck shows one card. The second row is never rendered; it is read only so
-// that "is there more" can be answered without a count, which is the same
-// device OpenItems uses and for the same reason.
+// pileLimit is one card. The second row is read but never rendered, so "is there
+// more" can be answered without a count — the same device OpenItems uses.
 const pileLimit = 1
 
 // Mux is the routing surface the screen needs from the shared server.
@@ -19,15 +18,16 @@ type Mux interface {
 	Post(pattern string, h http.HandlerFunc)
 }
 
-// Mount registers the screen, or refuses. A missing gate is not a
-// misconfiguration to warn about and continue past: the pile is every thought
-// you have ever had at this bot.
+// Mount registers the screen, or refuses. A missing gate is not something to
+// warn about and continue past: the pile is every thought you have ever had at
+// this bot.
+//
+// Every write below carries both checks. The identity says who is asking;
+// sameOrigin says which page asked.
 func Mount(m Mux, s Store, opts Options) error {
-	// Refused rather than defaulted, and it is the only value here that would
-	// be dangerous to default. Everything else missing degrades to less
-	// product — no coach, no camera, no push. An empty required group would
-	// degrade to more access, which is the one direction a default must never
-	// go.
+	// Refused rather than defaulted, and the only value here where a default would be
+	// dangerous: everything else missing degrades to less product, and an empty
+	// required group would degrade to more access.
 	if opts.RequiredGroup == "" {
 		return fmt.Errorf("refusing to mount the pile: WEB_REQUIRED_GROUP is empty")
 	}
@@ -52,8 +52,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
 	m.Get("/{$}", guard(opts, threadHandler(s, opts)))
-	// The slot. Behind the origin check like every other write here: the
-	// identity says who is asking, sameOrigin says which page asked.
+	// The slot.
 	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
 	// A door being pressed. A POST rather than a link — see openHandler.
 	m.Post("/open", guard(opts, sameOrigin(openHandler(s, opts))))
@@ -65,8 +64,7 @@ func Mount(m Mux, s Store, opts Options) error {
 		m.Get("/photo/{id}/thumb", guard(opts, thumbHandler(s, opts)))
 	}
 	m.Post("/mood", guard(opts, sameOrigin(threadMoodHandler(s, opts))))
-	// The one thing's three answers. Behind the origin check like every other
-	// write here.
+	// The one thing's three answers.
 	m.Post("/now/act", guard(opts, sameOrigin(nowActHandler(s, opts))))
 	// I can't start. Its own route rather than a fourth act, because it is the
 	// one answer that is about you rather than about the thing.
@@ -77,8 +75,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.PushKey != "" {
 		m.Post("/push/subscribe", guard(opts, sameOrigin(pushSubscribeHandler(s, opts))))
 	}
-	// Both writes carry the origin check as well as the identity one: the
-	// identity says who is asking, sameOrigin says which page asked.
 	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
 	// Starting fresh, when Buddy offers you back a run you were part way
 	// through. Its other answer — carry on — is an ordinary door press and
@@ -87,8 +83,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Triage, in the conversation: skipping one, and changing your mind.
 	m.Post("/pile/later", guard(opts, sameOrigin(laterHandler(s, opts))))
 	m.Post("/pile/undo", guard(opts, sameOrigin(undoHandler(s, opts))))
-	// The three questions a note can be asked, rather than the three verbs
-	// that end it. Each reuses the shape the chores already have.
+	// The three questions a note can be asked, rather than the three verbs that
+	// end it. Each reuses the shape the chores already have, and each arrives
+	// behind /pile/more — see moreHandler for why they are a turn rather than a
+	// panel.
 	m.Post("/pile/often", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askHowOften("/pile/chore",
 			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"}, "", "", "")
@@ -103,8 +101,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	// is a thing you are finding; this is the moment it becomes a thing you are
 	// deciding about. See findOpenHandler.
 	m.Post("/find/open", guard(opts, sameOrigin(findOpenHandler(s, opts))))
-	// The three questions a note can be asked, behind one press. See
-	// moreHandler for why they are a turn rather than a panel.
 	m.Post("/pile/more", guard(opts, sameOrigin(moreHandler(s, opts))))
 	m.Post("/pile/why", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askWhyNot(it.ID)
@@ -115,10 +111,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// asking, and keeping what was asked for — because they are the only two
 	// things you can do to a proposal.
 	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
-	// Buddy. A page until 25 August 2026, and turns since: the sheet brought a
-	// conversation with it because there was not one to join, and there is
-	// one now. Closing went with it — you stop talking, the way you stop
-	// talking to anyone.
+	// Buddy, as turns rather than a page of his own: there is a conversation to
+	// join now, so closing went with it. You stop talking.
 	m.Post("/buddy/ask", guard(opts, sameOrigin(coachAskHandler(s, opts))))
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
@@ -143,11 +137,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// A proposal, applied because it was pressed. Four things and no more —
 	// see coachDoHandler for why it is a switch rather than a dispatcher.
 	m.Post("/buddy/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
-	// It was /coach, then /buddy, and now it is the conversation. A bookmark
-	// that dies quietly is worse than a redirect nobody notices — the same
-	// reasoning /pile/chores already gets, and the same status. The query
-	// string is dropped rather than carried: nothing at the other end reads
-	// one any more.
+	// It was /coach, then /buddy, and now it is the conversation. A bookmark that
+	// dies quietly is worse than a redirect nobody notices. The query string is
+	// dropped: nothing at the other end reads one any more.
 	for _, gone := range []string{"/coach", "/buddy"} {
 		m.Get(gone, guard(opts, func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusMovedPermanently)
@@ -156,10 +148,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// A step finished, or a sequence thrown away. One route because they are
 	// the only two things you can do to a breakdown.
 	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))
-	// What you cannot act on. Its own page rather than a fourth door: see
-	// held.go for why home does not carry it.
-	// What is coming, and one of them. The notification lands on the second:
-	// see sw.js, and DESIGN.md for what that replaced.
+	// One fixed point, as a real page: a notification sent yesterday is still
+	// on a lock screen, and tapping it has to land somewhere. See sw.js.
 	m.Get("/at/{id}", guard(opts, atOneHandler(s, opts)))
 	// One fixed point, drawn into the conversation. See atOpenHandler.
 	m.Post("/at/open", guard(opts, sameOrigin(atOpenHandler(s, opts))))
@@ -168,15 +158,13 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/at/make", guard(opts, sameOrigin(atMakeHandler(s, opts))))
 	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
 	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
-	// The page went on 25 August 2026 — what you set aside is a message now,
-	// reached from the pile's turn. Setting one aside and picking it back up
-	// stayed, and both answer with a turn. See elsewhere.go.
+	// Setting something aside and picking it back up. What you set aside is a
+	// message now — see elsewhere.go.
 	m.Post("/held/act", guard(opts, sameOrigin(heldActHandler(s, opts))))
 	// How you have been, and only when asked for by name. Nothing links here
 	// except the check-in you just answered.
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
-	// Stopping. No store, on purpose: a route that cannot read cannot start
-	// keeping score of how much you did before you pressed it.
+	// Stopping. It reads nothing and counts nothing; it forgets one row.
 	m.Get("/enough", guard(opts, enoughHandler(s, opts)))
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
 	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
@@ -190,24 +178,19 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 	}))
-	// Outside the guard, like the worker below and for the same reason: a
-	// browser fetches a manifest without the cookies that carry the identity,
-	// and one that answers 403 leaves an installed app with no icon and no
-	// explanation. It names the app and lists four PNGs — there is nothing in
-	// it to protect.
-	// The way in, and the three routes that work it. Outside the guard on
-	// purpose and necessarily: a person with no session has to be able to get
-	// one.
+	// The way in, and the three routes that work it. Outside the guard
+	// necessarily: a person with no session has to be able to get one.
 	//
-	// Both writes still carry the origin check. It is a weaker claim here than
-	// elsewhere — there is no session yet to ride on — but a cross-site POST
-	// to /auth/in is a login started by somebody else's page, and a cross-site
-	// POST to /auth/out signs you out of your own notes from a page you were
-	// only reading.
+	// Both writes still carry the origin check. Weaker here — there is no
+	// session to ride on — but a cross-site POST to /auth/out signs you out of
+	// your own notes from a page you were only reading.
 	m.Get("/auth", gateHandler())
 	m.Post("/auth/in", sameOrigin(beginHandler(opts)))
 	m.Get("/auth/callback", backHandler(opts))
 	m.Post("/auth/out", sameOrigin(outHandler(opts)))
+	// Outside the guard, like the worker below: a browser fetches a manifest
+	// without the cookies that carry the identity, and one that answers 403
+	// leaves an installed app with no icon. There is nothing in it to protect.
 	m.Get("/manifest.webmanifest", manifestHandler())
 	// Not behind the guard: a browser fetches the worker without the cookies
 	// that carry the identity, and a worker that 302s to a login page is a
@@ -218,11 +201,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	return nil
 }
 
-// splittable reports whether the note on the card is worth asking about.
-//
-// A free check, and it is what keeps a model off every note in the pile: the
-// press is only drawn on the ones that look like several things, so the
-// expensive part never happens for the ordinary ones.
+// splittable reports whether the note is worth asking about. A free check, and it
+// is what keeps a model off every note in the pile.
 func splittable(opts Options, text string) bool {
 	return opts.Split != nil && opts.Splittable != nil && opts.Splittable(text)
 }

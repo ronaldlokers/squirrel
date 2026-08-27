@@ -1,6 +1,7 @@
 package squirrel
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -57,16 +58,7 @@ func TestItSaysTheNoteIsKeptBeforeItSaysWhatIsMissing(t *testing.T) {
 	require.Contains(t, m.Text, "IMG_5991.jpeg", "it does not say which note it means")
 	require.Contains(t, m.Text, "the camera on the pile",
 		"it names what is missing without saying where the picture would go")
-	require.Less(t, indexOf(m.Text, "Kept"), indexOf(m.Text, "not the photograph"),
+	require.Less(t, strings.Index(m.Text, "Kept"), strings.Index(m.Text, "not the photograph"),
 		"it leads with what is missing rather than with what was kept")
 	require.Empty(t, m.Actions, "nothing here is a thing to press")
-}
-
-func indexOf(haystack, needle string) int {
-	for i := 0; i+len(needle) <= len(haystack); i++ {
-		if haystack[i:i+len(needle)] == needle {
-			return i
-		}
-	}
-	return -1
 }

@@ -11,10 +11,8 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Coming back, Buddy says where you got to before anything else.
-//
-// Losing your place is the failure this product is built around. Until
-// 26 August 2026 the conversation opened as if nothing had been happening.
+// Losing your place is the failure this product is built around, and the
+// conversation used to open as if nothing had been happening.
 func TestBuddyOffersBackWhereYouGotTo(t *testing.T) {
 	f := &fakeStore{
 		checkin: fresh(),
@@ -89,7 +87,6 @@ func TestAnsweringACardKeepsYourPlace(t *testing.T) {
 		"deciding on a note did not remember where you got to")
 }
 
-// Starting fresh forgets it, and touches nothing else.
 func TestStartingFreshForgetsTheRun(t *testing.T) {
 	f := &fakeStore{run: squirrel.Run{Place: squirrel.RunPile}, hasRun: true,
 		items: []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)}}

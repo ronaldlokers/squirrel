@@ -9,13 +9,6 @@ import (
 )
 
 // The floor under the reading path: no model, no network, no cluster.
-//
-// Deliberately narrow. Match's own rule applies word for word — when in doubt
-// the answer is always capture — because the two failures are not the same
-// size. A question read as a thought is a note in the pile you could have had
-// answered, and there is a chip on the answer to fix it. A thought read as a
-// question is a thought dropped out of the pile, which is the one failure this
-// product does not have.
 
 func TestAQuestionMarkAtTheEndIsAQuestion(t *testing.T) {
 	require.True(t, squirrel.LooksLikeAQuestion("what should I do about the tax thing?"))
@@ -57,9 +50,6 @@ func TestAThoughtThatStartsLikeAQuestionIsStillAThought(t *testing.T) {
 	}
 }
 
-// A command is never a question. The grammar has already claimed these and
-// answering them with a model would be answering something the product knows
-// how to do itself.
 func TestACommandIsNeverAQuestion(t *testing.T) {
 	for _, command := range []string{
 		"!find boiler", "!at 14:30 dentist", "!notes", "!help",
@@ -74,7 +64,6 @@ func TestTheEscapeHatchIsNeverAQuestion(t *testing.T) {
 	require.False(t, squirrel.LooksLikeAQuestion(".what should I do?"))
 }
 
-// Nothing is not a question.
 func TestNothingIsNotAQuestion(t *testing.T) {
 	require.False(t, squirrel.LooksLikeAQuestion(""))
 	require.False(t, squirrel.LooksLikeAQuestion("   "))

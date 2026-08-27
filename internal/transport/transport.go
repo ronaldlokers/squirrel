@@ -11,9 +11,10 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Sink and Mount are declared here, not shared with the core. Go satisfies
-// interfaces structurally, so squirrel's types fit these without either
-// package importing the other's declaration.
+// Sink and Mount are declared here rather than shared with the core: Go
+// satisfies interfaces structurally, so squirrel's types fit them without
+// either package importing the other's declaration.
+
 type Sink interface {
 	Accept(ctx context.Context, c squirrel.Capture) squirrel.Outcome
 }

@@ -12,14 +12,12 @@ import (
 
 // The wire format, which is the OpenAI chat completions shape.
 //
-// Chat completions rather than anything newer on purpose: it is the shape every
-// gateway and every compatible provider implements, which is what makes
-// COACH_BASE_URL a real escape hatch rather than a decorative one. Nothing in
-// this product needs a feature that only the newer endpoint has.
+// Chat completions rather than anything newer: it is the shape every gateway and
+// compatible provider implements, which is what makes COACH_BASE_URL a real
+// escape hatch. Nothing here needs a feature only the newer endpoint has.
 //
-// Hand-rolled against net/http, like the push sender and the Campfire client
-// before it. A provider SDK would be a third dependency, a release cadence, and
-// a surface far larger than the four fields actually used.
+// Hand-rolled against net/http. A provider SDK would be a dependency, a release
+// cadence, and a surface far larger than the four fields actually used.
 
 // maxOutput caps what the model may produce. The guard refuses anything over
 // 400 characters anyway; capping here means an ignored prompt costs a fraction
@@ -37,12 +35,9 @@ const maxToolOutput = 600
 // for gpt-5.6-luna in /v1/chat/completions. To use function tools, use
 // /v1/responses or set reasoning_effort to 'none'."
 //
-// It is a real cost and worth naming rather than burying: the deep model does
-// its deciding without extended reasoning. The alternative is /v1/responses,
-// which buys reasoning back and spends the portability that made
-// COACH_BASE_URL worth having. This is the cheap fix; the endpoint question is
-// left open, because a coach that answers plainly beats one that reasons and
-// 400s.
+// So the deep model does its deciding without extended reasoning. The
+// alternative, /v1/responses, buys reasoning back and spends the portability
+// that made COACH_BASE_URL worth having.
 //
 // Sent only alongside tools, so a plain turn's request is unchanged and a
 // provider that has never heard of the field is never shown it.
@@ -97,16 +92,11 @@ type chatResponse struct {
 	} `json:"error"`
 }
 
-// completion is one call. It returns what was said and what it cost in tokens.
+// completion is one call, returning what was said and what it cost in tokens.
 //
-// Every failure is wrapped in ErrUnavailable, because that is the only
-// distinction a caller makes: either there is something usable to show, or the
-// deterministic answer is used. A taxonomy of failures here would be a
-// taxonomy nobody branches on.
-//
-// The detail is kept in the wrapped message all the same, for the log. "No
-// coach available" in a log line at three in the morning is not an answer to
-// anything.
+// Every failure is wrapped in ErrUnavailable, the only distinction a caller
+// makes. The detail is kept in the wrapped message for the log: "no coach
+// available" at three in the morning is not an answer to anything.
 func (p *Provider) completion(ctx context.Context, permit Permit, model string, messages []chatMessage) (string, int, int, error) {
 	text, _, in, out, err := p.completionWithTools(ctx, permit, model, messages, nil)
 	return text, in, out, err
@@ -114,22 +104,18 @@ func (p *Provider) completion(ctx context.Context, permit Permit, model string, 
 
 // completionWithTools is the same call with tools offered.
 //
-// The output cap is lifted for a tool round, because a tool call's arguments
-// are output tokens too and a cap sized for two sentences of prose truncates
-// them into unparseable JSON. It is still bounded — the round trips are capped
-// above, which is the ceiling that actually protects the budget.
 // The permit is unused and that is the point: it cannot be produced without
 // asking the month's budget first, so no paid call can be made without the
 // question having been put. See Budget.Ask.
 func (p *Provider) completionWithTools(ctx context.Context, _ Permit, model string, messages []chatMessage, tools []map[string]any) (string, []toolCall, int, int, error) {
-	cap := maxOutput
+	outputCap := maxOutput
 	if len(tools) > 0 {
-		cap = maxToolOutput
+		outputCap = maxToolOutput
 	}
 	asked := chatRequest{
 		Model:               model,
 		Messages:            messages,
-		MaxCompletionTokens: cap,
+		MaxCompletionTokens: outputCap,
 		Tools:               tools,
 	}
 	if len(tools) > 0 {

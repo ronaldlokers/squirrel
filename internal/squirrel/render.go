@@ -7,18 +7,13 @@ import (
 	"time"
 )
 
-// NotesMessage renders a numbered list of notes — the pile, or the results of
-// a search.
+// NotesMessage renders a numbered list of notes — the pile, or search results.
 //
-// `more` is a bool rather than a count, and that is the no-counting rule
-// expressed in the signature: this function could not render a total if a later
-// author wanted one, because the number never reaches it. A count of untriaged
-// notes beside an implied target of zero is the accumulating mechanism this
-// project bans.
+// `more` is a bool rather than a count: the number never reaches this function,
+// so it could not render a total.
 //
-// No buttons. The pile is answered by typing a number — `done 2`, `keep 2`,
-// `drop 2` — and a twenty-line list cannot carry a button per line anyway;
-// phase 3 capped actions at twelve for exactly that reason.
+// No buttons. The pile is answered by typing a number, and a twenty-line list
+// cannot carry a button per line — actions are capped at twelve.
 func NotesMessage(items []Item, more bool) Message {
 	if len(items) == 0 {
 		return Message{Text: "Nothing in the pile."}
@@ -34,15 +29,9 @@ func NotesMessage(items []Item, more bool) Message {
 	return Message{Text: strings.TrimRight(b.String(), "\n")}
 }
 
-// TasksMessage is what you decided, numbered so `done 2` can name one.
-//
-// The numbers are how you point at a task and nothing else. The last of them
-// happens to equal how many there are, which is true of any numbered list and
-// is why the list is capped and says "…and more" rather than reporting a
-// total: what is refused is a number that means "how much is outstanding".
-//
-// Nothing decided is stated plainly and nothing is suggested. An empty task
-// list is a normal state, not a failure to set up.
+// TasksMessage is what you decided, numbered so `done 2` can name one. The
+// numbers point at a task; the list is capped and says "…and more" rather than
+// reporting a total.
 func TasksMessage(items []Item, more bool) Message {
 	if len(items) == 0 {
 		return Message{Text: "Nothing decided."}
@@ -59,31 +48,13 @@ func TasksMessage(items []Item, more bool) Message {
 	return Message{Text: strings.TrimRight(b.String(), "\n")}
 }
 
-// HelpMessage is the vocabulary. Until now it existed nowhere, so the only way
-// to learn what Squirrel understood was to have written it.
-//
-// The capture rule comes first because it is the one that matters: if you
-// remember nothing else, typing a thought stores the thought.
-// screenURL is where the screen lives, or empty when nobody has said. It is a
-// package-level value rather than a parameter because the help message and the
-// evening message both want it and neither has any other reason to know about
-// configuration.
-//
-// Empty means chat says nothing about the screen. A link built from a guess is
-// a link that 404s, and a bot that confidently sends you nowhere is worse than
-// one that stays quiet.
 var screenURL string
 
 // SetScreenURL is called once at boot.
 func SetScreenURL(u string) { screenURL = u }
 
-// coachHere is whether a model is reachable. Help does not list `!buddy` when
-// it is not: a command that only ever answers "Buddy is not here" is worse
-// than one that was never advertised, and no key is an ordinary shipping
-// state rather than something broken.
-//
-// Package-level and set once at boot, the same shape and the same reason as
-// screenURL directly above.
+// coachHere is whether a model is reachable. Help does not list `!buddy` when it
+// is not. Package-level and set once at boot, like screenURL.
 var coachHere bool
 
 // stuckHelp is named because the coach's line is inserted directly after it,
@@ -94,6 +65,8 @@ const stuckHelp = "!stuck — I can't start. Four answers, and one of them helps
 // SetCoachHere is called once at boot.
 func SetCoachHere(here bool) { coachHere = here }
 
+// HelpMessage is the vocabulary. The capture rule comes first: if you remember
+// nothing else, typing a thought stores the thought.
 func HelpMessage() Message {
 	lines := []string{
 		"Anything you type is a note. That is the default and it always wins.",
@@ -219,12 +192,11 @@ func DefinedMessage(c Chore) Message {
 	}
 }
 
-// EveningMessage is the once-a-day message that always runs: what you did,
-// what you captured, and — only when no nudge fired earlier — the chore that
-// would otherwise have arrived as a second notification a second apart.
+// EveningMessage is the once-a-day message: what you did, what you captured, and
+// — only when no nudge fired earlier — the chore that would otherwise arrive as a
+// second notification.
 //
-// When nothing was completed the section is absent rather than empty. An empty
-// list is a scoreboard reading nil; an absent section says nothing about you.
+// When nothing was completed the section is absent rather than empty.
 func EveningMessage(handled Handled, captures []string, nudge *Chore, kept string) Message {
 	var b strings.Builder
 
@@ -252,13 +224,8 @@ func EveningMessage(handled Handled, captures []string, nudge *Chore, kept strin
 	}
 
 	// One kept note, sometimes, riding along with a message that was going out
-	// anyway. Never its own message and never more than one: a shelf that taps
-	// you on the shoulder is a second inbox, which is the thing this product
-	// exists not to have.
-	//
-	// Last, and unprompted by anything — it is not a task, it is not due, and
-	// nothing is being asked of you. It is there in case it is the thing you
-	// had forgotten you wrote down.
+	// anyway. Never its own message and never more than one. Last, and unprompted:
+	// nothing is being asked of you.
 	if kept != "" && b.Len() > 0 {
 		fmt.Fprintf(&b, "\nYou kept this: %s\n", kept)
 	}
@@ -277,17 +244,10 @@ func EveningMessage(handled Handled, captures []string, nudge *Chore, kept strin
 	return m
 }
 
-// NowMessage is the one thing, in chat.
+// NowMessage is the one thing, in chat. One line and never a list. The clause is
+// on its own line because it answers "why this".
 //
-// One line and never a list — the same discipline the nudge keeps, and for the
-// same reason: six things due is six decisions charged to the resource that is
-// already short. The clause is on its own line rather than in brackets,
-// because it is the answer to "why this" and that question deserves a sentence
-// rather than an aside.
-//
-// Two buttons, matching the nudge's shape exactly. Anything that can be
-// answered has to be answerable the same way everywhere, or the two surfaces
-// have grown two vocabularies.
+// Two buttons, matching the nudge's shape exactly.
 func NowMessage(o Offer) Message {
 	m := Message{Text: fmt.Sprintf("%s\n%s.", o.Text, o.Because)}
 	// A timer names no row, so there is nothing for a button to resolve
@@ -322,13 +282,8 @@ func doneWord(o Offer) string {
 	return "did it"
 }
 
-// MomentKeptMessage confirms a fixed point by saying the thing nobody works
-// out in time.
-//
-// It answers with the leaving time rather than the start time: the start is
-// what you already knew, and it is the leaving that gets missed. The offer to
-// say what to take rides along, because the moment just after making it is the
-// only moment anyone remembers there was something to take.
+// MomentKeptMessage answers with the leaving time rather than the start: the
+// start is what you already knew. The offer to say what to take rides along.
 func MomentKeptMessage(m Moment) Message {
 	return Message{Text: fmt.Sprintf("%s %s.\nI will say something at %s.\n!bring keys, wallet if there is something to take.",
 		m.Label, LeaveWords(m), m.WarnAt().Format("15:04"))}
@@ -336,16 +291,11 @@ func MomentKeptMessage(m Moment) Message {
 
 // LeaveMessage is the one thing a fixed point says, at the moment it matters.
 //
-// No buttons, and the reason is structural rather than a choice about
-// interface: a numbered line points at a chore or an item, the database
-// enforces that it is exactly one of the two, and a moment is neither. Widening
-// that constraint to carry a third kind of target would touch every path that
-// resolves a number, for one message. `!leaving` says the same thing in a word,
-// and the screen — where a moment is the offer — has the button.
+// No buttons, structurally: a numbered line points at a chore or an item and the
+// database enforces exactly one of the two. `!leaving` says the same in a word.
 //
-// There is deliberately no "in five minutes". A fixed point is the one thing
-// here that cannot be moved by pressing something, and a control implying
-// otherwise would be a lie with consequences.
+// There is deliberately no "in five minutes": a fixed point cannot be moved by
+// pressing something.
 func LeaveMessage(m Moment) Message {
 	text := fmt.Sprintf("%s %s.", m.Label, LeaveWords(m))
 	if m.Bring != "" {
@@ -354,12 +304,8 @@ func LeaveMessage(m Moment) Message {
 	return Message{Text: text + "\n!leaving when you go."}
 }
 
-// StuckQuestion asks what is in the way — four answers, one line, no
-// follow-up.
-//
-// It is asked once and never twice. A product that answers "I can't start"
-// with a second question has charged the person another decision at the moment
-// they said they had none left.
+// StuckQuestion asks what is in the way — four answers, one line, no follow-up.
+// Asked once and never twice.
 func StuckQuestion() Message {
 	words := make([]string, 0, len(Blockers))
 	for _, b := range Blockers {
@@ -369,13 +315,9 @@ func StuckQuestion() Message {
 		"\n\nSay !stuck and one of those."}
 }
 
-// StepMessage is one step, and never the sequence.
-//
-// It says what to do and how to say it is done, and nothing about how many
-// there are or how far through you got. "Step 2 of 5" is a count of what you
-// have left, which is the accruing number this product refuses — and on the
-// last one it says so, because being left waiting for a step that never comes
-// is its own small failure.
+// StepMessage is one step, never the sequence, and says nothing about how many
+// there are. On the last one it says so, because being left waiting for a step
+// that never comes is its own failure.
 func StepMessage(st Step) Message {
 	if st.Last {
 		return Message{Text: st.Body + "\nThat is the last one. Say !next when it is done."}
@@ -403,16 +345,12 @@ func HeldMessage(h HeldItem) Message {
 	return Message{Text: h.Text + " — " + h.Words() + "."}
 }
 
-// HeldListMessage is everything you set aside.
+// HeldListMessage is everything you set aside, grouped by which of the three:
+// waiting has somebody to chase, blocked has something to arrive, someday has
+// neither.
 //
-// Grouped by which of the three, because they are different questions: the
-// waiting ones have somebody to chase, the blocked ones have something to
-// arrive, and the somedays have neither and want leaving alone.
-//
-// No count anywhere, in either direction. `more` says that the list was capped
-// and never by how much, exactly like the pile — and there is deliberately no
-// line saying how many you have set aside, because a number beside stalled
-// work is a reproach and the point of setting it aside was to stop being asked.
+// No count in either direction. `more` says the list was capped and never by how
+// much.
 func HeldListMessage(held []HeldItem, more bool) Message {
 	if len(held) == 0 {
 		return Message{Text: "Nothing set aside."}
@@ -447,15 +385,9 @@ func HeldListMessage(held []HeldItem, more bool) Message {
 	return Message{Text: strings.Join(lines, "\n")}
 }
 
-// MoodsMessage is how you have been, when you ask.
-//
-// The readings and their days, and nothing else. No average, no streak, no
-// "you have been low three days" — the interpretation is yours, and a product
-// that offered one would be doing the thing the rule against reading this
-// table existed to prevent.
-//
-// Grouped by day rather than listed by timestamp, because two answers on one
-// Tuesday is a Tuesday you checked in twice, not two facts about you.
+// MoodsMessage is the readings and their days, and nothing else. No average, no
+// streak. Grouped by day: two answers on one Tuesday is a Tuesday you checked in
+// twice.
 func MoodsMessage(readings []Checkin, now time.Time) Message {
 	if len(readings) == 0 {
 		return Message{Text: "You have not said how you are lately."}
@@ -478,10 +410,6 @@ func MoodsMessage(readings []Checkin, now time.Time) Message {
 	}
 	return Message{Text: b.String()}
 }
-
-// MoodDay is moodDay, for the screen. Both surfaces name a day identically or
-// they are two products.
-func MoodDay(at, now time.Time) string { return moodDay(at, now) }
 
 // moodDay names a day the way you would say it. Two names and then the date:
 // past "yesterday" a weekday alone is ambiguous within a fortnight.
@@ -520,15 +448,10 @@ func NothingNowMessage(capacity Capacity) Message {
 	return Message{Text: "Nothing to hand you."}
 }
 
-// handledLines is what happened today, as lines, and nothing when nothing did.
+// handledLines is what happened today. Chores and tasks are named; notes are
+// counted, because naming a dozen cleared notes buries the lines above them.
 //
-// Chores and tasks are named because they are the things you set out to do.
-// Notes are counted because naming a dozen cleared notes would bury the two
-// lines above them in the bookkeeping — and because what matters about a
-// cleared note is that it is no longer waiting, not what it said.
-//
-// Never "nothing today". An absent section says nothing about you; an empty
-// one is a scoreboard reading nil.
+// Never "nothing today": an absent section says nothing about you.
 func handledLines(h Handled) []string {
 	lines := make([]string, 0, len(h.Chores)+len(h.Tasks)+1)
 	lines = append(lines, h.Chores...)
@@ -539,15 +462,10 @@ func handledLines(h Handled) []string {
 	return lines
 }
 
-// CheckinQuestion is the five faces as words, since chat has no pictures.
+// CheckinQuestion is the five faces as words, since chat has no pictures. Asked
+// about now, which is why the reading goes stale after a few hours.
 //
-// "How do you feel?" — asked, and answered, about now. The reading goes stale
-// after a few hours for that reason: a day is a thing you can have had a bad
-// one of, and the useful answer is about the minute you are in.
-//
-// The five are not a scale and are never numbered. Low and frazzled are
-// different states wanting different answers, which is exactly what a
-// one-to-five row cannot say and the reason this is worth asking at all.
+// The five are not a scale and are never numbered.
 func CheckinQuestion() Message {
 	actions := make([]Action, 0, len(Moods))
 	for _, m := range Moods {
@@ -574,18 +492,11 @@ var MoodEmoji = map[Mood]string{
 	MoodWiped:    "😴",
 }
 
-// screenLine is the way in, when there is one to give.
-// OnTheScreen is what chat says when Buddy has suggested something chat cannot
-// offer a press for.
+// OnTheScreen is what chat says when Buddy suggested something chat cannot offer
+// a press for. Chat's buttons resolve against recorded lines and cannot carry a
+// proposal's four fields, so the honest answer names the place that can.
 //
-// A fixed point, a chore, a retirement and a drop all need confirming, and
-// confirming means a button. Chat's buttons resolve against recorded lines and
-// cannot carry a proposal's four fields, so the honest answer is to name the
-// place that can — and naming it is better than pretending nothing was
-// suggested.
-//
-// Empty when there is no screen configured, which makes the whole sentence
-// disappear rather than pointing nowhere.
+// Empty with no screen configured, which removes the sentence.
 func OnTheScreen() string {
 	if screenURL == "" {
 		return ""
@@ -593,6 +504,7 @@ func OnTheScreen() string {
 	return " There is something to say yes to on the screen: " + screenURL
 }
 
+// screenLine is the way in, when there is one to give.
 func screenLine() string {
 	if screenURL == "" {
 		return ""

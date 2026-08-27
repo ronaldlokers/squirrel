@@ -1,10 +1,8 @@
-// Package web is the screen, and it is a transport: it imports
-// internal/squirrel and the reverse would be an import cycle, which is what
-// keeps HTML out of the core.
+// Package web is the screen, and it is a transport: it imports internal/squirrel
+// and the reverse would be an import cycle, which keeps HTML out of the core.
 //
-// It is read-and-triage only. There is no route that creates an item and there
-// never will be — two capture surfaces means two places to look for a thought,
-// which is the problem this product exists to solve.
+// Read-and-triage only. No route creates an item and none ever will — two
+// capture surfaces means two places to look for a thought.
 package web
 
 import (
@@ -14,12 +12,8 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Options is everything the screen needs to be mounted.
-//
-// Not where it lives: the screen is at the root, and the route table in Mount
-// is the whole of it. A configurable mount path meant a prefix on every URL in
-// every template, a header to widen the worker's scope by one character, and an
-// ingress that had to agree with all of it — for a setting nothing ever set.
+// Options is everything the screen needs to be mounted. Not where it lives: the
+// screen is at the root and the route table in Mount is the whole of it.
 type Options struct {
 	// Gate is the way in: the OIDC client that turns a code into a person.
 	// Nil is refused at mount — a pile with no way in is not a working
@@ -28,25 +22,20 @@ type Options struct {
 	// Sessions is who is signed in, remembered for a minute. Nil is refused at
 	// mount: guard would otherwise refuse every request forever.
 	Sessions *sessions
-	// RequiredGroup is the Authentik group an account must be in. Refused when
-	// empty, and it is the only value in this struct that is. Everything else
-	// missing degrades to less product — no coach, no camera, no push. This
-	// would degrade to more access.
+	// RequiredGroup is the Authentik group an account must be in, and the only value
+	// here that is refused when empty. Everything else missing degrades to less
+	// product; this would degrade to more access.
 	RequiredGroup string
 	// SessionLife is how long a session lasts without being used. Zero takes
 	// the default.
 	SessionLife time.Duration
-	// Location is where the person is, and it is not where the process is.
-	//
-	// Threaded rather than read off the clock, the way the scheduler's quiet
-	// hours and evening message already take one: a container's zone is an
-	// accident of its deployment, and a fixed point booked in the wrong one
-	// reads back exactly as typed. See issue #148.
+	// Location is where the person is, not where the process is. Threaded rather
+	// than read off the clock: a container's zone is an accident of its deployment.
+	// See issue #148.
 	Location *time.Location
 	// PushKey is the VAPID public key the browser needs to subscribe, or empty.
-	// Empty means the screen never offers: a subscribe button with no key
-	// behind it is a button that fails silently, which is worse than one that
-	// was never drawn.
+	// Empty means the screen never offers, rather than drawing a button that fails
+	// silently.
 	PushKey string
 	// Login turns an OIDC subject into a person, creating them the first
 	// time. A func rather than a Store method because this package must not
@@ -61,94 +50,65 @@ type Options struct {
 	// gap this exists to close.
 	Spool Spool
 
-	// The coach's three seams. Funcs rather than an interface, and funcs of
-	// primitives rather than of coach types, because this package must not
-	// have to know internal/coach exists — it is a transport, and a transport
-	// that depends on a model being reachable is the thing this architecture
-	// refuses. internal/boot supplies all three.
+	// The coach's three seams. Funcs of primitives rather than an interface, because
+	// this package must not know internal/coach exists. internal/boot supplies them.
 	//
-	// Ask is nil when there is no coach, and the nil carries meaning: the
-	// acorn is still drawn and the four chips still answer, but typing a
-	// sentence gets the chips back rather than a reply.
+	// Ask is nil when there is no coach, and the nil carries meaning: the four chips
+	// still answer, but typing a sentence gets the chips back rather than a reply.
 	Ask func(ctx context.Context, personID int64, kind, said, subject string) (Answer, error)
-	// Reads answers what was typed into the box and says whether it was a
-	// thought worth keeping. Nil with no coach, and the nil means the box does
-	// exactly what it always did: keeps the words and says "Kept."
+	// Reads answers what was typed into the box and says whether it was a thought
+	// worth keeping. Nil with no coach, and then the box keeps the words and says
+	// "Kept."
 	//
-	// The boolean is advice, not an instruction. captureHandler keeps the
-	// words first and drops them afterwards if this says to, so a wrong answer
-	// costs a note in the pile rather than a note that is gone.
-	// The fourth return is a place to draw underneath the reply, when the
-	// words asked to see one and Buddy said which. Empty on every other turn,
-	// which is nearly all of them.
+	// The boolean is advice, not an instruction: captureHandler keeps the words first
+	// and drops them afterwards, so a wrong answer costs a note rather than a
+	// thought.
+	//
+	// The fourth return is a place to draw underneath the reply, when the words asked
+	// to see one.
 	Reads func(ctx context.Context, personID int64, said string) (reply string, keep bool, open string, err error)
-	// AskedAQuestion is the model in the house: a small one on the cluster,
-	// asked whether the words are a question. The second return is whether it
-	// answered at all — false falls back to squirrel.LooksLikeAQuestion, which
-	// needs nothing running.
+	// AskedAQuestion is the model in the house, asked whether the words are a
+	// question. The second return is whether it answered at all; false falls back to
+	// squirrel.LooksLikeAQuestion, which needs nothing running.
 	//
-	// Nil is a supported configuration and the one this shipped with. It costs
-	// electricity in a cupboard rather than money abroad, which is why it may
-	// run on everything typed and Reads may not.
+	// Nil is a supported configuration. It costs electricity rather than money, which
+	// is why it may run on everything typed and Reads may not.
 	AskedAQuestion func(ctx context.Context, said string) (question bool, answered bool)
 	// Recent is the conversation so far, oldest first, or nil.
 	Recent func(personID int64) []Exchange
-	// Remember adds one round to it. The screen calls this for the ladder's
-	// deterministic answers as well as the model's, because what makes the
-	// window worth having is that it is the conversation — not the part of it
-	// a model happened to produce.
+	// Remember adds one round to it, for the ladder's deterministic answers as well
+	// as the model's: the window is the conversation, not the part a model produced.
 	Remember func(personID int64, said, replied string)
-	// Forget drops it. Closing the sheet has to mean the conversation is over,
-	// and it has to mean nothing else.
+	// Forget drops it. Ending a conversation has to mean it is over, and has to
+	// mean nothing else.
 	Forget func(personID int64)
 	// Decide lets a model choose among what the picker found, or is nil. The
 	// screen never calls it when the picker found nothing: absent rather than
 	// empty is a rule about this region, not about who chose.
 	Decide squirrel.Decider
-	// ForgetOffer drops the decision Decide made, or is nil where there is no
-	// coach to have made one.
+	// ForgetOffer drops the decision Decide made, or is nil where there is no coach.
 	//
-	// It exists because Decide may answer with a *different row* than the
-	// picker chose, and the card then carries that row rather than the
-	// picker's. So answering the card writes against a row the picker was
-	// never pointing at, the picker's answer does not move, and the cache
-	// behind Decide — which invalidates by watching for exactly that movement
-	// — serves the same decision back. The handler that answers an offer is
-	// the one place that knows an answer happened at all.
+	// Decide may answer with a different row than the picker chose, so answering the
+	// card writes against a row the picker never pointed at, the picker's answer does
+	// not move, and the cache behind Decide serves the same decision back.
 	ForgetOffer func(personID int64)
 	// Smaller breaks the thing being offered into steps, or is nil. Nil means
 	// the ladder's own fixed line is the whole answer, which is what it was
 	// before this existed.
 	Smaller squirrel.Breaker
-	// Spent is what the coach has cost this month and what it is allowed, both
-	// already rendered as money, or empty. Nil when there is no coach.
-	//
-	// The only accruing number this product puts on a screen, and the
-	// exception is narrow: it is money rather than a score, it is bounded by a
-	// ceiling you set, and it is a fact about a machine rather than about you.
+	// Spent is what the coach has cost this month and what it is allowed, rendered as
+	// money, or empty. The only accruing number on a screen here: money rather than a
+	// score, bounded by a ceiling you set, and a fact about a machine.
 	Spent func(ctx context.Context, personID int64) (spent, ceiling string, ok bool)
-	// Split proposes the separate things in one note, or is nil. Splittable is
-	// the free check that decides whether asking is worth a call at all —
-	// separate, because the card has to know whether to draw the press before
-	// anything has been asked.
+	// Split proposes the separate things in one note, or is nil. Splittable is the
+	// free check that decides whether asking is worth a call, separate because the
+	// card must know whether to draw the press before anything is asked.
 	Split      func(ctx context.Context, personID int64, text string) ([]string, bool)
 	Splittable func(text string) bool
 }
 
-// Options.person() was here until 25 August 2026. It read Owner, a
-// process-global atomic.Int64, and answered "whose pile this is" for every
-// handler in the package. It is deleted rather than left in place because a
-// global that still compiles is a global something will use, and the answer it
-// gave was correct for exactly one person. personOf(r) replaced it.
-
-// Spool is the durable half of capture, and the same one the room's captures
-// go through.
-//
-// Declared here and satisfied structurally by *squirrel.Spool, like Store. The
-// screen wrote straight to Postgres for its whole life, which meant a live
-// network and an unhealthy database lost the words — accepted while the screen
-// was secondary, wrong once it became the front door, and recorded as wrong at
-// the time.
+// Spool is the durable half of capture, and the same one the room's captures go
+// through. Declared here and satisfied structurally, like Store.
 type Spool interface {
 	// Write is durable when it returns: written, fsynced, renamed, and the
 	// directory fsynced too.
@@ -159,9 +119,7 @@ type Spool interface {
 }
 
 // Store is the narrow surface the screen consumes. Declared here rather than
-// imported: Go satisfies interfaces structurally, so *squirrel.Store fits this
-// without either package importing the other's declaration, the same way
-// transport.Sink does.
+// imported: *squirrel.Store fits it structurally, like transport.Sink.
 type Store interface {
 	OpenItems(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
 	OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]squirrel.Item, bool, error)
@@ -197,19 +155,14 @@ type Store interface {
 	HoldItem(ctx context.Context, personID, itemID int64, state squirrel.ItemState, because string, at time.Time) (bool, error)
 	HeldItems(ctx context.Context, personID int64, limit int) ([]squirrel.HeldItem, bool, error)
 	Unhold(ctx context.Context, personID, itemID int64, at time.Time) (bool, error)
-	// Something you set aside that nobody has mentioned since. The three
-	// states shipped as a one-way door: you park something precisely so you do
-	// not have to hold it, and that only works if something else does.
-	//
-	// One, never a list — a screen that handed back everything you had ever
-	// parked would be a second pile wearing a different word.
+	// Something you set aside that nobody has mentioned since. One, never a list: a
+	// screen handing back everything you ever parked is a second pile.
 	GoneQuiet(ctx context.Context, personID int64, at time.Time) (squirrel.HeldItem, bool, error)
 	StillHolding(ctx context.Context, personID, itemID int64, at time.Time) (bool, error)
 
-	// The one thing. PickNow chooses it, and the other three are the only
-	// answers it takes. There is deliberately no function here that returns
-	// more than one offer, for the same reason there is none that returns more
-	// than one check-in: a caller cannot render a list it cannot obtain.
+	// The one thing. There is deliberately no function here returning more than one
+	// offer, for the same reason as the check-in: a caller cannot render a list it
+	// cannot obtain.
 	PickNow(ctx context.Context, personID int64, now time.Time, showAnyway bool) (squirrel.Offer, bool, error)
 	Did(ctx context.Context, personID int64, o squirrel.Offer, at time.Time) error
 	Refuse(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, at time.Time) error
@@ -233,9 +186,10 @@ type Store interface {
 	HushRamp(ctx context.Context, personID int64, at time.Time) error
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
-	// MoveItemState is the same write for a caller that knows what the note
-	// was when the decision was made. The deck's is deferred by the length of
-	// the undo hold, so it is the one write here that can be stale.
+	// MoveItemState is the same write for a caller that knows what the note was
+	// when the decision was made. A card names the state it was drawn from, and
+	// the room can move the row in between — so this is the one write here that
+	// can arrive stale, and the only one that says so.
 	MoveItemState(ctx context.Context, itemID int64, from, to squirrel.ItemState, at time.Time) (bool, error)
 	// LandedBadlyLatest is one press saying the last thing Buddy said did not
 	// land. Principle 5 was opened knowing this could happen; this is the half
@@ -258,12 +212,8 @@ type Store interface {
 	DeactivateChore(ctx context.Context, choreID int64) error
 	RecordCompletion(ctx context.Context, choreID, personID int64, source string, at time.Time) error
 
-	// A thing broken into steps. Note what is absent and stays absent: there
-	// is no function here that returns the sequence, so this screen could not
-	// render one if a later author wanted it to — the same device that keeps
-	// it from rendering a count of the pile.
-	// A fixed point the coach proposed and you kept. The same function `!at`
-	// and the screen already call.
+	// A thing broken into steps. There is no function here that returns the sequence,
+	// so this screen cannot render one.
 	CreateMoment(ctx context.Context, personID int64, m squirrel.Moment) (squirrel.Moment, error)
 	// One fixed point, what is still coming, and the notes pointing at one.
 	// The list was refused for this product's whole life; see at.go for what
@@ -276,11 +226,8 @@ type Store interface {
 	AttachNote(ctx context.Context, personID, itemID, momentID int64) (bool, error)
 	DetachNote(ctx context.Context, personID, itemID int64) (bool, error)
 
-	// The conversation. The screen is one now — see
-	// docs/superpowers/specs/2026-08-24-the-thread-design.md — and these are
-	// the only three things done with it: add to it, read the end of it, and
-	// walk back up it. There is deliberately nothing here that edits a turn
-	// or removes one.
+	// The conversation: add to it, read the end of it, walk back up it. There is
+	// deliberately nothing that edits a turn or removes one.
 	AppendTurn(ctx context.Context, personID int64, t squirrel.Turn) (squirrel.Turn, error)
 	RecentTurns(ctx context.Context, personID int64, limit int) ([]squirrel.Turn, bool, error)
 	TurnsBefore(ctx context.Context, personID, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
@@ -288,12 +235,8 @@ type Store interface {
 	// nowhere, which is what makes the decision that allowed them reversible.
 	Waiting(ctx context.Context, personID int64, now time.Time) (squirrel.Waiting, error)
 
-	// Where you got to, when something interrupted you.
-	//
-	// Losing your place is the failure this product is built around, and until
-	// 26 August 2026 it kept no memory of a run in progress. There is
-	// deliberately no function here that returns a history of runs: one row per
-	// person, replaced, so this cannot become a record of your afternoons.
+	// Where you got to, when something interrupted you. One row per person,
+	// replaced, so this cannot become a record of your afternoons.
 	MarkRun(ctx context.Context, personID int64, place string, at time.Time) error
 	RunFor(ctx context.Context, personID int64, at time.Time) (squirrel.Run, bool, error)
 	EndRun(ctx context.Context, personID int64) error

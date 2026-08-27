@@ -53,7 +53,9 @@ func TestNothingToOfferRendersNoRegionAtAll(t *testing.T) {
 	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
 
 	require.NotContains(t, body, `class="turncard"`)
-	require.NotContains(t, body, "nothing")
+	for _, reassurance := range []string{"nothing to do", "all clear", "you are up to date"} {
+		require.NotContains(t, body, reassurance)
+	}
 }
 
 // The question comes first: with no fresh reading the region is the check-in,
@@ -62,11 +64,10 @@ func TestWithNoFreshReadingTheRegionAsksInstead(t *testing.T) {
 	body := mounted(t, &fakeStore{offer: aTask}).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "how do you feel?")
-	require.NotContains(t, body, `class="offer"`)
+	require.NotContains(t, body, "ring the vet about the booster",
+		"it handed you something while the question was still open")
 }
 
-// A picker that cannot answer must not take down a page that rendered without
-// one for the product's whole life.
 func TestTheOfferFailingLeavesHomeStanding(t *testing.T) {
 	s := answered(aTask)
 	s.err = errTest
@@ -148,7 +149,7 @@ func TestARunningTimerOfferCarriesNoButtons(t *testing.T) {
 	})).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "the kitchen")
-	require.NotContains(t, body, `class="oacts"`)
+	require.NotContains(t, body, `class="turnacts"`, "a running timer offered something to press")
 }
 
 // A breadcrumb names what you were on rather than a row Squirrel can act on,

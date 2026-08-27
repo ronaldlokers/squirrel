@@ -69,16 +69,10 @@ func (s *Server) handler() http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				slog.Error("handler panicked", "panic", rec, "path", r.URL.Path)
-				// A handler may have set a Content-Type (e.g. before doing
-				// work that then panicked) without writing a body yet. A
-				// non-200 must never carry a content type — Campfire uploads
-				// any non-200 that does into the room as a file attachment —
-				// so clear whatever headers were staged before answering.
-				// This only helps if nothing has been written yet; if the
-				// handler already called WriteHeader or Write, the response
-				// is committed and this can't undo it (Go logs "superfluous
-				// response.WriteHeader" in that case), which is out of scope
-				// here.
+				// A handler may have staged a Content-Type before panicking,
+				// and a non-200 carrying one is uploaded into the room as a
+				// file. Clearing them only helps while nothing has been
+				// written; once the response is committed this cannot undo it.
 				for k := range w.Header() {
 					w.Header().Del(k)
 				}

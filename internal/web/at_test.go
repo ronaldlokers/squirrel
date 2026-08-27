@@ -144,17 +144,13 @@ func TestAFixedPointNeverCountsAnything(t *testing.T) {
 	require.NotContains(t, body, "three notes")
 }
 
-// A fixed point that is not yours is one that does not exist.
 func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
 	res := routed(t, withMoment(aMoment(3*time.Hour, ""))).call(t, "GET", "/at/99", nil)
 	require.Equal(t, 404, res.Code)
 }
 
-// The contrast walk cannot tell a clean screen from an empty one, so this says
-// the two new paths render something. Both were added to that walk's list, and
-// a page with nothing on it would have passed it silently.
-// The one screen the agenda still has. The list became a turn on 24 August
-// 2026; this is the page a notification lands on, and it stays until phase 4.
+// The one route the agenda still has: the list is a turn, and this is what a
+// notification opens.
 func TestTappingTheWarningOpensTheAppointment(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
 	one := landsInTheThread(t, f)
@@ -185,8 +181,7 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 	said := strings.ToLower(f.appended[1].Words)
 	drawn := strings.ToLower(string(f.appended[1].Shown))
 
-	// Buddy counts what is ahead — permitted since 24 August 2026 — and the
-	// counting is the only number here.
+	// Counting what is ahead is permitted, and is the only number here.
 	require.Contains(t, said, "2 things have a time")
 	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
 		require.NotContains(t, said, banned)
@@ -247,7 +242,6 @@ func withUpcoming(ms ...squirrel.Moment) *fakeStore {
 	return &fakeStore{upcoming: ms}
 }
 
-// Opening one draws it with what to take and the notes pointing at it.
 func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
 	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
 	f.attached = []squirrel.Item{
@@ -262,7 +256,6 @@ func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
 	require.Contains(t, shown, "the referral letter")
 }
 
-// A fixed point that is not yours draws nothing and says nothing.
 func TestAFixedPointThatIsNotYoursDrawsNothing(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=99"))
@@ -281,7 +274,6 @@ func TestDetachingANoteIsSaid(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "pile")
 }
 
-// The question offers a month to pick a day out of, and a time.
 func TestAskingForADayOffersAMonthAndTimes(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/at/new", strings.NewReader("label=dentist"))
@@ -308,8 +300,6 @@ func TestAnsweringMakesItOnThatDay(t *testing.T) {
 	require.Equal(t, 30, f.moments[0].Starts.Minute())
 }
 
-// The picker and a typed sentence agree about what a time is. Asserted on the
-// hour and minute, not on a string.
 func TestThePickerAndTheSentenceAgreeAboutTheTime(t *testing.T) {
 	typed, ok := squirrel.ParseMoment("at 14:30 dentist", now())
 	require.True(t, ok)

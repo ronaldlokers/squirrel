@@ -116,7 +116,6 @@ func TestRespondIgnoredSendsNoContentType(t *testing.T) {
 	require.Empty(t, rec.Body.String())
 }
 
-// Still a 200. A non-200 carrying a Content-Type becomes an attachment.
 func TestRespondFailedIsStill200(t *testing.T) {
 	rec := httptest.NewRecorder()
 	transport.Respond(rec, squirrel.Failed)
@@ -171,10 +170,6 @@ func TestCampfireNeverPanicsOutOfTheHandlerEvenWhenTheSinkDoes(t *testing.T) {
 	require.Contains(t, rec.Body.String(), "resend")
 
 	require.NoError(t, stop(context.Background()))
-}
-
-func TestCampfireHasNoSendWithoutABotKey(t *testing.T) {
-	require.Nil(t, transport.NewCampfire(config()).Send)
 }
 
 func TestCampfirePayloadIsValidJSONForAnUnparseableBody(t *testing.T) {

@@ -12,22 +12,17 @@ import (
 
 // Where the coach is joined to the store.
 //
-// internal/coach must not import internal/squirrel — the core would then depend
-// on a model being reachable, which is the whole thing this architecture
-// refuses. internal/squirrel must not import internal/coach either, for the
-// same reason read the other way.
+// internal/coach must not import internal/squirrel, or the core would depend on a
+// model being reachable, and internal/squirrel must not import internal/coach for
+// the same reason read the other way.
 //
-// Elsewhere that separation is free: internal/web declares the narrow interface
-// it needs and *squirrel.Store satisfies it structurally, because every
-// parameter is either a primitive or a squirrel type. The budget's log cannot
-// work that way. Its parameter is a struct, and coach.Answer and
-// squirrel.CoachAnswer are different types however identically they are
-// written, so no structural match is possible in either direction.
+// Elsewhere the separation is free — internal/web declares the narrow interface
+// it needs and *squirrel.Store satisfies it structurally. The budget's log cannot
+// work that way: its parameter is a struct, and coach.Answer and
+// squirrel.CoachAnswer are different types however identically written.
 //
-// So the conversion is written down, here, in the package that already exists
-// to join things that must not know about each other. Twelve lines of copying
-// is a smaller price than either package importing the other, and it is the
-// only place the two structs have to agree.
+// So the conversion is written down here, in the package that exists to join
+// things that must not know about each other.
 
 // coachLog adapts the store to coach.Log.
 type coachLog struct{ store *squirrel.Store }
@@ -50,17 +45,13 @@ func (l coachLog) CoachSpentSince(ctx context.Context, personID int64, since tim
 	return l.store.CoachSpentSince(ctx, personID, since)
 }
 
-// budgetFor is the monthly ceiling, wired to the log that answers it.
+// budgetFor is the monthly ceiling, wired to the log that answers it. Two
+// ceilings: the owner's, and a smaller one for everybody else, so two demo
+// accounts are not two allowances.
 //
-// Two ceilings: the owner's, and a smaller one for everybody else. A demo
-// account can then try Buddy without being able to spend a month's allowance,
-// and two demo accounts are not two allowances.
-//
-// The owner is whoever SeedOwner made. There is no admin flag and no column,
-// because there is one owner and it is configuration — the same reason the
-// screen's owner is a seeded identity rather than a role. owner() is zero
-// until Postgres answers, and a lookup before then sees a guest, which is the
-// safe way round.
+// The owner is whoever SeedOwner made — there is no admin flag, because there is
+// one owner and it is configuration. owner() is zero until Postgres answers, and
+// a lookup before then sees a guest, which is the safe way round.
 func budgetFor(cfg squirrel.CoachConfig, store *squirrel.Store, owner func() int64) coach.Budget {
 	return coach.Budget{
 		Log: coachLog{store: store},
@@ -73,17 +64,11 @@ func budgetFor(cfg squirrel.CoachConfig, store *squirrel.Store, owner func() int
 	}
 }
 
-// coachFor builds the coach, or NoCoach.
+// coachFor builds the coach, or NoCoach — a shipping configuration, not a
+// failure, so a missing key is logged at info rather than as a warning.
 //
-// NoCoach is a shipping configuration, not a failure: with no key the picker
-// still chooses, the ladder still answers, and every screen still works. So the
-// absence of a key is logged at info — a warning would be telling someone off
-// for a choice they made.
-//
-// A model the price table does not know is different, and does warrant a
-// warning. It means the budget will price every call at zero and the monthly
-// ceiling silently stops existing, which is a thing to hear about at start
-// rather than discover on an invoice.
+// A model the price table does not know does warrant one: the budget prices every
+// call at zero and the ceiling silently stops existing.
 func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Store) coach.Coach {
 	if !cfg.Enabled() {
 		slog.Info("no coach configured; the picker and the ladder answer alone")
@@ -103,28 +88,18 @@ func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Sto
 	return p
 }
 
-// decider is the seam both surfaces choose through, or nil.
+// deciding is the seam both surfaces choose through, or nil, and the way to drop
+// a decision. Both halves come back together because they are only correct
+// against the same cache: two lines naming different ones compile, run, and
+// reproduce the exact bug this pair exists to fix.
 //
-// The cache is the reason this is worth having at all. Opening home is the
-// most repeated action in the product and most opens change nothing, so
-// without it the deep model is paid over and over for the same answer — and
-// pick.go's own argument applies too: an offer that changes on every reload
-// reads as the product changing its mind, and a model asked twice will not
-// answer identically.
+// The cache is what makes it worth having: opening home is the most repeated
+// action in the product and most opens change nothing.
 //
-// What it is keyed on is the picker's own answer. PickNow already reflects
-// every event the design listed as an invalidator — a check-in changes
-// capacity, a timer changes rules 2 and 3, a completion or a refusal removes
-// the row, a moment entering its leave-by window outranks everything — so
-// comparing its answer catches all of them without a hook at a single write
-// site. Hooks are the version of this that gets forgotten when a seventh write
-// path is added.
-// Both halves come back together, and that is the point rather than tidiness:
-// they are only correct against the same cache. Two adjacent lines reading
-// `decider(c, s.offers)` and `s.offers.Forget` are two chances to name a
-// different one, and a decider that caches into one place while the forget
-// clears another compiles, runs, and reproduces the exact bug this pair exists
-// to fix — silently, because nothing downstream can tell.
+// Keyed on the picker's own answer, which already reflects every invalidator the
+// design listed — a check-in changes capacity, a timer changes rules 2 and 3, a
+// completion removes the row. Hooks are the version of this that gets forgotten
+// when a seventh write path is added.
 func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(personID int64)) {
 	if _, none := c.(coach.NoCoach); none {
 		// No coach, no decision, and nothing to forget. Both nil, so the
@@ -134,7 +109,7 @@ func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(perso
 	}
 
 	decide := func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
-		mayAsk bool) (string, int64, string, string, bool) {
+		mayAsk bool) (kind string, refID int64, text, because string, ok bool) {
 
 		now := time.Now()
 		basis := squirrel.SuppressionKey(squirrel.OfferKind(pickedKind), pickedRef)
@@ -166,16 +141,13 @@ func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(perso
 	return decide, offers.Forget
 }
 
-// asker is the seam the core reaches a model through.
+// asker is the seam the core reaches a model through: a closure over primitives,
+// because internal/squirrel must not import internal/coach. Everything the model
+// is told about the day is assembled here, which keeps the core from knowing that
+// a prompt exists.
 //
-// A closure over primitives, because internal/squirrel must not import
-// internal/coach. Everything the model is told about the day is assembled here
-// rather than there, which is what keeps the core from knowing that a prompt
-// is a thing that exists.
-//
-// It returns nil when there is no coach at all, and the nil is meaningful: the
-// core checks it and does not advertise `!coach` in help when there is nothing
-// behind it.
+// Nil when there is no coach, and the core checks it: `!coach` is not advertised
+// in help when there is nothing behind it.
 func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canOpen bool) turnFn {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
@@ -184,7 +156,7 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canO
 	return func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error) {
 		now := time.Now()
 
-		// The one place overwhelm is recognised, so the sheet and the chat
+		// The one place overwhelm is recognised, so the screen and the chat
 		// cannot disagree about what it is. The caller says which surface
 		// asked; whether this particular turn is a pile rather than a question
 		// is a property of the words, not of the surface.
@@ -210,14 +182,16 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canO
 	}
 }
 
-// nowFor is the state of the day, as the four small facts the model is told.
+// badlyLandedShown is how many rejected replies the model is shown. Examples
+// rather than a record.
+const badlyLandedShown = 3
+
+// nowFor is the state of the day, as the small facts the model is told.
 //
-// Every read here fails soft. A missing capacity or an unreachable moment
-// costs the model a hint; it must not cost the person an answer, because the
-// alternative to a slightly less informed reply is no reply at all.
+// Every read here fails soft, including a nil store: a missing capacity or an
+// unreachable moment costs the model a hint and must not cost the person an
+// answer.
 func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time.Time) coach.Now {
-	// The softest failure of all, and the one this function's own rule asks
-	// for: no store is no hints, not no answer.
 	if store == nil {
 		return coach.Now{
 			Clock:     now.Format("15:04"),
@@ -234,21 +208,12 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 		Capacity: string(store.Capacity(ctx, personID, now)),
 	}
 
-	// What has not landed here, in the model's own words. Fails soft like
-	// everything else in this function: a reply that cannot be read back costs
-	// the model a hint, and never costs the person an answer.
-	//
-	// Three, because it is examples rather than a record. The model is being
-	// shown what does not work here; it is not being handed a history, and a
-	// longer list would start to read as one.
-	if said, err := store.BadlyLanded(ctx, personID, 3); err == nil {
+	// What has not landed here, in the model's own words.
+	if said, err := store.BadlyLanded(ctx, personID, badlyLandedShown); err == nil {
 		n.LandedBadly = said
 	}
 
 	// What a weekly read of the record concluded about how this person works.
-	// Fails soft for the same reason as everything else here — and its absence
-	// is the state the product was in until 25 August 2026, so a Buddy without
-	// it is a Buddy that works.
 	if known, err := store.Knowing(ctx, personID); err == nil {
 		n.Knowing = known
 	}
@@ -266,12 +231,9 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 	return n
 }
 
-// breaker is the seam the ladder makes a thing smaller through, or nil.
-//
-// No cache here, deliberately. A breakdown is asked for by pressing something,
-// once, at the moment of least capacity — there is no idle repeated open to
-// protect against, and holding an old sequence would mean pressing "too big"
-// on a different thing and being handed steps for the last one.
+// breaker is the seam the ladder makes a thing smaller through, or nil. No cache:
+// a breakdown is asked for by pressing something once, and holding an old
+// sequence would hand you steps for the last thing you pressed on.
 func breaker(c coach.Coach) squirrel.Breaker {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
@@ -285,15 +247,22 @@ func breaker(c coach.Coach) squirrel.Breaker {
 	}
 }
 
-// reading is the three tiers the box judges with, as one value.
-//
-// Lifted out of the inline literal it was written in, for the reason
-// schedulerOptionsFor was: a field set in an inline literal cannot be checked
-// by a test, and `AskedAQuestion` proved it by going missing while the whole
-// suite stayed green.
+// readsBox answers what was typed into the box: what to say back, whether the
+// words are a thought worth keeping, and a place to draw underneath the reply.
+type readsBox func(ctx context.Context, personID int64, said string) (
+	say string, keep bool, open string, err error)
+
+// asksAQuestion says whether the words are a question, and whether it managed to
+// answer at all. False for the second sends the caller back to the rule.
+type asksAQuestion func(ctx context.Context, said string) (question, answered bool)
+
+// reading is the three tiers the box judges with, as one value. Lifted out of an
+// inline literal for the reason schedulerOptionsFor was: a field set in one
+// cannot be checked by a test, and `AskedAQuestion` proved it by going missing
+// while the whole suite stayed green.
 type reading struct {
-	Reads          func(context.Context, int64, string) (string, bool, string, error)
-	AskedAQuestion func(context.Context, string) (bool, bool)
+	Reads          readsBox
+	AskedAQuestion asksAQuestion
 }
 
 // readingWiring is what the screen is given.
@@ -301,31 +270,23 @@ func readingWiring(c coach.Coach, store *squirrel.Store, h *coach.House) reading
 	return reading{Reads: reader(c, store), AskedAQuestion: housed(h)}
 }
 
-// housed is the model on the cluster, or nil.
-//
-// Its own seam rather than a method on the coach, because it has nothing to do
-// with the coach: no key, no budget, no accounting, and it answers when the
-// hosted one is absent entirely. A build with a house and no API key reads
-// every capture locally and never asks anybody for an answer, which is a
-// configuration worth being able to have.
-func housed(h *coach.House) func(context.Context, string) (bool, bool) {
+// housed is the model on the cluster, or nil. Its own seam rather than a method
+// on the coach: no key, no budget, no accounting, and it answers when the hosted
+// one is absent entirely.
+func housed(h *coach.House) asksAQuestion {
 	if h == nil {
 		return nil
 	}
 	return h.AskedAQuestion
 }
 
-// reader is what the box is answered by, or nil.
+// reader is what the box is answered by, or nil — and captureHandler checks the
+// nil, so a build without a key keeps the words and says "Kept."
 //
-// Nil with no coach, and the nil is what captureHandler checks — so a build
-// without a key keeps the words and says "Kept.", which is what the box did
-// for its whole life before this.
-//
-// The state of the day goes in the same way every other turn gets it, through
-// nowFor: what somebody types at eleven at night reads differently from the
-// same words at nine in the morning, and this is the one call that sees
-// everything typed.
-func reader(c coach.Coach, store *squirrel.Store) func(context.Context, int64, string) (string, bool, string, error) {
+// The state of the day goes in through nowFor, like every other turn: what
+// somebody types at eleven at night reads differently from the same words at
+// nine in the morning.
+func reader(c coach.Coach, store *squirrel.Store) readsBox {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
 	}
@@ -346,12 +307,9 @@ func learner(c coach.Coach) squirrel.Learner {
 	return c.Learn
 }
 
-// splitter is the seam a note is separated through, or nil.
-//
-// Two halves. The cheap one is a rule and runs on every note the pile draws;
-// the expensive one is a call and runs only when something is pressed. Which
-// is the interruption pre-filter's argument applied to triage: rules narrow,
-// and the model answers the few that survive.
+// splitter is the seam a note is separated through, or nil. The cheap half is a
+// rule and runs on every note the pile draws; the expensive half is a call and
+// runs only when something is pressed.
 func splitter(c coach.Coach) (
 	func(context.Context, int64, string) ([]string, bool), func(string) bool) {
 
@@ -377,15 +335,13 @@ func splitter(c coach.Coach) (
 // as a press.
 type turnFn func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error)
 
-// interrupter is the veto on a nudge the rules already allowed, or nil.
+// interrupter is the veto on a nudge the rules already allowed, or nil rather
+// than a pass-through, so the scheduler's own nil check decides and there is no
+// call at all.
 //
-// Nil rather than a pass-through when there is no coach, so the scheduler's
-// own nil check is the one that decides and there is no call at all — the
-// nudge path stays exactly what it was, which is the point of failing open.
-//
-// The Now handed over is deliberately thin: the clock, the part of the day and
-// capacity. The model is deciding whether *this moment* is a bad one to speak
-// into, and what is on the pile is not evidence about that.
+// The Now handed over is deliberately thin: the model is deciding whether this
+// moment is a bad one to speak into, and what is on the pile is not evidence
+// about that.
 func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
@@ -395,21 +351,10 @@ func interrupter(c coach.Coach, store *squirrel.Store) squirrel.Interrupter {
 	}
 }
 
-// spentFor is what the coach has cost this month, already rendered as money.
-//
-// Nil when there is no coach: a line saying "€0.00 of €10" under a sheet that
-// cannot call anything would be reporting on a thing that is not there.
-// overFor answers "is this month's coach budget gone", for the room.
-//
-// The screen has shown the figure in the sheet's lid since it was written, and
-// a session that lives in Campfire never sees it — so someone typing `!buddy`
-// at eleven at night could not tell "try again in a minute" from "not until
-// the first" and would try again four more times.
-//
-// A boolean rather than the figure. What it costs is on a surface you go to on
-// purpose; what belongs in the room is only that asking again tonight will not
-// help. Nil when there is no coach or no ceiling, and nil means "do not say
-// so", because a month with no ceiling is never spent.
+// overFor answers "is this month's coach budget gone", for the room. A boolean
+// rather than the figure: what it costs belongs on a surface you go to on
+// purpose. Nil means "do not say so", because a month with no ceiling is never
+// spent.
 func overFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) bool {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
@@ -423,6 +368,10 @@ func overFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) bo
 	}
 }
 
+// spentFor is what the coach has cost this month, already rendered as money.
+//
+// Nil when there is no coach: "€0.00 of €10" under something that cannot call
+// anything would be reporting on a thing that is not there.
 func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (string, string, bool) {
 	if _, none := c.(coach.NoCoach); none {
 		return nil
@@ -441,17 +390,21 @@ func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (
 	}
 }
 
-// coachWeb is the screen's half of the same seam.
-//
-// The screen declares its own Exchange, Answer and Proposal for the same
-// reason it declares its own Store: it must not have to know internal/coach
-// exists. So the conversion lives here, next to the budget's, and boot stays
-// the one place that knows both shapes.
-func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
-	func(context.Context, int64, string, string, string) (web.Answer, error),
-	func(int64) []web.Exchange, func(int64, string, string), func(int64)) {
+// The screen's half of the coach seam, in the screen's own types.
+type (
+	webAsker    func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error)
+	webRecenter func(personID int64) []web.Exchange
+	webRemember func(personID int64, said, replied string)
+	webForget   func(personID int64)
+)
 
-	recent := func(personID int64) []web.Exchange {
+// coachWeb is the screen's half of the same seam. The screen declares its own
+// Exchange, Answer and Proposal for the reason it declares its own Store, so the
+// conversion lives here and boot stays the one place that knows both shapes.
+func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
+	ask webAsker, recent webRecenter, remember webRemember, forget webForget) {
+
+	recent = func(personID int64) []web.Exchange {
 		fresh := talk.Recent(personID, time.Now())
 		out := make([]web.Exchange, 0, len(fresh))
 		for _, e := range fresh {
@@ -459,18 +412,18 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 		}
 		return out
 	}
-	remember := func(personID int64, said, replied string) {
+	remember = func(personID int64, said, replied string) {
 		talk.Add(personID, said, replied, time.Now())
 	}
-	forget := func(personID int64) { talk.Forget(personID) }
+	forget = func(personID int64) { talk.Forget(personID) }
 
-	ask := asker(c, store, talk, true)
-	if ask == nil {
+	turn := asker(c, store, talk, true)
+	if turn == nil {
 		return nil, recent, remember, forget
 	}
 
-	webAsk := func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error) {
-		reply, err := ask(ctx, personID, kind, said, subject)
+	ask = func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error) {
+		reply, err := turn(ctx, personID, kind, said, subject)
 		if err != nil {
 			return web.Answer{}, err
 		}
@@ -483,7 +436,7 @@ func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 		}
 		return a, nil
 	}
-	return webAsk, recent, remember, forget
+	return ask, recent, remember, forget
 }
 
 // coachChat is chat's half. It wants what was said and what changed, and it

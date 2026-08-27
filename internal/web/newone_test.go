@@ -90,7 +90,6 @@ func TestAnEmptyNameMakesNothing(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// A task is one answer, and it says so back.
 func TestMakingATaskTakesOneAnswer(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)

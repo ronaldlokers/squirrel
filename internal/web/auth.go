@@ -8,22 +8,15 @@ import (
 	"net/url"
 )
 
-// guard is this product's authentication, and it keeps its name and its
-// position while losing its body.
+// guard is this product's authentication.
 //
-// It was one comparison: Traefik called an Authentik forward-auth outpost,
-// Authentik decided, and Squirrel compared one header to one configured
-// string. That was the right size while there was one person and one pile. It
-// could only ever say "somebody Authentik likes" — never which somebody — so a
-// second person meant a redeploy.
+// It reads a session cookie and puts two things on the request: the person id,
+// which almost everything uses, and the sub, which only capture needs.
 //
-// It reads a session cookie now and puts two things on the request: the person
-// id, which almost everything uses, and the sub, which only capture needs.
-//
-// **A GET for a page redirects; nothing else does.** An unauthenticated POST,
-// and any request carrying X-Thread, gets 401 with no body. A redirect there
-// would swallow a form's words into a login screen, and thread.js would paste
-// the gate into the conversation as a turn.
+// A GET for a page redirects; nothing else does. An unauthenticated POST, and
+// any request carrying X-Thread, gets 401 with no body. A redirect there would
+// swallow a form's words into a login screen, and thread.js would paste the
+// gate into the conversation as a turn.
 func guard(opts Options, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		carried, err := r.Cookie(sessionCookie)
@@ -49,13 +42,19 @@ func guard(opts Options, h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// wantsAPage is a plain browser navigation rather than a form post or a fetch
+// from thread.js. Only one of those can be sent to a login screen.
+func wantsAPage(r *http.Request) bool {
+	return r.Method == http.MethodGet && r.Header.Get("X-Thread") == ""
+}
+
 // refuse is what a request with nobody behind it gets.
 //
 // No body on the 401: a refusal that describes what it is refusing tells an
 // unauthenticated caller that there is something here.
 func refuse(w http.ResponseWriter, r *http.Request, why string) {
 	slog.Warn("refused the pile", "why", why, "path", r.URL.Path)
-	if r.Method != http.MethodGet || r.Header.Get("X-Thread") != "" {
+	if !wantsAPage(r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -89,14 +88,8 @@ func withWho(r *http.Request, personID int64, sub string) *http.Request {
 
 // personOf is whose pile this request is about.
 //
-// It replaced Options.Owner on 25 August 2026. That was a process-global
-// atomic.Int64 read through opts.person(), and every handler read it. It could
-// not survive two people: a second person's request would have read the first
-// one's owner and drawn their pile.
-//
-// A request nobody has been put on is nobody, and never a default. A fallback
-// here would be exactly the silent cross-pile read this change exists to make
-// impossible.
+// A request nobody has been put on is nobody, and never a default: a fallback
+// here would be a silent cross-pile read.
 func personOf(r *http.Request) (int64, bool) {
 	w, ok := r.Context().Value(whoKey{}).(who)
 	return w.personID, ok && w.personID != 0

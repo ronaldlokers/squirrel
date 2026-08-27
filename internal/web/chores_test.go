@@ -114,16 +114,6 @@ func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 	require.NotContains(t, body, "a while back")
 }
 
-// The chore is at rest here, so it does not wear the colour of something being
-// made, nor the page tab that says what a note ended up as.
-func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
-	body := opened(t, &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}, "chores")
-
-	require.NotContains(t, body, "state-chore")
-	require.NotContains(t, body, `class="rcard`)
-	require.NotContains(t, body, `class="tab"`)
-}
-
 func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
 	f := &fakeStore{choresErr: errTest}
 	// The door still opens and Buddy says he cannot reach them. A 503 was
@@ -210,7 +200,6 @@ func TestRetiringAChoreSaysSomethingElse(t *testing.T) {
 	require.NotEqual(t, did.appended[1].Words, stopped.appended[1].Words)
 }
 
-// An act nobody offered does nothing and says nothing.
 func TestAChoreActThatWasNeverOfferedDoesNothing(t *testing.T) {
 	f := &fakeStore{chores: aChore()}
 	routed(t, f).call(t, "POST", "/chores/act", strings.NewReader("id=1&act=burn"))
@@ -234,7 +223,6 @@ func TestANewChoreComesBackAsACard(t *testing.T) {
 	require.Contains(t, string(f.appended[1].Shown), "/chores/act")
 }
 
-// Asking how often puts the question on the table with both rows on it.
 func TestAskingHowOftenOffersNumbersAndUnits(t *testing.T) {
 	f := &fakeStore{chores: aChore()}
 	routed(t, f).call(t, "POST", "/chores/often", strings.NewReader("id=1"))
@@ -319,7 +307,3 @@ func TestThePickerAndTheSentenceAgree(t *testing.T) {
 
 	require.Equal(t, typed, f.reinterval.every)
 }
-
-// The lid's menu is empty since the deck came out: every place is a message,
-// the way to one is the rail, and the way to the rail is the mark. A menu of
-// one item that is always where you are is furniture.

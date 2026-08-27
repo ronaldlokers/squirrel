@@ -96,15 +96,13 @@ func photoOrThumb(s Store, opts Options, small bool) http.HandlerFunc {
 			f, err = opts.Photos.Open(it.PhotoName)
 		}
 		if err != nil {
-			// The row says there is a photograph and the disk disagrees. That
-			// is worth a log and a 404 rather than a 500: the pile still
-			// works, and the note is still a note.
+			// The row says there is a photograph and the disk disagrees: a log
+			// and a 404 rather than a 500, because the pile still works.
 			//
-			// The log is the half that was missing. On a single node with the
-			// photographs on a volume beside the pod, a remount, a restore
-			// that did not line up, or a deletion turns every affected
-			// photograph into a quiet 404 — and without this line there is
-			// nothing afterwards to tell you it happened, or how many.
+			// The log is the half that matters. A remount, a restore that did
+			// not line up or a deletion turns every affected photograph into a
+			// quiet 404, and without this there is nothing afterwards to say
+			// it happened or how many.
 			slog.Warn("a photograph the row expects is not on disk",
 				"item", it.ID, "name", it.PhotoName, "error", err)
 			http.NotFound(w, r)
@@ -113,9 +111,9 @@ func photoOrThumb(s Store, opts Options, small bool) http.HandlerFunc {
 		defer f.Close()
 
 		w.Header().Set("Content-Type", kind)
-		// Immutable: the name is random and a name never gets new bytes, so a
-		// browser that has it never needs to ask again. Private, because this
-		// is behind forward-auth and no shared cache has any business with it.
+		// Immutable: the name is random and never gets new bytes, so a browser
+		// that has it need not ask again. Private, because this is behind a
+		// session and no shared cache has any business with it.
 		w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
 		// A photograph is not a document, and nothing here should ever be
 		// interpreted as one.

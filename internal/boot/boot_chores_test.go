@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func itoa(i int) string { return strconv.Itoa(i) }
-
 // End to end: define a chore by chat, and see it in the database. The reply
 // itself goes to Campfire, which is not running here, so the assertion is on
 // the state rather than on the message.
@@ -25,7 +23,7 @@ func TestBootDefinesAChoreFromChat(t *testing.T) {
 
 	body := strings.Replace(payload, `"plain": "buy milk"`, `"plain": "every 2 weeks: vacuum"`, 1)
 	res, err := http.Post(
-		"http://127.0.0.1:"+itoa(s.Port())+"/transports/campfire",
+		"http://127.0.0.1:"+strconv.Itoa(s.Port())+"/transports/campfire",
 		"application/json", strings.NewReader(body))
 	require.NoError(t, err)
 	defer res.Body.Close()

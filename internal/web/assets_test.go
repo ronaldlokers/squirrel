@@ -1,8 +1,10 @@
 package web
 
 import (
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,23 +33,46 @@ func TestStaticDoesNotEscapeItsDirectory(t *testing.T) {
 	require.NotEqual(t, http.StatusOK, w.Code)
 }
 
-// The door art is part of the screen, not part of the comp: a home page whose
-// illustrations 404 is a home page with two empty slots.
-func TestTheDoorArtIsServed(t *testing.T) {
-	m := mounted(t, &fakeStore{})
-
-	for _, name := range []string{"door-pile.png", "door-chores.png"} {
-		w := m.call(t, "GET", "/static/"+name, nil)
-		require.Equal(t, http.StatusOK, w.Code, name)
-		require.NotEmpty(t, w.Body.Bytes(), name)
-	}
-}
-
 func TestFontsAreEmbedded(t *testing.T) {
 	for _, name := range []string{"recursive.woff2", "inter-900.woff2", "logo.png"} {
 		b, err := staticFS.ReadFile("static/" + name)
 		require.NoError(t, err, name)
 		require.NotEmpty(t, b, name)
+	}
+}
+
+// Every embedded asset is one a page asks for. They are compiled into the
+// binary and hashed into assetVersion, so one that nothing names is bytes
+// shipped to every browser and a version stamp that churns for nothing.
+//
+// The mood drawings are named `mood-{{.Mood}}.png` in the template, so the
+// five of them are matched by prefix rather than by a literal that does not
+// appear anywhere.
+func TestEveryEmbeddedAssetIsAskedForSomewhere(t *testing.T) {
+	names, err := fs.ReadDir(staticFS, "static")
+	require.NoError(t, err)
+
+	// Every page, plus the two things the server writes rather than renders:
+	// the manifest names the app icons and nothing else does.
+	m := mounted(t, &fakeStore{})
+	asks := m.call(t, "GET", "/manifest.webmanifest", nil).Body.String()
+	for _, page := range templates(t) {
+		asks += page
+	}
+	for _, f := range []string{"static/pile.css", "static/pile.js", "static/sw.js", "static/thread.js"} {
+		b, err := staticFS.ReadFile(f)
+		require.NoError(t, err)
+		asks += string(b)
+	}
+
+	for _, entry := range names {
+		name := entry.Name()
+		switch {
+		case strings.HasSuffix(name, ".css"), strings.HasSuffix(name, ".js"),
+			name == "OFL.txt", strings.HasPrefix(name, "mood-"):
+			continue
+		}
+		require.Contains(t, asks, name, "%s is embedded and nothing asks for it", name)
 	}
 }
 

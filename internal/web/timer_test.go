@@ -23,8 +23,6 @@ func TestStartingATimerFromAChore(t *testing.T) {
 	require.Equal(t, 10*time.Minute, f.timer.Ends.Sub(f.timer.Started))
 }
 
-// Running, it rides the lid on every screen — you started it in order to go
-// and do something, and wandering to the pile should not lose it.
 func TestARunningTimerShowsOnEveryScreen(t *testing.T) {
 	ends := time.Now().Add(6*time.Minute + 12*time.Second)
 	f := &fakeStore{
@@ -75,7 +73,6 @@ func TestNoTimerNoStrip(t *testing.T) {
 	require.NotContains(t, body, `class="running"`)
 }
 
-// Three hours is not a body double, it is an afternoon.
 func TestATimerHasBounds(t *testing.T) {
 	for _, mins := range []string{"0", "-5", "1000", "nope"} {
 		f := &fakeStore{}

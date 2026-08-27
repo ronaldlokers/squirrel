@@ -38,14 +38,9 @@ type Fixed struct {
 
 // Happened is one thing that was already done today.
 //
-// Done only, and never refused. Something turned down is already absent from
-// OpenWork — suppression belongs in the fact rather than in the prompt, for
-// the same reason the caps do — so a list of refusals here would add nothing
-// except a record of what you keep saying no to, which is the series this
-// product does not write.
-//
-// Today only, and never a total. What it is for is not congratulating someone
-// on something they have not done.
+// Done only, never refused: something turned down is already absent from
+// OpenWork, and a list of refusals would be a record of what you keep saying no
+// to. Today only, and never a total.
 type Happened struct {
 	What string `json:"what"`
 }
@@ -63,12 +58,10 @@ type Facts interface {
 	// Typically is how long something usually takes, measured from timers that
 	// reached their end, or false when there are too few runs to say.
 	//
-	// The sixth tool, and it arrived after the other five: answering it needs
-	// a history of finished timers, and migration 0017 refused a timer history
-	// in writing. Migration 0022 narrows that refusal rather than reversing
-	// it — only runs that finished are recorded, so there is no failure rate
-	// in the table and the median is a fact about the bins rather than about
-	// you.
+	// Migration 0017 refused a timer history in writing; 0022 narrows that
+	// refusal rather than reversing it. Only runs that finished are recorded, so
+	// there is no failure rate in the table and the median is a fact about the
+	// bins rather than about you.
 	Typically(ctx context.Context, personID int64, label string) (int, bool, error)
 }
 

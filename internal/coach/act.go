@@ -10,16 +10,16 @@ import (
 
 // A conversational turn that can act.
 //
-// The read tools are the same five Decide uses. The write tools are the six
-// that pass the policy's test — already a button, undone by one press — plus
-// four that do not, which the model may only propose.
+// The read tools are the ones Decide uses, without choose. The write tools are
+// the ones that pass the policy's test — already a button, undone by one press
+// — plus the four kinds that do not, which the model may only propose.
 //
 // Nothing here can reword a note, touch a check-in, or delete a row. Those are
 // not omissions to be filled in later: rewriting your own words is what `!fix`
 // is for and it is yours alone; how you feel is said by you and never
 // inferred; and nothing in this product deletes, it retracts.
 
-// writeTools are the six that run when asked, and the one that proposes.
+// writeTools are the ones that run when asked, and the one that proposes.
 //
 // The proposal is a single tool with a kind rather than four tools, so the
 // four things that need confirming are unmistakably one category in the wire
@@ -114,8 +114,6 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 	if err != nil {
 		return Reply{}, ErrUnavailable
 	}
-	// The gate is given back whichever way this returns. `defer` rather
-	// than a release at the end, because the end is not the only exit.
 	defer permit.Release()
 
 	model := p.modelFor(t)
@@ -309,7 +307,7 @@ var writes = map[string]bool{
 	"refuse": true, "snooze_chore": true, "create_task": true,
 }
 
-// readTools is the five Decide uses, without choose — a conversational turn
+// readTools is what Decide reads with, without choose: a conversational turn
 // has nothing to choose, it has been handed what is on screen.
 func readTools() []map[string]any {
 	out := make([]map[string]any, 0, len(toolSpecs)-1)

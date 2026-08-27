@@ -8,21 +8,15 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The read tools, over the store.
-//
-// Here rather than in either package for the reason everything else in this
-// file is here: internal/coach must not know a database exists and
-// internal/squirrel must not know a model does. What the model may see is
-// therefore decided in one place, and it is a short place on purpose.
+// The read tools, over the store. Here because internal/coach must not know a
+// database exists and internal/squirrel must not know a model does.
 //
 // Two rules hold across all of it:
 //
-//   - Every cap is applied here, not asked for in the prompt. A cap the model
-//     is asked to respect is a cap it can ignore.
-//   - Every suppression is applied here too. Something turned down today is
-//     absent from what the model is shown, so "not now" means the same thing
-//     whether the picker or the coach is choosing. Leaving that to the prompt
-//     would make a press mean less depending on which one answered.
+//   - Every cap is applied here, not asked for in the prompt. A cap the model is
+//     asked to respect is a cap it can ignore.
+//   - Every suppression is applied here too, so "not now" means the same thing
+//     whether the picker or the coach is choosing.
 type facts struct {
 	store *squirrel.Store
 	now   func() time.Time
@@ -126,13 +120,10 @@ func (f *facts) Lately(ctx context.Context, personID int64, limit int) ([]coach.
 	return out, nil
 }
 
-// Typically is how long something usually takes, from timers that reached
-// their end.
-//
-// The store is what makes this narrow: it reads timer_runs, which only ever
-// holds finished runs, and it refuses to answer at all until there are enough
-// of them for a median to mean something. Both of those are the store's rules
-// rather than this adapter's, so there is no way to widen them from here.
+// Typically is how long something usually takes, from timers that reached their
+// end. The narrowness is the store's rule rather than this adapter's — it reads
+// timer_runs, which only holds finished runs, and refuses to answer until there
+// are enough for a median to mean something.
 func (f *facts) Typically(ctx context.Context, personID int64, label string) (int, bool, error) {
 	return f.store.TypicalMinutes(ctx, personID, label)
 }

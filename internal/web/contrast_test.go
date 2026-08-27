@@ -2,27 +2,18 @@
 
 // Every word on every screen, measured against what is behind it.
 //
-// This exists because the two ways a colour goes wrong here are both invisible
-// to a person writing the rule that causes them. The first is a scoped rule
-// reaching further than its author meant: `.checkin .lead` was written for a
-// question standing on the purple field and it also caught every small label
-// inside the offer card, so the head of the one thing home hands you rendered
-// tail cream on cream stock at 1.18:1 — present in the markup, gone from the
-// screen. `.results .lead` did the same to HOW OFTEN? on a search result. Both
-// shipped, both were read past for weeks, and neither is visible in a diff.
+// Two ways a colour goes wrong here, both invisible to whoever writes the rule
+// that causes them.
 //
-// The second is a fill and a type colour that were each chosen well and never
-// measured together. Paper on Acorn Orange is 3.1:1, which failed on all six
-// orange controls at once, on five screens, for the whole life of the screen.
+// A scoped rule reaching further than its author meant: `.checkin .lead` was
+// written for a question on the purple field and also caught every small label
+// in the offer card, rendering cream on cream at 1.18:1 — present in the markup,
+// gone from the screen. Neither that nor `.results .lead` doing the same to HOW
+// OFTEN? is visible in a diff.
 //
-// DESIGN.md's own instruction is "measure a colour against the type that will
-// sit on it, and change the number until it passes". A person doing that by
-// eye is the thing that failed. This does it by arithmetic, on the computed
-// styles, on every screen, at both widths.
-//
-// It is a browser test rather than a stylesheet test on purpose: what a piece
-// of text ends up coloured is a cascade result, and the two bugs above were
-// both rules that were present, correct, and outvoted.
+// A fill and a type colour each chosen well and never measured together: paper on
+// Acorn Orange is 3.1:1, which failed six controls on five screens for the whole
+// life of the screen.
 package web
 
 import (
@@ -199,13 +190,11 @@ func everyScreen() *fakeStore {
 // size change moves what counts as large text.
 func TestEveryWordCanBeRead(t *testing.T) {
 	screens := []string{
-		// "/" is several screens now: the rail, the transcript with a chore
-		// card, a task card and the interval picker on it, and the dock.
-		// "/" is the whole app: the rail, the transcript with a chore card, a
+		// "/" is the whole app: the menu, the transcript with a chore card, a
 		// task card, a note being triaged and the interval picker on it, and
 		// the dock.
 		"/",
-		"/moods", "/enough", "/buddy",
+		"/moods", "/enough",
 		"/at/4",
 	}
 

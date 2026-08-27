@@ -11,9 +11,9 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The confirmation surface, on the sheet. Nothing here is applied by anything
-// except the press, and everything arrives back through a form — so everything
-// is read the way a stranger's typing is read.
+// The confirmation surface. Nothing here is applied by anything except the
+// press, and everything arrives back through a form — so everything is read
+// the way a stranger's typing is read.
 
 func proposes(p *Proposal) *fakeCoach {
 	return &fakeCoach{reply: "Shall I?", propose: p}
@@ -35,18 +35,27 @@ func TestAProposalIsRenderedAndNothingIsWritten(t *testing.T) {
 	require.Empty(t, f.moments, "a proposal created something")
 }
 
-// It travels in the form that renders it. Nothing stores it, so it cannot be
-// applied by anything but the press — and a reload asks again rather than
-// doing it.
-func TestAProposalIsStoredNowhere(t *testing.T) {
+// A proposal is answerable while it is the newest thing Buddy said, and not
+// after. It travels in the form that renders it and nothing else holds it, so
+// a proposal that has scrolled up is a card with its words and no press —
+// there is no stored intent for a later reload to act on.
+func TestAProposalStopsBeingAnswerableOnceSomethingElseIsSaid(t *testing.T) {
 	f := withOffer(nil)
 	c := proposes(&Proposal{Do: "chore", Said: "Shall I?", Text: "bins", Every: "every 2 weeks"})
 	m := mountedWith(t, f, c)
 
 	m.call(t, "POST", "/buddy/say", strings.NewReader("said=the+bins+keep+piling+up"))
+	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "KEEP IT",
+		"the proposal never rendered, so this measures nothing")
 
-	body := m.call(t, "GET", "/buddy", nil).Body.String()
-	require.NotContains(t, body, "KEEP IT", "a proposal survived the page it was on")
+	// Said, and then said over.
+	f.turns = append(append(f.turns, f.appended...),
+		squirrel.Turn{ID: 99, Who: squirrel.SpeakerBuddy, Words: "Something else."})
+	f.appended = nil
+	f.checkin = fresh()
+
+	require.NotContains(t, thread(t, f), "KEEP IT",
+		"a proposal in scrollback still offers a press")
 }
 
 func TestKeepingAMomentCreatesIt(t *testing.T) {

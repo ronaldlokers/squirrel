@@ -39,8 +39,6 @@ func TestThePileOffersTheWayToStop(t *testing.T) {
 	require.Contains(t, body, squirrel.Say(squirrel.SayingStop, time.Now()))
 }
 
-// Nothing about how much you did. Not a count, not a word for one, not a
-// judgement about the size of it.
 func TestStoppingSaysNothingAboutHowMuchYouDid(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/enough", nil).Body.String()
 
@@ -117,12 +115,3 @@ func TestTheRestingPoseIsDrawnAtItsOwnSize(t *testing.T) {
 		"the pose is not marked, so the stylesheet draws it at the shared mark's size")
 	require.Contains(t, body, `width="300" height="207"`)
 }
-
-// TestStoppingDoesNotLookLikeHavingNothingLeft compared two drawings, and there
-// is only one left to compare. The empty states that were screens became
-// sentences when their screens became messages — Buddy says "nothing to decide
-// about" rather than drawing an absence — so /enough is the last screen in the
-// product that is an absence, and nothing can wear its drawing by accident.
-//
-// What the test protected is now structural: no other surface has an
-// empty-state block to confuse with this one.

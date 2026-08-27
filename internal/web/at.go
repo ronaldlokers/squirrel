@@ -12,17 +12,13 @@ import (
 
 // A fixed point, and what is pointing at it.
 //
-// The list this product spent its whole life refusing — `PRODUCT.md` said a
-// browsable set of your appointments is a calendar and a calendar is a thing
-// you are behind on. The owner overturned that on 24 August 2026, and what the
-// rule protected against is kept rather than argued away: this holds only what
-// is still ahead. Nothing past, nothing done, no count, and nothing here has
-// been missed.
+// A browsable set of appointments is a calendar, and a calendar is a thing you
+// are behind on — so this holds only what is still ahead. Nothing past, nothing
+// done, no count, and nothing here has been missed.
 //
 // Notes point at an appointment rather than the appointment growing fields of
-// its own, because a thought that lives on an appointment instead of in the
-// pile is a thought `!find` cannot reach. See the spec at
-// docs/superpowers/specs/2026-08-24-fixed-point-detail-design.md.
+// its own: a thought living on an appointment instead of in the pile is a
+// thought `!find` cannot reach.
 
 // upcomingLimit caps the list the way every other list here is capped. The cap
 // is what makes "there is more" truthful — and it is never rendered as a
@@ -167,45 +163,12 @@ func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// momentViewOf is one fixed point, with the arithmetic already done.
+// atOpenHandler draws one fixed point into the conversation: when to leave,
+// what to take, and the notes pointing at it.
 //
-// Whether the window is open is worked out here rather than in the template,
-// because a template that does arithmetic is a template that can disagree with
-// the core about when to leave — and the core is where LeaveWords lives.
-func momentViewOf(m squirrel.Moment) *momentView {
-	return &momentView{
-		ID:    m.ID,
-		Label: m.Label,
-		Words: squirrel.LeaveWords(m),
-		Take:  m.Bring,
-		Open:  m.Open(now()),
-	}
-}
-
-// attachedViews reuses the pile's own note shape, because an attached note is
-// an ordinary note and rendering it any other way would be the first step
-// towards it becoming a different kind of thing.
-func attachedViews(items []squirrel.Item) []noteView {
-	out := make([]noteView, 0, len(items))
-	for _, it := range items {
-		out = append(out, toView(it))
-	}
-	return out
-}
-
-func upcomingViews(ms []squirrel.Moment) []momentView {
-	out := make([]momentView, 0, len(ms))
-	for _, m := range ms {
-		out = append(out, *momentViewOf(m))
-	}
-	return out
-}
-
-// atOpenHandler draws one fixed point into the conversation.
-//
-// The same three things the page shows — when to leave, what to take, and the
-// notes pointing at it — said rather than navigated to. `/at/{id}` stays a real
-// page until phase 4: a notification sent yesterday is still on a lock screen.
+// `/at/{id}` stays a route because a notification sent yesterday is still on a
+// lock screen — it writes the same turn and redirects here, so the tap and the
+// press arrive at the same place. See TestTheNotificationsURLLandsInTheConversation.
 func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)

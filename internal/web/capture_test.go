@@ -46,20 +46,23 @@ func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
 	post(t, mountedSpooling(t, f, &fakeSpool{}), "/capture", url.Values{"text": {"a thought"}})
 
 	require.Len(t, f.appended, 2)
+
+	// Against the pool, not the word: the wording is chosen from the day, and
+	// "kept" is only one of them. Asserting the literal failed on every day
+	// that picked "On the shelf." — the third saying-shaped flake in this
+	// suite, after the one that failed after 21:00 and the one that failed
+	// between midnight and two.
+	require.Contains(t, squirrel.Sayings(squirrel.SayingKept), f.appended[1].Words)
+
 	said := strings.ToLower(f.appended[1].Words)
-	require.Contains(t, said, "kept")
 	for _, total := range []string{"1 note", "added", "in the pile now", "to review"} {
 		require.NotContains(t, said, total)
 	}
 }
 
-// There is no spool behind this write. The chat's 👀 means the words reached
-// disk before anything else could go wrong; here there is no such stage, so an
-// unreachable database is a note that was never taken — and the only honest
-// answer is to say so and give the words back.
-// The only way a capture can fail now is an unwritable disk, which is a much
-// louder problem than a database being briefly unreachable — and the words
-// still come back rather than disappearing.
+// A capture goes through the spool, so the only way it can fail is an unwritable
+// disk — a much louder problem than a database being briefly unreachable. The
+// words still come back rather than disappearing.
 func TestAFailedCaptureKeepsTheWords(t *testing.T) {
 	f := &fakeStore{}
 	m := mountedSpooling(t, f, &fakeSpool{err: errTest})
@@ -108,13 +111,8 @@ func TestAnEmptySlotDoesNothing(t *testing.T) {
 	require.Empty(t, f.items, "whitespace is not a thought")
 }
 
-// The words come back through the address bar, so they are escaped on the way
-// out like any other text on this screen.
-// What you said comes back on the screen as text, whatever you typed.
-//
-// It used to come back through the address bar and into the slot; it comes
-// back as a turn now, and the escaping matters in exactly the same way — the
-// thread renders your own words on every load, forever.
+// What you said comes back on the screen as text, whatever you typed. It comes
+// back as a turn, which the thread renders on every load, forever.
 func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 	body := mounted(t, &fakeStore{turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerYou, Words: "<script>alert(1)</script>"},
@@ -125,9 +123,9 @@ func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 }
 
 // Held is a third state, not a flavour of the other two: the words are safe,
-// which failure is not, and they are not in the pile yet, which kept is.
-// The one answer that is not a turn, because a turn needs a database and this
-// is what happens when there is no network to reach one.
+// which failure is not, and they are not in the pile yet, which kept is. It is
+// also the one answer that is not a turn, because a turn needs a database and
+// this is what happens when there is no network to reach one.
 func TestTheSlotSaysWhenWordsAreHeld(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/?held=1", nil).Body.String()
 
@@ -155,8 +153,6 @@ func (signedInAs) OpenSession(context.Context, int64, string, []byte, time.Time,
 }
 func (signedInAs) EndSession(context.Context, []byte) error { return nil }
 
-// A capture is spooled under the sub of whoever typed it.
-//
 // This is the trap the design's section 4 names. The screen does not write to
 // Postgres — it spools, with a sender string, and the drain resolves the
 // owner from that string rather than from the session. So the sender has to be

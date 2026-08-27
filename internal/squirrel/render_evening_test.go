@@ -74,7 +74,6 @@ func TestEveningMessageNeverCountsWhatRemains(t *testing.T) {
 	require.NotContains(t, m.Text, "0")
 }
 
-// One note is a note.
 func TestEveningMessageSaysOneNoteSingular(t *testing.T) {
 	m := squirrel.EveningMessage(squirrel.Handled{Notes: 1}, nil, nil, "")
 	require.Contains(t, m.Text, "1 note cleared")

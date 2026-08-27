@@ -93,8 +93,6 @@ func TestWhatCameBackIsSaidBeforeThePile(t *testing.T) {
 	require.NotContains(t, body, "not decided about")
 }
 
-// And the same sentence is not said twice.
-//
 // This is the defect the offer had for an afternoon: appended on every load,
 // so a reload put a second copy in the record. The offer refuses to talk over
 // an open turn, which is not enough here — this speaks when nothing is open.
@@ -148,7 +146,7 @@ func TestBuddyDoesNotOpenOverAQuestion(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// It is one thing, not a summary of all four. The rail already says all four.
+// It is one thing, not a summary of all four. The menu already says all four.
 func TestTheOpeningLineIsOneThing(t *testing.T) {
 	f := &fakeStore{
 		checkin: fresh(),
@@ -168,8 +166,6 @@ func TestTheOpeningLineIsOneThing(t *testing.T) {
 	require.Less(t, len(said), 90, "it is a paragraph, not an opening")
 }
 
-// A count that cannot be read is a line not drawn. You came to talk, not to be
-// told the database is unwell.
 func TestAStoreThatCannotCountOpensWithNothing(t *testing.T) {
 	f := &fakeStore{checkin: fresh(), err: errTest}
 	m := routed(t, f)
@@ -192,15 +188,13 @@ func TestTheOpeningLineUsesThePersonsDay(t *testing.T) {
 	appointment := time.Date(2026, 8, 26, 0, 30, 0, 0, ams)
 
 	// As the store hands it back before conversion: the right instant, in UTC.
-	said, _ := openingLine(ams, squirrel.Waiting{Agenda: 1},
+	said := openingLine(ams, squirrel.Waiting{Agenda: 1},
 		[]squirrel.Moment{{Label: "dentist", Starts: appointment.UTC()}}, tonight)
 
 	require.Contains(t, said, "dentist tomorrow")
 	require.Contains(t, said, "00:30", "it printed the time in the wrong clock")
 }
 
-// The opening line does not swallow the offer.
-//
 // The offer is the product's whole argument — one thing, chosen for you — and
 // tonight's opening line turned it off on every day it spoke, which is most
 // days. An opening says what is true and asks nothing; it is not something on
@@ -234,8 +228,8 @@ func TestTheOfferStillWillNotTalkOverACard(t *testing.T) {
 // A question you have not answered is not asked again.
 //
 // It is still on the screen; asking again does not make it easier to answer,
-// it makes a column of the same question — which is what a phone showed on
-// 25 August 2026, three deep, with opening lines in between them.
+// it makes a column of the same question — which is what a phone showed, three
+// deep, with opening lines in between them.
 func TestAnUnansweredCheckinIsNotAskedAgain(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)

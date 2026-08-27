@@ -74,8 +74,6 @@ func get(t *testing.T, url string, cookies ...*http.Cookie) *http.Response {
 	return res
 }
 
-// The screen is behind a session, and a header is not one.
-//
 // This test used to assert the opposite half of the same fact: that
 // X-Authentik-Username was the whole authentication. It is the end-to-end
 // proof that the middleware coming off the ingress does not leave the pile
@@ -106,7 +104,6 @@ func TestTheScreenIsBehindASession(t *testing.T) {
 		get(t, url, &http.Cookie{Name: "squirrel_session", Value: "made up"}).StatusCode)
 }
 
-// And the way in is reachable with nothing at all, or there is no way in.
 func TestTheWayInIsReachableWithNoSession(t *testing.T) {
 	withStore(t)
 	s := boots(t, withAWayIn(t, nil))

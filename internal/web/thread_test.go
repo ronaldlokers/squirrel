@@ -56,11 +56,6 @@ func TestOnlyTheNewestBuddyTurnHasControls(t *testing.T) {
 }
 
 // The four places, and the two things you can always do, in the menu.
-//
-// This asserted a rail of four doors pinned under the lid until 26 August 2026.
-// The rail is gone — it was a fixture taking a fifth of a phone screen — and
-// what it guaranteed did not go with it: every place is still reachable, and
-// the ones worth a number still carry one.
 func TestTheMenuHoldsEverywhereElse(t *testing.T) {
 	body := thread(t, &fakeStore{
 		waiting: squirrel.Waiting{Pile: 3, Tasks: 1, Chores: 2, Agenda: 1},
@@ -77,18 +72,7 @@ func TestTheMenuHoldsEverywhereElse(t *testing.T) {
 	require.Contains(t, body, `class="cnt">2<`)
 }
 
-// And the conversation itself carries none of it. The rail, the chip row and
-// the stop link were about 45% of a phone screen before a word was said.
-func TestTheConversationCarriesNoFrame(t *testing.T) {
-	body := thread(t, &fakeStore{waiting: squirrel.Waiting{Pile: 3}})
-
-	for _, gone := range []string{"railwrap", "alsochips", "rdoor", "doorcount"} {
-		require.NotContains(t, body, gone, "%s is still in the conversation", gone)
-	}
-}
-
-// Zero is no number, not a nought. A door reading "0" is the scoreboard the
-// retired rule was actually protecting against.
+// Zero is no number, not a nought. A door reading "0" is a scoreboard.
 func TestADoorWithNothingWaitingShowsNoNumber(t *testing.T) {
 	body := thread(t, &fakeStore{waiting: squirrel.Waiting{}})
 
@@ -147,16 +131,11 @@ func TestThreadWalksBackwardsWhenAsked(t *testing.T) {
 	require.NotContains(t, body, "newer")
 }
 
-// A database that cannot count is not a reason to take the navigation away.
-//
-// Counting the rail's own doors rather than looking for "the pile": that name
-// is in the lid's menu too, so a rail rendered as nothing at all would still
-// contain it and the test would pass over a missing rail.
+// A database that cannot count is not a reason to take the navigation away:
+// everywhere still goes where it goes, and only the numbers are missing.
 func TestTheDoorsSurviveACountThatFails(t *testing.T) {
 	body := thread(t, &fakeStore{waitingErr: errTest})
 
-	// Everywhere still goes where it goes; only the numbers are missing, which
-	// is what the menu was before 24 August.
 	for _, name := range []string{"the pile", "the tasks", "the chores", "the agenda"} {
 		require.Contains(t, body, name)
 	}
@@ -261,7 +240,6 @@ func TestWalkingBackDoesNotAsk(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// Answering records the reading and writes both turns.
 func TestAnsweringTheCheckinWritesTurnsAndRecords(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/mood", strings.NewReader("mood=good"))
@@ -273,7 +251,6 @@ func TestAnsweringTheCheckinWritesTurnsAndRecords(t *testing.T) {
 	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
 }
 
-// Not one of the five is no answer rather than a wrong one, and no turn at all.
 func TestAnAnswerThatIsNotOneOfTheFiveWritesNothing(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/mood", strings.NewReader("mood=splendid"))
@@ -415,16 +392,11 @@ func TestAFragmentAndAPageRenderTheSameTurn(t *testing.T) {
 	f := &fakeStore{}
 	fragment := routed(t, f).callFragment(t, "/capture", "text=milk").Body.String()
 
-	// `said`, not `bub`: Buddy's words are not in a bubble as of 26 August
-	// 2026, and yours are. The point of this test is that a fragment and a page
-	// render a turn identically, which is unchanged.
 	require.Contains(t, page, `<p class="said">`+kept+`</p>`)
 	require.Contains(t, fragment, `<p class="said">`+kept+`</p>`)
 	require.NotContains(t, fragment, "<html", "a fragment is turns and nothing else")
-	require.NotContains(t, fragment, "railwrap")
 }
 
-// A fragment press answers with the new turns rather than a redirect.
 func TestAFragmentPressAnswersWithTheNewTurns(t *testing.T) {
 	w := routed(t, &fakeStore{}).callFragment(t, "/capture", "text=milk")
 
@@ -452,7 +424,6 @@ func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
 	require.Contains(t, body, `href="/moods"`, "the newest turn keeps its chips")
 }
 
-// Pressing a door says its name, and Buddy answers with what is behind it.
 func TestOpeningADoorSaysItsName(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour,
@@ -502,13 +473,11 @@ func TestAnEmptyPlaceSaysWhereChoresComeFrom(t *testing.T) {
 	require.NotContains(t, f.appended[1].Words, "0")
 }
 
-// The rail posts rather than links, because opening a place is something you
-// said and a GET that writes would write again on every reload.
-func TestTheRailPostsRatherThanLinks(t *testing.T) {
-	body := thread(t, &fakeStore{})
-
-	require.Contains(t, body, `action="/open"`)
-	require.NotContains(t, body, `<a class="rdoor`)
+// A place is opened by posting rather than by following a link, because opening
+// one is something you said and a GET that writes would write again on every
+// reload.
+func TestOpeningAPlacePostsRatherThanLinks(t *testing.T) {
+	require.Contains(t, thread(t, &fakeStore{}), `action="/open"`)
 }
 
 // A question is something on the table too.
@@ -529,7 +498,6 @@ func TestNothingIsOfferedOverAnUnansweredQuestion(t *testing.T) {
 	require.Contains(t, body, `class="pick"`, "the question keeps its answers")
 }
 
-// The pile hands you one note, with the four ways out of it.
 func TestOpeningThePileHandsYouOneNote(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(9, "the boiler makes a noise", squirrel.ItemOpen),
@@ -617,7 +585,6 @@ func TestANoteCanBeAskedTheThreeQuestions(t *testing.T) {
 	}
 }
 
-// A note that is not yours cannot be asked about either.
 func TestANoteThatIsNotYoursIsNotAskedAbout(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/pile/reword", strings.NewReader("id=99"))
@@ -636,7 +603,6 @@ func TestRewordingSaysItAndCarriesOn(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "what it says now")
 }
 
-// Setting one aside says so, and hands you the next.
 func TestSettingOneAsideSaysSoAndCarriesOn(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(9, "the boiler", squirrel.ItemOpen),
@@ -650,13 +616,9 @@ func TestSettingOneAsideSaysSoAndCarriesOn(t *testing.T) {
 	require.Contains(t, string(f.appended[2].Shown), "meter reading")
 }
 
-// Searching answers in the conversation. What the deck's search tests pinned is
-// pinned here: both kinds of thing in one answer, and a result that carries no
-// verbs.
-//
-// The lid's one field, answered in the conversation. Both kinds of thing, and
-// a result carries no verbs: it is a thing you went looking for rather than a
-// thing you are deciding about.
+// The lid's one field, answered in the conversation. Both kinds of thing in one
+// answer, and a result carries no verbs: it is a thing you went looking for
+// rather than a thing you are deciding about.
 func TestSearchingAnswersInTheConversation(t *testing.T) {
 	f := &fakeStore{
 		items:  []squirrel.Item{note(9, "the boiler makes a noise", squirrel.ItemKept)},
@@ -699,11 +661,6 @@ func TestSearchingForNothingAsksNothing(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// Skipping is `later` here, and the cursor travels in the press rather than in
-// the address bar. What the deck's skip tests pinned — that acting on the third
-// note down does not quietly return you to the first — the conversation gets for
-// nothing: it never moves you, so there is no place to lose.
-//
 // Skipping to the end is not the same as an empty pile: what you skipped is
 // still there, and saying "nothing to decide about" would be a lie.
 func TestTheEndOfTheSkippedOnesIsNotAnEmptyPile(t *testing.T) {
@@ -747,7 +704,6 @@ func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
 	}
 }
 
-// A pile it cannot read says so rather than reading as empty.
 func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
 	f := &fakeStore{itemsErr: errTest}
 	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
@@ -755,15 +711,6 @@ func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "cannot reach the pile")
 }
 
-// TestTheDeckStillStands was true for exactly as long as it needed to be. The
-// deck came out once the conversation could do everything it did, which is what
-// that test was there to make safe.
-
-// The deck's undo travelled in the address bar and had to survive an empty
-// pile, a search and a page it could not read. The conversation's travels with
-// what Buddy said, and what was said does not move — so what is left to prove
-// is only that pressing it reverses the write.
-//
 // The way back actually puts it back. The chip carries the act and the state,
 // and pressing it is the same write as any other — which is the whole reason it
 // goes through the same handler.
@@ -778,7 +725,6 @@ func TestPressingTheWayBackPutsItBack(t *testing.T) {
 	require.Equal(t, squirrel.ItemOpen, f.states[9], "the way back did not reverse it")
 }
 
-// An undo that names something that was never offered does nothing.
 func TestAnUndoThatWasNeverOfferedDoesNothing(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)}}
 	routed(t, f).call(t, "POST", "/pile/undo", strings.NewReader("id=9&act=unburn&was=open"))
@@ -787,43 +733,8 @@ func TestAnUndoThatWasNeverOfferedDoesNothing(t *testing.T) {
 	require.Empty(t, f.appended)
 }
 
-// The card's four answers, in a real browser.
-//
-// This file was gate_test.go, and it tested the opposite of what it now tests.
-// For one day the four answers sat behind a disclosure that asked "what is
-// this?" first — a change made on a review's suggestion, chosen from options,
-// used, and then asked back: "the pile should have all its buttons visible
-// instead of hidden behind a click."
-//
-// The gate is gone from the markup and the stylesheet. Its tests stayed, so
-// five of them had been failing on this branch ever since — which is the whole
-// argument for the file existing in this form rather than being deleted: what
-// the owner asked for had no test holding it in place, and the tests that were
-// there were holding the thing he rejected.
-//
-// checkVisibility rather than a bounding rect throughout, for the reason this
-// package has now learnt three times: a closed <details> keeps its contents in
-// the DOM and Chrome still reports geometry for them, so a rect test says every
-// hidden answer is on screen.
-
-// Retired with the deck on 25 August 2026.
-//
-// These pinned the card's own machinery: the tray of answers that opened
-// without a press, the stamp that leaned at the day's angle, the hold that gave
-// an undo somewhere to be, and the skip link a key pressed. None of it crosses
-// to a conversation, where the answer is a new turn and the way back travels
-// with it.
-//
-// What did cross is pinned elsewhere: the letters, by
-// TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut; the interval question, by
-// TestTheCurrentIntervalSaysSoAndNotOnlyInPurple; and skipping, by
-// TestLaterHandsYouTheNextAndDecidesNothing.
-
-// Buddy's face, and where it goes.
-
-// Once per run. Consecutive turns are one utterance, and an acorn on every
-// bubble is wallpaper by the third day — which matters more here than usual,
-// because habituation is a documented risk for this user.
+// Once per run: consecutive turns are one utterance, and a face on every bubble
+// is wallpaper by the third day.
 func TestBuddyShowsHisFaceOncePerRun(t *testing.T) {
 	f := &fakeStore{checkin: fresh(), turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "dentist today."},
@@ -833,7 +744,7 @@ func TestBuddyShowsHisFaceOncePerRun(t *testing.T) {
 	}}
 
 	require.Equal(t, 2, strings.Count(thread(t, f), `class="buddyface"`),
-		"the acorn is on every bubble rather than where he starts speaking")
+		"his face is on every bubble rather than where he starts speaking")
 }
 
 // And never on your own words. There is one person using this and he knows
@@ -900,4 +811,19 @@ func TestOpeningSomebodyElsesResultFindsNothing(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 	require.Empty(t, f.appended)
+}
+
+// Home counts what is waiting twice and no more: once for the opening line and
+// once for the menu's numbers.
+//
+// It was three: the rail came off the conversation and `railFor` was left behind
+// feeding a view field no template read, so every open ran a third count and
+// threw it away. Nothing failed, because nothing was watching.
+func TestHomeCountsWhatIsWaitingOnceForEachThingThatShowsIt(t *testing.T) {
+	f := &fakeStore{checkin: fresh()}
+	mounted(t, f).call(t, "GET", "/", nil)
+
+	require.Equal(t, 2, f.waitingAsked,
+		"home read the counts %d times; the opening line and the menu are the only two that show them",
+		f.waitingAsked)
 }

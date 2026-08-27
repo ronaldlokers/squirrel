@@ -100,7 +100,6 @@ func TestAnythingElseIsNoAnswer(t *testing.T) {
 	}
 }
 
-// Asleep, unreachable, or thinking for longer than a press takes.
 func TestAHouseThatIsSlowIsAHouseThatDidNotAnswer(t *testing.T) {
 	h := housed(t, "QUESTION", 200, houseTimeout+300*time.Millisecond)
 
@@ -114,7 +113,6 @@ func TestAHouseThatRefusesIsAHouseThatDidNotAnswer(t *testing.T) {
 	require.False(t, answered)
 }
 
-// No address is no house, rather than a house that cannot work.
 func TestNoAddressIsNoHouse(t *testing.T) {
 	require.Nil(t, NewHouse("", "a small one"))
 	require.Nil(t, NewHouse("http://the-house", ""))

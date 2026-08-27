@@ -7,22 +7,14 @@ import (
 
 // I can't start.
 //
-// Knowing what to do is not being able to do it, and until now the product's
-// only answer to a thing you could not begin was a timer — which helps with
-// boring and does nothing for big, or dreaded, or not knowing how. This is the
-// ladder, and it is deterministic: four answers, each producing one line and
-// at most one control.
+// Knowing what to do is not being able to do it. This is the ladder, and it is
+// deterministic: four answers, each producing one line and at most one control. A
+// model may later replace the "too big" sentence with a generated first step, and
+// the sentence stays underneath as the fallback.
 //
-// No model is involved and none is needed. Phase I may replace the sentence
-// the "too big" branch produces with a generated first step, and the sentence
-// stays underneath it as the fallback — but the feature has to work, and be
-// worth having, with nothing behind it at all.
-//
-// Two of the brief's options are deliberately absent. "No energy" is what the
-// check-in already says, and asking twice is a second tax charged at the worst
-// moment. "Anxious" invites a therapeutic response this product should not
-// attempt, and its useful action — make the thing smaller — is already the
-// first option.
+// Two options are deliberately absent. "No energy" is what the check-in already
+// says, and "anxious" invites a therapeutic response this product should not
+// attempt — its useful action, make the thing smaller, is already first.
 
 // Blocker is what is in the way. Four, and never more: a list of reasons is
 // itself a decision, and this is being read by someone who has just said they
@@ -49,12 +41,8 @@ var BlockerWords = map[Blocker]string{
 	BlockerNotToday: "not today",
 }
 
-// ParseBlocker reads what was typed or pressed, generously.
-//
-// Generous because this arrives from someone who is stuck: "too big", "big",
-// "its too big" and "TOO BIG" are the same answer, and refusing one of them to
-// be strict about a wording the product chose itself is a tax at exactly the
-// wrong moment.
+// ParseBlocker reads what was typed or pressed generously, because this arrives
+// from someone who is stuck: "too big", "big" and "TOO BIG" are the same answer.
 func ParseBlocker(s string) (Blocker, bool) {
 	t := strings.ToLower(strings.TrimSpace(s))
 	switch {
@@ -72,12 +60,9 @@ func ParseBlocker(s string) (Blocker, bool) {
 	return "", false
 }
 
-// Unstuck is one answer: a line, and at most one thing to press.
-//
-// Never a plan. Never a numbered list. The whole failure mode being avoided is
-// the twelve-step productivity answer, and the shape of this struct is what
-// makes producing one impossible — there is one sentence and one number, and
-// nowhere to put a second step.
+// Unstuck is one answer: a line, and at most one thing to press. The shape of the
+// struct is what makes a twelve-step productivity answer impossible — one
+// sentence and one number, with nowhere to put a second step.
 type Unstuck struct {
 	// Line is what Squirrel says. One sentence, lower case, no exclamation.
 	Line string
@@ -92,22 +77,14 @@ type Unstuck struct {
 	Refuse bool
 }
 
-// Breaker is the seam a model breaks a thing into steps through, or nil.
-//
-// A func of primitives, like the coach's other two seams and for the same
-// reason. It reports false for everything — no coach, no budget, a model that
-// numbered its steps — and false means the fixed line stands, which is what it
-// did on its own before this existed.
+// Breaker is the seam a model breaks a thing into steps through, or nil. It
+// reports false for everything — no coach, no budget, a model that numbered its
+// steps — and false means the fixed line stands.
 type Breaker func(ctx context.Context, personID int64, task, blocker string) ([]string, bool)
 
-// BreakingHelps reports whether a breakdown is the right answer to this
-// blocker.
-//
-// Only "too big". The other three already have answers that are not a
-// sequence: "don't know how" ends in a question whose answer is a thought, and
-// thoughts go in the pile; "boring" ends in a timer, because the going is the
-// point; "not today" is not an obstacle at all. Handing any of them a list of
-// steps would be answering a question nobody asked.
+// BreakingHelps reports whether a breakdown answers this blocker. Only "too big":
+// "don't know how" ends in a question whose answer is a thought, "boring" ends in
+// a timer, and "not today" is not an obstacle.
 func BreakingHelps(b Blocker) bool { return b == BlockerBig }
 
 // UnstuckFor is the ladder. Every branch ends in something smaller than the

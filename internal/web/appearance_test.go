@@ -2,23 +2,13 @@
 
 // What the screens look like, in a form a diff can read.
 //
-// Both critique passes over this product found visual drift by eye — a rule
-// redefined somewhere global, four screens quietly repainted, nobody the
-// wiser until a person went looking. The browser suite covers the hard part,
-// which is behaviour: the stamp, the keys, search answering as you type. It
-// has never covered what any of it looks like.
+// Both critique passes found visual drift by eye — a global rule redefined, four
+// screens quietly repainted, nobody the wiser. The browser suite covers
+// behaviour and has never covered what any of it looks like.
 //
-// The obvious answer is a screenshot diff, and it is the wrong one here. Font
-// rasterisation differs between this machine and the runner, so a committed
-// PNG fails on the first CI run for a reason that has nothing to do with the
-// change — and a check that cries wolf teaches you to re-run the job instead
-// of reading it. That lesson is fresh: a genuine flake in this suite failed a
-// branch that had not touched it, an hour before this file was written.
-//
-// So this records the *computed* values instead. They are what the cascade
-// actually settled on, they do not depend on how a glyph is rasterised, and
-// they diff as text — you can read what changed in the pull request rather
-// than squinting at two images.
+// Not a screenshot diff: font rasterisation differs between this machine and the
+// runner, so a committed PNG fails on the first CI run for a reason unrelated to
+// the change, and a check that cries wolf teaches you to re-run the job.
 package web
 
 import (
@@ -44,10 +34,10 @@ var appearanceProps = []string{
 	"color", "background-color", "border-width", "border-radius", "outline-color",
 	"padding", "margin", "display", "width", "min-height",
 	// The mark that says what pressing something does. Underline means you are
-	// leaving and means nothing else, and the rule was broken by a rule that
-	// never mentioned it: `.ends a` outranks `.quietpick`, so one link written
-	// once rendered as a plain pill on the deck and an underlined pill on nine
-	// other screens. Nothing recorded here could see that.
+	// leaving and means nothing else, and the way it goes wrong is a rule that
+	// never mentions it: a descendant selector outranking the one that set it,
+	// so the same link renders underlined on one screen and not on another.
+	// Nothing else recorded here can see that.
 	"text-decoration-line",
 }
 
@@ -55,23 +45,24 @@ var appearanceProps = []string{
 // of something, the first is enough: what this catches is a rule moving, and a
 // rule moves all of them at once.
 var appearanceScreens = map[string][]string{
-	// The thread. The doors are a rail now and the offer is an ordinary card
-	// in it, so what is recorded here is the conversation's own shapes.
+	// The thread, which is the whole app. Only the newest Buddy turn carries
+	// controls, so one load can record one interactive shape and no more: the
+	// card is the one worth having, and the picker, the word box and the split
+	// are covered by the contrast walk, which renders them one at a time.
+	//
+	// Buddy's words are `.said` and yours are `.bub`, so there is no
+	// `.frombuddy .bub` to record.
 	"/": {
-		".lid", ".brand img", ".wordmark", ".lidbtn",
-		".railwrap", ".rail", ".rdoor", ".rname",
-		".thread", ".turn", ".frombuddy .bub", ".fromyou .bub",
+		".lid", ".brand img", ".wordmark",
+		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",
 		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
-		".pick", ".pick .lead", ".pickrow", ".pick .make", ".wordbox", ".wordbox textarea", ".cut", ".cut .piece",
 		".dock", ".slot", ".slot textarea", ".slot .post",
 	},
 	// The check-in as a question. It is a turn like any other, and the faces
 	// are worth their own visit: they are the control the capacity gate
 	// depends on.
 	"/?ask=1": {".faces", ".face", ".face img", ".face span"},
-	// `.ends .quietpick` as well as `.ends`: the underline is on the link, and
-	// the paragraph around it cannot report what the link is wearing.
-	"/moods": {".deckhead", ".weekrow", ".weekrow .wl", ".dots i", ".dots i.nought", ".moodkey", ".moodkey b", ".ends"},
+	"/moods":  {".deckhead", ".weekrow", ".weekrow .wl", ".dots i", ".dots i.nought", ".moodkey", ".moodkey b", ".ends"},
 	// `.empty img` is here and nowhere else because /enough is the one screen
 	// that overrides it. The size is the difference between a different drawing
 	// and the same one shrunk, and the HTML attribute cannot hold it — the
@@ -91,7 +82,10 @@ const appearanceFile = "testdata/appearance.json"
 // and read the diff before committing it. A snapshot that rewrites itself on
 // failure is a snapshot that records whatever happened, which is the opposite
 // of a fence.
-func TestTheScreensLookLikeThemselves(t *testing.T) {
+// appearanceFixture is a store with something in every shape the screens can
+// draw. A selector whose element the fixture never renders records only that it
+// is missing, which pins nothing.
+func appearanceFixture() *fakeStore {
 	f := aPile()
 	f.chores = []squirrel.Chore{{
 		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
@@ -110,6 +104,17 @@ func TestTheScreensLookLikeThemselves(t *testing.T) {
 	f.offer = &squirrel.Offer{
 		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
 	}
+	// Plain scrollback, so both speakers' words have a shape to record. The
+	// offer stays the live edge and draws the card.
+	f.turns = []squirrel.Turn{
+		{ID: 1, Who: squirrel.SpeakerYou, Words: "the chores"},
+		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back round."},
+	}
+	return f
+}
+
+func TestTheScreensLookLikeThemselves(t *testing.T) {
+	f := appearanceFixture()
 
 	// The clock is frozen, and that is load-bearing rather than tidy: four of
 	// the sentences on these screens are chosen from the date, so a snapshot

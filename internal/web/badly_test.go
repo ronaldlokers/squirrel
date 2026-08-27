@@ -20,8 +20,6 @@ func aConversation(t *testing.T) (*fakeStore, *fakeCoach) {
 	return f, c
 }
 
-// A way to say the last thing landed badly, on the reply it is about.
-//
 // Principle 5 was opened on 20 August so the coach could be useful at the one
 // thing a coach is for, and the cost was written down at the time: it can now
 // say something that lands badly on a bad day. Every exchange has been kept

@@ -9,7 +9,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The shelf. A page until 25 August 2026 and a message since.
+// The shelf, as a message rather than a page.
 
 func aShelf() *fakeStore {
 	return &fakeStore{items: []squirrel.Item{
@@ -67,9 +67,7 @@ func TestTheEmptyShelfDoesNotInstruct(t *testing.T) {
 // The shelf is reachable from the pile — and from every branch of it.
 //
 // It hung off the drawn card, so the moment there was nothing to decide about
-// it was reachable from nowhere at all. That is the bug this fixes, and it is
-// the one the comment beside the chip had been warning about since the deck
-// came out.
+// it was reachable from nowhere at all.
 func TestThePileOffersTheShelfEvenWithNothingToDecide(t *testing.T) {
 	require.Contains(t, opened(t, aShelf(), "pile"), "the things you kept")
 

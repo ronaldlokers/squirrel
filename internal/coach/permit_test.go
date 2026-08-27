@@ -18,10 +18,10 @@ import (
 //
 // It held before, and it held because six methods each carried an identical
 // four-line check of the month's ceiling. All six were correct. Nothing
-// enforced the seventh, and the roadmap has two more model-touching features
-// on it — so the guard was one plausible feature away from being forgotten,
-// and forgetting it means either spending past a ceiling that was set on
-// purpose or failing to fall back to the answers that shipped first.
+// enforced the seventh — so the guard was one plausible feature away from
+// being forgotten, and forgetting it means either spending past a ceiling
+// that was set on purpose or failing to fall back to the answers that
+// shipped first.
 //
 // A paid call cannot be made without a Permit, and a Permit cannot be had
 // without asking the budget. This test is the belt to that braces: it fails if
@@ -93,7 +93,6 @@ func TestOnlyOneCallHoldsTheGate(t *testing.T) {
 	third.Release()
 }
 
-// Releasing twice is not releasing somebody else's turn.
 func TestReleasingTwiceFreesOneTurn(t *testing.T) {
 	freshGate(t)
 	b := Budget{Log: gateLog{}}

@@ -18,8 +18,8 @@ import (
 // typing the same thing four more times at eleven at night is the one outcome
 // this can spare you.
 //
-// The screen has shown the figure in the sheet's lid all along. A session that
-// lives in the room never sees it.
+// The screen says the figure on the reply that spent it. A session that lives
+// in the room never sees that, which is what this is for.
 func TestChatSaysWhenTheMonthIsSpent(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -40,8 +40,6 @@ func TestChatSaysWhenTheMonthIsSpent(t *testing.T) {
 	require.Contains(t, (*got)[0].text, "done for this month",
 		"the room could not tell a spent month from a bad minute")
 
-	// No figure. What it costs is on a surface you go to on purpose; what
-	// belongs in the room is only that asking again tonight will not help.
 	for _, money := range []string{"€", "0.0", "spent", "ceiling", "budget"} {
 		require.NotContains(t, (*got)[0].text, money,
 			"the room was handed a number about money")

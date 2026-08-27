@@ -158,7 +158,6 @@ func TestAFailedWriteIsToldToTheModelAndNeverClaimed(t *testing.T) {
 	require.True(t, toldIt, "the model was not told the write failed")
 }
 
-// The four that fail the test are proposed, never done. Nothing here writes.
 func TestTheFourThatNeedAskingAreOnlyProposed(t *testing.T) {
 	for _, do := range []string{"moment", "chore", "retire", "drop"} {
 		h := &fakeHands{}

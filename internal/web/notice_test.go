@@ -52,7 +52,6 @@ func TestTheSameSetIsOnlyNoticedOnce(t *testing.T) {
 	require.Len(t, c.asked, 1, "it paid twice for the same set")
 }
 
-// A set that has changed is worth looking at again.
 func TestASetThatChangedIsNoticedAgain(t *testing.T) {
 	noticed.Clear()
 	f := someTasks(3)
@@ -140,8 +139,6 @@ func TestTheChoresMaySayWhatTheyNoticed(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "both of these are bin day")
 }
 
-// The cache has a bottom.
-//
 // It shipped as a sync.Map nothing ever evicted, growing by one entry per
 // distinct set anybody ever looked at — the shape of leak discovered by a pod
 // being OOM-killed on a quiet Tuesday months later.
@@ -190,8 +187,6 @@ func TestNothingWorthSayingIsRememberedToo(t *testing.T) {
 	require.Len(t, c.asked, 1, "it paid twice to be told nothing")
 }
 
-// The key names the person in digits.
-//
 // It was `string(rune(personID))`, a rune conversion rather than a number, so
 // every id above U+10FFFF and every negative one collapsed onto the same
 // replacement character and shared a cache entry.

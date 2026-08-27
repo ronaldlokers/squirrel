@@ -9,7 +9,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Things you cannot act on. A page until 25 August 2026 and a message since.
+// Things you cannot act on, as a message rather than a page.
 
 func aside(state squirrel.ItemState, id int64, text, because string) squirrel.HeldItem {
 	return squirrel.HeldItem{ID: id, Text: text, State: state, Because: because}
@@ -71,8 +71,6 @@ func TestNothingSetAsideReadsAsNothing(t *testing.T) {
 	require.Contains(t, f.appended[1].Words, "Nothing set aside")
 }
 
-// No count anywhere, in either direction. A number beside stalled work is a
-// reproach, and the point of setting it aside was to stop being asked about it.
 func TestWhatYouSetAsideNeverEmitsACount(t *testing.T) {
 	held := []squirrel.HeldItem{}
 	for i := int64(1); i <= 7; i++ {
@@ -85,7 +83,6 @@ func TestWhatYouSetAsideNeverEmitsACount(t *testing.T) {
 	}
 }
 
-// That there is more, never how much more.
 func TestWhatYouSetAsideSaysThereIsMoreWithoutSayingHowMuch(t *testing.T) {
 	held := []squirrel.HeldItem{}
 	for i := int64(1); i <= 25; i++ {
@@ -142,21 +139,15 @@ func TestAnUnknownWayToSetSomethingAsideDoesNothing(t *testing.T) {
 	require.Empty(t, f.aside)
 }
 
-// Not a fifth door. The rail is four and its equality is the whole statement
-// it makes, and a door for what you set aside would put it back in front of
-// you — which is the one thing setting it aside was for.
-func TestSettingThingsAsideDidNotBecomeADoor(t *testing.T) {
+// Reachable from the menu and not on the conversation: what you set aside in
+// front of you is the one thing setting it aside was for.
+func TestWhatYouSetAsideIsNotOnTheConversation(t *testing.T) {
 	f := &fakeStore{
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood},
 		aside:   []squirrel.HeldItem{aside(squirrel.ItemWaiting, 1, "ring the vet", "the vet")},
 	}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	// What this was protecting is unchanged and is the second line: the things
-	// you set aside are not *on* the conversation. Where you reach them from
-	// did change — it was "not a fifth door on the rail" until 26 August 2026,
-	// and there is no rail now, so it is a line in the menu like everywhere
-	// else.
 	require.Contains(t, body, "what you set aside", "there is no way to it at all")
 	require.NotContains(t, body, "ring the vet",
 		"what you set aside is on the conversation rather than behind a door")

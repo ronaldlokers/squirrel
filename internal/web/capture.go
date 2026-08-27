@@ -21,32 +21,10 @@ const captureLimit = 4000
 
 // The slot in the lid of the box: you post a thought in without opening it.
 //
-// This screen refused to capture for its whole life, and the reasoning is
-// worth keeping rather than deleting: two capture surfaces means two places to
-// look for a thought, which is the problem this product exists to solve. The
-// owner overruled it on 20 August 2026, choosing a direct write over a relay
-// through Campfire. What makes that survivable is that both surfaces write the
-// same row to the same table, so there is one pile with two doors into it.
+// It writes through the same spool the room's captures do — fsynced and renamed
+// before anything says it was kept. One durability mechanism for both doors.
 //
-// What it cost was real, and for one release it was not paid: there was no
-// spool behind this write. The chat's 👀 means the words reached disk before
-// anything else could go wrong, and here there was no such stage — so a live
-// network and an unhealthy database was a note that was never taken. The
-// screen said so loudly and gave the words back, which is honest and is not
-// the same as durable, because a page is one reload from empty.
-//
-// It goes through the same spool the room's captures do now. Written, fsynced
-// and renamed before anything says it was kept; the drain moves it on, and the
-// drain has always known how to wait for a database. One durability mechanism
-// for both doors rather than two that have to be kept in step.
-//
-// What that costs, stated: a note is in the pile a moment later rather than
-// instantly — the drain runs every second by default. The slot is on home and
-// the pile is a different screen, so the gap is invisible in practice; and the
-// room has always worked this way.
-//
-// The Campfire room still stops being the complete record. That part of the
-// original bargain stands.
+// The cost, stated: a note reaches the pile a drain tick later.
 func captureHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Still checked, and still refuses: the owner not being known yet means
@@ -59,37 +37,24 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
-		// Every capture that arrives says so, and this is not debugging left in
-		// by accident.
+		// Every capture that arrives is logged, because a failure logging one line and a
+		// success logging none made "nothing happened" and "the request never arrived"
+		// look identical.
 		//
-		// A capture that failed used to log one line and a capture that worked
-		// logged none, so "nothing happened" and "the request never got here"
-		// looked identical from the outside — and the difference between them
-		// is the entire diagnosis. Twice now the answer has come from noticing
-		// an absence rather than reading a message.
-		//
-		// Metadata only. The shape of the request, never a word of what was
-		// said: the whole product exists to be a place thoughts are safe, and a
-		// log that quotes them is a second copy nobody asked for.
+		// Metadata only. The shape of the request, never a word of what was said.
 		slog.Info("a capture arrived",
 			"content_type", r.Header.Get("Content-Type"),
 			"bytes", r.ContentLength,
 			"transport", "screen")
 
-		// The photograph goes to disk before the capture that references it,
-		// and is fsynced there. So a spool entry never points at a file that
-		// is not on the volume; the other order would give a note that renders
-		// a broken picture, which is a worse thing to find than a missing one.
-		//
-		// An entry that fails to write after the bytes landed leaves a file
-		// nothing references — litter on a volume, not a lost thought.
+		// The photograph goes to disk before the capture that references it, and is
+		// fsynced there, so a spool entry never points at a file that is not on the
+		// volume. An entry that fails after the bytes landed leaves litter, not a lost
+		// thought.
 		text, photo, kind, err := readCapture(r, opts)
 		if err != nil {
-			// Said out loud, because until this was written every way a
-			// capture could be refused was silent: the screen said "not kept"
-			// and the logs said nothing at all, so the only account of what
-			// went wrong was the sentence the person reading it could not
-			// act on.
+			// Said out loud: every way a capture could be refused used to be silent, so the
+			// only account of what went wrong was a sentence the reader could not act on.
 			slog.Warn("a capture was refused", "error", err)
 			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), "/")
 			return
@@ -133,11 +98,9 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			PhotoName:  photo,
 			PhotoType:  kind,
 		}); err != nil {
-			// The words go back to the page rather than into a log. A capture
-			// box that clears on failure is a capture box that eats thoughts.
-			//
-			// This means the disk is unwritable, which is a different and much
-			// louder problem than a database being briefly unreachable.
+			// The words go back to the page: a capture box that clears on failure is a
+			// capture box that eats thoughts. This means the disk is unwritable, which is
+			// louder than a database being briefly unreachable.
 			slog.Warn("a capture could not be spooled", "error", err)
 			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), "/")
 			return
@@ -151,11 +114,9 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// errNotAPhotograph is a photograph this will not keep — the wrong kind, too
-// big, empty. Its own error because it is the one refusal that is about what
-// was sent rather than about the machine, and the screen has to say so: "I
-// cannot reach my memory" is a lie when the truth is "that photo is too big",
-// and it is a lie that makes you press the same button again.
+// errNotAPhotograph is a photograph this will not keep — wrong kind, too big,
+// empty. Its own error because "I cannot reach my memory" is a lie when the truth
+// is "that photo is too big", and a lie that makes you press the button again.
 var errNotAPhotograph = errors.New("not a photograph this keeps")
 
 // refusalOf is which sentence Buddy says back.
@@ -169,16 +130,12 @@ func refusalOf(err error) string {
 	return "Not kept — Squirrel cannot reach its memory. Your words are still here; try again in a moment."
 }
 
-// saidInThread puts a capture and its answer into the conversation.
+// saidInThread puts a capture and its answer into the conversation. Buddy's line
+// must never claim more than happened: a "kept" over a failed write is the two
+// views disagreeing about the pile.
 //
-// The screen used to carry this back in the address bar and render it inside
-// the slot — which worked while there was a home screen to come back to. The
-// thread says it the way it says everything else, and Buddy's line must never
-// claim more than happened: a "kept" over a failed write is the two views
-// disagreeing about the pile.
-//
-// A capture with no words is a photograph, and it says so rather than putting
-// an empty bubble in a record that is never rewritten.
+// A capture with no words is a photograph, and says so rather than putting an
+// empty bubble in a record that is never rewritten.
 func saidInThread(r *http.Request, s Store, opts Options, text, reply, open string) []squirrel.Turn {
 	ctx := r.Context()
 	personID, ok := personOf(r)
@@ -204,19 +161,10 @@ func saidInThread(r *http.Request, s Store, opts Options, text, reply, open stri
 
 // answerable is Buddy's reply, with the way to say he read it wrong.
 //
-// The judgement that got here was made from one word by a small model, or by a
-// rule that only says yes when the sentence is doing nothing else. Both are
-// deliberately biased towards keeping — a thought dropped out of the pile is
-// the one failure this product does not have, so the bias costs a question
-// answered as a note.
+// The judgement that got here is biased towards keeping, so it costs a question
+// answered as a note. This is the one press out of that.
 //
-// This is the way out of that, and it is one press: the words are handed to
-// Buddy properly. The rule stays free and you keep the escape hatch, which is
-// the shape Ronald asked for on 25 August 2026.
-//
-// Only on an acknowledgement, and only when there is somebody to ask. A chip
-// offering to answer something that has just been answered is furniture, and
-// one that cannot work is worse.
+// Only on an acknowledgement, and only when there is somebody to ask.
 func answerable(opts Options, text, reply string) squirrel.Turn {
 	said := squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: reply}
 	if opts.Reads == nil || strings.TrimSpace(text) == "" {
@@ -237,13 +185,8 @@ func answerable(opts Options, text, reply string) squirrel.Turn {
 	return said
 }
 
-// isKeptWording is whether Buddy said one of the acknowledgements rather than
-// something he wrote.
-//
-// Asked of the pool rather than tracked alongside, because the pool is the
-// definition: an acknowledgement is one of these sentences, and anything else
-// is an answer. A second flag threaded through the call would be a second
-// place for the two to disagree.
+// isKeptWording asks the pool rather than tracking alongside it, because the pool
+// is the definition: an acknowledgement is one of these sentences.
 func isKeptWording(reply string) bool {
 	for _, one := range squirrel.Sayings(squirrel.SayingKept) {
 		if one == reply {
@@ -253,23 +196,15 @@ func isKeptWording(reply string) bool {
 	return false
 }
 
-// readCapture pulls the words and the photograph off the request, streaming
-// the photograph straight onto the volume it is going to live on.
+// readCapture streams the photograph straight onto the volume it will live on.
 //
-// Not ParseMultipartForm, and that is the whole of the bug this replaced. That
-// call holds the first megabyte in memory and spills the rest to a temporary
-// file — and this pod runs with a read-only root filesystem and no writable
-// /tmp, because everything it writes has its own volume. So every photograph
-// over a megabyte, which is every photograph a phone takes, failed in the
-// parser before the handler ever saw it, and failed with the one message that
-// was not true: that Squirrel could not reach its memory.
+// Not ParseMultipartForm: that holds the first megabyte in memory and spills the
+// rest to a temporary file, and this pod has a read-only root and no writable
+// /tmp. Every photograph over a megabyte failed in the parser with the one
+// message that was untrue — that Squirrel could not reach its memory.
 //
-// It was invisible to every test because the way to test an upload is with a
-// small file, and a small file is exactly the one that never touches the disk.
-//
-// Streaming is also simply the right shape: the bytes have a durable home to
-// go to and Keep already writes and fsyncs them there, so a copy through a
-// temporary file was doing nothing except needing somewhere to happen.
+// Invisible to every test, because the way to test an upload is with a small
+// file and a small file never touches the disk.
 func readCapture(r *http.Request, opts Options) (text, photo, kind string, err error) {
 	parts, err := r.MultipartReader()
 	if errors.Is(err, http.ErrNotMultipart) {
@@ -347,26 +282,17 @@ func said(raw string) string {
 
 // whatBuddyMakesOfIt is the answer to what you typed.
 //
-// The box was a capture slot and said "Kept.", which is what a filing cabinet
-// says. Ronald asked on 25 August 2026 for typing to be talking, and chose the
-// version where Buddy decides what the words were — knowing, because it was
-// said at the time, that a model between you and the capture promise can be
-// wrong.
+// The order is the design, and it is what makes a model in this path safe. The
+// words are already spooled and already a note by the time this is called;
+// nothing here can stop that. All this can do is drop a note afterwards, which
+// the pile can reverse and which leaves the words in the database either way.
 //
-// The order is where that risk is managed, and it is the whole design. The
-// words are already spooled and already a note by the time this is called.
-// Nothing here can stop that. What this can do is drop a note afterwards,
-// which is a state the product already has, which the pile can reverse, and
-// which leaves the words in the database either way.
+// So every failure — no coach, a spent budget, an unreachable model, a reply
+// that fails its shape, a wrong judgement — costs a note you did not want in
+// the pile. None of them costs a thought.
 //
-// So the failures line up in the safe direction. No coach, a spent budget, an
-// unreachable model, a reply that fails its shape, a wrong judgement — every
-// one of them costs a note sitting in the pile that you did not want there.
-// None of them costs a thought.
-//
-// A photograph is always kept and never read. It is not words, there is
-// nothing to answer, and a model asked to judge a picture it cannot see would
-// be guessing about the one capture that is hardest to make again.
+// A photograph is always kept and never read: a model asked to judge a picture
+// it cannot see would be guessing about the capture hardest to make again.
 func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, photo bool) (string, string) {
 	ctx := r.Context()
 	kept := squirrel.Say(squirrel.SayingKept, now())
@@ -378,13 +304,9 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 		return kept, ""
 	}
 
-	// Was that a question? Three tiers, cheapest first.
-	//
-	// The rule needs nothing running and is the floor. The house is a small
-	// model on the cluster and is asked only to improve on the rule — it costs
-	// electricity in a cupboard rather than money abroad, so it may run on
-	// everything typed. Neither of them writes an answer; they only decide
-	// whether one is worth paying for.
+	// Was that a question? Three tiers, cheapest first: the rule needs nothing
+	// running, the house costs electricity rather than money and may run on
+	// everything typed, and Reads may not. Neither of the first two writes an answer.
 	asking := squirrel.LooksLikeAQuestion(text)
 	if opts.AskedAQuestion != nil {
 		if said, answered := opts.AskedAQuestion(ctx, text); answered {
@@ -412,11 +334,8 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 		return kept, ""
 	}
 	if keep {
-		// It read the whole sentence and disagrees with the one-word
-		// judgement that got it here. Its answer wins.
-		//
-		// And it is a thought, so there is no place to draw: a note being
-		// filed is not a request to look at something.
+		// It read the whole sentence and disagrees with the one-word judgement that got
+		// it here. Its answer wins, and a thought has no place to draw.
 		return say, ""
 	}
 
@@ -432,14 +351,10 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 	return say, open
 }
 
-// dropWhatWasAQuestion finds the note that was just made and drops it.
-//
-// By the words rather than by an id, because there is no id: the capture went
-// through the spool, which is what makes it durable, and the row it becomes is
-// written by the drain rather than returned from here. Reading the newest open
-// note back and checking it says what was typed is how this stays honest — if
-// the drain has not caught up, nothing matches and nothing is dropped, which
-// leaves a question in the pile and loses nothing.
+// dropWhatWasAQuestion finds the note by its words rather than an id, because
+// there is no id: the capture went through the spool and the row is written by
+// the drain. If the drain has not caught up, nothing matches and nothing is
+// dropped, which leaves a question in the pile and loses nothing.
 func dropWhatWasAQuestion(ctx context.Context, s Store, personID int64, text string) error {
 	items, _, err := s.OpenItems(ctx, personID, 1)
 	if err != nil {

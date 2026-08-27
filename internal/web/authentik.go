@@ -16,16 +16,9 @@ import (
 
 // The application doing OIDC itself.
 //
-// Until 25 August 2026 this was a Traefik middleware calling an Authentik
-// forward-auth outpost, and Squirrel compared one header to one configured
-// string. The outpost could only ever say "somebody Authentik likes"; it could
-// not say which somebody in a way Squirrel could act on, which is why a second
-// person meant a redeploy.
-//
-// Everything about the protocol is go-oidc's: discovery, the JWKS, the
-// signature, the issuer, the audience and the expiry. What is written here is
-// only the part that is Squirrel's decision — whether this account is allowed
-// in at all.
+// Everything about the protocol is go-oidc's: discovery, the JWKS, the signature,
+// the issuer, the audience and the expiry. What is written here is only
+// Squirrel's decision — whether this account is allowed in at all.
 
 // ErrNotAllowed is an account Authentik authenticated and Squirrel will not
 // admit. It is a different thing from a login that failed, and the door says
@@ -47,18 +40,13 @@ type Authentik struct {
 // their account.
 var ErrNotReady = errors.New("the way in has not been found yet")
 
-// retryEvery is how often a gate that could not find authentik tries again.
-//
-// Not on every press: an authentik that is down would then cost a network
-// round trip per button, and the answer would be the same one each time. Not
-// once at boot either — see NewAuthentik.
+// retryEvery is how often a gate that could not find authentik tries again. Not
+// on every press, which would cost a round trip per button for the same answer,
+// and not once at boot — see NewAuthentik.
 const retryEvery = 30 * time.Second
 
-// Gate is a configured way in and back.
-//
-// Not "door": a door in this product is a section of the pile — /pile,
-// /chores, /kept — with its own art and its own heading. Reusing the word for
-// the thing you sign in through would make every mention of it ambiguous.
+// Gate is a configured way in and back. Not "door": a door here is a section of
+// the pile, and reusing the word would make every mention ambiguous.
 type Gate struct {
 	a Authentik
 
@@ -81,25 +69,16 @@ type Person struct {
 
 // NewAuthentik builds the gate. It makes no network call.
 //
-// Discovery used to happen here, and a provider that could not be reached was
-// a boot that failed — "a Squirrel with no way in is not a working Squirrel".
-// That reasoning was wrong and it took both clusters down on 25 August 2026:
-// squirrel's pod had no egress to authentik's hostname, discovery failed, and
-// the process refused to start. What went down with it was capture, the drain
-// and the Campfire webhook, none of which have anything to do with the screen —
-// and the room does not retry a delivery it could not make.
+// Discovery used to happen here and an unreachable provider was a boot that
+// failed. That took both clusters down on 25 August 2026: with no egress to
+// authentik, the process refused to start, and capture, the drain and the
+// Campfire webhook went with it — none of which have anything to do with the
+// screen, and the room does not retry a delivery it could not make.
 //
-// This product's rule is that a failure costs a feature and never the product.
-// The spool exists so that Postgres being unreachable does not lose a note. An
-// identity provider the *screen* needs must not be a harder dependency than the
-// database the *whole product* needs.
-//
-// So the split is by what the failure means:
-//
-//   - Configuration that is missing or dangerous is refused here, synchronously
-//     and without a network. It cannot come right on its own.
-//   - authentik being unreachable is not refused at all. The gate says so — the
-//     screen already has a state for it — and tries again.
+// So the split is by what the failure means: configuration that is missing or
+// dangerous is refused here, synchronously and without a network, because it
+// cannot come right on its own. authentik being unreachable is not refused at
+// all — the gate says so and tries again.
 func NewAuthentik(_ context.Context, a Authentik) (*Gate, error) {
 	// Refused rather than defaulted. Every other missing value in this product
 	// degrades to less product — no coach, no camera, no push. An empty
@@ -153,11 +132,9 @@ func (d *Gate) forget() {
 	d.found, d.retryAt = false, time.Time{}
 }
 
-// Away is where to send somebody who is signing in.
-//
-// The verifier never leaves this machine — only its hash does, as the PKCE
-// challenge — so a code intercepted on the way back cannot be spent by
-// whoever intercepted it.
+// Away is where to send somebody who is signing in. The verifier never leaves
+// this machine — only its hash does, as the PKCE challenge — so an intercepted
+// code cannot be spent.
 func (d *Gate) Away(state, verifier string) (string, error) {
 	if err := d.find(context.Background()); err != nil {
 		return "", err
@@ -172,12 +149,9 @@ func (d *Gate) Away(state, verifier string) (string, error) {
 		oauth2.SetAuthURLParam("code_challenge_method", "S256")), nil
 }
 
-// Back turns a code into a person, or refuses.
-//
-// The two refusals are deliberately different errors. A token that does not
-// verify is something wrong — a forgery, a clock, a rotated key — and says so.
-// ErrNotAllowed is nothing wrong at all: it is Authentik doing its job for an
-// account that is simply not for this product.
+// Back turns a code into a person, or refuses. The two refusals are deliberately
+// different errors: a token that does not verify is something wrong, and
+// ErrNotAllowed is Authentik doing its job for an account not for this product.
 func (d *Gate) Back(ctx context.Context, code, verifier string) (Person, error) {
 	if err := d.find(ctx); err != nil {
 		return Person{}, err

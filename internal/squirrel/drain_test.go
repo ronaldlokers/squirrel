@@ -214,8 +214,7 @@ func TestDrainQuarantinesAnUnreadableFile(t *testing.T) {
 // whole test, so a later pass on the same Drain instance can succeed against
 // the real database. Each call is timestamped, so the test can measure the
 // real gaps between ticks instead of reaching into the drain's private
-// backoff state. Ported from flakyDb in test/integration/drain.test.ts on
-// main.
+// backoff state.
 type flakyStore struct {
 	real      *squirrel.Store
 	failTimes int
@@ -248,8 +247,8 @@ func (f *flakyStore) snapshot() []time.Time {
 	return out
 }
 
-// The only drain mechanism that had no coverage in the Go port: Run must back
-// off while the database is unreachable, and reset once it recovers, rather
+// Run must back off while the database is unreachable, and reset once it
+// recovers, rather
 // than either hammering Postgres on every tick or staying slow forever after
 // one blip. flakyStore forces exactly two deferred passes before letting real
 // ones through, so growth and reset both happen on one Drain instance.
@@ -360,8 +359,6 @@ func TestDrainRunStopsWithTheContext(t *testing.T) {
 	}
 }
 
-// A capture with no conversation is not applied at all.
-//
 // The rule is about what the applier is for: every branch of it ends in
 // something said back, so with nowhere to say it there is nothing to run. The
 // screen's slot is the case that made it matter — it spools like the room now,

@@ -29,8 +29,9 @@ func TestConversationsAreNotShared(t *testing.T) {
 	require.Empty(t, c.Recent(2, august))
 }
 
-// Bounded on both axes, which is what makes holding this in memory safe: at
-// most WindowSize exchanges per person, and nothing past WindowAge.
+// Bounded per person, which is what makes holding this in memory safe: at most
+// WindowSize exchanges, and nothing past WindowAge. See window.go for the axis
+// this is not bounded on.
 func TestConversationsKeepOnlyTheNewestFew(t *testing.T) {
 	c := coach.NewConversations()
 	for i, said := range []string{"one", "two", "three", "four", "five"} {
@@ -41,17 +42,15 @@ func TestConversationsKeepOnlyTheNewestFew(t *testing.T) {
 	require.Equal(t, "three", recent[0].Said)
 }
 
-// Trimming on read rather than only on write is what makes the age bound real.
-// A conversation that stopped an hour ago is dropped when it is next asked
-// for, not left waiting for a write that may never come.
 func TestConversationsForgetAnOldConversationOnRead(t *testing.T) {
 	c := coach.NewConversations()
 	c.Add(1, "this morning", "ok", august.Add(-3*time.Hour))
 	require.Empty(t, c.Recent(1, august))
 }
 
-// Closing the sheet has to mean something. A widget that remembers what you
-// said last time is one you have to think about before opening.
+// Turning something down ends the conversation about it. Without this the next
+// exchange would open carrying what you said the last time — which is a thing
+// you have to think about before saying anything at all.
 func TestForgetDropsTheConversation(t *testing.T) {
 	c := coach.NewConversations()
 	c.Add(1, "what now", "The envelope.", august)
@@ -71,7 +70,12 @@ func TestNilConversationsAreSafe(t *testing.T) {
 }
 
 // Two surfaces can ask at once — chat drains on its own goroutine while the
-// screen serves a request. Run with -race, which CI does.
+// screen serves a request.
+//
+// The detector is this test's only assertion, so it is worth nothing unless
+// the suite runs with -race. It did not: the Makefile's own comment now says
+// why the flag is there, because a flag nobody can see the reason for is a
+// flag somebody removes.
 func TestConversationsSurviveConcurrentUse(t *testing.T) {
 	c := coach.NewConversations()
 	var wg sync.WaitGroup

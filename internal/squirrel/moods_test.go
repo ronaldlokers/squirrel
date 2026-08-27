@@ -88,8 +88,6 @@ func TestNoReadingsSaysSo(t *testing.T) {
 	require.Contains(t, triage(t, store, p, "!moods"), "not said how you are")
 }
 
-// A fortnight: long enough to see whether a bad week was a bad week, short
-// enough that it is not a record of your year.
 func TestOlderThanAFortnightIsNotRead(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

@@ -9,13 +9,10 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// choreActHandler is the three things you can do to a chore, and they are all
-// the same shape as the pile's: a form POST answered with a 303.
-//
-// `every` and `act` are separate fields rather than one vocabulary, because
-// changing how often something comes back is not a transition — the chore is
-// the same chore afterwards, which is exactly why the interval chips can post
-// straight to it.
+// choreActHandler is the three things you can do to a chore, all the same shape
+// as the pile's. `every` and `act` are separate fields because changing how often
+// something comes back is not a transition — the chore is the same chore
+// afterwards.
 func choreActHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -81,13 +78,10 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 				}
 				said = saidOnADay(day, weeks)
 			} else if c.OnADay() {
-				// A day was named once and is not any more. Put it back on an
-				// interval rather than leaving a rhythm nobody asked for.
+				// A day was named once and is not any more, so put it back on an interval.
 				//
-				// `c` and not `made`: UpsertChore's RETURNING clause does not
-				// carry the two rhythm columns, so the chore it hands back
-				// always looks like an interval one. `c` came from
-				// ActiveChores at the top of this handler and knows.
+				// `c` and not `made`: UpsertChore's RETURNING does not carry the rhythm columns,
+				// so the chore it hands back always looks like an interval one.
 				if err := s.SetChoreRhythm(r.Context(), personID, made.ID, 0, 0); err != nil {
 					fail(w, err)
 					return
@@ -201,17 +195,12 @@ func lastDone(sinceDays int) string {
 	return squirrel.SinceWords(sinceDays)
 }
 
-// newChoreHandler makes a chore from nothing.
+// newChoreHandler makes a chore from nothing, for the case where you already know
+// — standing in the kitchen having just descaled the kettle, wanting that to come
+// back rather than a note about wanting it to.
 //
-// Until now a chore could only be made from a note, and the reasoning was
-// sound: a chore usually starts life as a thought you had, and making one
-// from a note keeps the two connected. What it could not do is the case where
-// you already know — you are standing in the kitchen having just descaled the
-// kettle, and the thing you want is for that to come back, not a note about
-// wanting it to.
-//
-// The interval and the day-part are chosen from the chips that already exist,
-// so nothing new was invented and nothing has to be typed in a format.
+// The interval and day-part come from chips that already exist, so nothing has to
+// be typed in a format.
 func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -278,15 +267,12 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 // chore's name is read in a nudge, and a nudge is one line.
 const choreNameLimit = 200
 
-// offered turns one of the four chips into an interval, and refuses anything
-// else.
+// offered turns one of the four chips into an interval and refuses anything else.
 //
-// Parsing the value instead would be looser than it looks: ParseEvery is
-// deliberately generous about what follows the unit, because in a chat room
-// what follows is the chore's name. Fed a form value it makes "every fortnight
-// or so" into a fortnight with "or so" as leftovers — which is a reasonable
-// reading of a sentence and a wrong reading of a button that was never
-// offered. The screen offers four things; these are the four.
+// Parsing the value would be looser than it looks: ParseEvery is generous about
+// what follows the unit, so "every fortnight or so" becomes a fortnight with "or
+// so" as leftovers — a reasonable reading of a sentence and a wrong reading of a
+// button that was never offered.
 func offered(every string) (time.Duration, bool) {
 	switch strings.TrimSpace(every) {
 	case "every day":
@@ -351,12 +337,8 @@ func oftenHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// dayChosen is the day a chore already comes back on, in the picker's own
-// words, so the question opens on what is true rather than on a blank form.
-//
-// The same device rhythmOf uses for the interval, and for the same reason: a
-// question that forgets the answer you gave it last time is a question you
-// have to answer twice.
+// dayChosen is the day a chore already comes back on, in the picker's own words,
+// so the question opens on what is true. The same device rhythmOf uses.
 func dayChosen(c squirrel.Chore) string {
 	if !c.OnADay() {
 		return ""
@@ -364,17 +346,13 @@ func dayChosen(c squirrel.Chore) string {
 	return strings.ToLower(c.Weekday.String())[:3]
 }
 
-// dayAnswered reads the picker's third row, and refuses it unless the rest of
-// the answer makes a day mean anything.
+// dayAnswered reads the picker's third row and refuses it unless the rest of the
+// answer makes a day mean anything.
 //
-// Only against weeks, and only one or two of them. A day is meaningless on
-// "every 3 days" — it would be due every third day *and* on a Thursday, which
-// is a rhythm nobody has — and on "every 6 months" it would silently become
-// fortnightly. A picker that accepted either would be a picker that quietly
-// ignored half of what you said.
+// Only against one or two weeks. A day is meaningless on "every 3 days" and would
+// silently become fortnightly on "every 6 months".
 //
-// Refusing is not a failure here: the interval was already written, so what
-// happens is exactly what happened before this feature existed.
+// Refusing is not a failure: the interval was already written.
 func dayAnswered(said, unit, count string) (time.Weekday, int, bool) {
 	if unit != "weeks" {
 		return 0, 0, false
@@ -390,11 +368,8 @@ func dayAnswered(said, unit, count string) (time.Weekday, int, bool) {
 	return day, weeks, true
 }
 
-// saidOnADay is the rhythm in the words a person would use for it.
-//
-// "every other thursday", not "every 2 weeks on thursday". The whole point of
-// the feature is that the bins have a rhythm somebody can say out loud, and
-// saying it back in the machine's vocabulary would lose exactly that.
+// saidOnADay is the rhythm in the words a person would use: "every other
+// thursday", not "every 2 weeks on thursday".
 func saidOnADay(day time.Weekday, weeks int) string {
 	name := strings.ToLower(day.String())
 	if weeks == 2 {

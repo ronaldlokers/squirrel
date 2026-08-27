@@ -46,7 +46,6 @@ func TestTheIdentityHeaderIsNotASession(t *testing.T) {
 	require.Equal(t, http.StatusSeeOther, w.Code)
 }
 
-// A cookie the store does not know is nobody.
 func TestGuardRefusesACookieNobodyOpened(t *testing.T) {
 	opts := testOptions()
 	opts.Sessions = newSessions(&nobodyEver{}, cacheFor, cacheMost)
@@ -63,8 +62,6 @@ func TestGuardRefusesACookieNobodyOpened(t *testing.T) {
 	require.Empty(t, w.Body.String(), "a refusal says nothing about what is behind it")
 }
 
-// Who is asking is a fact about the request, not about the process.
-//
 // Options.Owner was a process-global atomic.Int64 and opts.person() read it in
 // forty-nine places. That cannot survive two people.
 func TestWhoIsAskingComesFromTheRequest(t *testing.T) {

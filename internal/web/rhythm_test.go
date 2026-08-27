@@ -11,7 +11,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The picker asks for a day as well as an interval.
 func TestTheIntervalQuestionAsksForADay(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{{ID: 3, Name: "the bins", Every: 7 * 24 * time.Hour}}}
 	m := routed(t, f)
@@ -37,7 +36,6 @@ func TestNamingADayGivesTheChoreThatDay(t *testing.T) {
 	require.Equal(t, 2, f.rhythms[0].Weeks)
 }
 
-// And it is said back in words a person would use.
 func TestTheRhythmIsSaidInWordsAPersonWouldUse(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{{ID: 3, Name: "the bins", Every: 7 * 24 * time.Hour}}}
 	m := routed(t, f)
@@ -78,8 +76,6 @@ func TestADayIsRefusedWhereItWouldMeanNothing(t *testing.T) {
 	}
 }
 
-// Taking the day off puts it back on an interval, rather than leaving a rhythm
-// nobody asked for.
 func TestTakingTheDayOffPutsItBackOnAnInterval(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 3, Name: "the bins", Every: 14 * 24 * time.Hour, Weekday: time.Thursday, Weeks: 2},
@@ -93,7 +89,6 @@ func TestTakingTheDayOffPutsItBackOnAnInterval(t *testing.T) {
 	require.Equal(t, 0, f.rhythms[0].Weeks, "the chore kept a day nobody asked for")
 }
 
-// The question opens on the day the chore already has.
 func TestTheQuestionRemembersTheDay(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 3, Name: "the bins", Every: 14 * 24 * time.Hour, Weekday: time.Thursday, Weeks: 2},

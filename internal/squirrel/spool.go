@@ -65,25 +65,16 @@ func (s *Spool) filename(c Capture) string {
 	return fmt.Sprintf("%015d-%s-%s.json", c.ReceivedAt.UnixMilli(), safe(c.Transport), id)
 }
 
-// Write is durable when it returns.
+// Write is durable when it returns: write, fsync the file, rename, fsync the
+// directory. The rename is atomic so the drain sees either nothing or a whole
+// file, and the directory sync is what survives a host power loss rather than
+// only a process crash — this runs on Raspberry Pis without a UPS.
 //
-// Write, fsync the file, rename, then fsync the directory. The rename is
-// atomic so the drain sees either nothing or a whole file. The directory sync
-// is what makes the rename survive a host power loss rather than only a
-// process crash — this runs on Raspberry Pis without a UPS.
-//
-// The temp file is exclusive to this call (os.CreateTemp, not a deterministic
-// "<name>.tmp" path): name is derived from safe(externalID), and safe is not
-// injective — two different external ids (e.g. two Matrix ids differing only
-// past the 64-byte truncation, or only in a character safe() maps to "_")
-// can produce the same name. net/http serves each request in its own
-// goroutine, so two such writes genuinely race. A shared, non-exclusive temp
-// path let concurrent writers truncate and overwrite each other's bytes on
-// the same inode, so both Write calls could return success while the surviving
-// file was a torn mix of neither payload. A unique temp file per call means
-// each writer's own bytes are only ever visible to itself until the final
-// rename, which is atomic — so once names collide, last-writer-wins is a
-// clean, whole-file overwrite rather than a corrupted one.
+// The temp file is exclusive to this call, not a deterministic "<name>.tmp":
+// safe() is not injective, so two different external ids can produce the same
+// name, and each request has its own goroutine. A shared temp path let concurrent
+// writers overwrite each other's bytes on one inode, so both calls returned
+// success while the surviving file was a torn mix of neither payload.
 func (s *Spool) Write(c Capture) (string, error) {
 	name := s.filename(c)
 

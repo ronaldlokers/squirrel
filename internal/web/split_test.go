@@ -138,7 +138,6 @@ func TestKeepingASplitInTheThread(t *testing.T) {
 	require.Contains(t, string(f.appended[2].Shown), `"cards"`)
 }
 
-// A note it reads as one thing says so rather than answering with silence.
 func TestANoteThatIsOneThingSaysSo(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(9, "milk", squirrel.ItemOpen)}}
 	m := routed(t, f) // no splitter configured
@@ -146,7 +145,3 @@ func TestANoteThatIsOneThingSaysSo(t *testing.T) {
 
 	require.Empty(t, f.appended, "with no splitter there is nothing to say")
 }
-
-// Both are pinned in the conversation now: the press is drawn only on a note
-// that looks like several things, and nothing is written when a split is
-// proposed — see TestProposingASplitInTheThread.

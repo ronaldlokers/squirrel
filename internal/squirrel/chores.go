@@ -30,17 +30,15 @@ type Chore struct {
 	// Ask is when raising it is worth doing. It never changes when the chore
 	// is due — see asking.go for why those are deliberately two questions.
 	Ask Asking
-	// Weekday and Weeks are a chore that comes back on a day rather than after
-	// an interval — alternating Thursdays, and the reason the bins never fitted.
+	// Weekday and Weeks are a chore that comes back on a day rather than after an
+	// interval — alternating Thursdays, and the reason the bins never fitted.
 	//
-	// Weeks is 0 for the interval rhythm, which is every chore that existed
-	// before 26 August 2026 and every one where a day would be nonsense. When
-	// it is 1 or 2, Weekday is the day and Every still carries the equivalent
-	// interval so that everything which asks "how often" keeps working.
+	// Weeks is 0 for the interval rhythm. When it is 1 or 2, Weekday is the day and
+	// Every still carries the equivalent interval so everything that asks "how often"
+	// keeps working.
 	//
-	// The difference that matters is that an interval measured from the last
-	// completion *slides*: do the bins a day late once and every reminder after
-	// it is a day late too. A weekday does not slide.
+	// An interval measured from the last completion slides: do the bins a day late
+	// once and every reminder after it is a day late too. A weekday does not.
 	Weekday time.Weekday
 	Weeks   int
 }
@@ -64,13 +62,9 @@ func (s *Store) UpsertChore(ctx context.Context, personID int64, name string, ev
 	return s.UpsertChoreAsking(ctx, personID, name, every, tolerance, Asking{})
 }
 
-// UpsertChoreAsking is UpsertChore plus when the chore is worth raising.
-//
-// A preference given is a preference kept: saying "every 2 weeks bins out"
-// after "every other tuesday bins out" is a change of rhythm, and it would be
-// a surprise for that to silently forget the tuesday. So an empty Asking
-// leaves what is already there, and clearing one is done by saying a different
-// one — the same shape as every other change here.
+// UpsertChoreAsking is UpsertChore plus when the chore is worth raising. An empty
+// Asking leaves what is already there; clearing one is done by saying a different
+// one.
 func (s *Store) UpsertChoreAsking(ctx context.Context, personID int64, name string, every, tolerance time.Duration, ask Asking) (Chore, error) {
 	const q = `
 		insert into chores (person_id, name, interval_seconds, tolerance_seconds, ask_days, ask_part)
@@ -110,12 +104,9 @@ func (s *Store) UpsertChoreAsking(ctx context.Context, personID int64, name stri
 	return c, nil
 }
 
-// SnoozeChore silences a chore until a moment, without pretending it was done.
-//
-// The baseline it is measured against is untouched, so nothing about when it is
-// next due changes — it is the asking that stops. Saying it again with a
-// different date moves it; passing a time in the past clears it, which is what
-// makes "actually, ask me now" the same operation rather than a special one.
+// SnoozeChore silences a chore until a moment without pretending it was done. The
+// baseline is untouched, so nothing about when it is next due changes — it is the
+// asking that stops. A time in the past clears it.
 func (s *Store) SnoozeChore(ctx context.Context, choreID, personID int64, until time.Time) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `
 		update chores set snoozed_until = $3, updated_at = now()
@@ -133,28 +124,17 @@ func (s *Store) DeactivateChore(ctx context.Context, choreID int64) error {
 }
 
 // baselineCTE computes, per chore, the moment its clock last started: the most
-// recent completion event, or the chore's creation if it has never been
-// completed. Deriving it rather than storing it is what makes a sensor-written
-// event reset the clock with no extra code.
+// recent completion event, or creation if never completed. Derived rather than
+// stored, so a sensor-written event resets the clock with no extra code.
 //
-// last_shown is filtered to p.kind in ('digest', 'nudge'). `?` (IntentQuery
-// in apply.go) records a prompt_line for every active chore too, due or not,
-// so without this filter asking "?" marked every chore as shown and the
-// tolerance gate below hid all of them until their tolerance window passed
-// again — up to a week of silence for one keystroke. Only an actual nudge
-// (or, before the rename, a digest) may reset how recently a chore was
-// shown.
+// last_shown is filtered to p.kind in ('digest', 'nudge'). `?` records a
+// prompt_line for every active chore, so without this filter one keystroke marked
+// every chore as shown and the tolerance gate hid them for up to a week.
 //
-// 'nudge' is the kind that actually names a chore now — 'digest' stays for
-// rows that predate the split. 'evening' is deliberately excluded: on a
-// nudge day the evening message shows nothing new about the nudged chore
-// (nudgeFor already recorded it), and on a quiet day the evening message
-// carries no chore lines at all. Without 'nudge' here, last_shown was
-// permanently null once nothing wrote 'digest' any more, and the tolerance
-// gate below — "last_shown is null or ..." — always took its null branch:
-// PickChore's overdue weighting exists specifically to stop the same most-
-// overdue chore from being nudged every single day, and a dead gate let it
-// happen anyway.
+// 'evening' is excluded: on a nudge day it shows nothing new, and on a quiet day
+// it carries no chore lines. Without 'nudge' here last_shown was permanently null
+// once nothing wrote 'digest', so the tolerance gate always took its null branch
+// and the same most-overdue chore was nudged every day.
 const baselineCTE = `
 	with baseline as (
 	  select c.id,
@@ -176,16 +156,17 @@ const baselineCTE = `
 	)`
 
 func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([]Chore, error) {
-	// The tolerance gate compares absolute instants, but the event it is
-	// timed against — the daily digest — fires on a wall clock once a day,
-	// not every 24 hours on the dot: ordinary scheduler tick jitter, and
-	// twice a year the DST shift, both make consecutive mornings' sends land
-	// anywhere from a little under to a little over 24 hours apart. Compared
-	// against an untouched tolerance, a short morning silently pushes a chore
-	// whose tolerance is a day or less out of the window it should have been
-	// in, and it is quietly skipped that day. Slack subtracted here absorbs
-	// both without risk of a second nudge the same day, because the digest
-	// only ever fires once daily regardless.
+	// The tolerance gate compares absolute instants, but the digest fires on a wall
+	// clock: tick jitter and the DST shift make consecutive mornings land a little
+	// under or over 24 hours apart. Against an untouched tolerance a short morning
+	// silently pushes a day-or-less chore out of its window. The slack absorbs both,
+	// and cannot cause a second nudge because the digest fires once daily.
+	// Every date in the weekday rule below is read in $3, where the person is,
+	// rather than in the session's own zone — which is UTC in production and in
+	// the suite. extract(dow) and ::date both follow the session, so between
+	// midnight and 02:00 in Amsterdam the rule was asking about yesterday: the
+	// bins were not due at 00:30 on a Thursday and were due at 00:30 on a
+	// Friday. Issue #148, one feature further on.
 	const q = baselineCTE + `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
 		       extract(epoch from ($2::timestamptz - b.since))::bigint,
@@ -209,31 +190,27 @@ func (s *Store) DueChores(ctx context.Context, personID int64, now time.Time) ([
 		            -- creation rather than from an ISO week number, which wraps
 		            -- at the turn of the year and would flip every alternating
 		            -- chore in the house on 1 January.
-		            extract(dow from $2::timestamptz)::int = c.on_weekday
-		            and (($2::timestamptz)::date - c.created_at::date) / 7
+		            extract(dow from ($2::timestamptz at time zone coalesce(nullif($3, ''), current_setting('TimeZone'))))::int
+		                    = c.on_weekday
+		            and (($2::timestamptz at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date
+		                 - (c.created_at at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date) / 7
 		                    % c.every_weeks = 0
-		            and b.since::date < ($2::timestamptz)::date
+		            and (b.since at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date
+		                    < ($2::timestamptz at time zone coalesce(nullif($3, ''), current_setting('TimeZone')))::date
 		       end
 		   and (b.last_shown is null
 		        or $2::timestamptz >= b.last_shown
 		               + make_interval(secs => c.tolerance_seconds) - interval '2 hours')
 		 order by extract(epoch from ($2::timestamptz - b.since)) / c.interval_seconds desc, c.name`
 
-	return s.scanChores(ctx, q, personID, now)
+	return s.scanChores(ctx, q, personID, now, s.zone())
 }
 
-// SearchChores finds an active chore by name.
+// SearchChores finds an active chore by name, because searching is one thing
+// rather than two: the lid carries one field, and a person searching for a word
+// does not first classify what kind of thing they are looking for.
 //
-// It exists because searching is one thing rather than two. The lid carries one
-// field on every screen, and typing "bins" into it while looking at the chores
-// used to answer with notes about bins and no chore — the field was honest
-// about searching notes, and the surprise was real anyway, because a person
-// searching for a word does not first classify what kind of thing they are
-// looking for.
-//
-// So the same query answers with both, and neither surface has to grow its own
-// search. Escaped like SearchItems, and for the same reason: a typed % is a
-// character.
+// Escaped like SearchItems: a typed % is a character.
 func (s *Store) SearchChores(ctx context.Context, personID int64, query string, limit int) ([]Chore, error) {
 	const q = baselineCTE + `
 		select c.id, c.person_id, c.name, c.interval_seconds, c.tolerance_seconds,
@@ -330,14 +307,10 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 		if err := rows.Scan(&text, &payload); err != nil {
 			return nil, fmt.Errorf("scanning capture: %w", err)
 		}
-		// A tap is stored in items just like a genuine capture, encoded as
-		// "!action <id> done:<n> <bool>". ParseAction matches on text alone,
-		// so a person who types that same shape produces byte-identical text —
-		// isActionPayload is the only thing that tells them apart, from the
-		// payload the transport actually sent. apply's applyAction requires
-		// both before treating something as a tap; requiring only ParseAction
-		// here would give the digest a second, looser definition of "tap" and
-		// silently drop a typed message that merely looked like one.
+		// A tap is stored in items like a genuine capture, and ParseAction matches on
+		// text alone, so isActionPayload is the only thing telling a tap from someone
+		// typing the same shape. Requiring only ParseAction here would give the digest a
+		// looser definition of "tap" and silently drop a message that looked like one.
 		if _, isTap := ParseAction(text); isTap && isActionPayload(payload) {
 			continue
 		}
@@ -348,20 +321,12 @@ func (s *Store) CapturesSince(ctx context.Context, personID int64, since time.Ti
 	return texts, rows.Err()
 }
 
-// HandledToday is everything that happened today that is worth saying back.
+// Handled is everything that happened today worth saying back: the chores and
+// tasks named, the notes counted.
 //
-// The evening message used to list completed chores and nothing else, so a day
-// with four tasks finished and no chores said nothing at all — on the one
-// surface positioned to correct "I did nothing today". It now names the chores
-// and the tasks, and counts the notes cleared.
-//
-// The count is the one number in this product, and it is worth being explicit
-// about why it is allowed. The banned counter is a count of what *remains*: it
-// grows while nobody is looking, it sits beside an implied target of zero, and
-// it can be lost. This counts what happened, in the past, on one day. It cannot
-// grow while you are not looking and there is nothing to lose. If that reading
-// is ever rejected, the fix is one line in EveningMessage — the words become
-// "some notes" — and nothing else moves.
+// The count is the one number in this product. The banned counter counts what
+// remains — it grows unwatched, sits beside an implied zero, and can be lost.
+// This counts what happened, in the past, on one day.
 type Handled struct {
 	Chores []string
 	Tasks  []string
@@ -443,21 +408,15 @@ func (s *Store) CompletedToday(ctx context.Context, personID int64, since time.T
 	return names, rows.Err()
 }
 
-// SetChoreRhythm makes a chore come back on a day rather than after an
-// interval, or puts it back on an interval.
+// SetChoreRhythm makes a chore come back on a day rather than after an interval,
+// or puts it back on an interval.
 //
-// Separate from UpsertChore rather than another pair of parameters on it,
-// because the two writes answer different questions and almost every caller
-// only ever asks the first. The screen asks how often; only if a day was named
-// does it then say which.
+// Separate from UpsertChore because the two writes answer different questions and
+// almost every caller only asks the first.
 //
-// It writes interval_seconds too, and that is the point of the whole design:
-// everything that renders "how often", every asking window and the tolerance
-// gate keep reading the column they always read. What the weekday adds is only
-// when the chore is *due*.
-//
-// weeks of 0 clears the rhythm, which is how a chore goes back to an interval
-// without being recreated.
+// It writes interval_seconds too, which is the point of the design: everything
+// that renders "how often", every asking window and the tolerance gate keep
+// reading the column they always read. weeks of 0 clears the rhythm.
 func (s *Store) SetChoreRhythm(ctx context.Context, personID, choreID int64, day time.Weekday, weeks int) error {
 	if weeks < 0 || weeks > 2 {
 		return fmt.Errorf("not a rhythm this product has: every %d weeks", weeks)

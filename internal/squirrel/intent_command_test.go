@@ -52,8 +52,6 @@ func TestCommandNameIsCaseInsensitive(t *testing.T) {
 	require.Equal(t, "find", squirrel.Match("!Find boiler").Command)
 }
 
-// A typo answered with 👀 would be filed as a note, silently, and the
-// correction with it.
 func TestAnUnknownCommandIsNotACapture(t *testing.T) {
 	in := squirrel.Match("!fnid boiler")
 	require.Equal(t, squirrel.IntentCommand, in.Kind)

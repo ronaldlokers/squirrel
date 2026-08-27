@@ -9,23 +9,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The stamp on the card and the line on the next page are the same words for
-// the same press. With script one appears, without it the other does, and a
-// person who uses both must not meet two vocabularies for one action.
-func TestTheCardAndThePageSayTheSameThingAboutSettingAside(t *testing.T) {
-	js, err := staticFS.ReadFile("static/pile.js")
-	require.NoError(t, err)
-
-	for state, said := range map[string]string{
-		"waiting": "waiting on someone",
-		"blocked": "blocked on a thing",
-		"someday": "someday",
-	} {
-		require.Equal(t, said, saidWords[state], "the page's word for %s", state)
-		require.Contains(t, string(js), said, "the card's word for %s", state)
-	}
-}
-
 // Stopping is offered wherever work happens, not only where triage does.
 //
 // /enough was linked from the deck's foot and nowhere else, so leaving was
@@ -53,16 +36,9 @@ func TestEverySessionScreenOffersAWayToStop(t *testing.T) {
 	said := squirrel.Say(squirrel.SayingStop, time.Now())
 	require.NotEmpty(t, said)
 
-	// One screen, since every place became a message. The shelf and the
-	// set-aside were the last two with a lid of their own.
-	for _, screen := range []string{"/"} {
-		body := m.call(t, "GET", screen, nil).Body.String()
-		require.Contains(t, body, `href="/enough"`,
-			"%s is a screen you can spend an evening on with no way to stop", screen)
-		require.Contains(t, body, said, "%s does not say the way out in today's words", screen)
-	}
+	// One screen, since every place became a message.
+	body := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, body, `href="/enough"`,
+		"the conversation is a screen you can spend an evening on with no way to stop")
+	require.Contains(t, body, said, "it does not say the way out in today's words")
 }
-
-// Setting one aside is said in the conversation now, and the way back is on
-// /held where it always was — see TestSettingOneAsideSaysSoAndCarriesOn. What
-// these pinned was the deck's redirect carrying an undo, and the deck is gone.

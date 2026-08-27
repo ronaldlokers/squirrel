@@ -11,33 +11,22 @@ import (
 
 // One heading, on every screen.
 //
-// There were five treatments — <h1 class="deckhead"> on two screens, a bare
-// <h1> on the empty states, and three different <p> classes doing the same job
-// in three sizes and two cases everywhere else — and ten of thirteen templates
-// had no <h1> at all, so heading navigation did not work anywhere in a product
-// built for someone who might well use it.
-//
-// These are the fence around that. A sixth treatment is one careless template
-// away, and the whole reason there were five is that nothing ever said so.
+// There were five treatments of a title and most templates had no <h1> at all,
+// so heading navigation did not work anywhere in a product built for someone
+// who might well use it. These are the fence around that: a sixth treatment is
+// one careless template away, and the whole reason there were five is that
+// nothing ever said so.
 
-// notATitle are the templates that legitimately have no title of their own:
-// the layout every page is poured into, and the fragments poured in with it.
+// notATitle are the templates that legitimately have no title of their own.
+// Each is checked to exist: an exemption for a file that is not there exempts
+// nothing today and exempts it silently the day somebody writes it.
 var notATitle = map[string]string{
-	"layout.html":   "the frame, not a screen",
-	"card.html":     "a note in the deck, titled by the deck",
-	"every.html":    "the interval picker, drawn inside a card",
-	"split.html":    "a proposal, drawn inside a card",
-	"stopping.html": "the way out, drawn into the foot of whatever offers it",
-	"results.html":  "has one, and two of them, one per branch",
-	"turn.html":     "one turn, drawn into the thread; its <h2> is the place it opens",
+	"layout.html": "the frame, not a screen",
+	"turn.html":   "one turn, drawn into the thread; its <h2> is the place it opens",
 	// The front door, and the one screen without a title. Every other screen
-	// is a place you navigated to, and its title answers "where am I"; home is
-	// where you start, and nobody arrives there wondering. It carried "right
-	// now" for an afternoon and read as a label for a room you were already
-	// standing in.
-	// The thread keeps home's exemption for the same reason, and it is the
-	// only screen left with it: a turn that opens a place carries that place's
-	// name as an <h2>, which is what heading navigation walks now.
+	// is a place you navigated to, and its title answers "where am I"; you do
+	// not arrive at the front door wondering. A turn that opens a place carries
+	// that place's name as an <h2>, which is what heading navigation walks.
 	"thread.html": "the front door — you do not arrive there wondering",
 }
 
@@ -59,7 +48,11 @@ func templates(t *testing.T) map[string]string {
 }
 
 func TestEveryScreenHasExactlyOneHeadingTreatment(t *testing.T) {
-	for name, body := range templates(t) {
+	all := templates(t)
+	for name := range notATitle {
+		require.Contains(t, all, name, "%s is exempted and does not exist", name)
+	}
+	for name, body := range all {
 		if _, skip := notATitle[name]; skip {
 			continue
 		}

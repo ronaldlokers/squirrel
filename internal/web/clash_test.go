@@ -10,13 +10,13 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The deck holds a tapped action for about a second and a half so the undo has
-// a card to sit on. For that whole window the row is untouched — so a `!drop`
-// typed in the room inside it wrote the truth, and the screen's write then
-// landed on top of it with nothing said to anybody.
-//
 // Two views, one pile. They may disagree about what is on screen; they may not
 // disagree about what a note is.
+//
+// A card on the screen names the state it was drawn from, and a press carries
+// that claim back. Between the draw and the press a `!drop` typed in the room
+// can move the row — and without the claim the screen's write lands on top of
+// it with nothing said to anybody.
 func TestADecisionThePileHasOvertakenDoesNotOverwriteIt(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		note(3, "the boiler makes a noise", squirrel.ItemOpen),
@@ -35,9 +35,7 @@ func TestADecisionThePileHasOvertakenDoesNotOverwriteIt(t *testing.T) {
 
 	require.Equal(t, squirrel.ItemDropped, f.items[0].State,
 		"the screen's stale decision overwrote the one made in the room")
-	// And it said so. The clash used to travel in the redirect; it is a thing
-	// Buddy says now, which is the same guarantee in the place the answer
-	// lives — see TestAClashIsSaidInTheConversation.
+	// And it said so — see TestAClashIsSaidInTheConversation.
 	require.Equal(t, "/", res.Header().Get("Location"))
 	require.Contains(t, f.appended[0].Words, "moved while you were looking at it",
 		"and it went back saying nothing about it")
@@ -67,8 +65,8 @@ func TestPressingTheSameThingTwiceIsStillOneDecision(t *testing.T) {
 		"a second press of the same button was reported as a collision")
 }
 
-// A form written before any of this said nothing about what it was showing,
-// and chat has no hold and so no stale window. Both keep the write they had.
+// A press that claims nothing has nothing to be stale about: the room's own
+// commands carry no `was`, and they keep the write they had.
 func TestAPressThatClaimsNothingWritesUnconditionally(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(3, "the boiler", squirrel.ItemOpen)}}
 	f.items[0].State = squirrel.ItemDropped
@@ -80,9 +78,8 @@ func TestAPressThatClaimsNothingWritesUnconditionally(t *testing.T) {
 	require.Equal(t, squirrel.ItemDone, f.states[3])
 }
 
-// It moved under you, in the conversation. Saying nothing would be the two
-// views disagreeing and neither of them mentioning it — and before this it
-// redirected to a deck that no longer exists.
+// It moved under you, and Buddy says so. Saying nothing would be the two views
+// disagreeing and neither of them mentioning it.
 func TestAClashIsSaidInTheConversation(t *testing.T) {
 	// The note is already kept, so a press that claims it was open finds it
 	// somewhere else — which is what the room having moved it looks like.
@@ -93,7 +90,3 @@ func TestAClashIsSaidInTheConversation(t *testing.T) {
 	require.NotEmpty(t, f.appended)
 	require.Contains(t, f.appended[0].Words, "moved while you were looking at it")
 }
-
-// Both went with the deck. A clash is said in the conversation now — see
-// TestAClashIsSaidInTheConversation — and what the card was showing travels in
-// the press rather than on the card, which is what `was` has always been.

@@ -1,6 +1,6 @@
 //go:build browser
 
-// The chores screen's own picker, and the keys it was not given.
+// The chores' own picker, and the keys it was not given.
 package web
 
 import (
@@ -21,12 +21,9 @@ func twoChores() *fakeStore {
 	return f
 }
 
-// Looking something up had a keyboard path and keeping a thought did not.
-//
-// `/` has focused the lid's search since it was written. Nothing focused the
-// slot, so on the deliberate-desktop scene the first thing home asked of a
-// keyboard user was to reach for the mouse — for the one act this product
-// calls sacred.
+// Looking something up had a keyboard path and keeping a thought did not, so
+// the first thing home asked of a keyboard user was to reach for the mouse —
+// for the one act this product calls sacred.
 func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 	f := aPile()
 	srv := screen(t, f)
@@ -39,30 +36,9 @@ func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 		"t on home did not reach the slot")
 }
 
-// Retired on 24 August 2026, with the control they covered.
-//
-// The interval question was a `details.often` disclosure inside the chore card,
-// and these pinned its behaviour: that opening it replaced the row rather than
-// opening a modal, that 1-4 answered it, and that the arrows belonged to it
-// while it was open. It is a turn of its own now — see askHowOften — with two
-// radio rows and one submit, and none of those three facts has anything left to
-// be true of.
-//
-// What went with it and is not replaced: the digit keys that answered the
-// question without reaching for the mouse. Recorded in docs/roadmap.md rather
-// than quietly dropped.
-
-// Both were about the deck: a stamp on a card that is gone, and `t` meaning
-// two things on a screen that had both a slot and a deck. There is one dock and
-// no deck, so the collision cannot happen — TestBrowserAKeyInTheDockIsJustA
-// Letter is what pins the remaining half.
-
-// The interval question answers to keys again.
-//
-// The deck's digits went with its disclosure and roadmap v0.24.0 recorded that
-// as worth restoring. The question is a turn now, so the carve-out is about the
-// picker wherever it is: a digit is a count, a letter is a unit by its own first
-// letter, and Enter answers.
+// The question is a turn, so the carve-out is about the picker wherever it is:
+// a digit is a count, a letter is a unit by its own first letter, and Enter
+// answers.
 func TestBrowserTheIntervalQuestionAnswersToKeys(t *testing.T) {
 	f := &fakeStore{
 		chores: []squirrel.Chore{{ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,

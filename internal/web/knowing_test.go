@@ -7,8 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// What Squirrel thinks it knows about you, shown to you.
-//
 // This is the only thing in the product that holds an opinion about somebody
 // rather than something they said. A product that quietly builds a picture of
 // you that you cannot read is not this product.
@@ -44,7 +42,6 @@ func TestItIsShownInItsOwnWords(t *testing.T) {
 		"Phone calls get done; forms get put off.")
 }
 
-// It says it might be wrong, because it might be.
 func TestItSaysItCouldBeWrong(t *testing.T) {
 	f := knows("Phone calls get done.")
 	f.appended = nil
@@ -114,7 +111,3 @@ func TestAStoreThatCannotBeReadSaysSo(t *testing.T) {
 
 	require.Equal(t, 303, w.Code)
 }
-
-// That the model is told never to say any of this back is pinned in
-// internal/coach, where the sentence lives — see TestTheModelIsToldNotToSayIt
-// Back in knowing_test.go there.

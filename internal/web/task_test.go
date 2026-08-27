@@ -33,8 +33,6 @@ func TestPromotingANoteSaysItBecameATask(t *testing.T) {
 	require.NotContains(t, f.appended[1].Words, "done")
 }
 
-// And the way back is its own verb.
-//
 // The note's state never moved — what changed was its kind — so `act=open`
 // undoes nothing at all. Putting it back means making it a note again, which
 // is the same lesson setting-aside landed on: some transitions come back by
@@ -67,14 +65,4 @@ func TestPuttingATaskBackOffersNoFurtherUndo(t *testing.T) {
 	q, err := url.Parse(to)
 	require.NoError(t, err)
 	require.Empty(t, q.Query().Get("undo"))
-}
-
-// The card's stamp and the next page's line are the same words for the same
-// press, with script and without it.
-func TestTheCardAndThePageAgreeAboutATask(t *testing.T) {
-	js, err := staticFS.ReadFile("static/pile.js")
-	require.NoError(t, err)
-
-	require.Equal(t, "now a task", saidWords["task"])
-	require.Contains(t, string(js), `said: "now a task"`)
 }

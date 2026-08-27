@@ -175,7 +175,6 @@ func TestARequestWithoutToolsSaysNothingAboutReasoning(t *testing.T) {
 	require.NotContains(t, api.requests[0], "reasoning_effort")
 }
 
-// The same, for the three calls whose tools are written out by hand.
 func TestTheHandWrittenCallsAlsoTurnReasoningOff(t *testing.T) {
 	for name, ask := range map[string]func(p *coach.Provider){
 		"smaller": func(p *coach.Provider) {

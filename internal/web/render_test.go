@@ -25,8 +25,3 @@ func TestEveryActionIsAFormSubmissionNotAScriptHook(t *testing.T) {
 		strings.Count(body, `action="/pile/act"`),
 		"an act that is not in a form is an act only a script can make")
 }
-
-// Three went with the deck's card and its disclosures. The rule they served —
-// an action is a form submission, not a script hook — is still pinned by
-// TestEveryActionIsAFormSubmissionNotAScriptHook, which now walks the
-// conversation.

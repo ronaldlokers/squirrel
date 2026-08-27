@@ -62,12 +62,25 @@ type Drain struct {
 // hammering Postgres and the spool directory as fast as the CPU allows.
 const defaultInterval = time.Second
 
+// defaultMaxBackoff bounds how far a failing pass may push the next one out. A
+// spool that has been waiting half a minute is still waiting; longer than that
+// only delays the recovery nobody is watching for.
+const defaultMaxBackoff = 30 * time.Second
+
+// The Postgres error classes that mean retrying cannot help: 22 is a data
+// exception and 23 an integrity constraint violation, and the same row will
+// violate the same rule next time.
+const (
+	pgDataException       = "22"
+	pgConstraintViolation = "23"
+)
+
 func NewDrain(o DrainOptions) *Drain {
 	if o.Interval <= 0 {
 		o.Interval = defaultInterval
 	}
 	if o.MaxBackoff == 0 {
-		o.MaxBackoff = 30 * time.Second
+		o.MaxBackoff = defaultMaxBackoff
 	}
 	return &Drain{opts: o}
 }
@@ -84,7 +97,8 @@ func permanent(err error) bool {
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
-		return strings.HasPrefix(pgErr.Code, "22") || strings.HasPrefix(pgErr.Code, "23")
+		return strings.HasPrefix(pgErr.Code, pgDataException) ||
+			strings.HasPrefix(pgErr.Code, pgConstraintViolation)
 	}
 	return false
 }

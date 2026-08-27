@@ -17,10 +17,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// fakeStore is an in-memory pile. The screen's own tests must not need
-// Postgres: what is under test here is routing, rendering and the refusal to
-// count, none of which is a database question. The store's own behaviour is
-// covered by the integration tests in internal/squirrel.
 // choreRhythm is one call to SetChoreRhythm.
 type choreRhythm struct {
 	ID    int64
@@ -28,6 +24,17 @@ type choreRhythm struct {
 	Weeks int
 }
 
+// fakeStore is an in-memory pile. The screen's own tests must not need
+// Postgres: what is under test here is routing, rendering and the refusal to
+// count, none of which is a database question.
+//
+// That is the rule for every fake in this file. Whatever internal/squirrel
+// already proves — the picker's rules, a spool's durability, how a moment
+// parses — is not proved again here; these stand in for it and record what the
+// screen did with the answer.
+//
+// The recorded fields — what was written, answered, refused, marked — are here
+// so a test can assert on the write rather than on a rendering of it.
 type fakeStore struct {
 	// The exit ramp, and what the screen did about it.
 	ramp        squirrel.Timer
@@ -43,13 +50,11 @@ type fakeStore struct {
 	hasQuiet bool
 	quietErr error
 	stilled  []int64
-	// Every rhythm the screen set, so a test can assert on the write rather
-	// than on a rendering of it — including the ones it refused, which are
-	// the interesting half.
+	// Every rhythm the screen set, including the ones it refused, which are the
+	// interesting half.
 	rhythms []choreRhythm
 	// Where you got to. hasRun is what RunFor answers; marked and ended are
-	// what the screen did, so a test can assert on the write rather than on a
-	// rendering of it.
+	// what the screen did.
 	run       squirrel.Run
 	hasRun    bool
 	runErr    error
@@ -62,7 +67,7 @@ type fakeStore struct {
 	items     []squirrel.Item
 	chores    []squirrel.Chore
 	checkin   *squirrel.Checkin
-	// readings is the fortnight the moods page reads, newest first.
+	// readings is what the moods page reads, newest first.
 	readings []squirrel.Checkin
 	timer    *squirrel.Timer
 	err      error
@@ -73,24 +78,21 @@ type fakeStore struct {
 	// until something asks anyway.
 	offer *squirrel.Offer
 	gated bool
-	// What the offer's buttons did, so a test can assert on the write rather
-	// than on a rendering of it.
+	// What the offer's buttons did.
 	answers    []string
 	refused    []int64
 	subscribed []string
 
-	// What was written, so a test can assert on the write rather than on a
-	// rendering of it. inserted is every note's words in the order they were
-	// stored; states is where each id ended up.
+	// inserted is every note's words in the order they were stored; states is
+	// where each id ended up.
 	inserted []string
 	states   map[int64]squirrel.ItemState
 
 	// Fixed points created by a proposal that was pressed.
 	moments []squirrel.Moment
 
-	// Every press of "that landed badly", so a test can assert on the record
-	// rather than on a rendering of it. noReplyToMark stands for a sheet with
-	// nothing behind it to mark.
+	// Every press of "that landed badly". noReplyToMark stands for a
+	// conversation with nothing behind it to mark.
 	landedBadly   []time.Time
 	noReplyToMark bool
 
@@ -119,22 +121,21 @@ type fakeStore struct {
 	appended    []squirrel.Turn
 	moreTurns   bool
 	pagedBefore int64
-	// The reading this render wrote, so a test can assert on the write rather
-	// than on a rendering of it.
+	// The reading this render wrote.
 	recorded squirrel.Mood
 	// What each door is holding, and a failure that belongs to the counting
 	// alone — the doors have to survive it while the rest of the page works.
-	waiting    squirrel.Waiting
-	waitingErr error
-	// A failure that belongs to reading the chores alone, so a test about the
-	// door can fail that read while the conversation itself still renders.
+	waiting squirrel.Waiting
+	// waitingAsked counts the reads, so a render that counts the same thing
+	// twice over is visible.
+	waitingAsked int
+	waitingErr   error
+	// Failures that belong to one read alone, so a test can break the chores or
+	// the notes while the conversation itself still renders.
 	choresErr error
-	// A failure that belongs to reading the notes alone, so a test about the
-	// pile can fail that read while the conversation itself still renders.
-	itemsErr error
+	itemsErr  error
 
-	// What the chore handlers did, so a test can assert on the write rather
-	// than on a rendering of it.
+	// What the chore handlers did.
 	completed  []int64
 	retired    []int64
 	reinterval struct {
@@ -334,10 +335,9 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 	return true, nil
 }
 
-// The picker, faked. The rules themselves are proved against a real database
-// in internal/squirrel; what the screen has to be tested for is what it does
-// with an offer and with the absence of one, so this hands back whatever the
-// test set and records the answers.
+// The picker, faked: it hands back whatever the test set and records the
+// answers, because what the screen has to be tested for is what it does with an
+// offer and with the absence of one.
 func (f *fakeStore) PickNow(_ context.Context, _ int64, _ time.Time, showAnyway bool) (squirrel.Offer, bool, error) {
 	if f.err != nil {
 		return squirrel.Offer{}, false, f.err
@@ -488,9 +488,9 @@ func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Ite
 	return squirrel.Item{}, false, nil
 }
 
-// MoveItemState is the conditional write the deck uses, and the fake keeps the
-// real one's rule: already being at the target is a success, because a second
-// identical press is a press.
+// MoveItemState is the conditional write a card's press makes, and the fake
+// keeps the real one's rule: already being at the target is a success, because
+// a second identical press is a press.
 func (f *fakeStore) MoveItemState(_ context.Context, id int64, from, to squirrel.ItemState, _ time.Time) (bool, error) {
 	if f.err != nil {
 		return false, f.err
@@ -756,10 +756,8 @@ func (f *fakeStore) ClearSteps(_ context.Context, _ int64) error {
 	return nil
 }
 
-// fakePhotos stands in for the volume. The durability — write, fsync, rename,
-// fsync the directory — is proved in internal/squirrel; what the screen has to
-// be tested for is that it offers a camera only when there is somewhere to put
-// a photograph, and what it stores when there is.
+// fakePhotos stands in for the volume: the screen has to offer a camera only
+// when there is somewhere to put a photograph, and store what it is given.
 type fakePhotos struct {
 	kept []string
 	err  error
@@ -798,10 +796,8 @@ func (p *fakePhotos) Thumb(name string) (*os.File, error) {
 	return os.Open(filepath.Join(p.dir, squirrel.ThumbName(name)))
 }
 
-// fakeSpool stands in for the durable half of capture. The spool's own
-// durability — write, fsync, rename, fsync the directory — is proved in
-// internal/squirrel; what the screen has to be tested for is that it goes
-// through one at all, and what it does when it cannot.
+// fakeSpool stands in for the durable half of capture: the screen has to go
+// through one at all, and say something honest when it cannot.
 type fakeSpool struct {
 	written  []squirrel.Capture
 	err      error
@@ -818,8 +814,6 @@ func (s *fakeSpool) Write(c squirrel.Capture) (string, error) {
 
 func (s *fakeSpool) Writable() bool { return !s.readonly }
 
-// mountedSpooling is mounted with a spool the test can inspect, for the two
-// things that are about capture itself rather than about the pile.
 // mountedWithCamera is mounted plus somewhere to keep a photograph.
 func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *testMux {
 	t.Helper()
@@ -833,6 +827,7 @@ func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos
 	return m
 }
 
+// mountedSpooling is mounted with a spool the test can inspect.
 func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
 	t.Helper()
 	m := newTestMux()
@@ -865,8 +860,8 @@ type fakeCoach struct {
 	err   error
 	// opens is the place the coach asked to be shown, or empty.
 	opens string
-	// asked is every turn it was handed, so a test can assert on what the
-	// model was told rather than on a rendering of it.
+	// asked is every turn it was handed, so a test can assert on what the model
+	// was told.
 	asked []struct{ kind, said, subject string }
 	// talk is the window, which the real one keeps in memory too.
 	talk   []Exchange
@@ -898,8 +893,8 @@ type fakeCoach struct {
 	did     []string
 	propose *Proposal
 
-	// spent and ceiling are what the sheet reports. Empty spent stands in for
-	// a sum that could not be read, which must draw no line at all.
+	// spent and ceiling are what the reply reports. Empty spent stands in for a
+	// sum that could not be read, which must draw no line at all.
 	spent   string
 	ceiling string
 }
@@ -919,11 +914,11 @@ func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) 
 	return Answer{Text: c.reply, Did: c.did, Propose: c.propose, Open: c.opens}, nil
 }
 
-// decided is what the model chooses instead, when a test says it chooses
+// decide is what the model chooses instead, when a test says it chooses
 // anything. The zero value chooses nothing, which is the shipping state
 // whenever the picker's answer is good enough or nothing is configured.
 func (c *fakeCoach) decide(_ context.Context, _ int64, pickedKind string, pickedRef int64,
-	mayAsk bool) (string, int64, string, string, bool) {
+	mayAsk bool) (kind string, refID int64, text, because string, ok bool) {
 
 	c.picked = append(c.picked, pickedKind)
 	if !mayAsk {
@@ -1064,6 +1059,7 @@ func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, before int64, limit 
 }
 
 func (f *fakeStore) Waiting(_ context.Context, _ int64, _ time.Time) (squirrel.Waiting, error) {
+	f.waitingAsked++
 	if f.waitingErr != nil {
 		return squirrel.Waiting{}, f.waitingErr
 	}

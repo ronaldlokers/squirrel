@@ -29,21 +29,15 @@ func (s *Store) In(loc *time.Location) { s.where = loc }
 
 // here puts a stored instant back into the person's clock.
 //
-// A timestamptz is an instant and carries no zone, so pgx hands it back in
-// UTC. Everything downstream then prints it — "at 14:30", "leave about 14:05",
-// "25 AUGUST" on the corner of a card — and printing the right instant with
-// the wrong digits on it is a missed appointment, or a note dated yesterday.
+// A timestamptz is an instant and carries no zone, so pgx hands it back in UTC.
+// Everything downstream prints it, and printing the right instant with the wrong
+// digits on it is a missed appointment or a note dated yesterday.
 //
-// This is issue #148 one layer further out. That fix threaded the location
-// into everything that *parses* a time, and the reading side was never
-// audited. It was found on the fixed points first, an hour after shipping a
-// line that printed an appointment two hours early, and on the notes the
-// following morning by looking for the same shape somewhere else.
+// Issue #148 one layer further out: that fix threaded the location into
+// everything that parses a time, and the reading side was never audited.
 //
-// Applied where a row comes out of the database rather than where it is
-// printed, because "each print site" is what let it happen twice. pick.go had
-// already patched one of them by hand, which is what that looks like from the
-// inside: correct, local, and no help to the next reader.
+// Applied where a row comes out of the database rather than where it is printed,
+// because "each print site" is what let it happen twice.
 func (s *Store) here(t time.Time) time.Time {
 	if s.where == nil {
 		return t
@@ -53,6 +47,23 @@ func (s *Store) here(t time.Time) time.Time {
 
 // today is the person's day, not the process's.
 func (s *Store) today(now time.Time) time.Time { return StartOfDayIn(s.where, now) }
+
+// zone is the name a query hands to `at time zone`, so SQL that reads a date or
+// a day of week reads the person's rather than the session's.
+//
+// The session is UTC, so anything comparing dates without this is asking about
+// yesterday for the first hours of every local day.
+//
+// Empty when nowhere is configured, and the query falls back to the session's
+// own zone — which is what every one of these did before. time.Local's name is
+// the literal "Local", which Postgres does not recognise, so it can never be
+// handed over.
+func (s *Store) zone() string {
+	if s.where == nil || s.where == time.Local {
+		return ""
+	}
+	return s.where.String()
+}
 
 func URLFor(c PostgresConfig) string {
 	u := url.URL{

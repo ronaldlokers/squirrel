@@ -14,7 +14,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,7 @@ import (
 
 // cameraScreen is the screen with somewhere to put a photograph, which is what
 // makes the camera appear at all.
-func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *fakeCoach) *httptest.Server {
+func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *httptest.Server {
 	t.Helper()
 
 	opts := Options{
@@ -30,9 +29,6 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		Spool:    sp, Photos: ph,
-	}
-	if c != nil {
-		opts = c.options(opts)
 	}
 
 	m := &serveMux{mux: http.NewServeMux()}
@@ -52,27 +48,24 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos, c *
 // openCamera points a browser at home, where the slot and its camera are.
 func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Server) {
 	t.Helper()
-	srv := cameraScreen(t, aPile(), sp, ph, nil)
+	srv := cameraScreen(t, aPile(), sp, ph)
 	c := browserAt(t, srv, "/")
 	return c, srv
 }
 
-// landed is the slot saying a capture went in. It used to be a navigation to
-// /?kept=1 — the capture posted the form, the browser left, and the page came
-// back at the top with a word on it. It keeps in place now, so the sign that
-// it worked is the slot's own answer rather than a change of address.
-// It landed when Buddy has said so. The answer used to be a word inside the
-// box; it is a turn in the conversation now, and the box being empty is the
-// other half of the same fact.
-// The exact word varies by the day, the way the slot's own line does — and
-// since the box became a conversation it may be a sentence Buddy wrote rather
-// than an acknowledgement at all. So this waits for a turn that was not there
-// before rather than for a phrasing.
+// marking stamps how many turns are on the page before the press, and landed
+// waits for one more.
 //
-// The count is stamped on the page before the press. A predicate that only
-// asked "has Buddy said something" was satisfied by whatever was already on
-// screen and returned instantly, which is how a spool assertion ran before the
-// write it was about.
+// A capture has landed when Buddy has said so, and the page keeps in place — so
+// the sign that it worked is a new turn rather than a change of address.
+//
+// It waits for a turn rather than for a phrasing: the acknowledgement varies by
+// the day, and since the box became a conversation it may be a sentence Buddy
+// wrote rather than an acknowledgement at all.
+//
+// The count has to be stamped first. A predicate that only asked "has Buddy said
+// something" was satisfied by whatever was already on screen and returned
+// instantly, which is how a spool assertion ran before the write it was about.
 const marking = `window.__before = document.querySelectorAll("#thread .turn").length; return 1`
 
 const landed = `document.querySelectorAll("#thread .turn").length > window.__before`
@@ -308,73 +301,3 @@ func TestBrowserAnExistingPhotographCanBeChosen(t *testing.T) {
 	require.Equal(t, "image/*", c.eval(t,
 		`return document.querySelector(".slot input[name=photo]").getAttribute("accept")`))
 }
-
-// Closing the sheet with a coach actually behind it. The two tests that
-// covered this ran with no coach configured, so the sheet they closed was the
-// short one — no spend in the lid, no conversation in it.
-
-// aLongConversation is what the sheet looks like after a few minutes of use,
-// which is the only state the close button was ever reported broken in.
-func aLongConversation() *fakeCoach {
-	c := &fakeCoach{spent: "€0.61", ceiling: "€10"}
-	for i := 0; i < 14; i++ {
-		c.talk = append(c.talk, Exchange{
-			Said:    "I still cannot make a start on the tax thing and I do not know why",
-			Replied: "Open the envelope and read the first line. That is the whole of it.",
-		})
-	}
-	return c
-}
-
-// Closing on a phone, after a conversation long enough to scroll.
-//
-// The sheet is a bottom sheet under 620px and it is what scrolls, and the lid
-// holding the close button is its first child — so reading Buddy's answer
-// carries the way out off the top of the screen. Escape needs a keyboard and
-// the backdrop is a strip above an 88vh sheet, which leaves nothing to press.
-
-// The close button has to be somewhere a thumb can reach it, which is a
-// different question from whether the handler fires. A control pushed out of
-// its own lid by the spend beside it is a control that cannot be pressed.
-
-// The close button, in a short window.
-//
-// Read what this does not prove. An emulated viewport has no browser chrome,
-// so vh and dvh resolve to the same number here and this test passes against
-// the code that shipped the bug. It is a guard on the sticky lid, not evidence
-// about a phone; the unit is guarded separately, in the stylesheet, below.
-
-// TestBrowserTheBackdropIsStillReachableOnAShortPhone was retired on 25 August
-// 2026 with the sheet it measured. Nothing is over anything else now, so there
-// is no backdrop to leave a strip of.
-
-// The sheet is measured in dvh, and this is the only check on it that means
-// anything.
-//
-// vh is the *large* viewport — the height the page would have if the browser's
-// own chrome were hidden. With an address bar on screen, which is most of the
-// time on a phone, a sheet anchored to the bottom at 88vh reaches higher than
-// the window actually shows, and the first thing over the top edge is the lid,
-// where the close button lives.
-//
-// It cannot be caught by driving a browser here: the emulator has no chrome to
-// retract, so both units agree and every geometric test passes either way.
-// That is exactly how this shipped twice. So the assertion is on the source —
-// blunt, and honest about being blunt.
-func TestTheSheetIsMeasuredInDynamicViewportHeight(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
-	require.NoError(t, err)
-
-	// Comments stripped first. The prose above this rule explains dvh at
-	// length, so a check on the raw bytes passes whatever the code does — which
-	// is what the first version of this test did.
-	naked := comments.ReplaceAllString(string(css), "")
-	require.Regexp(t, `max-height:\s*[0-9.]+dvh`, naked,
-		"the sheet went back to vh, which is not the height a phone shows")
-	require.NotRegexp(t, `dialog\.coachsheet[^}]*max-height:\s*[0-9.]+vh\s*;\s*}`, naked,
-		"a vh max-height is the last word on the sheet's height")
-}
-
-// CSS comments, for the check above. /* ... */ only; this stylesheet has no
-// other kind.
-var comments = regexp.MustCompile(`(?s)/\*.*?\*/`)

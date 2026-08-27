@@ -49,26 +49,30 @@ var toolSpecs = []map[string]any{
 		}),
 }
 
+// requiredArgs is empty for every tool but choose, whose arguments all matter.
+// The read tools' arguments have sensible defaults, so requiring them would make
+// the model spell out a limit it does not care about.
+//
+// Empty and never nil: a nil slice marshals to `null`, and the API rejects the
+// whole request with `None is not of type 'array'`. That took down every call
+// that offered tools, and the deterministic floor kept working underneath — which
+// is why it looked like a quiet model rather than a broken one.
+func requiredArgs(name string, props map[string]any) []string {
+	required := []string{}
+	if name != "choose" {
+		return required
+	}
+	for k := range props {
+		required = append(required, k)
+	}
+	return required
+}
+
 func spec(name, about string, props map[string]any) map[string]any {
 	if props == nil {
 		props = map[string]any{}
 	}
-	// choose is the only tool whose arguments all matter; the read tools'
-	// arguments all have sensible defaults, so requiring them would make the
-	// model spell out a limit it does not care about.
-	//
-	// Empty and never nil. A nil slice marshals to `null`, and the API answers
-	// `None is not of type 'array'` and rejects the whole request — which took
-	// down every call that offered tools, so the decide path and every
-	// conversational turn fell through to the deterministic floor and stayed
-	// there. The floor worked, which is why it looked like a quiet model
-	// rather than a broken one.
-	required := []string{}
-	if name == "choose" {
-		for k := range props {
-			required = append(required, k)
-		}
-	}
+	required := requiredArgs(name, props)
 	return map[string]any{
 		"type": "function",
 		"function": map[string]any{
@@ -131,8 +135,6 @@ func (p *Provider) Decide(ctx context.Context, personID int64) (Decision, error)
 	if err != nil {
 		return Decision{}, ErrUnavailable
 	}
-	// The gate is given back whichever way this returns. `defer` rather
-	// than a release at the end, because the end is not the only exit.
 	defer permit.Release()
 
 	// Everything a tool handed back, so that choose() can be checked against

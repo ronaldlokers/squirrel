@@ -14,8 +14,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// A photograph of the thing, instead of typing what it says.
-
 // photographed builds the multipart body a phone's camera actually sends.
 func photographed(t *testing.T, words, kind string, bytesIn []byte) (string, *bytes.Buffer) {
 	t.Helper()
@@ -130,7 +128,6 @@ func TestAVolumeThatRefusesKeepsTheWords(t *testing.T) {
 	require.Empty(t, sp.written)
 }
 
-// Words alone still post, with or without a camera on the page.
 func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	m := mountedWithCamera(t, &fakeStore{}, sp, ph)
@@ -187,8 +184,6 @@ func TestThePileShowsAPhotographByTheNotesID(t *testing.T) {
 		ID: 7, RawText: "", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
 		PhotoName: "photo-1.jpg", PhotoType: "image/jpeg",
 	}}}
-	// A photograph is fetched by the note's id and never by the file's name:
-	// the name is on a volume this process can see and the browser cannot.
 	body := opened(t, f, "pile")
 	require.Contains(t, body, `src="/photo/7/thumb"`)
 	require.Contains(t, body, `href="/photo/7"`)
@@ -292,13 +287,10 @@ func TestAnEmptyFilePartIsJustWords(t *testing.T) {
 	require.Empty(t, sp.written[0].PhotoName)
 }
 
-// A card prints the date the note carries, and does not reach for a clock.
-//
-// `toView` called `.Local()` on it until 25 August 2026 — the *process* clock,
-// and the pods run in UTC on purpose since #148. So anything captured after
-// ten in the evening wore the previous day's date. The store hands rows back
-// in the person's clock now; converting again here would be the same bug with
-// an extra step.
+// `toView` called `.Local()` on it — the *process* clock, and the pods run in
+// UTC on purpose (#148), so anything captured after ten in the evening wore the
+// previous day's date. The store hands rows back in the person's clock; converting
+// again here would be the same bug with an extra step.
 func TestACardPrintsTheDateTheNoteCarries(t *testing.T) {
 	ams, err := time.LoadLocation("Europe/Amsterdam")
 	require.NoError(t, err)

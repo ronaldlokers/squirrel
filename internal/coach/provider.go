@@ -87,9 +87,8 @@ func (p *Provider) modelFor(t Turn) string {
 
 // Answer is a conversational turn.
 func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
-	// With hands and facts, the turn can act. Without either, it can only
-	// talk — which is what every turn did before the phase that changed it,
-	// and what it goes back to whenever the wiring is absent.
+	// With hands and facts the turn can act; without either it can only talk,
+	// which is what it goes back to whenever the wiring is absent.
 	if p.Hands != nil && p.Facts != nil {
 		return p.answerActing(ctx, t)
 	}
@@ -100,8 +99,6 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 	if err != nil {
 		return Reply{}, ErrUnavailable
 	}
-	// The gate is given back whichever way this returns. `defer` rather
-	// than a release at the end, because the end is not the only exit.
 	defer permit.Release()
 
 	model := p.modelFor(t)
@@ -119,10 +116,10 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 
 	guarded, usable := Guard(text)
 
-	// Recorded before the guard's verdict is acted on, and recorded either
-	// way. The prompt kept is what the person said rather than the whole
-	// rendered conversation: the preamble is the same every time and the
-	// window is already several rows of this same table.
+	// Recorded before the guard's verdict is acted on, and either way. The
+	// prompt kept is what the person said rather than the rendered
+	// conversation: the preamble is identical every time and the window is
+	// already several rows of this table.
 	if err := p.Budget.Record(ctx, t.PersonID, Answer{
 		Kind:      t.Kind,
 		Model:     model,
@@ -133,19 +130,16 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 		Used:      usable,
 		At:        now,
 	}); err != nil {
-		// Not fatal to the turn. A reply that arrived is a reply worth showing
-		// even if the log failed to take it; the cost of that is one call
-		// missing from the month's sum, which errs toward under-counting and
-		// is the direction a failure here should err in anyway, because a
-		// failing database is about to take the next Allows call with it.
+		// Not fatal to the turn: a reply that arrived is worth showing even if
+		// the log failed to take it. The cost is one call missing from the
+		// month's sum, and a failing database is about to take the next Allows
+		// call with it anyway.
 		slog.Error("recording what the coach said", "error", err)
 	}
 
 	if !usable {
-		// The rejected text is logged, once, at the only moment anyone could
-		// act on it. Without this the guard is a silent filter and there is no
-		// way to tell "the model said something shaped wrong" from "the model
-		// was never called".
+		// Logged once, at the only moment anyone could act on it: otherwise the
+		// guard is a silent filter and "shaped wrong" reads as "never called".
 		slog.Warn("the coach said something the wrong shape; using the fixed answer",
 			"kind", t.Kind, "model", model, "said", text)
 		return Reply{}, ErrUnavailable

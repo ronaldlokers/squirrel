@@ -1,14 +1,10 @@
 //go:build browser
 
-// Five things that are only wrong on the screen.
+// Things that are only wrong on the screen.
 //
-// Each of these looked right in the source: a min-width that was stated, a
-// role that was documented, a panel that hangs from its control, a
-// destructive press that was deliberately not full width, two list cards
-// built from the same stock. What the browser drew was a staggered column, a
-// label in body text, a panel two pixels off the side of a phone, an ending
-// eight pixels under a doing, and two lists whose words start four pixels
-// apart.
+// Both of these looked right in the source — a width that was stated, a role
+// that was documented — and what the browser drew was a staggered column and a
+// label in body text.
 //
 // So, like the cascade tests, these ask the browser for the computed value and
 // compare against a sibling rather than against a number wherever the point is
@@ -101,12 +97,9 @@ func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	}
 }
 
-// `.lead` is the small line that says what the thing under it is, and the
-// stylesheet says so: "the meta role, set in cream at 11.5px everywhere it is
-// used". It was six scoped rules and no definition, so the three sites none of
-// them reached — the search results' two group labels, COMES BACK inside a
-// chore's interval row, RIGHT NOW above Buddy's context — rendered at the
-// document's own size, larger and lighter than the thing they label.
+// `.lead` is the small line that says what the thing under it is. It was six
+// scoped rules and no definition, so every site none of them reached rendered
+// at the document's own size — larger and lighter than the thing it labels.
 //
 // Against the body rather than against a number: the defect is not that a
 // label was 16px, it is that it was the same size as running text.
@@ -123,59 +116,28 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 
-	// One screen since /buddy went. Its meta labels are the picker's, and the
-	// picker arrives by pressing HOW OFTEN.
-	for _, path := range []string{""} {
-		openChores(t, c, srv)
-		c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
-		c.until(t, "the question", `!!document.querySelector(".pick")`)
+	// There is one screen, and its meta labels are the picker's — which arrives
+	// by pressing HOW OFTEN on a chore.
+	openChores(t, c, srv)
+	c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
+	c.until(t, "the question", `!!document.querySelector(".pick")`)
 
-		found := c.eval(t, `
-			const body = parseFloat(getComputedStyle(document.body).fontSize);
-			return Array.from(document.querySelectorAll(".lead")).map(el => ({
-				text: el.textContent.trim(),
-				size: parseFloat(getComputedStyle(el).fontSize),
-				body: body,
-			}));`)
+	found := c.eval(t, `
+		const body = parseFloat(getComputedStyle(document.body).fontSize);
+		return Array.from(document.querySelectorAll(".lead")).map(el => ({
+			text: el.textContent.trim(),
+			size: parseFloat(getComputedStyle(el).fontSize),
+			body: body,
+		}));`)
 
-		labels, ok := found.([]any)
-		require.True(t, ok, "%s did not answer with a list of labels", path)
-		require.NotEmpty(t, labels, "%q drew no meta label at all", path)
+	labels, ok := found.([]any)
+	require.True(t, ok, "the page did not answer with a list of labels")
+	require.NotEmpty(t, labels, "nothing on the screen drew a meta label at all")
 
-		for _, l := range labels {
-			label := l.(map[string]any)
-			require.Less(t, label["size"], label["body"],
-				"%s on %s is %vpx against body text at %vpx: it is not wearing the meta role",
-				label["text"], path, label["size"], label["body"])
-		}
+	for _, l := range labels {
+		label := l.(map[string]any)
+		require.Less(t, label["size"], label["body"],
+			"%s is %vpx against body text at %vpx: it is not wearing the meta role",
+			label["text"], label["size"], label["body"])
 	}
 }
-
-// TestBrowserBothLidPanelsEndWhereThePageEnds was retired on 25 August 2026.
-// It measured the search field's panel against the map's, and both came off
-// the lid the same day: search is a chip in the conversation and the map had
-// been empty since the deck came out. There are no panels to align.
-
-// Two lists of the same rows, one tab apart, inset their words by the same
-// amount. The set-aside card is quieter than a card in the deck on purpose —
-// less shadow, less weight — and it was also narrower, by four pixels nobody
-// chose.
-// TestBrowserTheSetAsideInsetsItsWordsLikeEveryOtherList was retired on
-// 25 August 2026. It measured `.rcard` on the shelf against `.aside` on the
-// set-aside page, and both pages went the same day: the two are cards in the
-// conversation now and draw from `.turncard`, which is one rule rather than
-// two that could drift apart. The appearance snapshot records it.
-
-// TestBrowserTheEndingIsNotTheNextThingUnderTheDoing was retired on 24 August
-// 2026. It measured STOP ASKING against the disclosure that used to sit beside
-// it in the chore card; the disclosure is a turn now, and the three buttons sit
-// in one row whose spacing the appearance snapshot records.
-
-// This compared two group labels — search's and the set-aside's — because they
-// were the same role in two places and had drifted apart. The conversation has
-// no group labels: results are cards, and a card's line is the card's own Meta
-// at 11.5px rather than a heading over a group at 12.5px.
-//
-// Retired rather than repointed. Forcing a card's line to match a group's
-// heading would be making two different roles the same size to keep a test,
-// which is the opposite of what it was for.

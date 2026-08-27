@@ -5,24 +5,15 @@ import (
 	"unicode"
 )
 
-// The guard is about shape, not content.
-//
-// Principle 5 was opened on 20 August 2026: the coach may evaluate, compare,
-// and mention counts and streaks. That decides *what* it may say, and nothing
-// here second-guesses it — there is no word list, no sentiment check, no
+// The guard is about shape, not content: no word list, no sentiment check, no
 // judgement about tone.
 //
-// What is still enforced is *form*, because form is where this product's whole
-// failure mode lives. The thing being prevented is the twelve-step plan: a
-// wall of numbered steps handed to someone who said they were overwhelmed. A
-// model that returns one is not being unkind, it is being a chatbot, and the
-// difference between those is a list.
+// Form is what it enforces, because form is where this product's failure mode
+// lives — a wall of numbered steps handed to someone who said they were
+// overwhelmed. A cheaper model needs this more, not less.
 //
-// A cheaper model needs this more, not less.
-//
-// Anything failing is discarded and the deterministic answer used. There is no
-// retry: a retry is a second chance to say something worse, and the fixed line
-// underneath is already acceptable.
+// Anything failing is discarded and the deterministic answer used. No retry: a
+// retry is a second chance to say something worse.
 
 // maxReply is the ceiling in characters. Two sentences of plain English fit in
 // far less; this is a backstop against a model that ignores the prompt
@@ -40,28 +31,32 @@ const maxSentences = 3
 // is a reply the deterministic line should have handled.
 func Guard(text string) (string, bool) {
 	t := strings.TrimSpace(text)
-	if t == "" {
+	switch {
+	case t == "",
+		len([]rune(t)) > maxReply,
+		countSentences(t) > maxSentences,
+		readsAsADocument(t),
+		holdsAList(t):
 		return "", false
-	}
-	if len([]rune(t)) > maxReply {
-		return "", false
-	}
-	if strings.Contains(t, "```") {
-		return "", false
-	}
-	// A blank line means paragraphs, and paragraphs mean a document.
-	if strings.Contains(t, "\n\n") {
-		return "", false
-	}
-	if countSentences(t) > maxSentences {
-		return "", false
-	}
-	for _, line := range strings.Split(t, "\n") {
-		if isListOrHeading(strings.TrimSpace(line)) {
-			return "", false
-		}
 	}
 	return t, true
+}
+
+// readsAsADocument is a code fence or a paragraph break: either means something
+// longer than a reply was written.
+func readsAsADocument(t string) bool {
+	return strings.Contains(t, "```") || strings.Contains(t, "\n\n")
+}
+
+// holdsAList reports any line shaped like a bullet, a numbered step or a
+// heading.
+func holdsAList(t string) bool {
+	for _, line := range strings.Split(t, "\n") {
+		if isListOrHeading(strings.TrimSpace(line)) {
+			return true
+		}
+	}
+	return false
 }
 
 // isListOrHeading reports the shapes that turn an answer into a plan: bullets,

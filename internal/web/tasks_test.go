@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"net/url"
 	"strings"
 	"testing"
@@ -37,22 +36,6 @@ func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
 	pile := string(f.appended[1].Shown)
 	require.Contains(t, pile, "buy milk")
 	require.NotContains(t, pile, "ring the vet")
-}
-
-// The archive was a screen; it is not one any more, and nothing has replaced
-// it yet. What you did is still in the store and `!find` still reaches it — the
-// thread will draw it when the pile joins the conversation in phase 3.
-//
-// This is left as a test of the store's own boundary rather than deleted, so
-// the day somebody wires the archive back in there is something that already
-// says what it should hold.
-func TestWhatYouDidIsStillThereToDrawLater(t *testing.T) {
-	f := aDeciding()
-	done, _, err := f.ArchivedTasks(context.Background(), 1, 10)
-
-	require.NoError(t, err)
-	require.Len(t, done, 1)
-	require.Equal(t, "cancel the old insurance", done[0].RawText)
 }
 
 // Two actions and only two. Dropping is absent: a task you no longer want is a
@@ -121,9 +104,9 @@ func TestAnEmptyDecisionDoesNothing(t *testing.T) {
 // Buddy counts them, and nothing else does.
 //
 // This forbade every shape of counter here, on the argument that a list of
-// things to do is where one most wants to appear. Principle 2 was retired on
-// 24 August 2026 and Buddy says how many. What is still refused is the shape
-// that reads as a position in a queue or as an amount outstanding: "1 of 7"
+// things to do is where one most wants to appear. Principle 2 was retired and
+// Buddy says how many. What is still refused is the shape that reads as a
+// position in a queue or as an amount outstanding: "1 of 7"
 // tells you where you are in a list you are behind on, and "7 left" is the same
 // sentence with the target said out loud.
 func TestTheTasksAreCountedAndNeverRanked(t *testing.T) {
@@ -139,9 +122,9 @@ func TestTheTasksAreCountedAndNeverRanked(t *testing.T) {
 	}
 }
 
-// A reply is not a screen of list. Five cards and one press for the rest,
-// since 25 August 2026: twelve arrived as a wall with a sentence on top, and
-// reading it was the work the conversation was supposed to replace.
+// A reply is not a screen of list. Five cards and one press for the rest: twelve
+// arrived as a wall with a sentence on top, and reading it was the work the
+// conversation was supposed to replace.
 func TestADoorHandsYouAFewRatherThanAllOfThem(t *testing.T) {
 	items := []squirrel.Item{}
 	for i := int64(1); i <= 9; i++ {
@@ -177,7 +160,7 @@ func TestNothingDecidedDoesNotNag(t *testing.T) {
 
 // The fourth action on the card, beside the three disposals. Deciding is not
 // disposing: it does not end the note, it moves it.
-func TestTheDeckCanDecideANote(t *testing.T) {
+func TestANoteCanBeDecided(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "ring the vet", squirrel.ItemOpen)}}
 
 	w := post(t, mounted(t, f), "/pile/act", url.Values{"id": {"1"}, "act": {"task"}})

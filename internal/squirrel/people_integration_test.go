@@ -65,7 +65,6 @@ func TestASeededSubKeepsItsPerson(t *testing.T) {
 	require.Equal(t, seeded, got, "logging in made a second person for the owner")
 }
 
-// Two people are two piles.
 func TestTwoSubsAreTwoPeople(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

@@ -24,11 +24,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// contrast is the WCAG ratio between two `rgb(r, g, b)` strings, which is what
-// getComputedStyle hands back. A focus indicator needs 3:1 against what it sits
-// on (1.4.11), and reading it off the stylesheet is exactly how the two
-// surfaces below were missed: the rule that fixes them is correct and simply
-// does not name them.
 // tabTo walks the focus there with the Tab key. It has to be the key: Chromium
 // only matches `:focus-visible` after a keyboard interaction, so a scripted
 // `.focus()` reads back the element's ordinary outline and would have measured
@@ -44,6 +39,11 @@ func tabTo(t *testing.T, c *cdp, sel string) {
 	t.Fatalf("60 tabs never reached %s", sel)
 }
 
+// contrast is the WCAG ratio between two `rgb(r, g, b)` strings, which is what
+// getComputedStyle hands back. A focus indicator needs 3:1 against what it sits
+// on (1.4.11), and reading it off the stylesheet is exactly how the two
+// surfaces below were missed: the rule that fixes them is correct and simply
+// does not name them.
 func contrast(t *testing.T, c *cdp, sel, prop, against string) float64 {
 	t.Helper()
 	got := c.eval(t, fmt.Sprintf(`
@@ -66,24 +66,14 @@ func contrast(t *testing.T, c *cdp, sel, prop, against string) float64 {
 	return ratio
 }
 
-// TestBrowserTheSheetSaysSoWhenItCannotReachBuddy was retired on 25 August
-// 2026 with the sheet. What it pinned — a submit that fails must say so, keep
-// the words, and leave the way to try again usable — is the thread's rule now,
-// and thread.js falls back to an ordinary form submission on a failed fetch
-// rather than swallowing it. TestBrowserAFailedPressGoesThroughAnyway.
-
-// TestBrowserKeysDoNotReachTheCardBehindTheSheet was retired on 25 August 2026
-// with the sheet. There is nothing over anything else now, so a key cannot
-// reach a card behind a modal — and the carve-out in pile.js stays anyway,
-// because the rule is about any modal rather than about that one.
-
 // The focus ring is visible on every surface a key can reach, not only the
 // ones the override happened to name.
 //
-// `.chore` and `.sheet` take the same cream stock as the deck's card, and were
-// left out of the rule that puts violet on cream — so the two most
-// keyboard-dense surfaces outside the deck kept the orange-lit ring, at a
-// measured 2.03:1 against the 3:1 a focus indicator owes.
+// Every surface that takes the cream card stock has to be named in the rule
+// that puts violet on it, and the way it goes wrong is by omission: a surface
+// left out keeps the orange-lit ring, at a measured 2.03:1 against the 3:1 a
+// focus indicator owes. It has happened twice, most recently to the dock —
+// the one control on the screen at every moment.
 func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	f := aPile()
 	f.chores = []squirrel.Chore{{
@@ -109,8 +99,3 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	require.GreaterOrEqual(t, onSlot, 3.0,
 		"the ring in the dock measures %.2f:1 against the slot it sits in", onSlot)
 }
-
-// Three about the deck's card: a decision pending inside its hold, the chore
-// disclosure's width on a phone, and the way out being shut while a stamp ran.
-// The conversation has no hold and no disclosure, so none of the three has
-// anything left to be true of.

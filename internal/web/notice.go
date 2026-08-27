@@ -10,21 +10,15 @@ import (
 	"sync"
 )
 
-// One line about what is actually there.
+// One line about what is actually there. Buddy can say three chores come back and
+// cannot say that two of them are about the car.
 //
-// Buddy has only ever handled rows. He can say three come back and cannot say
-// that two of them are about the car, which is the difference between somebody
-// who has read your notes and a query that has counted them.
-//
-// This is the smallest thing that closes it: when a door draws its cards, one
-// model call may add one sentence about the set. Everything about it is
-// bounded on purpose.
+// When a door draws its cards, one model call may add one sentence about the set.
+// Everything about it is bounded on purpose.
 
-// noticeMax is how long that sentence may be.
-//
-// A door's reply is read on the way to pressing something on it. A paragraph
-// there is a paragraph between you and the thing you came for, and the whole
-// case for the line is that it is faster to read than the cards.
+// noticeMax is how long that sentence may be. A door's reply is read on the way
+// to pressing something on it, and the whole case for the line is that it is
+// faster to read than the cards.
 const noticeMax = 90
 
 // noticeAsk is what the model is asked. Deliberately narrow: it is not being
@@ -35,36 +29,23 @@ const noticeAsk = "Here is what is in front of me. In at most fifteen words, " +
 	"do not count them. If there is nothing worth saying, answer with nothing.\n\n"
 
 // noticed caches what was said about a set, so opening a door twice costs one
-// call rather than two.
+// call. In process and lost on deploy: what is being protected is a person
+// pressing the same door four times in a minute, not the monthly bill.
 //
-// In process, and lost on deploy, which is the right trade for this: the thing
-// being protected is a person pressing the same door four times in a minute,
-// not the monthly bill — the budget already covers that, and it covers it in
-// the one place that can enforce it.
+// Keyed by the set rather than the door, so a set that has changed is worth
+// looking at again.
 //
-// Keyed by the set rather than by the door, so a set that has changed is a set
-// worth looking at again, and one that has not is not.
-//
-// It had no bottom when it shipped: a sync.Map nothing ever evicted, growing by
-// one entry per distinct set anybody ever looked at. At one person on a pod
-// that restarts every deploy that is slow and invisible, which is the shape of
-// leak that is discovered by a pod being OOM-killed on a quiet Tuesday months
-// later. Bounded now, and the bound is small on purpose — see noticeKeep.
+// It had no bound when it shipped — a sync.Map nothing evicted, growing by one
+// entry per distinct set anybody looked at.
 var noticed = &remembers{said: map[string]string{}}
 
-// noticeKeep is how many answers are held.
-//
-// Sixty-four, which is far more than the doors a person opens in a sitting and
-// far less than a number worth thinking about. The cache exists to stop a
-// repeated press repeating a call, and a press you made a hundred sets ago is
-// not a press you are about to repeat.
+// noticeKeep is how many answers are held. Far more than the doors a person opens
+// in a sitting: a press you made a hundred sets ago is not one you are about to
+// repeat.
 const noticeKeep = 64
 
-// remembers is a bounded map that forgets the oldest thing when it is full.
-//
-// A ring of keys beside the map rather than a real LRU: this is protecting
-// against a repeated press within a minute, and reordering on read would buy
-// nothing a queue does not already give. Fewer moving parts is the point.
+// remembers is a bounded map that forgets the oldest when full. A ring of keys
+// rather than a real LRU: reordering on read would buy nothing here.
 type remembers struct {
 	mu    sync.Mutex
 	said  map[string]string
@@ -100,14 +81,9 @@ func (r *remembers) Clear() {
 	r.said, r.order = map[string]string{}, nil
 }
 
-// noticeAbout is that sentence, or nothing at all.
-//
-// Nothing at all is the common case and the expected one: no key, nothing in
-// front of you, a model that would rather not, a model that has been asked for
-// this exact set already, or an answer that broke one of the bounds. Every one
-// of those paths returns silence rather than an apology, because a door that
-// explains why it has nothing to add is worse than a door that has nothing to
-// add.
+// noticeAbout is that sentence, or nothing at all — the common case: no key,
+// nothing in front of you, a set already asked about, or an answer that broke a
+// bound. Every path returns silence rather than an apology.
 func noticeAbout(ctx context.Context, opts Options, personID int64, place string, of []string) string {
 	if opts.Ask == nil || len(of) < 2 {
 		// Below two there is no set to notice anything about, and "one thing
@@ -132,12 +108,8 @@ func noticeAbout(ctx context.Context, opts Options, personID int64, place string
 	return said
 }
 
-// keepIfItIsALine refuses anything that is not one short sentence.
-//
-// The bounds are the product's, not the model's, and they are checked here
-// rather than asked for in the prompt — a prompt is a request and this is a
-// rule. A model that ignores "at most fifteen words" costs a dropped line and
-// nothing else.
+// keepIfItIsALine refuses anything that is not one short sentence. Checked here
+// rather than asked for in the prompt: a prompt is a request and this is a rule.
 func keepIfItIsALine(said string) string {
 	said = strings.TrimSpace(said)
 	if said == "" || len(said) > noticeMax {
@@ -161,13 +133,9 @@ func keepIfItIsALine(said string) string {
 	return said
 }
 
-// noticeKey identifies a person's view of one set.
-//
-// The person goes in as digits. It went in as `string(rune(personID))`, which
-// is a rune conversion rather than a number: every id above U+10FFFF and every
-// negative one becomes the same replacement character, so all of them shared a
-// cache entry. Unreachable at one person, and unreachable is not a property
-// worth relying on in a key.
+// noticeKey identifies a person's view of one set, with the person as digits. It
+// went in as `string(rune(personID))`, so every id above U+10FFFF and every
+// negative one became the same replacement character and shared a cache entry.
 func noticeKey(personID int64, place string, of []string) string {
 	h := sha256.New()
 	_, _ = h.Write([]byte(place))
