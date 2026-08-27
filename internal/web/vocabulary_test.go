@@ -20,8 +20,8 @@ import (
 // files together; this can.
 // The thread's own path cannot drift, because the script renders the server's
 // HTML rather than words of its own — see static/thread.js. What still has two
-// copies is pile.js, which enhances the slots on the pages that are still
-// pages, and this pins those to the sentences the Go code says.
+// copies is pile.js's fallback, for a slot rendered anywhere but the thread,
+// and this pins it to the sentences the Go code says.
 func TestBothCapturePathsSayTheSameWords(t *testing.T) {
 	js, err := staticFS.ReadFile("static/pile.js")
 	require.NoError(t, err)
@@ -64,8 +64,8 @@ func TestTheFailureMessagesSayWhatToDoNext(t *testing.T) {
 // meaning three different things, in a product whose argument is that
 // deciding is the scarce resource.
 func TestKeepMeansOneThing(t *testing.T) {
-	// coach.html went on 25 August 2026 — Buddy is turns, and what he draws is
-	// built in Go. turn.html is where a card's buttons are rendered now.
+	// Buddy is turns and what he draws is built in Go, so turn.html is where a
+	// card's buttons are rendered.
 	for _, name := range []string{"thread.html", "turn.html"} {
 		body, err := templateFS.ReadFile("templates/" + name)
 		require.NoError(t, err)
