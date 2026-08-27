@@ -41,16 +41,22 @@ func TestPressingTooBigShowsOneStepAndNeverTheList(t *testing.T) {
 
 // A model that is slow, absent or wrong costs nothing anyone can see, because
 // the line was always what rendered.
+//
+// It asked and got nothing, and the line rendered anyway. The step-present
+// case is the sibling above; there is nothing here to assert the absence of,
+// which is why this used to check for a class the product has never written.
 func TestTooBigFallsBackToTheLineOnTheScreen(t *testing.T) {
 	f := withOffer(&squirrel.Offer{Kind: squirrel.OfferTask, RefID: 7, Text: "the tax thing"})
-	m := mountedWith(t, f, &fakeCoach{})
+	c := &fakeCoach{}
+	m := mountedWith(t, f, c)
 
 	m.call(t, "POST", "/now/stuck", strings.NewReader("why=big&kind=task&id=7"))
+	require.Equal(t, 1, c.broke, "it did not even ask for a breakdown")
+
 	f.turns, f.appended = f.appended, nil
 	body := m.call(t, "GET", "/", nil).Body.String()
-
-	require.Contains(t, body, squirrel.UnstuckFor(squirrel.BlockerBig).Line)
-	require.NotContains(t, body, `class="step"`)
+	require.Contains(t, body, squirrel.UnstuckFor(squirrel.BlockerBig).Line,
+		"a model that broke nothing down took the fixed line down with it")
 }
 
 // The other three have answers that are not a sequence.
