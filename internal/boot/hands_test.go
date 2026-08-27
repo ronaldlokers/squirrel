@@ -107,8 +107,9 @@ func TestStartingATimerStartsTheOneInTheLid(t *testing.T) {
 	require.Equal(t, "the kitchen", timer.Label)
 }
 
-// A snooze is bounded in code. A model asked not to silence something for a
-// year is a model that can.
+// A snooze is bounded in code, at both ends. A model asked not to silence
+// something for a year is a model that can, and one asked for zero hours is a
+// model that can hand back a deadline already in the past.
 func TestSnoozingIsBounded(t *testing.T) {
 	ctx := context.Background()
 	store := factsStore(t)
@@ -126,6 +127,30 @@ func TestSnoozingIsBounded(t *testing.T) {
 	due, err := store.DueChores(ctx, p, now.Add(15*24*time.Hour))
 	require.NoError(t, err)
 	require.NotEmpty(t, due, "a chore was silenced past the ceiling")
+}
+
+// And the floor. Zero hours, or a negative number, is a snooze that expires
+// before it is written — the chore comes straight back, so the press did
+// nothing and there is nothing on the screen to say why.
+func TestSnoozingForNoTimeIsStillASnooze(t *testing.T) {
+	ctx := context.Background()
+	store := factsStore(t)
+	p := factsOwner(t, store)
+	now := time.Now()
+
+	for _, hours := range []int{0, -5} {
+		overdueChore(t, store, p, "put the bins out")
+		chores, err := store.ActiveChores(ctx, p)
+		require.NoError(t, err)
+		require.NotEmpty(t, chores)
+
+		_, err = handsFor(t, store, now).SnoozeChore(ctx, p, chores[0].ID, hours)
+		require.NoError(t, err, "%d hours", hours)
+
+		due, err := store.DueChores(ctx, p, now)
+		require.NoError(t, err)
+		require.Empty(t, due, "%d hours left the chore due immediately", hours)
+	}
 }
 
 // Refusing takes the vocabulary the picker itself uses, checked rather than
