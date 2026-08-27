@@ -11,8 +11,8 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Losing your place is the failure this product is built around. Until
-// 26 August 2026 the conversation opened as if nothing had been happening.
+// Losing your place is the failure this product is built around, and the
+// conversation used to open as if nothing had been happening.
 func TestBuddyOffersBackWhereYouGotTo(t *testing.T) {
 	f := &fakeStore{
 		checkin: fresh(),
