@@ -91,14 +91,3 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 		)), "/")
 	}
 }
-
-// heldChips is the three, for the card that offers them. The order is the
-// core's own: the two something outside you will end, then the one only you
-// can.
-func heldChips() []chipView {
-	out := make([]chipView, 0, len(squirrel.Held))
-	for _, state := range squirrel.Held {
-		out = append(out, chipView{Why: string(state), Word: squirrel.HeldWords[state]})
-	}
-	return out
-}

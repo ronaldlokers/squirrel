@@ -115,8 +115,7 @@ type actView struct {
 	Style  string            `json:"style,omitempty"`
 }
 
-// turnChip is a choice offered in the conversation. Not chipView, which is the
-// pile's three reasons for setting something aside.
+// turnChip is a choice offered in the conversation.
 type turnChip struct {
 	Label string `json:"label"`
 	// Href for somewhere to go; Action and Fields for something to do. A chip

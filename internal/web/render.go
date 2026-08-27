@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -206,52 +205,6 @@ type offerView struct {
 	// something chosen for you, so the card offers nothing to press: the lid
 	// already carries the only control it needs.
 	Running bool
-	// Unstuck is the ladder's answer, once one has been asked for. The offer
-	// stays on the card underneath it: the thing you could not start is still
-	// the thing, and taking it away would make "I can't start" a way of losing
-	// it.
-	Unstuck *unstuckView
-}
-
-// unstuckView is one line and at most one control. There is deliberately
-// nowhere here to put a second step — the failure being avoided is the
-// twelve-step plan, and a struct that cannot hold one cannot render one.
-type unstuckView struct {
-	Line    string
-	Minutes int
-	Ask     bool
-	// Step is the ladder having got specific: one step of a stored sequence,
-	// or nil. The line above it is what shows when this is nil, which is what
-	// it did on its own before a model existed — the fixed answer is not
-	// replaced, it is the floor this stands on.
-	Step *stepView
-}
-
-// chipView is one blocker as a press. Why is what the form sends; Word is what
-// it says, and they differ because "not today" is an answer and `not today` is
-// a value.
-type chipView struct {
-	Why  string
-	Word string
-}
-
-// clashFrom says whether this render is answering a decision the pile had
-// already overtaken. Read like every other parameter here: from an address
-// bar, so anything that is not a number is no clash rather than a bad one.
-func clashFrom(q url.Values) bool {
-	id, err := strconv.ParseInt(q.Get("clash"), 10, 64)
-	return err == nil && id > 0
-}
-
-// cursorFrom reads the skip position out of the query string. Nonsense is no
-// cursor: this arrives from an address bar, and the pile is the right answer to
-// a question that does not parse.
-func cursorFrom(q url.Values) int64 {
-	id, err := strconv.ParseInt(q.Get("after"), 10, 64)
-	if err != nil || id < 1 {
-		return 0
-	}
-	return id
 }
 
 // stateWords is what a row says it is. `open` is deliberately present: a search

@@ -306,16 +306,6 @@ func costLine(ctx context.Context, opts Options, personID int64) string {
 	return spent + " of " + ceiling
 }
 
-// blockerChips is the four, in the order the ladder already uses. One press,
-// no typing.
-func blockerChips() []chipView {
-	out := make([]chipView, 0, len(squirrel.Blockers))
-	for _, b := range squirrel.Blockers {
-		out = append(out, chipView{Why: string(b), Word: squirrel.BlockerWords[b]})
-	}
-	return out
-}
-
 // withDid is the reply plus what actually changed, as one thing said.
 func withDid(a Answer) string {
 	if len(a.Did) == 0 {

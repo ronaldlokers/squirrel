@@ -101,8 +101,8 @@ func stepsHandler(s Store, opts Options) http.HandlerFunc {
 }
 
 // stepView is one step and the two presses that belong to it. There is
-// deliberately nowhere here to put a second step, which is the same argument
-// unstuckView makes and for the same reason.
+// deliberately nowhere here to put a second step: the failure being avoided is
+// the twelve-step plan, and a struct that cannot hold one cannot render one.
 type stepView struct {
 	ID    int64
 	Label string

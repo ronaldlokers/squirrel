@@ -163,32 +163,6 @@ func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-// momentViewOf is one fixed point, with the arithmetic already done.
-//
-// Whether the window is open is worked out here rather than in the template,
-// because a template that does arithmetic is a template that can disagree with
-// the core about when to leave — and the core is where LeaveWords lives.
-func momentViewOf(m squirrel.Moment) *momentView {
-	return &momentView{
-		ID:    m.ID,
-		Label: m.Label,
-		Words: squirrel.LeaveWords(m),
-		Take:  m.Bring,
-		Open:  m.Open(now()),
-	}
-}
-
-// attachedViews reuses the pile's own note shape, because an attached note is
-// an ordinary note and rendering it any other way would be the first step
-// towards it becoming a different kind of thing.
-func attachedViews(items []squirrel.Item) []noteView {
-	out := make([]noteView, 0, len(items))
-	for _, it := range items {
-		out = append(out, toView(it))
-	}
-	return out
-}
-
 // atOpenHandler draws one fixed point into the conversation.
 //
 // The same three things the page shows — when to leave, what to take, and the

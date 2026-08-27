@@ -21,19 +21,6 @@ import (
 // remember/forget still writes the rolling window, because the next prompt is
 // built from it.
 
-// askBuddyChip is the way in, on the live edge wherever that is. It has to be
-// somewhere that always exists: a chip hanging off a card disappears exactly when
-// there is nothing to talk about.
-func askBuddyChip() turnChip {
-	return turnChip{Label: "ask Buddy", Action: "/buddy/ask"}
-}
-
-// findChip is the other one. Looking something up was a disclosure in the lid;
-// the lid is a mark and nothing else now.
-func findChip() turnChip {
-	return turnChip{Label: "look something up", Action: "/find/ask"}
-}
-
 // findAskHandler is the search chip: it asks for words, and `/find` answers
 // them. The field was a disclosure in the lid because it had to be reachable
 // from seven screens; there is one screen.

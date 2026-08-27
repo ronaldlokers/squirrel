@@ -2,7 +2,6 @@ package web
 
 import (
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -171,31 +170,6 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID,
 			saidAboutBeingStuck(s, opts, r, personID, b)), "/")
 	}
-}
-
-// unstuckFrom reads the ladder's answer out of the address bar, as though a
-// stranger typed it: anything that is not one of the four is no answer.
-func unstuckFrom(q url.Values) *unstuckView {
-	b, ok := squirrel.ParseBlocker(q.Get("stuck"))
-	if !ok {
-		return nil
-	}
-	u := squirrel.UnstuckFor(b)
-	if u.Refuse {
-		return nil
-	}
-	return &unstuckView{Line: u.Line, Minutes: u.Minutes, Ask: u.Ask}
-}
-
-// withStep is the ladder's answer with the sequence's next step attached, when
-// there is one. The line stays underneath it: what you could not start is
-// still the thing, and the fixed answer is the floor rather than a draft.
-func withStep(u *unstuckView, s Store, opts Options, r *http.Request) *unstuckView {
-	if u == nil {
-		return nil
-	}
-	u.Step = stepFor(s, opts, r)
-	return u
 }
 
 // offerKinds is the vocabulary, as a map rather than a switch so an unknown
