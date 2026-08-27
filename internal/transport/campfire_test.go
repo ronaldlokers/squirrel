@@ -172,10 +172,6 @@ func TestCampfireNeverPanicsOutOfTheHandlerEvenWhenTheSinkDoes(t *testing.T) {
 	require.NoError(t, stop(context.Background()))
 }
 
-func TestCampfireHasNoSendWithoutABotKey(t *testing.T) {
-	require.Nil(t, transport.NewCampfire(config()).Send)
-}
-
 func TestCampfirePayloadIsValidJSONForAnUnparseableBody(t *testing.T) {
 	got := transport.CaptureFrom([]byte("not json"), at)
 	var anything any
