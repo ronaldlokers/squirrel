@@ -105,8 +105,8 @@ func TestTheRecordedLinePointsAtWhatWasChosen(t *testing.T) {
 	require.Equal(t, other, line.Item.ID)
 }
 
-// `!now` is an explicit ask, so chat may pay for one. The screen's coach sheet
-// may not — see internal/web, where the asymmetry lives.
+// `!now` is an explicit ask, so chat may pay for one. Asking Buddy on the
+// screen may not — see internal/web, where the asymmetry lives.
 func TestNowMayPayForADecision(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)

@@ -18,8 +18,8 @@ import (
 // typing the same thing four more times at eleven at night is the one outcome
 // this can spare you.
 //
-// The screen has shown the figure in the sheet's lid all along. A session that
-// lives in the room never sees it.
+// The screen says the figure on the reply that spent it. A session that lives
+// in the room never sees that, which is what this is for.
 func TestChatSaysWhenTheMonthIsSpent(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()

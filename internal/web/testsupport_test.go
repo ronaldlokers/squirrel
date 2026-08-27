@@ -488,9 +488,9 @@ func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Ite
 	return squirrel.Item{}, false, nil
 }
 
-// MoveItemState is the conditional write the deck uses, and the fake keeps the
-// real one's rule: already being at the target is a success, because a second
-// identical press is a press.
+// MoveItemState is the conditional write a card's press makes, and the fake
+// keeps the real one's rule: already being at the target is a success, because
+// a second identical press is a press.
 func (f *fakeStore) MoveItemState(_ context.Context, id int64, from, to squirrel.ItemState, _ time.Time) (bool, error) {
 	if f.err != nil {
 		return false, f.err
