@@ -13,10 +13,13 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// insertItem stores a note and returns its id. InsertItem answers "was this a
-// fresh row" rather than "which row", because the drain needs the first
-// question and nothing until now needed the second. Reading the id back by its
-// external id keeps this helper on the public API.
+// insertItem stores a note the way a transport does — with an external id, so
+// the insert goes through the same ON CONFLICT that makes a redelivered webhook
+// a no-op — and reads its id back.
+//
+// InsertItemReturningID would be shorter and would not be this: it has no
+// conflict clause, because the row it writes was typed on the screen rather
+// than delivered.
 func insertItem(t *testing.T, store *squirrel.Store, personID int64, text string) int64 {
 	t.Helper()
 	ctx := context.Background()
@@ -93,6 +96,10 @@ func TestSetItemStateRecordsWhen(t *testing.T) {
 	require.NoError(t, store.Pool().QueryRow(ctx,
 		`select state_at from items where id = $1`, id).Scan(&after))
 	require.NotNil(t, after)
+	// The moment it was given, not the moment Postgres wrote the row: the
+	// drain applies a decision made in the room some time before it reaches
+	// here, and `now()` in the SQL would record the wrong one.
+	require.WithinDuration(t, at, *after, time.Millisecond)
 }
 
 func TestOpenItemsIsNewestFirst(t *testing.T) {
@@ -183,10 +190,13 @@ func TestSearchItemsIsCaseInsensitive(t *testing.T) {
 	require.Len(t, items, 1)
 }
 
-// A search for "%" is a search for that character. Interpolating the term into
-// a LIKE pattern would make it a wildcard and return the entire pile, which
-// looks like a working search right up until you notice every note is in it.
-func TestSearchItemsTreatsWildcardsAsText(t *testing.T) {
+// A search term is a person's typing, not a pattern. Interpolated into a LIKE
+// unescaped, `%` returns the entire pile and `_` matches any character — a
+// search that looks like it works right up until you notice what came back.
+//
+// Both wildcards, alone and inside a word: this was two tests with the same
+// name in different words, each covering half of it.
+func TestSearchTreatsWildcardsAsText(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -194,15 +204,25 @@ func TestSearchItemsTreatsWildcardsAsText(t *testing.T) {
 	insertItem(t, store, p, "the battery was at 50% again")
 	insertItem(t, store, p, "unrelated thought")
 	insertItem(t, store, p, "another unrelated thought")
+	insertItem(t, store, p, "meter_reading")
 
 	items, _, err := store.SearchItems(ctx, p, "%", 10)
 	require.NoError(t, err)
-	require.Len(t, items, 1, "a literal %% must not become a wildcard matching everything")
+	require.Len(t, items, 1, "a typed %% became a wildcard matching everything")
 	require.Contains(t, items[0].RawText, "50%")
+
+	items, _, err = store.SearchItems(ctx, p, "50%", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "a %% inside a word stopped the word matching")
 
 	under, _, err := store.SearchItems(ctx, p, "_", 10)
 	require.NoError(t, err)
-	require.Empty(t, under, "_ is LIKE's single-character wildcard and must be just as literal")
+	require.Len(t, under, 1, "_ matched something other than the note with one in it")
+	require.Contains(t, under[0].RawText, "meter_reading")
+
+	items, _, err = store.SearchItems(ctx, p, "meter_", 10)
+	require.NoError(t, err)
+	require.Len(t, items, 1, "a typed underscore is a character too")
 }
 
 func TestSearchItemsIsScopedToThePerson(t *testing.T) {
@@ -389,8 +409,8 @@ func TestPromoteItemRefusesACommand(t *testing.T) {
 	require.False(t, ok, "there is no chore called !notes")
 }
 
-// Skipping moves past a note without doing anything to it: the deck shows the
-// next-oldest untriaged note, and the one skipped is untouched and still open.
+// Skipping moves past a note without doing anything to it: what comes back is
+// the next-oldest untriaged note, and the one skipped is untouched and open.
 func TestOpenItemsAfterWalksBackwards(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -447,34 +467,6 @@ func TestOpenItemsAfterZeroIsTheTopOfThePile(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, items, 1)
 	require.Equal(t, newest, items[0].ID)
-}
-
-// The term is a person's typing, not a pattern. A LIKE that did not escape it
-// would make `%` match everything — a search that looks like it works right up
-// until you notice it returned the whole pile.
-func TestSearchTreatsWildcardsAsText(t *testing.T) {
-	store := withStore(t)
-	ctx := context.Background()
-	p := owner(t, store)
-
-	insertItem(t, store, p, "buy milk")
-	literal := insertItem(t, store, p, "the tank is at 80% full")
-	insertItem(t, store, p, "the boiler")
-
-	items, _, err := store.SearchItems(ctx, p, "%", 10)
-	require.NoError(t, err)
-	require.Len(t, items, 1, "a typed %% is a character, not a wildcard")
-	require.Equal(t, literal, items[0].ID)
-
-	items, _, err = store.SearchItems(ctx, p, "80%", 10)
-	require.NoError(t, err)
-	require.Len(t, items, 1)
-
-	// _ is the other one, and it matches any single character in a LIKE.
-	insertItem(t, store, p, "meter_reading")
-	items, _, err = store.SearchItems(ctx, p, "meter_", 10)
-	require.NoError(t, err)
-	require.Len(t, items, 1, "a typed underscore is a character too")
 }
 
 func TestSearchStillFindsPlainWords(t *testing.T) {
