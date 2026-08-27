@@ -1,354 +1,9 @@
 // Progressive enhancement, and nothing here is load-bearing. Every action on
 // this page is a form submission or a link that works with this file absent;
-// what this adds is the stamp, the moment the card holds still so the undo has
-// somewhere to be, one key per action, and search that answers as you type.
+// what this adds is a slot that grows with what you type, a photograph held
+// somewhere durable the moment it is chosen, one key per action on the chores,
+// and the worker that makes the whole thing installable.
 (() => {
-  const find = document.querySelector(".find input");
-  const stage = document.getElementById("stage");
-  const say = document.getElementById("say");
-
-  // Anything this file changes without a navigation has to be said out loud
-  // too, or the screen is silent for exactly the person who cannot see it
-  // change. The region lives outside the stage so a search swap cannot take it
-  // away mid-announcement.
-  function announce(what) {
-    if (say) say.textContent = what;
-  }
-
-  // Honoured here as well as in the stylesheet: the CSS can shorten an
-  // animation, but the pause that lets the undo be read is this file's, and
-  // someone who has asked for less motion should not be made to sit through
-  // a card sliding away before the write happens.
-  const calm = matchMedia("(prefers-reduced-motion: reduce)");
-  const hold = () => (calm.matches ? 400 : 1150);
-  const leave = () => (calm.matches ? 0 : 440);
-
-  // The three ways of not being able to act on something. They share one
-  // stamp colour: which of the three it is says why, not what happened.
-  const HELD = { waiting: 1, blocked: 1, someday: 1 };
-
-  const STATES = {
-    done:  { word: "DONE",    said: "marked done" },
-    keep:  { word: "KEPT",    said: "kept as reference" },
-    drop:  { word: "DROPPED", said: "dropped" },
-    chore: { word: "CHORE",   said: "now a chore" },
-    // Deciding is not disposing, and this was the one answer with no entry
-    // here — so it fell through to `STATES.done` and a note promoted to a task
-    // stamped itself DONE.
-    task:  { word: "A TASK",  said: "now a task" },
-    // Set aside. The same three the server knows, so the stamp on the card and
-    // the line on the next page say the same thing for the same press — which
-    // is the rule saidWords exists to keep.
-    waiting: { word: "WAITING", said: "waiting on someone" },
-    blocked: { word: "BLOCKED", said: "blocked on a thing" },
-    someday: { word: "SOMEDAY", said: "someday" }
-  };
-
-  // Everything below hangs off whatever is currently in #stage. Live search
-  // replaces that wholesale — a search can turn into a deck and back — so the
-  // wiring is a function that runs again on the new markup rather than a set
-  // of listeners bound once at load.
-  let deck = null;
-
-  // A tapped action is written ~1150ms after the press, so the undo has a card
-  // to sit on. Three things can take the page away inside that window — the
-  // way out of the deck, a live search replacing the stage, and the phone
-  // being locked or the app backgrounded — and in all three the write was
-  // simply lost, on a screen that had already shown you the stamp.
-  //
-  // `owed` is that write, held where anything that takes the page can settle
-  // it first. It clears itself, so settling twice is not a second write.
-  let owed = null;
-
-  // The ordinary way: hand the submission back to the browser, which navigates
-  // and gets the 303. Only works while the form is still in the document.
-  function settle() {
-    const o = owed;
-    owed = null;
-    if (!o) return;
-    o.stop();
-    o.form.requestSubmit(o.button);
-  }
-
-  // The last-moment way, for a page that is going whether or not the write is
-  // done: the same bytes, sent with `keepalive` so the browser finishes it
-  // after the document is gone. No navigation to wait for and none wanted —
-  // the answer is a 303 nobody will read.
-  function flush() {
-    const o = owed;
-    owed = null;
-    if (!o) return;
-    o.stop();
-    fetch(o.form.action, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: o.body,
-      keepalive: true,
-      credentials: "same-origin",
-    }).catch(() => {});
-  }
-
-  // Locked, switched away from, or closed. `pagehide` is the one iOS actually
-  // fires when an installed app is backgrounded; `visibilitychange` covers the
-  // tab going to the background without unloading. Both settle the same debt,
-  // and settling twice is not a second write.
-  addEventListener("pagehide", flush);
-  addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
-
-  function wire() {
-    const card = document.getElementById("card");
-    deck = card ? bindCard(card) : null;
-    scatter();
-  }
-
-  // Habituation is the enemy: the stack never sits the same way twice.
-  function scatter() {
-    document.querySelectorAll(".behind").forEach((el, n) => {
-      const rot = (n % 2 ? -1 : 1) * (0.7 + Math.random() * 1.3);
-      const step = 1 + n * 0.8 + Math.random() * 0.5;
-      el.style.transform =
-        `translate(calc(var(--o) * ${step.toFixed(2)}), calc(var(--o) * ${(step * 1.1).toFixed(2)})) rotate(${rot.toFixed(2)}deg)`;
-    });
-  }
-
-  function bindCard(card) {
-    const form = document.getElementById("actions");
-    const stamp = document.getElementById("stamp");
-    const stampText = document.getElementById("stampText");
-    const undoRow = document.getElementById("undoRow");
-    const said = document.getElementById("said");
-    const undo = document.getElementById("undo");
-    const every = form.querySelector("details.everyFallback");
-    const chips = [...form.querySelectorAll("button[name=every]")];
-    const neverMind = form.querySelector("[data-close=chore]");
-    let going = false;
-    // The hold's own timer, and the write it still owes. Both live out here
-    // because two other things can take the page away before the hold is up.
-    let waiting = 0;
-
-    // Act, then hold, then submit. The delay is not decoration: it is the
-    // moment the spec asks for, and the undo has to be reachable while the
-    // card that it undoes is still on the screen.
-    function go(button) {
-      if (going) return;
-      going = true;
-      // `aside` for the three chips, `data-act` for everything else. The
-      // stamp's colour follows the same name, and the three take the state
-      // colours their own screen already uses.
-      const kind = button.dataset.act || button.value || "done";
-      const s = STATES[kind] || STATES.done;
-      const token = kind === "keep" ? "kept" : kind === "drop" ? "dropped"
-        : kind === "task" ? "violet"
-        : STATES[kind] && kind in HELD ? "held" : kind;
-      stamp.style.setProperty("--sc", `var(--${token})`);
-      stamp.style.setProperty("--sct", `var(--${token}-ink)`);
-      stampText.textContent = s.word;
-      said.textContent = s.said;
-      card.classList.add("stamped");
-      form.hidden = true;
-      // The repairs go with the answers.
-      //
-      // They are siblings of the form rather than children of it — correcting
-      // the words is not an answer, which is exactly why it sits outside the
-      // row — so hiding the form left them on a card that had just been
-      // dropped. For the length of the hold you were being offered "fix the
-      // words" and "i can't act on this" about a note that was already gone,
-      // and "this is more than one thing" about a note that was no longer any
-      // things at all.
-      //
-      // What a stamped card shows is the stamp and the way back. Nothing else
-      // on it means anything now.
-      card.querySelectorAll(".ways, .cantact, form:has(.askSplit)")
-        .forEach((el) => { el.hidden = true; });
-      undoRow.hidden = false;
-      undo.focus({ preventScroll: true });
-      announce(s.said + ". Put it back is focused.");
-
-      // The way out stops being a way out. LATER is a link, so it navigates
-      // the moment it is pressed — and it sat live and visible through the
-      // whole hold, next to a card that had already been stamped. Pressing it
-      // took the page away before the write left, and the decision you had
-      // watched happen was simply gone.
-      card.querySelector("#later")?.setAttribute("hidden", "");
-
-      // What is owed to the server, if anything takes the page first. The body
-      // is built now, while the form is certainly still attached and certainly
-      // still says what was pressed.
-      const data = new FormData(button.form);
-      if (button.name) data.append(button.name, button.value);
-      owed = {
-        form: button.form,
-        button,
-        body: new URLSearchParams([...data].filter(([, v]) => typeof v === "string")),
-        stop() { clearTimeout(waiting); },
-      };
-
-      waiting = setTimeout(() => {
-        card.classList.add("leaving");
-        waiting = setTimeout(settle, leave());
-      }, hold());
-    }
-
-    // Choosing an interval takes the place of the actions rather than sitting
-    // under them, the way the comp draws it. The disclosure already does the
-    // showing; the class does the hiding, and neither exists without this file.
-    function choosing(open) {
-      if (open !== every.open) announce(open ? "how often should it come back?" : "never mind");
-      every.open = open;
-      form.classList.toggle("choosing", open);
-      neverMind.hidden = !open;
-      if (open) chips[0]?.focus({ preventScroll: true });
-      else every.querySelector("summary")?.focus({ preventScroll: true });
-    }
-
-    every.addEventListener("toggle", () => choosing(every.open));
-    neverMind?.addEventListener("click", () => choosing(false));
-
-    form.addEventListener("click", e => {
-      const b = e.target.closest("button[name=act], button[name=every]");
-      if (!b || going) return;
-      e.preventDefault();
-      go(b);
-    });
-
-    // Setting one aside is a disposition like the other four and now leaves
-    // like one. Its three chips live in their own form, outside `.actions`,
-    // because "i can't act on this" is not an answer to what the note is — so
-    // they were never wired to any of this, and a note set aside vanished with
-    // no stamp, no hold and nothing offering it back.
-    card.querySelector(".whys")?.addEventListener("click", e => {
-      const b = e.target.closest("button[name=aside]");
-      if (!b || going) return;
-      e.preventDefault();
-      go(b);
-    });
-
-    // PUT IT BACK is the transition back to open, posted like any other.
-    undo.addEventListener("click", () => {
-      const back = document.createElement("form");
-      back.method = "post";
-      back.action = form.action;
-      // Built as nodes rather than as markup: the id came from the page, but a
-      // string spliced into innerHTML is a habit that outlives the one safe
-      // value it was written for.
-      for (const [name, value] of [["id", card.dataset.id], ["act", "open"]]) {
-        const field = document.createElement("input");
-        field.type = "hidden";
-        field.name = name;
-        field.value = value;
-        back.append(field);
-      }
-      document.body.append(back);
-      back.submit();
-    });
-
-    return {
-      get going() { return going; },
-      card, form, every, chips, choosing,
-      act(name) {
-        const b = form.querySelector(`[data-act="${name}"]`);
-        if (b) go(b);
-      },
-      chip(n) { if (chips[n]) go(chips[n]); }
-    };
-  }
-
-  // ---- live search --------------------------------------------------------
-  //
-  // The same URL the form already submits to, fetched and swapped in. One
-  // renderer, one code path: what lands here is exactly the page a full
-  // navigation would have produced, which is why nothing about the scriptless
-  // path changes.
-
-  let pending = null;
-  let timer = 0;
-  let shown = new URL(location.href).searchParams.get("q") || "";
-
-  async function swap(query) {
-    const url = new URL(location.href);
-    if (query) url.searchParams.set("q", query);
-    else url.searchParams.delete("q");
-    // A search is a fresh look at everything, so it drops the skip position
-    // rather than searching from halfway down the pile.
-    url.searchParams.delete("after");
-    url.searchParams.delete("undo");
-    url.searchParams.delete("was");
-    url.searchParams.delete("state");
-
-    pending?.abort();
-    pending = new AbortController();
-    let html;
-    try {
-      const res = await fetch(url, { signal: pending.signal, headers: { "X-Requested-With": "fetch" } });
-      if (!res.ok) return;                 // leave what is on the screen alone
-      html = await res.text();
-    } catch (e) {
-      return;                              // aborted, or the network went away
-    }
-
-    const fresh = new DOMParser().parseFromString(html, "text/html").getElementById("stage");
-    if (!fresh) return;
-    // Anything owed goes now, while the form that owes it is still in the
-    // document. Replacing the stage detaches that form, and a detached form
-    // does not submit — the browser refuses silently, so the press was kept,
-    // stamped, announced, and then dropped with nothing said.
-    settle();
-    stage.innerHTML = fresh.innerHTML;
-    stage.className = fresh.className;
-    shown = query;
-    // replaceState, not pushState: one entry for the search rather than one
-    // per keystroke, so back goes where you came from instead of through every
-    // letter you typed.
-    history.replaceState(null, "", url);
-    wire();
-    // What changed, in words, since nothing navigated and the eye has the
-    // whole page to notice it with. Never how many — the rule holds here as
-    // everywhere.
-    announce(query ? `showing everything that says ${query}` : "the pile");
-  }
-
-  // Search-as-you-type belongs to the deck, where a query swaps the stage for
-  // results in place. On the thread a search is a thing you asked: the form
-  // posts, and the answer arrives as a turn like everything else — so this
-  // enhancement stands aside rather than fetching a page nobody asked for and
-  // pasting it over the conversation.
-  if (find && !document.getElementById("thread")) {
-    find.form.addEventListener("submit", e => {
-      // Enter is already what the field does; intercepting it keeps the page
-      // from reloading under a search that is already on screen.
-      e.preventDefault();
-      clearTimeout(timer);
-      swap(find.value.trim());
-    });
-    find.addEventListener("input", () => {
-      clearTimeout(timer);
-      const value = find.value.trim();
-      if (value === shown) return;
-      timer = setTimeout(() => swap(value), 180);
-    });
-  }
-
-  // ---- keys ---------------------------------------------------------------
-  //
-  // Letters are actions, always. Movement is space and the arrows, because in
-  // a one-card topology j/k has nothing to move between and k is keep.
-
-  // T decides: not a disposal, but the same one-key gesture.
-  const KEYS = { d: "done", k: "keep", x: "drop", t: "task" };
-
-  // The key presses the card's own LATER link rather than working out where
-  // to go: one answer to "what does skipping mean", and it is the one a phone
-  // and a scriptless page already use.
-  function skip() {
-    announce("skipped");
-    const later = deck?.card.querySelector("a.later");
-    if (!later) return;
-    const url = new URL(later.href);
-    for (const stale of ["undo", "was", "state"]) url.searchParams.delete(stale);
-    location.assign(url);
-  }
-
-
   // ---- the slot -----------------------------------------------------------
   //
   // The field grows with what is in it. Without this a thought longer than one
@@ -667,11 +322,10 @@
 
   // ---- the chores screen -------------------------------------------------
   //
-  // The deck has one card, so a key there needs no idea of which thing it
-  // means. A list does, and rather than invent a selection model this uses the
-  // platform's own: the chore you are focused in is the chore a letter acts
-  // on. That also keeps DESIGN.md's rule intact — letters are actions, and
-  // movement is the arrow keys — applied to a list rather than to a deck.
+  // A letter has to know which chore it means, and rather than invent a
+  // selection model this uses the platform's own: the chore you are focused in
+  // is the chore a letter acts on. That keeps DESIGN.md's rule intact —
+  // letters are actions, movement is the arrow keys.
   //
   // With this file absent every button is still a button and Tab still
   // reaches it. Nothing below is load-bearing.
@@ -723,10 +377,8 @@
   // interval question, and each press moved the focus, which on a phone shuts
   // the keyboard. The reword box and the slot had the same problem.
   //
-  // The search field is not covered here because it has its own branch below:
-  // Escape means "clear the search" there, and that is worth keeping.
   function typing(target) {
-    if (!target || target === find) return false;
+    if (!target) return false;
     return target.isContentEditable === true ||
       ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
   }
@@ -749,14 +401,7 @@
     // nothing here for it to want, and "/" jumping you into a search field
     // behind a modal is the same bug wearing a different key.
     if (document.querySelector("dialog[open]")) return;
-    if (e.target === find) {
-      if (e.key === "Escape") { find.value = ""; clearTimeout(timer); swap(""); }
-      return;
-    }
-    // Before "/" as well, or typing a path into a box would jump you into the
-    // search field.
     if (typing(e.target)) return;
-    if (e.key === "/") { e.preventDefault(); find?.focus(); return; }
     // Capture, on the key beside the one that finds. Looking something up had
     // a keyboard path and keeping a thought did not, so on the deliberate
     // desktop the first thing home asked of a keyboard was to reach for the
@@ -765,38 +410,20 @@
     // `t` because it is the verb the button already uses: Tell it. It reaches
     // the slot wherever the slot is, which is home and the ladder's own
     // capture box, and does nothing on a screen that has neither.
-    // `t` is A TASK on the deck, and per-screen meanings are how the letters
-    // already work here — `d` is DONE on the deck and DID IT on the chores. So
-    // this is only ever the slot's key on a screen with a slot and no deck,
-    // which is checked rather than assumed: a screen that ever had both would
-    // otherwise have one letter meaning two things.
-    if ((e.key === "t" || e.key === "T") && !deck) {
+    if (e.key === "t" || e.key === "T") {
       const box = document.querySelector(".slot textarea");
       if (box) { e.preventDefault(); box.focus(); return; }
     }
     // A focused control owns space and enter; that is the platform's contract.
     if ((e.key === " " || e.key === "Enter") && e.target.closest("button, summary, a")) return;
 
-    // The chores. Their own keys, because they are a list and the deck is
-    // not — and their own branch, because there is no card here to act on.
-    //
     // Asked for rather than captured at load: the chores arrive in the
     // conversation after the page has painted, and a list taken at load is
     // empty for exactly the cards these keys are for.
     if (allChores().length) {
-      // A question in progress owns the keys, exactly as it does on the deck:
-      // 1-4 answer it, and moving between chores is not what an arrow means
-      // while it is open.
-      //
-      // The deck earned those digits precisely so a picker could not be
-      // interrupted by movement keys. This screen has the same picker and
-      // never got the carve-out, so an arrow aimed at the four chips threw the
-      // focus onto a different chore's buttons — and the next letter then
-      // acted on that one.
-      // The interval question is a turn of its own now rather than a
-      // disclosure inside the card, so the carve-out is about the picker
-      // wherever it is on the page: while one is open the arrows belong to it,
-      // not to the movement between chores.
+      // A question in progress owns the arrows. Without this carve-out an
+      // arrow aimed at the picker's chips threw the focus onto a different
+      // chore's buttons — and the next letter acted on that one.
       const asking = document.querySelector(".pick");
       if (asking && asking.contains(document.activeElement)) {
         if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); return; }
@@ -812,30 +439,8 @@
       return;
     }
 
-    if (!deck || deck.going) return;
-
-    // The chore interval is a question, not an action: C asks it, 1-4 answer
-    // it, and ESC withdraws it. Nothing here fires a write on its own.
-    if (deck.every?.open) {
-      const n = "1234".indexOf(e.key);
-      if (n >= 0) { e.preventDefault(); deck.chip(n); return; }
-      if (e.key === "Escape") { e.preventDefault(); deck.choosing(false); }
-      return;
-    }
-    if (e.key.toLowerCase() === "c") { e.preventDefault(); deck.choosing(true); return; }
-
-    if (e.key === " " || e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      skip();
-      return;
-    }
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); history.back(); return; }
-
-    const act = KEYS[e.key.toLowerCase()];
-    if (act) { e.preventDefault(); deck.act(act); }
   });
 
-  wire();
 
   // The worker is what makes this installable and what answers when the
   // network is gone. Registered from here rather than inline in the page so
@@ -947,25 +552,5 @@
       });
     }
   }
-
-  // ---------------------------------------------------------------- //
-  // Buddy and the lid's two panels were here.
-  //
-  // Buddy was an acorn in the lid opening `/buddy` as a sheet over whatever
-  // you were looking at, because the conversation was about the screen behind
-  // it and navigating away from that screen was the one thing it must not do.
-  // There is one screen now and the conversation is on it: `ask Buddy` is a
-  // chip on the live edge and the exchange is turns, so there is nothing to
-  // lift out of a page and nothing to close.
-  //
-  // The panels were the search field and the map, made to behave like menus —
-  // closing on Escape, on a press outside, and never both at once. The map had
-  // been empty since the deck came out and search is a chip now. The lid is a
-  // mark and the running timer.
-  //
-  // All of it went on 25 August 2026. Roughly 300 lines, and every guarantee
-  // it maintained by hand — focus, Escape, one-at-a-time, a way out that
-  // survives a dialog refusing to close — is a guarantee the thread does not
-  // need, because nothing here is over anything else any more.
 
 })();

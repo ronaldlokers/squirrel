@@ -66,13 +66,3 @@ func TestPuttingATaskBackOffersNoFurtherUndo(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, q.Query().Get("undo"))
 }
-
-// The card's stamp and the next page's line are the same words for the same
-// press, with script and without it.
-func TestTheCardAndThePageAgreeAboutATask(t *testing.T) {
-	js, err := staticFS.ReadFile("static/pile.js")
-	require.NoError(t, err)
-
-	require.Equal(t, "now a task", saidWords["task"])
-	require.Contains(t, string(js), `said: "now a task"`)
-}

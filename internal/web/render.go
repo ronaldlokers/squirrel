@@ -141,7 +141,6 @@ type view struct {
 	// forget it and no template has to know where it comes from.
 	V     string
 	Query string
-	Undo  *undoView
 	// Turns is the conversation, oldest first. The screen is one page now;
 	// see internal/web/thread.go.
 	Turns []turnView
@@ -238,86 +237,6 @@ type unstuckView struct {
 type chipView struct {
 	Why  string
 	Word string
-}
-
-type undoView struct {
-	// ID is the note to move, and State is where to move it back to. The pair
-	// is a plain transition — undo is not a special case, it is `act=open` on
-	// a note that just left.
-	ID    int64
-	State string
-	// Said is what happened, in the same words the card's own stamp uses.
-	Said string
-	// Action is where the way back is posted, because the three set-aside
-	// states do not come back the way the other four do: `open` is a state a
-	// note can be moved to, while a note that was set aside is *picked back
-	// up*, which is its own verb on its own route.
-	Action string
-	// From is where the way back returns you to, for the route that asks.
-	From string
-}
-
-// saidWords is the other half of pile.js's STATES table: what the screen says
-// a transition did, once it has been done. The two have to match, because with
-// JavaScript the phrase appears on the card and without it the phrase appears
-// on the next page, for the same action.
-var saidWords = map[string]string{
-	"done":    "marked done",
-	"kept":    "kept as reference",
-	"dropped": "dropped",
-	"chore":   "now a chore",
-	// Deciding is not disposing, and it was the one answer on the card with no
-	// word here at all — so the stamp fell through to the default and a note
-	// promoted to a task announced itself as "marked done".
-	"task": "now a task",
-	"open": "back in the pile",
-	// Setting one aside is a transition like any other, and until now it was
-	// the only one that said nothing afterwards and offered nothing back.
-	"waiting": "waiting on someone",
-	"blocked": "blocked on a thing",
-	"someday": "someday",
-}
-
-// backTo turns the state a note was in into the action word that returns it
-// there. The form's vocabulary and the store's are deliberately not the same
-// list — `keep` is what you do to a note, `kept` is what the note then is — so
-// the round trip needs one place that knows both.
-var backTo = map[squirrel.ItemState]string{
-	squirrel.ItemOpen:    "open",
-	squirrel.ItemDone:    "done",
-	squirrel.ItemKept:    "keep",
-	squirrel.ItemDropped: "drop",
-}
-
-// undoFrom reads the way back out of the query string. The parameters arrive
-// through the address bar, so an id that is not a number, or a state that is not
-// one of the four, is no undo rather than a bad one.
-func undoFrom(q url.Values) *undoView {
-	id, err := strconv.ParseInt(q.Get("undo"), 10, 64)
-	if err != nil || id == 0 {
-		return nil
-	}
-	said := saidWords[q.Get("state")]
-	// A promotion, which comes back by being made a note again rather than by
-	// being moved to a state: what changed was the note's kind, and its state
-	// never moved, so `act=open` would undo nothing at all.
-	if q.Get("was") == "task" {
-		return &undoView{ID: id, State: "note", Said: said, Action: "/pile/act"}
-	}
-	// Set aside, which comes back by being picked back up rather than by being
-	// moved to a state. Checked first: the two vocabularies do not overlap, and
-	// this one is not in `backTo` on purpose.
-	if _, held := squirrel.ParseHeld(q.Get("was")); held {
-		return &undoView{
-			ID: id, State: "back", Said: said,
-			Action: "/held/act", From: backTolerant(q.Get("from")),
-		}
-	}
-	act, ok := backTo[squirrel.ItemState(q.Get("was"))]
-	if !ok {
-		return nil
-	}
-	return &undoView{ID: id, State: act, Said: said, Action: "/pile/act"}
 }
 
 // clashFrom says whether this render is answering a decision the pile had

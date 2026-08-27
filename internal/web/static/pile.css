@@ -267,20 +267,6 @@
   main { align-items: flex-start; padding-top: 40px; }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
 
-  .deck { position: relative; }
-
-  /* The cards underneath: the only thing that says there is more, never how
-     much more. Handled, so they do not sit square. */
-  .behind {
-    position: absolute; inset: 0;
-    background: var(--card-deep);
-    border: var(--line) solid var(--outline);
-    border-radius: var(--r);
-  }
-  .behind:nth-of-type(1) { transform: translate(var(--o), var(--o)) rotate(1.1deg); }
-  .behind:nth-of-type(2) { transform: translate(calc(var(--o) * 1.6), calc(var(--o) * 2.2)) rotate(-1.4deg); }
-  .behind:nth-of-type(3) { transform: translate(calc(var(--o) * 2.1), calc(var(--o) * 3.2)) rotate(1.8deg); }
-
   .card {
     position: relative;
     background: var(--card);
@@ -335,30 +321,6 @@
     text-wrap: pretty;
   }
 
-  /* The stamp: slapped on, in the state's own colour, in the sticker language. */
-  .stamp {
-    position: absolute; right: 26px; bottom: -4px;
-    display: none; align-items: center; gap: 9px;
-    padding: 9px 17px;
-    background: var(--paper);
-    color: var(--sct, var(--outline));
-    border: var(--line) solid var(--sc, var(--outline));
-    border-radius: 10px;
-    font-size: 15px;
-    font-variation-settings: var(--precise), "wght" 850;
-    letter-spacing: .1em;
-    box-shadow: 0 4px 0 0 var(--sc, var(--outline));
-    /* The lean is the day's, not the file's. It was pinned at -7deg for the
-       stamp's whole life; the server now hands down an angle between -11 and
-       -3 on the body, and this is what it shipped as when nothing does.
-
-       Novelty in art, which is what the roadmap sanctions, on the one object
-       here you read *after* acting rather than aim at. Never a control: a
-       button that moved a few degrees a day would be a different button. */
-    transform: rotate(var(--tilt, -7deg));
-  }
-  /* A stamp slams and stops. The weight is in the scale, not in a rebound. */
-  .card.stamped .stamp { display: inline-flex; animation: slap 240ms cubic-bezier(.16, .84, .28, 1) both; }
   @keyframes slap {
     0%   { transform: rotate(-22deg) scale(1.7); opacity: 0; }
     /* Lands where the stamp rests, or the slap ends by snapping to a
@@ -394,25 +356,6 @@
     padding: 2px 5px 1px; opacity: .72;
   }
   .chip.back { box-shadow: none; border-style: dashed; }
-
-  /* The actioned card holds still for a moment so the undo has somewhere to
-     be — on the card it undoes, not in a corner of the screen. */
-  .undoRow { gap: 14px; }
-  .undo {
-    font: 700 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 800;
-    letter-spacing: .07em;
-    color: var(--outline); background: var(--paper);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    padding: 12px 18px; cursor: pointer; min-height: 44px;
-    box-shadow: 0 4px 0 0 var(--outline);
-  }
-  .undo:active { transform: translateY(4px); box-shadow: none; }
-  .undoRow .said {
-    font-size: 13.5px;
-    font-variation-settings: var(--precise), "wght" 600;
-    color: var(--brown);
-  }
 
   /* Present for anything that reads the page aloud, absent for anything that
      draws it. Not display:none, which would take it out of both. */
@@ -524,57 +467,6 @@
   }
   .abtn.stop:hover  { background: #af9a8b; }
   .abtn.stop:active { background: var(--dropped); color: var(--paper); }
-
-  /* ---------- how often: a disclosure, in place, no modal ---------- */
-
-  .often { display: inline-flex; }
-  .often > summary {
-    list-style: none;
-    font: 700 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 830;
-    letter-spacing: .08em;
-    color: var(--outline); background: var(--paper);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    padding: 11px 16px; cursor: pointer; min-height: 44px;
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    box-shadow: 0 4px 0 0 var(--outline);
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-    user-select: none;
-  }
-  .often > summary::-webkit-details-marker { display: none; }
-  /* A disclosure is not a button: it opens something here and changes
-     nothing on the server. It was filled amber, which is what this world uses
-     for a thing that has been done to a row — so the loudest control on a
-     chore card was the one with no consequence. Outlined, like every other
-     disclosure, and the chevron says the rest. */
-  .often:not([open]) > summary {
-    background: var(--paper); color: var(--outline);
-  }
-  .often:not([open]) > summary:hover { background: var(--paper-deep); }
-  .often:not([open]) > summary:active {
-    transform: translateY(4px); box-shadow: none;
-    background: var(--violet-ink); color: var(--paper);
-  }
-
-  /* Open, the picker takes the whole foot of the card and the other two
-     actions step aside — the row is replaced in place, exactly as the deck
-     does it, and CSS alone is the one doing it. Where :has() is missing the
-     actions simply stay and the chips open beneath: still the working page. */
-  .acts:has(.often[open]) > .abtn { display: none; }
-  .often[open] {
-    width: 100%;
-    display: flex; flex-direction: column-reverse; gap: 14px;
-  }
-  /* The summary becomes the way back, and the way back is the system's dashed
-     "this does nothing". */
-  .often[open] > summary {
-    align-self: flex-start;
-    background: var(--paper); color: var(--outline);
-    box-shadow: none; border-style: dashed;
-    font-size: 13.5px; font-variation-settings: var(--precise), "wght" 750;
-    letter-spacing: .03em; text-transform: none;
-    padding: 11px 15px;
-  }
 
   /* Where the interval sits now. Cap purple: the product's own colour, not a
      state and not a reward — it reports how things are without grading anyone.
@@ -782,35 +674,12 @@
     background: var(--violet); color: var(--paper);
   }
 
-  /* ---------- fixing the words ---------- */
-
-  /* A correction happens where the note is, not on a page of its own — the
-     same disclosure the interval question uses, and closing it changes
-     nothing. Quiet when shut, because most notes are fine. */
-  /* The two ways of not answering, side by side at the card's foot. Open,
-     either one takes the whole width — a disclosure that has opened is the
-     thing you are doing. */
-  .ways {
-    display: flex; flex-wrap: wrap; align-items: baseline;
-    gap: 2px 18px; margin-top: 2px;
-  }
-  .ways > details[open] { flex-basis: 100%; }
-
   /* The way to what you have done. A line rather than a section: the archive
      is somewhere you go, not something this screen reports on. */
   .ends { margin: 22px 0 0; text-align: center; font-size: 13.5px; font-variation-settings: var(--precise), "wght" 560; }
   .ends a { color: var(--cream); text-decoration: underline; text-underline-offset: 4px; }
   .ends a:hover { color: var(--paper); }
 
-  .whys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0 2px; }
-  /* The fallback is for anywhere this ever stands outside the sheet; inside
-     it, the sheet's own quiet ink is what makes it legible on either ground. */
-  .whys .lead {
-    width: 100%; margin: 0 0 2px;
-    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 750;
-    color: var(--sheet-quiet, var(--brown));
-  }
   /* Four answers, all the same weight. One of them being louder would be the
      product guessing which it is, and it does not know. */
   .why {
@@ -884,7 +753,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .card.leaving { animation-duration: 1ms; }
-    .card.stamped .stamp { animation: none; }
     * { transition-duration: 1ms !important; }
   }
 
@@ -948,23 +816,11 @@
     .card { min-height: 284px; }
     .row { gap: 8px; }
 
-    /* Two by two, then the one that makes something across the full width
-       beneath them.
-
-       Three columns for as long as there were three answers, and then a fourth
-       answer was added and nothing here changed: A TASK dropped into a
-       one-third cell on a row of its own and wrapped its label to two lines
-       while its siblings sat on one. It read as a rendering accident on the
-       one screen that has to be flawless. Four answers want an even grid. */
-    .actions {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
-    }
-
     .chore { padding: 17px 18px 18px; }
     .chore .name { font-size: 23px; }
     .chore .meta { font-size: 12px; }
     .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .abtn, .often:not([open]) > summary {
+    .abtn {
       padding: 14px 8px; min-height: 48px;
       font-size: 12.5px; letter-spacing: .05em;
     }
@@ -972,45 +828,14 @@
        spanning the card made it the largest thing on it — a destructive
        action wearing the emphasis of a primary one. */
     .abtn.stop { margin-left: 0; }
-    .often { display: flex; }
-    .often > summary { width: 100%; }
-    .often[open] { grid-column: 1 / -1; }
-    .often[open] > summary { width: auto; padding: 11px 15px; min-height: 44px; font-size: 13.5px; }
 
     .chip.back { grid-column: 1 / -1; }
     .chip { justify-content: center; }
     .empty h1 { font-size: 31px; }
     .empty p { font-size: 18px; }
-    .stamp { right: 18px; font-size: 13.5px; padding: 8px 14px; }
-    .behind:nth-of-type(3) { display: none; }
-    .behind:nth-of-type(1) { transform: translate(var(--o), var(--o)) rotate(.7deg); }
-    .behind:nth-of-type(2) { transform: translate(calc(var(--o) * 1.6), calc(var(--o) * 2.2)) rotate(-.9deg); }
     .empty img { width: 150px; height: 113px; }
   }
 
-  /* ---------- the scriptless additions ---------- */
-
-  /* The comp asked "how often?" in a row JavaScript revealed. A page that
-     works without JavaScript asks it with a disclosure, so the summary wears
-     the button it stands in for and the chips keep the row they had.
-     
-     The disclosure now stands where MAKE A CHORE used to, so it takes that
-     button's place in the line — and in the mobile grid — while the summary
-     inside it fills whatever it is given. */
-  .everyFallback > summary { list-style: none; margin: 0; width: 100%; }
-  .everyFallback > summary::-webkit-details-marker { display: none; }
-  .actions > .everyFallback { margin-left: auto; }
-  .everyFallback[open] { width: 100%; margin-left: 0; }
-  .everyFallback[open] > summary { margin-bottom: 12px; }
-
-  @media (max-width: 560px) {
-    .actions > .everyFallback { grid-column: 1 / -1; margin-left: 0; }
-  }
-
-  /* main centres a single child, so an undo above the deck turns the field
-     into a column — two of them side by side is not what either one is. */
-  main.withUndo { flex-direction: column; align-items: center; }
-  main.scrolling.withUndo { justify-content: flex-start; }
 
   .landed {
     display: flex; align-items: center; justify-content: center;
@@ -1055,19 +880,6 @@
     padding: 12px 14px;
   }
 
-  /* Quieter than the four answers, and drawn only on a note that looks like
-     several things. A press that is always there is a press that is usually
-     wrong. */
-  .askSplit {
-    margin-top: 6px; min-height: 44px;
-    background: none; border: 0; padding: 10px 2px;
-    color: var(--brown); cursor: pointer;
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 620;
-    text-decoration: underline; text-underline-offset: 3px;
-  }
-  .askSplit:hover { color: var(--outline); }
-
   /* A thing the coach wants permission for. Quiet, and it carries exactly one
      press: the four things that need asking are the four that one press on
      something already on screen would not undo. */
@@ -1082,38 +894,6 @@
     font-size: 16px; line-height: 1.4;
     font-variation-settings: var(--casual), "wght" 500;
   }
-
-  /* Something you cannot act on. Quieter than a card in the deck: these are
-     things you have deliberately stopped looking at, and the page exists to be
-     checked rather than worked through. */
-  .aside {
-    display: flex; flex-direction: column; gap: 6px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 4px 0 0 var(--outline);
-    padding: 14px 16px; margin-bottom: 12px;
-    width: min(720px, 100%);
-  }
-  .aside .what {
-    margin: 0;
-    font-size: 18px; line-height: 1.3;
-    font-variation-settings: var(--casual), "wght" 540;
-  }
-  .aside form { margin-top: 4px; }
-
-  /* The disclosure on the card. Same grammar as the interval question and the
-     reword box: quiet, and opening it changes nothing. */
-  .cantact { margin-top: 8px; }
-  .cantact > summary {
-    list-style: none; cursor: pointer; display: inline-block;
-    min-height: 44px; padding: 12px 2px;
-    color: var(--brown);
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 620;
-    text-decoration: underline; text-underline-offset: 3px;
-  }
-  .cantact > summary::-webkit-details-marker { display: none; }
-  .cantact > summary:hover { color: var(--outline); }
 
   /* The readings: six weeks by seven days, and the only grid in the product.
      
@@ -1268,87 +1048,6 @@
     background: var(--card-deep);
     border: var(--line) solid var(--outline); border-radius: 10px;
   }
-/* One frame — approved, and folded in.
- *
- * This was a second stylesheet loaded after pile.css, so a comp could show the
- * real product with exactly these changes on top and nothing else. It was
- * approved on 21 August 2026 and folded in here, which is what it said it
- * would do; the separate file is gone.
- *
- * It stays one block rather than being dissolved into the sections above,
- * because what these rules have in common is the argument they came from — one
- * frame, one vocabulary of controls, navigation in one place — and splitting
- * them across the file would leave that argument nowhere. Everything it does
- * not mention is unchanged, which is most of the product: the palette, both
- * type axes, the sticker shadows, the four state colours, the mascot, the
- * deck's whole composition.
- *
- * Its rules are still written at column zero where the rest of this file is
- * indented two, which is the last visible trace of it having been a file.
- */
-
-/* ---------------------------------------------------------------- */
-/* 1. Three kinds of control, one mark each.                         */
-/* ---------------------------------------------------------------- */
-/*
- * A button is a filled shape and it changes something.
- * A link is underlined and it takes you somewhere else.
- * A disclosure carries a chevron and it opens something here.
- *
- * Today the third one has four appearances — plain underlined text on the
- * card, a filled yellow pill on the chores screen, a plus sign on the new
- * chore form, a quiet line under a chore — and the first two are
- * indistinguishable from each other wherever they sit side by side. On the
- * card, LATER goes to another note, "fix the words" opens a box here, and
- * they look the same.
- *
- * The chevron is the whole fix. It goes on every disclosure regardless of
- * that disclosure's weight, because weight says how loud the control is and
- * the mark says what kind of thing it is. A disclosure inside a row of
- * buttons still has to look like the row or the row breaks; it just carries
- * the chevron too.
- */
-.cantact > summary, .often > summary, .everyFallback > summary {
-  position: relative;
-}
-
-.cantact > summary::after, .often > summary::after, .everyFallback > summary::after {
-  content: "";
-  flex: none;
-  width: 12px; height: 12px;
-  margin-left: 8px;
-  /* Drawn, and drawn the way the other two icons in this product are drawn:
-     a 2.4 stroke with round caps, the same as the camera and the cross. A
-     chevron built from two CSS borders would be the only icon here that was
-     not a path, and it would sit at a weight nothing else uses. Masked rather
-     than a background image so it takes currentColor and inherits whatever
-     the control it belongs to is doing on hover. */
-  background: currentColor;
-  --chev: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="black" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>');
-  mask: var(--chev) center / contain no-repeat;
-  -webkit-mask: var(--chev) center / contain no-repeat;
-  transition: transform 140ms cubic-bezier(.16, .84, .28, 1);
-}
-
-/* Open, it points at what it opened. */
-.cantact[open] > summary::after, .often[open] > summary::after, .everyFallback[open] > summary::after {
-  transform: rotate(180deg);
-}
-
-/* The quiet ones are inline-flex so the chevron sits on the text's line. */
-.cantact > summary {
-  display: inline-flex; align-items: center;
-}
-
-/* Underline means you are leaving, and it now means only that. Every one of
-   these opens something on the screen you are already on. */
-.cantact > summary {
-  text-decoration: none;
-}
-.cantact > summary:hover {
-  text-decoration: none;
-  color: var(--outline);
-}
 
 /* ---------------------------------------------------------------- */
 /* 2. One frame: title, content, the way onward.                     */
@@ -1540,14 +1239,7 @@
     color: var(--brown);
   }
 
-  /* Quieter than a card in the deck was the point; narrower was not. Every
-     other list card on the frame's 720px insets its words by 20px and this one
-     by 16, so two lists of the same rows started their text four pixels apart
-     on two screens that are one tab from each other. */
-  .aside { padding: 15px 20px 16px; }
-
   @media (max-width: 620px) {
-    .aside { padding: 16px 20px 17px; }
 
     /* Eight pixels under DID IT, in the same thumb column, sat the one press
        on this screen that ends something. The two-column grid put it there;

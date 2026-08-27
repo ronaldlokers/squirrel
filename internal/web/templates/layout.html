@@ -161,7 +161,7 @@
      and a region that is replaced announces nothing. pile.js writes here when
      it changes what is on screen without a navigation. */}}
 <p id="say" class="offscreen" role="status" aria-live="polite"></p>
-<main id="stage" class="{{if .Home}}threadpage {{end}}{{if .Scrolling}}scrolling {{end}}{{if .Undo}}withUndo{{end}}">
+<main id="stage" class="{{if .Home}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
 {{/* The undo lives here rather than on the card, because by the time this
      page is drawn the card it undoes has gone. pile.js shows the card's own
      row during the hold; this is the same offer once the write has landed,
@@ -174,17 +174,6 @@
 {{if .Clash}}
 <div class="landed clash" role="status">
   <span class="said">that note had already moved &mdash; it is where you left it in the room</span>
-</div>
-{{end}}
-{{with .Undo}}
-<div class="landed" role="status">
-  <span class="said">{{.Said}}</span>
-  <form method="post" action="{{.Action}}">
-    <input type="hidden" name="id" value="{{.ID}}">
-    <input type="hidden" name="q" value="{{$.Query}}">
-    {{with .From}}<input type="hidden" name="from" value="{{.}}">{{end}}
-    <button class="undo" name="act" value="{{.State}}">PUT IT BACK</button>
-  </form>
 </div>
 {{end}}
 {{template "content" .}}
