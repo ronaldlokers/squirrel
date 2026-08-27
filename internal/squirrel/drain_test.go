@@ -214,8 +214,7 @@ func TestDrainQuarantinesAnUnreadableFile(t *testing.T) {
 // whole test, so a later pass on the same Drain instance can succeed against
 // the real database. Each call is timestamped, so the test can measure the
 // real gaps between ticks instead of reaching into the drain's private
-// backoff state. Ported from flakyDb in test/integration/drain.test.ts on
-// main.
+// backoff state.
 type flakyStore struct {
 	real      *squirrel.Store
 	failTimes int
