@@ -1,14 +1,10 @@
 //go:build browser
 
-// Five things that are only wrong on the screen.
+// Things that are only wrong on the screen.
 //
-// Each of these looked right in the source: a min-width that was stated, a
-// role that was documented, a panel that hangs from its control, a
-// destructive press that was deliberately not full width, two list cards
-// built from the same stock. What the browser drew was a staggered column, a
-// label in body text, a panel two pixels off the side of a phone, an ending
-// eight pixels under a doing, and two lists whose words start four pixels
-// apart.
+// Both of these looked right in the source — a width that was stated, a role
+// that was documented — and what the browser drew was a staggered column and a
+// label in body text.
 //
 // So, like the cascade tests, these ask the browser for the computed value and
 // compare against a sibling rather than against a number wherever the point is
@@ -101,12 +97,9 @@ func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	}
 }
 
-// `.lead` is the small line that says what the thing under it is, and the
-// stylesheet says so: "the meta role, set in cream at 11.5px everywhere it is
-// used". It was six scoped rules and no definition, so the three sites none of
-// them reached — the search results' two group labels, COMES BACK inside a
-// chore's interval row, RIGHT NOW above Buddy's context — rendered at the
-// document's own size, larger and lighter than the thing they label.
+// `.lead` is the small line that says what the thing under it is. It was six
+// scoped rules and no definition, so every site none of them reached rendered
+// at the document's own size — larger and lighter than the thing it labels.
 //
 // Against the body rather than against a number: the defect is not that a
 // label was 16px, it is that it was the same size as running text.
@@ -123,30 +116,28 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 
-	// One screen since /buddy went. Its meta labels are the picker's, and the
-	// picker arrives by pressing HOW OFTEN.
-	for _, path := range []string{""} {
-		openChores(t, c, srv)
-		c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
-		c.until(t, "the question", `!!document.querySelector(".pick")`)
+	// There is one screen, and its meta labels are the picker's — which arrives
+	// by pressing HOW OFTEN on a chore.
+	openChores(t, c, srv)
+	c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
+	c.until(t, "the question", `!!document.querySelector(".pick")`)
 
-		found := c.eval(t, `
-			const body = parseFloat(getComputedStyle(document.body).fontSize);
-			return Array.from(document.querySelectorAll(".lead")).map(el => ({
-				text: el.textContent.trim(),
-				size: parseFloat(getComputedStyle(el).fontSize),
-				body: body,
-			}));`)
+	found := c.eval(t, `
+		const body = parseFloat(getComputedStyle(document.body).fontSize);
+		return Array.from(document.querySelectorAll(".lead")).map(el => ({
+			text: el.textContent.trim(),
+			size: parseFloat(getComputedStyle(el).fontSize),
+			body: body,
+		}));`)
 
-		labels, ok := found.([]any)
-		require.True(t, ok, "%s did not answer with a list of labels", path)
-		require.NotEmpty(t, labels, "%q drew no meta label at all", path)
+	labels, ok := found.([]any)
+	require.True(t, ok, "the page did not answer with a list of labels")
+	require.NotEmpty(t, labels, "nothing on the screen drew a meta label at all")
 
-		for _, l := range labels {
-			label := l.(map[string]any)
-			require.Less(t, label["size"], label["body"],
-				"%s on %s is %vpx against body text at %vpx: it is not wearing the meta role",
-				label["text"], path, label["size"], label["body"])
-		}
+	for _, l := range labels {
+		label := l.(map[string]any)
+		require.Less(t, label["size"], label["body"],
+			"%s is %vpx against body text at %vpx: it is not wearing the meta role",
+			label["text"], label["size"], label["body"])
 	}
 }
