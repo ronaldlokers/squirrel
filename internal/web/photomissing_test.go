@@ -30,8 +30,8 @@ func TestAPhotographTheDiskHasLostSaysSo(t *testing.T) {
 	t.Cleanup(func() { slog.SetDefault(was) })
 
 	// The handler directly: the test mux matches by prefix and cannot resolve
-	// a `{id}` wildcard, which is why every other photo test asserts the route
-	// exists rather than calling it. fakePhotos.Open has always answered
+	// a `{id}` wildcard, so the route is asserted to exist separately — see
+	// TestTheThumbRouteIsMounted. fakePhotos.Open has always answered
 	// ErrNotExist, which is exactly the disagreement this is about.
 	opts := Options{
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
