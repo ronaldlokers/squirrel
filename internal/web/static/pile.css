@@ -205,54 +205,14 @@
 
   /* ---------- the field ---------- */
 
+  /* Top rather than centred. Centring was right when the whole product was one
+     card; on a screen with a heading it leaves a field of empty above the words
+     you came for. */
   main {
-    flex: 1; display: flex; justify-content: center; align-items: center;
-    padding: 58px 22px 48px;
+    flex: 1; display: flex; justify-content: center; align-items: flex-start;
+    padding: 40px 22px 48px;
   }
-  /* Top by default; centred only for the deck.
-   *
-   * Everything was centred, which was right when the pile was one card and the
-   * only screen. With thirteen screens that have titles it left 230px of empty
-   * field above the pile's own heading and spent a 900px desktop viewport on
-   * one 20px row of moods — the app read as unfinished in exactly the view you
-   * would show someone.
-   *
-   * The deck keeps it, because one card floating in the middle of the field is
-   * the shoebox's composition rather than a layout default. `safe` so that a
-   * card taller than the window is top-aligned instead: a centred flex child
-   * that overflows puts its own head above the scroll origin, where nothing
-   * can reach it, and a long enough note lost its first line that way. */
-  main { align-items: flex-start; padding-top: 40px; }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
-
-  @keyframes leave {
-    0%   { transform: perspective(1400px) rotateX(0) translate3d(0, 0, 0) rotate(0); opacity: 1; }
-    30%  { transform: perspective(1400px) rotateX(-6deg) translate3d(0, -26px, 60px) rotate(-1deg); opacity: 1; }
-    100% { transform: perspective(1400px) rotateX(-70deg) translate3d(0, -118px, 10px) rotate(-3deg); opacity: 0; }
-  }
-
-  /* The way past a note, for the screens that have no keyboard. It sits in the
-     titlebar rather than the tray because it is not one of the ways out — the
-     tray is for what a note becomes, and this is for deciding nothing. */
-  .later {
-    flex: none;
-    display: inline-flex; align-items: center; gap: 6px;
-    margin: -11px -16px -11px 0; padding: 11px 16px;
-    min-height: 44px;
-    color: var(--paper); text-decoration: none;
-    font-size: 12.5px; letter-spacing: .09em;
-    font-variation-settings: var(--precise), "wght" 750;
-    opacity: .82;
-    border-radius: 0 11px 0 0;
-  }
-  .later:hover, .later:focus-visible { opacity: 1; background: rgba(0, 0, 0, .16); }
-
-  @keyframes slap {
-    0%   { transform: rotate(-22deg) scale(1.7); opacity: 0; }
-    /* Lands where the stamp rests, or the slap ends by snapping to a
-       different angle than it animated to. */
-    100% { transform: rotate(var(--tilt, -7deg)) scale(1); opacity: 1; }
-  }
 
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row[hidden] { display: none; }
@@ -652,8 +612,8 @@
     /* The lid steps DOWN on a phone, against the Step-Up Rule and for the
        reason that rule gives. Roles grow on a phone because a phone is read at
        arm's length; the lid is not read — it is the thing you look past on the
-       way to the card. At the deck's sizes it spent a fifth of a small screen
-       saying a name you already know. */
+       way to the conversation. At its desktop size it spent a fifth of a small
+       screen saying a name you already know. */
     .brand { gap: 7px; }
     .brand img { width: 56px; height: 42px; }
     .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
