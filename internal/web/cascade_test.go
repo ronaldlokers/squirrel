@@ -77,3 +77,48 @@ func TestBrowserTheOffersThirdControlIsTheSameShapeAsTheOtherTwo(t *testing.T) {
 			"the offer's %s differs: `did it` is %s, `not now` is %s", prop, did, later)
 	}
 }
+
+// The four things Buddy can ask for are one object with four contents.
+//
+// They were four rules repeating one block of stock — same fill, same outline,
+// same radius, same lift — which is four chances for a question to drift into
+// looking like a different kind of thing. They share one rule now, and this is
+// what says the sharing survives: computed in a browser, because the hazard is
+// a later rule of equal weight rather than anything visible in the source.
+//
+// One fixture each, because only the newest Buddy turn draws its controls: a
+// page can hold one of these at a time.
+func TestBrowserEveryQuestionIsCutFromTheSameStock(t *testing.T) {
+	drawn := []struct{ sel, shown string }{
+		{".pick", `{"pick":{"action":"/chores/act","do":"that's it",` +
+			`"rows":[{"lead":"every","name":"count","options":["1","2"]}]}}`},
+		{".calbox", `{"cal":{"action":"/at/make","month":"August","pad":0,` +
+			`"days":[{"day":1,"date":"2026-08-01"}],"times":["14:30"],"do":"that's it"}}`},
+		{".wordbox", `{"say":{"action":"/pile/fix","fields":{"id":"9"},` +
+			`"was":"the boiler","do":"say it this way"}}`},
+		{".cut", `{"cut":{"action":"/pile/split","id":9,"pieces":["a","b"],"do":"use these"}}`},
+	}
+
+	var first, firstSel string
+	for _, d := range drawn {
+		f := aPile()
+		f.checkin = fresh()
+		f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "?", Shown: []byte(d.shown)}}
+		c := browserAt(t, screen(t, f), "/")
+
+		stock := c.eval(t, `
+			const el = document.querySelector("`+d.sel+`");
+			if (!el) return "MISSING";
+			const cs = getComputedStyle(el);
+			return [cs.backgroundColor, cs.borderTopWidth, cs.borderTopColor, cs.borderRadius,
+			        cs.padding, cs.boxShadow, cs.display, cs.flexDirection].join(" | ");`)
+		require.NotEqual(t, "MISSING", stock, "%s never rendered, so this measured nothing", d.sel)
+
+		if first == "" {
+			first, firstSel = stock.(string), d.sel
+			continue
+		}
+		require.Equal(t, first, stock,
+			"%s is not cut from the same stock as %s", d.sel, firstSel)
+	}
+}

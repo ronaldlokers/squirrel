@@ -776,19 +776,13 @@
   }
   .moodkey b.nought { background: transparent; border-style: dashed; }
 
-  /* Every screen's title, and the only one.
-   *
-   * There were five: <h1 class="deckhead"> on two screens, a bare <h1> on the
-   * empty states, and three different <p> classes doing the same job in three
-   * different sizes and cases everywhere else. Ten of thirteen templates had
-   * no <h1> at all, so heading navigation did not work anywhere in a product
-   * built for someone who might well use it.
-   *
-   * One element, one class, sentence case — the register the two newest
-   * screens had already found. The empty states keep their own larger
-   * treatment: a screen that is an absence is a different composition, not a
-   * different size of the same one, and that is two headings with a reason
-   * rather than five without one. */
+  /* A screen's title. One element, one class, sentence case — there were five
+     ways of writing a heading here, and most templates had no <h1> at all, so
+     heading navigation did not work in a product built for someone who might
+     well use it.
+     
+     /enough keeps its own larger treatment: a screen that is an absence is a
+     different composition, not a different size of the same one. */
   .deckhead {
     margin: 0 0 18px;
     display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
@@ -796,14 +790,6 @@
     font-weight: 900; font-size: 21px; letter-spacing: -.01em;
     color: var(--paper); text-wrap: balance;
   }
-  /* What was searched for, inside the title that reports it. His words, so
-     the casual axis, the way his words are set everywhere else. */
-  .deckhead b {
-    font-family: "Recursive", sans-serif;
-    font-variation-settings: var(--casual), "wght" 800;
-    font-weight: 400; letter-spacing: 0;
-  }
-
   /* The camera in the slot. Same height as the words beside it and quieter
      than the button: photographing is the alternative to typing, not the
      headline. */
@@ -1003,24 +989,21 @@
     .chore .abtn.stop { margin-top: 12px; }
   }
 
-  /* The thread is a column of full-width bands, not one centred box: the rail
-     is pinned edge to edge under the lid and the transcript sits in its own
-     measure inside. main is a centred flex row for every other screen, which
-     put five siblings side by side and shrank the conversation to 240px of a
-     390px phone — the face labels stopped fitting their cells, which is how it
-     was found. */
+  /* The thread is a column of full-width bands, not one centred box. main is a
+     centred flex row for every other screen, which put five siblings side by
+     side and shrank the conversation to 240px of a 390px phone — the face
+     labels stopped fitting their cells, which is how it was found. */
   main.threadpage {
     flex-direction: column; align-items: stretch; justify-content: flex-start;
     padding: 0;
     /* Room at the bottom for the dock, which is fixed and covers whatever is
        under it.
 
-       On the whole column rather than on .thread, which is where it was until
-       25 August 2026 — and .thread is not the last thing on the page. The two
-       chips and the way out sit below it, outside its padding, so on a phone
-       they were behind the dock with no way to scroll them clear. Reported
-       from a phone, and invisible on a laptop where the page is short enough
-       that nothing needs scrolling at all.
+       On the whole column rather than on .thread, which is not the last thing
+       on the page: what sits below it was outside its padding and therefore
+       behind the dock, with no way to scroll it clear. Reported from a phone,
+       and invisible on a laptop where the page is short enough that nothing
+       needs scrolling at all.
 
        The fallback is what the dock measures at rest. thread.js replaces it
        with the real height, so a textarea grown to four lines pushes the tail
@@ -1032,9 +1015,8 @@
   .thread {
     --gutter: 40px;
     width: min(720px, 100%); margin: 0 auto;
-    /* No bottom clearance here — see main.threadpage. It carried 132px until
-       25 August 2026, which cleared the dock for the conversation and for
-       nothing after it. */
+    /* No bottom clearance here — see main.threadpage, which is the last thing
+       on the page and so the one that has to clear the dock. */
     padding: 22px 22px 0;
     display: flex; flex-direction: column; gap: 8px;
   }
@@ -1063,9 +1045,7 @@
   }
   .fromyou > * { grid-column: 1; }
 
-  /* The face itself. Cream stock and the 3px outline, like everything else on
-     this field that is an object rather than the room. */
-  /* Nothing around it.
+  /* Nothing around the face.
      
      The artwork brings its own outline — the same 3px ring the system draws
      on every object — so a disc behind it stacked two, which is the heaviest
@@ -1179,10 +1159,10 @@
     padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
     background: linear-gradient(to top, var(--purple-dark) 62%, transparent);
   }
-  /* 676 rather than 720: the rail and the transcript are 720 wide with 22px
-     of padding inside them, so their content sits on a 676 measure. The dock's
-     padding is outside its slot, and at 720 the slot's edge stood 22px proud
-     of every bubble above it. */
+  /* 676 rather than 720: the transcript is 720 wide with 22px of padding
+     inside it, so its content sits on a 676 measure. The dock's padding is
+     outside its slot, and at 720 the slot's edge stood 22px proud of every
+     bubble above it. */
   .dock .slot { width: min(676px, 100%); margin: 0 auto; }
 
   @media (max-width: 620px) {
@@ -1194,12 +1174,11 @@
     .dock .slot { margin: 0 auto; }
   }
 
-  /* The offer's own three, now that it is an ordinary card in the thread.
-     Spelled out for exactly the reason `.obtn.later` spells them out, and the
-     bug recurred the moment the class changed: `.later` further down this file
-     gives every quiet pill a 2px currentColor border and cream type — right
-     for a pill standing on the field, and on card stock it measures 1.18:1,
-     which is not a colour anyone can read. The contrast walk caught it. */
+  /* The offer's own three, spelled out. A quiet pill styled for the field —
+     cream type, a thin currentColor border — measures 1.18:1 on card stock,
+     which is not a colour anyone can read; every one of these states its own
+     ink against the stock it actually stands on. The contrast walk caught it
+     twice, once per class name the button has had. */
   .abtn.later {
     margin-left: auto;
     background: var(--card-deep); color: var(--brown);
@@ -1224,16 +1203,18 @@
   }
   .abtn.why:hover { background: var(--card-deep); color: var(--outline); }
 
-  /* The question, as a card of choices. Same stock as any other card in the
-     thread, because it is one — what makes it a question is that it has a
-     submit rather than three verbs. */
-  .pick {
-    display: flex; flex-direction: column; gap: 8px; width: 100%;
+  /* Everything Buddy asks for is a card in the thread, because it is one; what
+     makes it a question rather than speech is that it carries a submit instead
+     of three verbs. One description of the stock, so four questions cannot
+     drift into being four different objects. */
+  .pick, .calbox, .wordbox, .cut {
+    display: flex; flex-direction: column; width: 100%;
     padding: 13px 15px 15px;
     background: var(--card); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: var(--r);
     box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
   }
+  .pick { gap: 8px; }
   /* The shared Meta role, not a class of its own: a label above a row of
      choices is the same thing the rest of the product calls a lead, and
      TestBrowserNoMetaLabelIsAsLargeAsBodyText fences that role by name. */
@@ -1244,16 +1225,16 @@
   .pickrow { display: flex; flex-wrap: wrap; gap: 8px; }
   .pick .make { align-self: flex-start; margin-top: 4px; }
   .cal .make { align-self: flex-start; margin-top: 2px; }
-  .turn.wide { max-width: 100%; width: 100%; }
-
-  /* A turn holding the faces takes the full column. They are five drawings in
-     a row and a bubble's 92% leaves the labels too narrow to fit their own
-     cells at 390px.
+  /* A turn holding a control strip takes the full column. The faces are five
+     drawings in a row, and a bubble's 92% leaves the labels too narrow to fit
+     their own cells at 390px.
 
      A class the template writes rather than `:has(.faces)`, which reads better
      and does not match in the browser the tests drive — the measurement said
      212px of an available 362px, which is the turn still shrinking to fit. */
-  /* The full-width controls span the gutter as well.
+  .turn.wide { max-width: 100%; width: 100%; }
+
+  /* And the strip spans the gutter as well.
      
      A question with its answers drawn on it is a control strip rather than
      speech, and Buddy's face does not indent it — the check-in's five labels
@@ -1262,14 +1243,8 @@
      time the same test found it. */
   .turn .faces, .turn .pick, .turn .calbox, .turn .wordbox { grid-column: 1 / -1; width: 100%; }
 
-  /* THE DAY PICKER. Same stock as the question it is: a card of choices. */
-  .calbox {
-    display: flex; flex-direction: column; gap: 10px; width: 100%;
-    padding: 13px 15px 15px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-  }
+  /* THE DAY PICKER. */
+  .calbox { gap: 10px; }
   .calhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .calhead b {
     font-family: "Inter", sans-serif; font-weight: 900; font-size: 16px;
@@ -1308,18 +1283,10 @@
     .calgrid { gap: 4px; }
   }
 
-  /* A question whose answer is words. Same stock as the other questions; what
-     makes it one is the box rather than a row of choices.
-     
-     .wordbox and not .say: the coach sheet's slot already wears `say`, and the
-     appearance snapshot caught this one reaching into it. */
-  .wordbox {
-    display: flex; flex-direction: column; gap: 10px; width: 100%;
-    padding: 13px 15px 15px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-  }
+  /* A question whose answer is words rather than a row of choices.
+     `.wordbox` and not `.say`, which was already taken — the appearance
+     snapshot caught this one reaching into the rule that owned it. */
+  .wordbox { gap: 10px; }
   .wordbox textarea {
     width: 100%; resize: none;
     padding: 10px 12px;
@@ -1334,13 +1301,7 @@
 
   /* A proposal. The pieces are shown as they would be kept, so what you are
      agreeing to is the thing in front of you rather than a description of it. */
-  .cut {
-    display: flex; flex-direction: column; gap: 8px; width: 100%;
-    padding: 13px 15px 15px;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
-  }
+  .cut { gap: 8px; }
   .cut .piece {
     margin: 0; padding: 9px 12px;
     background: var(--paper); color: var(--outline);
