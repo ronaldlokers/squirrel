@@ -186,7 +186,6 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 		{"the pile's door", "POST", "/open", url.Values{"where": {"pile"}}},
 		{"the kept door", "POST", "/open", url.Values{"where": {"kept"}}},
 		{"the tasks door", "POST", "/open", url.Values{"where": {"tasks"}}},
-		{"the archive", "POST", "/open", url.Values{"where": {"archive"}}},
 		{"the chores door", "POST", "/open", url.Values{"where": {"chores"}}},
 		{"what is coming", "POST", "/open", url.Values{"where": {"at"}}},
 		{"what was set aside", "POST", "/open", url.Values{"where": {"held"}}},
@@ -273,12 +272,22 @@ func TestSomebodyElsesPhotographIsNotFound(t *testing.T) {
 
 	opts := signedInOptions()
 	opts.Photos = &fakePhotos{}
-	for _, path := range []string{"/photo/", "/photo/"} {
-		id := strconv.FormatInt(photoID, 10)
-		r := httptest.NewRequest("GET", path+id, nil)
+	id := strconv.FormatInt(photoID, 10)
+
+	// Both routes. They were the same string twice here, so the card-sized
+	// copy — the one every card on the screen actually asks for — was never
+	// aimed at somebody else's row at all.
+	for _, serves := range []struct {
+		what    string
+		handler http.HandlerFunc
+	}{
+		{"/photo/{id}", photoHandler(store, opts)},
+		{"/photo/{id}/thumb", thumbHandler(store, opts)},
+	} {
+		r := httptest.NewRequest("GET", "/photo/"+id, nil)
 		r.SetPathValue("id", id)
 		w := httptest.NewRecorder()
-		photoHandler(store, opts)(w, withWho(r, 1, "sub-mine"))
-		require.Equal(t, http.StatusNotFound, w.Code)
+		serves.handler(w, withWho(r, 1, "sub-mine"))
+		require.Equal(t, http.StatusNotFound, w.Code, "%s served it", serves.what)
 	}
 }

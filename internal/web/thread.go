@@ -754,9 +754,10 @@ func placeSaid(ctx context.Context, s Store, opts Options, personID int64, where
 	case "held":
 		reply = heldTurn(ctx, s, personID, name)
 	default:
-		// The pile and the agenda are phase 3. Until then the doors that are
-		// not built say so rather than answering with silence, which reads as
-		// a press that did not land.
+		// Unreachable while this switch covers doorNames, which is checked
+		// above. Here so that a name added to the map and forgotten here says
+		// so rather than answering with silence, which reads as a press that
+		// did not land.
 		reply = squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "Not yet — that one is still a page."}
 	}
 	return reply, true
