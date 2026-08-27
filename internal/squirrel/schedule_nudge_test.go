@@ -47,9 +47,13 @@ func TestNudgeSendsOneChore(t *testing.T) {
 	require.Len(t, (*sent)[0].message.Actions, 2)
 }
 
-// The budget is the design. Two triggers on one day produce one nudge, and the
-// index is what enforces it — not anything held in memory.
-func TestSecondNudgeInADaySendsNothing(t *testing.T) {
+// One chore, two triggers, one nudge.
+//
+// Named for the budget until now, which it does not reach: with a single chore
+// DueChores' own per-chore tolerance gate suppresses the second call before the
+// dated row is consulted, so this stays green with the budget removed. What it
+// does pin is that gate. The budget is the sibling below.
+func TestASecondNudgeAboutTheSameChoreSendsNothing(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -70,13 +74,15 @@ func TestSecondNudgeInADaySendsNothing(t *testing.T) {
 	require.Len(t, *sent, 1)
 }
 
-// TestSecondNudgeInADaySendsNothing above proves nothing about the budget
-// itself: with a single chore, DueChores' own per-chore tolerance gate
-// already suppresses the second Nudge call — a nulled sent_for_date in
-// nudgeFor (which would let the unique index refuse nothing at all) leaves
-// that test just as green. A second due chore is what actually exercises the
-// index: DueChores still returns it as an option for the second trigger,
-// so only the once-a-day claim itself can be what refuses it. The clock is
+// The budget is the design: two triggers on one day produce one nudge, and the
+// dated row is what enforces it rather than anything held in memory.
+//
+// A second due chore is what exercises the index. With one chore the per-chore
+// tolerance gate answers first — see the sibling above — and a nulled
+// sent_for_date in nudgeFor, which would let the unique index refuse nothing at
+// all, leaves that test green. DueChores still returns the second chore as an
+// option for the second trigger, so only the once-a-day claim itself can be
+// what refuses it. The clock is
 // pinned to two fixed instants an hour apart, both mid-morning, rather than
 // time.Now() and time.Now().Add(time.Hour) — the latter straddles local
 // midnight into two different calendar dates whenever the suite happens to
