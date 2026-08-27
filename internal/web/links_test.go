@@ -17,28 +17,36 @@ import (
 // that exercises a route by name cannot notice that the page names a different
 // one.
 //
-// So this reads the pages instead: a href is a GET, an action is a POST, and
-// both have to land somewhere.
+// So this reads the pages instead: a href and a src are GETs, an action is a
+// POST, and all of them have to land somewhere. src as well as href because a
+// card's photograph is an <img> — renaming the route it points at leaves every
+// card on the screen drawing a broken image, and a walk that only reads links
+// would not see it.
 func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
-	m := mounted(t, &fakeStore{
+	// With a camera, because the routes that take a note's id in the path are
+	// only mounted when there is somewhere to put a photograph — and a card
+	// drawing one is the only thing on any page that writes such a URL.
+	m := mountedWithCamera(t, &fakeStore{
 		items: []squirrel.Item{
 			note(1, "the boiler makes a noise", squirrel.ItemOpen),
 			note(2, "buy milk", squirrel.ItemOpen),
 		},
 		chores: []squirrel.Chore{{ID: 1, PersonID: 1, Name: "bins out", Active: true}},
-	})
+		// A card carrying a photograph, so the two routes that take a note's
+		// id in the path are among the URLs this walks. Without one the only
+		// links on the page are fixed, and a wildcard route could be written
+		// wrong without anything here noticing.
+		turns: []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "This one.",
+			Shown: []byte(`{"cards":[{"title":"the tax letter","photo":"/photo/9"}]}`)}},
+	}, &fakeSpool{}, &fakePhotos{})
 
-	// The deck, its results and its bottom were three pages; they are one
-	// conversation now. The shelf and the set-aside went the same way on
-	// 25 August 2026, and what is left is reached by name and nothing else.
 	pages := map[string]string{
 		"the conversation": "/",
 		"the readings":     "/moods",
 	}
-	// The empty pile is its own page, and it is the one with the way back on it.
-	empty := mounted(t, &fakeStore{})
 
 	href := regexp.MustCompile(`href="(/[^"]*)"`)
+	src := regexp.MustCompile(`src="(/[^"]*)"`)
 	// A form's method decides which table it is asking of, and the search form
 	// is a GET to the same path the deck answers.
 	form := regexp.MustCompile(`<form[^>]*>`)
@@ -47,12 +55,10 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 
 	for name, url := range pages {
 		body := m.call(t, "GET", url, nil).Body.String()
-		if name == "bottom" {
-			body = empty.call(t, "GET", "/pile?after=1", nil).Body.String()
-		}
-
-		for _, found := range href.FindAllStringSubmatch(body, -1) {
-			requireRouted(t, m, "GET", pathOf(found[1]), name)
+		for _, at := range []*regexp.Regexp{href, src} {
+			for _, found := range at.FindAllStringSubmatch(body, -1) {
+				requireRouted(t, m, "GET", pathOf(found[1]), name)
+			}
 		}
 		for _, tag := range form.FindAllString(body, -1) {
 			found := action.FindStringSubmatch(tag)
@@ -82,7 +88,8 @@ func pathOf(target string) string {
 
 // requireRouted answers the question ServeMux would: is there a pattern that
 // takes this? Prefix patterns end in a slash; everything else is exact, except
-// `/{$}`, which is the root and only the root.
+// `/{$}`, which is the root and only the root, and `{id}`, which takes one
+// segment.
 func requireRouted(t *testing.T, m *testMux, method, path, page string) {
 	t.Helper()
 	for pattern := range m.routes {
@@ -99,9 +106,33 @@ func requireRouted(t *testing.T, m *testMux, method, path, page string) {
 			if strings.HasPrefix(path, registered) {
 				return
 			}
+		case strings.Contains(registered, "{"):
+			if takesSegment(registered, path) {
+				return
+			}
 		case registered == path:
 			return
 		}
 	}
-	t.Fatalf("the %s page writes %s %s, and nothing answers it", page, method, path)
+	t.Fatalf("%s writes %s %s, and nothing answers it", page, method, path)
+}
+
+// takesSegment is a wildcard pattern against a real path, segment by segment.
+// A `{name}` takes exactly one and says nothing about what is in it, which is
+// all ServeMux promises and all this needs to know.
+func takesSegment(pattern, path string) bool {
+	want := strings.Split(strings.Trim(pattern, "/"), "/")
+	got := strings.Split(strings.Trim(path, "/"), "/")
+	if len(want) != len(got) {
+		return false
+	}
+	for i, segment := range want {
+		if strings.HasPrefix(segment, "{") {
+			continue
+		}
+		if segment != got[i] {
+			return false
+		}
+	}
+	return true
 }
