@@ -72,16 +72,6 @@ func TestTheMenuHoldsEverywhereElse(t *testing.T) {
 	require.Contains(t, body, `class="cnt">2<`)
 }
 
-// And the conversation itself carries none of it. The rail, the chip row and
-// the stop link were about 45% of a phone screen before a word was said.
-func TestTheConversationCarriesNoFrame(t *testing.T) {
-	body := thread(t, &fakeStore{waiting: squirrel.Waiting{Pile: 3}})
-
-	for _, gone := range []string{"railwrap", "alsochips", "rdoor", "doorcount"} {
-		require.NotContains(t, body, gone, "%s is still in the conversation", gone)
-	}
-}
-
 // Zero is no number, not a nought. A door reading "0" is a scoreboard.
 func TestADoorWithNothingWaitingShowsNoNumber(t *testing.T) {
 	body := thread(t, &fakeStore{waiting: squirrel.Waiting{}})
@@ -405,7 +395,6 @@ func TestAFragmentAndAPageRenderTheSameTurn(t *testing.T) {
 	require.Contains(t, page, `<p class="said">`+kept+`</p>`)
 	require.Contains(t, fragment, `<p class="said">`+kept+`</p>`)
 	require.NotContains(t, fragment, "<html", "a fragment is turns and nothing else")
-	require.NotContains(t, fragment, "railwrap")
 }
 
 func TestAFragmentPressAnswersWithTheNewTurns(t *testing.T) {

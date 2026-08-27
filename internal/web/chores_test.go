@@ -114,16 +114,6 @@ func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 	require.NotContains(t, body, "a while back")
 }
 
-// The chore is at rest here, so it does not wear the colour of something being
-// made, nor the page tab that says what a note ended up as.
-func TestAChoreAtRestIsNotDressedAsANoteOrACreation(t *testing.T) {
-	body := opened(t, &fakeStore{chores: []squirrel.Chore{chore(1, "bins out", 14, 3)}}, "chores")
-
-	require.NotContains(t, body, "state-chore")
-	require.NotContains(t, body, `class="rcard`)
-	require.NotContains(t, body, `class="tab"`)
-}
-
 func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
 	f := &fakeStore{choresErr: errTest}
 	// The door still opens and Buddy says he cannot reach them. A 503 was

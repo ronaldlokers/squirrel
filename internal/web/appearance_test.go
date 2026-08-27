@@ -34,10 +34,10 @@ var appearanceProps = []string{
 	"color", "background-color", "border-width", "border-radius", "outline-color",
 	"padding", "margin", "display", "width", "min-height",
 	// The mark that says what pressing something does. Underline means you are
-	// leaving and means nothing else, and the rule was broken by a rule that
-	// never mentioned it: `.ends a` outranks `.quietpick`, so one link written
-	// once rendered as a plain pill on the deck and an underlined pill on nine
-	// other screens. Nothing recorded here could see that.
+	// leaving and means nothing else, and the way it goes wrong is a rule that
+	// never mentions it: a descendant selector outranking the one that set it,
+	// so the same link renders underlined on one screen and not on another.
+	// Nothing else recorded here can see that.
 	"text-decoration-line",
 }
 
@@ -62,9 +62,7 @@ var appearanceScreens = map[string][]string{
 	// are worth their own visit: they are the control the capacity gate
 	// depends on.
 	"/?ask=1": {".faces", ".face", ".face img", ".face span"},
-	// `.ends .quietpick` as well as `.ends`: the underline is on the link, and
-	// the paragraph around it cannot report what the link is wearing.
-	"/moods": {".deckhead", ".weekrow", ".weekrow .wl", ".dots i", ".dots i.nought", ".moodkey", ".moodkey b", ".ends"},
+	"/moods":  {".deckhead", ".weekrow", ".weekrow .wl", ".dots i", ".dots i.nought", ".moodkey", ".moodkey b", ".ends"},
 	// `.empty img` is here and nowhere else because /enough is the one screen
 	// that overrides it. The size is the difference between a different drawing
 	// and the same one shrunk, and the HTML attribute cannot hold it — the
