@@ -669,9 +669,9 @@ const listLimit = 5
 // something destructive. The same device the offer's kinds use.
 var doorNames = map[string]string{
 	"pile": "the pile", "tasks": "the tasks", "chores": "the chores", "at": "the agenda",
-	// Not doors on the rail — the rail is four and its equality is the whole
-	// statement it makes. These are places all the same: opening one is
-	// something you said, and the chips on the pile's turn are how you say it.
+	// Not in the menu: these two are reached from the pile's own turn, which
+	// is where you are when you wonder where something went. Places all the
+	// same — opening one is something you said.
 	"kept": "the things you kept", "held": "what you set aside",
 }
 
@@ -691,7 +691,7 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		// How far in. A door pressed from the rail starts at nothing; "the
+		// How far in. A door pressed from the menu starts at nothing; "the
 		// rest" is the same door pressed again from where the last one
 		// stopped. See theRest.
 		from, _ := strconv.Atoi(r.FormValue("from"))
@@ -1308,7 +1308,7 @@ func pileTurn(ctx context.Context, s Store, opts Options, personID, after int64,
 		}},
 		Chips: append([]turnChip{
 			// Later is not a decision. It leaves the note where it was and
-			// hands you the next, which is the deck's own LATER.
+			// hands you the next one.
 			{
 				Label: "later", Action: "/pile/later",
 				Fields: map[string]string{"after": strconv.FormatInt(v.ID, 10)},

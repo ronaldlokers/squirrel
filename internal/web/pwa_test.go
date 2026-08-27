@@ -26,8 +26,8 @@ func TestTheManifestDoesNotNeedAnIdentity(t *testing.T) {
 }
 
 // The installed app opens at home and its worker scopes to the whole screen.
-// start_url was /pile until v0.10.0; an app installed before that still opens
-// on the deck, which still serves, until the manifest is refetched.
+// start_url was /pile until v0.10.0 — an app installed before that opens on a
+// URL nothing answers any more, until the manifest is refetched.
 func TestTheManifestKnowsWhereTheScreenIs(t *testing.T) {
 	w := mounted(t, &fakeStore{}).call(t, "GET", "/manifest.webmanifest", nil)
 

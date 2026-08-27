@@ -69,10 +69,11 @@ func contrast(t *testing.T, c *cdp, sel, prop, against string) float64 {
 // The focus ring is visible on every surface a key can reach, not only the
 // ones the override happened to name.
 //
-// `.chore` and `.sheet` take the same cream stock as the deck's card, and were
-// left out of the rule that puts violet on cream — so the two most
-// keyboard-dense surfaces outside the deck kept the orange-lit ring, at a
-// measured 2.03:1 against the 3:1 a focus indicator owes.
+// Every surface that takes the cream card stock has to be named in the rule
+// that puts violet on it, and the way it goes wrong is by omission: a surface
+// left out keeps the orange-lit ring, at a measured 2.03:1 against the 3:1 a
+// focus indicator owes. It has happened twice, most recently to the dock —
+// the one control on the screen at every moment.
 func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	f := aPile()
 	f.chores = []squirrel.Chore{{

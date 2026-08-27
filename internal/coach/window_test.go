@@ -47,8 +47,9 @@ func TestConversationsForgetAnOldConversationOnRead(t *testing.T) {
 	require.Empty(t, c.Recent(1, august))
 }
 
-// Closing the sheet has to mean something. A widget that remembers what you
-// said last time is one you have to think about before opening.
+// Turning something down ends the conversation about it. Without this the next
+// exchange would open carrying what you said the last time — which is a thing
+// you have to think about before saying anything at all.
 func TestForgetDropsTheConversation(t *testing.T) {
 	c := coach.NewConversations()
 	c.Add(1, "what now", "The envelope.", august)

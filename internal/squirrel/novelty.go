@@ -23,8 +23,8 @@ const (
 	SayingSlot Saying = "slot"
 	// SayingOffer is the label over the one thing Squirrel is holding out.
 	SayingOffer Saying = "offer"
-	// SayingStop is the way out of the deck, which has to read as an invitation
-	// rather than as an exit sign.
+	// SayingStop is the way out, which has to read as an invitation rather than
+	// as an exit sign.
 	SayingStop Saying = "stop"
 	// SayingEnough is the stopping screen's own line — the product's signature
 	// beat, and the one it can least afford to have stopped being read.
