@@ -117,11 +117,14 @@ func TestForgettingTheStepsCostsOnePress(t *testing.T) {
 	f.steps = []squirrel.Step{{ID: 1, Body: "open the letter"}}
 	m := mounted(t, f)
 
-	m.call(t, "POST", "/steps", strings.NewReader("act=clear&from=%2Fbuddy"))
+	m.call(t, "POST", "/steps", strings.NewReader("act=clear&from=%2F"))
 	require.Equal(t, 1, f.cleared)
 
-	body := m.call(t, "GET", "/buddy", nil).Body.String()
-	require.NotContains(t, body, "open the letter")
+	// On the conversation, which is the only screen there is. Read against
+	// /buddy until now, which is a 301 — so this asserted that a redirect body
+	// does not mention a step, which no change could ever have made false.
+	f.checkin = fresh()
+	require.NotContains(t, thread(t, f), "open the letter")
 }
 
 // The value arrives from a form field, and a form field is a place a stranger
@@ -139,7 +142,9 @@ func TestAStepOnTheScreenNeverSaysHowManyAreLeft(t *testing.T) {
 	f := withOffer(nil)
 	f.steps = []squirrel.Step{{ID: 1, Body: "open the letter"}}
 
-	body := mounted(t, f).call(t, "GET", "/buddy", nil).Body.String()
+	f.checkin = fresh()
+	body := thread(t, f)
+	require.Contains(t, body, "open the letter", "the step never rendered, so this measured nothing")
 	for _, count := range []string{"of 3", "1/3", "step 1", "1 of"} {
 		require.NotContains(t, body, count)
 	}
@@ -153,7 +158,7 @@ func TestAnUnreadableSequenceIsNoStep(t *testing.T) {
 	f.err = errTest
 
 	require.NotPanics(t, func() {
-		_ = mounted(t, f).call(t, "GET", "/buddy", nil)
+		_ = routed(t, f).call(t, "GET", "/", nil)
 	})
 }
 
