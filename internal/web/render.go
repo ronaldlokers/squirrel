@@ -4,8 +4,10 @@ import (
 	"embed"
 	"errors"
 	"html/template"
+	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -30,16 +32,57 @@ var helpers = template.FuncMap{
 	},
 }
 
+// templatesFS is the embedded copy, or the working tree in development. See
+// devDir in assets.go.
+func templatesFS() fs.FS {
+	if devDir != "" {
+		return os.DirFS(devDir)
+	}
+	return templateFS
+}
+
 // page parses layout and exactly one content template: Go's templates are a flat
 // namespace, so two files defining "content" cannot share a set.
 func page(files ...string) *template.Template {
-	return template.Must(template.New("layout.html").Funcs(helpers).ParseFS(templateFS, files...))
+	return template.Must(template.New("layout.html").Funcs(helpers).ParseFS(templatesFS(), files...))
+}
+
+// pageFiles is what each page is made of, kept as data so development can
+// re-parse from it. Parsed once at start and never again in a shipped binary:
+// the files cannot change under a running process.
+var pageFiles = map[string][]string{
+	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html"},
+	"moods":  {"templates/layout.html", "templates/moods.html"},
+	"enough": {"templates/layout.html", "templates/enough.html"},
 }
 
 var pages = map[string]*template.Template{
-	"thread": page("templates/layout.html", "templates/turn.html", "templates/thread.html"),
-	"moods":  page("templates/layout.html", "templates/moods.html"),
-	"enough": page("templates/layout.html", "templates/enough.html"),
+	"thread": page(pageFiles["thread"]...),
+	"moods":  page(pageFiles["moods"]...),
+	"enough": page(pageFiles["enough"]...),
+}
+
+// pageFor is the template to render with.
+//
+// Re-parsed per request in development, so an edited template is one refresh
+// away rather than one rebuild. A parse error there is returned rather than
+// panicking: a half-typed template is the normal state of editing one, and
+// taking the server down for it would make the mode useless.
+func pageFor(name string) (*template.Template, bool) {
+	if devDir == "" {
+		t, ok := pages[name]
+		return t, ok
+	}
+	files, ok := pageFiles[name]
+	if !ok {
+		return nil, false
+	}
+	t, err := template.New("layout.html").Funcs(helpers).ParseFS(templatesFS(), files...)
+	if err != nil {
+		slog.Error("re-reading a template", "page", name, "error", err)
+		return pages[name], true
+	}
+	return t, true
 }
 
 // gatePage is on its own, outside `pages`, because it carries none of the
@@ -290,11 +333,11 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 }
 
 func render(w http.ResponseWriter, name string, v view) {
-	t, ok := pages[name]
+	t, ok := pageFor(name)
 	if !ok {
 		panic("no such page: " + name)
 	}
-	v.V = assetVersion
+	v.V = stamp()
 	// What the sentences say today. Chosen from the day, so both viewports
 	// agree and a reload is not a slot machine — see squirrel.Say.
 	v.SaySlot = squirrel.Say(squirrel.SayingSlot, now())

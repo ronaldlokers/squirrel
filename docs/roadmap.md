@@ -345,6 +345,37 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### The dev screen — 28 August 2026, unreleased
+
+**Everything this product looks like is compiled into the binary**, and that had
+a cost nobody had named: `//go:embed templates/*.html` and `//go:embed static`
+mean editing `pile.css` does nothing to a running process, and `pages` is parsed
+once at package init. Three things had nowhere to run because of it — impeccable's
+live mode, the design detector's overlay, and any test of the service worker by
+hand, which needs a real origin and a real network to cut.
+
+`make dev` serves the screen on a port with invented contents: no database, no
+model, nothing that survives the process. Templates and static files come from
+the working tree, templates re-parse per request, and nothing is cached, so an
+edit is a refresh.
+
+**The build tag is the safety argument rather than a convention.**
+`EnableDevelopment` and `DevServe` live behind `//go:build dev`, so a binary
+built without it does not contain the code that could set `devDir` — verified by
+`strings` on both binaries, which finds neither symbol in the production one. The
+checks that read `devDir` compile in either way and are simply never true.
+
+**It caught a bug in its own making, which is the part worth recording.**
+`stampOf` walks the tree it is given and used to be handed the whole embedded FS
+to walk a `static` prefix. Handing it the static directory itself — which is what
+serving from disk needs — made the walk find nothing and return the SHA-256 of
+empty input: a constant stamp, in every asset URL, under `max-age=31536000`.
+That is exactly the v0.7.0 failure the comment on `assetVersion` describes, and
+it is silent. `TestTheStampIsOfTheFilesAndNotOfNothing` now fails on it.
+
+**What it unlocks that matters most:** the offline path can finally be tested by
+hand. It has been flagged five times and has survived four layout changes.
+
 ### Rooms — 28 August 2026, unreleased
 
 **One conversation became seven, each with its own Buddy.** Spec:

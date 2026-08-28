@@ -23,8 +23,8 @@ func manifestHandler() http.HandlerFunc {
 		"background_color": "#58388a",
 		"theme_color":      "#3b2560",
 		"icons": []map[string]string{
-			{"src": "/static/icon-192.png?v=" + assetVersion, "sizes": "192x192", "type": "image/png"},
-			{"src": "/static/icon-512.png?v=" + assetVersion, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+			{"src": "/static/icon-192.png?v=" + stamp(), "sizes": "192x192", "type": "image/png"},
+			{"src": "/static/icon-512.png?v=" + stamp(), "sizes": "512x512", "type": "image/png", "purpose": "any"},
 		},
 	}, "", "  ")
 	if err != nil {
@@ -50,7 +50,7 @@ func swHandler() http.HandlerFunc {
 	}
 	// The worker's cache name has to change when the assets do, or a released
 	// stylesheet would sit behind a cache keyed to the old one forever.
-	body := strings.ReplaceAll(string(source), "SQUIRREL_ASSET_VERSION", assetVersion)
+	body := strings.ReplaceAll(string(source), "SQUIRREL_ASSET_VERSION", stamp())
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")

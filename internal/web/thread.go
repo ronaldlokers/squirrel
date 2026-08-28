@@ -265,7 +265,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		if unreadable {
 			v.Turns = []turnView{{
-				Buddy: true, Live: true, V: assetVersion,
+				Buddy: true, Live: true, V: stamp(),
 				Words: "I cannot reach what we said. Tell me things anyway — they are kept, and they go in when I can.",
 			}}
 		}
@@ -309,7 +309,7 @@ func endsOpen(turns []squirrel.Turn) bool {
 func turnViews(turns []squirrel.Turn) []turnView {
 	out := make([]turnView, 0, len(turns))
 	for _, t := range turns {
-		v := turnView{ID: t.ID, Room: t.Room, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
+		v := turnView{ID: t.ID, Room: t.Room, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: stamp()}
 		if len(t.Shown) > 0 {
 			var sh drawn
 			if err := json.Unmarshal(t.Shown, &sh); err != nil {
