@@ -235,8 +235,10 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
+		buddy, _ := roomByKey("buddy")
 		v := view{
 			Home: true,
+			Room: buddy,
 			// The worker having taken the words because there was no network.
 			// From the address bar, read the way a stranger's typing is read:
 			// a present flag and nothing else.

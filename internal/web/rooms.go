@@ -265,3 +265,25 @@ func roomsFor(ctx context.Context, s Store, personID int64, here string) []railV
 	}
 	return out
 }
+
+// fromTheDock reads the room out of the posted form and puts it on the
+// request.
+//
+// The dock posts to /capture, /chores/name, /at/new or /tasks/new — one route
+// per destination, not one per room — so the path cannot say which room the
+// words were typed in and the form has to. Without this every answer lands in
+// Buddy's room, which is what roomOf falls back to, and nothing on the screen
+// says so.
+//
+// r.ParseForm is idempotent, so the handlers' own calls still work.
+func fromTheDock(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err == nil {
+			if _, ok := roomByKey(r.FormValue("room")); ok {
+				withRoom(r.FormValue("room"), h)(w, r)
+				return
+			}
+		}
+		h(w, r)
+	}
+}

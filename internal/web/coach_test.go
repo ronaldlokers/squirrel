@@ -241,13 +241,30 @@ func TestSayingNothingAsksNothing(t *testing.T) {
 	require.Empty(t, f.appended, "an empty press said something")
 }
 
-// Not a fifth place. The menu holds four, and their equality is the whole
-// statement it makes.
-func TestBuddyDidNotBecomeADoor(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+// Buddy is a room now, and is still not a place that holds things.
+//
+// This read "not a fifth place" until 28 August, when he became the first of
+// seven. What it was guarding survives the change and is what is asserted
+// here: the other six draw a list on arrival, and his draws none. He is where
+// you talk; they are where things live.
+func TestBuddysRoomHoldsNothing(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	require.Contains(t, body, "the pile")
-	require.NotContains(t, body, `value="buddy"`)
+	f.appended = nil
+	m.call(t, "GET", "/r/buddy", nil)
+
+	for _, turn := range f.appended {
+		require.NotContains(t, string(turn.Shown), `"place":`,
+			"Buddy's room drew a place")
+	}
+
+	// And the pile's does, so this measured the difference rather than an
+	// empty store.
+	f.appended = nil
+	m.call(t, "GET", "/r/pile", nil)
+	require.NotEmpty(t, f.appended)
 }
 
 // Nothing here renders a total, in either direction. The conversation is a

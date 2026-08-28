@@ -62,8 +62,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Any other room. A GET, because entering a place is navigation — see
 	// roomHandler.
 	m.Get("/r/{room}", guard(opts, roomRoute(s, opts)))
-	// The slot.
-	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
+	// The dock, in whichever room it was typed in. See fromTheDock.
+	m.Post("/capture", guard(opts, sameOrigin(fromTheDock(captureHandler(s, opts)))))
 	// The door, as it was until 28 August 2026. See openHandler.
 	m.Post("/open", guard(opts, sameOrigin(openHandler(s, opts))))
 	// A photograph, behind the same guard as everything else: a picture of a
@@ -136,7 +136,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// the ones the screens posted to. See newone.go.
 	m.Post("/chores/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
 		"a new chore", "What should come back?", "/chores/name", "name", "next"))))
-	m.Post("/chores/name", guard(opts, sameOrigin(choreNameHandler(s, opts))))
+	m.Post("/chores/name", guard(opts, sameOrigin(fromTheDock(choreNameHandler(s, opts)))))
 	m.Post("/tasks/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
 		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it"))))
 	m.Post("/pile/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
@@ -164,7 +164,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// One fixed point, drawn into the conversation. See atOpenHandler.
 	m.Post("/at/open", guard(opts, sameOrigin(atOpenHandler(s, opts))))
 	// Which day, and what time. See askForADay.
-	m.Post("/at/new", guard(opts, sameOrigin(atNewHandler(s, opts))))
+	m.Post("/at/new", guard(opts, sameOrigin(fromTheDock(atNewHandler(s, opts)))))
 	m.Post("/at/make", guard(opts, sameOrigin(atMakeHandler(s, opts))))
 	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
 	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
@@ -177,7 +177,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Stopping. It reads nothing and counts nothing; it forgets one row.
 	m.Get("/enough", guard(opts, enoughHandler(s, opts)))
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
-	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
+	m.Post("/tasks/new", guard(opts, sameOrigin(fromTheDock(newTaskHandler(s, opts)))))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
 	// How often, as a number and a unit. See askHowOften.
 	m.Post("/chores/often", guard(opts, sameOrigin(oftenHandler(s, opts))))
