@@ -1381,96 +1381,138 @@
     background: var(--purple); color: var(--paper);
   }
 
-  /* The rail: the rooms, and it is the whole of this product's navigation.
+  /* The rooms, and they are the whole of this product's navigation.
    *
-   * A menu of eight stood here from 26 August behind one 44px control. It went
-   * on 28 August, and what replaced it is not a smaller menu — it is furniture.
-   * A room list you press to open is a screen; a room list that is always
-   * there costs no screen and no gesture, which is the only structural
-   * difference between rooms and the doors they came from.
+   * They shipped on 28 August as raised cream card stock — the same fill,
+   * outline, radius and sticker offset a chore card wears. Navigation dressed
+   * as content: seven cream cards in a column read as a backlog on a product
+   * whose whole thesis is one thing at a time, and the eye could not separate
+   * *where I can go* from *what I can act on*.
    *
-   * Links, where the menu was forms: a door was a POST because opening a place
-   * appended what you said, and a room is a place you go.
-   *
-   * A phone gets a strip above the conversation that scrolls sideways. Seven
-   * rooms in a column on a phone would be the screen. */
-  .rail {
-    display: flex; flex-direction: row; gap: 8px;
-    padding: 10px 14px 2px;
-    overflow-x: auto; scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+   * Recessed now, which is the treatment set-aside already uses and already
+   * means: present, and not a thing you pick up. A room is exactly that. Card
+   * stock goes back to meaning "act on this", which is the Three Marks Rule
+   * applied to surfaces rather than only to controls. */
+  .roomsheet > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    min-height: 44px; padding: 0 6px 0 12px;
+    color: var(--cream); border-radius: 11px;
+    font: 400 16px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 620;
   }
-  .rail::-webkit-scrollbar { display: none; }
+  .roomsheet > summary::-webkit-details-marker { display: none; }
+  .roomsheet > summary svg { width: 20px; height: 20px; flex: none; }
+  .roomsheet[open] > summary svg { transform: rotate(180deg); }
+  .roomsheet[open] > summary { background: rgba(255, 251, 243, .16); }
 
+  .rail {
+    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  }
+
+  /* A recessed well. No shadow — a thing you cannot pick up does not sit on
+     one — and the dashed edge is set-aside's, for the same reason it is
+     dashed there. */
   .rail .room {
-    display: flex; align-items: center; gap: 7px; flex: 0 0 auto;
-    padding: 8px 13px;
-    font: 600 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-variation-settings: var(--casual), "wght" 600;
-    text-decoration: none; white-space: nowrap;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline);
-    transition: transform 90ms, box-shadow 90ms;
+    display: flex; align-items: center; gap: 10px;
+    min-height: 44px; padding: 9px 13px;
+    font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 560;
+    text-decoration: none; color: var(--cream);
+    background: rgba(28, 17, 11, .18);
+    border: 2.5px dashed rgba(254, 214, 167, .38);
+    border-radius: var(--r);
+    transition: background 90ms, border-color 90ms;
   }
-  /* The room you are in, said the way this product says pressed: down on its
-     own shadow. Not a different colour — a colour would be a second meaning
-     for a thing that already has one. */
+  .rail .room:hover { background: rgba(28, 17, 11, .28); border-color: rgba(254, 214, 167, .6); }
+
+  /* The room you are in is the one you are standing inside, so it stops being
+     a well and becomes solid — the lid's own colour, its outline, paper type.
+     Not cream card stock: that would put one room back in content's clothes
+     and undo the whole point.
+     
+     It replaces a 4px downward nudge that was invisible at this size. The
+     product still says pressed by moving down; a room is not pressed, it is
+     where you are. */
   .rail .room.in {
-    transform: translateY(4px);
-    box-shadow: 0 1px 0 0 var(--outline);
+    background: var(--purple-dark); color: var(--paper);
+    border: var(--line) solid var(--outline);
+    font-variation-settings: var(--casual), "wght" 700;
   }
-  /* Zero is no number and not a nought: a room reading "0" is a scoreboard. */
+  .rail .room.in:hover { background: var(--purple-dark); }
+
+  /* What is waiting. Ink rather than the orange pill it was: orange is this
+     product's "this makes something happen", and a count is a fact. Tabular
+     figures so the column of numbers lines up.
+     
+     Zero is no number and not a nought: a room reading "0" is a scoreboard,
+     which is the rule the four doors carried and this inherits with them. */
   .rail .cnt {
-    min-width: 22px; height: 22px; border-radius: 999px;
-    background: var(--orange); border: 2px solid var(--outline);
-    font-size: 12px; line-height: 18px; text-align: center;
-    font-variation-settings: var(--precise), "wght" 800;
+    margin-left: auto; padding-left: 8px;
+    font-size: 14px; font-variant-numeric: tabular-nums;
+    font-variation-settings: var(--precise), "wght" 640;
+    color: rgba(254, 214, 167, .72);
   }
-  /* Looking something up sits with the way out, below the rule and outside the
-     seven: it is a thing you do rather than a place you go. */
-  .rail .lookup { margin: 0 0 0 6px; flex: 0 0 auto; display: flex; }
-  .rail .lookup button {
-    padding: 8px 13px; border: 0; background: none; cursor: pointer;
-    color: var(--cream); white-space: nowrap;
-    font: 500 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  .rail .room.in .cnt { color: rgba(255, 251, 243, .8); }
+
+  /* Neither of these is a place. Below the rule, and — the point of the
+     rewrite — always in view: they sat at x≈928 and x≈1106 of a strip that
+     scrolled sideways, so on every phone the way out of this product was
+     off-screen and undiscoverable. */
+  .rail .lookup { margin: 8px 0 0; display: flex; }
+  .rail .lookup button,
+  .rail .leaving {
+    display: flex; align-items: center; width: 100%;
+    min-height: 44px; padding: 10px 13px;
+    background: none; border: 0; cursor: pointer;
+    color: var(--cream); text-align: left; text-decoration: none;
+    font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--casual), "wght" 500;
   }
-
+  .rail .lookup button:hover, .rail .leaving:hover { color: var(--paper); }
   /* The way out is last and under a rule of its own. It is not a destination
-     like the others: it is the end of the evening, and its place at the end is
-     what says so without a louder word. Principle 3 — leaving must never look
+     like the others: it is the end of the evening, and its place at the bottom
+     says that without a louder word. Principle 3 — leaving must never look
      like failure — is why it is not smaller or greyer, only elsewhere. */
   .rail .leaving {
-    display: flex; align-items: center; flex: 0 0 auto;
-    padding: 8px 13px; margin-left: 6px;
-    border-left: var(--line) solid rgba(255, 251, 243, .3);
-    color: var(--cream); text-decoration: none; white-space: nowrap;
-    font: 500 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-variation-settings: var(--casual), "wght" 500;
+    margin-top: 2px; padding-top: 14px;
+    border-top: var(--line) solid rgba(255, 251, 243, .28);
   }
 
-  /* On a desktop it is a column beside the conversation, and it is fixed:
-     scrolling the conversation must not scroll the way out of it. */
+  /* On a phone the summary is the control and the rail is the sheet it opens.
+     It names the room you are in, which is the half the strip never had. */
+  @media (max-width: 859px) {
+    .rail { display: none; }
+    /* From under the lid, not from under itself: the sheet used to start above
+       its own control and cover it, leaving an open disclosure with no visible
+       way to close it. */
+    .roomsheet[open] ~ .rail {
+      display: flex;
+      position: fixed; left: 0; right: 0; top: 87px; bottom: 0; z-index: 30;
+      overflow-y: auto;
+      padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+      background: var(--purple-deep);
+      border-top: var(--line) solid var(--outline);
+    }
+  }
+
+  /* On a desktop it is furniture: a fixed column beside the conversation, and
+     the disclosure has nothing to do. */
   @media (min-width: 860px) {
-    body { --railw: 236px; }
+    body { --railw: 212px; }
+    .roomsheet { display: none; }
     .rail {
-      position: fixed; top: 0; left: 0; bottom: 0; width: var(--railw);
-      flex-direction: column; align-items: stretch;
-      padding: 92px 16px 20px;
-      overflow-x: visible; overflow-y: auto;
-      background: rgba(28, 17, 11, .22);
+      display: flex;
+      position: fixed; left: 0; top: 92px; bottom: 0; width: var(--railw);
+      overflow-y: auto;
+      padding: 16px 14px calc(20px + env(safe-area-inset-bottom));
     }
-    .rail .room { width: 100%; }
-    .rail .cnt { margin-left: auto; }
-    .rail .lookup { margin: auto 0 0; }
-    .rail .lookup button { width: 100%; text-align: left; padding-left: 13px; }
-    .rail .leaving {
-      margin: 8px 0 0; border-left: 0;
-      border-top: var(--line) solid rgba(255, 251, 243, .3);
-      padding: 14px 13px 0;
-    }
-    .lid, #stage { margin-left: var(--railw); }
+    #stage { margin-left: var(--railw); }
+    /* The dock is fixed to the viewport, so with the rail beside it its
+       centred slot was centred on the window and the conversation on the
+       stage — 166px apart, the thing you type into and the things it produces
+       on two different axes. It starts where the conversation starts. */
+    .dock { left: var(--railw); }
   }
 
   /* The six bodies. See DESIGN.md, The Six Bodies.

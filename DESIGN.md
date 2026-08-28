@@ -739,14 +739,15 @@ width was whatever the words happened to need.
 ### The lid
 
 A full-width flex bar: the mark and wordmark on the left, then a spacer, then
-the timer strip if one is running. Nothing on the right at all since 28 August
-2026 — navigation is the rail beside the conversation now. Padding
-`11px 22px 13px`. Below it hangs the brim, a full-width SVG whose outline
+the timer strip if one is running, then — on a phone only — the room you are
+in. Padding `11px 22px 13px`. Below it hangs the brim, a full-width SVG whose outline
 stroke is held at 3px by `vector-effect="non-scaling-stroke"` regardless of
 viewport width.
 
-Above 860px the lid is inset by the rail's width, so the mark sits over the
-conversation rather than over the rooms.
+**The lid spans the full width at every size, and the brim with it.** It was
+inset by the rail's 212px for part of 28 August, which sawed the brim off
+two-thirds of the way across — a lid that stops before the end of the box, with
+a hard vertical seam where it met the rail.
 
 ### The thread
 
@@ -1343,6 +1344,10 @@ The mark, and the timer when one is running. Nothing else.
   you chose to start, never a total of what you have not done.
 - **The brim** is the purple curve that closes it, with the 3px outline
   following the same path at non-scaling stroke width.
+
+On a phone the lid also holds the room you are in, as the control that opens
+the seven. On a desktop that control is hidden and the rooms are a column
+beside the conversation. See The Rooms.
 
 **Everything else that has ever lived here has left, and it left in three
 moves.** A mark and three icons — Buddy's acorn, a search disclosure, a map —
@@ -2109,62 +2114,85 @@ the caption.
 That is deliberate and it is the only one. A parked note that looked like every
 other object would be a parked note you keep trying to act on.
 
-### The Rail
+### The Rooms
 
-The seven rooms, on every screen, never closing. The whole of this product's
-navigation as of 28 August 2026.
+The seven rooms, and the whole of this product's navigation as of 28 August
+2026. **Rewritten the same day**, because the first version dressed navigation
+as content — see the end of this section.
 
-**A room list you press to open is a screen. One that is always there is
-furniture.** That is the only structural difference between the rail and the
-menu it replaced, and it is the whole argument for rooms: moving between them
-costs no screen and no gesture.
+**Two shapes from one markup**, because two markups are two things to keep in
+step. The control and the list are siblings, not parent and child: a closed
+`<details>` hides its children through a slot the child's own CSS cannot
+override, so `.rooms > .rail` rendered nothing at all on a desktop. The
+sibling combinator reaches the list from the control with nothing exotic.
 
-- **Desktop (≥860px):** a fixed column 236px wide, ruled off from the field by
-  its own darker ground. Fixed rather than scrolling with the conversation —
-  scrolling what you are reading must not scroll away the way out of it. The
-  lid and the stage are inset by its width.
-- **Phone:** a strip above the conversation, scrolling sideways. Seven rooms in
-  a column on a phone is the screen.
-- **Stock and depth:** each room is card fill, 3px outline, 14px radius, the
-  raised object's `0 5px 0 0` sticker offset. Nothing new: a room is an object
-  in this world like every other object.
-- **The room you are in** is drawn the way this product draws *pressed* — down
-  on its own shadow, `translateY(4px)` onto a 1px offset. Not a different
-  colour: colour already means something here, and a second meaning for it is
-  how a system stops being readable. It carries `aria-current="page"` as well.
-- **Links, where the menu was forms.** A door was a POST because opening a
-  place appended what you said to the record; going somewhere writes nothing.
-  Back steps through rooms now, and a room opens in a new tab — both of which
-  the door paid for and neither of which anybody could have got back without
-  this.
-- **Counts** on the four rooms that can have something waiting. Zero is no
-  number and not a nought: a room reading "0" is a scoreboard, which is the
-  rule the four doors carried and the rail inherits with them.
-- **Looking something up** sits below the rule with the way out, not among the
-  seven. It is a thing you do rather than a place you go, and what it finds is
-  a card in the room you are standing in.
-- **The way out is last, under a rule of its own,** in today's words. It is not
-  a destination like the others; it is the end of the evening, and its place at
-  the end says so without a louder word. Principle 3 is why it is not smaller
-  or greyer — only elsewhere.
+**Desktop (≥860px): furniture.** A fixed 212px column beside the conversation,
+the control hidden, nothing to open. Fixed rather than scrolling with the
+transcript — scrolling what you are reading must not scroll away the way out of
+it.
 
-**The counts were kept against the evidence, deliberately.** A mockup of a bad
-week — five rooms carrying numbers, thirty-four things waiting — reads as a
-scoreboard, because pills in a column invite a total the eye computes whether
-or not the product prints one. That is the shape PRODUCT.md named when it
-retired the no-count rule, at seven rooms instead of four. The owner kept them
-on 27 August 2026 on the argument that not knowing how much is waiting is its
-own weight, and the decision reverses cleanly: the numbers are computed at
-render time and stored nowhere, so removing one call removes all of them.
+**Phone (<860px): a control in the lid and a sheet under it.** The control
+names the room you are in, and that is the half its predecessor never had: a
+strip of seven scrolling sideways said where you could *go* and never where you
+*were*. The sheet drops from below the lid rather than from below itself, so
+the control stays visible and there is always a way to close it.
+
+- **A room is a recessed well.** `rgba(28, 17, 11, .18)` with a 2.5px dashed
+  cream edge and **no shadow**. This is set-aside's treatment, and it is reused
+  rather than invented because it already means the right thing: *present, and
+  not a thing you pick up.* A room is exactly that.
+- **The room you are in is solid** — the lid's own `--purple-dark`, the 3px
+  outline, paper type at `wght` 700, and `aria-current="page"`. You are
+  standing inside it, so it stops being a well. **Deliberately not cream card
+  stock**: that would put one room back in content's clothes and undo the whole
+  point.
+- **Links, not forms.** A door was a POST because opening a place appended what
+  you said; going somewhere writes nothing. Back steps through rooms and a room
+  opens in a new tab.
+- **Counts are ink, never a pill.** Right-aligned, tabular figures, cream at
+  72%. Orange is this system's *this makes something happen*, and a count is a
+  fact rather than an action — an orange badge put a status value in the action
+  colour on every screen at once. Zero is no number and not a nought.
+- **44px minimum on every row**, including the way out and search.
+- **Search and the way out sit below the rule, not among the seven**, because
+  neither is a place. Both are always in view.
+
+**The counts were kept against the evidence, deliberately.** A bad week reads
+as a scoreboard, because pills in a column invite a total the eye computes
+whether or not the product prints one. The owner kept them on 27 August on the
+argument that not knowing how much is waiting is its own weight; taking them
+out of orange on 28 August is the smaller correction that keeps the decision
+and removes the loudest part of the reading. It still reverses cleanly — the
+numbers are computed at render time and stored nowhere.
 
 Neither half of the retired rule is reopened. **Nothing counts what you failed
 to do, and no number survives being dealt with.**
 
-*Before this, from 26 August: one 44px hamburger in the lid holding eight
-things, over the conversation rather than pushing it down. Before that, from
-25 August: four doors, two always-on chips and a stop line as permanent
-fixtures in the conversation, together about 45% of a phone screen before a
-word was said.*
+**What the first version got wrong, recorded because it is the more useful
+half.** Rooms shipped as raised cream card stock — the same fill, outline,
+radius and `0 5px 0 0` sticker offset a chore card wears — on the reasoning
+that *a room is an object in this world like every other object.* That sentence
+was wrong. A room is not an object in the box; it is the box's furniture.
+Seven cream cards in a column read as a backlog on a product whose entire
+thesis is one thing at a time, and the eye could not separate *where I can go*
+from *what I can act on*. The Three Marks Rule already forbade it and had only
+ever been applied to controls, not to surfaces.
+
+Three things went with that mistake, all visible in one screenshot and none
+caught by a test:
+
+- The current room said itself with a 4px downward nudge, which is invisible at
+  this size. It is a different material now, not a different position.
+- The rail was a flat slab with **no outline** — the only surface in the
+  product without one, which is why it read as a hole rather than an object.
+  The slab is gone; the rooms carry their own recess.
+- Four rooms, search and the way out sat off the right edge of every phone in a
+  strip with `scrollbar-width: none`. **The way out of this product was
+  unreachable** without discovering that a nav scrolls sideways.
+
+*Before all of it, from 26 August: one 44px hamburger holding eight things.
+Before that, from 25 August: four doors and two chips as permanent fixtures in
+the conversation, about 45% of a phone screen before a word was said.*
 
 ### The Dock Names Its Consequence
 
@@ -2194,6 +2222,10 @@ confirmation without a press.
 - **A camera only where a photograph can go anywhere** — the three rooms that
   post to `/capture`. A chore is a name and a rhythm, and a control that cannot
   work is worse than one never drawn.
+- **The dock starts where the conversation starts.** It is fixed to the
+  viewport, so beside a rail its centred slot centred on the *window* while the
+  transcript centred on the *stage* — 166px apart, the thing you type into and
+  the things it produces on two different axes.
 
 ### The Gate
 

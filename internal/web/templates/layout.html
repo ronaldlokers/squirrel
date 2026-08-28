@@ -96,52 +96,76 @@
     <button class="stopTimer" type="submit">stop</button>
   </form>
   {{end}}
-  {{/* The lid holds the mark and the timer when one is running. Nothing else:
-       it was a row of words costing most of a phone screen before anything you
-       came for.
+  {{/* The rooms, and they are the whole of this product's navigation.
 
-       The menu that stood here from 26 August went to the rail below on
-       28 August. It held eight things behind one control, which was the whole
-       of this product's navigation; the rail holds seven and never closes. */}}
+       Two shapes from one markup, because two would be two things to keep in
+       step. On a desktop the <nav> is furniture — a fixed column beside the
+       conversation, the control hidden, and nothing to open. On a phone the
+       control is what you press and the <nav> is the sheet it opens.
 
+       The control and the list are siblings rather than parent and child, and
+       that is not a style choice: a closed <details> hides its children
+       through a slot the child's own CSS cannot override, so the desktop
+       column did not render at all. `[open] ~ .rail` reaches the list from the
+       control with nothing exotic.
+
+       A <details>, so it works with the script off — the same grammar every
+       other disclosure here uses.
+
+       The control names the room you are in, which is the half its predecessor
+       never had. The strip that shipped on 28 August said where you could go
+       and never where you were, and it said even that badly: four of the seven
+       rooms, plus search, plus the way out, sat off the right edge of every
+       phone in a strip with no scrollbar. The way out of this product was
+       unreachable without discovering that a nav scrolls sideways. */}}
+  <details class="roomsheet">
+    <summary aria-label="The rooms">
+      <span class="atroom">{{if .Room.Name}}{{.Room.Name}}{{else}}the rooms{{end}}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 10l5 5 5-5"/>
+      </svg>
+    </summary>
+  </details>
+  {{/* Links, not forms. A door was a POST because opening a place appended
+       what you said to the record; a room is a place you go, and going
+       somewhere writes nothing — so back steps through rooms and a room opens
+       in a new tab. */}}
+  <nav class="rail" aria-label="The rooms">
+    {{range .Rooms}}
+    <a class="room{{if .Current}} in{{end}}" href="/r/{{.Key}}"{{if .Current}} aria-current="page"{{end}}>
+      <span class="roomname">{{.Name}}</span>
+      {{/* What is waiting. Ink rather than the orange pill it was until
+           28 August: orange is what this product uses for *this makes
+           something happen*, and a count is a fact rather than an action.
+           Zero is no number and not a nought. */}}
+      {{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}
+    </a>
+    {{end}}
+    {{/* Neither of these is a place, so both sit below the rule rather than
+         among the seven — and both are always in view now, which they were not
+         when they lived at the end of a strip that scrolled. */}}
+    <form class="lookup" method="post" action="/find/ask">
+      <button type="submit">look something up</button>
+    </form>
+    {{/* The way out, last and under a rule. It is the end of the evening, and
+         it must never look like failure — its own place at the bottom says
+         that without a louder word. The wording moves with the day. */}}
+    <a class="leaving" href="/enough">{{.SayStop}}</a>
+  </nav>
+
+  {{/* The lid holds the mark, the room you are in, and the timer when one is
+       running. Nothing else: it was a row of words costing most of a phone
+       screen before anything you came for.
+
+       It spans the full width, and the brim with it. It was inset by the
+       rail's 212px until 28 August, which sawed the brim off two-thirds of the
+       way across — a lid that stops before the end of the box. */}}
   <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
     <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
   </svg>
 </div>
-{{/* The rail. Furniture on a desktop and a strip above the conversation on a
-     phone, and that is the one structural difference between this and the menu
-     it replaced: moving between rooms costs no screen and no gesture.
-
-     Links, where the menu was forms. A door was a POST because opening a place
-     appended what you said to the record; a room is a place you go, and going
-     somewhere writes nothing. Back steps through rooms now, and a room opens in
-     a new tab.
-
-     Counts on the four that earn one, and zero is no number rather than a
-     nought. See railView for why they were kept and what reverses them. */}}
-<nav class="rail" aria-label="The rooms">
-  {{range .Rooms}}
-  <a class="room{{if .Current}} in{{end}}" href="/r/{{.Key}}"{{if .Current}} aria-current="page"{{end}}>
-    <span class="roomname">{{.Name}}</span>
-    {{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}
-  </a>
-  {{end}}
-  {{/* Looking something up. Not a room — it is a thing you do, and what it
-       finds is a card in the room you are standing in — so it sits below the
-       rule with the way out rather than among the seven.
-
-       It was a menu entry until 28 August and would have gone with the menu.
-       A POST, because asking is an utterance and goes into the record like
-       anything else you say. See findAskHandler. */}}
-  <form class="lookup" method="post" action="/find/ask">
-    <button type="submit">look something up</button>
-  </form>
-  {{/* The way out, last and under a rule. Not a room: it is the end of the
-       evening, and it must never look like failure — its own place at the
-       bottom says that without a louder word. The wording moves with the day. */}}
-  <a class="leaving" href="/enough">{{.SayStop}}</a>
-</nav>
 <main id="stage" class="{{if .Thread}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
 {{/* The pile moved while this card was on the screen. Not an error and not a
      failure: the note is where the room put it, and this says so rather than

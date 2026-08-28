@@ -68,11 +68,19 @@ var appearanceScreens = map[string][]string{
 		//
 		// `:not(.in)` and not the bare `.rail .room`: the first room on this
 		// page is Buddy's, which is the room you are in, so the bare selector
-		// recorded the pressed shape twice and the resting one never. The
+		// recorded the current shape twice and the resting one never. The
 		// difference between them is the whole of how this rail says where you
-		// are.
+		// are — a recessed well against a solid one.
 		".rail", ".rail .room:not(.in)", ".rail .room.in",
-		".rail .lookup button", ".rail .leaving",
+		".rail .lookup button", ".rail .leaving", ".rail .cnt",
+		// The control that names the room you are in is deliberately NOT here.
+		// This snapshot visits one viewport and it is a desktop one, where the
+		// control is inside a display:none parent — getComputedStyle still
+		// returns its own styles, so it would record a full set of values for
+		// something nobody can see and pass whatever happened to the phone.
+		// Its markup is held by TestTheRoomsNeedNoScript; its appearance on a
+		// phone is held by nothing, and saying so is better than a line that
+		// looks like cover.
 		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",
 		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
 		".dock", ".slot", ".slot textarea", ".slot .post",
