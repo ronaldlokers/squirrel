@@ -41,7 +41,7 @@ func learning(t *testing.T, store *squirrel.Store, p int64, l *aLearner) *squirr
 
 func said(t *testing.T, store *squirrel.Store, p int64, who squirrel.Speaker, words string) {
 	t.Helper()
-	_, err := store.AppendTurn(context.Background(), p, squirrel.Turn{Who: who, Words: words})
+	_, err := store.AppendTurn(context.Background(), p, "buddy", squirrel.Turn{Who: who, Words: words})
 	require.NoError(t, err)
 }
 
@@ -150,7 +150,7 @@ func TestTheRecordIsWordsAndNotButtons(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
-	_, err := store.AppendTurn(ctx, p, squirrel.Turn{
+	_, err := store.AppendTurn(ctx, p, "buddy", squirrel.Turn{
 		Who: squirrel.SpeakerBuddy, Words: "This one.",
 		Shown: []byte(`{"cards":[{"title":"the boiler","acts":[{"label":"DONE","action":"/pile/act"}]}]}`),
 	})

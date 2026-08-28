@@ -1021,7 +1021,7 @@ func (f *fakeStore) DetachNote(_ context.Context, _, itemID int64) (bool, error)
 // The conversation. turns is what has been said already; appended is what the
 // handler under test said, so a test can assert on the write rather than on a
 // rendering of it.
-func (f *fakeStore) AppendTurn(_ context.Context, _ int64, t squirrel.Turn) (squirrel.Turn, error) {
+func (f *fakeStore) AppendTurn(_ context.Context, _ int64, room string, t squirrel.Turn) (squirrel.Turn, error) {
 	if f.err != nil {
 		return squirrel.Turn{}, f.err
 	}
@@ -1031,7 +1031,7 @@ func (f *fakeStore) AppendTurn(_ context.Context, _ int64, t squirrel.Turn) (squ
 	return t, nil
 }
 
-func (f *fakeStore) RecentTurns(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
+func (f *fakeStore) RecentTurns(_ context.Context, _ int64, _ string, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -1041,7 +1041,7 @@ func (f *fakeStore) RecentTurns(_ context.Context, _ int64, limit int) ([]squirr
 	return f.turns, f.moreTurns, nil
 }
 
-func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, before int64, limit int) ([]squirrel.Turn, bool, error) {
+func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, _ string, before int64, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
 	}

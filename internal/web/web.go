@@ -228,9 +228,9 @@ type Store interface {
 
 	// The conversation: add to it, read the end of it, walk back up it. There is
 	// deliberately nothing that edits a turn or removes one.
-	AppendTurn(ctx context.Context, personID int64, t squirrel.Turn) (squirrel.Turn, error)
-	RecentTurns(ctx context.Context, personID int64, limit int) ([]squirrel.Turn, bool, error)
-	TurnsBefore(ctx context.Context, personID, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
+	AppendTurn(ctx context.Context, personID int64, room string, t squirrel.Turn) (squirrel.Turn, error)
+	RecentTurns(ctx context.Context, personID int64, room string, limit int) ([]squirrel.Turn, bool, error)
+	TurnsBefore(ctx context.Context, personID int64, room string, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
 	// The four numbers on the doors. Computed at read time and stored
 	// nowhere, which is what makes the decision that allowed them reversible.
 	Waiting(ctx context.Context, personID int64, now time.Time) (squirrel.Waiting, error)

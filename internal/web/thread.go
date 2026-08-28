@@ -159,9 +159,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		before, perr := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
 		walkingBack := perr == nil && before > 0
 		if walkingBack {
-			turns, more, err = s.TurnsBefore(ctx, personID, before, threadLimit)
+			turns, more, err = s.TurnsBefore(ctx, personID, "buddy", before, threadLimit)
 		} else {
-			turns, more, err = s.RecentTurns(ctx, personID, threadLimit)
+			turns, more, err = s.RecentTurns(ctx, personID, "buddy", threadLimit)
 		}
 		// A record that cannot be read is not a reason to take the screen away: the dock
 		// still writes to the spool. Said out loud rather than rendered as an empty
@@ -176,7 +176,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// record leaves a hole in the conversation, which is recoverable;
 		// refusing the page over it would not be.
 		say := func(t squirrel.Turn, doing string) {
-			saved, err := s.AppendTurn(ctx, personID, t)
+			saved, err := s.AppendTurn(ctx, personID, "buddy", t)
 			if err != nil {
 				slog.Error(doing, "error", err)
 				return
@@ -555,7 +555,7 @@ func saidAboutTheOffer(act, label string) []squirrel.Turn {
 func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn) []squirrel.Turn {
 	out := make([]squirrel.Turn, 0, len(said))
 	for _, t := range said {
-		saved, err := s.AppendTurn(ctx, personID, t)
+		saved, err := s.AppendTurn(ctx, personID, "buddy", t)
 		if err != nil {
 			slog.Error("keeping what was said", "error", err)
 			continue
