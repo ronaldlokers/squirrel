@@ -1,7 +1,7 @@
 # Rooms
 
 **Date:** 28 August 2026
-**Status:** layout approved; data model and Buddy scoping unresolved
+**Status:** layout and Buddy scoping approved; the scoping's cost unmeasured
 
 The thread replaced seven screens on 25 August, and everything became one
 conversation. This is the argument for partitioning it again — not back into
@@ -144,12 +144,26 @@ text, for the reason `who` is text: a new room should be a phase, not a
 migration. Not yet decided: whether the existing thread backfills into Buddy's
 room or the pile's.
 
-**Buddy's scope, and its cost.** Per-room Buddy means a narrower toolset and
-bounded facts, which pulls cost down, and a separate rolling window per room,
-which pulls it up. `Conversations` is keyed by person and would become
-`(person, room)`. The net is unknown and should be **measured before it is
-chosen**, as the dock's toolset was in v0.43.0 — that precedent is in the
-roadmap with the number written down.
+**Buddy's scope — settled; only the cost is open.** A room contains a Buddy
+that handles that room's things and no others: he is offered the room's tools
+and refused the ones he was not offered, because a model can name a function
+that was never in its list. This is the half section 1 calls the thing that
+makes a room worth having, and it is not deferrable — a room that keeps its own
+history but answers with the whole product is a filter on a transcript.
+
+The chores' Buddy can complete a chore and snooze one; he cannot complete a
+task, make one, or be handed one when he asks what is open. The agenda cannot
+write at all and may only propose a moment: an appointment is a fixed point and
+rule 1 is to prefer it, so a model that can move one can move the thing
+everything else is arranged around. The two shelves only talk — the way off a
+shelf is a card's own button.
+
+The **cost** is what is unknown, and it moves both ways: a narrower toolset is
+fewer schemas in every request, and a per-room window is more windows carrying
+less each. `Conversations` is keyed by person and becomes `(person, room)`.
+Measure it against the €10 ceiling the way the dock's toolset was measured in
+v0.43.0 — that precedent is in the roadmap with the number written down — and
+report the number. It is a check on the ceiling, not a gate on the feature.
 
 **Multi-person.** One person now; the design should not assume it forever. The
 `turns` schema already anticipates a third speaker, and rooms should not close
