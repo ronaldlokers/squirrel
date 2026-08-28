@@ -94,13 +94,26 @@
   html { overflow-y: scroll; }
 
   body {
+    /* The app is exactly the viewport, and the regions inside it scroll.
+       
+       It was a document in normal flow with four fixed things stuck on — the
+       lid, the dock, the rail, and a stage shoved sideways by a margin — which
+       is why a short conversation sat at the top with a field of empty below
+       it and a dock floating in the middle of nowhere, and why the dock
+       collided with something three times in two days. Those were not separate
+       bugs. They were one missing layout. Campfire's own is a grid at 100dvh
+       where every region owns its box; this is that. */
     margin: 0;
-    min-height: 100vh;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    overflow: hidden;
     color: var(--paper);
     font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--precise);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-areas: "nav side" "main side";
+    grid-template-columns: 1fr var(--railw, 0px);
+    grid-template-rows: min-content 1fr;
     background-color: var(--purple-deep);
     /* The highlight is at .35 rather than .5, and the number is a contrast
        result rather than a taste one. Cream on the lit centre of this radial
@@ -163,11 +176,33 @@
   /* ---------- the lid: the mascot's cap ---------- */
 
   .lid {
-    position: relative; z-index: 2;
+    /* Above the dock's 4, and that is load-bearing rather than tidy: the room
+       sheet lives inside this element, so its own z-index is scoped to this
+       stacking context. At 2 the whole lid sat under the dock and the dock
+       painted over the open sheet — in landscape that covered the last three
+       rooms, search and the way out, which is the failure the sheet exists to
+       fix. They never overlap otherwise: one is the top of the screen and the
+       other the bottom. */
+    grid-area: nav;
+    /* The full width, over the rail as well as the conversation. Campfire
+       insets its nav because its sidebar is a translucent overlay with its own
+       top; this rail is a solid column, and stopping the lid short of it cut
+       the brim off two-thirds across and left a hard vertical seam. The rail
+       clears the lid with its own top padding instead. */
+    position: fixed; inset: 0 0 auto 0; z-index: 6;
     display: flex; align-items: center; gap: 18px;
     padding: 11px 22px 13px;
-    background: var(--purple-dark);
+    /* Translucent and blurred rather than opaque, so the conversation is seen
+       to pass under it rather than to stop at it. The transcript reserves the
+       height instead of being pushed by it — see .scroll. */
+    background: rgba(59, 37, 96, .72);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    /* Clicks fall through to the conversation everywhere the lid is empty,
+       which is most of it. Its own controls take them back. */
+    pointer-events: none;
   }
+  .lid > * { pointer-events: auto; }
   /* On every screen but home the brand is a link back to home. It carries no
      link decoration: the mark is the mark, and the whole lid is a place rather
      than a control. */
@@ -209,7 +244,8 @@
      card; on a screen with a heading it leaves a field of empty above the words
      you came for. */
   main {
-    flex: 1; display: flex; justify-content: center; align-items: flex-start;
+    grid-area: main; min-block-size: 0; overflow: auto;
+    display: flex; justify-content: center; align-items: flex-start;
     padding: 40px 22px 48px;
   }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
@@ -994,22 +1030,42 @@
      side and shrank the conversation to 240px of a 390px phone — the face
      labels stopped fitting their cells, which is how it was found. */
   main.threadpage {
-    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    /* Two rows: the transcript scrolls, the dock does not. The dock is the
+       column's last child rather than a fixed thing over the top of it, which
+       is what removes --dockspace, the ResizeObserver that maintained it, and
+       every collision between the two. */
+    display: grid; grid-template-rows: 1fr auto;
+    align-items: stretch; justify-content: stretch;
+    overflow: hidden;
     padding: 0;
-    /* Room at the bottom for the dock, which is fixed and covers whatever is
-       under it.
-
-       On the whole column rather than on .thread, which is not the last thing
-       on the page: what sits below it was outside its padding and therefore
-       behind the dock, with no way to scroll it clear. Reported from a phone,
-       and invisible on a laptop where the page is short enough that nothing
-       needs scrolling at all.
-
-       The fallback is what the dock measures at rest. thread.js replaces it
-       with the real height, so a textarea grown to four lines pushes the tail
-       of the conversation up rather than sitting on top of it. */
-    padding-bottom: var(--dockspace, 132px);
   }
+
+  /* What scrolls, and the only thing that does.
+     
+     Bottom-anchored: a conversation shorter than the screen sits above the
+     dock rather than at the top with a field of empty under it, which is what
+     every chat surface does and what this one did not. The padding clears the
+     floating lid, so the transcript passes under it rather than starting
+     below it. */
+  .threadpage .scroll {
+    min-block-size: 0; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding-top: calc(var(--lid-h, 87px) + 8px);
+    /* The end of the conversation stops short of the dock rather than touching
+       it: flush against the rule above the slot, the last thing said reads as
+       clipped rather than as the end. */
+    padding-bottom: 14px;
+  }
+  /* An auto margin on the first child, and NOT justify-content: flex-end on
+     the container.
+     
+     They look equivalent and are not: with justify-content, content taller
+     than the box overflows the *start* edge, where scrollHeight does not count
+     it and no scroll can reach it. A 2470px conversation in a 745px box
+     reported 745 and the top of it was simply gone. The auto margin resolves
+     to zero the moment the content is tall enough, so a short conversation
+     sits above the dock and a long one scrolls from its beginning. */
+  .threadpage .scroll > :first-child { margin-block-start: auto; }
 
   /* THE TRANSCRIPT. */
   .thread {
@@ -1029,6 +1085,32 @@
      said to the right of it. Every turn of his carries the gutter whether or
      not it draws a face, so a run of them stays on one left edge instead of
      stepping in and out. */
+  /* Buddy's words are speech, and they are not stock.
+     
+     They were paper ink on the field from 26 August, on the argument that a
+     sentence and an object must not wear one costume — a conversation of seven
+     outlined cream boxes read as a column of beige rather than as an exchange.
+     That argument holds and this does not break it: the bubble is a tint on
+     the field, fully round, with no border and no shadow, and every rectangle
+     on the screen is still a note, an appointment, a chore, or something you
+     said. What changed is that a sentence now reads as *received*, which is
+     the chat convention the old rule knowingly gave up.
+     
+     Round to 3em, which is Campfire's own message radius, and deliberately far
+     from this world's 14px card corner: at a glance the two can never be the
+     same object. */
+  .frombuddy .said {
+    background: rgba(255, 251, 243, .13);
+    border-radius: 3em;
+    padding: .62em 2.1ch;
+    /* Hugs its words. Stretched to the column it reads as a banner across the
+       screen rather than as something somebody said. */
+    width: fit-content;
+    max-width: min(46ch, 100%);
+    align-self: flex-start;
+    text-shadow: none;
+  }
+
   .turn {
     display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr);
     align-items: start; column-gap: 10px; row-gap: 10px;
@@ -1155,9 +1237,13 @@
 
   /* THE DOCK. The slot, on every view of the app, because there is one view. */
   .dock {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
-    padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
-    background: linear-gradient(to top, var(--purple-dark) 62%, transparent);
+    /* In flow, as the last row of the thread's grid. It was fixed to the
+       viewport, which is what made it collide with cards, with the room sheet,
+       and with its own centring axis. Nothing under it to cover, so no
+       gradient to hide anything with. */
+    padding: 12px 22px calc(16px + env(safe-area-inset-bottom));
+    background: var(--purple-dark);
+    border-top: var(--line) solid var(--outline);
   }
   /* 676 rather than 720: the transcript is 720 wide with 22px of padding
      inside it, so its content sits on a 676 measure. The dock's padding is
@@ -1168,7 +1254,33 @@
   @media (max-width: 620px) {
 
     .thread { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
-    .turn { max-width: 96%; }
+    /* Buddy's words are speech, and they are not stock.
+     
+     They were paper ink on the field from 26 August, on the argument that a
+     sentence and an object must not wear one costume — a conversation of seven
+     outlined cream boxes read as a column of beige rather than as an exchange.
+     That argument holds and this does not break it: the bubble is a tint on
+     the field, fully round, with no border and no shadow, and every rectangle
+     on the screen is still a note, an appointment, a chore, or something you
+     said. What changed is that a sentence now reads as *received*, which is
+     the chat convention the old rule knowingly gave up.
+     
+     Round to 3em, which is Campfire's own message radius, and deliberately far
+     from this world's 14px card corner: at a glance the two can never be the
+     same object. */
+  .frombuddy .said {
+    background: rgba(255, 251, 243, .13);
+    border-radius: 3em;
+    padding: .62em 2.1ch;
+    /* Hugs its words. Stretched to the column it reads as a banner across the
+       screen rather than as something somebody said. */
+    width: fit-content;
+    max-width: min(46ch, 100%);
+    align-self: flex-start;
+    text-shadow: none;
+  }
+
+  .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
     .dock .slot { margin: 0 auto; }
@@ -1381,96 +1493,171 @@
     background: var(--purple); color: var(--paper);
   }
 
-  /* The rail: the rooms, and it is the whole of this product's navigation.
+  /* The rooms, and they are the whole of this product's navigation.
    *
-   * A menu of eight stood here from 26 August behind one 44px control. It went
-   * on 28 August, and what replaced it is not a smaller menu — it is furniture.
-   * A room list you press to open is a screen; a room list that is always
-   * there costs no screen and no gesture, which is the only structural
-   * difference between rooms and the doors they came from.
+   * They shipped on 28 August as raised cream card stock — the same fill,
+   * outline, radius and sticker offset a chore card wears. Navigation dressed
+   * as content: seven cream cards in a column read as a backlog on a product
+   * whose whole thesis is one thing at a time, and the eye could not separate
+   * *where I can go* from *what I can act on*.
    *
-   * Links, where the menu was forms: a door was a POST because opening a place
-   * appended what you said, and a room is a place you go.
-   *
-   * A phone gets a strip above the conversation that scrolls sideways. Seven
-   * rooms in a column on a phone would be the screen. */
-  .rail {
-    display: flex; flex-direction: row; gap: 8px;
-    padding: 10px 14px 2px;
-    overflow-x: auto; scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+   * Recessed now, which is the treatment set-aside already uses and already
+   * means: present, and not a thing you pick up. A room is exactly that. Card
+   * stock goes back to meaning "act on this", which is the Three Marks Rule
+   * applied to surfaces rather than only to controls. */
+  .roomsheet > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    min-height: 44px; padding: 0 6px 0 12px;
+    color: var(--cream); border-radius: 11px;
+    font: 400 16px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 620;
   }
-  .rail::-webkit-scrollbar { display: none; }
+  .roomsheet > summary::-webkit-details-marker { display: none; }
+  .roomsheet > summary svg { width: 20px; height: 20px; flex: none; }
+  .roomsheet[open] > summary svg { transform: rotate(180deg); }
+  .roomsheet[open] > summary { background: rgba(255, 251, 243, .16); }
 
+  .rail {
+    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  }
+
+  /* A recessed well. No shadow — a thing you cannot pick up does not sit on
+     one — and the dashed edge is set-aside's, for the same reason it is
+     dashed there. */
   .rail .room {
-    display: flex; align-items: center; gap: 7px; flex: 0 0 auto;
-    padding: 8px 13px;
-    font: 600 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-variation-settings: var(--casual), "wght" 600;
-    text-decoration: none; white-space: nowrap;
-    background: var(--card); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 5px 0 0 var(--outline);
-    transition: transform 90ms, box-shadow 90ms;
+    display: flex; align-items: center; gap: 10px;
+    min-height: 44px; padding: 9px 13px;
+    font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 560;
+    text-decoration: none; color: var(--cream);
+    background: rgba(28, 17, 11, .18);
+    border: 2.5px dashed rgba(254, 214, 167, .38);
+    border-radius: var(--r);
+    transition: background 90ms, border-color 90ms;
   }
-  /* The room you are in, said the way this product says pressed: down on its
-     own shadow. Not a different colour — a colour would be a second meaning
-     for a thing that already has one. */
+  .rail .room:hover { background: rgba(28, 17, 11, .28); border-color: rgba(254, 214, 167, .6); }
+
+  /* The room you are in is the one you are standing inside, so it stops being
+     a well and becomes solid — the lid's own colour, its outline, paper type.
+     Not cream card stock: that would put one room back in content's clothes
+     and undo the whole point.
+     
+     It replaces a 4px downward nudge that was invisible at this size. The
+     product still says pressed by moving down; a room is not pressed, it is
+     where you are. */
   .rail .room.in {
-    transform: translateY(4px);
-    box-shadow: 0 1px 0 0 var(--outline);
+    background: var(--purple-dark); color: var(--paper);
+    border: var(--line) solid var(--outline);
+    font-variation-settings: var(--casual), "wght" 700;
   }
-  /* Zero is no number and not a nought: a room reading "0" is a scoreboard. */
+  .rail .room.in:hover { background: var(--purple-dark); }
+
+  /* What is waiting. Ink rather than the orange pill it was: orange is this
+     product's "this makes something happen", and a count is a fact. Tabular
+     figures so the column of numbers lines up.
+     
+     Zero is no number and not a nought: a room reading "0" is a scoreboard,
+     which is the rule the four doors carried and this inherits with them. */
   .rail .cnt {
-    min-width: 22px; height: 22px; border-radius: 999px;
-    background: var(--orange); border: 2px solid var(--outline);
-    font-size: 12px; line-height: 18px; text-align: center;
-    font-variation-settings: var(--precise), "wght" 800;
+    margin-left: auto; padding-left: 8px;
+    font-size: 14px; font-variant-numeric: tabular-nums;
+    font-variation-settings: var(--precise), "wght" 640;
+    color: rgba(254, 214, 167, .72);
   }
-  /* Looking something up sits with the way out, below the rule and outside the
-     seven: it is a thing you do rather than a place you go. */
-  .rail .lookup { margin: 0 0 0 6px; flex: 0 0 auto; display: flex; }
-  .rail .lookup button {
-    padding: 8px 13px; border: 0; background: none; cursor: pointer;
-    color: var(--cream); white-space: nowrap;
-    font: 500 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  .rail .room.in .cnt { color: rgba(255, 251, 243, .8); }
+
+  /* Neither of these is a place. Below the rule, and — the point of the
+     rewrite — always in view: they sat at x≈928 and x≈1106 of a strip that
+     scrolled sideways, so on every phone the way out of this product was
+     off-screen and undiscoverable. */
+  .rail .lookup { margin: 8px 0 0; display: flex; }
+  .rail .lookup button,
+  .rail .leaving {
+    display: flex; align-items: center; width: 100%;
+    min-height: 44px; padding: 10px 13px;
+    background: none; border: 0; cursor: pointer;
+    color: var(--cream); text-align: left; text-decoration: none;
+    font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--casual), "wght" 500;
   }
-
+  .rail .lookup button:hover, .rail .leaving:hover { color: var(--paper); }
   /* The way out is last and under a rule of its own. It is not a destination
-     like the others: it is the end of the evening, and its place at the end is
-     what says so without a louder word. Principle 3 — leaving must never look
+     like the others: it is the end of the evening, and its place at the bottom
+     says that without a louder word. Principle 3 — leaving must never look
      like failure — is why it is not smaller or greyer, only elsewhere. */
   .rail .leaving {
-    display: flex; align-items: center; flex: 0 0 auto;
-    padding: 8px 13px; margin-left: 6px;
-    border-left: var(--line) solid rgba(255, 251, 243, .3);
-    color: var(--cream); text-decoration: none; white-space: nowrap;
-    font: 500 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-variation-settings: var(--casual), "wght" 500;
+    margin-top: 2px; padding-top: 14px;
+    border-top: var(--line) solid rgba(255, 251, 243, .28);
   }
 
-  /* On a desktop it is a column beside the conversation, and it is fixed:
-     scrolling the conversation must not scroll the way out of it. */
-  @media (min-width: 860px) {
-    body { --railw: 236px; }
+  /* On a phone the summary is the control and the rail is the sheet it opens.
+     It names the room you are in, which is the half the strip never had. */
+  @media (max-width: 979px) {
+    .rail { display: none; }
+    /* The control belongs in the lid and the markup cannot put it there: the
+       rail has to be a child of body to be a grid area, and the control has to
+       stay its sibling for `[open] ~ .rail` to reach it. So it is placed over
+       the lid rather than inside it. */
+    .roomsheet { position: fixed; top: 10px; right: 14px; z-index: 7; }
+    /* From under the lid, not from under itself: the sheet used to start above
+       its own control and cover it, leaving an open disclosure with no visible
+       way to close it. */
+    .roomsheet[open] ~ .rail {
+      display: flex;
+      position: fixed; left: 0; right: 0; top: 87px; bottom: 0; z-index: 30;
+      overflow-y: auto;
+      padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+      background: var(--purple-deep);
+      border-top: var(--line) solid var(--outline);
+    }
+  }
+
+  /* A landscape phone, or a short window. One column of seven scrolled, which
+     put the way out below the fold again — the whole reason this sheet exists.
+     Two columns fit all seven without scrolling, and the two that are not
+     places stay full width under the rule. */
+  @media (max-width: 979px) and (max-height: 560px) {
+    .roomsheet[open] ~ .rail { flex-flow: row wrap; align-content: flex-start; }
+    .roomsheet[open] ~ .rail .room { width: calc(50% - 3px); }
+    .roomsheet[open] ~ .rail .lookup,
+    .roomsheet[open] ~ .rail .leaving { width: 100%; }
+  }
+
+  /* On a desktop it is furniture: a fixed column beside the conversation, and
+     the disclosure has nothing to do.
+     
+     980 rather than 860, because that is where the layout can afford both: the
+     rail's 212 plus the transcript's 720 plus gutters. At 861 the rail was a
+     quarter of the screen and squeezed the conversation below its own measure,
+     for seven labels of at most nineteen characters. Under that width the
+     phone's shape is not a fallback, it is the better one. */
+  @media (min-width: 980px) {
+    /* 212px is not a preference, it is what "the things you kept" needs on one
+       line. Narrowing it wrapped four of the nine rows and turned an even
+       column into a ragged one, so the width is fixed and the breakpoint moves
+       instead. */
+    body { --railw: 212px; }
+    .roomsheet { display: none; }
+    /* On the right, which is Campfire's side and the thumb's. A grid area
+       rather than a fixed box beside a shoved margin. */
     .rail {
-      position: fixed; top: 0; left: 0; bottom: 0; width: var(--railw);
-      flex-direction: column; align-items: stretch;
-      padding: 92px 16px 20px;
-      overflow-x: visible; overflow-y: auto;
-      background: rgba(28, 17, 11, .22);
+      display: flex;
+      grid-area: side; min-block-size: 0; overflow-y: auto;
+      border-left: var(--line) solid var(--outline);
+      background: rgba(28, 17, 11, .16);
+      padding: calc(var(--lid-h, 87px) + 10px) 14px calc(20px + env(safe-area-inset-bottom));
     }
-    .rail .room { width: 100%; }
-    .rail .cnt { margin-left: auto; }
-    .rail .lookup { margin: auto 0 0; }
-    .rail .lookup button { width: 100%; text-align: left; padding-left: 13px; }
-    .rail .leaving {
-      margin: 8px 0 0; border-left: 0;
-      border-top: var(--line) solid rgba(255, 251, 243, .3);
-      padding: 14px 13px 0;
-    }
-    .lid, #stage { margin-left: var(--railw); }
+    /* The dock is fixed to the viewport, so with the rail beside it its
+       centred slot was centred on the window and the conversation on the
+       stage — 166px apart, the thing you type into and the things it produces
+       on two different axes.
+       
+       The padding moves the slot onto the conversation's axis and the ground
+       still spans the viewport. Insetting the element itself also worked and
+       cut a hard vertical edge down the bottom-left of the screen, where the
+       dock's gradient started and the field did not. */
+    .dock { padding-left: calc(22px + var(--railw)); }
   }
 
   /* The six bodies. See DESIGN.md, The Six Bodies.

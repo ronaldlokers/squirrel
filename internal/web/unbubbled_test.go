@@ -55,14 +55,22 @@ func TestTheWayOutIsStillOnePress(t *testing.T) {
 	require.Contains(t, body, `class="leaving"`)
 }
 
-// The rail needs no script at all, where the menu needed a <details> to open
-// without one. Seven links and a form.
-func TestTheRailNeedsNoScript(t *testing.T) {
+// The rooms need no script.
+//
+// A <details> on a phone and furniture on a desktop, from one markup — and a
+// <details> opens with the script off, which is the grammar every other
+// disclosure here already uses. What must never come back is a room that needs
+// JavaScript to be reachable.
+func TestTheRoomsNeedNoScript(t *testing.T) {
 	body := thread(t, &fakeStore{})
 
+	require.Contains(t, body, `<details class="roomsheet">`)
 	require.Contains(t, body, `<nav class="rail"`)
-	require.NotContains(t, body, "<summary",
-		"the rail still has something to open")
+	for _, r := range rooms {
+		require.Contains(t, body, `href="/r/`+r.Key+`"`,
+			"%s is not a plain link", r.Key)
+	}
+	require.NotContains(t, body, `onclick`)
 }
 
 // Everywhere is reachable from every screen, not only the conversation. A rail

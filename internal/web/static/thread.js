@@ -20,32 +20,13 @@
     if (say) say.textContent = what || "";
   }
 
-  // How much room the dock needs.
-  //
-  // It is fixed to the bottom and covers whatever is under it, so the page
-  // reserves its height as padding. Measured rather than guessed, because the
-  // slot grows as you type: at four lines a static reserve leaves the last
-  // thing you said underneath the box you said it in.
-  //
-  // The stylesheet carries a fallback for the height at rest, so the page is
-  // correct before this runs and stays correct with the script off.
-  const dock = document.querySelector(".dock");
-
-  function roomForTheDock() {
-    if (!dock) return;
-    // A little over the measurement: the shadow under the dock is drawn
-    // outside its box, and a gap of exactly zero reads as the last card being
-    // clipped rather than as the end of the conversation.
-    const room = Math.ceil(dock.getBoundingClientRect().height) + 18;
-    document.documentElement.style.setProperty("--dockspace", room + "px");
-  }
-
-  roomForTheDock();
-  if (typeof ResizeObserver === "function" && dock) {
-    // The slot grows and shrinks as you type, and each change moves where the
-    // conversation has to stop.
-    new ResizeObserver(roomForTheDock).observe(dock);
-  }
+  // The dock used to be fixed to the bottom and cover whatever was under it,
+  // so this measured its height on every resize and reserved that much padding
+  // through a --dockspace custom property. The dock is the last row of the
+  // thread's own grid now, so there is nothing to reserve and nothing to
+  // measure: a slot grown to four lines shortens the scroll region by exactly
+  // its own growth, which is what a layout does and a ResizeObserver was
+  // standing in for.
 
   function toTheEnd() {
     const last = thread.lastElementChild;

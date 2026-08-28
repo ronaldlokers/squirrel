@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 	"time"
 
@@ -484,15 +485,25 @@ func atTheBottomOfAPhone(t *testing.T) *cdp {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.eval(t, `window.scrollTo(0, document.body.scrollHeight); return 1`)
+	// The page itself does not scroll any more — the body is one viewport-high
+	// grid and the transcript is the only thing with an overflow. Measuring
+	// document.body here reported zero and the fixture looked broken when it
+	// was the measurement that had moved.
+	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
 	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-	require.Greater(t, c.eval(t, `return document.body.scrollHeight - window.innerHeight`),
+	require.Greater(t, c.eval(t, `
+		const s = document.querySelector(".scroll");
+		return s.scrollHeight - s.clientHeight`),
 		float64(0), "the fixture does not scroll, so nothing can be hidden")
 	return c
 }
 
 // The last thing on the screen must not be underneath the box you type into.
 // Reported from a phone.
+//
+// It cannot be, now: they are two rows of one grid rather than a column with a
+// fixed box over it. The test stays because that is a claim about the layout,
+// and a claim is worth a check that would notice it being untrue.
 func TestBrowserTheEndOfThePageClearsTheDock(t *testing.T) {
 	c := atTheBottomOfAPhone(t)
 
@@ -504,8 +515,9 @@ func TestBrowserTheEndOfThePageClearsTheDock(t *testing.T) {
 		"the last turn sits %v pixels under the dock", gap)
 }
 
-// And the reserve follows the slot as it grows. At four lines a static reserve
-// leaves the last thing you said underneath the box you said it in.
+// And the conversation gives way as the slot grows. A slot at four lines
+// shortens the scroll region by its own growth; this used to be a measured
+// reserve maintained by a ResizeObserver, and is now what a grid row does.
 func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 	c := atTheBottomOfAPhone(t)
 
@@ -526,7 +538,14 @@ func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 	after := c.eval(t, `return Math.round(document.querySelector(".dock").getBoundingClientRect().height)`)
 	require.Greater(t, after, before, "the slot did not grow, so this proves nothing")
 
-	c.eval(t, `window.scrollTo(0, document.body.scrollHeight); return 1`)
+	// Scrolled to the end after the growth, because that is the claim: the end
+	// of the conversation stays reachable when the slot takes more room.
+	//
+	// Not measured before scrolling. A turn inside a scrolling box that is
+	// currently out of view legitimately has a rect below the fold — clipping
+	// is not layout — so measuring without scrolling asks whether the end
+	// happens to be on screen, which is a different and uninteresting question.
+	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
 	c.eval(t, `return new Promise(r => setTimeout(r, 250))`)
 
 	gap := c.eval(t, `
@@ -534,7 +553,7 @@ func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 		const dock = document.querySelector(".dock").getBoundingClientRect();
 		return Math.round(dock.top - it.bottom);`)
 	require.GreaterOrEqual(t, gap, float64(0),
-		"the grown slot covers the end of the page by %v pixels", gap)
+		"the end of the conversation cannot be scrolled clear of the grown slot: %v pixels", gap)
 }
 
 // Buddy's face is the gutter wide, and nothing is drawn around it.
@@ -600,4 +619,45 @@ func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
 
 	require.Equal(t, float64(0), inset,
 		"the mood row is indented past the gutter by %v pixels", inset)
+}
+
+// Nothing paints over the open room sheet.
+//
+// The sheet is an overlay and the way out is its last row, so the question is
+// whether anything is on top of it — which is how this failed before: the
+// sheet lived inside the lid, its z-index was scoped to the lid's stacking
+// context, and the dock painted straight over it. On a landscape phone that
+// covered the last three rooms, search and the way out, which is the failure
+// the sheet exists to fix.
+//
+// Asserted by hit-testing rather than by comparing z-indexes. The dock is in
+// flow now and carries no z-index at all, so the numbers no longer answer the
+// question; what the person can actually press does.
+func TestBrowserNothingPaintsOverTheOpenRoomSheet(t *testing.T) {
+	c, srv := open(t, &fakeStore{})
+	c.navigate(t, srv.URL+"/r/chores")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 844, "height": 390, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 200))`)
+
+	hit := c.eval(t, `
+		const out = document.querySelector(".rail .leaving");
+		out.scrollIntoView({block: "center"});
+		const b = out.getBoundingClientRect();
+		const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+		return top === out || out.contains(top) ? "the way out" : (top ? top.className || top.tagName : "nothing");`)
+
+	require.Equal(t, "the way out", hit,
+		"something is painted over the way out in the open room sheet")
+}
+
+func layer(t *testing.T, v any) int {
+	t.Helper()
+	s, ok := v.(string)
+	require.True(t, ok, "z-index came back as %T", v)
+	n, err := strconv.Atoi(s)
+	require.NoError(t, err, "z-index %q is not a number", s)
+	return n
 }

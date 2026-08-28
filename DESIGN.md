@@ -739,14 +739,15 @@ width was whatever the words happened to need.
 ### The lid
 
 A full-width flex bar: the mark and wordmark on the left, then a spacer, then
-the timer strip if one is running. Nothing on the right at all since 28 August
-2026 — navigation is the rail beside the conversation now. Padding
-`11px 22px 13px`. Below it hangs the brim, a full-width SVG whose outline
+the timer strip if one is running, then — on a phone only — the room you are
+in. Padding `11px 22px 13px`. Below it hangs the brim, a full-width SVG whose outline
 stroke is held at 3px by `vector-effect="non-scaling-stroke"` regardless of
 viewport width.
 
-Above 860px the lid is inset by the rail's width, so the mark sits over the
-conversation rather than over the rooms.
+**The lid spans the full width at every size, and the brim with it.** It was
+inset by the rail's 212px for part of 28 August, which sawed the brim off
+two-thirds of the way across — a lid that stops before the end of the box, with
+a hard vertical seam where it met the rail.
 
 ### The thread
 
@@ -1343,6 +1344,10 @@ The mark, and the timer when one is running. Nothing else.
   you chose to start, never a total of what you have not done.
 - **The brim** is the purple curve that closes it, with the 3px outline
   following the same path at non-scaling stroke width.
+
+On a phone the lid also holds the room you are in, as the control that opens
+the seven. On a desktop that control is hidden and the rooms are a column
+beside the conversation. See The Rooms.
 
 **Everything else that has ever lived here has left, and it left in three
 moves.** A mark and three icons — Buddy's acorn, a search disclosure, a map —
@@ -2055,15 +2060,29 @@ the live edge holds one thing.
 
 ### The Conversation
 
-**Buddy's words are not in a bubble. Yours are.**
+**Buddy's words are in a tint. Yours are in stock. Neither is the other.**
 
 Two kinds of thing wore one costume until 26 August 2026: a sentence and an
 object were both cream rectangles with a 3px outline, so a conversation read as
-one column of beige rather than as an exchange between two parties.
+one column of beige rather than as an exchange between two parties. The fix was
+to take Buddy's bubble away entirely, and it cost the chat convention — his
+words no longer read as *received*.
 
-- **Buddy:** paper on the field, casual axis at `wght` 500, with a 1px outline
-  text-shadow and the 40px face in the gutter. No stock, no border, no shadow.
+**28 August 2026 gives the bubble back without giving the costume back.**
+
+- **Buddy:** a tint on the field at `rgba(255, 251, 243, .13)`, fully round at
+  `3em` — Campfire's own message radius — with no border, no shadow, and no
+  stock. It hugs its words at `width: fit-content`; stretched to the column it
+  reads as a banner rather than as something somebody said. The 40px face stays
+  in the gutter.
 - **You:** the cream bubble, unchanged, right-aligned.
+
+**Why this does not reopen what 26 August closed.** The rule's letter was "no
+bubble for Buddy"; its reason was that a sentence and an object must never wear
+one costume. A round translucent tint and a 14px-cornered outlined cream
+rectangle with a hard shadow cannot be confused at any glance — the radius
+alone is 3em against 14px. Every rectangle on the screen is still a note, an
+appointment, a chore, or something you said.
 
 What the bubble now means is not "somebody said this" but **"this is a thing
 rather than a sentence"**. Every remaining rectangle on the screen is a note, an
@@ -2073,9 +2092,22 @@ seven outlined boxes to three.
 Paper and not cream: on the purple field cream measures 4.8:1 and paper 8.9:1,
 and this text has no stock behind it to sit on.
 
-**What it costs:** the chat convention. Buddy's words no longer read as
-"received", which is a real loss for somebody arriving for the first time. The
-first-run worked example is what teaches the grammar in one look.
+**What it costs:** contrast, and these are read values rather than estimates.
+Paper measured against the composited tint:
+
+| | bare field | in the bubble |
+| --- | --- | --- |
+| the field at its darkest | 8.67:1 | **6.17:1** |
+| the lit centre of the radial | 6.32:1 | **4.73:1** |
+
+So the worst case on this screen is 4.73:1 — over the 4.5 floor for body text,
+and not over it by much. **The tint is 13% for that reason and must not go
+higher**: at 20% the lit centre drops through the floor, and the lit centre is
+where the field is brightest by the day's own `--light`.
+
+*Between 26 and 28 August the cost was the chat convention instead: Buddy's
+words did not read as received, which the first-run worked example had to teach
+in one look. It still teaches it, and now it has less to teach.*
 
 ### The Six Bodies
 
@@ -2109,62 +2141,150 @@ the caption.
 That is deliberate and it is the only one. A parked note that looked like every
 other object would be a parked note you keep trying to act on.
 
-### The Rail
+### The App Is The Viewport
 
-The seven rooms, on every screen, never closing. The whole of this product's
-navigation as of 28 August 2026.
+**One grid at `100dvh`, and the regions inside it scroll.** Adopted from
+Campfire — the application Squirrel lives inside — on 28 August 2026.
 
-**A room list you press to open is a screen. One that is always there is
-furniture.** That is the only structural difference between the rail and the
-menu it replaced, and it is the whole argument for rooms: moving between them
-costs no screen and no gesture.
+```
+grid-template-areas: "nav side" / "main side"
+```
 
-- **Desktop (≥860px):** a fixed column 236px wide, ruled off from the field by
-  its own darker ground. Fixed rather than scrolling with the conversation —
-  scrolling what you are reading must not scroll away the way out of it. The
-  lid and the stage are inset by its width.
-- **Phone:** a strip above the conversation, scrolling sideways. Seven rooms in
-  a column on a phone is the screen.
-- **Stock and depth:** each room is card fill, 3px outline, 14px radius, the
-  raised object's `0 5px 0 0` sticker offset. Nothing new: a room is an object
-  in this world like every other object.
-- **The room you are in** is drawn the way this product draws *pressed* — down
-  on its own shadow, `translateY(4px)` onto a 1px offset. Not a different
-  colour: colour already means something here, and a second meaning for it is
-  how a system stops being readable. It carries `aria-current="page"` as well.
-- **Links, where the menu was forms.** A door was a POST because opening a
-  place appended what you said to the record; going somewhere writes nothing.
-  Back steps through rooms now, and a room opens in a new tab — both of which
-  the door paid for and neither of which anybody could have got back without
-  this.
-- **Counts** on the four rooms that can have something waiting. Zero is no
-  number and not a nought: a room reading "0" is a scoreboard, which is the
-  rule the four doors carried and the rail inherits with them.
-- **Looking something up** sits below the rule with the way out, not among the
-  seven. It is a thing you do rather than a place you go, and what it finds is
-  a card in the room you are standing in.
-- **The way out is last, under a rule of its own,** in today's words. It is not
-  a destination like the others; it is the end of the evening, and its place at
-  the end says so without a louder word. Principle 3 is why it is not smaller
-  or greyer — only elsewhere.
+- **`body`** is exactly the viewport and does not scroll. `overflow: hidden`.
+- **The lid** is `grid-area: nav`, fixed across the full width, translucent at
+  `rgba(59, 37, 96, .72)` with a 14px backdrop blur, and `pointer-events: none`
+  so clicks fall through everywhere it is empty. The conversation is seen to
+  pass *under* it rather than to stop at it.
+- **`main.threadpage`** is two rows, `1fr auto`: the transcript scrolls, the
+  dock does not.
+- **The rooms** are `grid-area: side`, a real column rather than a fixed box
+  beside a shoved margin.
 
-**The counts were kept against the evidence, deliberately.** A mockup of a bad
-week — five rooms carrying numbers, thirty-four things waiting — reads as a
-scoreboard, because pills in a column invite a total the eye computes whether
-or not the product prints one. That is the shape PRODUCT.md named when it
-retired the no-count rule, at seven rooms instead of four. The owner kept them
-on 27 August 2026 on the argument that not knowing how much is waiting is its
-own weight, and the decision reverses cleanly: the numbers are computed at
-render time and stored nowhere, so removing one call removes all of them.
+**What this replaced, and why it is the whole answer to "the layout feels
+buggy".** The screen was a document in normal flow with four independently
+fixed things stuck to it — the lid, the dock, the rail, and a stage pushed
+sideways by `margin-left`. Every symptom came from there and none of them were
+separate bugs:
+
+- A conversation shorter than the screen sat at the **top**, with a field of
+  empty below it and the dock floating in the middle of nowhere. Chat surfaces
+  anchor to the bottom; this one could not, because nothing knew how tall the
+  screen was.
+- The dock collided with cards, then with the room sheet, then with its own
+  centring axis — three times in two days, each fixed separately.
+- `--dockspace`, a custom property carrying the dock's measured height, kept up
+  to date by a `ResizeObserver` in `thread.js`, so the column could reserve room
+  for a thing floating over it. All of it is deleted: a slot grown to four lines
+  now shortens the scroll region by exactly its own growth, which is what a
+  layout does and the observer was standing in for.
+
+**The transcript is bottom-anchored with `margin-block-start: auto` on the
+first child, and NOT with `justify-content: flex-end`.** They look equivalent
+and are not: with `justify-content`, content taller than the box overflows the
+*start* edge, where `scrollHeight` does not count it and no scroll can reach
+it. A 2470px conversation in a 745px box reported 745 and the top of it was
+gone. The auto margin resolves to zero the moment the content is tall enough,
+so a short conversation sits above the dock and a long one scrolls from its
+beginning.
+
+### The Rooms
+
+The seven rooms, and the whole of this product's navigation as of 28 August
+2026. **Rewritten the same day**, because the first version dressed navigation
+as content — see the end of this section.
+
+**Two shapes from one markup**, because two markups are two things to keep in
+step. The control and the list are siblings, not parent and child: a closed
+`<details>` hides its children through a slot the child's own CSS cannot
+override, so `.rooms > .rail` rendered nothing at all on a desktop. The
+sibling combinator reaches the list from the control with nothing exotic.
+
+**Wide (≥980px): furniture.** A fixed 212px column beside the conversation,
+the control hidden, nothing to open. Fixed rather than scrolling with the
+transcript — scrolling what you are reading must not scroll away the way out of
+it.
+
+**980 and not 860**, because that is where the layout can afford both: the
+rail's 212 plus the transcript's 720 plus gutters. At 861 the rail was a
+quarter of the screen and squeezed the conversation below its own measure, for
+seven labels of at most nineteen characters. **212px is not a preference** — it
+is what *the things you kept* needs on one line, and narrowing it wrapped four
+of the nine rows and turned an even column into a ragged one. So the width is
+fixed and the breakpoint moved. Below it the phone's shape is not a fallback,
+it is the better one.
+
+**Narrow (<980px): a control in the lid and a sheet under it.** The control
+names the room you are in, and that is the half its predecessor never had: a
+strip of seven scrolling sideways said where you could *go* and never where you
+*were*. The sheet drops from below the lid rather than from below itself, so
+the control stays visible and there is always a way to close it.
+
+- **A room is a recessed well.** `rgba(28, 17, 11, .18)` with a 2.5px dashed
+  cream edge and **no shadow**. This is set-aside's treatment, and it is reused
+  rather than invented because it already means the right thing: *present, and
+  not a thing you pick up.* A room is exactly that.
+- **The room you are in is solid** — the lid's own `--purple-dark`, the 3px
+  outline, paper type at `wght` 700, and `aria-current="page"`. You are
+  standing inside it, so it stops being a well. **Deliberately not cream card
+  stock**: that would put one room back in content's clothes and undo the whole
+  point.
+- **Links, not forms.** A door was a POST because opening a place appended what
+  you said; going somewhere writes nothing. Back steps through rooms and a room
+  opens in a new tab.
+- **Counts are ink, never a pill.** Right-aligned, tabular figures, cream at
+  72%. Orange is this system's *this makes something happen*, and a count is a
+  fact rather than an action — an orange badge put a status value in the action
+  colour on every screen at once. Zero is no number and not a nought.
+- **44px minimum on every row**, including the way out and search.
+- **Search and the way out sit below the rule, not among the seven**, because
+  neither is a place. Both are always in view.
+- **In a short viewport the sheet is two columns**, not a scroll. One column of
+  seven put the way out below the fold, which is the whole reason the sheet
+  exists. All seven fit; the two that are not places stay full width under the
+  rule. On a landscape phone the way out is still one short scroll away, and
+  the sheet keeps a visible scrollbar — the strip it replaced suppressed one.
+- **The lid outranks the dock.** The sheet lives inside the lid, so its own
+  z-index is scoped to the lid's stacking context; at the lid's original 2 the
+  dock's 4 painted straight over the open sheet and hid the last three rooms,
+  search and the way out. They never overlap otherwise — one is the top of the
+  screen and the other the bottom — so the lid simply sits above.
+
+**The counts were kept against the evidence, deliberately.** A bad week reads
+as a scoreboard, because pills in a column invite a total the eye computes
+whether or not the product prints one. The owner kept them on 27 August on the
+argument that not knowing how much is waiting is its own weight; taking them
+out of orange on 28 August is the smaller correction that keeps the decision
+and removes the loudest part of the reading. It still reverses cleanly — the
+numbers are computed at render time and stored nowhere.
 
 Neither half of the retired rule is reopened. **Nothing counts what you failed
 to do, and no number survives being dealt with.**
 
-*Before this, from 26 August: one 44px hamburger in the lid holding eight
-things, over the conversation rather than pushing it down. Before that, from
-25 August: four doors, two always-on chips and a stop line as permanent
-fixtures in the conversation, together about 45% of a phone screen before a
-word was said.*
+**What the first version got wrong, recorded because it is the more useful
+half.** Rooms shipped as raised cream card stock — the same fill, outline,
+radius and `0 5px 0 0` sticker offset a chore card wears — on the reasoning
+that *a room is an object in this world like every other object.* That sentence
+was wrong. A room is not an object in the box; it is the box's furniture.
+Seven cream cards in a column read as a backlog on a product whose entire
+thesis is one thing at a time, and the eye could not separate *where I can go*
+from *what I can act on*. The Three Marks Rule already forbade it and had only
+ever been applied to controls, not to surfaces.
+
+Three things went with that mistake, all visible in one screenshot and none
+caught by a test:
+
+- The current room said itself with a 4px downward nudge, which is invisible at
+  this size. It is a different material now, not a different position.
+- The rail was a flat slab with **no outline** — the only surface in the
+  product without one, which is why it read as a hole rather than an object.
+  The slab is gone; the rooms carry their own recess.
+- Four rooms, search and the way out sat off the right edge of every phone in a
+  strip with `scrollbar-width: none`. **The way out of this product was
+  unreachable** without discovering that a nav scrolls sideways.
+
+*Before all of it, from 26 August: one 44px hamburger holding eight things.
+Before that, from 25 August: four doors and two chips as permanent fixtures in
+the conversation, about 45% of a phone screen before a word was said.*
 
 ### The Dock Names Its Consequence
 
@@ -2194,6 +2314,13 @@ confirmation without a press.
 - **A camera only where a photograph can go anywhere** — the three rooms that
   post to `/capture`. A chore is a name and a rhythm, and a control that cannot
   work is worse than one never drawn.
+- **The dock's slot sits on the conversation's axis, and its ground still
+  spans the viewport.** Fixed to the viewport, its centred slot centred on the
+  *window* while the transcript centred on the *stage* — 166px apart, the thing
+  you type into and the things it produces on two different axes. The fix is
+  padding, not insetting the element: insetting also worked and cut a hard
+  vertical edge down the bottom-left of the screen, where the dock's gradient
+  started and the field did not.
 
 ### The Gate
 

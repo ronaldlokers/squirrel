@@ -1,4 +1,8 @@
 {{define "content"}}
+{{/* What scrolls. The dock is its sibling and does not, which is what lets a
+     conversation shorter than the screen sit above the dock rather than at the
+     top with a field of empty under it. */}}
+<div class="scroll">
 {{/* The worked example, on a conversation nobody has ever said anything in.
 
      Dimmed, ruled off, and drawn rather than remembered: these are not turns
@@ -72,7 +76,9 @@
 </p>
 {{end}}
 
-{{/* The dock: home's slot, pinned. Same route, same field, same camera — one
+</div>
+
+{{/* The dock: the thread's last row. Same route, same field, same camera — one
      capture path, because a second one would have weaker guarantees than the
      first and nobody would know which they were using. What it says back is a
      turn now rather than a paragraph inside the box. */}}

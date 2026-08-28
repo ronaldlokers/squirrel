@@ -5,3 +5,5 @@
 .impeccable/hook.cache.json
 .impeccable/live/
 .product-team-review/
+# Design comps: throwaway renders, and they carry a copy of static/.
+.impeccable/mocks/
