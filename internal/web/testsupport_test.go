@@ -910,7 +910,12 @@ type fakeCoach struct {
 	opens string
 	// asked is every turn it was handed, so a test can assert on what the model
 	// was told.
-	asked []struct{ kind, said, subject string }
+	asked []struct{ kind, room, said, subject string }
+	// Which rooms an exchange was remembered in, and which one was forgotten.
+	// The window is keyed by room now, and remembering in the wrong one is
+	// invisible from the reply.
+	remembered []string
+	forgotIn   string
 	// talk is the window, which the real one keeps in memory too.
 	talk   []Exchange
 	forgot int
@@ -954,8 +959,8 @@ type fakeDecision struct {
 	because string
 }
 
-func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) (Answer, error) {
-	c.asked = append(c.asked, struct{ kind, said, subject string }{kind, said, subject})
+func (c *fakeCoach) ask(_ context.Context, _ int64, kind, room, said, subject string) (Answer, error) {
+	c.asked = append(c.asked, struct{ kind, room, said, subject string }{kind, room, said, subject})
 	if c.err != nil {
 		return Answer{}, c.err
 	}
@@ -999,11 +1004,12 @@ func (c *fakeCoach) options(o Options) Options {
 	o.Spent = func(context.Context, int64) (string, string, bool) {
 		return c.spent, c.ceiling, c.spent != ""
 	}
-	o.Recent = func(int64) []Exchange { return c.talk }
-	o.Remember = func(_ int64, said, replied string) {
+	o.Recent = func(int64, string) []Exchange { return c.talk }
+	o.Remember = func(_ int64, room, said, replied string) {
+		c.remembered = append(c.remembered, room)
 		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})
 	}
-	o.Forget = func(int64) { c.forgot++; c.talk = nil }
+	o.Forget = func(_ int64, room string) { c.forgot++; c.forgotIn = room; c.talk = nil }
 	return o
 }
 

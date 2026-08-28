@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/ronaldlokers/squirrel/internal/coach"
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
@@ -174,4 +175,23 @@ func TestTheRailIsOnEveryScreen(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The coach keeps its own copy of the room names, because internal/coach must
+// not import internal/web. Two lists of the same six is one list that goes
+// stale, and a room the coach has never heard of is a room it does not narrow
+// in — which is Buddy's whole toolset, silently.
+func TestTheRoomNamesAgreeWithTheCoach(t *testing.T) {
+	for _, r := range rooms {
+		if r.Key == "buddy" {
+			// Buddy's own is deliberately absent there: it is not a room he is
+			// confined to, it is where he is.
+			require.Empty(t, coach.RoomName(r.Key))
+			continue
+		}
+		require.Equal(t, r.Name, coach.RoomName(r.Key),
+			"the coach calls %q something else", r.Key)
+	}
+	require.Len(t, coach.RoomKeys(), len(rooms)-1,
+		"a room was added on one side only")
 }

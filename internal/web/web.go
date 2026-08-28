@@ -55,7 +55,7 @@ type Options struct {
 	//
 	// Ask is nil when there is no coach, and the nil carries meaning: the four chips
 	// still answer, but typing a sentence gets the chips back rather than a reply.
-	Ask func(ctx context.Context, personID int64, kind, said, subject string) (Answer, error)
+	Ask func(ctx context.Context, personID int64, kind, room, said, subject string) (Answer, error)
 	// Reads answers what was typed into the box and says whether it was a thought
 	// worth keeping. Nil with no coach, and then the box keeps the words and says
 	// "Kept."
@@ -75,13 +75,13 @@ type Options struct {
 	// is why it may run on everything typed and Reads may not.
 	AskedAQuestion func(ctx context.Context, said string) (question bool, answered bool)
 	// Recent is the conversation so far, oldest first, or nil.
-	Recent func(personID int64) []Exchange
+	Recent func(personID int64, room string) []Exchange
 	// Remember adds one round to it, for the ladder's deterministic answers as well
 	// as the model's: the window is the conversation, not the part a model produced.
-	Remember func(personID int64, said, replied string)
+	Remember func(personID int64, room, said, replied string)
 	// Forget drops it. Ending a conversation has to mean it is over, and has to
 	// mean nothing else.
-	Forget func(personID int64)
+	Forget func(personID int64, room string)
 	// Decide lets a model choose among what the picker found, or is nil. The
 	// screen never calls it when the picker found nothing: absent rather than
 	// empty is a rule about this region, not about who chose.

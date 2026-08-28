@@ -3,6 +3,7 @@ package boot
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -132,7 +133,7 @@ func TestTheScreenIsGivenThePlaceToOpen(t *testing.T) {
 	c := &sayingCoach{reply: coach.Reply{Text: "Here they are.", Open: "tasks"}}
 	ask, _, _, _ := coachWeb(c, nil, coach.NewConversations())
 
-	answer, err := ask(context.Background(), 1, "thread", "show me the tasks", "")
+	answer, err := ask(context.Background(), 1, "thread", "buddy", "show me the tasks", "")
 	require.NoError(t, err)
 	require.Equal(t, "tasks", answer.Open, "the screen was told nothing to open")
 }
@@ -142,13 +143,46 @@ func TestTheScreenIsGivenThePlaceToOpen(t *testing.T) {
 func TestOnlyTheScreenMayBeOfferedAPlace(t *testing.T) {
 	c := &sayingCoach{reply: coach.Reply{Text: "Here they are."}}
 	ask, _, _, _ := coachWeb(c, nil, coach.NewConversations())
-	_, err := ask(context.Background(), 1, "thread", "show me the tasks", "")
+	_, err := ask(context.Background(), 1, "thread", "buddy", "show me the tasks", "")
 	require.NoError(t, err)
 	require.True(t, c.saw.CanOpen, "the screen cannot draw a place")
 
 	chat := &sayingCoach{reply: coach.Reply{Text: "Here they are."}}
 	_, err = asker(chat, nil, coach.NewConversations(), false)(
-		context.Background(), 1, "chat", "show me the tasks", "")
+		context.Background(), 1, "chat", "buddy", "show me the tasks", "")
 	require.NoError(t, err)
 	require.False(t, chat.saw.CanOpen, "chat was offered a place it cannot draw")
+}
+
+// The room reaches the coach, and it reaches it from the surface rather than
+// being guessed here.
+//
+// Same shape as the CanOpen check above and there for the same reason: Room is
+// a field in an inline literal in `asker`, nothing warns if it is left out,
+// and a turn with the wrong room is not a wrong label — it is the wrong Buddy,
+// with another room's tools and another room's conversation.
+func TestTheRoomReachesTheCoach(t *testing.T) {
+	c := &sayingCoach{reply: coach.Reply{Text: "Which bin."}}
+	_, err := asker(c, nil, coach.NewConversations(), true)(
+		context.Background(), 1, "thread", "chores", "the bins", "")
+	require.NoError(t, err)
+	require.Equal(t, "chores", c.saw.Room, "the coach was not told which room")
+}
+
+// And each room's window is its own, through this seam as well as inside it.
+func TestTheSeamCarriesEachRoomsOwnConversation(t *testing.T) {
+	talk := coach.NewConversations()
+	c := &sayingCoach{reply: coach.Reply{Text: "ok"}}
+	ask := asker(c, nil, talk, true)
+
+	talk.Add(1, "chores", "the bins", "Which bin.", time.Now())
+
+	_, err := ask(context.Background(), 1, "thread", "chores", "and the other one", "")
+	require.NoError(t, err)
+	require.Len(t, c.saw.Recent, 1, "the chores' own conversation did not arrive")
+
+	_, err = ask(context.Background(), 1, "thread", "pile", "a letter", "")
+	require.NoError(t, err)
+	require.Empty(t, c.saw.Recent,
+		"what was said in the chores was carried into the pile")
 }

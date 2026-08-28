@@ -59,7 +59,15 @@ type drawn struct {
 }
 
 type turnView struct {
-	ID    int64
+	ID int64
+	// Room is where this was said, and every form drawn on this turn carries
+	// it. Threading it through the twenty places that build a Fields map would
+	// be twenty chances to forget one, and a forgotten one is invisible: the
+	// answer lands in Buddy's room, which is what roomOf falls back to.
+	//
+	// From the turn rather than from the page, because a fragment is rendered
+	// with no page around it — the same reason V is filled here.
+	Room  string
 	Buddy bool
 	Words string
 	// Cost is what this reply cost, on the reply that cost it.
@@ -300,7 +308,7 @@ func endsOpen(turns []squirrel.Turn) bool {
 func turnViews(turns []squirrel.Turn) []turnView {
 	out := make([]turnView, 0, len(turns))
 	for _, t := range turns {
-		v := turnView{ID: t.ID, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
+		v := turnView{ID: t.ID, Room: t.Room, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
 		if len(t.Shown) > 0 {
 			var sh drawn
 			if err := json.Unmarshal(t.Shown, &sh); err != nil {

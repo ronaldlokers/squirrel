@@ -128,7 +128,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 
-		answer, err := opts.Ask(r.Context(), personID, "thread", said, subjectFor(s, opts, r))
+		answer, err := opts.Ask(r.Context(), personID, "thread", roomOf(r.Context()), said, subjectFor(s, opts, r))
 		if err != nil {
 			// The floor. What was said is kept — the record is what the box
 			// used to be, and words that reached the server do not evaporate
@@ -145,7 +145,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 		// said, because it is part of the same turn and because the next turn
 		// should know it happened. The words are the application's — a model
 		// saying "done" is not evidence anything did.
-		remember(opts, personID, said, withDid(answer))
+		remember(opts, personID, roomOf(r.Context()), said, withDid(answer))
 
 		// The reply, the proposal and where you are in a breakdown, as one
 		// turn. A proposal is stored nowhere and travels in the form that
@@ -184,7 +184,7 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 		}
 		// Back to where the rest of the screen is. Turning something down is
 		// the end of the conversation about it, not the start of one.
-		forget(opts, personID)
+		forget(opts, personID, roomOf(r.Context()))
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -201,7 +201,7 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 	// sends it — so the ladder's words live in one place, in the core, and the
 	// control that comes with them is drawn from the same view the home screen
 	// draws. A reload re-reads rather than repeating the press.
-	remember(opts, personID, squirrel.BlockerWords[b], squirrel.UnstuckFor(b).Line)
+	remember(opts, personID, roomOf(r.Context()), squirrel.BlockerWords[b], squirrel.UnstuckFor(b).Line)
 	// The ladder's words come from the core, so they are the same wherever
 	// they are read. The step, when there is one, is drawn on the same turn —
 	// which is what the address bar used to carry.
@@ -276,15 +276,15 @@ func subjectFor(s Store, opts Options, r *http.Request) string {
 	return o.Text
 }
 
-func remember(opts Options, personID int64, said, replied string) {
+func remember(opts Options, personID int64, room, said, replied string) {
 	if opts.Remember != nil {
-		opts.Remember(personID, said, replied)
+		opts.Remember(personID, room, said, replied)
 	}
 }
 
-func forget(opts Options, personID int64) {
+func forget(opts Options, personID int64, room string) {
 	if opts.Forget != nil {
-		opts.Forget(personID)
+		opts.Forget(personID, room)
 	}
 }
 

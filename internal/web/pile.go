@@ -123,7 +123,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
 	// Buddy, as turns rather than a page of his own: there is a conversation to
 	// join now, so closing went with it. You stop talking.
-	m.Post("/buddy/ask", guard(opts, sameOrigin(coachAskHandler(s, opts))))
+	m.Post("/buddy/ask", guard(opts, sameOrigin(fromTheDock(coachAskHandler(s, opts)))))
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
 	m.Post("/find/ask", guard(opts, sameOrigin(findAskHandler(s, opts))))
@@ -141,7 +141,7 @@ func Mount(m Mux, s Store, opts Options) error {
 		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it"))))
 	m.Post("/pile/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
 		"put something down", "What is it?", "/capture", "text", "keep it"))))
-	m.Post("/buddy/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
+	m.Post("/buddy/say", guard(opts, sameOrigin(fromTheDock(coachSayHandler(s, opts)))))
 	// "That landed badly." One press, about the thing you just read.
 	m.Post("/buddy/badly", guard(opts, sameOrigin(coachBadlyHandler(s, opts))))
 	// A proposal, applied because it was pressed. Four things and no more —

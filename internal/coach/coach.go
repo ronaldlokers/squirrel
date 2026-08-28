@@ -91,6 +91,18 @@ type Turn struct {
 	// the log and nothing else, and it is what makes "which surface produces
 	// the answers that land badly" a question with an answer.
 	Kind string
+	// Room is which room this was said in: "buddy", "pile", "chores", "at",
+	// "tasks", "held", "kept". Empty means Buddy's own room, which is where
+	// every turn was said before 28 August 2026.
+	//
+	// Stated by the surface rather than inferred here, for the same reason
+	// CanOpen is: this package cannot know, and guessing would be a second
+	// answer to a question the caller already has.
+	//
+	// It decides two things — which tools Buddy is given, and which
+	// conversation he is carrying — so a wrong value is not a wrong label, it
+	// is the wrong Buddy.
+	Room string
 	// Deep asks for the escalation tier. The caller decides, because the
 	// caller is the only thing that knows whether this is a routine turn or
 	// one where judgement matters. Overwhelmed() is what sets it today.
@@ -241,4 +253,35 @@ func Trim(recent []Exchange, now time.Time) []Exchange {
 		fresh = fresh[len(fresh)-WindowSize:]
 	}
 	return fresh
+}
+
+// The rooms this package knows the names of, and it is a copy: internal/coach
+// must not import internal/web, and Buddy has to be able to say where he is.
+//
+// Buddy's own room is deliberately absent. It is not a room he is confined to
+// — it is where he is, and every other room is the narrowing.
+//
+// TestTheRoomNamesAgreeWithTheCoach fails when the two lists drift, because
+// two lists of the same seven names is one list that goes stale.
+var roomNames = map[string]string{
+	"pile":   "the pile",
+	"chores": "the chores",
+	"at":     "the agenda",
+	"tasks":  "the tasks",
+	"held":   "what you set aside",
+	"kept":   "the things you kept",
+}
+
+// RoomName is what a room is called, or empty for Buddy's own and for anything
+// this package has never heard of.
+func RoomName(key string) string { return roomNames[key] }
+
+// RoomKeys is every room this package narrows in, in no particular order.
+// Buddy's own is not among them.
+func RoomKeys() []string {
+	out := make([]string, 0, len(roomNames))
+	for key := range roomNames {
+		out = append(out, key)
+	}
+	return out
 }
