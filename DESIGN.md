@@ -413,7 +413,7 @@ own colours, and any screen that reads as neutral has failed to be Squirrel.
 - **Cap Purple** (`#6c4da9`): the card's title bar, and the interval a chore
   currently has. The mid purple of the mascot's cap.
 - **Field Purple** (`#58388a`): the base colour of the room the cards sit in.
-- **Lid Purple** (`#3b2560`): the header bar and its brim, and the scrollbar
+- **Lid Purple** (`#3b2560`): the header bar, and the scrollbar
   track. The deepest purple in the system; nothing goes darker except the
   outline.
 
@@ -744,10 +744,27 @@ in. Padding `11px 22px 13px`. Below it hangs the brim, a full-width SVG whose ou
 stroke is held at 3px by `vector-effect="non-scaling-stroke"` regardless of
 viewport width.
 
-**The lid spans the full width at every size, and the brim with it.** It was
-inset by the rail's 212px for part of 28 August, which sawed the brim off
-two-thirds of the way across — a lid that stops before the end of the box, with
-a hard vertical seam where it met the rail.
+**The lid spans the full width at every size.** It was inset by the rail's 212px
+for part of 28 August, which left a hard vertical seam where it met the rail.
+
+**The brim came off on 29 August, and the reason is a measurement rather than a
+preference.** It was a 30px arc stretched to the full width by
+`preserveAspectRatio="none"`. At 390px it read as the mascot's cap and it was
+doing its job; at 1440px the same shape sagged about eight pixels across the
+whole screen, which is not a curve — it is a line that looks slightly wrong, and
+that is worse than either a real arc or a straight rule.
+
+One shape could not serve both widths. The three ways out were: straight
+everywhere; keep the curve and drop the stretch so it holds its proportion; or
+curved on a phone and straight on a desktop, which is two identities. The owner
+chose the one that is honest at every width.
+
+*What it cost:* the lid was the mascot's cap, and the brim was the piece that
+said so. The mark still carries the cap; the header no longer echoes it.
+
+*What it revealed:* the brim's opaque fill had been hiding the conversation
+passing under the lid. With it gone you can see content slide beneath the
+translucent bar, which is what the translucent bar was for.
 
 ### The thread
 
@@ -1342,8 +1359,9 @@ The mark, and the timer when one is running. Nothing else.
   go and do something and wandering to the pile should not lose it. The
   remaining time is the one number here that counts down: a fact about a thing
   you chose to start, never a total of what you have not done.
-- **The brim** is the purple curve that closes it, with the 3px outline
-  following the same path at non-scaling stroke width.
+- **The rule** is the 3px outline that closes it, the same weight as every
+  other edge in this world. *A curved brim hung here until 29 August; see The
+  lid under Layout for why it went.*
 
 On a phone the lid also holds the room you are in, as the control that opens
 the seven. On a desktop that control is hidden and the rooms are a column
@@ -1972,6 +1990,12 @@ it is dimmed rather than greyed: the colours are part of what is being taught.
   no route they could reach if they were pressed. A worked example wired to
   real controls is a trap: the one thing worse than not knowing what DONE does
   is finding out on somebody else's note.
+- **It is laid out like the conversation it pictures** — the same measure,
+  padding and gap as `.thread`. It had the conversation's classes and none of
+  its container until 29 August, so on a phone the label ran off the left edge
+  of the screen and every card overlapped the bubble beneath it. That shipped on
+  26 August and nobody saw it for two weeks: it draws only when the record is
+  empty, and this record has never been empty since.
 - **It carries its own classes, not the conversation's.** It looks the same —
   that is the teaching — but a picture of a card is not a card, and sharing the
   class would let a screen that must have no controls on it report one. The
@@ -2334,10 +2358,14 @@ confirmation without a press.
 - **The dock's slot sits on the conversation's axis, and its ground still
   spans the viewport.** Fixed to the viewport, its centred slot centred on the
   *window* while the transcript centred on the *stage* — 166px apart, the thing
-  you type into and the things it produces on two different axes. The fix is
-  padding, not insetting the element: insetting also worked and cut a hard
-  vertical edge down the bottom-left of the screen, where the dock's gradient
-  started and the field did not.
+  you type into and the things it produces on two different axes.
+
+  The first fix added `padding-left: calc(22px + var(--railw))` while the rail
+  was on the left, and it stayed when the rail moved right — pushing the slot
+  197px past the conversation instead, which a measurement found on 29 August.
+  `#stage` already stops at the rail, so the slot's own margin is the whole of
+  it: left edge 271px, exactly the turns'. That is what the 676px width was
+  chosen for.
 
 ### The Gate
 

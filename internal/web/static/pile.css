@@ -72,8 +72,7 @@
    * off the double-tap gesture, not the ability to scroll or to magnify
    * deliberately. */
   html { touch-action: manipulation; }
-  /* The brim reaches past both edges of the lid on purpose; nothing about it
-     should be scrollable. */
+  /* Nothing on this screen is scrolled sideways. */
   html, body { overflow-x: clip; }
   /* The scrollbar is there whether or not the screen scrolls.
    *
@@ -198,6 +197,15 @@
     background: rgba(59, 37, 96, .72);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
+    /* Ruled off straight, in the outline every other shape here is drawn with.
+       
+       A brim hung below this until 29 August: a 30px arc, stretched to the full
+       width by preserveAspectRatio="none". At 390px it read as the mascot's cap
+       and it was doing its job; at 1440px the same shape sagged about eight
+       pixels across the screen, which is not a curve — it is a line that looks
+       slightly wrong. One shape could not serve both widths, and the owner
+       chose the one that is honest at every one of them. */
+    border-bottom: var(--line) solid var(--outline);
     /* Clicks fall through to the conversation everywhere the lid is empty,
        which is most of it. Its own controls take them back. */
     pointer-events: none;
@@ -223,20 +231,6 @@
   }
   .lid .spacer { flex: 1; }
 
-  /* The mascot's cap has a brim, so the lid of the box has one too: the whole
-     header edge sags into it, and the outline is the mark's own weight. */
-  /* Stretched to the full width rather than curved by a radius, so the outline
-     never rises back into the lid and leaves the screen edges bare. The stroke
-     stays 3px at any width. */
-  .brim {
-    /* An svg is a replaced element: left/right will not stretch it, so the
-       width has to be stated. */
-    position: absolute; left: 0; top: 100%;
-    width: 100%; height: 30px; display: block; pointer-events: none;
-    /* No cast shadow. It pooled under the deepest part of the curve and read as
-       a stain in the middle of the header; the 3px outline is what separates
-       this world's shapes, and the mark itself has no gradients. */
-  }
 
   /* ---------- the field ---------- */
 
@@ -668,7 +662,6 @@
     .brand { gap: 7px; }
     .brand img { width: 56px; height: 42px; }
     .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
-    .brim { height: 22px; }
     /* The search field's own phone size is not here.
      *
      * It used to be: `.find { flex: 1 1 100%; order: 5 }` put the field on its
@@ -1276,7 +1269,7 @@
 
   @media (max-width: 620px) {
 
-    .thread { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
+    .thread, .worked { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
     /* Buddy's words are speech, and they are not stock.
      
      They were paper ink on the field from 26 August, on the argument that a
@@ -1671,16 +1664,17 @@
       background: rgba(28, 17, 11, .16);
       padding: calc(var(--lid-h, 87px) + 10px) 14px calc(20px + env(safe-area-inset-bottom));
     }
-    /* The dock is fixed to the viewport, so with the rail beside it its
-       centred slot was centred on the window and the conversation on the
-       stage — 166px apart, the thing you type into and the things it produces
-       on two different axes.
-       
-       The padding moves the slot onto the conversation's axis and the ground
-       still spans the viewport. Insetting the element itself also worked and
-       cut a hard vertical edge down the bottom-left of the screen, where the
-       dock's gradient started and the field did not. */
-    .dock { padding-left: calc(22px + var(--railw)); }
+    /* Nothing here insets the dock any more.
+
+       It carried padding-left: calc(22px + var(--railw)) from the day the rail
+       was on the left and the dock was fixed to the viewport. The rail moved to
+       the right and the dock moved into the grid, and the padding stayed —
+       pushing the slot 197px right of the conversation it feeds, which is the
+       third of three axes a measurement found on 29 August.
+
+       #stage already stops at the rail, so the slot's own margin centres it on
+       the transcript: left edge 271px, exactly the turns'. That is what the
+       676px width was chosen for. */
   }
 
   /* The six bodies. See DESIGN.md, The Six Bodies.
@@ -1812,7 +1806,24 @@
      It carries its own classes rather than the conversation's. It looks the
      same, which is the teaching, but a picture of a card is not a card: they
      share the rules above and nothing else. */
-  .worked { opacity: .72; }
+  /* The worked example is a picture of a conversation, so it needs the
+     conversation's container as well as its parts.
+     
+     It carries its own card and act classes on purpose — a picture of a card is
+     not a card — but it sat outside .thread with no width, no padding and no
+     gap, and inherited none. On a phone that ran the label off the left edge
+     and let each card overlap the bubble under it. Shipping since 26 August and
+     seen by nobody, because it draws only when the record is empty and this
+     record has never been empty since.
+     
+     The same measure and rhythm as .thread, and nothing else: it is still
+     outside the transcript, which is what keeps the live edge on a real turn. */
+  .worked {
+    opacity: .72;
+    width: min(720px, 100%); margin: 0 auto;
+    padding: 22px 22px 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
   .workedsays {
     margin: 0 0 14px; font-size: 13px;
     letter-spacing: .05em; text-transform: uppercase;
