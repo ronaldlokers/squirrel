@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 	"time"
 
@@ -600,4 +601,40 @@ func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
 
 	require.Equal(t, float64(0), inset,
 		"the mood row is indented past the gutter by %v pixels", inset)
+}
+
+// The room sheet is above the dock, and nothing else in the suite can see it.
+//
+// The sheet lives inside the lid, so its own z-index is scoped to the lid's
+// stacking context — at the lid's old z-index of 2 the whole thing sat under
+// the dock's 4, and the dock painted over the open sheet. On a landscape phone
+// that covered the last three rooms, search and the way out: the exact failure
+// the sheet was built to fix, back again in another orientation.
+//
+// The appearance snapshot cannot catch it — it records no stacking property
+// and visits one viewport where the two do not overlap — and every other test
+// here reads markup, where the bug is invisible. Computed values, from a real
+// browser, are the only place this is true or false.
+func TestBrowserTheRoomSheetOutranksTheDock(t *testing.T) {
+	c, srv := open(t, &fakeStore{})
+	c.navigate(t, srv.URL+"/r/chores")
+
+	lid := c.eval(t, `return getComputedStyle(document.querySelector(".lid")).zIndex`)
+	dock := c.eval(t, `return getComputedStyle(document.querySelector(".dock")).zIndex`)
+
+	require.Greater(t, layer(t, lid), layer(t, dock),
+		"the dock outranks the lid, so it paints over the open room sheet")
+}
+
+// layer is a computed z-index as a number. "auto" fails rather than counting
+// as zero: an element with no stacking context of its own cannot be reasoned
+// about this way, and quietly reading it as 0 would let the test pass on a
+// page where the question does not apply.
+func layer(t *testing.T, v any) int {
+	t.Helper()
+	s, ok := v.(string)
+	require.True(t, ok, "z-index came back as %T", v)
+	n, err := strconv.Atoi(s)
+	require.NoError(t, err, "z-index %q is not a number", s)
+	return n
 }

@@ -89,11 +89,11 @@
       "margin": "0px",
       "min-height": "0px",
       "outline-color": "rgb(255, 251, 243)",
-      "padding": "14px 22px 16px",
+      "padding": "14px 22px 16px 234px",
       "text-decoration-line": "none",
       "text-transform": "none",
       "transform": "none",
-      "width": "1058px"
+      "width": "1270px"
     },
     ".frombuddy .said": {
       "background-color": "rgba(0, 0, 0, 0)",

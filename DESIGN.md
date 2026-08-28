@@ -2126,12 +2126,21 @@ step. The control and the list are siblings, not parent and child: a closed
 override, so `.rooms > .rail` rendered nothing at all on a desktop. The
 sibling combinator reaches the list from the control with nothing exotic.
 
-**Desktop (≥860px): furniture.** A fixed 212px column beside the conversation,
+**Wide (≥980px): furniture.** A fixed 212px column beside the conversation,
 the control hidden, nothing to open. Fixed rather than scrolling with the
 transcript — scrolling what you are reading must not scroll away the way out of
 it.
 
-**Phone (<860px): a control in the lid and a sheet under it.** The control
+**980 and not 860**, because that is where the layout can afford both: the
+rail's 212 plus the transcript's 720 plus gutters. At 861 the rail was a
+quarter of the screen and squeezed the conversation below its own measure, for
+seven labels of at most nineteen characters. **212px is not a preference** — it
+is what *the things you kept* needs on one line, and narrowing it wrapped four
+of the nine rows and turned an even column into a ragged one. So the width is
+fixed and the breakpoint moved. Below it the phone's shape is not a fallback,
+it is the better one.
+
+**Narrow (<980px): a control in the lid and a sheet under it.** The control
 names the room you are in, and that is the half its predecessor never had: a
 strip of seven scrolling sideways said where you could *go* and never where you
 *were*. The sheet drops from below the lid rather than from below itself, so
@@ -2156,6 +2165,16 @@ the control stays visible and there is always a way to close it.
 - **44px minimum on every row**, including the way out and search.
 - **Search and the way out sit below the rule, not among the seven**, because
   neither is a place. Both are always in view.
+- **In a short viewport the sheet is two columns**, not a scroll. One column of
+  seven put the way out below the fold, which is the whole reason the sheet
+  exists. All seven fit; the two that are not places stay full width under the
+  rule. On a landscape phone the way out is still one short scroll away, and
+  the sheet keeps a visible scrollbar — the strip it replaced suppressed one.
+- **The lid outranks the dock.** The sheet lives inside the lid, so its own
+  z-index is scoped to the lid's stacking context; at the lid's original 2 the
+  dock's 4 painted straight over the open sheet and hid the last three rooms,
+  search and the way out. They never overlap otherwise — one is the top of the
+  screen and the other the bottom — so the lid simply sits above.
 
 **The counts were kept against the evidence, deliberately.** A bad week reads
 as a scoreboard, because pills in a column invite a total the eye computes
@@ -2222,10 +2241,13 @@ confirmation without a press.
 - **A camera only where a photograph can go anywhere** — the three rooms that
   post to `/capture`. A chore is a name and a rhythm, and a control that cannot
   work is worse than one never drawn.
-- **The dock starts where the conversation starts.** It is fixed to the
-  viewport, so beside a rail its centred slot centred on the *window* while the
-  transcript centred on the *stage* — 166px apart, the thing you type into and
-  the things it produces on two different axes.
+- **The dock's slot sits on the conversation's axis, and its ground still
+  spans the viewport.** Fixed to the viewport, its centred slot centred on the
+  *window* while the transcript centred on the *stage* — 166px apart, the thing
+  you type into and the things it produces on two different axes. The fix is
+  padding, not insetting the element: insetting also worked and cut a hard
+  vertical edge down the bottom-left of the screen, where the dock's gradient
+  started and the field did not.
 
 ### The Gate
 
