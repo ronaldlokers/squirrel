@@ -450,7 +450,20 @@
   /* His words, in his voice — the same CASL 1 the card sets a note in, because
      it is the same sentence before and after it is kept. */
   .slot textarea {
-    flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 8px 0;
+    /* A floor, not zero.
+       
+       At zero the field shrinks to whatever the button leaves it, and the
+       button's label is a whole sentence — "put it in the agenda" is 20
+       characters and takes over half a phone. The placeholder wrapped to two
+       lines inside a field too narrow to type in, which is the one control on
+       this screen that has to work. With a floor the button wraps to its own
+       row instead.
+
+       20ch is the longest placeholder — "what did you decide?" — because a
+       field that cannot show its own prompt is not wide enough. It is the
+       floor between the two sizes below; on a desktop every label still fits
+       beside a field far wider than this. */
+    flex: 1 1 20ch; min-width: 20ch; resize: none; border: 0; background: transparent; padding: 8px 0;
     font: 400 18px/1.45 "Recursive", sans-serif;
     font-variation-settings: var(--casual), "wght" 480;
     color: var(--outline); caret-color: var(--orange);
@@ -465,7 +478,9 @@
   /* Says what happens, in the product's own word. Not "add", which is a word
      about a list, and not "save", which is a word about a document. */
   .post {
-    flex: none;
+    /* Right-aligned when it wraps to its own row, which the auto margin does
+       and which the textarea's flex:1 already does when they share one. */
+    flex: none; margin-left: auto;
     padding: 11px 18px; min-height: 44px;
     background: var(--orange); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: 999px;
@@ -679,7 +694,15 @@
        field almost nothing. 18.5px is the Step-Up pair, and anything under
        16px makes iOS zoom the page on focus. */
     .slot { gap: 8px; padding: 10px 10px 10px 14px; margin-top: 22px; }
-    .slot textarea { font-size: 18.5px; padding: 6px 0; }
+    /* On a phone the button always takes its own row, and it is stated rather
+       than left to arithmetic on the label.
+       
+       Left to the 20ch floor, five rooms wrapped and Buddy's did not — "tell
+       it" is short enough to fit beside the field — so the dock changed height
+       as you moved between rooms. The dock is the one thing you come back to
+       on every screen; it must not jump. And a rule that depends on measuring
+       the longest label breaks the day a label changes. */
+    .slot textarea { font-size: 18.5px; padding: 6px 0; flex-basis: 100%; min-width: 0; }
     .post { padding: 11px 14px; letter-spacing: .05em; }
 
     /* Its own row on a phone, where the lid is already two rows deep. */

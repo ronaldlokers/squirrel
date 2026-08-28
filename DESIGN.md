@@ -2311,8 +2311,25 @@ confirmation without a press.
   note that exists. A shelf with no dock would be the one screen where the
   thumb has nowhere to go, and one that lied about its destination would be
   worse than either.
+- **On a phone the field has its own row and the button sits under it**,
+  right-aligned, in every room. Reported from a phone in the agenda: *put it in
+  the agenda* is twenty characters and took over half the width, so the
+  placeholder wrapped to two lines inside a field too narrow to type in. A
+  button that names the consequence and a one-row dock cannot both hold at
+  390px, and between them the field is the control that has to work.
+
+  **Stated at the breakpoint rather than left to arithmetic on the label.**
+  With only a 20ch floor on the field, five rooms wrapped and Buddy's did not —
+  *tell it* is short enough to fit beside it — so the dock changed height as
+  you moved between rooms. The dock is the one thing you come back to on every
+  screen and it must not jump; and a rule that depends on measuring the longest
+  label breaks the day a label changes.
+
+  The 20ch floor stays for the sizes in between, and the number is the longest
+  placeholder: a field that cannot show its own prompt is not wide enough.
 - **A camera only where a photograph can go anywhere** — the three rooms that
-  post to `/capture`. A chore is a name and a rhythm, and a control that cannot
+  post to `/capture`. On a phone it takes the left of the button's row, which
+  is where it stopped being squeezed between the field and the button. A chore is a name and a rhythm, and a control that cannot
   work is worse than one never drawn.
 - **The dock's slot sits on the conversation's axis, and its ground still
   spans the viewport.** Fixed to the viewport, its centred slot centred on the
