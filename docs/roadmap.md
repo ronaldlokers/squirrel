@@ -373,8 +373,20 @@ empty input: a constant stamp, in every asset URL, under `max-age=31536000`.
 That is exactly the v0.7.0 failure the comment on `assetVersion` describes, and
 it is silent. `TestTheStampIsOfTheFilesAndNotOfNothing` now fails on it.
 
-**What it unlocks that matters most:** the offline path can finally be tested by
-hand. It has been flagged five times and has survived four layout changes.
+**What it unlocked immediately: the offline path, proved.** Flagged five times
+since 28 August and never verified, because it needs a real origin, a real
+service worker and a real failure — and the worker is the one part of this
+screen Go never runs. `node scripts/offline-path.mjs` starts a dev screen, kills
+it, types a chore into the dead server, brings it back and reports what
+returned. On 29 August: the worker held
+`{text, room:"chores", action:"/chores/name", field:"name"}`, the chore came
+back a chore with its how-often picker, **0 in the pile**, **0 still held**.
+
+**The first attempt passed while proving nothing**, which is the part worth
+keeping. CDP's `Network.emulateNetworkConditions` with `offline: true` does not
+reach the service worker's own fetch: the POST returned 200, the worker held
+nothing, and the chore arrived correctly by the ordinary online path. Stopping
+the server process is the only cut that reaches through.
 
 ### Rooms — 28 August 2026, unreleased
 
