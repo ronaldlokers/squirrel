@@ -740,7 +740,8 @@ width was whatever the words happened to need.
 
 A full-width flex bar: the mark and wordmark on the left, then a spacer, then
 the timer strip if one is running, then — on a phone only — the room you are
-in. Padding `11px 22px 13px`. Below it hangs the brim, a full-width SVG whose outline
+in. Padding `11px 22px 13px`, plus `env(safe-area-inset-top)` at the top.
+Below it hangs the brim, a full-width SVG whose outline
 stroke is held at 3px by `vector-effect="non-scaling-stroke"` regardless of
 viewport width.
 
@@ -765,6 +766,25 @@ said so. The mark still carries the cap; the header no longer echoes it.
 *What it revealed:* the brim's opaque fill had been hiding the conversation
 passing under the lid. With it gone you can see content slide beneath the
 translucent bar, which is what the translucent bar was for.
+
+**The lid's height is arithmetic rather than a number.** `--lid-h` is the sum of
+the lid's own padding, the mark and the rule, plus the status bar inset. Two
+regions reserve it — the transcript's top padding and the rail's — and until 29
+August 2026 both read it against a fallback of `87px` that nothing ever
+overrode. That is three pixels short of the desktop lid, which measures 90, and
+twenty too many on a phone, where the lid is 67: twenty pixels of empty field
+under the rule at the top of every conversation. The room control and the open
+room sheet carried the same 87 typed in directly and now follow the same source.
+
+**The band above the header belongs to the lid.** An installed app on iOS does
+not start at the top of the screen. Without
+`apple-mobile-web-app-status-bar-style` the system keeps a strip the height of
+the status bar and fills it with the page's `background-color` — the field's
+purple, sitting above a lid of a different one. `black-translucent` hands the
+strip to the page, and the lid takes it as top padding and paints it. The band
+matches the lid because it *is* the lid, which is what lets the blur stay: a
+translucent bar has no one colour to hand a system that wants a flat fill. No
+manifest colour reaches this strip.
 
 ### The thread
 
@@ -1033,6 +1053,13 @@ interval chips become two columns with the lead and *never mind* spanning both;
 the five faces share one row exactly rather than each taking its own width. The
 mark drops to 56×42. Touch targets are 48px in the action row, 44px everywhere
 else.
+
+**The dock is tighter below the breakpoint.** Dock padding `8px 14px calc(10px +
+safe-area)`, slot `8px 8px 8px 12px`, gap 6px, field padding `4px 0`. At the
+desktop padding the dock stood 146px tall on an 852px screen with nothing typed
+in it, because below the breakpoint the composer is two rows — the field on its
+own, the button beneath it. The rows stay; they are what keeps the dock from
+changing height as you move between rooms. Only the air came out: 129px.
 
 ***Make a chore* has its own row and not the whole of it.** This document said
 full-width until 24 August 2026 and the stylesheet has never done it: the
@@ -2178,7 +2205,9 @@ grid-template-areas: "nav side" / "main side"
 - **The lid** is `grid-area: nav`, fixed across the full width, translucent at
   `rgba(59, 37, 96, .72)` with a 14px backdrop blur, and `pointer-events: none`
   so clicks fall through everywhere it is empty. The conversation is seen to
-  pass *under* it rather than to stop at it.
+  pass *under* it rather than to stop at it. Its height — including the status
+  bar inset in the installed app — is `--lid-h`, and everything that has to
+  clear the lid reserves that rather than a number of its own.
 - **`main.threadpage`** is two rows, `1fr auto`: the transcript scrolls, the
   dock does not.
 - **The rooms** are `grid-area: side`, a real column rather than a fixed box
