@@ -25,32 +25,35 @@ func asked(t *testing.T, m *testMux, f *fakeStore, body string) string {
 	return last.Words + " " + string(last.Shown)
 }
 
-// The way in is on the live edge, which is the part of one screen that is
-// always now. The acorn was on every screen by being outside all of them;
-// there is one screen.
-func TestTheWayToBuddyIsOnTheLiveEdge(t *testing.T) {
+// The way in is the rail, which is on every screen and never closes.
+//
+// It was a chip on the live edge, then a menu entry, and it is furniture now:
+// Buddy is a room, and going to a room is a link. Looking something up is not
+// a room — it is a thing you do — so it sits below the rule with the way out.
+func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
 	f := &fakeStore{
 		items:   []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)},
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood},
 	}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "ask Buddy")
-	require.Contains(t, body, `action="/buddy/ask"`)
+	require.Contains(t, body, `href="/r/buddy"`)
 	require.Contains(t, body, "look something up")
+	require.Contains(t, body, `action="/find/ask"`)
 }
 
 // Even with nothing said yet.
 //
-// This is why the chips are at the foot of the conversation rather than on the
-// live edge, which was the first version: the live edge is the newest Buddy
-// turn and a brand new conversation has none, so a way to Buddy that appears
-// once Buddy has spoken is a way to Buddy you cannot use to start.
+// This was the argument for chips at the foot rather than on the live edge:
+// the live edge is the newest Buddy turn, and a brand new conversation has
+// none, so a way to Buddy that appears once Buddy has spoken is a way to Buddy
+// you cannot use to start. The rail settles it — it is furniture, so it is
+// there before anything is.
 func TestTheWayToBuddyIsThereBeforeAnythingIsSaid(t *testing.T) {
 	f := &fakeStore{checkin: fresh()}
 	body := thread(t, f)
 
-	require.Contains(t, body, "ask Buddy")
+	require.Contains(t, body, `href="/r/buddy"`)
 	require.Contains(t, body, "look something up")
 }
 

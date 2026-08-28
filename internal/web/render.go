@@ -131,8 +131,14 @@ type view struct {
 	PushKey string
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
-	// Menu is everywhere else, behind the lid's one control. See layout.html.
-	Menu []turnChip
+	// Rooms is the rail, on every screen. It replaced the lid's menu on
+	// 28 August 2026: a room list you navigate to is a screen, and a room list
+	// that is always there is furniture. See internal/web/rooms.go.
+	Rooms []railView
+	// Room is the one you are in, and it is what the dock reads its
+	// placeholder, its button and its action from. Filled by the handler
+	// rather than by renderWith, because renderWith cannot know.
+	Room room
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -262,11 +268,11 @@ func toView(it squirrel.Item) noteView {
 // what it is about: the timer, if one is running. Threading it through each
 // handler would mean five places to forget it.
 func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, name string, v view) {
-	// The menu, on every screen that has a store to build it from. It carries
+	// The rail, on every screen that has a store to build it from. It carries
 	// the counts, so it is filled here rather than in render() — which takes
 	// neither a store nor a person and never could.
 	if personID, ok := personOf(r); ok {
-		v.Menu = menuFor(r.Context(), s, personID)
+		v.Rooms = roomsFor(r.Context(), s, personID, roomOf(r.Context()))
 	}
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey

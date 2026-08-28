@@ -1,7 +1,6 @@
 package web
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -34,9 +33,9 @@ func TestAPhotographIsShownOnTheShelf(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		withPhoto(1, "the tax letter", squirrel.ItemKept, squirrel.ItemNote)}}
 	f.appended = nil
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=kept"))
+	fDrew := drewIn(t, f, "kept")
 
-	require.Contains(t, string(f.appended[1].Shown), `"photo":"/photo/1"`,
+	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), `"photo":"/photo/1"`,
 		"the shelf drops the photograph")
 }
 
@@ -61,9 +60,9 @@ func TestAPhotographSurvivesBeingSetAside(t *testing.T) {
 		Because: "the vet", Kind: squirrel.ItemTask, PhotoName: "letter.jpg",
 	}}}
 	f.appended = nil
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=held"))
+	fDrew := drewIn(t, f, "held")
 
-	require.Contains(t, string(f.appended[1].Shown), `"photo":"/photo/20"`,
+	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), `"photo":"/photo/20"`,
 		"setting something aside loses its photograph")
 }
 
@@ -73,7 +72,7 @@ func TestAPhotographIsNeverAddressedByItsFilename(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		withPhoto(1, "the tax letter", squirrel.ItemKept, squirrel.ItemNote)}}
 	f.appended = nil
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=kept"))
+	fDrew := drewIn(t, f, "kept")
 
-	require.NotContains(t, string(f.appended[1].Shown), "letter.jpg")
+	require.NotContains(t, string(fDrew[len(fDrew)-1].Shown), "letter.jpg")
 }

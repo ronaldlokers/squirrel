@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -68,9 +67,9 @@ func storeWithPhoto(id int64) *fakeStore {
 // original is a photograph from a phone.
 func TestACardAsksForTheSmallerCopy(t *testing.T) {
 	f := storeWithPhoto(7)
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+	fDrew := drewIn(t, f, "pile")
 
-	shown := string(f.appended[1].Shown)
+	shown := string(fDrew[len(fDrew)-1].Shown)
 	require.Contains(t, shown, `"photo":"/photo/7"`)
 
 	body := opened(t, storeWithPhoto(7), "pile")

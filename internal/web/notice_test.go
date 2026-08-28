@@ -30,8 +30,8 @@ func TestADoorMaySayWhatItNoticed(t *testing.T) {
 	m := mountedWith(t, f, c)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
-	said := f.appended[1].Words
+	m.call(t, "GET", "/r/tasks", nil)
+	said := f.appended[len(f.appended)-1].Words
 
 	require.Contains(t, said, "3 things you decided")
 	require.Contains(t, said, "all about the car")
@@ -46,8 +46,8 @@ func TestTheSameSetIsOnlyNoticedOnce(t *testing.T) {
 	c := &fakeCoach{reply: "these are all about the car"}
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
+	m.call(t, "GET", "/r/tasks", nil)
 
 	require.Len(t, c.asked, 1, "it paid twice for the same set")
 }
@@ -58,9 +58,9 @@ func TestASetThatChangedIsNoticedAgain(t *testing.T) {
 	c := &fakeCoach{reply: "these are all about the car"}
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
 	f.items = append(f.items, task(9, "ring the dentist", squirrel.ItemOpen))
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
 
 	require.Len(t, c.asked, 2)
 }
@@ -72,9 +72,9 @@ func TestWithNoCoachADoorJustCounts(t *testing.T) {
 	m := routed(t, f)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
 
-	require.Equal(t, "3 things you decided.", f.appended[1].Words)
+	require.Equal(t, "3 things you decided.", f.appended[len(f.appended)-1].Words)
 }
 
 // One thing is not a set, and "one thing you notice about this one thing" is a
@@ -85,7 +85,7 @@ func TestOneCardIsNotWorthNoticingAnythingAbout(t *testing.T) {
 	c := &fakeCoach{reply: "should not be called"}
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
 
 	require.Empty(t, c.asked)
 }
@@ -99,10 +99,10 @@ func TestADoorThatCannotAskStillOpens(t *testing.T) {
 	m := mountedWith(t, f, c)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
 
-	require.Equal(t, "3 things you decided.", f.appended[1].Words)
-	require.Contains(t, string(f.appended[1].Shown), "a thing about the car")
+	require.Equal(t, "3 things you decided.", f.appended[len(f.appended)-1].Words)
+	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "a thing about the car")
 }
 
 // The bounds are the product's, not the model's, and they are checked rather
@@ -134,9 +134,9 @@ func TestTheChoresMaySayWhatTheyNoticed(t *testing.T) {
 	m := mountedWith(t, f, c)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=chores"))
+	m.call(t, "GET", "/r/chores", nil)
 
-	require.Contains(t, f.appended[1].Words, "both of these are bin day")
+	require.Contains(t, f.appended[len(f.appended)-1].Words, "both of these are bin day")
 }
 
 // It shipped as a sync.Map nothing ever evicted, growing by one entry per
@@ -181,8 +181,8 @@ func TestNothingWorthSayingIsRememberedToo(t *testing.T) {
 	c := &fakeCoach{reply: "You should start with the car one"} // refused: advice
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	m.call(t, "GET", "/r/tasks", nil)
+	m.call(t, "GET", "/r/tasks", nil)
 
 	require.Len(t, c.asked, 1, "it paid twice to be told nothing")
 }

@@ -162,8 +162,10 @@ func slice[T any](all []T, from int) (page []T, more bool) {
 	return all[from:to], true
 }
 
-// theRest is the chip that asks for the next page. A form, because it opens a
-// place and opening a place is something you said.
+// theRest is the chip that asks for the next page. A form, and it stays one
+// after rooms became links: this is paging inside a room rather than
+// navigation to one, and asking for the rest is something you said. See
+// openHandler, which is these two jobs behind one route.
 func theRest(where string, from int) turnChip {
 	return turnChip{
 		Label: "the rest", Action: "/open",

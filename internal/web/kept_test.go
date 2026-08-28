@@ -56,11 +56,11 @@ func TestTheShelfNeverEmitsACount(t *testing.T) {
 
 func TestTheEmptyShelfDoesNotInstruct(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=kept"))
+	fDrew := drewIn(t, f, "kept")
 
-	require.Contains(t, f.appended[1].Words, "Nothing on the shelf yet")
+	require.Contains(t, fDrew[len(fDrew)-1].Words, "Nothing on the shelf yet")
 	for _, forbidden := range []string{"well done", "start by", "you should", "try to"} {
-		require.NotContains(t, strings.ToLower(f.appended[1].Words), forbidden)
+		require.NotContains(t, strings.ToLower(fDrew[len(fDrew)-1].Words), forbidden)
 	}
 }
 

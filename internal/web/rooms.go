@@ -2,7 +2,11 @@ package web
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
+	"strconv"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 // The rooms.
@@ -106,6 +110,158 @@ func roomOf(ctx context.Context) string {
 // See TestOnlyKeepSaidPutsTurnsInARoom for the fence that keeps it that way.
 func withRoom(key string, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		h(w, r.WithContext(context.WithValue(r.Context(), roomKey{}, key)))
+		h(w, r.WithContext(withRoomIn(r.Context(), key)))
 	}
+}
+
+// withRoomIn is the same thing for a handler that learns its room part way
+// through — from a form field rather than from where it was mounted.
+func withRoomIn(ctx context.Context, key string) context.Context {
+	return context.WithValue(ctx, roomKey{}, key)
+}
+
+// roomRoute reads the room out of the path and puts it on the request before
+// anything downstream can append a turn.
+func roomRoute(s Store, opts Options) http.HandlerFunc {
+	h := roomHandler(s, opts)
+	return func(w http.ResponseWriter, r *http.Request) {
+		withRoom(r.PathValue("room"), h)(w, r)
+	}
+}
+
+// roomHandler is a room, entered.
+//
+// A GET, where a door was a POST. Entering a place is navigation and
+// navigation must not write: the door appended "the pile" to the record on
+// every press, which made a record of walking around rather than of anything
+// said. The cost the door paid for being a POST — no new tab, no back through
+// doors — comes back with it.
+//
+// What it does append is the room's own current state, and only when the
+// conversation ends with nothing to act on. The same guard the offer uses on
+// the thread, for the same reason: something already handed to you is
+// something you already have.
+func roomHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		here, ok := roomByKey(r.PathValue("room"))
+		if !ok {
+			// A typo, not a page. Not a redirect to Buddy: a URL that
+			// silently becomes a different room is a URL you cannot trust in
+			// a bookmark.
+			http.NotFound(w, r)
+			return
+		}
+		ctx := r.Context()
+
+		var (
+			turns []squirrel.Turn
+			more  bool
+			err   error
+		)
+		// `?before=` walks up this room's conversation, and it is in the
+		// address bar for the same reason the thread's is: a page of the past
+		// is a place you can send yourself back to.
+		before, perr := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
+		walkingBack := perr == nil && before > 0
+		if walkingBack {
+			turns, more, err = s.TurnsBefore(ctx, personID, here.Key, before, threadLimit)
+		} else {
+			turns, more, err = s.RecentTurns(ctx, personID, here.Key, threadLimit)
+		}
+		unreadable := err != nil
+		if unreadable {
+			slog.Error("reading a room", "room", here.Key, "error", err)
+			turns, more = nil, false
+		}
+
+		// The room's own current state. Never while walking back — reading the
+		// past must not add to it — and never onto a conversation that already
+		// ends with something to act on.
+		if !walkingBack && !unreadable && !endsOpen(turns) {
+			if reply, has := placeSaid(ctx, s, opts, personID, here.Key, 0); has {
+				saved := keepSaid(ctx, s, personID, []squirrel.Turn{
+					alsoOffer(reply, newChipFor(here.Key)...),
+				})
+				turns = append(turns, saved...)
+			}
+		}
+
+		v := view{
+			Room:      here,
+			Here:      here.Key,
+			Scrolling: true,
+			Turns:     turnViews(turns),
+			MoreAbove: more,
+		}
+		if len(turns) > 0 {
+			v.Oldest = turns[0].ID
+		}
+		if unreadable {
+			v.Turns = []turnView{{
+				Buddy: true, Live: true, V: assetVersion,
+				Words: "I cannot reach what we said here. Tell me things anyway — they are kept, and they go in when I can.",
+			}}
+		}
+		renderWith(w, r, s, opts, "thread", v)
+	}
+}
+
+// railView is one room on the rail.
+type railView struct {
+	Key, Name string
+	// Count is what is waiting, and zero draws no pill. Zero is no number and
+	// not a nought: a room reading "0" is a scoreboard, which is the rule the
+	// four doors carried and the rail inherits along with them.
+	//
+	// Kept against the evidence, deliberately, on 27 August 2026. A bad week
+	// reads as a scoreboard, because pills in a column invite a total the eye
+	// computes whether or not the product prints one — which is the shape
+	// PRODUCT.md named when it retired the no-count rule. The trade is that
+	// not knowing how much is waiting is its own weight.
+	//
+	// It reverses cleanly, which is why it is safe to have kept: delete the
+	// Waiting read below and every number goes, because they are computed here
+	// and stored nowhere.
+	Count int
+	// Current is the room you are in.
+	Current bool
+}
+
+// roomsFor is the rail.
+//
+// Counts on the four that earn one. The three without — Buddy's room and the
+// two shelves — carry nothing, and that is not an omission: a shelf is where a
+// decision has already been made, and a number on it would be a reproach for
+// having made it.
+func roomsFor(ctx context.Context, s Store, personID int64, here string) []railView {
+	out := make([]railView, 0, len(rooms))
+	for _, r := range rooms {
+		out = append(out, railView{Key: r.Key, Name: r.Name, Current: r.Key == here})
+	}
+	waiting, err := s.Waiting(ctx, personID, now())
+	if err != nil {
+		// A count that cannot be read is a rail with no numbers on it, which
+		// is what this was before 24 August. Everything still goes where it
+		// goes.
+		slog.Error("counting what is waiting, for the rail", "error", err)
+		return out
+	}
+	for i := range out {
+		switch out[i].Key {
+		case "pile":
+			out[i].Count = waiting.Pile
+		case "at":
+			out[i].Count = waiting.Agenda
+		case "tasks":
+			out[i].Count = waiting.Tasks
+		case "chores":
+			out[i].Count = waiting.Chores
+		}
+	}
+	return out
 }

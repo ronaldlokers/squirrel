@@ -25,10 +25,8 @@ import (
 // nothing to decide about, and the bottom you reach by skipping.
 func elsewhereFromThePile() []turnChip {
 	return []turnChip{
-		{Label: "the things you kept", Action: "/open",
-			Fields: map[string]string{"where": "kept"}},
-		{Label: "what you set aside", Action: "/open",
-			Fields: map[string]string{"where": "held"}},
+		{Label: "the things you kept", Href: "/r/kept"},
+		{Label: "what you set aside", Href: "/r/held"},
 	}
 }
 

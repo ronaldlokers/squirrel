@@ -32,8 +32,8 @@ func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
 	// the door drew rather than on the page, which by now also holds the tasks
 	// this test just asked for.
 	f.appended = nil
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
-	pile := string(f.appended[1].Shown)
+	fDrew := drewIn(t, f, "pile")
+	pile := string(fDrew[len(fDrew)-1].Shown)
 	require.Contains(t, pile, "buy milk")
 	require.NotContains(t, pile, "ring the vet")
 }
@@ -175,11 +175,11 @@ func TestOpeningTheTasksDrawsThem(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{
 		{ID: 3, RawText: "ring the bank", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
 	}}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	fDrew := drewIn(t, f, "tasks")
 
-	require.Len(t, f.appended, 2)
-	require.Contains(t, string(f.appended[1].Shown), "ring the bank")
-	require.Contains(t, string(f.appended[1].Shown), `"place":"the tasks"`)
+	require.Len(t, fDrew, 1)
+	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), "ring the bank")
+	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), `"place":"the tasks"`)
 }
 
 // A task made from a photograph is a card with the photograph on it. Without
@@ -189,9 +189,9 @@ func TestATaskWithNoWordsKeepsItsPhotograph(t *testing.T) {
 		{ID: 3, RawText: "", Kind: squirrel.ItemTask, State: squirrel.ItemOpen,
 			PhotoName: "letter.jpg", PhotoType: "image/jpeg"},
 	}}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	fDrew := drewIn(t, f, "tasks")
 
-	require.Contains(t, string(f.appended[1].Shown), "photo")
+	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), "photo")
 }
 
 // Doing one says so, in the words the note actually holds.
@@ -233,8 +233,8 @@ func TestATaskThatIsNotYoursDoesNothing(t *testing.T) {
 // Nothing decided yet is a sentence rather than an empty list.
 func TestNoTasksSaysSo(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks"))
+	fDrew := drewIn(t, f, "tasks")
 
-	require.Len(t, f.appended, 2)
-	require.Contains(t, f.appended[1].Words, "Nothing decided yet")
+	require.Len(t, fDrew, 1)
+	require.Contains(t, fDrew[len(fDrew)-1].Words, "Nothing decided yet")
 }

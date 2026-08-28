@@ -15,13 +15,13 @@ func aside(state squirrel.ItemState, id int64, text, because string) squirrel.He
 	return squirrel.HeldItem{ID: id, Text: text, State: state, Because: because}
 }
 
-// What the turn drew, as the record kept it.
+// What the room drew on arrival, as the record kept it.
 func drewFor(t *testing.T, f *fakeStore, where string) string {
 	t.Helper()
 	f.appended = nil
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where="+where))
-	require.Len(t, f.appended, 2)
-	return string(f.appended[1].Shown) + " " + f.appended[1].Words
+	drew := drewIn(t, f, where)
+	require.Len(t, drew, 1, "a room draws one turn on arrival")
+	return string(drew[0].Shown) + " " + drew[0].Words
 }
 
 // Each card says which of the three it is and what would move it. The page
@@ -66,9 +66,9 @@ func TestWhatYouSetAsideKeepsTheCoresOrder(t *testing.T) {
 
 func TestNothingSetAsideReadsAsNothing(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=held"))
+	fDrew := drewIn(t, f, "held")
 
-	require.Contains(t, f.appended[1].Words, "Nothing set aside")
+	require.Contains(t, fDrew[len(fDrew)-1].Words, "Nothing set aside")
 }
 
 func TestWhatYouSetAsideNeverEmitsACount(t *testing.T) {
@@ -160,7 +160,7 @@ func TestTheTasksReachIt(t *testing.T) {
 	body := opened(t, f, "tasks")
 
 	require.Contains(t, body, "what you set aside")
-	require.Contains(t, body, `value="held"`)
+	require.Contains(t, body, `href="/r/held"`)
 }
 
 // And the page itself is gone.

@@ -1381,60 +1381,96 @@
     background: var(--purple); color: var(--paper);
   }
 
-  /* The menu, and it is the whole of this product's navigation.
+  /* The rail: the rooms, and it is the whole of this product's navigation.
    *
-   * The rail of four doors, the always-on chip row and the stop link were all
-   * permanent fixtures in the conversation, together about 45% of a phone
-   * screen before a word was said. They are here, behind one 44px control.
+   * A menu of eight stood here from 26 August behind one 44px control. It went
+   * on 28 August, and what replaced it is not a smaller menu — it is furniture.
+   * A room list you press to open is a screen; a room list that is always
+   * there costs no screen and no gesture, which is the only structural
+   * difference between rooms and the doors they came from.
    *
-   * A <details>, so it opens with the script off. */
-  .menu > summary {
-    list-style: none; cursor: pointer;
-    width: 44px; height: 44px; flex: none;
-    display: grid; place-items: center;
-    color: var(--cream); border-radius: 11px;
+   * Links, where the menu was forms: a door was a POST because opening a place
+   * appended what you said, and a room is a place you go.
+   *
+   * A phone gets a strip above the conversation that scrolls sideways. Seven
+   * rooms in a column on a phone would be the screen. */
+  .rail {
+    display: flex; flex-direction: row; gap: 8px;
+    padding: 10px 14px 2px;
+    overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
-  .menu > summary::-webkit-details-marker { display: none; }
-  .menu > summary svg { width: 22px; height: 22px; display: block; }
-  .menu[open] > summary { background: rgba(255, 251, 243, .16); }
+  .rail::-webkit-scrollbar { display: none; }
 
-  /* Over the conversation rather than pushing it down: a menu that reflowed
-     the screen would move the thing you were reading in order to show you a
-     way somewhere else. */
-  .menupanel {
-    position: absolute; top: 58px; right: 12px; z-index: 20;
-    width: min(260px, calc(100vw - 24px));
+  .rail .room {
+    display: flex; align-items: center; gap: 7px; flex: 0 0 auto;
+    padding: 8px 13px;
+    font: 600 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 600;
+    text-decoration: none; white-space: nowrap;
     background: var(--card); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: var(--r);
-    box-shadow: 0 8px 0 0 var(--outline), 0 20px 34px -18px rgba(0, 0, 0, .8);
-    overflow: hidden;
+    box-shadow: 0 5px 0 0 var(--outline);
+    transition: transform 90ms, box-shadow 90ms;
   }
-  .menupanel form { margin: 0; }
-  .menupanel button,
-  .menupanel .leaving {
-    display: flex; align-items: center; gap: 9px; width: 100%;
-    padding: 12px 14px; text-align: left;
-    background: none; border: 0; border-bottom: 2px solid rgba(28, 17, 11, .14);
-    color: var(--outline); font: inherit; font-size: 15px;
-    font-variation-settings: var(--casual), "wght" 600;
-    text-decoration: none; cursor: pointer;
+  /* The room you are in, said the way this product says pressed: down on its
+     own shadow. Not a different colour — a colour would be a second meaning
+     for a thing that already has one. */
+  .rail .room.in {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 0 var(--outline);
   }
-  .menupanel button:hover,
-  .menupanel .leaving:hover { background: var(--paper); }
-  /* The way out is last and under a rule of its own. It is not a destination
-     like the others: it is the end of the evening, and its place at the bottom
-     is what says so without a louder word. Principle 3 — leaving must never
-     look like failure — is why it is not smaller or greyer, only elsewhere. */
-  .menupanel .leaving {
-    border-bottom: 0; border-top: var(--line) solid var(--outline);
-    font-variation-settings: var(--casual), "wght" 500;
-  }
-  /* Zero is no number and not a nought: a row reading "0" is a scoreboard. */
-  .menupanel .cnt {
-    margin-left: auto; min-width: 22px; height: 22px; border-radius: 999px;
+  /* Zero is no number and not a nought: a room reading "0" is a scoreboard. */
+  .rail .cnt {
+    min-width: 22px; height: 22px; border-radius: 999px;
     background: var(--orange); border: 2px solid var(--outline);
     font-size: 12px; line-height: 18px; text-align: center;
     font-variation-settings: var(--precise), "wght" 800;
+  }
+  /* Looking something up sits with the way out, below the rule and outside the
+     seven: it is a thing you do rather than a place you go. */
+  .rail .lookup { margin: 0 0 0 6px; flex: 0 0 auto; display: flex; }
+  .rail .lookup button {
+    padding: 8px 13px; border: 0; background: none; cursor: pointer;
+    color: var(--cream); white-space: nowrap;
+    font: 500 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+
+  /* The way out is last and under a rule of its own. It is not a destination
+     like the others: it is the end of the evening, and its place at the end is
+     what says so without a louder word. Principle 3 — leaving must never look
+     like failure — is why it is not smaller or greyer, only elsewhere. */
+  .rail .leaving {
+    display: flex; align-items: center; flex: 0 0 auto;
+    padding: 8px 13px; margin-left: 6px;
+    border-left: var(--line) solid rgba(255, 251, 243, .3);
+    color: var(--cream); text-decoration: none; white-space: nowrap;
+    font: 500 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--casual), "wght" 500;
+  }
+
+  /* On a desktop it is a column beside the conversation, and it is fixed:
+     scrolling the conversation must not scroll the way out of it. */
+  @media (min-width: 860px) {
+    body { --railw: 236px; }
+    .rail {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--railw);
+      flex-direction: column; align-items: stretch;
+      padding: 92px 16px 20px;
+      overflow-x: visible; overflow-y: auto;
+      background: rgba(28, 17, 11, .22);
+    }
+    .rail .room { width: 100%; }
+    .rail .cnt { margin-left: auto; }
+    .rail .lookup { margin: auto 0 0; }
+    .rail .lookup button { width: 100%; text-align: left; padding-left: 13px; }
+    .rail .leaving {
+      margin: 8px 0 0; border-left: 0;
+      border-top: var(--line) solid rgba(255, 251, 243, .3);
+      padding: 14px 13px 0;
+    }
+    .lid, #stage { margin-left: var(--railw); }
   }
 
   /* The six bodies. See DESIGN.md, The Six Bodies.

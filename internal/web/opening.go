@@ -137,14 +137,11 @@ func openingTurn(ctx context.Context, s Store, opts Options, personID int64, tur
 	// notification.
 	switch {
 	case len(soon) > 0:
-		sh.Chips = []turnChip{{Label: "the agenda", Action: "/open",
-			Fields: map[string]string{"where": "at"}}}
+		sh.Chips = []turnChip{{Label: "the agenda", Href: "/r/at"}}
 	case waiting.Chores > 0:
-		sh.Chips = []turnChip{{Label: "the chores", Action: "/open",
-			Fields: map[string]string{"where": "chores"}}}
+		sh.Chips = []turnChip{{Label: "the chores", Href: "/r/chores"}}
 	default:
-		sh.Chips = []turnChip{{Label: "the pile", Action: "/open",
-			Fields: map[string]string{"where": "pile"}}}
+		sh.Chips = []turnChip{{Label: "the pile", Href: "/r/pile"}}
 	}
 
 	body, err := json.Marshal(sh)
@@ -178,7 +175,7 @@ func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn,
 		// time the page is drawn.
 		Opened: "place:" + run.Place,
 		Chips: []turnChip{
-			{Label: "carry on", Action: "/open", Fields: map[string]string{"where": run.Place}},
+			{Label: "carry on", Href: "/r/" + run.Place},
 			{Label: "start fresh", Action: "/place/fresh"},
 		},
 	}

@@ -96,67 +96,52 @@
     <button class="stopTimer" type="submit">stop</button>
   </form>
   {{end}}
-  {{/* The other half of the pile, and the way back from it. A chore was
-       invisible until it nudged you, which is the one moment you are least
-       able to decide you never want it again.
+  {{/* The lid holds the mark and the timer when one is running. Nothing else:
+       it was a row of words costing most of a phone screen before anything you
+       came for.
 
-       Not on home: both doors are already the body of that page, and a third
-       copy of a door is furniture. */}}
-  {{/* The menu, and it is the whole of this product's navigation as of
-       26 August 2026.
-
-       The rail of four doors, the `ask Buddy` and `look something up` chips and
-       the `stop whenever you like` line were all permanent fixtures in the
-       conversation, together taking about 45% of a phone screen before a word
-       was said. They are here now, behind one 44px control.
-
-       This is a hamburger, and this product deliberately removed one on
-       25 August. Bringing it back is a decision rather than a drift: it held
-       three things then and it holds eight now, and the argument against it —
-       that a menu of three is emptier than the space it costs — stops applying
-       at eight.
-
-       A <details> rather than a script: it opens with JavaScript off, which
-       every other disclosure here already does.
-
-       Counts on the two that earn one. Zero is no number and not a nought — a
-       door reading "0" is a scoreboard, which is the rule the four doors
-       carried and this inherits along with them. */}}
-  <details class="menu">
-    <summary aria-label="Everywhere else">
-      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
-           stroke-width="2.4" stroke-linecap="round">
-        <path d="M4 7h16M4 12h16M4 17h16"/>
-      </svg>
-    </summary>
-    <nav class="menupanel" aria-label="Everywhere else">
-      {{range .Menu}}
-      <form method="post" action="{{.Action}}">
-        {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
-        <button type="submit">{{.Label}}{{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}</button>
-      </form>
-      {{end}}
-      {{/* The way out, last and under a rule. Not a destination like the
-           others: it is the end of the evening, and it must never look like
-           failure — its own place at the bottom says that without a louder
-           word. The wording moves with the day. */}}
-      <a class="leaving" href="/enough">{{.SayStop}}</a>
-    </nav>
-  </details>
-  {{/* The lid holds the mark, the menu, and the timer when one is running.
-       Nothing else: it was a row of words costing most of a phone screen
-       before anything you came for.
-
-       The acorn, the search disclosure and the map beside them came off:
-       Buddy joins the conversation that is already here rather than bringing
-       one, search is a chip for the same reason, and the map was already
-       opening onto a blank list. */}}
+       The menu that stood here from 26 August went to the rail below on
+       28 August. It held eight things behind one control, which was the whole
+       of this product's navigation; the rail holds seven and never closes. */}}
 
   <svg class="brim" viewBox="-1 0 102 30" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-1 -2 L-1 5 Q 50 29 101 5 L101 -2 Z" fill="#3b2560"/>
     <path d="M-1 5 Q 50 29 101 5" fill="none" stroke="#1c110b" stroke-width="3" vector-effect="non-scaling-stroke"/>
   </svg>
 </div>
+{{/* The rail. Furniture on a desktop and a strip above the conversation on a
+     phone, and that is the one structural difference between this and the menu
+     it replaced: moving between rooms costs no screen and no gesture.
+
+     Links, where the menu was forms. A door was a POST because opening a place
+     appended what you said to the record; a room is a place you go, and going
+     somewhere writes nothing. Back steps through rooms now, and a room opens in
+     a new tab.
+
+     Counts on the four that earn one, and zero is no number rather than a
+     nought. See railView for why they were kept and what reverses them. */}}
+<nav class="rail" aria-label="The rooms">
+  {{range .Rooms}}
+  <a class="room{{if .Current}} in{{end}}" href="/r/{{.Key}}"{{if .Current}} aria-current="page"{{end}}>
+    <span class="roomname">{{.Name}}</span>
+    {{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}
+  </a>
+  {{end}}
+  {{/* Looking something up. Not a room — it is a thing you do, and what it
+       finds is a card in the room you are standing in — so it sits below the
+       rule with the way out rather than among the seven.
+
+       It was a menu entry until 28 August and would have gone with the menu.
+       A POST, because asking is an utterance and goes into the record like
+       anything else you say. See findAskHandler. */}}
+  <form class="lookup" method="post" action="/find/ask">
+    <button type="submit">look something up</button>
+  </form>
+  {{/* The way out, last and under a rule. Not a room: it is the end of the
+       evening, and it must never look like failure — its own place at the
+       bottom says that without a louder word. The wording moves with the day. */}}
+  <a class="leaving" href="/enough">{{.SayStop}}</a>
+</nav>
 <main id="stage" class="{{if .Home}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
 {{/* The pile moved while this card was on the screen. Not an error and not a
      failure: the note is where the room put it, and this says so rather than

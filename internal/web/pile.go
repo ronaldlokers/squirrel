@@ -51,10 +51,20 @@ func Mount(m Mux, s Store, opts Options) error {
 	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
-	m.Get("/{$}", guard(opts, threadHandler(s, opts)))
+	m.Get("/{$}", guard(opts, withRoom("buddy", threadHandler(s, opts))))
+	// Buddy's room, by its own name. The same handler as "/": the worked
+	// example, the check-in and the offer all live on the thread, and a second
+	// handler for the same room would be a second set of them.
+	//
+	// Go's ServeMux prefers the more specific pattern, so this wins over
+	// /r/{room} without any ordering care here.
+	m.Get("/r/buddy", guard(opts, withRoom("buddy", threadHandler(s, opts))))
+	// Any other room. A GET, because entering a place is navigation — see
+	// roomHandler.
+	m.Get("/r/{room}", guard(opts, roomRoute(s, opts)))
 	// The slot.
 	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
-	// A door being pressed. A POST rather than a link — see openHandler.
+	// The door, as it was until 28 August 2026. See openHandler.
 	m.Post("/open", guard(opts, sameOrigin(openHandler(s, opts))))
 	// A photograph, behind the same guard as everything else: a picture of a
 	// letter is at least as private as the note beside it.

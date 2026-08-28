@@ -55,21 +55,24 @@ func TestTheWayOutIsStillOnePress(t *testing.T) {
 	require.Contains(t, body, `class="leaving"`)
 }
 
-func TestTheMenuOpensWithoutScript(t *testing.T) {
+// The rail needs no script at all, where the menu needed a <details> to open
+// without one. Seven links and a form.
+func TestTheRailNeedsNoScript(t *testing.T) {
 	body := thread(t, &fakeStore{})
 
-	require.Contains(t, body, `<details class="menu">`)
-	require.Contains(t, body, "<summary")
+	require.Contains(t, body, `<nav class="rail"`)
+	require.NotContains(t, body, "<summary",
+		"the rail still has something to open")
 }
 
-// Everywhere is reachable from every screen, not only the conversation. A menu
+// Everywhere is reachable from every screen, not only the conversation. A rail
 // that emptied itself on the screen you navigated to would be a one-way door.
-func TestTheMenuIsOnEveryScreen(t *testing.T) {
+func TestTheRailIsOnEveryOtherScreenToo(t *testing.T) {
 	m := mounted(t, &fakeStore{checkin: fresh()})
 
 	for _, screen := range []string{"/", "/moods", "/enough"} {
 		body := m.call(t, "GET", screen, nil).Body.String()
-		require.Contains(t, body, `class="menupanel"`, "%s has no menu", screen)
-		require.Contains(t, body, "the pile", "%s cannot reach the pile", screen)
+		require.Contains(t, body, `<nav class="rail"`, "%s has no rail", screen)
+		require.Contains(t, body, `href="/r/pile"`, "%s cannot reach the pile", screen)
 	}
 }

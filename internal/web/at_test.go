@@ -164,8 +164,8 @@ func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
 	// Soonest first, in the turn the door draws now.
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
-	body := string(f.appended[1].Shown)
+	fDrew := drewIn(t, f, "at")
+	body := string(fDrew[len(fDrew)-1].Shown)
 
 	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
 }
@@ -177,9 +177,9 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
-	said := strings.ToLower(f.appended[1].Words)
-	drawn := strings.ToLower(string(f.appended[1].Shown))
+	fDrew := drewIn(t, f, "at")
+	said := strings.ToLower(fDrew[len(fDrew)-1].Words)
+	drawn := strings.ToLower(string(fDrew[len(fDrew)-1].Shown))
 
 	// Counting what is ahead is permitted, and is the only number here.
 	require.Contains(t, said, "2 things have a time")
@@ -191,8 +191,8 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 
 func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
-	body := strings.ToLower(f.appended[1].Words)
+	fDrew := drewIn(t, f, "at")
+	body := strings.ToLower(fDrew[len(fDrew)-1].Words)
 
 	require.Contains(t, body, "when something has a time you can be late for")
 	require.NotContains(t, body, "plan")
@@ -203,10 +203,10 @@ func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
 func TestOpeningTheAgendaDrawsWhatIsComing(t *testing.T) {
 	m := aMoment(3*time.Hour, "keys, wallet")
 	f := withUpcoming(*m)
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	fDrew := drewIn(t, f, "at")
 
-	require.Len(t, f.appended, 2)
-	shown := string(f.appended[1].Shown)
+	require.Len(t, fDrew, 1)
+	shown := string(fDrew[len(fDrew)-1].Shown)
 	require.Contains(t, shown, "dentist")
 	require.Contains(t, shown, `"place":"the agenda"`)
 	require.Contains(t, shown, squirrel.LeaveWords(*m))
@@ -217,24 +217,24 @@ func TestOpeningTheAgendaDrawsWhatIsComing(t *testing.T) {
 // thing three hours early is one that gets pressed by accident.
 func TestLeavingIsAbsentOutsideTheWindow(t *testing.T) {
 	far := withUpcoming(*aMoment(3*time.Hour, ""))
-	routed(t, far).call(t, "POST", "/open", strings.NewReader("where=at"))
-	require.NotContains(t, string(far.appended[1].Shown), "LEAVING")
+	farDrew := drewIn(t, far, "at")
+	require.NotContains(t, string(farDrew[len(farDrew)-1].Shown), "LEAVING")
 
 	near := withUpcoming(*aMoment(20*time.Minute, ""))
-	routed(t, near).call(t, "POST", "/open", strings.NewReader("where=at"))
-	require.Contains(t, string(near.appended[1].Shown), "LEAVING")
+	nearDrew := drewIn(t, near, "at")
+	require.Contains(t, string(nearDrew[len(nearDrew)-1].Shown), "LEAVING")
 }
 
 // An absence, not an encouragement. Nothing here says you ought to be making
 // plans, and nothing counts what is not there.
 func TestAnEmptyAgendaSaysSoWithoutEncouraging(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=at"))
+	fDrew := drewIn(t, f, "at")
 
-	require.Len(t, f.appended, 2)
-	require.Contains(t, strings.ToLower(f.appended[1].Words), "when something has a time you can be late for")
+	require.Len(t, fDrew, 1)
+	require.Contains(t, strings.ToLower(fDrew[len(fDrew)-1].Words), "when something has a time you can be late for")
 	for _, nag := range []string{"why not", "get started", "add your first", "0"} {
-		require.NotContains(t, strings.ToLower(f.appended[1].Words), nag)
+		require.NotContains(t, strings.ToLower(fDrew[len(fDrew)-1].Words), nag)
 	}
 }
 

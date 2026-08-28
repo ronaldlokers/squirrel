@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -32,8 +33,8 @@ func TestTheRestOfTheTasksIsTheRestOfTheTasks(t *testing.T) {
 	m := routed(t, f)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
-	first := string(f.appended[1].Shown)
+	m.call(t, "GET", "/r/tasks", nil)
+	first := string(f.appended[len(f.appended)-1].Shown)
 	require.Contains(t, first, "decided thing a")
 	require.Contains(t, first, "decided thing e")
 	require.NotContains(t, first, "decided thing f")
@@ -41,7 +42,7 @@ func TestTheRestOfTheTasksIsTheRestOfTheTasks(t *testing.T) {
 
 	f.appended = nil
 	m.call(t, "POST", "/open", strings.NewReader("where=tasks&from=5"))
-	second := string(f.appended[1].Shown)
+	second := string(f.appended[len(f.appended)-1].Shown)
 	require.Contains(t, second, "decided thing f")
 	require.Contains(t, second, "decided thing i")
 	require.NotContains(t, second, "decided thing a", "it started again from the top")
@@ -64,7 +65,7 @@ func TestTheRestDoesNotOfferANewOne(t *testing.T) {
 	f.appended = nil
 	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks&from=5"))
 
-	require.NotContains(t, string(f.appended[1].Shown), "a new task")
+	require.NotContains(t, string(f.appended[len(f.appended)-1].Shown), "a new task")
 }
 
 // Past the end is a sentence rather than an empty reply, which reads as a
@@ -74,7 +75,7 @@ func TestPastTheEndSaysSo(t *testing.T) {
 	f.appended = nil
 	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks&from=99"))
 
-	require.Contains(t, f.appended[1].Words, "That is all of them")
+	require.Contains(t, f.appended[len(f.appended)-1].Words, "That is all of them")
 }
 
 // The chores page the same way.
@@ -90,13 +91,13 @@ func TestTheRestOfTheChores(t *testing.T) {
 	m := routed(t, f)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=chores"))
-	require.Contains(t, string(f.appended[1].Shown), `"from":"5"`)
+	m.call(t, "GET", "/r/chores", nil)
+	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"from":"5"`)
 
 	f.appended = nil
 	m.call(t, "POST", "/open", strings.NewReader("where=chores&from=5"))
-	require.Contains(t, string(f.appended[1].Shown), "chore f")
-	require.NotContains(t, string(f.appended[1].Shown), "chore a")
+	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "chore f")
+	require.NotContains(t, string(f.appended[len(f.appended)-1].Shown), "chore a")
 }
 
 // And the agenda, which had no chip at all: it drew five and said nothing
@@ -113,12 +114,12 @@ func TestTheAgendaOffersTheRest(t *testing.T) {
 	m := routed(t, f)
 
 	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=at"))
-	require.Contains(t, string(f.appended[1].Shown), `"from":"5"`)
+	m.call(t, "GET", "/r/at", nil)
+	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"from":"5"`)
 
 	f.appended = nil
 	m.call(t, "POST", "/open", strings.NewReader("where=at&from=5"))
-	require.Contains(t, string(f.appended[1].Shown), "thing f")
+	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "thing f")
 }
 
 // Search's chip led to a 404. There is no second page of search, and
@@ -133,28 +134,82 @@ func TestSearchNoLongerPointsAtTheDeck(t *testing.T) {
 	f.appended = nil
 	routed(t, f).call(t, "POST", "/find", strings.NewReader("q=boiler"))
 
-	drew := string(f.appended[1].Shown)
+	drew := string(f.appended[len(f.appended)-1].Shown)
 	require.NotContains(t, drew, "/pile", "it still points at the deck")
 	require.Contains(t, drew, "/find/ask")
 }
 
 // Every chip that acts is a form. A link out of the conversation is a link to
 // somewhere that is not the conversation, and there is nowhere else.
-func TestNoChipInTheConversationIsALink(t *testing.T) {
+// Every chip that is a link points somewhere that exists.
+//
+// This was "no chip is a link" until 28 August, and the rule was always the
+// narrower one underneath it: the three chips that broke it pointed at
+// `/?open=chores`, `/?open=tasks` and `/pile?q=…`, none of which the thread
+// has ever read, so pressing one reloaded the conversation and did nothing —
+// which reads exactly like a press that did not land.
+//
+// Rooms are links, so the blanket ban had to go. What replaces it is the check
+// the ban was standing in for, and it is stronger: resolve every href against
+// the route table.
+func TestEveryChipGoesSomewhereThatExists(t *testing.T) {
 	f := nineTasks()
 	f.checkin = fresh()
+	f.aside = []squirrel.HeldItem{{ID: 5, Text: "the referral", State: squirrel.ItemWaiting}}
 	body := opened(t, f, "tasks")
 
-	// Positively, and by the tag each chip is written with. Asserted as an
-	// absence of two dead URLs until now, which is a check that passes because
-	// the strings no longer exist anywhere rather than because the rule holds.
+	m := mounted(t, &fakeStore{})
+	hrefs := regexp.MustCompile(`<a class="chip" href="([^"]+)"`).FindAllStringSubmatch(body, -1)
+	require.NotEmpty(t, hrefs, "no linked chips rendered, so this measured nothing")
+	for _, h := range hrefs {
+		path, query, _ := strings.Cut(h[1], "?")
+		require.True(t, reachable(m, path), "a chip points at %q, which nothing serves", h[1])
+
+		// And the query has to be one somebody reads. All three of the dead
+		// chips resolved to a path that exists — `/?open=chores` is `/` — so
+		// checking the path alone is the check that let them ship.
+		q, err := url.ParseQuery(query)
+		require.NoError(t, err)
+		for key := range q {
+			require.Contains(t, readsQuery, key,
+				"a chip passes ?%s, which no handler reads — pressing it "+
+					"reloads the page and does nothing", key)
+		}
+	}
+
+	// And anything that is not a link is still a press, never a bare anchor
+	// somewhere else in the turn.
 	tags := regexp.MustCompile(`<([a-z]+) class="chip`).FindAllStringSubmatch(body, -1)
-	require.NotEmpty(t, tags, "no chips rendered, so this measured nothing")
 	for _, tag := range tags {
 		// A label is the picker's own radio, which is a press too.
-		require.Contains(t, []string{"button", "label"}, tag[1],
-			"a chip in the conversation is a <%s> rather than a press", tag[1])
+		require.Contains(t, []string{"a", "button", "label"}, tag[1],
+			"a chip is a <%s>, which is neither a press nor a way somewhere", tag[1])
 	}
+}
+
+// readsQuery is every query key a GET handler on this screen actually reads.
+// Kept by hand, and short on purpose: a key nobody reads is a chip that looks
+// like it did not land.
+var readsQuery = []string{"before", "ask", "anyway", "held"}
+
+// reachable says the route table answers a GET for this path.
+func reachable(m *testMux, path string) bool {
+	for pattern := range m.routes {
+		method, p, _ := strings.Cut(pattern, " ")
+		if method != "GET" {
+			continue
+		}
+		if exact, ok := strings.CutSuffix(p, "{$}"); ok {
+			if path == exact {
+				return true
+			}
+			continue
+		}
+		if matchesPath(p, path) {
+			return true
+		}
+	}
+	return false
 }
 
 // The room for the dock is reserved on the column and not on `.thread`.

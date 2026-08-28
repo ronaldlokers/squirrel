@@ -55,25 +55,25 @@ func TestOnlyTheNewestBuddyTurnHasControls(t *testing.T) {
 		"a card in scrollback keeps its words and loses its buttons")
 }
 
-// The four places, and the two things you can always do, in the menu.
-func TestTheMenuHoldsEverywhereElse(t *testing.T) {
+// The seven rooms, and the one thing you can always do, on the rail.
+func TestTheRailHoldsEverywhereElse(t *testing.T) {
 	body := thread(t, &fakeStore{
 		waiting: squirrel.Waiting{Pile: 3, Tasks: 1, Chores: 2, Agenda: 1},
 	})
 
 	for _, name := range []string{
-		"the pile", "the tasks", "the chores", "the agenda",
+		"Buddy", "the pile", "the tasks", "the chores", "the agenda",
 		"what you set aside", "the things you kept",
-		"ask Buddy", "look something up",
+		"look something up",
 	} {
-		require.Contains(t, body, name, "the menu lost %s", name)
+		require.Contains(t, body, name, "the rail lost %s", name)
 	}
 	require.Contains(t, body, `class="cnt">3<`)
 	require.Contains(t, body, `class="cnt">2<`)
 }
 
-// Zero is no number, not a nought. A door reading "0" is a scoreboard.
-func TestADoorWithNothingWaitingShowsNoNumber(t *testing.T) {
+// Zero is no number, not a nought. A room reading "0" is a scoreboard.
+func TestARoomWithNothingWaitingShowsNoNumber(t *testing.T) {
 	body := thread(t, &fakeStore{waiting: squirrel.Waiting{}})
 
 	require.Contains(t, body, "the pile")
@@ -424,28 +424,33 @@ func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
 	require.Contains(t, body, `href="/moods"`, "the newest turn keeps its chips")
 }
 
-func TestOpeningADoorSaysItsName(t *testing.T) {
+// Entering a room draws the room and puts no words in your mouth.
+//
+// The door it replaced wrote two turns — "the chores", said by you, and
+// Buddy's reply. Pressing a door was an utterance because a door was a POST;
+// walking into a room is not, so the record no longer holds a sentence you
+// never said.
+func TestEnteringARoomDrawsItAndSaysNothingForYou(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour,
 			EveryDays: 7, SinceDays: 8, Active: true, EverDone: true},
 	}}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=chores"))
+	fDrew := drewIn(t, f, "chores")
 
-	require.Len(t, f.appended, 2)
-	require.Equal(t, squirrel.SpeakerYou, f.appended[0].Who)
-	require.Equal(t, "the chores", f.appended[0].Words)
-	require.Equal(t, squirrel.SpeakerBuddy, f.appended[1].Who)
-	require.Contains(t, string(f.appended[1].Shown), "water the plants")
+	require.Len(t, fDrew, 1, "a room wrote something besides its own turn")
+	require.Equal(t, squirrel.SpeakerBuddy, fDrew[0].Who,
+		"the record has you saying a room's name out loud")
+	require.Contains(t, string(fDrew[0].Shown), "water the plants")
 }
 
 // And the turn carries the place's name as a heading, so heading navigation
 // still walks the app.
 func TestTheReplyToADoorCarriesItsHeading(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=chores"))
+	fDrew := drewIn(t, f, "chores")
 
-	require.Len(t, f.appended, 2)
-	require.Contains(t, string(f.appended[1].Shown), `"place":"the chores"`)
+	require.Len(t, fDrew, 1)
+	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), `"place":"the chores"`)
 }
 
 // A door nobody offered does nothing and says nothing. It arrives from a form,
@@ -466,18 +471,21 @@ func TestADoorThatDoesNotExistDoesNothing(t *testing.T) {
 // with the empty branch deleted.
 func TestAnEmptyPlaceSaysWhereChoresComeFrom(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=chores"))
+	fDrew := drewIn(t, f, "chores")
 
-	require.Len(t, f.appended, 2)
-	require.Contains(t, f.appended[1].Words, "Nothing comes back on its own")
-	require.NotContains(t, f.appended[1].Words, "0")
+	require.Len(t, fDrew, 1)
+	require.Contains(t, fDrew[len(fDrew)-1].Words, "Nothing comes back on its own")
+	require.NotContains(t, fDrew[len(fDrew)-1].Words, "0")
 }
 
-// A place is opened by posting rather than by following a link, because opening
-// one is something you said and a GET that writes would write again on every
-// reload.
-func TestOpeningAPlacePostsRatherThanLinks(t *testing.T) {
-	require.Contains(t, thread(t, &fakeStore{}), `action="/open"`)
+// A room is reached by following a link, because going somewhere is not
+// something you said. The door posted, and paid for it: no new tab, and back
+// did not step through doors.
+func TestARoomIsALinkRatherThanAPress(t *testing.T) {
+	body := thread(t, &fakeStore{})
+	require.Contains(t, body, `href="/r/chores"`)
+	require.NotContains(t, body, `action="/open"`,
+		"the rail still posts to open a place")
 }
 
 // A question is something on the table too.
@@ -503,10 +511,10 @@ func TestOpeningThePileHandsYouOneNote(t *testing.T) {
 		note(9, "the boiler makes a noise", squirrel.ItemOpen),
 		note(8, "meter reading 48213", squirrel.ItemOpen),
 	}}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+	fDrew := drewIn(t, f, "pile")
 
-	require.Len(t, f.appended, 2)
-	shown := string(f.appended[1].Shown)
+	require.Len(t, fDrew, 1)
+	shown := string(fDrew[len(fDrew)-1].Shown)
 	require.Contains(t, shown, "the boiler makes a noise")
 	require.NotContains(t, shown, "meter reading", "one at a time, like the deck")
 	for _, act := range []string{"done", "keep", "drop", "task"} {
@@ -561,11 +569,11 @@ func TestLaterHandsYouTheNextAndDecidesNothing(t *testing.T) {
 // Nothing left says so rather than handing you an empty card.
 func TestAnEmptyPileSaysSo(t *testing.T) {
 	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+	fDrew := drewIn(t, f, "pile")
 
-	require.Len(t, f.appended, 2)
-	require.NotContains(t, string(f.appended[1].Shown), `"cards"`)
-	require.NotEmpty(t, f.appended[1].Words)
+	require.Len(t, fDrew, 1)
+	require.NotContains(t, string(fDrew[len(fDrew)-1].Shown), `"cards"`)
+	require.NotEmpty(t, fDrew[len(fDrew)-1].Words)
 }
 
 // The three questions a note can be asked, rather than the three verbs that end
@@ -706,9 +714,9 @@ func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
 
 func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
 	f := &fakeStore{itemsErr: errTest}
-	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=pile"))
+	fDrew := drewIn(t, f, "pile")
 
-	require.Contains(t, f.appended[1].Words, "cannot reach the pile")
+	require.Contains(t, fDrew[len(fDrew)-1].Words, "cannot reach the pile")
 }
 
 // The way back actually puts it back. The chip carries the act and the state,
