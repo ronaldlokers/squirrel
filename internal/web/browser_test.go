@@ -661,3 +661,38 @@ func layer(t *testing.T, v any) int {
 	require.NoError(t, err, "z-index %q is not a number", s)
 	return n
 }
+
+// On a phone the dock's button sits on its own row, under the field.
+//
+// Reported from a phone, in the agenda: "put it in the agenda" is twenty
+// characters and took over half the width, so the placeholder wrapped to two
+// lines inside a field too narrow to type in. The button naming the
+// consequence and the one-row dock cannot both hold at 390px, and the field is
+// the control that has to work.
+//
+// Nothing else here can see it. The appearance snapshot visits one desktop
+// viewport, where they legitimately share a row, and it samples no property
+// that would change — min-width is not in its list.
+func TestBrowserTheDockGivesTheFieldItsOwnRowOnAPhone(t *testing.T) {
+	c, srv := open(t, &fakeStore{})
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+
+	for _, room := range []string{"at", "buddy", "pile"} {
+		c.navigate(t, srv.URL+"/r/"+room)
+		gap := c.eval(t, `
+			const box = document.querySelector(".dock textarea").getBoundingClientRect();
+			const post = document.querySelector(".dock .post").getBoundingClientRect();
+			return Math.round(post.top - box.bottom);`)
+		require.GreaterOrEqual(t, gap, float64(0),
+			"in %s the button shares the field's row on a phone, by %v pixels", room, gap)
+
+		lines := c.eval(t, `
+			const t = document.querySelector(".dock textarea");
+			const cs = getComputedStyle(t);
+			return Math.round(t.getBoundingClientRect().height / parseFloat(cs.lineHeight));`)
+		require.LessOrEqual(t, lines, float64(1),
+			"in %s the placeholder wraps to %v lines in an empty field", room, lines)
+	}
+}
