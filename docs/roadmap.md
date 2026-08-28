@@ -404,11 +404,38 @@ mark saying which room you are in was pinned by nothing. It is also the first
 thing that has ever watched the sticker offset, which is the depth rule of the
 whole system.
 
-**Outstanding: the cost of per-room Buddy is unmeasured.** A narrower toolset
-is fewer schemas in every request; a per-room window is more windows carrying
-less each. The net is unknown and it is a check on the €10 ceiling rather than
-a gate on the feature, which shipped either way. Measure it the way the dock's
-toolset was measured in v0.43.0.
+**The cost of per-room Buddy, measured 28 August 2026.** Serialising the tools
+exactly as they go on the wire, plus the room's own preamble line. Bytes are
+exact; tokens are bytes/4, an approximation used only to put the number in the
+ceiling's unit.
+
+| room | tools | bytes | ~tokens | vs Buddy |
+| --- | --- | --- | --- | --- |
+| Buddy | 15 | 4756 | 1189 | — |
+| the chores | 9 | 3390 | 847 | −28.7% |
+| the tasks | 11 | 3371 | 842 | −29.1% |
+| the pile | 8 | 3096 | 774 | −34.9% |
+| the agenda | 5 | 2234 | 558 | −53.0% |
+| the things you kept | 4 | 1463 | 365 | −69.2% |
+| what you set aside | 4 | 1461 | 365 | −69.3% |
+
+**It goes down, and not by enough to matter.** At the routine tier's 20 cents
+per million input tokens the largest saving — 824 tokens in a shelf — is about
+€0.00016 a request. Against ≈€3.72/month, nothing here moves the ceiling in
+either direction, and the feature was never justified by cost.
+
+**The window was the direction that could have gone the other way, and did
+not.** Keying it by `(person, room)` means more windows, but each request
+carries one of them and a room's own is a subset of what the single window
+held. Per request it can only shrink.
+
+Both directions are pinned by tests rather than left as arguments —
+`TestARoomNeverCostsMoreThanBuddysOwn` and
+`TestARoomsWindowIsNoBiggerThanTheOneItReplaced`.
+
+**What the measurement cannot see** is the behaviour: losing the thread when
+you change rooms could make you repeat yourself, which is *more turns* rather
+than bigger ones. Nothing here would catch that, and only use will.
 
 ### v0.43.0 — 26 August 2026
 
