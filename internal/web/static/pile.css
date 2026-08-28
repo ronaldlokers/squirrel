@@ -94,13 +94,26 @@
   html { overflow-y: scroll; }
 
   body {
+    /* The app is exactly the viewport, and the regions inside it scroll.
+       
+       It was a document in normal flow with four fixed things stuck on — the
+       lid, the dock, the rail, and a stage shoved sideways by a margin — which
+       is why a short conversation sat at the top with a field of empty below
+       it and a dock floating in the middle of nowhere, and why the dock
+       collided with something three times in two days. Those were not separate
+       bugs. They were one missing layout. Campfire's own is a grid at 100dvh
+       where every region owns its box; this is that. */
     margin: 0;
-    min-height: 100vh;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    overflow: hidden;
     color: var(--paper);
     font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--precise);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-areas: "nav side" "main side";
+    grid-template-columns: 1fr var(--railw, 0px);
+    grid-template-rows: min-content 1fr;
     background-color: var(--purple-deep);
     /* The highlight is at .35 rather than .5, and the number is a contrast
        result rather than a taste one. Cream on the lit centre of this radial
@@ -170,11 +183,26 @@
        rooms, search and the way out, which is the failure the sheet exists to
        fix. They never overlap otherwise: one is the top of the screen and the
        other the bottom. */
-    position: relative; z-index: 6;
+    grid-area: nav;
+    /* The full width, over the rail as well as the conversation. Campfire
+       insets its nav because its sidebar is a translucent overlay with its own
+       top; this rail is a solid column, and stopping the lid short of it cut
+       the brim off two-thirds across and left a hard vertical seam. The rail
+       clears the lid with its own top padding instead. */
+    position: fixed; inset: 0 0 auto 0; z-index: 6;
     display: flex; align-items: center; gap: 18px;
     padding: 11px 22px 13px;
-    background: var(--purple-dark);
+    /* Translucent and blurred rather than opaque, so the conversation is seen
+       to pass under it rather than to stop at it. The transcript reserves the
+       height instead of being pushed by it — see .scroll. */
+    background: rgba(59, 37, 96, .72);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    /* Clicks fall through to the conversation everywhere the lid is empty,
+       which is most of it. Its own controls take them back. */
+    pointer-events: none;
   }
+  .lid > * { pointer-events: auto; }
   /* On every screen but home the brand is a link back to home. It carries no
      link decoration: the mark is the mark, and the whole lid is a place rather
      than a control. */
@@ -216,7 +244,8 @@
      card; on a screen with a heading it leaves a field of empty above the words
      you came for. */
   main {
-    flex: 1; display: flex; justify-content: center; align-items: flex-start;
+    grid-area: main; min-block-size: 0; overflow: auto;
+    display: flex; justify-content: center; align-items: flex-start;
     padding: 40px 22px 48px;
   }
   main.scrolling { align-items: flex-start; padding-top: 62px; }
@@ -1001,22 +1030,42 @@
      side and shrank the conversation to 240px of a 390px phone — the face
      labels stopped fitting their cells, which is how it was found. */
   main.threadpage {
-    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    /* Two rows: the transcript scrolls, the dock does not. The dock is the
+       column's last child rather than a fixed thing over the top of it, which
+       is what removes --dockspace, the ResizeObserver that maintained it, and
+       every collision between the two. */
+    display: grid; grid-template-rows: 1fr auto;
+    align-items: stretch; justify-content: stretch;
+    overflow: hidden;
     padding: 0;
-    /* Room at the bottom for the dock, which is fixed and covers whatever is
-       under it.
-
-       On the whole column rather than on .thread, which is not the last thing
-       on the page: what sits below it was outside its padding and therefore
-       behind the dock, with no way to scroll it clear. Reported from a phone,
-       and invisible on a laptop where the page is short enough that nothing
-       needs scrolling at all.
-
-       The fallback is what the dock measures at rest. thread.js replaces it
-       with the real height, so a textarea grown to four lines pushes the tail
-       of the conversation up rather than sitting on top of it. */
-    padding-bottom: var(--dockspace, 132px);
   }
+
+  /* What scrolls, and the only thing that does.
+     
+     Bottom-anchored: a conversation shorter than the screen sits above the
+     dock rather than at the top with a field of empty under it, which is what
+     every chat surface does and what this one did not. The padding clears the
+     floating lid, so the transcript passes under it rather than starting
+     below it. */
+  .threadpage .scroll {
+    min-block-size: 0; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding-top: calc(var(--lid-h, 87px) + 8px);
+    /* The end of the conversation stops short of the dock rather than touching
+       it: flush against the rule above the slot, the last thing said reads as
+       clipped rather than as the end. */
+    padding-bottom: 14px;
+  }
+  /* An auto margin on the first child, and NOT justify-content: flex-end on
+     the container.
+     
+     They look equivalent and are not: with justify-content, content taller
+     than the box overflows the *start* edge, where scrollHeight does not count
+     it and no scroll can reach it. A 2470px conversation in a 745px box
+     reported 745 and the top of it was simply gone. The auto margin resolves
+     to zero the moment the content is tall enough, so a short conversation
+     sits above the dock and a long one scrolls from its beginning. */
+  .threadpage .scroll > :first-child { margin-block-start: auto; }
 
   /* THE TRANSCRIPT. */
   .thread {
@@ -1036,6 +1085,32 @@
      said to the right of it. Every turn of his carries the gutter whether or
      not it draws a face, so a run of them stays on one left edge instead of
      stepping in and out. */
+  /* Buddy's words are speech, and they are not stock.
+     
+     They were paper ink on the field from 26 August, on the argument that a
+     sentence and an object must not wear one costume — a conversation of seven
+     outlined cream boxes read as a column of beige rather than as an exchange.
+     That argument holds and this does not break it: the bubble is a tint on
+     the field, fully round, with no border and no shadow, and every rectangle
+     on the screen is still a note, an appointment, a chore, or something you
+     said. What changed is that a sentence now reads as *received*, which is
+     the chat convention the old rule knowingly gave up.
+     
+     Round to 3em, which is Campfire's own message radius, and deliberately far
+     from this world's 14px card corner: at a glance the two can never be the
+     same object. */
+  .frombuddy .said {
+    background: rgba(255, 251, 243, .13);
+    border-radius: 3em;
+    padding: .62em 2.1ch;
+    /* Hugs its words. Stretched to the column it reads as a banner across the
+       screen rather than as something somebody said. */
+    width: fit-content;
+    max-width: min(46ch, 100%);
+    align-self: flex-start;
+    text-shadow: none;
+  }
+
   .turn {
     display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr);
     align-items: start; column-gap: 10px; row-gap: 10px;
@@ -1162,9 +1237,13 @@
 
   /* THE DOCK. The slot, on every view of the app, because there is one view. */
   .dock {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
-    padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
-    background: linear-gradient(to top, var(--purple-dark) 62%, transparent);
+    /* In flow, as the last row of the thread's grid. It was fixed to the
+       viewport, which is what made it collide with cards, with the room sheet,
+       and with its own centring axis. Nothing under it to cover, so no
+       gradient to hide anything with. */
+    padding: 12px 22px calc(16px + env(safe-area-inset-bottom));
+    background: var(--purple-dark);
+    border-top: var(--line) solid var(--outline);
   }
   /* 676 rather than 720: the transcript is 720 wide with 22px of padding
      inside it, so its content sits on a 676 measure. The dock's padding is
@@ -1175,7 +1254,33 @@
   @media (max-width: 620px) {
 
     .thread { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
-    .turn { max-width: 96%; }
+    /* Buddy's words are speech, and they are not stock.
+     
+     They were paper ink on the field from 26 August, on the argument that a
+     sentence and an object must not wear one costume — a conversation of seven
+     outlined cream boxes read as a column of beige rather than as an exchange.
+     That argument holds and this does not break it: the bubble is a tint on
+     the field, fully round, with no border and no shadow, and every rectangle
+     on the screen is still a note, an appointment, a chore, or something you
+     said. What changed is that a sentence now reads as *received*, which is
+     the chat convention the old rule knowingly gave up.
+     
+     Round to 3em, which is Campfire's own message radius, and deliberately far
+     from this world's 14px card corner: at a glance the two can never be the
+     same object. */
+  .frombuddy .said {
+    background: rgba(255, 251, 243, .13);
+    border-radius: 3em;
+    padding: .62em 2.1ch;
+    /* Hugs its words. Stretched to the column it reads as a banner across the
+       screen rather than as something somebody said. */
+    width: fit-content;
+    max-width: min(46ch, 100%);
+    align-self: flex-start;
+    text-shadow: none;
+  }
+
+  .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
     .dock .slot { margin: 0 auto; }
@@ -1490,6 +1595,11 @@
      It names the room you are in, which is the half the strip never had. */
   @media (max-width: 979px) {
     .rail { display: none; }
+    /* The control belongs in the lid and the markup cannot put it there: the
+       rail has to be a child of body to be a grid area, and the control has to
+       stay its sibling for `[open] ~ .rail` to reach it. So it is placed over
+       the lid rather than inside it. */
+    .roomsheet { position: fixed; top: 10px; right: 14px; z-index: 7; }
     /* From under the lid, not from under itself: the sheet used to start above
        its own control and cover it, leaving an open disclosure with no visible
        way to close it. */
@@ -1529,13 +1639,15 @@
        instead. */
     body { --railw: 212px; }
     .roomsheet { display: none; }
+    /* On the right, which is Campfire's side and the thumb's. A grid area
+       rather than a fixed box beside a shoved margin. */
     .rail {
       display: flex;
-      position: fixed; left: 0; top: 92px; bottom: 0; width: var(--railw);
-      overflow-y: auto;
-      padding: 16px 14px calc(20px + env(safe-area-inset-bottom));
+      grid-area: side; min-block-size: 0; overflow-y: auto;
+      border-left: var(--line) solid var(--outline);
+      background: rgba(28, 17, 11, .16);
+      padding: calc(var(--lid-h, 87px) + 10px) 14px calc(20px + env(safe-area-inset-bottom));
     }
-    #stage { margin-left: var(--railw); }
     /* The dock is fixed to the viewport, so with the rail beside it its
        centred slot was centred on the window and the conversation on the
        stage — 166px apart, the thing you type into and the things it produces

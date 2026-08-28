@@ -221,17 +221,30 @@ func reachable(m *testMux, path string) bool {
 //
 // The measurement is TestBrowserTheEndOfThePageClearsTheDock. This is the
 // narrower claim that browser cannot make: which element carries the reserve.
-func TestTheDockClearanceIsOnTheColumnAndNotTheThread(t *testing.T) {
+// The dock cannot cover the end of the conversation, and it is a fact about
+// the layout rather than about a reserve.
+//
+// It used to be fixed to the viewport, so the column reserved its measured
+// height as padding through a --dockspace custom property that thread.js kept
+// up to date with a ResizeObserver. The dock is the last row of the thread's
+// own grid now: a slot grown to four lines shortens the scroll region by
+// exactly its own growth, which is what a layout does and the observer was
+// standing in for.
+//
+// Asserted on the grid rather than on the absence of the old property, because
+// "--dockspace is gone" passes for every reason including the one where the
+// dock went back to being fixed and nothing reserves anything.
+func TestTheDockIsARowAndNotAThingOnTop(t *testing.T) {
 	css, err := staticFS.ReadFile("static/pile.css")
 	require.NoError(t, err)
 	sheet := string(css)
 
-	require.Contains(t, sheet, "padding-bottom: var(--dockspace",
-		"nothing reserves room for the dock")
-	require.Contains(t, ruleFor(t, sheet, "main.threadpage"), "--dockspace",
-		"the column does not carry the reserve")
-	require.NotContains(t, ruleFor(t, sheet, ".thread"), "--dockspace",
-		"the reserve is back on .thread, which is not the last thing on the page")
+	require.Contains(t, ruleFor(t, sheet, "main.threadpage"), "grid-template-rows: 1fr auto",
+		"the transcript and the dock are not two rows")
+	require.NotContains(t, ruleFor(t, sheet, ".dock"), "position: fixed",
+		"the dock is fixed to the viewport again")
+	require.NotContains(t, sheet, "--dockspace:",
+		"something still reserves room for a dock that is in flow")
 }
 
 // ruleFor is one selector's declarations. The whole sheet is the wrong thing

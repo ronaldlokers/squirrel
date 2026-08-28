@@ -2060,15 +2060,29 @@ the live edge holds one thing.
 
 ### The Conversation
 
-**Buddy's words are not in a bubble. Yours are.**
+**Buddy's words are in a tint. Yours are in stock. Neither is the other.**
 
 Two kinds of thing wore one costume until 26 August 2026: a sentence and an
 object were both cream rectangles with a 3px outline, so a conversation read as
-one column of beige rather than as an exchange between two parties.
+one column of beige rather than as an exchange between two parties. The fix was
+to take Buddy's bubble away entirely, and it cost the chat convention — his
+words no longer read as *received*.
 
-- **Buddy:** paper on the field, casual axis at `wght` 500, with a 1px outline
-  text-shadow and the 40px face in the gutter. No stock, no border, no shadow.
+**28 August 2026 gives the bubble back without giving the costume back.**
+
+- **Buddy:** a tint on the field at `rgba(255, 251, 243, .13)`, fully round at
+  `3em` — Campfire's own message radius — with no border, no shadow, and no
+  stock. It hugs its words at `width: fit-content`; stretched to the column it
+  reads as a banner rather than as something somebody said. The 40px face stays
+  in the gutter.
 - **You:** the cream bubble, unchanged, right-aligned.
+
+**Why this does not reopen what 26 August closed.** The rule's letter was "no
+bubble for Buddy"; its reason was that a sentence and an object must never wear
+one costume. A round translucent tint and a 14px-cornered outlined cream
+rectangle with a hard shadow cannot be confused at any glance — the radius
+alone is 3em against 14px. Every rectangle on the screen is still a note, an
+appointment, a chore, or something you said.
 
 What the bubble now means is not "somebody said this" but **"this is a thing
 rather than a sentence"**. Every remaining rectangle on the screen is a note, an
@@ -2078,9 +2092,22 @@ seven outlined boxes to three.
 Paper and not cream: on the purple field cream measures 4.8:1 and paper 8.9:1,
 and this text has no stock behind it to sit on.
 
-**What it costs:** the chat convention. Buddy's words no longer read as
-"received", which is a real loss for somebody arriving for the first time. The
-first-run worked example is what teaches the grammar in one look.
+**What it costs:** contrast, and these are read values rather than estimates.
+Paper measured against the composited tint:
+
+| | bare field | in the bubble |
+| --- | --- | --- |
+| the field at its darkest | 8.67:1 | **6.17:1** |
+| the lit centre of the radial | 6.32:1 | **4.73:1** |
+
+So the worst case on this screen is 4.73:1 — over the 4.5 floor for body text,
+and not over it by much. **The tint is 13% for that reason and must not go
+higher**: at 20% the lit centre drops through the floor, and the lit centre is
+where the field is brightest by the day's own `--light`.
+
+*Between 26 and 28 August the cost was the chat convention instead: Buddy's
+words did not read as received, which the first-run worked example had to teach
+in one look. It still teaches it, and now it has less to teach.*
 
 ### The Six Bodies
 
@@ -2113,6 +2140,52 @@ the caption.
 **Set aside bends "cream card stock, never white" by not being stock at all.**
 That is deliberate and it is the only one. A parked note that looked like every
 other object would be a parked note you keep trying to act on.
+
+### The App Is The Viewport
+
+**One grid at `100dvh`, and the regions inside it scroll.** Adopted from
+Campfire — the application Squirrel lives inside — on 28 August 2026.
+
+```
+grid-template-areas: "nav side" / "main side"
+```
+
+- **`body`** is exactly the viewport and does not scroll. `overflow: hidden`.
+- **The lid** is `grid-area: nav`, fixed across the full width, translucent at
+  `rgba(59, 37, 96, .72)` with a 14px backdrop blur, and `pointer-events: none`
+  so clicks fall through everywhere it is empty. The conversation is seen to
+  pass *under* it rather than to stop at it.
+- **`main.threadpage`** is two rows, `1fr auto`: the transcript scrolls, the
+  dock does not.
+- **The rooms** are `grid-area: side`, a real column rather than a fixed box
+  beside a shoved margin.
+
+**What this replaced, and why it is the whole answer to "the layout feels
+buggy".** The screen was a document in normal flow with four independently
+fixed things stuck to it — the lid, the dock, the rail, and a stage pushed
+sideways by `margin-left`. Every symptom came from there and none of them were
+separate bugs:
+
+- A conversation shorter than the screen sat at the **top**, with a field of
+  empty below it and the dock floating in the middle of nowhere. Chat surfaces
+  anchor to the bottom; this one could not, because nothing knew how tall the
+  screen was.
+- The dock collided with cards, then with the room sheet, then with its own
+  centring axis — three times in two days, each fixed separately.
+- `--dockspace`, a custom property carrying the dock's measured height, kept up
+  to date by a `ResizeObserver` in `thread.js`, so the column could reserve room
+  for a thing floating over it. All of it is deleted: a slot grown to four lines
+  now shortens the scroll region by exactly its own growth, which is what a
+  layout does and the observer was standing in for.
+
+**The transcript is bottom-anchored with `margin-block-start: auto` on the
+first child, and NOT with `justify-content: flex-end`.** They look equivalent
+and are not: with `justify-content`, content taller than the box overflows the
+*start* edge, where `scrollHeight` does not count it and no scroll can reach
+it. A 2470px conversation in a 745px box reported 745 and the top of it was
+gone. The auto margin resolves to zero the moment the content is tall enough,
+so a short conversation sits above the dock and a long one scrolls from its
+beginning.
 
 ### The Rooms
 
