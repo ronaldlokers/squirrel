@@ -549,13 +549,20 @@ func saidAboutTheOffer(act, label string) []squirrel.Turn {
 	return nil
 }
 
-// keepSaid writes what was said, and logs when it cannot. A press that changed
-// the pile and failed to reach the conversation is recoverable; refusing the
-// press because the record could not be written would not be.
+// keepSaid writes what was said into the room the request is in, and logs when
+// it cannot. A press that changed the pile and failed to reach the
+// conversation is recoverable; refusing the press because the record could not
+// be written would not be.
+//
+// The room comes from the context rather than from a parameter because thirty
+// handlers call this and a thirty-first would be added without one. A turn in
+// the wrong room is invisible — it looks exactly like a room that is quiet —
+// so there is one place that decides, and TestOnlyKeepSaidPutsTurnsInARoom
+// fences it.
 func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn) []squirrel.Turn {
 	out := make([]squirrel.Turn, 0, len(said))
 	for _, t := range said {
-		saved, err := s.AppendTurn(ctx, personID, "buddy", t)
+		saved, err := s.AppendTurn(ctx, personID, roomOf(ctx), t)
 		if err != nil {
 			slog.Error("keeping what was said", "error", err)
 			continue
