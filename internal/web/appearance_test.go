@@ -39,6 +39,15 @@ var appearanceProps = []string{
 	// so the same link renders underlined on one screen and not on another.
 	// Nothing else recorded here can see that.
 	"text-decoration-line",
+	// How this system says pressed: down onto its own shadow, never a
+	// different colour. Added 28 August 2026 with the rail, whose current room
+	// is drawn exactly that way — without these two, `.rail .room.in` recorded
+	// byte-identically to `.rail .room` and the one mark saying which room you
+	// are in was pinned by nothing.
+	//
+	// It is also the sticker offset, which is the depth rule of the whole
+	// system, and this is the first thing that has ever watched it.
+	"transform", "box-shadow",
 }
 
 // One selector per thing that has a shape of its own. Where a screen has many
@@ -54,6 +63,16 @@ var appearanceScreens = map[string][]string{
 	// `.frombuddy .bub` to record.
 	"/": {
 		".lid", ".brand img", ".wordmark",
+		// The rail, which is furniture on every screen and the largest thing
+		// this snapshot could miss.
+		//
+		// `:not(.in)` and not the bare `.rail .room`: the first room on this
+		// page is Buddy's, which is the room you are in, so the bare selector
+		// recorded the pressed shape twice and the resting one never. The
+		// difference between them is the whole of how this rail says where you
+		// are.
+		".rail", ".rail .room:not(.in)", ".rail .room.in",
+		".rail .lookup button", ".rail .leaving",
 		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",
 		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
 		".dock", ".slot", ".slot textarea", ".slot .post",

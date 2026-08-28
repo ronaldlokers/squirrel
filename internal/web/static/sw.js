@@ -59,9 +59,26 @@ function heldStore(mode) {
   });
 }
 
-function hold(text) {
+// The four routes a room's dock can post to, and the field each expects.
+// One route per destination rather than one per room, so the room travels in
+// the form — see internal/web/rooms.go.
+const FIELDS = {
+  "/capture": "text",
+  "/chores/name": "name",
+  "/at/new": "label",
+  "/tasks/new": "text",
+};
+const DOCKS = new Set(Object.keys(FIELDS));
+
+// A held note carries where it was going as well as what it said.
+//
+// Without the room and the route, everything replayed to /capture as `text`,
+// so a chore typed on a train came back a pile note. That is the failure
+// nobody would diagnose, because the words are there and only the room is
+// wrong.
+function hold(text, room, action, field) {
   return heldStore("readwrite").then(store => new Promise((resolve, reject) => {
-    const put = store.add({ text, at: Date.now() });
+    const put = store.add({ text, room, action, field, at: Date.now() });
     put.onsuccess = () => resolve();
     put.onerror = () => reject(put.error);
   }));
@@ -85,10 +102,15 @@ async function flush() {
   });
 
   for (const note of all) {
-    const body = new URLSearchParams({ text: note.text });
+    // Back to the room it was typed in, by the route that room's dock posts
+    // to. The defaults are what a note held by an older worker looks like.
+    const body = new URLSearchParams({
+      [note.field || "text"]: note.text,
+      room: note.room || "buddy",
+    });
     let res;
     try {
-      res = await fetch("/capture", {
+      res = await fetch(note.action || "/capture", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
@@ -134,17 +156,28 @@ self.addEventListener("fetch", event => {
   //
   // Multipart is the test rather than "has a file part", because reading the
   // body to find out would consume the very request being forwarded.
-  if (request.method === "POST" && new URL(request.url).pathname === "/capture" &&
+  // Every room's dock, not just the pile's. A dock route missing from this
+  // set posts straight to the network and loses the words when there is none,
+  // which is the whole of what this branch exists to prevent.
+  //
+  // Kept in step with `rooms` in internal/web/rooms.go by
+  // TestTheWorkerHoldsEveryRoomsDock.
+  if (request.method === "POST" && DOCKS.has(new URL(request.url).pathname) &&
       !(request.headers.get("Content-Type") || "").startsWith("multipart/")) {
     event.respondWith((async () => {
       const copy = request.clone();
       try {
         return await fetch(request);
       } catch {
-        const text = (await copy.formData()).get("text");
+        const form = await copy.formData();
+        const room = String(form.get("room") || "buddy");
+        // The field name is the room's, not always `text`: a chore posts
+        // `name` and an appointment posts `label`.
+        const field = FIELDS[new URL(request.url).pathname] || "text";
+        const text = form.get(field);
         if (!text || !String(text).trim()) return Response.redirect("/", 303);
-        await hold(String(text));
-        return Response.redirect("/?held=1", 303);
+        await hold(String(text), room, new URL(request.url).pathname, field);
+        return Response.redirect("/r/" + room + "?held=1", 303);
       }
     })());
     return;

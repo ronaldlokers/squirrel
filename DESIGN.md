@@ -739,15 +739,14 @@ width was whatever the words happened to need.
 ### The lid
 
 A full-width flex bar: the mark and wordmark on the left, then a spacer, then
-the timer strip if one is running, then **three 44px icons** — Buddy, search,
-and the map. Padding `11px 22px 13px`. Below it hangs the brim, a full-width SVG
-whose outline stroke is held at 3px by `vector-effect="non-scaling-stroke"`
-regardless of viewport width.
+the timer strip if one is running. Nothing on the right at all since 28 August
+2026 — navigation is the rail beside the conversation now. Padding
+`11px 22px 13px`. Below it hangs the brim, a full-width SVG whose outline
+stroke is held at 3px by `vector-effect="non-scaling-stroke"` regardless of
+viewport width.
 
-Both panels — the menu and the search field — hang absolutely from the right
-edge of their own control, 8px below it. Absolute, so opening one never moves
-the page underneath it; right-aligned, because both controls sit at the right
-end of the lid and a panel hung from the left ran off the side of a phone.
+Above 860px the lid is inset by the rail's width, so the mark sits over the
+conversation rather than over the rooms.
 
 ### The thread
 
@@ -764,11 +763,14 @@ of this app than a list of pages was.
 
 Three bands, top to bottom:
 
-1. **The rail** — the four doors, pinned under the lid and never scrolled away.
-2. **The transcript** — what has been said, oldest first, ending at the live
-   edge.
-3. **The dock** — the slot, pinned to the bottom, on every view because there is
-   only one view.
+1. **The transcript** — what has been said in this room, oldest first, ending
+   at the live edge.
+2. **The dock** — the slot, pinned to the bottom, and it names what typing here
+   will do. See The Dock Names Its Consequence.
+
+The rail is beside these rather than among them, and it is on every screen
+rather than on this one. *The four doors were the first band here until
+28 August 2026.*
 
 `main` is a column of full-width bands here and a centred flex row everywhere
 else. That is a real difference and it is load-bearing: as a row it put the
@@ -1330,69 +1332,29 @@ all. Not every pill is loud. But a choice is drawn as a choice.
 
 ### The lid
 
-A mark and three icons. All three work with the script off; two of them are
-disclosures, which is the same grammar as the chore's interval and the card's
-reword box.
+The mark, and the timer when one is running. Nothing else.
 
-- **The icon** is 44px, a full pill, no fill and no border, tail cream,
-  hovering to the cream wash. Open, it fills Notebook Violet with paper type —
-  the product's own "this one".
-- **Buddy is outside the menu**, because a conversation about what is in front
-  of you should be one tap. It is the acorn at last, rather than the whole
-  mascot at 46px where its face is mush. This is the case the acorn exists for.
-- **Search is behind the second icon**, and opens on its own when there is a
-  query — a search result never shows you a field you cannot see the words in.
-- **The map is behind the third**, a hamburger that becomes the same cross that
-  closes Buddy's sheet. One mark for *this is shut now*, not two.
+- **The mark** is the logo at 84×63 beside the Inter 900 wordmark. On the front
+  door it is a `<span>`, everywhere else an `<a href="/">` — the convention
+  every website has, and the cheapest possible way back.
+- **The running timer** is on every screen, because you started it in order to
+  go and do something and wandering to the pile should not lose it. The
+  remaining time is the one number here that counts down: a fact about a thing
+  you chose to start, never a total of what you have not done.
+- **The brim** is the purple curve that closes it, with the 3px outline
+  following the same path at non-scaling stroke width.
 
-**The floating acorn is gone, and both of its rules survived it.** It was fixed
-bottom-right at 62px on every screen. It sat on top of a chore's timer row on a
-phone and on top of the sheet's own send button on a wide screen, and a fixed
-control over live ones turns a mis-tap into the wrong thing entirely. What it
-must keep, wherever Buddy lives: it was `.askacorn` and not `.acorn` because the
-card's title bar had that name first for the drawn badge, and taking it made
-every note's badge a 62px circle in the corner of the screen for a release —
-**the same mark in two roles needs two names.** And it never dims and never
-carries a badge: a badge here would be a count, and a dimmed acorn would be the
-product reading meaning into how a button gets used.
+**Everything else that has ever lived here has left, and it left in three
+moves.** A mark and three icons — Buddy's acorn, a search disclosure, a map —
+until 25 August 2026. Then a rail of four doors and two always-on chips *in the
+conversation*, about 45% of a phone screen before a word was said. Then one
+hamburger holding eight things, on 26 August. The rail took the last of it on
+28 August: navigation is furniture beside the conversation now, not something
+stacked on top of it.
 
-### The map
+Each of those was a row of words costing most of a phone screen before anything
+you came for.
 
-A panel of card stock, 6px padding, hanging under its icon. Three places — the
-pile, the tasks, the chores — each a full-pill row at 44px in the Nav role.
-
-- **Where you are is in the list and is not a link.** It is filled Notebook
-  Violet with paper type and `aria-current="page"`. A menu that drops the place
-  you are standing has items that move as you move, so *the second one* means a
-  different screen on every screen.
-- **Home is not in it.** The mark is the way home and has been since the screen
-  existed.
-- **Buddy is not in it.** It is one tap in the lid.
-- **A screen that hangs off another answers with its parent.** The shelf is
-  somewhere in the pile; the archive and the set-aside are somewhere in the
-  tasks. The map says which room; the views row says which corner.
-
-### The views row
-
-Under a screen's title, and only under the screens that have corners: the pile
-keeps a shelf, the tasks keep what is finished and what is stalled.
-
-- 44px minimum height, 13.5px Nav, tail cream, underlined at 45% opacity —
-  they go somewhere, so they are underlined.
-- The one you are in drops the underline and steps up to `wght` 780 in paper.
-- It sits under the title because that is what it is about: a link to the
-  archive means nothing beside the chores.
-
-**This is the half of the problem a consistent frame does not solve.** `/kept`
-was reachable from the bottom of the pile and from an empty pile, and nowhere
-else — the shelf of things deliberately kept for later sat behind having nothing
-left to triage, which is the one state this product exists to say you need not
-reach. `/moods` stays behind the check-in on purpose: Principle 5 traded a
-construction-level guarantee for *shown back on request, and never on its own*,
-and a link in a footer is closer to "on its own" than that bargain allows.
-
-**These were 20.9px inline anchors — 47% of the minimum tap target** — and they
-are the only way from a screen to its own sub-views.
 
 ### The Door
 
@@ -2147,32 +2109,91 @@ the caption.
 That is deliberate and it is the only one. A parked note that looked like every
 other object would be a parked note you keep trying to act on.
 
-### The Menu
+### The Rail
 
-One 44px control in the lid, and the whole of this product's navigation.
+The seven rooms, on every screen, never closing. The whole of this product's
+navigation as of 28 August 2026.
 
-The rail of four doors, the always-on `ask Buddy` / `look something up` chips
-and the `stop whenever you like` line were all permanent fixtures in the
-conversation, together about **45% of a phone screen before a word was said**.
+**A room list you press to open is a screen. One that is always there is
+furniture.** That is the only structural difference between the rail and the
+menu it replaced, and it is the whole argument for rooms: moving between them
+costs no screen and no gesture.
 
-- **Stock and depth:** card fill, 3px outline, 14px radius, the raised object's
-  hard shadow. Positioned over the conversation rather than pushing it down — a
-  menu that reflowed the screen would move the thing you were reading in order
-  to show you a way somewhere else.
-- **A `<details>`,** so it opens with the script off, like every other
-  disclosure here.
-- **Counts** on the places that earn one. Zero is no number and not a nought: a
-  door reading "0" is a scoreboard, which is the rule the four doors carried and
-  this inherited with them.
+- **Desktop (≥860px):** a fixed column 236px wide, ruled off from the field by
+  its own darker ground. Fixed rather than scrolling with the conversation —
+  scrolling what you are reading must not scroll away the way out of it. The
+  lid and the stage are inset by its width.
+- **Phone:** a strip above the conversation, scrolling sideways. Seven rooms in
+  a column on a phone is the screen.
+- **Stock and depth:** each room is card fill, 3px outline, 14px radius, the
+  raised object's `0 5px 0 0` sticker offset. Nothing new: a room is an object
+  in this world like every other object.
+- **The room you are in** is drawn the way this product draws *pressed* — down
+  on its own shadow, `translateY(4px)` onto a 1px offset. Not a different
+  colour: colour already means something here, and a second meaning for it is
+  how a system stops being readable. It carries `aria-current="page"` as well.
+- **Links, where the menu was forms.** A door was a POST because opening a
+  place appended what you said to the record; going somewhere writes nothing.
+  Back steps through rooms now, and a room opens in a new tab — both of which
+  the door paid for and neither of which anybody could have got back without
+  this.
+- **Counts** on the four rooms that can have something waiting. Zero is no
+  number and not a nought: a room reading "0" is a scoreboard, which is the
+  rule the four doors carried and the rail inherits with them.
+- **Looking something up** sits below the rule with the way out, not among the
+  seven. It is a thing you do rather than a place you go, and what it finds is
+  a card in the room you are standing in.
 - **The way out is last, under a rule of its own,** in today's words. It is not
   a destination like the others; it is the end of the evening, and its place at
-  the bottom says so without a louder word. Principle 3 is why it is not smaller
+  the end says so without a louder word. Principle 3 is why it is not smaller
   or greyer — only elsewhere.
 
-**This is a hamburger, and this product deliberately removed one on 25 August.**
-Bringing it back is a decision rather than a drift: it held three things then and
-holds eight now, and the argument against it — that a menu of three is emptier
-than the space it costs — stops applying at eight.
+**The counts were kept against the evidence, deliberately.** A mockup of a bad
+week — five rooms carrying numbers, thirty-four things waiting — reads as a
+scoreboard, because pills in a column invite a total the eye computes whether
+or not the product prints one. That is the shape PRODUCT.md named when it
+retired the no-count rule, at seven rooms instead of four. The owner kept them
+on 27 August 2026 on the argument that not knowing how much is waiting is its
+own weight, and the decision reverses cleanly: the numbers are computed at
+render time and stored nowhere, so removing one call removes all of them.
+
+Neither half of the retired rule is reopened. **Nothing counts what you failed
+to do, and no number survives being dealt with.**
+
+*Before this, from 26 August: one 44px hamburger in the lid holding eight
+things, over the conversation rather than pushing it down. Before that, from
+25 August: four doors, two always-on chips and a stop line as permanent
+fixtures in the conversation, together about 45% of a phone screen before a
+word was said.*
+
+### The Dock Names Its Consequence
+
+The dock is one form in every room, and where it posts is the room's.
+
+**The room decides the filing, with no confirmation step.** That was chosen
+over asking on the grounds that a press on every capture is a worse tax than an
+occasional misfile — which puts the whole weight of *what will typing do here*
+on one control. A grey placeholder cannot carry it: it is invisible by the
+third day.
+
+So **the button names the consequence rather than the act**. *Make a chore*,
+*Put it in the pile*, *Put it in the agenda*, *Make a task* — and *Tell it*
+only in Buddy's room, where the words are not being filed anywhere. You read
+what is about to happen at the moment you commit to it, which is the
+confirmation without a press.
+
+- **Three rooms are two-step and stay two-step.** A chore needs a rhythm and an
+  appointment needs a day, and both pickers already exist. What the dock
+  replaced is the first step: a box asking for the words you have already
+  typed.
+- **The two shelves file into the pile and say so on the button.** Nothing is
+  *kept* or *set aside* by being typed; both are reached by deciding about a
+  note that exists. A shelf with no dock would be the one screen where the
+  thumb has nowhere to go, and one that lied about its destination would be
+  worse than either.
+- **A camera only where a photograph can go anywhere** — the three rooms that
+  post to `/capture`. A chore is a name and a rhythm, and a control that cannot
+  work is worse than one never drawn.
 
 ### The Gate
 

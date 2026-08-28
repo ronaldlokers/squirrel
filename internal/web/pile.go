@@ -51,10 +51,20 @@ func Mount(m Mux, s Store, opts Options) error {
 	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
-	m.Get("/{$}", guard(opts, threadHandler(s, opts)))
-	// The slot.
-	m.Post("/capture", guard(opts, sameOrigin(captureHandler(s, opts))))
-	// A door being pressed. A POST rather than a link — see openHandler.
+	m.Get("/{$}", guard(opts, withRoom("buddy", threadHandler(s, opts))))
+	// Buddy's room, by its own name. The same handler as "/": the worked
+	// example, the check-in and the offer all live on the thread, and a second
+	// handler for the same room would be a second set of them.
+	//
+	// Go's ServeMux prefers the more specific pattern, so this wins over
+	// /r/{room} without any ordering care here.
+	m.Get("/r/buddy", guard(opts, withRoom("buddy", threadHandler(s, opts))))
+	// Any other room. A GET, because entering a place is navigation — see
+	// roomHandler.
+	m.Get("/r/{room}", guard(opts, roomRoute(s, opts)))
+	// The dock, in whichever room it was typed in. See fromTheDock.
+	m.Post("/capture", guard(opts, sameOrigin(fromTheDock(captureHandler(s, opts)))))
+	// The door, as it was until 28 August 2026. See openHandler.
 	m.Post("/open", guard(opts, sameOrigin(openHandler(s, opts))))
 	// A photograph, behind the same guard as everything else: a picture of a
 	// letter is at least as private as the note beside it.
@@ -113,7 +123,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
 	// Buddy, as turns rather than a page of his own: there is a conversation to
 	// join now, so closing went with it. You stop talking.
-	m.Post("/buddy/ask", guard(opts, sameOrigin(coachAskHandler(s, opts))))
+	m.Post("/buddy/ask", guard(opts, sameOrigin(fromTheDock(coachAskHandler(s, opts)))))
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
 	m.Post("/find/ask", guard(opts, sameOrigin(findAskHandler(s, opts))))
@@ -126,12 +136,12 @@ func Mount(m Mux, s Store, opts Options) error {
 	// the ones the screens posted to. See newone.go.
 	m.Post("/chores/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
 		"a new chore", "What should come back?", "/chores/name", "name", "next"))))
-	m.Post("/chores/name", guard(opts, sameOrigin(choreNameHandler(s, opts))))
+	m.Post("/chores/name", guard(opts, sameOrigin(fromTheDock(choreNameHandler(s, opts)))))
 	m.Post("/tasks/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
 		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it"))))
 	m.Post("/pile/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
 		"put something down", "What is it?", "/capture", "text", "keep it"))))
-	m.Post("/buddy/say", guard(opts, sameOrigin(coachSayHandler(s, opts))))
+	m.Post("/buddy/say", guard(opts, sameOrigin(fromTheDock(coachSayHandler(s, opts)))))
 	// "That landed badly." One press, about the thing you just read.
 	m.Post("/buddy/badly", guard(opts, sameOrigin(coachBadlyHandler(s, opts))))
 	// A proposal, applied because it was pressed. Four things and no more —
@@ -154,7 +164,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// One fixed point, drawn into the conversation. See atOpenHandler.
 	m.Post("/at/open", guard(opts, sameOrigin(atOpenHandler(s, opts))))
 	// Which day, and what time. See askForADay.
-	m.Post("/at/new", guard(opts, sameOrigin(atNewHandler(s, opts))))
+	m.Post("/at/new", guard(opts, sameOrigin(fromTheDock(atNewHandler(s, opts)))))
 	m.Post("/at/make", guard(opts, sameOrigin(atMakeHandler(s, opts))))
 	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
 	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
@@ -167,7 +177,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Stopping. It reads nothing and counts nothing; it forgets one row.
 	m.Get("/enough", guard(opts, enoughHandler(s, opts)))
 	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
-	m.Post("/tasks/new", guard(opts, sameOrigin(newTaskHandler(s, opts))))
+	m.Post("/tasks/new", guard(opts, sameOrigin(fromTheDock(newTaskHandler(s, opts)))))
 	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
 	// How often, as a number and a unit. See askHowOften.
 	m.Post("/chores/often", guard(opts, sameOrigin(oftenHandler(s, opts))))

@@ -77,10 +77,29 @@
      first and nobody would know which they were using. What it says back is a
      turn now rather than a paragraph inside the box. */}}
 <div class="dock">
-  <form class="slot" method="post" action="/capture"{{if .Camera}} enctype="multipart/form-data"{{end}}>
-    <textarea name="text" rows="1" placeholder="{{.SaySlot}}"
+  {{/* Where this posts is the room's, not the page's.
+
+       The room decides the filing with no confirmation step — the owner chose
+       the symmetric rule on 27 August, on the grounds that a press on every
+       capture is a worse tax than an occasional misfile. That puts the whole
+       weight of "what will typing do here" on one control, and a grey
+       placeholder cannot carry it: it is invisible by the third day. So the
+       button names the consequence rather than the act, and you read what is
+       about to happen at the moment you commit to it.
+
+       See internal/web/rooms.go for the seven, and for why two of them are
+       shelves that file into the pile. */}}
+  <form class="slot" method="post" action="{{.Room.Action}}"{{if and .Camera (eq .Room.Action "/capture")}} enctype="multipart/form-data"{{end}}>
+    {{/* Which room these words were typed in. Read by the handler, and held by
+         sw.js when there is no network — without it a chore typed on a train
+         comes back a pile note, which is the one failure nobody would
+         diagnose, because the words are there. */}}
+    <input type="hidden" name="room" value="{{.Room.Key}}">
+    <textarea name="{{.Room.Field}}" rows="1" placeholder="{{.Room.Placeholder}}"
       aria-label="Tell Squirrel a thing"></textarea>
-    {{if .Camera}}
+    {{/* Only where a photograph can go anywhere. A chore is a name and a
+         rhythm, and a camera on it is a control that cannot work. */}}
+    {{if and .Camera (eq .Room.Action "/capture")}}
     {{/* No `capture` attribute: it reads like "prefer the camera" and it is
          not — on a phone it removes every other source, so the letter you
          photographed this morning becomes unreachable. */}}
@@ -93,7 +112,7 @@
       <span class="offscreen">Add a photograph</span>
     </label>
     {{end}}
-    <button class="post" type="submit">Tell it</button>
+    <button class="post" type="submit">{{.Room.Button}}</button>
 
     {{/* The one answer that is not a turn, and it cannot be one: the worker
          took these words because there is no network, so there is no database

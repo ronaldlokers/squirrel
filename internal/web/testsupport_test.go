@@ -592,10 +592,10 @@ func (m *testMux) route(t *testing.T, method, target string) string {
 			if asked != exact {
 				continue
 			}
-		} else if !strings.HasPrefix(target, path) {
+		} else if !matchesPath(path, target) {
 			continue
 		}
-		if len(pattern) > len(best) {
+		if moreSpecific(pattern, best) {
 			best = pattern
 		}
 	}
@@ -610,6 +610,7 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	best := m.route(t, method, target)
 
 	r := httptest.NewRequest(method, target, body)
+	setPathValues(r, best, target)
 	// Signed in. This was an identity header until 25 August 2026; it is a
 	// cookie the guard resolves through the session store now, and
 	// alwaysSignedIn is what answers for it.
@@ -625,12 +626,78 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	return w
 }
 
+// moreSpecific says this pattern beats the one held so far, the way the real
+// ServeMux resolves an overlap.
+//
+// Fewer wildcards wins first, and only then the longer literal. Length alone
+// picked "/r/{room}" over "/r/buddy" — thirteen characters against twelve — so
+// every test asking for Buddy's room reached the generic handler while the
+// server reached his own. That is a test helper answering a different question
+// from the product, which is worse than no helper.
+func moreSpecific(pattern, best string) bool {
+	if best == "" {
+		return true
+	}
+	a, b := strings.Count(pattern, "{"), strings.Count(best, "{")
+	if a != b {
+		return a < b
+	}
+	return len(pattern) > len(best)
+}
+
+// matchesPath is prefix matching that understands a wildcard segment.
+//
+// A plain HasPrefix cannot see one: "/r/{room}" is not a prefix of "/r/pile",
+// so a route with a wildcard was unreachable in these tests while the real
+// ServeMux served it — which is a test helper answering a different question
+// from the product.
+func matchesPath(path, target string) bool {
+	asked, _, _ := strings.Cut(target, "?")
+	want := strings.Split(strings.Trim(path, "/"), "/")
+	got := strings.Split(strings.Trim(asked, "/"), "/")
+	if len(got) < len(want) {
+		return false
+	}
+	for i, seg := range want {
+		if strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}") {
+			continue
+		}
+		if seg != got[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// setPathValues fills the pattern's wildcards, which the real ServeMux does
+// and this helper's map dispatch does not. Without it a handler reading
+// r.PathValue sees an empty string and the test passes or fails for a reason
+// that has nothing to do with the handler.
+func setPathValues(r *http.Request, pattern, target string) {
+	_, path, _ := strings.Cut(pattern, " ")
+	asked, _, _ := strings.Cut(target, "?")
+	want := strings.Split(strings.Trim(path, "/"), "/")
+	got := strings.Split(strings.Trim(asked, "/"), "/")
+	for i, seg := range want {
+		name, ok := strings.CutPrefix(seg, "{")
+		if !ok || i >= len(got) {
+			continue
+		}
+		name, ok = strings.CutSuffix(name, "}")
+		if !ok || name == "$" {
+			continue
+		}
+		r.SetPathValue(name, got[i])
+	}
+}
+
 // callAnonymously is the same call with nobody behind it, for the tests about
 // what a stranger gets.
 func (m *testMux) callAnonymously(t *testing.T, method, target string, body io.Reader) *httptest.ResponseRecorder {
 	t.Helper()
 	best := m.route(t, method, target)
 	r := httptest.NewRequest(method, target, body)
+	setPathValues(r, best, target)
 	if method == "POST" {
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r.Header.Set("Origin", "http://"+r.Host)
@@ -862,7 +929,12 @@ type fakeCoach struct {
 	opens string
 	// asked is every turn it was handed, so a test can assert on what the model
 	// was told.
-	asked []struct{ kind, said, subject string }
+	asked []struct{ kind, room, said, subject string }
+	// Which rooms an exchange was remembered in, and which one was forgotten.
+	// The window is keyed by room now, and remembering in the wrong one is
+	// invisible from the reply.
+	remembered []string
+	forgotIn   string
 	// talk is the window, which the real one keeps in memory too.
 	talk   []Exchange
 	forgot int
@@ -906,8 +978,8 @@ type fakeDecision struct {
 	because string
 }
 
-func (c *fakeCoach) ask(_ context.Context, _ int64, kind, said, subject string) (Answer, error) {
-	c.asked = append(c.asked, struct{ kind, said, subject string }{kind, said, subject})
+func (c *fakeCoach) ask(_ context.Context, _ int64, kind, room, said, subject string) (Answer, error) {
+	c.asked = append(c.asked, struct{ kind, room, said, subject string }{kind, room, said, subject})
 	if c.err != nil {
 		return Answer{}, c.err
 	}
@@ -951,11 +1023,12 @@ func (c *fakeCoach) options(o Options) Options {
 	o.Spent = func(context.Context, int64) (string, string, bool) {
 		return c.spent, c.ceiling, c.spent != ""
 	}
-	o.Recent = func(int64) []Exchange { return c.talk }
-	o.Remember = func(_ int64, said, replied string) {
+	o.Recent = func(int64, string) []Exchange { return c.talk }
+	o.Remember = func(_ int64, room, said, replied string) {
+		c.remembered = append(c.remembered, room)
 		c.talk = append(c.talk, Exchange{Said: said, Replied: replied})
 	}
-	o.Forget = func(int64) { c.forgot++; c.talk = nil }
+	o.Forget = func(_ int64, room string) { c.forgot++; c.forgotIn = room; c.talk = nil }
 	return o
 }
 
@@ -1021,17 +1094,21 @@ func (f *fakeStore) DetachNote(_ context.Context, _, itemID int64) (bool, error)
 // The conversation. turns is what has been said already; appended is what the
 // handler under test said, so a test can assert on the write rather than on a
 // rendering of it.
-func (f *fakeStore) AppendTurn(_ context.Context, _ int64, t squirrel.Turn) (squirrel.Turn, error) {
+func (f *fakeStore) AppendTurn(_ context.Context, _ int64, room string, t squirrel.Turn) (squirrel.Turn, error) {
 	if f.err != nil {
 		return squirrel.Turn{}, f.err
 	}
 	t.ID = int64(len(f.turns) + len(f.appended) + 1)
 	t.SaidAt = now()
+	// The room comes back on the turn, as the real store's does: a test that
+	// could not see which room was written could not tell a scoped append from
+	// an unscoped one.
+	t.Room = room
 	f.appended = append(f.appended, t)
 	return t, nil
 }
 
-func (f *fakeStore) RecentTurns(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
+func (f *fakeStore) RecentTurns(_ context.Context, _ int64, _ string, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -1041,7 +1118,7 @@ func (f *fakeStore) RecentTurns(_ context.Context, _ int64, limit int) ([]squirr
 	return f.turns, f.moreTurns, nil
 }
 
-func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, before int64, limit int) ([]squirrel.Turn, bool, error) {
+func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, _ string, before int64, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -1069,25 +1146,29 @@ func (f *fakeStore) Waiting(_ context.Context, _ int64, _ time.Time) (squirrel.W
 	return f.waiting, nil
 }
 
-// opened presses a door and renders the conversation it produced.
+// opened goes into a room and returns what it drew.
 //
-// Two steps rather than one, because that is what actually happens: the press
-// writes the turns, and the next render draws them. The fake keeps what was
-// written in `appended`, so moving it into `turns` is what a real store would
-// have done by the time the page came back.
+// One step, where the door was two. A door was a POST that wrote the turns and
+// a render that drew them; a room is a GET that does both, because entering a
+// place is navigation and the place draws itself on arrival.
 func opened(t *testing.T, f *fakeStore, where string) string {
 	t.Helper()
 	// A fresh reading, so Buddy does not ask how you are on the way past and
 	// become the live edge himself — which would take the controls off the
-	// cards the door just put there. Incidental to what these tests are about,
-	// and TestOnlyTheNewestBuddyTurnHasControls is where that rule is proved.
+	// cards the room just drew. Incidental to what these tests are about, and
+	// TestOnlyTheNewestBuddyTurnHasControls is where that rule is proved.
 	if f.checkin == nil {
 		f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
 	}
-	m := routed(t, f)
-	m.call(t, "POST", "/open", strings.NewReader("where="+where))
-	f.turns, f.appended = append(f.turns, f.appended...), nil
-	return m.call(t, "GET", "/", nil).Body.String()
+	return routed(t, f).call(t, "GET", "/r/"+where, nil).Body.String()
+}
+
+// drewIn goes into a room and hands back the turns it wrote, for the tests
+// that assert on the write rather than on a rendering of it.
+func drewIn(t *testing.T, f *fakeStore, where string) []squirrel.Turn {
+	t.Helper()
+	routed(t, f).call(t, "GET", "/r/"+where, nil)
+	return f.appended
 }
 
 // What Squirrel thinks it knows, faked. The weekly pass that writes these is

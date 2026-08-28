@@ -60,6 +60,11 @@
        on. */}}
   {{range .Hits}}
   <form class="hit" method="post" action="{{.Action}}">
+    {{/* Which room this was said in, on every form a turn draws. Read by
+       fromTheDock, so the answer to a question asked in the chores is Buddy in
+       the chores rather than Buddy in his own room. $ and not . because most of
+       these are inside a range over the turn's cards. */}}
+  {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
     {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
     <button type="submit">
       <span class="hitname">{{.Title}}</span>
@@ -101,6 +106,7 @@
     <div class="{{if eq .Kind "chore"}}acts{{else}}turnacts{{end}}">
       {{range .Acts}}
       <form method="post" action="{{.Action}}">
+        {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
         {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
         <button class="abtn {{.Style}}" type="submit">{{.Label}}</button>
       </form>
@@ -116,6 +122,7 @@
        record that is never rewritten. */}}
   {{if and .Live .Pick}}
   <form class="pick" method="post" action="{{.Pick.Action}}">
+    {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
     {{range $name, $value := .Pick.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
     {{range .Pick.Rows}}
     {{$row := .}}
@@ -137,6 +144,7 @@
        has lost its button, so a stale one cannot be applied at all. */}}
   {{if and .Live .Cut}}
   <form class="cut" method="post" action="{{.Cut.Action}}">
+    {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
     <input type="hidden" name="id" value="{{.Cut.ID}}">
     <input type="hidden" name="act" value="keep">
     <input type="hidden" name="from" value="thread">
@@ -154,6 +162,7 @@
        could not trust with a thought. */}}
   {{if and .Live .Say}}
   <form class="wordbox" method="post" action="{{.Say.Action}}">
+    {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
     {{range $name, $value := .Say.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
     <textarea name="{{.Say.Field}}" rows="2" aria-label="{{.Say.Label}}">{{.Say.Was}}</textarea>
     <button class="make" type="submit">{{.Say.Do}}</button>
@@ -168,6 +177,7 @@
     <div class="calhead">
       {{if .Cal.Prev}}
       <form method="post" action="/at/new">
+        {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
         {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
         <input type="hidden" name="month" value="{{.Cal.Prev}}">
         <button class="chip arrow" type="submit" aria-label="the month before">&#8249;</button>
@@ -175,6 +185,7 @@
       {{else}}<span class="arrowgap"></span>{{end}}
       <b>{{.Cal.Month}}</b>
       <form method="post" action="/at/new">
+        {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
         {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
         <input type="hidden" name="month" value="{{.Cal.Next}}">
         <button class="chip arrow" type="submit" aria-label="the month after">&#8250;</button>
@@ -182,6 +193,7 @@
     </div>
 
     <form class="cal" method="post" action="{{.Cal.Action}}">
+      {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
       {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
       <div class="calgrid" role="group" aria-label="the days">
         <span class="dow">M</span><span class="dow">T</span><span class="dow">W</span>
@@ -208,6 +220,7 @@
 
   {{if and .Live .Faces}}
   <form class="faces" method="post" action="/mood">
+    {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
     {{range .Faces}}
     <button class="face" name="mood" value="{{.Mood}}">
       <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
@@ -222,6 +235,7 @@
     {{range .Chips}}
     {{if .Action}}
     <form method="post" action="{{.Action}}">
+      {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
       {{range $name, $value := .Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
       <button class="chip" type="submit">{{.Label}}</button>
     </form>

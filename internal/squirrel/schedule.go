@@ -674,7 +674,7 @@ func (s *Scheduler) KnowingTick(ctx context.Context, now time.Time) error {
 		return nil
 	}
 
-	turns, _, err := s.opts.Store.RecentTurns(ctx, s.opts.PersonID, learnFrom)
+	turns, _, err := s.opts.Store.EverythingSaid(ctx, s.opts.PersonID, learnFrom)
 	if err != nil {
 		return fmt.Errorf("reading the record back: %w", err)
 	}

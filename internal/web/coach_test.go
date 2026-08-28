@@ -25,32 +25,35 @@ func asked(t *testing.T, m *testMux, f *fakeStore, body string) string {
 	return last.Words + " " + string(last.Shown)
 }
 
-// The way in is on the live edge, which is the part of one screen that is
-// always now. The acorn was on every screen by being outside all of them;
-// there is one screen.
-func TestTheWayToBuddyIsOnTheLiveEdge(t *testing.T) {
+// The way in is the rail, which is on every screen and never closes.
+//
+// It was a chip on the live edge, then a menu entry, and it is furniture now:
+// Buddy is a room, and going to a room is a link. Looking something up is not
+// a room — it is a thing you do — so it sits below the rule with the way out.
+func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
 	f := &fakeStore{
 		items:   []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)},
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood},
 	}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "ask Buddy")
-	require.Contains(t, body, `action="/buddy/ask"`)
+	require.Contains(t, body, `href="/r/buddy"`)
 	require.Contains(t, body, "look something up")
+	require.Contains(t, body, `action="/find/ask"`)
 }
 
 // Even with nothing said yet.
 //
-// This is why the chips are at the foot of the conversation rather than on the
-// live edge, which was the first version: the live edge is the newest Buddy
-// turn and a brand new conversation has none, so a way to Buddy that appears
-// once Buddy has spoken is a way to Buddy you cannot use to start.
+// This was the argument for chips at the foot rather than on the live edge:
+// the live edge is the newest Buddy turn, and a brand new conversation has
+// none, so a way to Buddy that appears once Buddy has spoken is a way to Buddy
+// you cannot use to start. The rail settles it — it is furniture, so it is
+// there before anything is.
 func TestTheWayToBuddyIsThereBeforeAnythingIsSaid(t *testing.T) {
 	f := &fakeStore{checkin: fresh()}
 	body := thread(t, f)
 
-	require.Contains(t, body, "ask Buddy")
+	require.Contains(t, body, `href="/r/buddy"`)
 	require.Contains(t, body, "look something up")
 }
 
@@ -238,13 +241,30 @@ func TestSayingNothingAsksNothing(t *testing.T) {
 	require.Empty(t, f.appended, "an empty press said something")
 }
 
-// Not a fifth place. The menu holds four, and their equality is the whole
-// statement it makes.
-func TestBuddyDidNotBecomeADoor(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+// Buddy is a room now, and is still not a place that holds things.
+//
+// This read "not a fifth place" until 28 August, when he became the first of
+// seven. What it was guarding survives the change and is what is asserted
+// here: the other six draw a list on arrival, and his draws none. He is where
+// you talk; they are where things live.
+func TestBuddysRoomHoldsNothing(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	require.Contains(t, body, "the pile")
-	require.NotContains(t, body, `value="buddy"`)
+	f.appended = nil
+	m.call(t, "GET", "/r/buddy", nil)
+
+	for _, turn := range f.appended {
+		require.NotContains(t, string(turn.Shown), `"place":`,
+			"Buddy's room drew a place")
+	}
+
+	// And the pile's does, so this measured the difference rather than an
+	// empty store.
+	f.appended = nil
+	m.call(t, "GET", "/r/pile", nil)
+	require.NotEmpty(t, f.appended)
 }
 
 // Nothing here renders a total, in either direction. The conversation is a

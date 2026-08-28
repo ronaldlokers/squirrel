@@ -153,7 +153,7 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canO
 		return nil
 	}
 
-	return func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error) {
+	return func(ctx context.Context, personID int64, kind, room, said, subject string) (coach.Reply, error) {
 		now := time.Now()
 
 		// The one place overwhelm is recognised, so the screen and the chat
@@ -168,11 +168,12 @@ func asker(c coach.Coach, store *squirrel.Store, talk *coach.Conversations, canO
 		return c.Answer(ctx, coach.Turn{
 			PersonID: personID,
 			Kind:     kind,
+			Room:     room,
 			Deep:     deep,
 			Now:      nowFor(ctx, store, personID, now),
 			Said:     said,
 			Subject:  subject,
-			Recent:   talk.Recent(personID, now),
+			Recent:   talk.Recent(personID, room, now),
 			// Whether a place can be drawn is a fact about the surface, and
 			// the screen is the surface that can. See coachChat for the other
 			// half: chat leaves this false, because a place there would be the
@@ -333,7 +334,7 @@ func splitter(c coach.Coach) (
 // adapted from it below, because they want different parts of the same answer:
 // chat renders what changed as lines, and the screen also renders a proposal
 // as a press.
-type turnFn func(ctx context.Context, personID int64, kind, said, subject string) (coach.Reply, error)
+type turnFn func(ctx context.Context, personID int64, kind, room, said, subject string) (coach.Reply, error)
 
 // interrupter is the veto on a nudge the rules already allowed, or nil rather
 // than a pass-through, so the scheduler's own nil check decides and there is no
@@ -392,10 +393,10 @@ func spentFor(c coach.Coach, budget coach.Budget) func(context.Context, int64) (
 
 // The screen's half of the coach seam, in the screen's own types.
 type (
-	webAsker    func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error)
-	webRecenter func(personID int64) []web.Exchange
-	webRemember func(personID int64, said, replied string)
-	webForget   func(personID int64)
+	webAsker    func(ctx context.Context, personID int64, kind, room, said, subject string) (web.Answer, error)
+	webRecenter func(personID int64, room string) []web.Exchange
+	webRemember func(personID int64, room, said, replied string)
+	webForget   func(personID int64, room string)
 )
 
 // coachWeb is the screen's half of the same seam. The screen declares its own
@@ -404,26 +405,26 @@ type (
 func coachWeb(c coach.Coach, store *squirrel.Store, talk *coach.Conversations) (
 	ask webAsker, recent webRecenter, remember webRemember, forget webForget) {
 
-	recent = func(personID int64) []web.Exchange {
-		fresh := talk.Recent(personID, time.Now())
+	recent = func(personID int64, room string) []web.Exchange {
+		fresh := talk.Recent(personID, room, time.Now())
 		out := make([]web.Exchange, 0, len(fresh))
 		for _, e := range fresh {
 			out = append(out, web.Exchange{Said: e.Said, Replied: e.Replied})
 		}
 		return out
 	}
-	remember = func(personID int64, said, replied string) {
-		talk.Add(personID, said, replied, time.Now())
+	remember = func(personID int64, room, said, replied string) {
+		talk.Add(personID, room, said, replied, time.Now())
 	}
-	forget = func(personID int64) { talk.Forget(personID) }
+	forget = func(personID int64, room string) { talk.Forget(personID, room) }
 
 	turn := asker(c, store, talk, true)
 	if turn == nil {
 		return nil, recent, remember, forget
 	}
 
-	ask = func(ctx context.Context, personID int64, kind, said, subject string) (web.Answer, error) {
-		reply, err := turn(ctx, personID, kind, said, subject)
+	ask = func(ctx context.Context, personID int64, kind, room, said, subject string) (web.Answer, error) {
+		reply, err := turn(ctx, personID, kind, room, said, subject)
 		if err != nil {
 			return web.Answer{}, err
 		}
@@ -448,7 +449,10 @@ func coachChat(ask turnFn) Asker {
 		return nil
 	}
 	return func(ctx context.Context, personID int64, kind, said, subject string) (string, []string, error) {
-		reply, err := ask(ctx, personID, kind, said, subject)
+		// Chat has no rooms, and Buddy's room is where a conversation with no
+		// room lives — it is the one he is not narrowed in, which is what
+		// chat has always had.
+		reply, err := ask(ctx, personID, kind, "buddy", said, subject)
 		if err != nil {
 			return "", nil, err
 		}

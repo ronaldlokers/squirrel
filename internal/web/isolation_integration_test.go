@@ -115,7 +115,7 @@ func aWholePile(t *testing.T, store *squirrel.Store, handle, sub, mark string) i
 		{Who: squirrel.SpeakerYou, Words: mark + " something I said"},
 		{Who: squirrel.SpeakerBuddy, Words: mark + " something Buddy said"},
 	} {
-		_, err = store.AppendTurn(ctx, personID, turn)
+		_, err = store.AppendTurn(ctx, personID, "buddy", turn)
 		require.NoError(t, err)
 	}
 
@@ -236,7 +236,7 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 	// theirs either. A turn is the one thing on this screen that outlives the
 	// response it was rendered in: a leak that reached a turn is a leak that
 	// is still on the screen tomorrow.
-	turns, _, err := store.RecentTurns(ctx, mine, 200)
+	turns, _, err := store.RecentTurns(ctx, mine, "buddy", 200)
 	require.NoError(t, err)
 	for _, turn := range turns {
 		// Shown is the rendered pile — cards, chores, appointments — and none
@@ -253,7 +253,7 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 	}
 
 	// Nor did any of it write into their conversation.
-	theirTurns, _, err := store.RecentTurns(ctx, theirs, 200)
+	theirTurns, _, err := store.RecentTurns(ctx, theirs, "buddy", 200)
 	require.NoError(t, err)
 	require.Len(t, theirTurns, 2, "somebody else's conversation was written to")
 }

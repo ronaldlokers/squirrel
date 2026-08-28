@@ -95,7 +95,10 @@ func noticeAbout(ctx context.Context, opts Options, personID int64, place string
 		return said
 	}
 
-	answer, err := opts.Ask(ctx, personID, "door", noticeAsk+strings.Join(of, "\n"), "")
+	// The room comes from the context rather than from `place`, which is the
+	// display name: "the tasks" is not a room key, and asking as one would
+	// hand this turn Buddy's whole toolset under a name that looks right.
+	answer, err := opts.Ask(ctx, personID, "door", roomOf(ctx), noticeAsk+strings.Join(of, "\n"), "")
 	if err != nil {
 		// The floor. A door that cannot reach a model is a door, and the
 		// cards are what you came for.

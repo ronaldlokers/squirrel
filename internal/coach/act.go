@@ -98,6 +98,26 @@ for those, and say in one sentence what you want to do.
 
 Most of the time nothing needs doing. Call say and answer them.`
 
+// inTheRoom is what Buddy is told about where he is.
+//
+// Named rather than described. "You are in the chores" and a toolset that only
+// touches chores agree with each other, so the model reading both is told the
+// same thing twice rather than handed a rule to follow — and the tools are the
+// half that is enforced.
+//
+// Buddy's own room says nothing. It is not a room he is confined to; it is
+// where he is, and every other room is the narrowing.
+func inTheRoom(room string) string {
+	name := RoomName(room)
+	if name == "" {
+		return ""
+	}
+	return "\n\nYou are in " + name + ". Everything here is about " + name +
+		", and the tools you have are the ones that room uses. If they ask " +
+		"about something that lives somewhere else, say where it is rather " +
+		"than answering for it."
+}
+
 // actRounds is how many times a turn may go round. Two, not three: a
 // conversational turn is not a search — it has already been handed what is on
 // screen — and a loop is a place for a model to talk itself into acting.
@@ -119,13 +139,12 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 	model := p.modelFor(t)
 	handed := map[string]Work{}
 	msgs := p.messages(t)
-	msgs[0].Content += actPreamble
+	msgs[0].Content += actPreamble + inTheRoom(t.Room)
 
-	tools := append(append([]map[string]any{}, readTools()...), writeTools...)
-	// Only where there is something to draw it on. See Turn.CanOpen.
-	if t.CanOpen {
-		tools = append(tools, openTool)
-	}
+	// Narrowed to the room. See toolsfor.go — this is the half of a room that
+	// makes it worth having, and Turn.CanOpen is still what decides whether a
+	// place can be drawn at all.
+	tools := toolsFor(t.Room, t.CanOpen)
 
 	var inTotal, outTotal int
 	var reply Reply
@@ -213,7 +232,7 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 				})
 
 			default:
-				said, done := p.runTool(ctx, t.PersonID, call, handed)
+				said, done := p.runTool(ctx, t.PersonID, t.Room, call, handed)
 				if done != "" {
 					acted = append(acted, done)
 				}
@@ -234,9 +253,18 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 // The second return is what the surface shows underneath the reply. A model
 // saying "done" is not evidence anything happened; a line the application
 // wrote after the write succeeded is.
-func (p *Provider) runTool(ctx context.Context, personID int64, call toolCall, handed map[string]Work) (string, string) {
+func (p *Provider) runTool(ctx context.Context, personID int64, room string, call toolCall, handed map[string]Work) (string, string) {
+	// Offering fewer tools is most of the narrowing; refusing the ones the
+	// room was not offered is the rest. A model can name a function that was
+	// never in its list, and providers do — so a narrowing that lives only in
+	// the request is not the only thing between the chores and a deleted task.
+	if !mayUse(room, call.Function.Name) {
+		slog.Warn("a tool was called in a room that does not have it",
+			"room", room, "tool", call.Function.Name)
+		return refused("that is not something this room does"), ""
+	}
 	if p.Hands == nil || !writes[call.Function.Name] {
-		return p.answerTool(ctx, personID, call, handed), ""
+		return p.answerTool(ctx, personID, room, call, handed), ""
 	}
 
 	var args struct {

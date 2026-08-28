@@ -16,11 +16,9 @@ func TestAnAppointmentIsATicket(t *testing.T) {
 	f := &fakeStore{upcoming: []squirrel.Moment{
 		{ID: 1, Label: "dentist", Starts: now().Add(3 * time.Hour), Travel: 20 * time.Minute},
 	}}
-	m := routed(t, f)
-
-	m.call(t, "POST", "/open", strings.NewReader("where=at"))
-
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"kind":"at"`)
+	drew := drewIn(t, f, "at")
+	require.NotEmpty(t, drew)
+	require.Contains(t, string(drew[len(drew)-1].Shown), `"kind":"at"`)
 
 	body := drawnAs(t, "at")
 	require.Contains(t, body, "kat")
@@ -31,11 +29,10 @@ func TestAnAppointmentIsATicket(t *testing.T) {
 // already owns for a row that was decided on.
 func TestATaskWearsThePageTab(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{task(1, "book the MOT", squirrel.ItemOpen)}}
-	m := routed(t, f)
+	drew := drewIn(t, f, "tasks")
+	require.NotEmpty(t, drew)
 
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks"))
-
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"kind":"task"`)
+	require.Contains(t, string(drew[len(drew)-1].Shown), `"kind":"task"`)
 	require.Contains(t, drawnAs(t, "task"), `class="pagetab"`)
 }
 
@@ -45,11 +42,10 @@ func TestSomethingSetAsideIsNotStock(t *testing.T) {
 	f := &fakeStore{aside: []squirrel.HeldItem{{
 		ID: 5, Text: "the referral", State: squirrel.ItemWaiting, Kind: squirrel.ItemNote,
 	}}}
-	m := routed(t, f)
+	drew := drewIn(t, f, "held")
+	require.NotEmpty(t, drew)
 
-	m.call(t, "POST", "/open", strings.NewReader("where=held"))
-
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"kind":"held"`)
+	require.Contains(t, string(drew[len(drew)-1].Shown), `"kind":"held"`)
 	require.Contains(t, drawnAs(t, "held"), "kheld")
 }
 
@@ -59,10 +55,9 @@ func TestAChoreKeepsItsOwnClass(t *testing.T) {
 	f := &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "the bins", EveryDays: 7, SinceDays: 6, Active: true},
 	}}
-	m := routed(t, f)
-
-	m.call(t, "POST", "/open", strings.NewReader("where=chores"))
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"kind":"chore"`)
+	drew := drewIn(t, f, "chores")
+	require.NotEmpty(t, drew)
+	require.Contains(t, string(drew[len(drew)-1].Shown), `"kind":"chore"`)
 	require.Contains(t, drawnAs(t, "chore"), "turncard kchore chore")
 }
 
@@ -79,9 +74,9 @@ func TestTheKindsAreDistinguishable(t *testing.T) {
 		{"chores", &fakeStore{chores: []squirrel.Chore{{ID: 1, Name: "the bins", EveryDays: 7, Active: true}}}},
 		{"held", &fakeStore{aside: []squirrel.HeldItem{{ID: 5, Text: "the referral", State: squirrel.ItemWaiting}}}},
 	} {
-		m := routed(t, c.f)
-		m.call(t, "POST", "/open", strings.NewReader("where="+c.where))
-		shown := string(c.f.appended[len(c.f.appended)-1].Shown)
+		drew := drewIn(t, c.f, c.where)
+		require.NotEmpty(t, drew)
+		shown := string(drew[len(drew)-1].Shown)
 		for _, kind := range []string{"at", "task", "chore", "held"} {
 			if strings.Contains(shown, `"kind":"`+kind+`"`) {
 				require.False(t, seen[kind], "%s claims a kind another already used", c.where)

@@ -59,7 +59,15 @@ type drawn struct {
 }
 
 type turnView struct {
-	ID    int64
+	ID int64
+	// Room is where this was said, and every form drawn on this turn carries
+	// it. Threading it through the twenty places that build a Fields map would
+	// be twenty chances to forget one, and a forgotten one is invisible: the
+	// answer lands in Buddy's room, which is what roomOf falls back to.
+	//
+	// From the turn rather than from the page, because a fragment is rendered
+	// with no page around it — the same reason V is filled here.
+	Room  string
 	Buddy bool
 	Words string
 	// Cost is what this reply cost, on the reply that cost it.
@@ -159,9 +167,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		before, perr := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
 		walkingBack := perr == nil && before > 0
 		if walkingBack {
-			turns, more, err = s.TurnsBefore(ctx, personID, before, threadLimit)
+			turns, more, err = s.TurnsBefore(ctx, personID, "buddy", before, threadLimit)
 		} else {
-			turns, more, err = s.RecentTurns(ctx, personID, threadLimit)
+			turns, more, err = s.RecentTurns(ctx, personID, "buddy", threadLimit)
 		}
 		// A record that cannot be read is not a reason to take the screen away: the dock
 		// still writes to the spool. Said out loud rather than rendered as an empty
@@ -176,7 +184,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// record leaves a hole in the conversation, which is recoverable;
 		// refusing the page over it would not be.
 		say := func(t squirrel.Turn, doing string) {
-			saved, err := s.AppendTurn(ctx, personID, t)
+			saved, err := s.AppendTurn(ctx, personID, "buddy", t)
 			if err != nil {
 				slog.Error(doing, "error", err)
 				return
@@ -235,8 +243,11 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
+		buddy, _ := roomByKey("buddy")
 		v := view{
-			Home: true,
+			Home:   true,
+			Thread: true,
+			Room:   buddy,
 			// The worker having taken the words because there was no network.
 			// From the address bar, read the way a stranger's typing is read:
 			// a present flag and nothing else.
@@ -298,7 +309,7 @@ func endsOpen(turns []squirrel.Turn) bool {
 func turnViews(turns []squirrel.Turn) []turnView {
 	out := make([]turnView, 0, len(turns))
 	for _, t := range turns {
-		v := turnView{ID: t.ID, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
+		v := turnView{ID: t.ID, Room: t.Room, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: assetVersion}
 		if len(t.Shown) > 0 {
 			var sh drawn
 			if err := json.Unmarshal(t.Shown, &sh); err != nil {
@@ -336,31 +347,6 @@ func turnViews(turns []squirrel.Turn) []turnView {
 // menuFor is everywhere else, behind the lid's one control. Order is by how
 // often a thing is wanted; stopping is not in it — the template puts it last,
 // under a rule.
-func menuFor(ctx context.Context, s Store, personID int64) []turnChip {
-	menu := []turnChip{
-		{Label: "the pile", Action: "/open", Fields: map[string]string{"where": "pile"}},
-		{Label: "the agenda", Action: "/open", Fields: map[string]string{"where": "at"}},
-		{Label: "the tasks", Action: "/open", Fields: map[string]string{"where": "tasks"}},
-		{Label: "the chores", Action: "/open", Fields: map[string]string{"where": "chores"}},
-		{Label: "what you set aside", Action: "/open", Fields: map[string]string{"where": "held"}},
-		{Label: "the things you kept", Action: "/open", Fields: map[string]string{"where": "kept"}},
-		{Label: "ask Buddy", Action: "/buddy/ask"},
-		{Label: "look something up", Action: "/find/ask"},
-	}
-	waiting, err := s.Waiting(ctx, personID, now())
-	if err != nil {
-		// A count that cannot be read is a menu with no numbers on it, which is
-		// what this was before 24 August. Everything still goes where it goes.
-		slog.Error("counting what is waiting, for the menu", "error", err)
-		return menu
-	}
-	menu[0].Count = waiting.Pile
-	menu[1].Count = waiting.Agenda
-	menu[2].Count = waiting.Tasks
-	menu[3].Count = waiting.Chores
-	return menu
-}
-
 // theFaces is the five, in the one order both surfaces use.
 func theFaces() []faceView {
 	out := make([]faceView, 0, len(squirrel.Moods))
@@ -549,13 +535,20 @@ func saidAboutTheOffer(act, label string) []squirrel.Turn {
 	return nil
 }
 
-// keepSaid writes what was said, and logs when it cannot. A press that changed
-// the pile and failed to reach the conversation is recoverable; refusing the
-// press because the record could not be written would not be.
+// keepSaid writes what was said into the room the request is in, and logs when
+// it cannot. A press that changed the pile and failed to reach the
+// conversation is recoverable; refusing the press because the record could not
+// be written would not be.
+//
+// The room comes from the context rather than from a parameter because thirty
+// handlers call this and a thirty-first would be added without one. A turn in
+// the wrong room is invisible — it looks exactly like a room that is quiet —
+// so there is one place that decides, and TestOnlyKeepSaidPutsTurnsInARoom
+// fences it.
 func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn) []squirrel.Turn {
 	out := make([]squirrel.Turn, 0, len(said))
 	for _, t := range said {
-		saved, err := s.AppendTurn(ctx, personID, t)
+		saved, err := s.AppendTurn(ctx, personID, roomOf(ctx), t)
 		if err != nil {
 			slog.Error("keeping what was said", "error", err)
 			continue
@@ -663,22 +656,24 @@ func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, ba
 // is past it is one press away, and never a count.
 const listLimit = 5
 
-// doorNames is the vocabulary, as a map rather than a switch so an unknown door
-// is a lookup miss instead of a default branch someone later fills in with
-// something destructive. The same device the offer's kinds use.
-var doorNames = map[string]string{
-	"pile": "the pile", "tasks": "the tasks", "chores": "the chores", "at": "the agenda",
-	// Not in the menu: these two are reached from the pile's own turn, which
-	// is where you are when you wonder where something went. Places all the
-	// same — opening one is something you said.
-	"kept": "the things you kept", "held": "what you set aside",
+// doorName is the vocabulary, and it is the rooms'. Two lists of the same
+// seven names is one list that goes stale.
+func doorName(key string) (string, bool) {
+	r, ok := roomByKey(key)
+	return r.Name, ok
 }
 
-// openHandler is a door being pressed. A POST because opening a place is an
-// utterance and goes into the record; a GET would write again on every reload.
+// openHandler is two things that used to be one.
 //
-// The cost: a door cannot be opened in a new tab, and back does not step through
-// doors.
+// With a `from`, it is "the rest" — the next page of a list you are already
+// looking at. That is paging inside a room rather than navigation to one, and
+// it is genuinely something you said, so it still writes: the record says you
+// asked for the rest of the tasks, not that you opened the tasks twice.
+//
+// Without one, it is the door as it was until 28 August 2026, and it writes
+// nothing — it sends you to the room. Kept rather than deleted because an
+// installed home screen holds a cached page whose forms still post here, and a
+// 405 on the first press after an update is an app that looks broken.
 func openHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		personID, ok := personOf(r)
@@ -690,22 +685,31 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		// How far in. A door pressed from the menu starts at nothing; "the
-		// rest" is the same door pressed again from where the last one
-		// stopped. See theRest.
-		from, _ := strconv.Atoi(r.FormValue("from"))
-		said := placeTurn(r.Context(), s, opts, personID, r.FormValue("where"), from)
-		if len(said) == 0 {
+		where := r.FormValue("where")
+		if _, ok := roomByKey(where); !ok {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+		from, _ := strconv.Atoi(r.FormValue("from"))
+		if from <= 0 {
+			http.Redirect(w, r, "/r/"+where, http.StatusSeeOther)
+			return
+		}
+		// The rest belongs in the room the list is in, so it is written there
+		// rather than wherever the press happened to come from.
+		ctx := withRoomIn(r.Context(), where)
+		said := placeTurn(ctx, s, opts, personID, where, from)
+		if len(said) == 0 {
+			http.Redirect(w, r, "/r/"+where, http.StatusSeeOther)
+			return
+		}
+		answerWith(w, r, keepSaid(ctx, s, personID, said), "/r/"+where)
 	}
 }
 
 // placeTurn is what you said and what Buddy answered, or nothing at all.
 func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where string, from int) []squirrel.Turn {
-	name, ok := doorNames[where]
+	name, ok := doorName(where)
 	if !ok {
 		return nil
 	}
@@ -734,7 +738,7 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 // putting "the tasks" in your mouth would be the record inventing a sentence
 // you did not say. See coachSayHandler.
 func placeSaid(ctx context.Context, s Store, opts Options, personID int64, where string, from int) (squirrel.Turn, bool) {
-	name, ok := doorNames[where]
+	name, ok := doorName(where)
 	if !ok {
 		return squirrel.Turn{}, false
 	}
@@ -1036,10 +1040,9 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 			},
 		})
 	}
-	// The way to what you set aside. Without it here, /held is reachable from
-	// nowhere. A form rather than a link, now that it is a message and not a page.
-	sh.Chips = []turnChip{{Label: "what you set aside", Action: "/open",
-		Fields: map[string]string{"where": "held"}}}
+	// The way to what you set aside, from the room a task is set aside out of.
+	// A link, because it is a room and going to one writes nothing.
+	sh.Chips = []turnChip{{Label: "what you set aside", Href: "/r/held"}}
 	if more {
 		sh.Chips = append(sh.Chips, theRest("tasks", from+listLimit))
 	}
@@ -1482,6 +1485,8 @@ func searchTurn(ctx context.Context, s Store, personID int64, q string) squirrel
 		v := toChoreView(c)
 		sh.Hits = append(sh.Hits, hitView{
 			Title: v.Name, Meta: "chore · " + choreMeta(v),
+			// A form, because hitView has no href — and /open redirects into
+			// the room, so this lands where the rail would take you.
 			Action: "/open", Fields: map[string]string{"where": "chores"},
 		})
 	}

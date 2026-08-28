@@ -194,7 +194,10 @@ func (p *Provider) Decide(ctx context.Context, personID int64) (Decision, error)
 			msgs = append(msgs, chatMessage{
 				Role:       "tool",
 				ToolCallID: call.ID,
-				Content:    p.answerTool(ctx, personID, call, handed),
+				// Decide is not room-scoped: it is the one thing to do now,
+				// across everything, and narrowing it would hide half the
+				// day from the only decision that looks at all of it.
+				Content: p.answerTool(ctx, personID, "", call, handed),
 			})
 		}
 	}
@@ -248,7 +251,7 @@ func key(kind string, id int64) string { return kind + ":" + fmt.Sprint(id) }
 // answer is a fact the model does not have, and the alternative — telling the
 // model the database is unreachable — invites it to say so to a person who
 // asked what to do next.
-func (p *Provider) answerTool(ctx context.Context, personID int64, call toolCall, handed map[string]Work) string {
+func (p *Provider) answerTool(ctx context.Context, personID int64, room string, call toolCall, handed map[string]Work) string {
 	var args struct {
 		Limit int    `json:"limit"`
 		ID    int64  `json:"id"`
@@ -269,6 +272,10 @@ func (p *Provider) answerTool(ctx context.Context, personID int64, call toolCall
 		if err != nil {
 			return "[]"
 		}
+		// The room's own kind. Without this the chores ask what is open and
+		// are handed a task, which tells the model the task exists — the fact
+		// the room was drawn to keep out.
+		work = onlyKind(room, work)
 		remember(handed, work...)
 		return asJSON(work)
 

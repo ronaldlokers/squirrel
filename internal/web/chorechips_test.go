@@ -28,7 +28,7 @@ func TestTheCurrentIntervalSaysSoAndNotOnlyInPurple(t *testing.T) {
 	}
 
 	m := routed(t, f)
-	m.call(t, "POST", "/open", strings.NewReader("where=chores"))
+	m.call(t, "GET", "/r/chores", nil)
 	m.call(t, "POST", "/chores/often", strings.NewReader("id=1"))
 	f.turns, f.appended = append(f.turns, f.appended...), nil
 	body := m.call(t, "GET", "/", nil).Body.String()
