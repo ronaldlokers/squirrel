@@ -1,4 +1,4 @@
-.PHONY: check fmt vet test test-integration test-browser build
+.PHONY: check fmt vet test test-integration test-browser build dev
 
 check: fmt vet test
 
@@ -26,6 +26,16 @@ test-integration:
 # or Chromium on the path.
 test-browser:
 	go test -tags=browser -count=1 ./internal/web/
+
+# The screen on a port, with invented contents and no database. Templates and
+# static files are read from the working tree, so an edit is a refresh rather
+# than a rebuild — which is what impeccable's live mode, the design detector's
+# overlay and any by-hand test of the service worker all need.
+#
+# Behind the `dev` tag, and so is the code that switches internal/web onto the
+# working tree: a binary built without it cannot turn any of this on.
+dev:
+	go run -tags=dev ./cmd/devscreen
 
 build:
 	CGO_ENABLED=0 go build -o squirrel ./cmd/squirrel

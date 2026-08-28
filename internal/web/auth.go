@@ -19,6 +19,13 @@ import (
 // gate into the conversation as a turn.
 func guard(opts Options, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Development is always signed in as person 1. devDir is set only by
+		// EnableDevelopment, which lives behind the `dev` build tag — a shipped
+		// binary does not contain the code that could make this true.
+		if devDir != "" {
+			h(w, withWho(r, 1, "dev"))
+			return
+		}
 		carried, err := r.Cookie(sessionCookie)
 		if err != nil {
 			refuse(w, r, "no cookie")

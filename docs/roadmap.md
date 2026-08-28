@@ -345,6 +345,49 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### The dev screen — 28 August 2026, unreleased
+
+**Everything this product looks like is compiled into the binary**, and that had
+a cost nobody had named: `//go:embed templates/*.html` and `//go:embed static`
+mean editing `pile.css` does nothing to a running process, and `pages` is parsed
+once at package init. Three things had nowhere to run because of it — impeccable's
+live mode, the design detector's overlay, and any test of the service worker by
+hand, which needs a real origin and a real network to cut.
+
+`make dev` serves the screen on a port with invented contents: no database, no
+model, nothing that survives the process. Templates and static files come from
+the working tree, templates re-parse per request, and nothing is cached, so an
+edit is a refresh.
+
+**The build tag is the safety argument rather than a convention.**
+`EnableDevelopment` and `DevServe` live behind `//go:build dev`, so a binary
+built without it does not contain the code that could set `devDir` — verified by
+`strings` on both binaries, which finds neither symbol in the production one. The
+checks that read `devDir` compile in either way and are simply never true.
+
+**It caught a bug in its own making, which is the part worth recording.**
+`stampOf` walks the tree it is given and used to be handed the whole embedded FS
+to walk a `static` prefix. Handing it the static directory itself — which is what
+serving from disk needs — made the walk find nothing and return the SHA-256 of
+empty input: a constant stamp, in every asset URL, under `max-age=31536000`.
+That is exactly the v0.7.0 failure the comment on `assetVersion` describes, and
+it is silent. `TestTheStampIsOfTheFilesAndNotOfNothing` now fails on it.
+
+**What it unlocked immediately: the offline path, proved.** Flagged five times
+since 28 August and never verified, because it needs a real origin, a real
+service worker and a real failure — and the worker is the one part of this
+screen Go never runs. `node scripts/offline-path.mjs` starts a dev screen, kills
+it, types a chore into the dead server, brings it back and reports what
+returned. On 29 August: the worker held
+`{text, room:"chores", action:"/chores/name", field:"name"}`, the chore came
+back a chore with its how-often picker, **0 in the pile**, **0 still held**.
+
+**The first attempt passed while proving nothing**, which is the part worth
+keeping. CDP's `Network.emulateNetworkConditions` with `offline: true` does not
+reach the service worker's own fetch: the POST returned 200, the worker held
+nothing, and the chore arrived correctly by the ordinary online path. Stopping
+the server process is the only cut that reaches through.
+
 ### Rooms — 28 August 2026, unreleased
 
 **One conversation became seven, each with its own Buddy.** Spec:

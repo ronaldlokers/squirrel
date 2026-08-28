@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -23,8 +24,8 @@ func manifestHandler() http.HandlerFunc {
 		"background_color": "#58388a",
 		"theme_color":      "#3b2560",
 		"icons": []map[string]string{
-			{"src": "/static/icon-192.png?v=" + assetVersion, "sizes": "192x192", "type": "image/png"},
-			{"src": "/static/icon-512.png?v=" + assetVersion, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+			{"src": "/static/icon-192.png?v=" + stamp(), "sizes": "192x192", "type": "image/png"},
+			{"src": "/static/icon-512.png?v=" + stamp(), "sizes": "512x512", "type": "image/png", "purpose": "any"},
 		},
 	}, "", "  ")
 	if err != nil {
@@ -44,15 +45,32 @@ func manifestHandler() http.HandlerFunc {
 // /static/sw.js it could only ever answer for the assets, which is the one
 // thing it does not need to intercept.
 func swHandler() http.HandlerFunc {
-	source, err := staticFS.ReadFile("static/sw.js")
-	if err != nil {
-		panic(err)
+	// Read through assetsFS rather than the embedded copy directly, so
+	// development serves the worker from the working tree like everything
+	// else. Reading the embed here made sw.js the one file an edit could not
+	// reach — and the worker is the thing the dev screen exists to let you
+	// test by hand.
+	read := func() string {
+		f, err := assetsFS().Open("sw.js")
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		source, err := io.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+		// The worker's cache name has to change when the assets do, or a
+		// released stylesheet would sit behind a cache keyed to the old one
+		// forever.
+		return strings.ReplaceAll(string(source), "SQUIRREL_ASSET_VERSION", stamp())
 	}
-	// The worker's cache name has to change when the assets do, or a released
-	// stylesheet would sit behind a cache keyed to the old one forever.
-	body := strings.ReplaceAll(string(source), "SQUIRREL_ASSET_VERSION", assetVersion)
+	body := read()
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if devDir != "" {
+			body = read()
+		}
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		// No Service-Worker-Allowed. This worker comes from /sw.js, so its
 		// default scope is already / — every screen, including the one an

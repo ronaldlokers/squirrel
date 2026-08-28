@@ -696,3 +696,41 @@ func TestBrowserTheDockGivesTheFieldItsOwnRowOnAPhone(t *testing.T) {
 			"in %s the placeholder wraps to %v lines in an empty field", room, lines)
 	}
 }
+
+// The worked example is laid out like the conversation it is a picture of.
+//
+// It carries its own card and act classes on purpose — a picture of a card is
+// not a card — but it sat outside .thread with no width, no padding and no gap
+// and inherited none of them. On a phone that ran its label off the left edge
+// of the screen and let every card overlap the bubble beneath it.
+//
+// It shipped that way on 26 August and nobody saw it for two weeks, because it
+// draws only when the record is empty and this record has never been empty
+// since. The appearance snapshot cannot see it either: its fixture has turns,
+// so the example is not on the page it samples.
+func TestBrowserTheWorkedExampleIsInsideTheScreen(t *testing.T) {
+	c, srv := open(t, &fakeStore{})
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the worked example", `!!document.querySelector(".worked")`)
+
+	left := c.eval(t, `return Math.round(document.querySelector(".workedsays").getBoundingClientRect().left)`)
+	require.Greater(t, left, float64(0),
+		"the example's first line starts at or past the left edge of the screen")
+
+	// And its turns do not sit on top of one another, which is what having no
+	// gap looked like: a card over the bubble under it.
+	overlap := c.eval(t, `
+		const turns = [...document.querySelectorAll(".worked .turn")];
+		let worst = 0;
+		for (let i = 1; i < turns.length; i++) {
+			const above = turns[i - 1].getBoundingClientRect();
+			const below = turns[i].getBoundingClientRect();
+			worst = Math.min(worst, Math.round(below.top - above.bottom));
+		}
+		return worst;`)
+	require.GreaterOrEqual(t, overlap, float64(0),
+		"two turns of the worked example overlap by %v pixels", overlap)
+}

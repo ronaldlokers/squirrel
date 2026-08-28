@@ -4,6 +4,8 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -137,4 +139,31 @@ func TestTheWorkerHoldsACaptureWithNoNetwork(t *testing.T) {
 	// Deleted only once its own write has landed — a queue that keeps what it
 	// has delivered is a second pile.
 	require.Contains(t, body, "del.delete(note.key)")
+}
+
+// The stamp is a hash of the files, and never the hash of nothing.
+//
+// stampOf walks the tree it is given. It used to be handed the whole embedded
+// FS and walk a "static" prefix; it is handed the static directory itself now,
+// because development serves that directory from disk. Walking the old prefix
+// against the new root found no files at all and returned the SHA-256 of empty
+// input — a constant, in every asset URL, under `max-age=31536000`.
+//
+// That is the v0.7.0 failure the comment on assetVersion describes: a browser
+// rendering new markup against the stylesheet it already had. It is silent,
+// which is why it is worth a test rather than a reading.
+func TestTheStampIsOfTheFilesAndNotOfNothing(t *testing.T) {
+	const empty = "e3b0c44298" // sha256 of no bytes at all, first ten
+	require.NotEqual(t, empty, assetVersion,
+		"the stamp is the hash of an empty walk, so every asset URL is constant forever")
+	require.Len(t, assetVersion, 10)
+
+	// And it moves when a file does. Same algorithm over a tree of one file.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.css"), []byte("one"), 0o644))
+	first := stampOf(os.DirFS(dir))
+	require.NotEqual(t, empty, first, "a tree with a file in it hashed to nothing")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.css"), []byte("two"), 0o644))
+	require.NotEqual(t, first, stampOf(os.DirFS(dir)), "the stamp did not follow the contents")
 }

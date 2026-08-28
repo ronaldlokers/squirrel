@@ -73,7 +73,7 @@ func gateHandler() http.HandlerFunc {
 			// Checked, not trusted. A value that arrives in a URL is a place a
 			// stranger can type, and the same rule the timer's `from` uses.
 			Next:  backTolerant(r.URL.Query().Get("next")),
-			V:     assetVersion,
+			V:     stamp(),
 			Tilt:  squirrel.Tilt(now()),
 			Light: squirrel.Light(now()),
 		}); err != nil {

@@ -206,7 +206,7 @@ func roomHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		if unreadable {
 			v.Turns = []turnView{{
-				Buddy: true, Live: true, V: assetVersion,
+				Buddy: true, Live: true, V: stamp(),
 				Words: "I cannot reach what we said here. Tell me things anyway — they are kept, and they go in when I can.",
 			}}
 		}
