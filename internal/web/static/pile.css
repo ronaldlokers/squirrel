@@ -51,6 +51,11 @@
     --line: 3px;               /* the outline weight of the mark */
     --r: 14px;
 
+    --lid-pad-top: 11px;
+    --lid-pad-bottom: 13px;
+    --lid-mark-h: 63px;
+    --lid-h: calc(env(safe-area-inset-top) + var(--lid-pad-top) + var(--lid-mark-h) + var(--lid-pad-bottom) + var(--line));
+
     /* His words in the casual axis, the machinery in the linear one. MONO is
        pinned off on both: this is a warm tool, not a terminal. */
     --casual: "MONO" 0, "CASL" 1;
@@ -190,7 +195,7 @@
        clears the lid with its own top padding instead. */
     position: fixed; inset: 0 0 auto 0; z-index: 6;
     display: flex; align-items: center; gap: 18px;
-    padding: 11px 22px 13px;
+    padding: calc(env(safe-area-inset-top) + var(--lid-pad-top)) 22px var(--lid-pad-bottom);
     /* Translucent and blurred rather than opaque, so the conversation is seen
        to pass under it rather than to stop at it. The transcript reserves the
        height instead of being pushed by it — see .scroll. */
@@ -216,7 +221,7 @@
      than a control. */
   .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
   .brand img {
-    width: 84px; height: 63px; display: block;
+    width: 84px; height: var(--lid-mark-h); display: block;
     filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .3));
   }
   .wordmark {
@@ -647,20 +652,23 @@
   }
 
   @media (max-width: 620px) {
-    :root { --o: 5px; }
+    :root { --o: 5px; --lid-pad-top: 10px; --lid-pad-bottom: 12px; --lid-mark-h: 42px; }
     /* Wrapping is still what lets the lid be two rows, but nothing about the
        search field needs it any more: the mark and the three icons fit one
        row at every width this product is used at. It is the running timer that
        wraps now — it takes `order: 6` and the full width, so it sits under the
        mark rather than squeezing the icons. */
-    .lid { flex-wrap: wrap; padding: 10px 14px 12px; gap: 8px 10px; }
+    .lid {
+      flex-wrap: wrap; gap: 8px 10px;
+      padding: calc(env(safe-area-inset-top) + var(--lid-pad-top)) 14px var(--lid-pad-bottom);
+    }
     /* The lid steps DOWN on a phone, against the Step-Up Rule and for the
        reason that rule gives. Roles grow on a phone because a phone is read at
        arm's length; the lid is not read — it is the thing you look past on the
        way to the conversation. At its desktop size it spent a fifth of a small
        screen saying a name you already know. */
     .brand { gap: 7px; }
-    .brand img { width: 56px; height: 42px; }
+    .brand img { width: 56px; height: var(--lid-mark-h); }
     .wordmark { font-size: 20px; -webkit-text-stroke-width: 1.6px; }
     /* The search field's own phone size is not here.
      *
@@ -686,7 +694,7 @@
        doors — and the label is short enough that keeping it inline costs the
        field almost nothing. 18.5px is the Step-Up pair, and anything under
        16px makes iOS zoom the page on focus. */
-    .slot { gap: 8px; padding: 10px 10px 10px 14px; margin-top: 22px; }
+    .slot { gap: 6px; padding: 8px 8px 8px 12px; margin-top: 22px; }
     /* On a phone the button always takes its own row, and it is stated rather
        than left to arithmetic on the label.
        
@@ -695,7 +703,7 @@
        as you moved between rooms. The dock is the one thing you come back to
        on every screen; it must not jump. And a rule that depends on measuring
        the longest label breaks the day a label changes. */
-    .slot textarea { font-size: 18.5px; padding: 6px 0; flex-basis: 100%; min-width: 0; }
+    .slot textarea { font-size: 18.5px; padding: 4px 0; flex-basis: 100%; min-width: 0; }
     .post { padding: 11px 14px; letter-spacing: .05em; }
 
     /* Its own row on a phone, where the lid is already two rows deep. */
@@ -1066,7 +1074,7 @@
   .threadpage .scroll {
     min-block-size: 0; overflow-y: auto;
     display: flex; flex-direction: column;
-    padding-top: calc(var(--lid-h, 87px) + 8px);
+    padding-top: calc(var(--lid-h) + 8px);
     /* The end of the conversation stops short of the dock rather than touching
        it: flush against the rule above the slot, the last thing said reads as
        clipped rather than as the end. */
@@ -1298,7 +1306,7 @@
 
   .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
-    .dock { padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); }
+    .dock { padding: 8px 14px calc(10px + env(safe-area-inset-bottom)); }
     .dock .slot { margin: 0 auto; }
   }
 
@@ -1615,13 +1623,13 @@
        rail has to be a child of body to be a grid area, and the control has to
        stay its sibling for `[open] ~ .rail` to reach it. So it is placed over
        the lid rather than inside it. */
-    .roomsheet { position: fixed; top: 10px; right: 14px; z-index: 7; }
+    .roomsheet { position: fixed; top: calc(env(safe-area-inset-top) + 10px); right: 14px; z-index: 7; }
     /* From under the lid, not from under itself: the sheet used to start above
        its own control and cover it, leaving an open disclosure with no visible
        way to close it. */
     .roomsheet[open] ~ .rail {
       display: flex;
-      position: fixed; left: 0; right: 0; top: 87px; bottom: 0; z-index: 30;
+      position: fixed; left: 0; right: 0; top: var(--lid-h); bottom: 0; z-index: 30;
       overflow-y: auto;
       padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
       background: var(--purple-deep);
@@ -1662,7 +1670,7 @@
       grid-area: side; min-block-size: 0; overflow-y: auto;
       border-left: var(--line) solid var(--outline);
       background: rgba(28, 17, 11, .16);
-      padding: calc(var(--lid-h, 87px) + 10px) 14px calc(20px + env(safe-area-inset-bottom));
+      padding: calc(var(--lid-h) + 10px) 14px calc(20px + env(safe-area-inset-bottom));
     }
     /* Nothing here insets the dock any more.
 

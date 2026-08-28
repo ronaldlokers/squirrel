@@ -734,3 +734,80 @@ func TestBrowserTheWorkedExampleIsInsideTheScreen(t *testing.T) {
 	require.GreaterOrEqual(t, overlap, float64(0),
 		"two turns of the worked example overlap by %v pixels", overlap)
 }
+
+func TestBrowserTheTranscriptClearsTheLidAndNoMore(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+
+	for _, size := range []struct {
+		what          string
+		width, height int
+		mobile        bool
+	}{
+		{"a phone", 390, 844, true},
+		{"a desktop", 1280, 900, false},
+	} {
+		c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+			"width": size.width, "height": size.height,
+			"deviceScaleFactor": 0, "mobile": size.mobile,
+		})
+		c.navigate(t, srv.URL+"/")
+
+		require.Equal(t, float64(8), c.eval(t, `
+			const lid = document.querySelector(".lid").getBoundingClientRect();
+			const s = document.querySelector(".scroll");
+			const pad = parseFloat(getComputedStyle(s).paddingTop);
+			return Math.round(s.getBoundingClientRect().top + pad - lid.bottom)`),
+			"on %s the transcript does not start 8px under the lid", size.what)
+	}
+}
+
+func TestBrowserTheRailClearsTheLidToo(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 1280, "height": 900, "deviceScaleFactor": 0, "mobile": false,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, float64(10), c.eval(t, `
+		const lid = document.querySelector(".lid").getBoundingClientRect();
+		const rail = document.querySelector(".rail");
+		const pad = parseFloat(getComputedStyle(rail).paddingTop);
+		return Math.round(rail.getBoundingClientRect().top + pad - lid.bottom)`),
+		"the first room does not clear the lid by 10")
+}
+
+func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 0},
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, float64(126), c.eval(t, `
+		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
+		"the lid did not grow by the status bar, so something else paints it")
+
+	require.Equal(t, float64(8), c.eval(t, `
+		const lid = document.querySelector(".lid").getBoundingClientRect();
+		const s = document.querySelector(".scroll");
+		const pad = parseFloat(getComputedStyle(s).paddingTop);
+		return Math.round(s.getBoundingClientRect().top + pad - lid.bottom)`),
+		"the transcript does not clear the taller lid by 8")
+
+	require.Equal(t, true, c.eval(t, `
+		return document.querySelector(".roomsheet > summary").getBoundingClientRect().top >= 59`),
+		"the room control sits in the status bar")
+
+	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
+	require.Equal(t, float64(0), c.eval(t, `
+		const lid = document.querySelector(".lid").getBoundingClientRect();
+		const rail = document.querySelector(".rail").getBoundingClientRect();
+		return Math.round(rail.top - lid.bottom)`),
+		"the open sheet does not start at the foot of the lid")
+}

@@ -118,3 +118,20 @@ func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
 	require.Contains(t, body, `rel="manifest"`)
 	require.Regexp(t, `rel="manifest"[^>]*crossorigin="use-credentials"`, body)
 }
+
+func TestTheStatusBandIsTheLid(t *testing.T) {
+	css, err := staticFS.ReadFile("static/pile.css")
+	require.NoError(t, err)
+	sheet := string(css)
+
+	require.Contains(t, ruleFor(t, sheet, ".lid"),
+		"padding: calc(env(safe-area-inset-top)",
+		"the lid does not reach into the status bar, so something else paints it")
+	require.Contains(t, sheet, "--lid-h: calc(env(safe-area-inset-top)",
+		"the lid grew by the inset and whatever reserves it did not")
+
+	page := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, page,
+		`<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`,
+		"iOS keeps the strip and fills it with the page background")
+}
