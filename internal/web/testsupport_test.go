@@ -595,7 +595,7 @@ func (m *testMux) route(t *testing.T, method, target string) string {
 		} else if !matchesPath(path, target) {
 			continue
 		}
-		if len(pattern) > len(best) {
+		if moreSpecific(pattern, best) {
 			best = pattern
 		}
 	}
@@ -624,6 +624,25 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	w := httptest.NewRecorder()
 	m.routes[best](w, r)
 	return w
+}
+
+// moreSpecific says this pattern beats the one held so far, the way the real
+// ServeMux resolves an overlap.
+//
+// Fewer wildcards wins first, and only then the longer literal. Length alone
+// picked "/r/{room}" over "/r/buddy" — thirteen characters against twelve — so
+// every test asking for Buddy's room reached the generic handler while the
+// server reached his own. That is a test helper answering a different question
+// from the product, which is worse than no helper.
+func moreSpecific(pattern, best string) bool {
+	if best == "" {
+		return true
+	}
+	a, b := strings.Count(pattern, "{"), strings.Count(best, "{")
+	if a != b {
+		return a < b
+	}
+	return len(pattern) > len(best)
 }
 
 // matchesPath is prefix matching that understands a wildcard segment.

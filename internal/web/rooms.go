@@ -192,7 +192,10 @@ func roomHandler(s Store, opts Options) http.HandlerFunc {
 		}
 
 		v := view{
-			Room:      here,
+			Room: here,
+			// A conversation, but not the front door: the mark is a link back
+			// to Buddy's room from here.
+			Thread:    true,
 			Here:      here.Key,
 			Scrolling: true,
 			Turns:     turnViews(turns),

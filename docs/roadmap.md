@@ -345,6 +345,71 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### Rooms — 28 August 2026, unreleased
+
+**One conversation became seven, each with its own Buddy.** Spec:
+`docs/superpowers/specs/2026-08-28-rooms-design.md`.
+
+**A room is two things, and the second is the point.** It keeps its own
+conversation, and it narrows what Buddy can do in it. A room that kept its own
+history while answering with the whole product would be a filter on a
+transcript.
+
+- **`turns` gained a `room` column**, defaulting to `buddy` — which is what
+  backfills the record. Everything said before rooms existed was one
+  conversation, and the room a conversation lives in is Buddy's, not the
+  pile's: the record holds his openings and his answers as well as your notes.
+  `EverythingSaid` is the one unscoped read, for the learning tick: rooms
+  partition the screen, not the person.
+- **Doors became rooms.** A door was a POST that appended "the pile" to the
+  record on every press, which made a record of walking around. A room is a GET
+  at `/r/{room}`, and it draws its own state on arrival only when the
+  conversation ends with nothing to act on. `/open` survives as a redirect for
+  an installed home screen's cached forms, and keeps "the rest", which is paging
+  inside a room and genuinely something you said.
+- **The menu became the rail.** Furniture beside the conversation on a desktop,
+  a sideways strip above it on a phone. Counts on the four rooms that earn one,
+  kept against the scoreboard evidence on the owner's decision of 27 August.
+- **The dock names its consequence** — *Make a chore*, *Put it in the pile* —
+  because the room decides the filing with no confirmation step and a
+  placeholder is invisible by the third day.
+- **Buddy is narrowed per room.** The chores cannot complete a task, make one,
+  or be handed one when they ask what is open. The agenda cannot write at all
+  and may only propose a moment. The shelves only talk. Enforced twice: the
+  tools he is offered, and a refusal at dispatch for the ones he was not, since
+  a model can name a function that was never in its list.
+
+**What the tests found that the plan had not:**
+
+- `sw.js` held `{text}` and replayed everything to `/capture`, so a chore typed
+  with no network came back a pile note.
+- `Home` meant both "the front door" and "this is a conversation", so every
+  room rendered without `thread.js` — the fragment posting, the live edge and
+  the chore keys all live there. Nothing looked broken, because the forms fall
+  back to full navigations. Only a browser test found it.
+- The test mux resolved overlapping routes by pattern length, so `/r/{room}`
+  beat `/r/buddy` by one character and every test asking for Buddy's room
+  reached the generic handler while the server reached his own.
+- `noticeAbout` was asked with the display name — "the tasks" is not a room
+  key — so the door's own line went unnarrowed under a name that looked right.
+- `TestNoChipInTheConversationIsALink` banned links outright; the rule
+  underneath was that a chip must not point somewhere dead. It now resolves
+  every href against the route table *and* checks the query is one a handler
+  reads — checking the path alone is what let `/?open=chores` ship, since that
+  is `/`.
+
+**The appearance snapshot now records `transform` and `box-shadow`.** Without
+them `.rail .room.in` recorded byte-identically to `.rail .room`, so the one
+mark saying which room you are in was pinned by nothing. It is also the first
+thing that has ever watched the sticker offset, which is the depth rule of the
+whole system.
+
+**Outstanding: the cost of per-room Buddy is unmeasured.** A narrower toolset
+is fewer schemas in every request; a per-room window is more windows carrying
+less each. The net is unknown and it is a check on the €10 ceiling rather than
+a gate on the feature, which shipped either way. Measure it the way the dock's
+toolset was measured in v0.43.0.
+
 ### v0.43.0 — 26 August 2026
 
 **The box can show you a place, and a request to see one is not a note.** Two

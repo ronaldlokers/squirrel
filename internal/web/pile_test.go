@@ -170,3 +170,17 @@ func TestMountRefusesWithoutWhatItNeeds(t *testing.T) {
 			"without %s it refused for some other reason", missing.what)
 	}
 }
+
+// The helper resolves an overlap the way the server does.
+//
+// It picked the longest pattern, so "/r/{room}" beat "/r/buddy" by one
+// character and every test asking for Buddy's room reached the generic handler
+// while the server reached his own. A helper that answers a different question
+// from the product is worse than no helper.
+func TestTheTestMuxPrefersTheSpecificRoute(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+
+	require.Equal(t, "GET /r/buddy", m.route(t, "GET", "/r/buddy"))
+	require.Equal(t, "GET /r/{room}", m.route(t, "GET", "/r/chores"))
+	require.Equal(t, "GET /{$}", m.route(t, "GET", "/"))
+}

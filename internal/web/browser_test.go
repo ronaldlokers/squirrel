@@ -360,14 +360,15 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 
 // atChores opens the thread and presses the chores door.
 //
-// The chores are not a page, so a browser test that wants them presses the door
-// and waits for the cards — which is what a person does, and what makes these
-// tests exercise the swap as well as the cards.
+// The chores are a room, so a browser test that wants them goes there and waits
+// for the cards — which is what a person does, and what makes these tests
+// exercise the room's own draw as well as the cards.
+//
+// It pressed a menu form until 28 August 2026. A room is a link now, and going
+// somewhere writes nothing.
 func atChores(t *testing.T, srv *httptest.Server) *cdp {
 	t.Helper()
-	c := browserAt(t, srv, "/")
-	c.eval(t, `document.querySelector('.menupanel input[value="chores"]').form
-		.querySelector("button").click()`)
+	c := browserAt(t, srv, "/r/chores")
 	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
 	return c
 }
@@ -375,9 +376,9 @@ func atChores(t *testing.T, srv *httptest.Server) *cdp {
 // openChores presses the chores door on a browser already open.
 func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 	t.Helper()
-	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector('.menupanel input[value="chores"]').form
-		.querySelector("button").click()`)
+	// Straight to the room. This pressed a menu form until 28 August 2026,
+	// when rooms became links — a click on the rail is what a person does now.
+	c.navigate(t, srv.URL+"/r/chores")
 	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
 }
 
@@ -420,9 +421,7 @@ func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
 	}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector('.menupanel input[value="pile"]').form
-		.querySelector("button").click()`)
+	c.navigate(t, srv.URL+"/r/pile")
 	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
 
 	c.key(t, "k")
@@ -438,9 +437,7 @@ func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
 	}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/")
-	c.eval(t, `document.querySelector('.menupanel input[value="pile"]').form
-		.querySelector("button").click()`)
+	c.navigate(t, srv.URL+"/r/pile")
 	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
 
 	c.eval(t, `document.querySelector(".dock textarea").focus()`)

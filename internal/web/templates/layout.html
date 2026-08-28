@@ -142,7 +142,7 @@
        bottom says that without a louder word. The wording moves with the day. */}}
   <a class="leaving" href="/enough">{{.SayStop}}</a>
 </nav>
-<main id="stage" class="{{if .Home}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
+<main id="stage" class="{{if .Thread}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
 {{/* The pile moved while this card was on the screen. Not an error and not a
      failure: the note is where the room put it, and this says so rather than
      letting the two views disagree in silence. There is nothing to undo —
@@ -156,8 +156,11 @@
 {{template "content" .}}
 </main>
 <script src="/static/pile.js?v={{.V}}" defer></script>
-{{/* The thread's own script, and only on the thread. Required rather than an
-     enhancement: see static/thread.js. */}}
-{{if .Home}}<script src="/static/thread.js?v={{.V}}" defer></script>{{end}}
+{{/* The thread's own script, and only on a conversation. Required rather than
+     an enhancement: see static/thread.js.
+
+     `.Thread` and not `.Home`: every room is a conversation, and only the
+     front door is home. */}}
+{{if .Thread}}<script src="/static/thread.js?v={{.V}}" defer></script>{{end}}
 </body>
 </html>{{end}}

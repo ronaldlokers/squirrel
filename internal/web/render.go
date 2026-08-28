@@ -103,6 +103,15 @@ type view struct {
 	// Home is the front door, where the mark is not a link because it would be
 	// a link to here.
 	Home bool
+	// Thread is a conversation with a dock, which every room is and the front
+	// door also is.
+	//
+	// Split from Home on 28 August 2026, when rooms arrived. Home carried both
+	// meanings, so every room rendered without thread.js: the fragment posting,
+	// the live edge and the chore keys are all in that file, and a room got
+	// none of them. Nothing looked broken — the forms fell back to full
+	// navigations — which is why it took a browser test to find.
+	Thread bool
 	// Said carries words back to the slot when the write failed. A capture box
 	// that clears on failure is a capture box that eats thoughts.
 	Said string

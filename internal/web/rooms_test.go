@@ -195,3 +195,36 @@ func TestTheRoomNamesAgreeWithTheCoach(t *testing.T) {
 	require.Len(t, coach.RoomKeys(), len(rooms)-1,
 		"a room was added on one side only")
 }
+
+// Every room is a conversation, so every room loads the conversation's script.
+//
+// Home carried both meanings until 28 August 2026 and every room rendered
+// without thread.js — the fragment posting, the live edge and the chore keys
+// all live there. Nothing looked broken, because the forms fall back to full
+// navigations, which is why only a browser test found it.
+func TestEveryRoomLoadsTheThreadsScript(t *testing.T) {
+	f := &fakeStore{}
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, signedInOptions()))
+
+	for _, r := range rooms {
+		t.Run(r.Key, func(t *testing.T) {
+			body := m.call(t, "GET", "/r/"+r.Key, nil).Body.String()
+			require.Contains(t, body, "/static/thread.js",
+				"%s is a conversation with no conversation script", r.Key)
+			require.Contains(t, body, "threadpage",
+				"%s does not lay out as a conversation", r.Key)
+		})
+	}
+}
+
+// And only the front door keeps the mark unpressable. Everywhere else it is
+// the way back, which is the convention every website has.
+func TestOnlyTheFrontDoorHasNoWayBack(t *testing.T) {
+	f := &fakeStore{}
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, signedInOptions()))
+
+	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `<a class="brand" href="/"`)
+	require.Contains(t, m.call(t, "GET", "/r/chores", nil).Body.String(), `<a class="brand" href="/"`)
+}
