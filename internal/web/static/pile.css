@@ -108,8 +108,7 @@
        bugs. They were one missing layout. Campfire's own is a grid at 100dvh
        where every region owns its box; this is that. */
     margin: 0;
-    block-size: 100dvh;
-    max-block-size: 100dvh;
+    position: fixed; inset: 0;
     overflow: hidden;
     color: var(--paper);
     font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;

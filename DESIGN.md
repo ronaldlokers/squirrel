@@ -2214,7 +2214,13 @@ Campfire — the application Squirrel lives inside — on 28 August 2026.
 grid-template-areas: "nav side" / "main side"
 ```
 
-- **`body`** is exactly the viewport and does not scroll. `overflow: hidden`.
+- **`body`** is exactly the viewport and does not scroll: `position: fixed;
+  inset: 0`, `overflow: hidden`. It was `block-size: 100dvh` until 29 August
+  2026, when the installed app on iOS left a 57px band of the field's purple
+  below the dock — `dvh` reported a height that did not include the status bar
+  inset while the page was laid out from the top of the screen. Anchoring the
+  shell to the viewport rather than measuring it in viewport units removes the
+  question.
 - **The lid** is `grid-area: nav`, fixed across the full width, translucent at
   `rgba(59, 37, 96, .72)` with a 14px backdrop blur, and `pointer-events: none`
   so clicks fall through everywhere it is empty. The conversation is seen to
