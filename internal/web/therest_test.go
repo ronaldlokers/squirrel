@@ -257,3 +257,23 @@ func ruleFor(t *testing.T, css, selector string) string {
 	body := css[at+len(selector)+5:]
 	return body[:strings.Index(body, "}")]
 }
+
+func TestThePillRuleHasNoExceptions(t *testing.T) {
+	css, err := staticFS.ReadFile("static/pile.css")
+	require.NoError(t, err)
+	sheet := string(css)
+
+	for _, selector := range []string{
+		".letmein",
+		".roomsheet > summary",
+		".hit button",
+		".calgrid label.day, .calgrid span.gone",
+		".post",
+		".abtn",
+		".chip",
+		".enough .leavehere",
+	} {
+		require.Contains(t, ruleFor(t, sheet, selector), "border-radius: 999px",
+			"%s draws a pressable shape and is not a pill", selector)
+	}
+}

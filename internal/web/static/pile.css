@@ -1405,7 +1405,7 @@
      Seven columns cannot do better without cropping the month to weekdays or
      scrolling it sideways, and both are worse than the pixel. */
   .calgrid label.day, .calgrid span.gone {
-    min-height: 44px; display: grid; place-items: center; border-radius: 9px;
+    min-height: 44px; display: grid; place-items: center; border-radius: 999px;
     font-size: 13.5px; font-variation-settings: var(--precise), "wght" 700;
     border: 2px solid var(--outline); background: var(--paper); color: var(--outline);
     cursor: pointer;
@@ -1517,7 +1517,7 @@
     font-size: 15px; letter-spacing: .06em;
     font-variation-settings: var(--precise), "wght" 800;
     background: var(--orange); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: var(--r);
+    border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 5px 0 0 var(--outline);
     transition: transform 90ms, box-shadow 90ms, background 90ms;
   }
@@ -1543,7 +1543,7 @@
     list-style: none; cursor: pointer;
     display: flex; align-items: center; gap: 6px;
     min-height: 32px; padding: 0 6px 0 12px;
-    color: var(--cream); border-radius: 11px;
+    color: var(--cream); border-radius: 999px;
     font: 400 16px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--casual), "wght" 620;
   }
@@ -1791,7 +1791,7 @@
   .hit { width: 100%; margin: 0; }
   .hit button {
     display: block; width: 100%; text-align: left; cursor: pointer;
-    padding: 9px 12px; border-radius: 11px;
+    padding: 9px 12px; border-radius: 999px;
     background: rgba(255, 251, 243, .12);
     border: 2px solid rgba(254, 214, 167, .4);
     color: var(--paper); font: inherit;
