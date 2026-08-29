@@ -778,7 +778,7 @@ func TestBrowserTheRailClearsTheLidToo(t *testing.T) {
 		"the first room does not clear the lid by 10")
 }
 
-func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
+func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 	srv := screen(t, aScrollingThread())
 	c := browserAt(t, srv, "/")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
@@ -791,7 +791,7 @@ func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
 
 	require.Equal(t, float64(108), c.eval(t, `
 		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
-		"the lid did not grow by the status bar, so something else paints it")
+		"the lid does not reserve a top inset when there is one")
 
 	require.Equal(t, true, c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
@@ -807,7 +807,7 @@ func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
 
 	require.Equal(t, true, c.eval(t, `
 		return document.querySelector(".roomsheet > summary").getBoundingClientRect().top >= 59`),
-		"the room control sits in the status bar")
+		"the room control sits inside the top inset")
 
 	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
 	require.Equal(t, float64(0), c.eval(t, `

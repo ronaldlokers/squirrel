@@ -786,15 +786,14 @@ twenty too many on a phone, where the lid is 67: twenty pixels of empty field
 under the rule at the top of every conversation. The room control and the open
 room sheet carried the same 87 typed in directly and now follow the same source.
 
-**The band above the header belongs to the lid.** An installed app on iOS does
-not start at the top of the screen. Without
-`apple-mobile-web-app-status-bar-style` the system keeps a strip the height of
-the status bar and fills it with the page's `background-color` — the field's
-purple, sitting above a lid of a different one. `black-translucent` hands the
-strip to the page, and the lid takes it as top padding and paints it. The band
-matches the lid because it *is* the lid, which is what lets the blur stay: a
-translucent bar has no one colour to hand a system that wants a flat fill. No
-manifest colour reaches this strip.
+**The band above the header is iOS's, and that is why the lid is flat.** The
+system keeps a strip the height of the status bar and fills it with the page's
+canvas colour — see `html` under The App Is The Viewport. A flat strip can only
+match a flat bar: at `rgba(59, 37, 96, .72)` over a blur the lid renders around
+`#472e70` at rest and around `rgb(113,93,128)` with a cream card passing beneath
+it, and the seam against a fixed strip would open every time you scrolled. So
+the lid is `--purple-bar` outright, which is what the blur rendered as. The dock
+keeps the blur: nothing is painted beside it.
 
 ### The thread
 
@@ -2221,14 +2220,21 @@ Campfire — the application Squirrel lives inside — on 28 August 2026.
 grid-template-areas: "nav side" / "main side"
 ```
 
-- **`html`** carries `--purple-bar`, and it is the only thing that colour is
-  for. In the installed app on iOS the web view comes up short of the screen,
-  and the system fills what is left with the page's canvas colour — the same
-  sampling that painted the band above the header before `black-translucent`.
-  Left to `body`, that colour was the field's purple and read as a band of
-  nothing under the composer. On `html` it is what the translucent bars render
-  as, so the strip reads as the dock running to the edge. It does not make the
-  view any taller; it makes what is outside it belong.
+- **`html`** carries `--purple-bar`, and that colour exists for one job. An
+  installed app on iOS does not start at the top of the screen: the system
+  keeps the status bar strip and fills it with the page's canvas colour. That
+  colour used to come from `body` — the field's purple, a visibly lighter band
+  above a header of another colour, which is what was reported. On `html` it is
+  the header's own colour, so the strip and the lid are one bar.
+
+  **`black-translucent` was tried for a day and taken out again.** It hands the
+  page the strip so the lid can paint it, and the lid did — but iOS then gives
+  the web view the height it would have had *below* the status bar while
+  positioning it at the top, so the page ends about 59px short of the bottom of
+  the screen and the system fills that with the canvas colour instead. WebKit
+  313800. Reinstalling the web clip does not fix it, `position: fixed; inset: 0`
+  on `body` cannot reach it, and the value is deprecated on top of that. The
+  strip belongs to iOS; the only thing we control is its colour.
 - **`body`** is exactly the viewport and does not scroll: `position: fixed;
   inset: 0`, `overflow: hidden`. It was `block-size: 100dvh` until 29 August
   2026, when the installed app on iOS left a 57px band of the field's purple

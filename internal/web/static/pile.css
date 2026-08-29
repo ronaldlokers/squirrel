@@ -199,9 +199,7 @@
     /* Translucent and blurred rather than opaque, so the conversation is seen
        to pass under it rather than to stop at it. The transcript reserves the
        height instead of being pushed by it — see .scroll. */
-    background: rgba(59, 37, 96, .72);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
+    background: var(--purple-bar);
     /* Ruled off straight, in the outline every other shape here is drawn with.
        
        A brim hung below this until 29 August: a 30px arc, stretched to the full
