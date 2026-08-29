@@ -789,7 +789,7 @@ func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	require.Equal(t, float64(116), c.eval(t, `
+	require.Equal(t, float64(108), c.eval(t, `
 		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
 		"the lid did not grow by the status bar, so something else paints it")
 
@@ -840,4 +840,24 @@ func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {
 	require.Equal(t, "10px", c.eval(t, `
 		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
 		"with no inset the dock keeps no floor of its own")
+}
+
+func TestBrowserTheShellFillsTheViewport(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return Math.round(window.innerHeight - document.body.getBoundingClientRect().bottom)`),
+		"the shell stops short of the bottom of the screen")
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
+		"the dock stops short of the bottom of the screen")
 }

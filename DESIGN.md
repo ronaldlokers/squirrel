@@ -768,12 +768,14 @@ passing under the lid. With it gone you can see content slide beneath the
 translucent bar, which is what the translucent bar was for.
 
 **The lid steps down again on a phone.** The mark goes to 45×34 and the block
-padding to 10/10, which is a 57px lid against 67. The floor is the room control:
-it is `position: fixed` over the lid rather than a flex child of it, so it does
-not hold the lid open, but its 44px tap target must still clear the rule. At 57
-it sits five pixels below the inset and eight above the rule; much denser and it
-hangs through. That is what `TestBrowserThePhoneLidOwnsTheStatusBar` guards, and
-the guard was checked by moving the control rather than by reading it.
+padding to 6/6, which is a 49px lid against 67. What held it open was the room
+control: it is `position: fixed` over the lid rather than a flex child of it, so
+it never held the lid open structurally, but its tap target has to clear the
+rule. At 44 that fixed the lid at 57. The target is 32 now — see the exception
+above — and the control sits level with the mark and clears the rule by seven.
+`TestBrowserThePhoneLidOwnsTheStatusBar` guards both the height and the
+overhang, and the overhang guard was checked by putting the target back to 44,
+which fails it.
 
 **The lid's height is arithmetic rather than a number.** `--lid-h` is the sum of
 the lid's own padding, the mark and the rule, plus the status bar inset. Two
@@ -1059,8 +1061,13 @@ Below it the four answers become a two-by-two grid with *make a chore* on its
 own row beneath them; the chore's three actions become a two-column grid; the
 interval chips become two columns with the lead and *never mind* spanning both;
 the five faces share one row exactly rather than each taking its own width. The
-mark drops to 45×34. Touch targets are 48px in the action row, 44px everywhere
-else.
+mark drops to 45×34. Touch targets are 48px in the action row and 44px
+everywhere else, **with one exception the owner made on 29 August 2026: the room
+control in the lid is 32px.** It was the only thing holding the header open —
+59px of that header is the status bar inset and cannot move, and of the 57 left
+44 was this one target — so the choice was a 32px control or a header that could
+not get denser. The owner chose the header, and this is the record of it rather
+than a number that drifted.
 
 **The dock is tighter below the breakpoint.** Dock padding `8px 14px max(10px,
 safe-area)`, slot `8px 8px 8px 12px`, gap 6px, field padding `4px 0`. The bottom
@@ -2214,7 +2221,13 @@ Campfire — the application Squirrel lives inside — on 28 August 2026.
 grid-template-areas: "nav side" / "main side"
 ```
 
-- **`body`** is exactly the viewport and does not scroll. `overflow: hidden`.
+- **`body`** is exactly the viewport and does not scroll: `position: fixed;
+  inset: 0`, `overflow: hidden`. It was `block-size: 100dvh` until 29 August
+  2026, when the installed app on iOS left a 57px band of the field's purple
+  below the dock — `dvh` reported a height that did not include the status bar
+  inset while the page was laid out from the top of the screen. Anchoring the
+  shell to the viewport rather than measuring it in viewport units removes the
+  question.
 - **The lid** is `grid-area: nav`, fixed across the full width, translucent at
   `rgba(59, 37, 96, .72)` with a 14px backdrop blur, and `pointer-events: none`
   so clicks fall through everywhere it is empty. The conversation is seen to
