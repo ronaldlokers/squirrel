@@ -137,6 +137,8 @@ func TestTheStatusBandTakesTheBarColour(t *testing.T) {
 		`<meta name="apple-mobile-web-app-status-bar-style" content="default">`,
 		"the status bar style is not stated, so the strip is whatever iOS decides")
 
-	require.Contains(t, ruleFor(t, sheet, "html"), "background-color: var(--purple-bar)",
-		"the canvas is not the bar colour, so iOS paints the strip some other purple")
+	require.Contains(t, ruleFor(t, sheet, "body"), "background-color: var(--purple-bar)",
+		"the strip beside the lid samples body, and body is not the bar colour")
+	require.Contains(t, ruleFor(t, sheet, "body::before"), "background-color: var(--purple-deep)",
+		"the field lost its own ground when body took the bar colour")
 }

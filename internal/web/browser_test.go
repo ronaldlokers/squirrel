@@ -12,7 +12,9 @@ package web
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
+	"image/png"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -354,7 +356,7 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 	light := c.eval(t, `return getComputedStyle(document.body).getPropertyValue("--light").trim()`)
 	require.NotEmpty(t, light, "the body carries no light")
 
-	image := c.eval(t, `return getComputedStyle(document.body).backgroundImage`)
+	image := c.eval(t, `return getComputedStyle(document.body, "::before").backgroundImage`)
 	require.Contains(t, image, fmt.Sprintf("at %v", light),
 		"the field's highlight is not where the day put it")
 }
@@ -896,4 +898,47 @@ func TestBrowserTheTranscriptPassesUnderTheDock(t *testing.T) {
 	require.Equal(t, float64(0), c.eval(t, `
 		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
 		"the dock scrolled away from the bottom")
+}
+
+func lidTopBand(t *testing.T, c *cdp) []string {
+	t.Helper()
+	shot := c.send(t, "Page.captureScreenshot", map[string]any{"format": "png"})
+	raw, err := base64.StdEncoding.DecodeString(shot["data"].(string))
+	require.NoError(t, err)
+	img, err := png.Decode(bytes.NewReader(raw))
+	require.NoError(t, err)
+
+	var out []string
+	for _, x := range []int{5, 100, 195, 300, 385} {
+		r, g, b, _ := img.At(x, 1).RGBA()
+		out = append(out, fmt.Sprintf("%d,%d,%d", r>>8, g>>8, b>>8))
+	}
+	return out
+}
+
+func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	c.eval(t, `document.querySelector(".scroll").scrollTop = 0; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
+	atTheTop := lidTopBand(t, c)
+
+	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
+	atTheBottom := lidTopBand(t, c)
+
+	for _, got := range [][]string{atTheTop, atTheBottom} {
+		for _, c := range got {
+			require.Equal(t, got[0], c, "the lid's top band is not one colour across the screen: %v", got)
+		}
+	}
+	require.Equal(t, atTheTop, atTheBottom,
+		"the lid's top band changes with what is under it, so the status bar strip beside it cannot match")
+	require.Equal(t, "71,46,112", atTheTop[0],
+		"the lid's top band is not --purple-bar, which is what the strip beside it takes")
 }
