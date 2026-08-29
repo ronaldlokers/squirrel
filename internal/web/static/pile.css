@@ -1286,35 +1286,8 @@
   .dock .slot { width: min(676px, 100%); margin: 0 auto; }
 
   @media (max-width: 620px) {
-
     .thread, .worked { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
-    /* Buddy's words are speech, and they are not stock.
-     
-     They were paper ink on the field from 26 August, on the argument that a
-     sentence and an object must not wear one costume — a conversation of seven
-     outlined cream boxes read as a column of beige rather than as an exchange.
-     That argument holds and this does not break it: the bubble is a tint on
-     the field, fully round, with no border and no shadow, and every rectangle
-     on the screen is still a note, an appointment, a chore, or something you
-     said. What changed is that a sentence now reads as *received*, which is
-     the chat convention the old rule knowingly gave up.
-     
-     Round to 3em, which is Campfire's own message radius, and deliberately far
-     from this world's 14px card corner: at a glance the two can never be the
-     same object. */
-  .frombuddy .said {
-    background: rgba(255, 251, 243, .13);
-    border-radius: 3em;
-    padding: .62em 2.1ch;
-    /* Hugs its words. Stretched to the column it reads as a banner across the
-       screen rather than as something somebody said. */
-    width: fit-content;
-    max-width: min(46ch, 100%);
-    align-self: flex-start;
-    text-shadow: none;
-  }
-
-  .turn { max-width: 96%; }
+    .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 8px 14px max(10px, env(safe-area-inset-bottom)); }
     .dock .slot { margin: 0 auto; }
