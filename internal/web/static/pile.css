@@ -356,6 +356,14 @@
     box-shadow: 0 0 0 0 var(--outline);
   }
 
+  .key {
+    font: 800 11px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 800;
+    border: 2px solid currentColor; border-radius: 999px;
+    padding: 2px 6px 1px; opacity: .72;
+  }
+  .make .key { opacity: 1; }
+
   /* A button wears the colour of what it does, at rest and not only under the
      thumb. Doing it is a done; stopping is a drop; how often is a setting, and
      settings wear the product's violet.
@@ -710,6 +718,7 @@
        on every screen; it must not jump. And a rule that depends on measuring
        the longest label breaks the day a label changes. */
     .slot textarea { font-size: 18.5px; padding: 4px 0; flex-basis: 100%; min-width: 0; }
+    .key { display: none; }
     .post { padding: 11px 14px; letter-spacing: .05em; }
 
     /* Its own row on a phone, where the lid is already two rows deep. */

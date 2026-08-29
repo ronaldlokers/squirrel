@@ -31,6 +31,7 @@
   function toTheEnd() {
     const last = thread.lastElementChild;
     if (last && last.scrollIntoView) last.scrollIntoView({ block: "end", behavior: "smooth" });
+    drawKeys();
   }
 
   // Controls belong to the live edge alone. When new turns arrive the turns
@@ -148,6 +149,46 @@
   // is a new turn, and the way back travels with it. What crosses is the letters
   // — d, k, x, t — because typing them is how triage is done at a desk.
   const PILE_KEYS = { d: "done", k: "keep", x: "drop", t: "task" };
+
+  function cap(legend) {
+    const el = document.createElement("span");
+    el.className = "key";
+    el.setAttribute("aria-hidden", "true");
+    el.textContent = legend;
+    return el;
+  }
+
+  function pickerLegend(radio, row) {
+    if (radio.name === "count") {
+      return /^[0-9]$/.test(radio.value) ? radio.value : null;
+    }
+    if (radio.name !== "unit") return null;
+    const first = radio.value[0]?.toLowerCase();
+    if (!first) return null;
+    const sharing = row.filter(other =>
+      other.name === "unit" && other.value[0]?.toLowerCase() === first);
+    return sharing.length === 1 ? first.toUpperCase() : null;
+  }
+
+  function drawKeys() {
+    thread.querySelectorAll(".key").forEach(el => el.remove());
+    const last = thread.querySelector(".turn:last-child");
+    if (!last) return;
+
+    for (const [letter, act] of Object.entries(PILE_KEYS)) {
+      last.querySelector(`input[name="act"][value="${act}"]`)?.form
+        ?.querySelector("button")?.append(cap(letter.toUpperCase()));
+    }
+
+    const pick = last.querySelector(".pick");
+    if (!pick) return;
+    const radios = [...pick.querySelectorAll('.pickrow input[type="radio"]')];
+    for (const radio of radios) {
+      const legend = pickerLegend(radio, radios);
+      if (legend) radio.closest(".chip")?.append(cap(legend));
+    }
+    pick.querySelector(".make")?.append(cap("\u21b5"));
+  }
 
   // A question in progress owns the keys.
   //
