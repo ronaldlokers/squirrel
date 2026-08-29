@@ -767,6 +767,14 @@ said so. The mark still carries the cap; the header no longer echoes it.
 passing under the lid. With it gone you can see content slide beneath the
 translucent bar, which is what the translucent bar was for.
 
+**The lid steps down again on a phone.** The mark goes to 45×34 and the block
+padding to 10/10, which is a 57px lid against 67. The floor is the room control:
+it is `position: fixed` over the lid rather than a flex child of it, so it does
+not hold the lid open, but its 44px tap target must still clear the rule. At 57
+it sits five pixels below the inset and eight above the rule; much denser and it
+hangs through. That is what `TestBrowserThePhoneLidOwnsTheStatusBar` guards, and
+the guard was checked by moving the control rather than by reading it.
+
 **The lid's height is arithmetic rather than a number.** `--lid-h` is the sum of
 the lid's own padding, the mark and the rule, plus the status bar inset. Two
 regions reserve it — the transcript's top padding and the rail's — and until 29
@@ -1051,11 +1059,16 @@ Below it the four answers become a two-by-two grid with *make a chore* on its
 own row beneath them; the chore's three actions become a two-column grid; the
 interval chips become two columns with the lead and *never mind* spanning both;
 the five faces share one row exactly rather than each taking its own width. The
-mark drops to 56×42. Touch targets are 48px in the action row, 44px everywhere
+mark drops to 45×34. Touch targets are 48px in the action row, 44px everywhere
 else.
 
-**The dock is tighter below the breakpoint.** Dock padding `8px 14px calc(10px +
-safe-area)`, slot `8px 8px 8px 12px`, gap 6px, field padding `4px 0`. At the
+**The dock is tighter below the breakpoint.** Dock padding `8px 14px max(10px,
+safe-area)`, slot `8px 8px 8px 12px`, gap 6px, field padding `4px 0`. The bottom
+is `max()` and not `calc(10px + …)`: added, the home indicator's 34px band and
+ten pixels of our own made 44px of empty purple under the composer, which is
+what the owner saw and named. The `max()` keeps a floor of ten where there is no
+indicator and hands the whole band to the indicator where there is one — the
+34px that remains is Apple's, not a choice. At the
 desktop padding the dock stood 146px tall on an 852px screen with nothing typed
 in it, because below the breakpoint the composer is two rows — the field on its
 own, the button beneath it. The rows stay; they are what keeps the dock from
