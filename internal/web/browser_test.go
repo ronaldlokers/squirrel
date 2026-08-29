@@ -789,9 +789,14 @@ func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	require.Equal(t, float64(126), c.eval(t, `
+	require.Equal(t, float64(116), c.eval(t, `
 		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
 		"the lid did not grow by the status bar, so something else paints it")
+
+	require.Equal(t, true, c.eval(t, `
+		const lid = document.querySelector(".lid").getBoundingClientRect();
+		return document.querySelector(".roomsheet > summary").getBoundingClientRect().bottom <= lid.bottom`),
+		"the room control hangs below the rule")
 
 	require.Equal(t, float64(8), c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
@@ -810,4 +815,29 @@ func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
 		const rail = document.querySelector(".rail").getBoundingClientRect();
 		return Math.round(rail.top - lid.bottom)`),
 		"the open sheet does not start at the foot of the lid")
+}
+
+func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, "34px", c.eval(t, `
+		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
+		"the dock adds its own padding on top of the home indicator's band")
+
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 0, "left": 0, "right": 0, "bottom": 0},
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, "10px", c.eval(t, `
+		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
+		"with no inset the dock keeps no floor of its own")
 }
