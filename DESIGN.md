@@ -1266,6 +1266,21 @@ radius; anything you press is a full pill (`999px`); the stamp and every
 photograph take 10px because they are stuck on rather than pressed; keycaps take
 5px.
 
+**The pill rule is exceptionless wherever a shape is actually drawn.** It had
+four standing exceptions and they were drift rather than decision: the gate's
+`.letmein` — the make-something button of the first screen anyone sees, wearing
+the same orange, the same 3px outline and the same 5px sticker shadow as its
+999px siblings — the room-sheet summary and a search hit at 11px, and the day
+picker's cells at 9px. All four are pills now, and the day picker is a grid of
+circles as a consequence, which the owner chose knowingly on 29 August 2026.
+
+Two pressable things keep a card corner and the reason is the same in both: the
+rule governs the shape of a pressable object, and neither draws one. `.face` has
+`background: none` and `border: 0` — the drawing is the button — so its radius
+clips nothing but a 10%-alpha hover tint. `.rail .room` is furniture in a
+navigation column rather than a control on the field. Both are open questions
+rather than settled exemptions.
+
 **The outline scales with the object, and never goes thin.** 3px is the mark's
 own weight and the default everywhere. 2px is the one step down, and it is
 reserved for a small control living inside a card — a search result's actions, a
