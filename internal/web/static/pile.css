@@ -199,7 +199,9 @@
     /* Translucent and blurred rather than opaque, so the conversation is seen
        to pass under it rather than to stop at it. The transcript reserves the
        height instead of being pushed by it — see .scroll. */
-    background: var(--purple-bar);
+    background: rgba(59, 37, 96, .72);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     /* Ruled off straight, in the outline every other shape here is drawn with.
        
        A brim hung below this until 29 August: a 30px arc, stretched to the full
@@ -1056,7 +1058,7 @@
        column's last child rather than a fixed thing over the top of it, which
        is what removes --dockspace, the ResizeObserver that maintained it, and
        every collision between the two. */
-    display: grid; grid-template-rows: 1fr auto;
+    display: grid; grid-template-rows: 1fr;
     align-items: stretch; justify-content: stretch;
     overflow: hidden;
     padding: 0;
@@ -1076,7 +1078,7 @@
     /* The end of the conversation stops short of the dock rather than touching
        it: flush against the rule above the slot, the last thing said reads as
        clipped rather than as the end. */
-    padding-bottom: 14px;
+    padding-bottom: 0;
   }
   /* An auto margin on the first child, and NOT justify-content: flex-end on
      the container.
@@ -1263,6 +1265,8 @@
        viewport, which is what made it collide with cards, with the room sheet,
        and with its own centring axis. Nothing under it to cover, so no
        gradient to hide anything with. */
+    position: sticky; bottom: 0; z-index: 4;
+    margin-top: 14px;
     padding: 12px 22px calc(16px + env(safe-area-inset-bottom));
     background: rgba(59, 37, 96, .72);
     -webkit-backdrop-filter: blur(14px);

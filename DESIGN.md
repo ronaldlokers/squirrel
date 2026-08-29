@@ -786,14 +786,20 @@ twenty too many on a phone, where the lid is 67: twenty pixels of empty field
 under the rule at the top of every conversation. The room control and the open
 room sheet carried the same 87 typed in directly and now follow the same source.
 
-**The band above the header is iOS's, and that is why the lid is flat.** The
+**The band above the header is iOS's, and the lid is translucent anyway.** The
 system keeps a strip the height of the status bar and fills it with the page's
-canvas colour — see `html` under The App Is The Viewport. A flat strip can only
-match a flat bar: at `rgba(59, 37, 96, .72)` over a blur the lid renders around
-`#472e70` at rest and around `rgb(113,93,128)` with a cream card passing beneath
-it, and the seam against a fixed strip would open every time you scrolled. So
-the lid is `--purple-bar` outright, which is what the blur rendered as. The dock
-keeps the blur: nothing is painted beside it.
+canvas colour — see `html` under The App Is The Viewport — and `--purple-bar` is
+what the lid renders as at rest, so the two agree while nothing bright is under
+the lid.
+
+The lid was made flat for one release to guarantee that agreement, and it was
+the wrong trade. Flat, the lid is the only bar with anything behind it and it
+stopped frosting; the dock has nothing behind it to blur, so with both flat the
+material disappeared from the product entirely. **The blur is the point and the
+seam is the price.** A cream card passing under the top edge takes the lid to
+about `rgb(113,93,128)` against a strip fixed at `#472e70`, which shows. If that
+ever costs more than the material is worth, the two ways out are a higher alpha
+— which narrows the swing at the cost of the frost — or the flat lid again.
 
 ### The thread
 
@@ -2248,12 +2254,20 @@ grid-template-areas: "nav side" / "main side"
   pass *under* it rather than to stop at it. Its height — including the status
   bar inset in the installed app — is `--lid-h`, and everything that has to
   clear the lid reserves that rather than a number of its own.
-- **`main.threadpage`** is two rows, `1fr auto`: the transcript scrolls, the
-  dock does not. The dock wears the lid's material — `rgba(59, 37, 96, .72)`
-  over a 14px backdrop blur — so the two bars that hold the conversation are
-  made of one thing. Nothing scrolls under the dock, so the blur carries the
-  field and its dots rather than moving content; that is the cost of the
-  symmetry and it was chosen with it.
+- **`main.threadpage`** is one row, and the dock is the last thing *inside* the
+  scroll region rather than a row beside it: `position: sticky; bottom: 0`.
+  It wears the lid's material — `rgba(59, 37, 96, .72)` over a 14px backdrop
+  blur — and now has something to blur, because the conversation passes behind
+  it the way it passes behind the lid.
+
+  **Sticky rather than fixed, and that distinction is the whole reason this is
+  safe.** A sticky element still occupies its place in the flow, at the end of
+  the content, so the last thing said is never behind the dock at the foot of
+  the conversation — it clears it by the dock's own `margin-top: 14px`. Nothing
+  measures the dock and nothing reserves room for it. That is what makes this
+  different from the fixed dock that was removed on 28 August: `--dockspace`
+  and its `ResizeObserver` are still gone, and a slot grown to four lines still
+  shortens the scroll region by exactly its own growth.
 - **The rooms** are `grid-area: side`, a real column rather than a fixed box
   beside a shoved margin.
 
@@ -2271,9 +2285,9 @@ separate bugs:
   centring axis — three times in two days, each fixed separately.
 - `--dockspace`, a custom property carrying the dock's measured height, kept up
   to date by a `ResizeObserver` in `thread.js`, so the column could reserve room
-  for a thing floating over it. All of it is deleted: a slot grown to four lines
-  now shortens the scroll region by exactly its own growth, which is what a
-  layout does and the observer was standing in for.
+  for a thing floating over it. All of it is deleted and stays deleted: the
+  sticky dock reserves its own room by being in the flow, which is what a layout
+  does and the observer was standing in for.
 
 **The transcript is bottom-anchored with `margin-block-start: auto` on the
 first child, and NOT with `justify-content: flex-end`.** They look equivalent

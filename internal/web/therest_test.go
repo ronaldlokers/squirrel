@@ -239,12 +239,12 @@ func TestTheDockIsARowAndNotAThingOnTop(t *testing.T) {
 	require.NoError(t, err)
 	sheet := string(css)
 
-	require.Contains(t, ruleFor(t, sheet, "main.threadpage"), "grid-template-rows: 1fr auto",
-		"the transcript and the dock are not two rows")
+	require.Contains(t, ruleFor(t, sheet, ".dock"), "position: sticky",
+		"the dock does not sit at the foot of the transcript")
 	require.NotContains(t, ruleFor(t, sheet, ".dock"), "position: fixed",
 		"the dock is fixed to the viewport again")
 	require.NotContains(t, sheet, "--dockspace:",
-		"something still reserves room for a dock that is in flow")
+		"something reserves room for the dock again instead of the dock reserving its own")
 }
 
 // ruleFor is one selector's declarations. The whole sheet is the wrong thing

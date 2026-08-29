@@ -119,7 +119,7 @@ func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
 	require.Regexp(t, `rel="manifest"[^>]*crossorigin="use-credentials"`, body)
 }
 
-func TestTheStatusBandMatchesTheLid(t *testing.T) {
+func TestTheStatusBandTakesTheBarColour(t *testing.T) {
 	css, err := staticFS.ReadFile("static/pile.css")
 	require.NoError(t, err)
 	sheet := string(css)
@@ -139,6 +139,4 @@ func TestTheStatusBandMatchesTheLid(t *testing.T) {
 
 	require.Contains(t, ruleFor(t, sheet, "html"), "background-color: var(--purple-bar)",
 		"the canvas is not the bar colour, so iOS paints the strip some other purple")
-	require.Contains(t, ruleFor(t, sheet, ".lid"), "background: var(--purple-bar)",
-		"the lid is not flat, so no one colour can match the strip beside it")
 }
