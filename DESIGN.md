@@ -158,11 +158,8 @@ typography:
 rounded:
   chip: "999px"
   card: "14px"
-  card-inner: "11px"
   stamp: "10px"
-  tab: "8px"
-  key: "5px"
-  dot: "3px"
+  speech: "3em"
 spacing:
   stack-offset: "8px"
   outline: "3px"
@@ -1261,10 +1258,32 @@ sanctions:
 
 ## Shapes
 
-Soft rounded geometry, matching the mascot's own construction. Cards take a 14px
-radius; anything you press is a full pill (`999px`); the stamp and every
-photograph take 10px because they are stuck on rather than pressed; keycaps take
-5px.
+Soft rounded geometry, matching the mascot's own construction. Four meanings,
+and the sheet names only what ships. Cards take a 14px radius; anything you
+press is a full pill (`999px`); the stamp and every photograph take 10px because
+they are stuck on rather than pressed; and Buddy's speech takes `3em`, the only
+relative radius in the product. `999px` also draws an actual circle where one is
+wanted — the agenda card's punched notch — which is the one place it does not
+mean "you press this".
+
+**Speech rounds with its own words, and that is why it is `em`.** It is
+Campfire's own message radius, borrowed by name, and it is held deliberately far
+from the 14px card corner so that at a glance the two can never be the same
+object. A card is a thing you were handed; a sentence is not.
+
+**Small marks are a category, not a scale.** A mood dot, a page tab, a legend
+swatch: drawn marks rather than objects, never pressed, each with a soft corner
+sized to its own mark rather than to a shared step. Their values are deliberately
+not tokens — three numbers two pixels apart would read as a system, and they are
+not one. Adding a fourth mark means choosing a corner for that mark, not looking
+one up.
+
+**Four tokens retired on 29 August 2026, all of them naming nothing.**
+`card-inner: 11px` and `key: 5px` were emptied by the pill rule and the keycap's
+return as a pill; `dot: 3px` never matched a rule in the stylesheet at all; and
+`tab: 8px` named a value whose only occurrence is the scrollbar thumb, while the
+page tab it was presumably named for has always been 6px. A token that names
+nothing is worse than a missing one: it reads as a decision.
 
 **The keycap is a pill too, and that is the rule's edge case stated on
 purpose.** A keycap is a label rather than a control — nothing presses it — so
@@ -1276,8 +1295,8 @@ orange answering button, where the ink goes back to full. That is a contrast
 result, not a taste one: the outline measures 5.78:1 on this orange and 3.79:1
 once `.72` is applied to it, and 11px type needs 4.5. The keycaps that shipped
 before the deck went carried the same exemption for the same reason. Corner is
-not what separates a hint from a control. `rounded.key: 5px` retires with this, so the scale loses a step
-rather than gaining one.
+not what separates a hint from a control. `rounded.key: 5px` retires with this,
+so the scale loses a step rather than gaining one.
 
 **The pill rule is exceptionless wherever a shape is actually drawn.** It had
 four standing exceptions and they were drift rather than decision: the gate's

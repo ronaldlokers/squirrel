@@ -17,6 +17,24 @@
         ],
         "createdAt": "2026-08-18T15:50:51.363Z",
         "reason": "Mobile step-up sizes; documented as The Step-Up Rule in DESIGN.md Layout, which the detector cannot read"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "7px",
+        "createdAt": "2026-08-29T20:43:19.011Z",
+        "reason": "user confirmed: small marks are a documented category in DESIGN.md ## Shapes with values deliberately not tokenised"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "6px",
+        "createdAt": "2026-08-29T20:43:19.043Z",
+        "reason": "user confirmed: small marks are a documented category in DESIGN.md ## Shapes with values deliberately not tokenised"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "4px",
+        "createdAt": "2026-08-29T20:43:19.088Z",
+        "reason": "user confirmed: small marks are a documented category in DESIGN.md ## Shapes with values deliberately not tokenised"
       }
     ]
   }
