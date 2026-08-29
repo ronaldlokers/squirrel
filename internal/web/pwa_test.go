@@ -119,7 +119,7 @@ func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
 	require.Regexp(t, `rel="manifest"[^>]*crossorigin="use-credentials"`, body)
 }
 
-func TestTheStatusBandIsTheLid(t *testing.T) {
+func TestTheStatusBandMatchesTheLid(t *testing.T) {
 	css, err := staticFS.ReadFile("static/pile.css")
 	require.NoError(t, err)
 	sheet := string(css)
@@ -131,7 +131,14 @@ func TestTheStatusBandIsTheLid(t *testing.T) {
 		"the lid grew by the inset and whatever reserves it did not")
 
 	page := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	require.NotContains(t, page, `content="black-translucent"`,
+		"black-translucent hands the page a viewport shorter than the screen")
 	require.Contains(t, page,
-		`<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`,
-		"iOS keeps the strip and fills it with the page background")
+		`<meta name="apple-mobile-web-app-status-bar-style" content="default">`,
+		"the status bar style is not stated, so the strip is whatever iOS decides")
+
+	require.Contains(t, ruleFor(t, sheet, "html"), "background-color: var(--purple-bar)",
+		"the canvas is not the bar colour, so iOS paints the strip some other purple")
+	require.Contains(t, ruleFor(t, sheet, ".lid"), "background: var(--purple-bar)",
+		"the lid is not flat, so no one colour can match the strip beside it")
 }
