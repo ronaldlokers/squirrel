@@ -1292,6 +1292,15 @@ not tokens — three numbers two pixels apart would read as a system, and they a
 not one. Adding a fourth mark means choosing a corner for that mark, not looking
 one up.
 
+**The vocabulary is closed, and a test holds it shut.**
+`TestTheRadiusVocabularyIsClosed` reads the `rounded:` tokens out of this file
+and requires every `border-radius` in the stylesheet to be one of them or one of
+the three small marks. It fails from both ends: a new corner in the CSS with no
+meaning here, and a token deleted here while its value still ships. Until 29
+August 2026 the shape system was the only system with no token, no snapshot
+dimension and no test — which is how ten values came to ship against four
+documented ones without anyone noticing.
+
 **Four tokens retired on 29 August 2026, all of them naming nothing.**
 `card-inner: 11px` and `key: 5px` were emptied by the pill rule and the keycap's
 return as a pill; `dot: 3px` never matched a rule in the stylesheet at all; and

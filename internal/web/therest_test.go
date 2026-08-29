@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -275,5 +276,51 @@ func TestThePillRuleHasNoExceptions(t *testing.T) {
 	} {
 		require.Contains(t, ruleFor(t, sheet, selector), "border-radius: 999px",
 			"%s draws a pressable shape and is not a pill", selector)
+	}
+}
+
+func TestTheRadiusVocabularyIsClosed(t *testing.T) {
+	css, err := staticFS.ReadFile("static/pile.css")
+	require.NoError(t, err)
+	sheet := string(css)
+
+	design, err := os.ReadFile("../../DESIGN.md")
+	require.NoError(t, err)
+
+	named := map[string]string{}
+	inBlock := false
+	for _, line := range strings.Split(string(design), "\n") {
+		if strings.HasPrefix(line, "rounded:") {
+			inBlock = true
+			continue
+		}
+		if inBlock {
+			if !strings.HasPrefix(line, "  ") {
+				break
+			}
+			parts := strings.SplitN(strings.TrimSpace(line), ":", 2)
+			if len(parts) == 2 {
+				named[strings.Trim(strings.TrimSpace(parts[1]), `"`)] = parts[0]
+			}
+		}
+	}
+	require.NotEmpty(t, named, "DESIGN.md declares no rounded tokens")
+
+	// The small marks: a documented category in ## Shapes whose values are
+	// deliberately not tokens, and the same three the detector is configured
+	// to pass over.
+	for _, mark := range []string{"7px", "6px", "4px"} {
+		named[mark] = "a small mark"
+	}
+	named["var(--r)"] = "card"
+
+	for _, m := range regexp.MustCompile(`border-radius:\s*([^;]+);`).FindAllStringSubmatch(sheet, -1) {
+		for _, corner := range strings.Fields(m[1]) {
+			if corner == "0" {
+				continue
+			}
+			require.Contains(t, named, corner,
+				"border-radius %q is in the stylesheet and in no documented meaning", corner)
+		}
 	}
 }
