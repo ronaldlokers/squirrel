@@ -21,6 +21,21 @@ func backdate(t *testing.T, store *squirrel.Store, name string, days int) {
 	require.NoError(t, err)
 }
 
+// backdateTo puts a chore's last-done at an exact moment rather than an
+// interval before the database's own now(). Anything that asks about a fixed
+// date has to use this one: with backdate, created_at walks forward with real
+// time while the question stays where it was written, so the gap between them
+// shrinks by a day every day until the test stops meaning what it said.
+// TestAPreferenceDoesNotChangeWhenAChoreIsDue was written on a 20-day backdate
+// against a fixed 23 August, and it went red on 29 August 2026 at 12:00 UTC
+// when that gap crossed under the chore's fortnight.
+func backdateTo(t *testing.T, store *squirrel.Store, name string, when time.Time) {
+	t.Helper()
+	_, err := store.Pool().Exec(context.Background(),
+		`update chores set created_at = $2 where name = $1`, name, when)
+	require.NoError(t, err)
+}
+
 func dueNames(t *testing.T, store *squirrel.Store, personID int64) []string {
 	t.Helper()
 	due, err := store.DueChores(context.Background(), personID, time.Now())
