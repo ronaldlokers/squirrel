@@ -2221,6 +2221,14 @@ Campfire — the application Squirrel lives inside — on 28 August 2026.
 grid-template-areas: "nav side" / "main side"
 ```
 
+- **`html`** carries `--purple-bar`, and it is the only thing that colour is
+  for. In the installed app on iOS the web view comes up short of the screen,
+  and the system fills what is left with the page's canvas colour — the same
+  sampling that painted the band above the header before `black-translucent`.
+  Left to `body`, that colour was the field's purple and read as a band of
+  nothing under the composer. On `html` it is what the translucent bars render
+  as, so the strip reads as the dock running to the edge. It does not make the
+  view any taller; it makes what is outside it belong.
 - **`body`** is exactly the viewport and does not scroll: `position: fixed;
   inset: 0`, `overflow: hidden`. It was `block-size: 100dvh` until 29 August
   2026, when the installed app on iOS left a 57px band of the field's purple
@@ -2235,7 +2243,11 @@ grid-template-areas: "nav side" / "main side"
   bar inset in the installed app — is `--lid-h`, and everything that has to
   clear the lid reserves that rather than a number of its own.
 - **`main.threadpage`** is two rows, `1fr auto`: the transcript scrolls, the
-  dock does not.
+  dock does not. The dock wears the lid's material — `rgba(59, 37, 96, .72)`
+  over a 14px backdrop blur — so the two bars that hold the conversation are
+  made of one thing. Nothing scrolls under the dock, so the blur carries the
+  field and its dots rather than moving content; that is the cost of the
+  symmetry and it was chosen with it.
 - **The rooms** are `grid-area: side`, a real column rather than a fixed box
   beside a shoved margin.
 

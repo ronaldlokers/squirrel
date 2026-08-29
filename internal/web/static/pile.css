@@ -19,6 +19,7 @@
     --purple: #6c4da9;
     --purple-deep: #58388a;
     --purple-dark: #3b2560;
+    --purple-bar: #472e70;
     --violet: #5e23b1;
     --orange: #e66d0d;
     --orange-lit: #ff8a2b;
@@ -63,7 +64,7 @@
   }
 
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; background-color: var(--purple-bar); }
   /* Double-tap does not magnify.
    *
    * The other half of "no zooming", and the half that works where the viewport
@@ -1265,7 +1266,9 @@
        and with its own centring axis. Nothing under it to cover, so no
        gradient to hide anything with. */
     padding: 12px 22px calc(16px + env(safe-area-inset-bottom));
-    background: var(--purple-dark);
+    background: rgba(59, 37, 96, .72);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     border-top: var(--line) solid var(--outline);
   }
   /* 676 rather than 720: the transcript is 720 wide with 22px of padding
