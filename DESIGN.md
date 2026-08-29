@@ -2254,12 +2254,20 @@ grid-template-areas: "nav side" / "main side"
   pass *under* it rather than to stop at it. Its height — including the status
   bar inset in the installed app — is `--lid-h`, and everything that has to
   clear the lid reserves that rather than a number of its own.
-- **`main.threadpage`** is two rows, `1fr auto`: the transcript scrolls, the
-  dock does not. The dock wears the lid's material — `rgba(59, 37, 96, .72)`
-  over a 14px backdrop blur — so the two bars that hold the conversation are
-  made of one thing. Nothing scrolls under the dock, so the blur carries the
-  field and its dots rather than moving content; that is the cost of the
-  symmetry and it was chosen with it.
+- **`main.threadpage`** is one row, and the dock is the last thing *inside* the
+  scroll region rather than a row beside it: `position: sticky; bottom: 0`.
+  It wears the lid's material — `rgba(59, 37, 96, .72)` over a 14px backdrop
+  blur — and now has something to blur, because the conversation passes behind
+  it the way it passes behind the lid.
+
+  **Sticky rather than fixed, and that distinction is the whole reason this is
+  safe.** A sticky element still occupies its place in the flow, at the end of
+  the content, so the last thing said is never behind the dock at the foot of
+  the conversation — it clears it by the dock's own `margin-top: 14px`. Nothing
+  measures the dock and nothing reserves room for it. That is what makes this
+  different from the fixed dock that was removed on 28 August: `--dockspace`
+  and its `ResizeObserver` are still gone, and a slot grown to four lines still
+  shortens the scroll region by exactly its own growth.
 - **The rooms** are `grid-area: side`, a real column rather than a fixed box
   beside a shoved margin.
 
@@ -2277,9 +2285,9 @@ separate bugs:
   centring axis — three times in two days, each fixed separately.
 - `--dockspace`, a custom property carrying the dock's measured height, kept up
   to date by a `ResizeObserver` in `thread.js`, so the column could reserve room
-  for a thing floating over it. All of it is deleted: a slot grown to four lines
-  now shortens the scroll region by exactly its own growth, which is what a
-  layout does and the observer was standing in for.
+  for a thing floating over it. All of it is deleted and stays deleted: the
+  sticky dock reserves its own room by being in the flow, which is what a layout
+  does and the observer was standing in for.
 
 **The transcript is bottom-anchored with `margin-block-start: auto` on the
 first child, and NOT with `justify-content: flex-end`.** They look equivalent

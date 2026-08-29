@@ -861,3 +861,39 @@ func TestBrowserTheShellFillsTheViewport(t *testing.T) {
 		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
 		"the dock stops short of the bottom of the screen")
 }
+
+func TestBrowserTheTranscriptPassesUnderTheDock(t *testing.T) {
+	srv := screen(t, aScrollingThread())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
+
+	require.Equal(t, float64(14), c.eval(t, `
+		const dock = document.querySelector(".dock").getBoundingClientRect();
+		const turns = [...document.querySelectorAll(".thread .turn")];
+		return Math.round(dock.top - turns[turns.length - 1].getBoundingClientRect().bottom)`),
+		"at the foot of the conversation the last thing said is not clear of the dock")
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
+		"the dock is not at the bottom of the screen")
+
+	c.eval(t, `document.querySelector(".scroll").scrollTop = 0; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
+
+	require.Equal(t, true, c.eval(t, `
+		const dock = document.querySelector(".dock").getBoundingClientRect();
+		return [...document.querySelectorAll(".thread .turn")].some(el => {
+			const r = el.getBoundingClientRect();
+			return r.top < dock.bottom && r.bottom > dock.top });`),
+		"nothing passes behind the dock, so its blur has no backdrop")
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
+		"the dock scrolled away from the bottom")
+}
