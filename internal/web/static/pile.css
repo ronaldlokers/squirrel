@@ -165,7 +165,7 @@
   ::-webkit-scrollbar { width: 14px; }
   ::-webkit-scrollbar-track { background: var(--purple-dark); }
   ::-webkit-scrollbar-thumb {
-    background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 8px;
+    background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 999px;
   }
   * { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
   :focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
@@ -272,7 +272,7 @@
   .chip:hover { background: var(--paper-deep); }
   .chip:active, .chip.hit {
     transform: translateY(4px); box-shadow: none;
-    background: var(--orange); color: var(--paper);
+    background: var(--orange); color: var(--outline);
   }
   .chip.back { box-shadow: none; border-style: dashed; }
 
@@ -362,7 +362,7 @@
     border: 2px solid currentColor; border-radius: 999px;
     padding: 2px 6px 1px; opacity: .72;
   }
-  .make .key { opacity: 1; }
+  .make .key, .chip:active .key, .chip.hit .key { opacity: 1; }
 
   /* A button wears the colour of what it does, at rest and not only under the
      thumb. Doing it is a done; stopping is a drop; how often is a setting, and
@@ -662,7 +662,16 @@
      'stop whenever you like' is the product's line, not the keyboard's. */
 
   @media (prefers-reduced-motion: reduce) {
-    * { transition-duration: 1ms !important; }
+    *, *::before, *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+    }
+    .chip:active, .chip.hit, .abtn:active, .post:active, .why:active,
+    .letmein:active, .enough .leavehere:active,
+    .pick .make:active, .cal .make:active, .wordbox .make:active, .cut .make:active {
+      transform: none;
+    }
+    .face:active { transform: none; background: rgba(254, 214, 167, .22); }
   }
 
   @media (max-width: 620px) {
@@ -1020,7 +1029,7 @@
     text-decoration: none;
     transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
   }
-  .enough .leavehere:hover { background: var(--orange-lit); }
+  .enough .leavehere:hover { background: var(--orange-lit); color: var(--outline); }
   .enough .leavehere:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline); }
 
 /* ---------------------------------------------------------------- */
