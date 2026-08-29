@@ -786,14 +786,20 @@ twenty too many on a phone, where the lid is 67: twenty pixels of empty field
 under the rule at the top of every conversation. The room control and the open
 room sheet carried the same 87 typed in directly and now follow the same source.
 
-**The band above the header is iOS's, and that is why the lid is flat.** The
+**The band above the header is iOS's, and the lid is translucent anyway.** The
 system keeps a strip the height of the status bar and fills it with the page's
-canvas colour — see `html` under The App Is The Viewport. A flat strip can only
-match a flat bar: at `rgba(59, 37, 96, .72)` over a blur the lid renders around
-`#472e70` at rest and around `rgb(113,93,128)` with a cream card passing beneath
-it, and the seam against a fixed strip would open every time you scrolled. So
-the lid is `--purple-bar` outright, which is what the blur rendered as. The dock
-keeps the blur: nothing is painted beside it.
+canvas colour — see `html` under The App Is The Viewport — and `--purple-bar` is
+what the lid renders as at rest, so the two agree while nothing bright is under
+the lid.
+
+The lid was made flat for one release to guarantee that agreement, and it was
+the wrong trade. Flat, the lid is the only bar with anything behind it and it
+stopped frosting; the dock has nothing behind it to blur, so with both flat the
+material disappeared from the product entirely. **The blur is the point and the
+seam is the price.** A cream card passing under the top edge takes the lid to
+about `rgb(113,93,128)` against a strip fixed at `#472e70`, which shows. If that
+ever costs more than the material is worth, the two ways out are a higher alpha
+— which narrows the swing at the cost of the frost — or the flat lid again.
 
 ### The thread
 
