@@ -54,11 +54,14 @@ func TestAPreferenceDoesNotChangeWhenAChoreIsDue(t *testing.T) {
 	p := owner(t, store)
 
 	triage(t, store, p, "every other tuesday: bins out")
-	backdate(t, store, "bins out", 20)
 
 	// A Sunday, which is not the preferred day.
 	sunday := time.Date(2026, 8, 23, 12, 0, 0, 0, time.Local)
 	require.Equal(t, time.Sunday, sunday.Weekday())
+
+	// Twenty days before the Sunday being asked about, not twenty days before
+	// whenever this happens to run. See backdateTo.
+	backdateTo(t, store, "bins out", sunday.AddDate(0, 0, -20))
 
 	due, err := store.DueChores(ctx, p, sunday)
 	require.NoError(t, err)
