@@ -1256,6 +1256,20 @@ sanctions:
   as crooked, and the word inside it gets harder to read at a glance — which is
   the one job it has.
 
+**Reduced motion removes the travel, not the feedback.** Every press in this
+product is a sticker sitting down: a 3-5px translate plus the shadow collapsing
+under it. Asked for less motion, the translate goes and the shadow collapse
+stays, so a press still reads as a press. It was a blanket
+`* { transition-duration: 1ms !important }` until 29 August 2026, which erased
+nothing meaningful here — there are no keyframes and every transition is
+90-110ms of state feedback — but it was a rule that would have silently killed
+the first animation anyone added. The blanket now covers `animation` only, where
+the vestibular risk actually is.
+
+The one control needing an alternative rather than a subtraction is the mood
+face: it has no fill and no border, so its press is *only* the travel. Under
+reduced motion it takes a stronger tint instead.
+
 ## Shapes
 
 Soft rounded geometry, matching the mascot's own construction. Four meanings,
