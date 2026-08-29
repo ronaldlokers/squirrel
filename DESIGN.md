@@ -786,20 +786,29 @@ twenty too many on a phone, where the lid is 67: twenty pixels of empty field
 under the rule at the top of every conversation. The room control and the open
 room sheet carried the same 87 typed in directly and now follow the same source.
 
-**The band above the header is iOS's, and the lid is translucent anyway.** The
-system keeps a strip the height of the status bar and fills it with the page's
-canvas colour — see `html` under The App Is The Viewport — and `--purple-bar` is
-what the lid renders as at rest, so the two agree while nothing bright is under
-the lid.
+**The band above the header is iOS's, and the lid's top four pixels are pinned
+to match it.** The strip is always a flat colour — see `body` under The App Is
+The Viewport — so the seam beside it opens only because a frosted bar's topmost
+row changes with whatever is passing beneath. So it is held still:
 
-The lid was made flat for one release to guarantee that agreement, and it was
-the wrong trade. Flat, the lid is the only bar with anything behind it and it
-stopped frosting; the dock has nothing behind it to blur, so with both flat the
-material disappeared from the product entirely. **The blur is the point and the
-seam is the price.** A cream card passing under the top edge takes the lid to
-about `rgb(113,93,128)` against a strip fixed at `#472e70`, which shows. If that
-ever costs more than the material is worth, the two ways out are a higher alpha
-— which narrows the swing at the cost of the frost — or the flat lid again.
+```
+background:
+  linear-gradient(to bottom, var(--purple-bar) 0 4px, rgba(71, 46, 112, 0) 20px),
+  rgba(59, 37, 96, .72);
+```
+
+Four pixels of solid `--purple-bar` against the seam, fading out over twenty, and
+below that the frost is untouched — a cream card passing under still lightens the
+bar, just not where it meets the strip. The tint sampler ignores
+`background-image`, so the gradient cannot disturb the colour it is matching.
+
+**A blurred strip is not available.** It was, under `black-translucent`, and that
+is what this replaces: in `default` the web view is laid out below the status bar
+at the UIKit level, so there is no web content under the strip to show, and the
+sampler reads colour tokens rather than compositing the frost. The two earlier
+answers to this seam were both worse: a flat lid killed the only frosted surface
+in the product, and matching the strip's colour alone left the seam to reopen
+under bright content.
 
 ### The thread
 
@@ -2226,12 +2235,20 @@ Campfire — the application Squirrel lives inside — on 28 August 2026.
 grid-template-areas: "nav side" / "main side"
 ```
 
-- **`html`** carries `--purple-bar`, and that colour exists for one job. An
-  installed app on iOS does not start at the top of the screen: the system
-  keeps the status bar strip and fills it with the page's canvas colour. That
-  colour used to come from `body` — the field's purple, a visibly lighter band
-  above a header of another colour, which is what was reported. On `html` it is
-  the header's own colour, so the strip and the lid are one bar.
+- **`body`** carries `--purple-bar`, and **`body::before`** carries the field.
+  That inversion is the only way to control the status bar strip. An installed
+  app on iOS does not start at the top of the screen: the system keeps the
+  strip and, on iOS 26, tints it by reading the computed `background-color` of
+  `body` — not the CSS canvas, not `theme-color`, and not the rendered pixels.
+  `html { background-color }` was tried for one release on the canvas theory
+  and moved nothing on the device; `theme-color` has been `#3b2560` throughout
+  and has never touched the strip. The proof it reads the token rather than the
+  pixels is that the strip was always flat: `body` carries two radial gradients
+  and a dot grid, and none of it ever appeared up there.
+
+  So `body`'s own colour is the strip's colour, and the field it used to paint
+  moves to a pseudo-element behind everything. The page looks identical; the
+  strip is now the header's purple.
 
   **`black-translucent` was tried for a day and taken out again.** It hands the
   page the strip so the lid can paint it, and the lid did — but iOS then gives

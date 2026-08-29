@@ -64,7 +64,7 @@
   }
 
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; background-color: var(--purple-bar); }
+  html { -webkit-text-size-adjust: 100%; }
   /* Double-tap does not magnify.
    *
    * The other half of "no zooming", and the half that works where the viewport
@@ -118,7 +118,7 @@
     grid-template-areas: "nav side" "main side";
     grid-template-columns: 1fr var(--railw, 0px);
     grid-template-rows: min-content 1fr;
-    background-color: var(--purple-deep);
+    background-color: var(--purple-bar);
     /* The highlight is at .35 rather than .5, and the number is a contrast
        result rather than a taste one. Cream on the lit centre of this radial
        measured 4.19:1 at .5 — a fail — which quietly made every piece of
@@ -131,11 +131,15 @@
        only — the height and the alpha are both fixed, because .35 is that
        measurement and sliding a highlight sideways moves the same light
        without ever making it brighter. */
+  }
+
+  body::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background-color: var(--purple-deep);
     background-image:
       radial-gradient(120% 90% at var(--light, 15%) -10%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
       radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
     background-size: 100% 100%, 22px 22px;
-    background-attachment: fixed;
   }
 
   /* Hidden means hidden, whatever else this file says.
@@ -199,7 +203,9 @@
     /* Translucent and blurred rather than opaque, so the conversation is seen
        to pass under it rather than to stop at it. The transcript reserves the
        height instead of being pushed by it — see .scroll. */
-    background: rgba(59, 37, 96, .72);
+    background:
+      linear-gradient(to bottom, var(--purple-bar) 0 4px, rgba(71, 46, 112, 0) 20px),
+      rgba(59, 37, 96, .72);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     /* Ruled off straight, in the outline every other shape here is drawn with.
