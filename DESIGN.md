@@ -1266,6 +1266,19 @@ radius; anything you press is a full pill (`999px`); the stamp and every
 photograph take 10px because they are stuck on rather than pressed; keycaps take
 5px.
 
+**The keycap is a pill too, and that is the rule's edge case stated on
+purpose.** A keycap is a label rather than a control — nothing presses it — so
+the pill rule need not have reached it, and the owner chose on 29 August 2026
+that it should anyway. The distinction between a hint and a control is carried
+where it already was: no fill, a 2px border in `currentColor` against the
+button's 3px, 11px type against 13, and `.72` opacity — except on the
+orange answering button, where the ink goes back to full. That is a contrast
+result, not a taste one: the outline measures 5.78:1 on this orange and 3.79:1
+once `.72` is applied to it, and 11px type needs 4.5. The keycaps that shipped
+before the deck went carried the same exemption for the same reason. Corner is
+not what separates a hint from a control. `rounded.key: 5px` retires with this, so the scale loses a step
+rather than gaining one.
+
 **The pill rule is exceptionless wherever a shape is actually drawn.** It had
 four standing exceptions and they were drift rather than decision: the gate's
 `.letmein` — the make-something button of the first screen anyone sees, wearing
@@ -1287,6 +1300,22 @@ reserved for a small control living inside a card — a search result's actions,
 keycap, a quiet pill — where a 3px stroke at 12.5px type reads as a blob. There
 is no third step. A 1px rule anywhere is a defect, and there are no borderless
 objects.
+
+**The letters are drawn by the script, not the template, and that is a
+correctness requirement rather than a preference.** `retire()` strips the action
+row from every turn before a new one arrives, so a template-rendered keycap on a
+card action would be correct — but it does not strip `.pick`, so a stale
+interval question would keep letters that answer nothing. `drawKeys()` clears
+and redraws against the live edge on every append, hung off `toTheEnd()`, which
+is the one function every append path already calls.
+
+What wears a letter is decided by what the handler actually answers, never by
+what looks answerable: the four card actions, a count chip's own digit, a unit
+chip's first letter where that letter is unique in its row, and Enter on the
+button that answers. **The day row wears nothing**, because a digit there would
+be a day of the month and the handler refuses it — advertising a key that
+guesses between two meanings would book the wrong appointment. They are hidden
+below 620px: a thumb cannot press D.
 
 The deck's stack is three cards translated by multiples of an 8px offset and
 rotated between 0.7° and 1.8°, randomised on every card change. Nothing in this
