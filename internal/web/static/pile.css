@@ -651,7 +651,7 @@
   }
 
   @media (max-width: 620px) {
-    :root { --o: 5px; --lid-pad-top: 10px; --lid-pad-bottom: 10px; --lid-mark-h: 34px; }
+    :root { --o: 5px; --lid-pad-top: 6px; --lid-pad-bottom: 6px; --lid-mark-h: 34px; }
     /* Wrapping is still what lets the lid be two rows, but nothing about the
        search field needs it any more: the mark and the three icons fit one
        row at every width this product is used at. It is the running timer that
@@ -1531,7 +1531,7 @@
   .roomsheet > summary {
     list-style: none; cursor: pointer;
     display: flex; align-items: center; gap: 6px;
-    min-height: 44px; padding: 0 6px 0 12px;
+    min-height: 32px; padding: 0 6px 0 12px;
     color: var(--cream); border-radius: 11px;
     font: 400 16px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--casual), "wght" 620;
@@ -1622,7 +1622,7 @@
        rail has to be a child of body to be a grid area, and the control has to
        stay its sibling for `[open] ~ .rail` to reach it. So it is placed over
        the lid rather than inside it. */
-    .roomsheet { position: fixed; top: calc(env(safe-area-inset-top) + 5px); right: 14px; z-index: 7; }
+    .roomsheet { position: fixed; top: calc(env(safe-area-inset-top) + 7px); right: 14px; z-index: 7; }
     /* From under the lid, not from under itself: the sheet used to start above
        its own control and cover it, leaving an open disclosure with no visible
        way to close it. */

@@ -789,7 +789,7 @@ func TestBrowserThePhoneLidOwnsTheStatusBar(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	require.Equal(t, float64(116), c.eval(t, `
+	require.Equal(t, float64(108), c.eval(t, `
 		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
 		"the lid did not grow by the status bar, so something else paints it")
 
