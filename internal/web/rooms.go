@@ -272,14 +272,21 @@ func roomsFor(ctx context.Context, s Store, personID int64, here string) []railV
 // fromTheDock reads the room out of the posted form and puts it on the
 // request.
 //
-// The dock posts to /capture, /chores/name, /at/new or /tasks/new — one route
-// per destination, not one per room — so the path cannot say which room the
-// words were typed in and the form has to. Without this every answer lands in
-// Buddy's room, which is what roomOf falls back to, and nothing on the screen
-// says so.
+// Every press carries the room it was made in, because the path cannot: there
+// is one route per destination, not one per room. /pile/act is the same URL
+// whether you pressed DROP in the pile or in the agenda, and turn.html puts
+// the room on every form for exactly that reason.
 //
-// r.ParseForm is idempotent, so the handlers' own calls still work.
-func fromTheDock(h http.HandlerFunc) http.HandlerFunc {
+// Without this the answer lands in Buddy's room, which is what roomOf falls
+// back to, and nothing on the screen says so — the room you were in simply
+// keeps the offer it already had, buttons and all, so a decision looks like it
+// was taken and then forgotten. This was the dock's alone until 30 August 2026
+// and it was wrong for every card action for as long as rooms have existed.
+//
+// r.ParseForm is idempotent, so the handlers' own calls still work — but it
+// consumes a body it believes is a form, so a route whose body is JSON must not
+// come through here. /push/subscribe is the only one and is mounted without it.
+func inTheRoomItCameFrom(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err == nil {
 			if _, ok := roomByKey(r.FormValue("room")); ok {
