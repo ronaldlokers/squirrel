@@ -112,6 +112,15 @@
     try {
       const res = await fetch(form.action, init);
       if (!res.ok) throw new Error("the press did not land");
+      // A redirect is the server saying this press is a navigation rather than
+      // a turn. fetch follows one without telling anybody, so what arrives is
+      // a whole page — and pasting that into the room it came from is exactly
+      // the bug it looked like: a room, and its navigation, inside the room.
+      // Going where it points is what the answer meant.
+      if (res.redirected) {
+        window.location.assign(res.url);
+        return;
+      }
       const html = await res.text();
       // Nothing back means the server decided there was nothing to do — an
       // empty box, pressed. Say nothing; it did nothing.

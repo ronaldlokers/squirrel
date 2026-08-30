@@ -28,9 +28,10 @@ func newChipFor(where string) []turnChip {
 	case "tasks":
 		return []turnChip{{Label: "a new task", Action: "/tasks/ask"}}
 	case "at":
-		// Straight to the day picker: an appointment is a day and a time
-		// before it is anything else, and /at/new already asks exactly that.
-		return []turnChip{{Label: "a new appointment", Action: "/at/new"}}
+		// Its name first, then the day. /at/new asks for a day *given* a
+		// label, so posting to it with none was a press that could only
+		// redirect.
+		return []turnChip{{Label: "a new appointment", Action: "/at/ask"}}
 	case "pile":
 		return []turnChip{{Label: "put something down", Action: "/pile/ask"}}
 	}

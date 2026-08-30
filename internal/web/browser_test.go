@@ -942,3 +942,27 @@ func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
 	require.Equal(t, "71,46,112", atTheTop[0],
 		"the lid's top band is not --purple-bar, which is what the strip beside it takes")
 }
+
+// A press the server answers with a redirect takes you there, instead of the
+// page it points at being pasted into the room you are standing in.
+//
+// fetch follows a redirect without telling anybody, so what comes back is a
+// whole document. This is the guard that turns that into a navigation, and it
+// is the reason "a new appointment" showed a room, and its navigation, inside
+// the room.
+func TestBrowserARedirectedPressGoesThere(t *testing.T) {
+	f := aPile()
+	f.items = []squirrel.Item{note(1, "the boiler code", squirrel.ItemKept)}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/r/kept")
+	c.navigate(t, srv.URL+"/r/kept")
+	c.until(t, "the kept note", `!!document.querySelector('input[name="act"][value="open"]')`)
+
+	c.eval(t, `document.querySelector('input[name="act"][value="open"]').form
+		.querySelector("button").click(); return 1`)
+	c.until(t, "the browser to go", `location.pathname === "/"`)
+
+	require.Equal(t, float64(0), c.eval(t, `
+		return document.querySelectorAll("#thread nav, #thread .rail").length`),
+		"a whole page was pasted into the conversation instead of being followed")
+}

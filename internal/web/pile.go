@@ -151,6 +151,13 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/chores/ask", posting(opts, askNameHandler(s, opts,
 		"a new chore", "What should come back?", "/chores/name", "name", "next")))
 	m.Post("/chores/name", posting(opts, choreNameHandler(s, opts)))
+	// The agenda had no ask step and its chip posted straight to /at/new,
+	// which needs a label before it can offer a day. With none it redirected,
+	// and fetch follows a redirect without telling the script — so the whole
+	// page came back and was pasted into the room. Every other room asks
+	// first; this one does now too.
+	m.Post("/at/ask", posting(opts, askNameHandler(s, opts,
+		"a new appointment", "What is it?", "/at/new", "label", "next")))
 	m.Post("/tasks/ask", posting(opts, askNameHandler(s, opts,
 		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it")))
 	m.Post("/pile/ask", posting(opts, askNameHandler(s, opts,

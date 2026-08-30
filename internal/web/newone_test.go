@@ -118,8 +118,17 @@ func TestThePilesChipGoesThroughCapture(t *testing.T) {
 	require.Contains(t, string(f.appended[1].Shown), `"action":"/capture"`)
 }
 
-// The appointment chip goes straight to the day picker: an appointment is a
-// day and a time before it is anything else.
-func TestTheAppointmentChipAsksWhichDay(t *testing.T) {
-	require.Contains(t, drewFor(t, &fakeStore{}, "at"), `"action":"/at/new"`)
+// The appointment chip asks what it is, then which day.
+//
+// It went straight to /at/new until 31 August 2026, on the recorded intent that
+// an appointment is a day and a time before it is anything else. That intent
+// was never reachable: /at/new asks for a day *given* a label, /at/make refuses
+// without one, and nothing in the flow ever collected one — so the chip posted
+// a form its handler could only redirect away from, and fetch followed the
+// redirect and pasted a whole room, navigation and all, into the room.
+//
+// So the agenda asks first, like every other room. The old intent described a
+// flow the code could not perform.
+func TestTheAppointmentChipAsksWhatItIs(t *testing.T) {
+	require.Contains(t, drewFor(t, &fakeStore{}, "at"), `"action":"/at/ask"`)
 }
