@@ -65,6 +65,13 @@ type Person struct {
 	Sub string
 	// Handle is a display name and nothing more. Two accounts may share one.
 	Handle string
+	// Name is what Authentik calls you, which is not what you sign in as.
+	// Absent on a provider that does not send the claim, and never an identity.
+	Name string
+	// Face is where a picture of you can be fetched, once, at login. It is not
+	// kept: the bytes are, so nothing on the screen depends on the provider
+	// still being reachable. Empty when the claim is absent.
+	Face string
 }
 
 // NewAuthentik builds the gate. It makes no network call.
@@ -176,8 +183,13 @@ func (d *Gate) Back(ctx context.Context, code, verifier string) (Person, error) 
 		return Person{}, fmt.Errorf("checking the id token: %w", err)
 	}
 
+	// Both `name` and `picture` are in the `profile` scope this already asks
+	// for, so reading them costs nothing at the gate: they were being granted
+	// and thrown away.
 	var said struct {
 		Handle string   `json:"preferred_username"`
+		Name   string   `json:"name"`
+		Face   string   `json:"picture"`
 		Groups []string `json:"groups"`
 	}
 	if err := id.Claims(&said); err != nil {
@@ -190,7 +202,7 @@ func (d *Gate) Back(ctx context.Context, code, verifier string) (Person, error) 
 	if !allowed(said.Groups, d.group) {
 		return Person{}, ErrNotAllowed
 	}
-	return Person{Sub: id.Subject, Handle: said.Handle}, nil
+	return Person{Sub: id.Subject, Handle: said.Handle, Name: said.Name, Face: said.Face}, nil
 }
 
 func allowed(groups []string, want string) bool {

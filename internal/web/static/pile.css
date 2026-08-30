@@ -1167,14 +1167,17 @@
   }
   .turn > * { grid-column: 2; }
   .frombuddy { align-self: flex-start; }
-  /* Your own words need no gutter. There is one person here and he knows
-     which words are his. */
+  /* Your gutter is on the right, which is the mirror of Buddy's and the only
+     way a face on your side can sit where you start speaking. It costs the
+     bubble a gutter's width, which is what the old no-face argument was right
+     about — see turn.html. */
   .fromyou {
     align-self: flex-end; justify-items: end;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) var(--gutter);
     max-width: 80%;
   }
   .fromyou > * { grid-column: 1; }
+  .fromyou .youface { grid-column: 2; grid-row: 1; }
 
   /* Nothing around the face.
      
@@ -1193,6 +1196,48 @@
     display: block;
   }
   .buddyface img { width: 100%; height: auto; display: block; }
+
+  /* Your face, mirroring his. A picture is a portrait with nothing drawn
+     around it, exactly as the mascot's is; the monogram is the other half —
+     when there is no picture the letter has to make its own shape, so it takes
+     the card stock and the outline every other object here is drawn with. */
+  .youface {
+    grid-column: 1; grid-row: 1;
+    width: var(--gutter); height: auto;
+    display: block;
+  }
+  .youface img { width: 100%; height: auto; display: block; border-radius: 999px; }
+  .youface.mono {
+    aspect-ratio: 1; display: grid; place-items: center;
+    background: var(--card); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: 999px;
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 900; font-size: 17px; letter-spacing: -.02em;
+    box-shadow: 0 3px 0 0 var(--outline);
+  }
+
+  /* Who you are, at the foot of the rooms. A row rather than a stack: the rail
+     is already a column of places and a second column inside it would read as
+     one more. */
+  .whoami {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 14px; padding-top: 14px;
+    border-top: var(--line) solid rgba(254, 214, 167, .28);
+  }
+  .whoami .youface { width: 36px; flex: none; }
+  .whoami .youface.mono { font-size: 15px; }
+  .whoname {
+    flex: 1 1 auto; min-width: 0;
+    color: var(--paper); font-size: 14.5px;
+    font-variation-settings: var(--casual), "wght" 620;
+    overflow-wrap: anywhere;
+  }
+  /* The way out is a whole row of its own: a button beside a name reads as a
+     name's button. It wears what the rail's other two non-places wear — no
+     box at all — for the reason written beside them: leaving must never look
+     louder. It was a dashed pill for an hour, which was worse than wrong: in
+     this world dashed means this does nothing, and signing out does. */
+  .whoami form { flex: 1 1 100%; }
   .bub {
     margin: 0; padding: 11px 15px;
     border: var(--line) solid var(--outline); border-radius: var(--r);
@@ -1600,7 +1645,8 @@
      off-screen and undiscoverable. */
   .rail .lookup { margin: 8px 0 0; display: flex; }
   .rail .lookup button,
-  .rail .leaving {
+  .rail .leaving,
+  .signout {
     display: flex; align-items: center; width: 100%;
     min-height: 44px; padding: 10px 13px;
     background: none; border: 0; cursor: pointer;
@@ -1608,7 +1654,7 @@
     font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--casual), "wght" 500;
   }
-  .rail .lookup button:hover, .rail .leaving:hover { color: var(--paper); }
+  .rail .lookup button:hover, .rail .leaving:hover, .signout:hover { color: var(--paper); }
   /* The way out is last and under a rule of its own. It is not a destination
      like the others: it is the end of the evening, and its place at the bottom
      says that without a louder word. Principle 3 — leaving must never look

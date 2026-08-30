@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"html/template"
@@ -10,7 +11,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+	"unicode"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
@@ -137,6 +140,10 @@ type view struct {
 	SaySlot   string
 	SayStop   string
 	SayEnough string
+	// You is who the screen is talking to: the name at the foot of the rooms
+	// and the face on your own turns. Zero when there is no person, which is
+	// every screen the gate serves.
+	You whom
 	// The two things that move without being read. The stamp's lean and where
 	// the room's light falls, both chosen from the day like the sentences are,
 	// and both handed to the stylesheet as custom properties because a static
@@ -325,11 +332,115 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 	// neither a store nor a person and never could.
 	if personID, ok := personOf(r); ok {
 		v.Rooms = roomsFor(r.Context(), s, personID, roomOf(r.Context()))
+		v.You = youFor(r.Context(), s, personID)
 	}
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
 	v.Camera = opts.Photos != nil
 	render(w, name, v)
+}
+
+// whom is you, as the screen says you.
+type whom struct {
+	// Known is whether there is a person at all. The block draws on this and
+	// not on the name, so the way out is reachable even before the gate has
+	// ever said what to call you.
+	Known bool
+	// Name is the display name Authentik sent, or the handle when it sent
+	// none. Empty only when the person could not be read at all.
+	Name string
+	// Face is whether there is a picture to fetch. False draws the monogram.
+	Face bool
+	// Letter is the monogram: the first letter of the name, uppercased. It is
+	// computed here rather than in the template because the first *rune* of a
+	// name is not its first byte, and a name can begin with one that is not a
+	// letter at all.
+	Letter string
+}
+
+// whomKey carries a lazy reader of who you are.
+//
+// On the request rather than threaded through, for the reason roomOf gives:
+// turnViews is reached from fifty-two callers of answerWith, and widening all
+// of them would be fifty-two chances to forget one. Lazy because most requests
+// never draw a face and none of them should pay for a query that draws nothing.
+type whomKey struct{}
+
+type lazyWhom struct {
+	once sync.Once
+	val  whom
+	// The context arrives at call time, not at wrap time: the wrapper runs
+	// before guard, so the request it could capture is one with nobody on it.
+	load func(context.Context) whom
+}
+
+func (l *lazyWhom) get(ctx context.Context) whom {
+	if l == nil {
+		return whom{}
+	}
+	l.once.Do(func() { l.val = l.load(ctx) })
+	return l.val
+}
+
+// knowsYou wraps a mux so every handler it mounts can find out who is asking
+// without being handed a store. One place, so a route added later cannot miss
+// it — the same argument fromTheDock's rename records.
+func knowsYou(m Mux, s Store) Mux { return knowing{m: m, s: s} }
+
+type knowing struct {
+	m Mux
+	s Store
+}
+
+func (k knowing) Get(pattern string, h http.HandlerFunc)  { k.m.Get(pattern, k.wrap(h)) }
+func (k knowing) Post(pattern string, h http.HandlerFunc) { k.m.Post(pattern, k.wrap(h)) }
+
+func (k knowing) wrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		lazy := &lazyWhom{load: func(ctx context.Context) whom {
+			personID, ok := personIn(ctx)
+			if !ok {
+				return whom{}
+			}
+			return youFor(ctx, k.s, personID)
+		}}
+		h(w, r.WithContext(context.WithValue(r.Context(), whomKey{}, lazy)))
+	}
+}
+
+// whomOf is who the screen is talking to, read once per request.
+func whomOf(ctx context.Context) whom {
+	lazy, _ := ctx.Value(whomKey{}).(*lazyWhom)
+	return lazy.get(ctx)
+}
+
+// youFor reads who you are for the chrome. Best-effort: a screen that cannot
+// say your name is worth more than a screen that will not draw.
+func youFor(ctx context.Context, s Store, personID int64) whom {
+	was, err := s.WhoIs(ctx, personID)
+	if err != nil {
+		slog.Error("reading who you are", "error", err)
+		return whom{}
+	}
+	// The monogram falls back to the handle where the name does not: a letter
+	// out of "ronald-cf1cab94" is still R, and a letter is all it takes.
+	from := was.Name
+	if from == "" {
+		from = was.Handle
+	}
+	return whom{Known: true, Name: was.Name, Face: was.HasFace, Letter: monogram(from)}
+}
+
+// monogram is the drawn stand-in for a picture: one letter, from the first
+// letter in the name rather than the first character, so a name that opens with
+// a bracket or an emoji still gets the letter a person would say.
+func monogram(name string) string {
+	for _, r := range name {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return string(unicode.ToUpper(r))
+		}
+	}
+	return ""
 }
 
 func render(w http.ResponseWriter, name string, v view) {

@@ -39,6 +39,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	if opts.RequiredGroup == "" {
 		return fmt.Errorf("refusing to mount the pile: WEB_REQUIRED_GROUP is empty")
 	}
+	// Every handler can find out who is asking, without fifty routes each
+	// remembering to arrange it. See knowsYou.
+	m = knowsYou(m, s)
 	if opts.Gate == nil {
 		return fmt.Errorf("refusing to mount the pile: no way in")
 	}
@@ -76,6 +79,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/open", posting(opts, openHandler(s, opts)))
 	// A photograph, behind the same guard as everything else: a picture of a
 	// letter is at least as private as the note beside it.
+	// Your own face is not one of them: it arrives with the identity rather
+	// than with a note, so it is mounted whether or not photographs are.
+	m.Get("/me/face", guard(opts, faceHandler(s)))
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
 		// The card asks for this one. See thumbHandler.

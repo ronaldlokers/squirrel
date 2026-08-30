@@ -1399,6 +1399,61 @@ camera, the chevron. No icon fonts, no emoji standing in for an icon, and no
 icon built out of CSS borders — the chevron is a masked path precisely so it can
 take `currentColor` and sit at the same weight as its five siblings.
 
+### Who You Are
+
+Two things arrived together on 30 August 2026 and only one of them was a
+decoration. `/auth/out` had existed as a route since the gate did and appeared
+in no template: **there was no way to sign out of this product at all.**
+
+**In the rail, not the lid.** The rail is two shapes from one markup — a column
+on a desktop, the sheet behind the room control on a phone — so one block
+serves both, and the lid keeps the emptiness three separate changes argued it
+into. Your face, your name, and the way out sit under the same rule the two
+non-places above them already follow: no box, cream ink, and *leaving must
+never look louder.*
+
+**The way out speaks the product's language** — "close the door", beside the
+rooms it closes. It was "lock it behind you" for an hour, which
+`TestChoresNeverCounts` refused: **behind** is on the same list as *overdue*,
+*streak* and *%*, the vocabulary of falling short that this product does not
+own. A test written about the chores screen caught a word in the rail.
+
+**It is a form, not a link.** `/auth/out` is a POST behind `sameOrigin`; a link
+would be broken and a cross-site GET away from being a way to sign somebody
+else out.
+
+**The name is the display name and never the handle.** `handleFor` makes the
+stored handle unique by appending a hash of the OIDC subject, so it reads
+`ronald-cf1cab94` — legible in a row, not a name for a screen. A person who has
+not signed in since this shipped gets their monogram and no name until they
+next do, and the block still draws, because the way out must not wait for a
+login.
+
+**The picture is bytes, fetched once.** Authentik's `picture` claim is a URL;
+keeping the URL would make the one face on the screen a third-party request —
+a referrer handed to the provider on every render, and the first thing to
+vanish when the network does, on the product whose offline path was
+deliberately proved. It is fetched at sign-in, stored, and served from this
+origin as `/me/face`, exactly as a note's photograph already is. Neither
+`name` nor `picture` cost a scope: both were already in the `profile` scope the
+gate has always asked for and always thrown away.
+
+**No picture is a shape, not a hole.** The monogram takes the card stock, the
+3px outline and the sticker shadow every other object here is drawn with — one
+letter, taken from the first *letter* in the name rather than its first
+character, so a name opening with a bracket still gets the letter a person
+would say.
+
+**Your turns carry your face, and that reverses a recorded decision.** The
+argument in `turn.html` was that a profile picture on your own messages is
+furniture, because the alignment and the fill already say whose words they are.
+That was right about the cost and wrong about the reason: Buddy has a face, and
+a conversation where one speaker has one and the other does not reads as a
+service answering a form. The cost is real and now measured — a from-you turn
+gives up a gutter's width, 120px to 170px in the appearance record — and the
+gutter is on the right, mirroring his, because a face belongs where a speaker
+starts speaking.
+
 ## Components
 
 ### The three marks

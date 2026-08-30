@@ -1,12 +1,15 @@
 package web
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -157,6 +160,11 @@ func backHandler(opts Options) http.HandlerFunc {
 			return
 		}
 
+		// Best-effort, and after the person exists: what you are called and
+		// what you look like are not what lets you in, and failing to fetch a
+		// picture must never be a failed sign-in.
+		rememberWho(r.Context(), opts, personID, who)
+
 		token, err := secret(32)
 		if err != nil {
 			down("no randomness for a session", err)
@@ -221,4 +229,109 @@ func lifeOf(opts Options) time.Duration {
 		return opts.SessionLife
 	}
 	return sessionLife
+}
+
+// faceLimit is the most of a picture worth keeping. Authentik serves an avatar,
+// not a photograph, and a provider that answers with something enormous is a
+// provider to ignore rather than to store.
+const faceLimit = 512 << 10
+
+// remember keeps the display name and, once, the picture. Everything here is
+// best-effort: it runs after the session's person exists and before the cookie,
+// and every failure is a log line rather than a refused login.
+func rememberWho(ctx context.Context, opts Options, personID int64, who Person) {
+	if opts.RememberWho == nil {
+		return
+	}
+	// The username stands in when the provider sends no name, because the
+	// stored handle cannot: handleFor makes it unique with a hash of the sub,
+	// and "ronald-cf1cab94" is a row, not a person.
+	name := who.Name
+	if name == "" {
+		name = who.Handle
+	}
+	face, kind := fetchFace(ctx, opts, who.Face)
+	if err := opts.RememberWho(ctx, personID, name, face, kind); err != nil {
+		slog.Error("remembering who signed in", "error", err)
+	}
+}
+
+// fetchFace pulls the avatar once, so nothing on the screen depends on the
+// provider still being reachable. Empty on any doubt at all: a wrong picture is
+// worse than none, and none is drawn as a monogram.
+func fetchFace(ctx context.Context, opts Options, from string) ([]byte, string) {
+	if from == "" {
+		return nil, ""
+	}
+	u, err := url.Parse(from)
+	if err != nil || u.Scheme != "https" {
+		slog.Warn("ignoring a picture that is not https", "url", from)
+		return nil, ""
+	}
+	ctx, stop := context.WithTimeout(ctx, 5*time.Second)
+	defer stop()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, from, nil)
+	if err != nil {
+		return nil, ""
+	}
+	client := opts.Fetch
+	if client == nil {
+		client = http.DefaultClient
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		slog.Warn("could not fetch your picture", "error", err)
+		return nil, ""
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		slog.Warn("the picture answered badly", "status", res.StatusCode)
+		return nil, ""
+	}
+	kind := res.Header.Get("Content-Type")
+	if !strings.HasPrefix(kind, "image/") {
+		slog.Warn("that is not a picture", "type", kind)
+		return nil, ""
+	}
+	body, err := io.ReadAll(io.LimitReader(res.Body, faceLimit+1))
+	if err != nil || len(body) == 0 || len(body) > faceLimit {
+		slog.Warn("ignoring a picture that would not fit", "bytes", len(body))
+		return nil, ""
+	}
+	return body, kind
+}
+
+// faceHandler serves your picture from this origin.
+//
+// From here rather than from Authentik, so the one face on the screen is not a
+// third-party request: no referrer to the provider on every render, nothing to
+// go missing when the network does, and the browser's own cache can hold it.
+func faceHandler(s Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, known := personOf(r)
+		if !known {
+			fail(w, errNoOwner)
+			return
+		}
+		face, kind, found, err := s.PersonFace(r.Context(), personID)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found {
+			// The monogram is drawn, not served: a missing picture is a shape
+			// this product already knows how to make.
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if kind == "" {
+			kind = "application/octet-stream"
+		}
+		w.Header().Set("Content-Type", kind)
+		// Yours, so it never belongs to a shared cache, and short so a picture
+		// changed at the provider arrives on the next sign-in rather than never.
+		w.Header().Set("Cache-Control", "private, max-age=300")
+		_, _ = w.Write(face)
+	}
 }

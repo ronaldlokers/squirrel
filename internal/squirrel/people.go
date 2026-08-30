@@ -152,3 +152,73 @@ func handleFor(sub, handle string) string {
 	sum := sha256.Sum256([]byte(sub))
 	return handle + "-" + hex.EncodeToString(sum[:])[:8]
 }
+
+// Whom is what the screen says about you: a name to show and whether there is
+// a picture to show beside it. Not an identity — see the migration.
+type Whom struct {
+	Name    string
+	Handle  string
+	HasFace bool
+}
+
+// WhoIs is the display name, falling back to the handle. Both may be empty on
+// a person who signed in before there was anything to ask for.
+func (s *Store) WhoIs(ctx context.Context, personID int64) (Whom, error) {
+	var out Whom
+	var name *string
+	var face []byte
+	err := s.pool.QueryRow(ctx,
+		`select display_name, handle, face from people where id = $1`,
+		personID).Scan(&name, &out.Handle, &face)
+	if err != nil {
+		return Whom{}, fmt.Errorf("reading who you are: %w", err)
+	}
+	if name != nil {
+		out.Name = *name
+	}
+	// Deliberately no fall back to the handle. handleFor appends a hash of the
+	// sub to make the column unique, so the stored handle reads
+	// "ronald-cf1cab94" — legible to somebody reading rows, not a name to put
+	// on a screen. A person who has not signed in since display names existed
+	// gets a monogram and no name until they next do.
+	out.HasFace = len(face) > 0
+	return out, nil
+}
+
+// PersonFace is the stored picture and its type.
+func (s *Store) PersonFace(ctx context.Context, personID int64) ([]byte, string, bool, error) {
+	var face []byte
+	var kind *string
+	err := s.pool.QueryRow(ctx,
+		`select face, face_type from people where id = $1`, personID).Scan(&face, &kind)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("reading your picture: %w", err)
+	}
+	if len(face) == 0 {
+		return nil, "", false, nil
+	}
+	out := ""
+	if kind != nil {
+		out = *kind
+	}
+	return face, out, true, nil
+}
+
+// RememberPerson keeps what the gate said about you this time.
+//
+// A missing name or picture never erases one already held: the provider may
+// stop sending a claim it once sent, and losing your face because Authentik
+// was reconfigured is not something to store.
+func (s *Store) RememberPerson(ctx context.Context, personID int64, name string, face []byte, faceType string) error {
+	_, err := s.pool.Exec(ctx, `
+		update people set
+		  display_name = coalesce(nullif($2, ''), display_name),
+		  face         = case when $3::bytea is null then face else $3 end,
+		  face_type    = case when $3::bytea is null then face_type else nullif($4, '') end
+		 where id = $1`,
+		personID, name, face, faceType)
+	if err != nil {
+		return fmt.Errorf("remembering who you are: %w", err)
+	}
+	return nil
+}

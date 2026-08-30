@@ -160,6 +160,29 @@
        it must never look like failure — its own place at the bottom says
        that without a louder word. The wording moves with the day. */}}
   <a class="leaving" href="/enough">{{.SayStop}}</a>
+  {{/* Who the screen is talking to, and the way out.
+
+       In the rail rather than the lid, and that is the whole placement
+       argument: the rail is two shapes from one markup — a column on a desktop
+       and the sheet behind the room control on a phone — so one block serves
+       both, and the lid keeps the emptiness it was argued into.
+
+       Signing out is a form because /auth/out is a POST behind sameOrigin. A
+       link would be broken and a cross-site GET away from being a way to sign
+       somebody else out. */}}
+  {{if .You.Known}}
+  <div class="whoami">
+    {{if .You.Face}}
+    <img class="youface" src="/me/face" alt="" width="36" height="36">
+    {{else}}
+    <span class="youface mono" aria-hidden="true">{{.You.Letter}}</span>
+    {{end}}
+    {{if .You.Name}}<span class="whoname">{{.You.Name}}</span>{{end}}
+    <form method="post" action="/auth/out">
+      <button class="signout" type="submit">close the door</button>
+    </form>
+  </div>
+  {{end}}
 </nav>
 
 <main id="stage" class="{{if .Thread}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">

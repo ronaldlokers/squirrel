@@ -97,8 +97,11 @@ func withWho(r *http.Request, personID int64, sub string) *http.Request {
 //
 // A request nobody has been put on is nobody, and never a default: a fallback
 // here would be a silent cross-pile read.
-func personOf(r *http.Request) (int64, bool) {
-	w, ok := r.Context().Value(whoKey{}).(who)
+func personOf(r *http.Request) (int64, bool) { return personIn(r.Context()) }
+
+// personIn is the same read from a context that has no request around it.
+func personIn(ctx context.Context) (int64, bool) {
+	w, ok := ctx.Value(whoKey{}).(who)
 	return w.personID, ok && w.personID != 0
 }
 

@@ -67,12 +67,16 @@ type turnView struct {
 	//
 	// From the turn rather than from the page, because a fragment is rendered
 	// with no page around it — the same reason V is filled here.
-	Room  string
+	Room string
+	// You is who is reading, for the face on your own turns. On the turn for
+	// the same reason Room and V are: a fragment is rendered with no page
+	// around it.
+	You   whom
 	Buddy bool
 	Words string
 	// Cost is what this reply cost, on the reply that cost it.
 	Cost string
-	// Opens marks the turn that begins a run of Buddy's, which is where his
+	// Opens marks the turn that begins a run by either speaker, which is where a
 	// face goes: consecutive turns are one utterance, and a face on every one
 	// is wallpaper by the third day.
 	Opens bool
@@ -254,7 +258,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Held:      r.URL.Query().Get("held") != "",
 			Here:      "thread",
 			Scrolling: true,
-			Turns:     turnViews(turns),
+			Turns:     turnViews(r.Context(), turns),
 			MoreAbove: more,
 		}
 		if first {
@@ -306,10 +310,10 @@ func endsOpen(turns []squirrel.Turn) bool {
 // turnViews decodes each turn's record of what it drew and marks the live edge.
 // The scan runs backwards and stops at the first Buddy turn, so a run of your own
 // turns at the bottom leaves something to press.
-func turnViews(turns []squirrel.Turn) []turnView {
+func turnViews(ctx context.Context, turns []squirrel.Turn) []turnView {
 	out := make([]turnView, 0, len(turns))
 	for _, t := range turns {
-		v := turnView{ID: t.ID, Room: t.Room, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: stamp()}
+		v := turnView{ID: t.ID, Room: t.Room, Buddy: t.Who == squirrel.SpeakerBuddy, Words: t.Words, V: stamp(), You: whomOf(ctx)}
 		if len(t.Shown) > 0 {
 			var sh drawn
 			if err := json.Unmarshal(t.Shown, &sh); err != nil {
@@ -332,7 +336,10 @@ func turnViews(turns []squirrel.Turn) []turnView {
 	// Where Buddy starts speaking. The first turn of a run and every turn
 	// after somebody else spoke.
 	for i := range out {
-		out[i].Opens = out[i].Buddy && (i == 0 || !out[i-1].Buddy)
+		// Either speaker, since 30 August 2026: yours carries a face now too,
+		// and a run of yours has to hold one right edge for the same reason a
+		// run of his holds one left edge.
+		out[i].Opens = i == 0 || out[i-1].Buddy != out[i].Buddy
 	}
 
 	for i := len(out) - 1; i >= 0; i-- {
@@ -630,7 +637,7 @@ func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, ba
 		http.Redirect(w, r, back, http.StatusSeeOther)
 		return
 	}
-	vs := turnViews(said)
+	vs := turnViews(r.Context(), said)
 	for i := range vs {
 		vs[i].Live = false
 	}

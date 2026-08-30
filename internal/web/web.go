@@ -7,6 +7,7 @@ package web
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -41,6 +42,18 @@ type Options struct {
 	// time. A func rather than a Store method because this package must not
 	// have to know how a person is made — internal/boot supplies it.
 	Login func(ctx context.Context, sub, handle string) (int64, error)
+	// RememberWho keeps what the gate said that is not identity: a display name
+	// and a picture. Separate from Login because Login resolves who you are
+	// and this only decides what the screen calls you — widening Login would
+	// have made presentation a parameter of identity.
+	//
+	// Optional: nil is a screen that shows a monogram and a handle.
+	RememberWho func(ctx context.Context, personID int64, name string, face []byte, faceType string) error
+	// Fetch is who goes and gets the picture, so a test can answer without a
+	// network. nil is http.DefaultClient.
+	Fetch interface {
+		Do(*http.Request) (*http.Response, error)
+	}
 	// Photos is where a photograph is kept, or nil. Nil means the camera is
 	// never offered — a control that cannot work is worse than one that was
 	// never drawn.
@@ -230,6 +243,10 @@ type Store interface {
 	// deliberately nothing that edits a turn or removes one.
 	AppendTurn(ctx context.Context, personID int64, room string, t squirrel.Turn) (squirrel.Turn, error)
 	RecentTurns(ctx context.Context, personID int64, room string, limit int) ([]squirrel.Turn, bool, error)
+	// Who the screen is talking to: a name to show, and whether there is a
+	// picture to show beside it.
+	WhoIs(ctx context.Context, personID int64) (squirrel.Whom, error)
+	PersonFace(ctx context.Context, personID int64) ([]byte, string, bool, error)
 	TurnsBefore(ctx context.Context, personID int64, room string, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
 	// The four numbers on the doors. Computed at read time and stored
 	// nowhere, which is what makes the decision that allowed them reversible.
