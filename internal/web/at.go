@@ -225,6 +225,15 @@ func atNewHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		label := strings.TrimSpace(r.FormValue("label"))
 		if label == "" {
+			// The agenda's dock, pressed empty. Nothing rather than a
+			// redirect, for the reason captureHandler states at the same
+			// branch: the script follows a redirect without being told, and
+			// what comes back is a whole page it then pastes into the room.
+			// This route was the one dock that never got that guard.
+			if wantsFragment(r) {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
