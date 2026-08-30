@@ -246,3 +246,15 @@ func (store) NextStep(_ context.Context, _ int64) (squirrel.Step, bool, error) {
 }
 func (store) StepDone(_ context.Context, _, _ int64, _ time.Time) error { return nil }
 func (store) ClearSteps(_ context.Context, _ int64) error               { return nil }
+
+// Who the dev screen is talking to. Invented, like everything else here, and
+// deliberately without a picture: the monogram is the state a person who has
+// never signed in through Authentik is actually in, so it is the one worth
+// having on screen while the design is being looked at.
+func (store) WhoIs(context.Context, int64) (squirrel.Whom, error) {
+	return squirrel.Whom{Name: "Ronald Lokers", Handle: "ronald"}, nil
+}
+
+func (store) PersonFace(context.Context, int64) ([]byte, string, bool, error) {
+	return nil, "", false, nil
+}

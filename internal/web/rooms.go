@@ -198,7 +198,7 @@ func roomHandler(s Store, opts Options) http.HandlerFunc {
 			Thread:    true,
 			Here:      here.Key,
 			Scrolling: true,
-			Turns:     turnViews(turns),
+			Turns:     turnViews(r.Context(), turns),
 			MoreAbove: more,
 		}
 		if len(turns) > 0 {

@@ -268,6 +268,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// the pool: internal/web states what it needs and nothing more.
 			Sessions: web.NewSessions(store),
 			Login:    store.PersonForLogin,
+			// What you are called and what you look like, which are not what
+			// lets you in. See Options.RememberWho.
+			RememberWho: store.RememberPerson,
 			// Where the person is, the same location the store already took.
 			Location: config.DigestLocation,
 			// Empty unless the *whole* pair plus the contact is configured,

@@ -36,6 +36,8 @@ type choreRhythm struct {
 // The recorded fields — what was written, answered, refused, marked — are here
 // so a test can assert on the write rather than on a rendering of it.
 type fakeStore struct {
+	whoName string
+	whoFace []byte
 	// The exit ramp, and what the screen did about it.
 	ramp        squirrel.Timer
 	hasRamp     bool
@@ -1338,4 +1340,24 @@ func (f *fakeStore) RampSaid(_ context.Context, _ int64, _ time.Time) error {
 func (f *fakeStore) HushRamp(_ context.Context, _ int64, _ time.Time) error {
 	f.hushed++
 	return nil
+}
+
+// Who the fake screen is talking to. `whoName` empty is a person the gate
+// never learned a name for, which is what every screen looked like before
+// 30 August 2026 and what a person who signed in before it still looks like.
+func (f *fakeStore) WhoIs(_ context.Context, _ int64) (squirrel.Whom, error) {
+	if f.err != nil {
+		return squirrel.Whom{}, f.err
+	}
+	return squirrel.Whom{Name: f.whoName, Handle: "ronald-cf1cab94", HasFace: f.whoFace != nil}, nil
+}
+
+func (f *fakeStore) PersonFace(_ context.Context, _ int64) ([]byte, string, bool, error) {
+	if f.err != nil {
+		return nil, "", false, f.err
+	}
+	if f.whoFace == nil {
+		return nil, "", false, nil
+	}
+	return f.whoFace, "image/png", true, nil
 }

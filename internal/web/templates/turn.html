@@ -7,9 +7,16 @@
      a thing that was asked, not a thing to answer now. */}}
 {{define "turn"}}
 <div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal .Say .Cut}} wide{{end}}" id="turn-{{.ID}}">
-  {{/* Buddy's face, where he starts speaking, and only his: a profile picture
-       on your own messages is furniture, and the alignment and the fill
-       already say whose words they are.
+  {{/* A face where a speaker starts speaking, once per run.
+
+       Yours was refused here until 30 August 2026, on the argument that a
+       profile picture on your own messages is furniture and that the alignment
+       and the fill already say whose words they are. The owner asked for it
+       anyway, and the reason it is not furniture is that Buddy has one: a
+       conversation where one speaker has a face and the other does not reads
+       as a service answering a form. What the old argument was right about is
+       the cost — see .fromyou in pile.css, which now gives up a gutter's width
+       on a phone.
 
        Once per run, so consecutive turns read as one utterance. Hidden from
        the accessibility tree — a screen reader gets the speaker from the
@@ -21,9 +28,17 @@
        DESIGN.md calls it the mascot's sticker drawing, and a sticker has no
        plate under it. */}}
   {{if .Opens}}
+  {{if .Buddy}}
   <span class="buddyface" aria-hidden="true">
     <img src="/static/buddy.png?v={{$.V}}" alt="" width="40" height="41">
   </span>
+  {{else if .You.Known}}
+  {{/* The monogram is drawn rather than served, so a person with no picture
+       still gets a face rather than a hole. */}}
+  <span class="youface{{if not .You.Face}} mono{{end}}" aria-hidden="true">
+    {{if .You.Face}}<img src="/me/face" alt="" width="40" height="40">{{else}}{{.You.Letter}}{{end}}
+  </span>
+  {{end}}
   {{end}}
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
