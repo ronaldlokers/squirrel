@@ -56,7 +56,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// Said out loud: every way a capture could be refused used to be silent, so the
 			// only account of what went wrong was a sentence the reader could not act on.
 			slog.Warn("a capture was refused", "error", err)
-			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), "/")
+			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), backToTheRoom(r))
 			return
 		}
 
@@ -76,7 +76,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -102,7 +102,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			// capture box that eats thoughts. This means the disk is unwritable, which is
 			// louder than a database being briefly unreachable.
 			slog.Warn("a capture could not be spooled", "error", err)
-			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), "/")
+			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), backToTheRoom(r))
 			return
 		}
 		// Says which it was, so the script knows whether to empty the box. The
@@ -110,7 +110,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// clearing on one of them is a capture box that eats thoughts.
 		w.Header().Set("X-Kept", "1")
 		reply, open := whatBuddyMakesOfIt(r, s, opts, text, photo != "")
-		answerWith(w, r, saidInThread(r, s, opts, text, reply, open), "/")
+		answerWith(w, r, saidInThread(r, s, opts, text, reply, open), backToTheRoom(r))
 	}
 }
 

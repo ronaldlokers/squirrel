@@ -67,7 +67,7 @@ func atOneHandler(s Store, opts Options) http.HandlerFunc {
 			{Who: squirrel.SpeakerYou, Words: m.Label},
 			fixedPointTurn(m, notes),
 		})
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 	}
 }
 
@@ -142,7 +142,7 @@ func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		itemID, perr := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if perr != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		moved, err := s.DetachNote(r.Context(), personID, itemID)
@@ -153,13 +153,13 @@ func atDetachHandler(s Store, opts Options) http.HandlerFunc {
 		if !moved {
 			// Not yours, or not pointing anywhere. Nothing happened, so
 			// nothing is said about it.
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "back in the pile"},
 			{Who: squirrel.SpeakerBuddy, Words: "It is in the pile again."},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -177,12 +177,12 @@ func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		m, found, err := s.MomentByID(r.Context(), personID, id)
@@ -192,7 +192,7 @@ func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		if !found {
 			// Not yours, or gone. Nothing is drawn and nothing is said.
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		notes, err := s.NotesFor(r.Context(), personID, id)
@@ -203,7 +203,7 @@ func atOpenHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: m.Label},
 			fixedPointTurn(m, notes),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -220,7 +220,7 @@ func atNewHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		label := strings.TrimSpace(r.FormValue("label"))
@@ -234,7 +234,7 @@ func atNewHandler(s Store, opts Options) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -243,17 +243,28 @@ func atNewHandler(s Store, opts Options) http.HandlerFunc {
 		if want := r.FormValue("month"); want != "" {
 			m, err := time.ParseInLocation("2006-01", want, now().Location())
 			if err != nil {
-				http.Redirect(w, r, "/", http.StatusSeeOther)
+				http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 				return
 			}
 			month, turning = m, true
 		}
 
-		said := []squirrel.Turn{askForADay(label, month)}
-		if !turning {
-			said = append([]squirrel.Turn{{Who: squirrel.SpeakerYou, Words: label}}, said...)
+		// Turning the month re-draws the question that is already there. It
+		// is not an answer and it is not kept: see answerInstead.
+		if turning {
+			in, _ := strconv.ParseInt(r.FormValue("turn"), 10, 64)
+			ask := askForADay(label, month)
+			if insteadOf(w, r, &ask, in) {
+				answerWith(w, r, []squirrel.Turn{ask}, backToTheRoom(r))
+				return
+			}
+			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{ask}), backToTheRoom(r))
+			return
 		}
-		answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: label},
+			askForADay(label, month),
+		}), backToTheRoom(r))
 	}
 }
 
@@ -271,13 +282,13 @@ func atMakeHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		label := strings.TrimSpace(r.FormValue("label"))
 		at := r.FormValue("at")
-		if label == "" || !offeredTime(at) {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+		if label == "" || !aTimeOfDay(at) {
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		day, err := time.ParseInLocation("2006-01-02", r.FormValue("day"), now().Location())
@@ -285,13 +296,13 @@ func atMakeHandler(s Store, opts Options) http.HandlerFunc {
 			// A day nobody offered. The picker draws none in the past, and an
 			// appointment you are already late for is the one thing this list
 			// may not hold.
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
 		m, ok := squirrel.MomentOn(opts.Location, day, "at "+at+" "+label, now())
 		if !ok {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		kept, err := s.CreateMoment(r.Context(), personID, m)
@@ -303,17 +314,6 @@ func atMakeHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: kept.Starts.Format("Monday 2 January") + ", " + at},
 			fixedPointTurn(kept, nil),
-		}), "/")
+		}), backToTheRoom(r))
 	}
-}
-
-// offeredTime is the guard on a value that arrives from a form. Only the three
-// the picker draws; anything else is a sentence, which the dock reads.
-func offeredTime(at string) bool {
-	for _, t := range pickTimes {
-		if t == at {
-			return true
-		}
-	}
-	return false
 }

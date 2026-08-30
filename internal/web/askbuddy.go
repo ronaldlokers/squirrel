@@ -34,7 +34,7 @@ func findAskHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "look something up"},
 			askInWordsNamed("What are you looking for?", "/find", "q", "find it", nil),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 

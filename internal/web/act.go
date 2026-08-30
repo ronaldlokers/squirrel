@@ -81,7 +81,7 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 						{Who: squirrel.SpeakerBuddy, Words: "It is a note again."},
 					},
 					pileTurn(r.Context(), s, opts, personID, 0, ""),
-				)), "/")
+				)), backToTheRoom(r))
 				return
 			}
 			answerInThread(w, r, s, opts, personID, "task", it.RawText, id, string(it.State))
@@ -125,7 +125,7 @@ func actHandler(s Store, opts Options) http.HandlerFunc {
 						Words: "That one moved while you were looking at it. It is not where the card said.",
 					}},
 					pileTurn(r.Context(), s, opts, personID, 0, ""),
-				)), "/")
+				)), backToTheRoom(r))
 				return
 			}
 		} else if err := s.SetItemState(r.Context(), it.ID, state, time.Now()); err != nil {
@@ -175,7 +175,7 @@ func choreHandler(s Store, opts Options) http.HandlerFunc {
 				{Who: squirrel.SpeakerBuddy, Words: "It comes back now."},
 			},
 			pileTurn(r.Context(), s, opts, personID, 0, ""),
-		)), "/")
+		)), backToTheRoom(r))
 	}
 }
 
@@ -189,7 +189,7 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
@@ -197,7 +197,7 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 		// Empty is not a correction. A note cannot be emptied into nothing —
 		// that is what dropping it is for, and it is reversible.
 		if err != nil || id < 1 || text == "" {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		if len(text) > captureLimit {
@@ -213,7 +213,7 @@ func fixHandler(s Store, opts Options) http.HandlerFunc {
 				{Who: squirrel.SpeakerBuddy, Words: "That is what it says now."},
 			},
 			pileTurn(r.Context(), s, opts, personID, 0, ""),
-		)), "/")
+		)), backToTheRoom(r))
 	}
 }
 
@@ -223,7 +223,7 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 	personID int64, act, text string, id int64, was string) {
 	said := saidAboutANote(act, text, id, was)
 	if len(said) == 0 {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 		return
 	}
 	// Marked on every answer rather than once at the start, so the clock measures
@@ -237,7 +237,7 @@ func answerInThread(w http.ResponseWriter, r *http.Request, s Store, opts Option
 	}
 
 	said = append(said, pileTurn(r.Context(), s, opts, personID, 0, ""))
-	answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+	answerWith(w, r, keepSaid(r.Context(), s, personID, said), backToTheRoom(r))
 }
 
 // laterHandler is skipping one, which is not a decision: the note stays where it
@@ -251,18 +251,18 @@ func laterHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "later"},
 			pileTurn(r.Context(), s, opts, personID, after, ""),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -273,7 +273,7 @@ func undoHandler(s Store, opts Options) http.HandlerFunc {
 	act := actHandler(s, opts)
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		r.Form.Set("from", "thread")
@@ -293,12 +293,12 @@ func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) h
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		it, found, err := s.ItemByID(r.Context(), personID, id)
@@ -307,13 +307,13 @@ func askAbout(s Store, opts Options, ask func(it squirrel.Item) squirrel.Turn) h
 			return
 		}
 		if !found {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: it.RawText},
 			ask(it),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -333,12 +333,12 @@ func moreHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil || id < 1 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		// Checked against what this person actually has, rather than trusted:
@@ -371,6 +371,6 @@ func moreHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "something else?"},
 			sayWithChips("about that one:", chips),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }

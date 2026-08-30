@@ -197,3 +197,17 @@ func TestAPictureIsNotFollowedOffHttps(t *testing.T) {
 	deep := make([]*http.Request, 5)
 	require.Error(t, client.CheckRedirect(safe, deep), "a redirect chain with no end was allowed")
 }
+
+// One face, one markup. The rail drew a bare <img class="youface">, which the
+// rule that rounds a picture could not reach, so the same face was a circle in
+// the conversation and a square in the rooms.
+func TestYourFaceIsTheSameShapeInBothPlaces(t *testing.T) {
+	f := &fakeStore{whoName: "Ronald Lokers", whoFace: []byte("not really a png")}
+	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerYou, Words: "the tasks"}}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.NotContains(t, body, `<img class="youface"`,
+		"the rail draws a bare image, which .youface img cannot round")
+	require.Equal(t, 2, strings.Count(body, `<span class="youface"`),
+		"the rail and the conversation do not draw the same thing")
+}

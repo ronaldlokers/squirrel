@@ -869,7 +869,22 @@ thing is what is inside it.
 
 - **A row of choices** (`.pick`) — the interval question. Two radio rows and one
   submit; see Chips.
-- **A month** (`.calbox`) — the day question; see Chips.
+- **A month** (`.calbox`) — the day question; see Chips. The time under it is a
+  field (`.attime`, `input[type=time]`) with three chips beside it that fill it.
+  It was three radios and nothing else until 31 August 2026, which meant this
+  product could hold an appointment at 09:00, 14:30 or 18:00 and no other — the
+  dentist at a quarter past was unsayable here. The three stay because they are
+  most appointments in one press; the field is what posts, so the shortcut and
+  the answer are never two answers that can disagree. Field vocabulary and not
+  chip vocabulary — paper, outline, the 3px shadow — because it is a thing you
+  type in and must not read as a fourth shortcut.
+- **Turning the month replaces the question.** Paging appended a whole new
+  "Which day?" each press, so walking to November left five of them in a record
+  that is never rewritten. Paging is not something you said: the answer comes
+  back under the id the turn already has, carrying `X-Replaces`, and the script
+  swaps it where it stands. Nothing is kept, so a reload shows the question
+  once. Without the script it is kept and redrawn the old way — the floor still
+  works, and it is still the floor.
 - **A box of words** (`.wordbox`) — rewording. Its own box and deliberately not
   the dock: the dock keeps everything you type, and these words replace
   something. A dock that sometimes captured and sometimes edited would be a dock
@@ -1412,11 +1427,17 @@ into. Your face, your name, and the way out sit under the same rule the two
 non-places above them already follow: no box, cream ink, and *leaving must
 never look louder.*
 
-**The way out speaks the product's language** — "close the door", beside the
-rooms it closes. It was "lock it behind you" for an hour, which
-`TestChoresNeverCounts` refused: **behind** is on the same list as *overdue*,
-*streak* and *%*, the vocabulary of falling short that this product does not
-own. A test written about the chores screen caught a word in the rail.
+**The way out is named, not narrated** — **log out**, under a drawn door with
+the way through it. It was "lock it behind you" for an hour, which
+`TestChoresNeverCounts` refused — **behind** is on the same list as *overdue*,
+*streak* and *%*, the vocabulary of falling short this product does not own —
+and then "close the door" for a day, which was the product's voice doing the
+wrong job. The rule the second version broke is the one every other control
+here follows: **a control names its action.** The voice belongs in what Buddy
+says; the way out is the one control you look for by name at the moment
+something has gone wrong, and a sentence you have to interpret is a sentence in
+the way. The icon is authored SVG on the same 2.4px round-capped stroke as the
+chevron and the camera — a door, and an arrow leaving through it.
 
 **It is a form, not a link.** `/auth/out` is a POST behind `sameOrigin`; a link
 would be broken and a cross-site GET away from being a way to sign somebody

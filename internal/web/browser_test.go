@@ -958,10 +958,16 @@ func TestBrowserARedirectedPressGoesThere(t *testing.T) {
 	c.navigate(t, srv.URL+"/r/kept")
 	c.until(t, "the kept note", `!!document.querySelector('input[name="act"][value="open"]')`)
 
+	// A mark that only survives if the page never went anywhere. The redirect
+	// lands back in the room the press was made in — see backToTheRoom — so
+	// the URL alone cannot tell a navigation from standing still.
+	c.eval(t, `window.__stillHere = true; return 1`)
 	c.eval(t, `document.querySelector('input[name="act"][value="open"]').form
 		.querySelector("button").click(); return 1`)
-	c.until(t, "the browser to go", `location.pathname === "/"`)
+	c.until(t, "the browser to go", `!window.__stillHere && !!document.querySelector("#thread")`)
 
+	require.Equal(t, "/r/kept", c.eval(t, `return location.pathname`),
+		"the press left the room it was made in")
 	require.Equal(t, float64(0), c.eval(t, `
 		return document.querySelectorAll("#thread nav, #thread .rail").length`),
 		"a whole page was pasted into the conversation instead of being followed")

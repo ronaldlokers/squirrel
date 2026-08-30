@@ -194,6 +194,7 @@
       <form method="post" action="/at/new">
         {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
         {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+        <input type="hidden" name="turn" value="{{$.ID}}">
         <input type="hidden" name="month" value="{{.Cal.Prev}}">
         <button class="chip arrow" type="submit" aria-label="the month before">&#8249;</button>
       </form>
@@ -202,6 +203,7 @@
       <form method="post" action="/at/new">
         {{if $.Room}}<input type="hidden" name="room" value="{{$.Room}}">{{end}}
         {{range $name, $value := .Cal.Fields}}<input type="hidden" name="{{$name}}" value="{{$value}}">{{end}}
+        <input type="hidden" name="turn" value="{{$.ID}}">
         <input type="hidden" name="month" value="{{.Cal.Next}}">
         <button class="chip arrow" type="submit" aria-label="the month after">&#8250;</button>
       </form>
@@ -223,10 +225,17 @@
       </div>
 
       <p class="lead">at</p>
+      {{/* The three are a shortcut; the field is the answer. Three chips could
+           only ever be three appointments, and the fourth one you have is at a
+           quarter past. Radios and a field cannot share a name, so the chips
+           fill the field and the field is what posts — with the script gone
+           the field is still there and still takes any time, which is the
+           floor this is built on. */}}
       <div class="pickrow">
         {{range .Cal.Times}}
-        <label class="chip"><input type="radio" name="at" value="{{.}}">{{.}}</label>
+        <button class="chip" type="button" data-at="{{.}}">{{.}}</button>
         {{end}}
+        <input class="attime" type="time" name="at" required aria-label="the time">
       </div>
       <button class="make" type="submit">{{.Cal.Do}}</button>
     </form>

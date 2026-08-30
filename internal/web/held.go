@@ -25,12 +25,12 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		back := backTolerant(r.FormValue("from"))
@@ -88,6 +88,6 @@ func heldActHandler(s Store, opts Options) http.HandlerFunc {
 				{Who: squirrel.SpeakerBuddy, Words: "Set aside. It is in the set-aside until it is not."},
 			},
 			pileTurn(r.Context(), s, opts, personID, 0, ""),
-		)), "/")
+		)), backToTheRoom(r))
 	}
 }

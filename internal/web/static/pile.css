@@ -1405,7 +1405,20 @@
     margin: 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
     color: var(--brown); font-variation-settings: var(--precise), "wght" 750;
   }
-  .pickrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pickrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  /* The time itself, beside the three that fill it. Built out of the field
+     vocabulary rather than the chip's, because it is a thing you type in and
+     it must not read as a fourth shortcut. */
+  .attime {
+    padding: 9px 12px;
+    background: var(--paper); color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    box-shadow: 0 3px 0 0 var(--outline);
+    font: 400 17px/1.2 "Recursive", sans-serif;
+    font-variation-settings: var(--casual), "wght" 500;
+    min-height: 44px;
+  }
+  .attime:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
   .pick .make { align-self: flex-start; margin-top: 4px; }
   .cal .make { align-self: flex-start; margin-top: 2px; }
   /* A turn holding a control strip takes the full column. The faces are five
@@ -1655,6 +1668,12 @@
     font-variation-settings: var(--casual), "wght" 500;
   }
   .rail .lookup button:hover, .rail .leaving:hover, .signout:hover { color: var(--paper); }
+  /* A door with the way out drawn through it. The control said "close the
+     door", which is the product's voice and the wrong job for a label: the way
+     out is the one control you look for by name when something has gone wrong,
+     and a sentence you have to interpret is a sentence in the way. */
+  .signout { gap: 9px; }
+  .signout svg { width: 19px; height: 19px; flex: none; }
   /* The way out is last and under a rule of its own. It is not a destination
      like the others: it is the end of the evening, and its place at the bottom
      says that without a louder word. Principle 3 — leaving must never look

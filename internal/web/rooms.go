@@ -297,3 +297,17 @@ func inTheRoomItCameFrom(h http.HandlerFunc) http.HandlerFunc {
 		h(w, r)
 	}
 }
+
+// backToTheRoom is where a press goes when the answer cannot be a fragment.
+//
+// Every one of these said "/", which is Buddy's room and was the only room
+// there was until 28 August 2026. Typing in the agenda's dock filed the
+// appointment in the agenda and then put you in Buddy, which reads as the
+// press having gone to the wrong place — it had not; the way back had.
+func backToTheRoom(r *http.Request) string {
+	where := roomOf(r.Context())
+	if where == "buddy" {
+		return "/"
+	}
+	return "/r/" + where
+}

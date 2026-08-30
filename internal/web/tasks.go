@@ -43,7 +43,7 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if !found {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -60,7 +60,7 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			// require finishing it.
 			_, err = s.SetItemKind(r.Context(), personID, id, squirrel.ItemNote)
 		default:
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		if err != nil {
@@ -68,7 +68,7 @@ func taskActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID,
-			saidAboutATask(act, it.RawText)), "/")
+			saidAboutATask(act, it.RawText)), backToTheRoom(r))
 	}
 }
 
@@ -86,13 +86,13 @@ func newTaskHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		text := strings.TrimSpace(r.FormValue("text"))
 		if text == "" {
 			// Nothing to decide on. Silence rather than a scolding.
-			answerWith(w, r, nil, "/")
+			answerWith(w, r, nil, backToTheRoom(r))
 			return
 		}
 		if len(text) > captureLimit {
@@ -117,6 +117,6 @@ func newTaskHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: text},
 			{Who: squirrel.SpeakerBuddy, Words: "On the list."},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }

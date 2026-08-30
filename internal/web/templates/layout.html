@@ -173,13 +173,21 @@
   {{if .You.Known}}
   <div class="whoami">
     {{if .You.Face}}
-    <img class="youface" src="/me/face" alt="" width="36" height="36">
+    <span class="youface"><img src="/me/face" alt="" width="36" height="36"></span>
     {{else}}
     <span class="youface mono" aria-hidden="true">{{.You.Letter}}</span>
     {{end}}
     {{if .You.Name}}<span class="whoname">{{.You.Name}}</span>{{end}}
     <form method="post" action="/auth/out">
-      <button class="signout" type="submit">close the door</button>
+      <button class="signout" type="submit">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 4H5v16h8"/>
+          <path d="M21 12H10"/>
+          <path d="M17 8l4 4-4 4"/>
+        </svg>
+        log out
+      </button>
     </form>
   </div>
   {{end}}

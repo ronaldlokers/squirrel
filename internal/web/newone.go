@@ -91,7 +91,7 @@ func askNameHandler(s Store, opts Options, said, question, action, field, does s
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: said},
 			askInWordsNamed(question, action, field, does, nil),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -109,14 +109,14 @@ func choreNameHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		name := strings.TrimSpace(r.FormValue("name"))
 		if name == "" {
 			// Nothing to make. Silence rather than a scolding: an empty box
 			// submitted by accident is not a mistake worth a sentence.
-			answerWith(w, r, nil, "/")
+			answerWith(w, r, nil, backToTheRoom(r))
 			return
 		}
 		if len(name) > choreNameLimit {
@@ -125,7 +125,7 @@ func choreNameHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: name},
 			askHowOften("/chores/new", map[string]string{"name": name}, "", "", ""),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
