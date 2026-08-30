@@ -1321,20 +1321,38 @@ before the deck went carried the same exemption for the same reason. Corner is
 not what separates a hint from a control. `rounded.key: 5px` retires with this,
 so the scale loses a step rather than gaining one.
 
-**The pill rule is exceptionless wherever a shape is actually drawn.** It had
-four standing exceptions and they were drift rather than decision: the gate's
-`.letmein` — the make-something button of the first screen anyone sees, wearing
-the same orange, the same 3px outline and the same 5px sticker shadow as its
-999px siblings — the room-sheet summary and a search hit at 11px, and the day
-picker's cells at 9px. All four are pills now, and the day picker is a grid of
-circles as a consequence, which the owner chose knowingly on 29 August 2026.
+**A pill is a single-line label you press.** Stated that way on 30 August 2026,
+after the shorter version — "anything you press is a full pill" — was enforced
+without exceptions for a day and made two things worse.
 
-Two pressable things keep a card corner and the reason is the same in both: the
-rule governs the shape of a pressable object, and neither draws one. `.face` has
-`background: none` and `border: 0` — the drawing is the button — so its radius
-clips nothing but a 10%-alpha hover tint. `.rail .room` is furniture in a
-navigation column rather than a control on the field. Both are open questions
-rather than settled exemptions.
+What it fixed was real: the gate's `.letmein`, wearing the same orange, the same
+3px outline and the same sticker shadow as its 999px siblings, had been sitting
+at the card radius with nothing defending it, on the first screen anyone sees.
+The room-sheet summary was an 11px near-miss. Both are pills and stay pills.
+
+What it broke was the other half. A day cell and a search hit are pressable, so
+the short rule reached them — but neither is a single-line label. **A pill on a
+43x44 grid cell costs 21% of its own hit area**, because pointer hit-testing
+follows the corner: measured, a point three pixels inside a cell's corner lands
+on the grid and not on the day. On a booking flow reached one-handed that is a
+dropped tap, on the one control whose own comment carefully defends being a
+single pixel under the touch floor. The card radius costs 8.9% of the same box,
+which is what every other card-cornered control in the product already pays.
+And a search hit wraps to two or four lines, so a pill drew a left-aligned
+stadium — a silhouette this product uses nowhere else.
+
+So both take the card corner, and the rule names why rather than listing
+exceptions. **The card radius is what a pressable cell inside a structure takes,
+and what furniture takes.** `.rail .room` is a room in a column rather than a
+control on the field; `.face` has `background: none` and `border: 0`, so the
+drawing is the button and the corner clips only a hover tint. Those two were
+carried as open questions for a day and the restated rule closes both.
+
+**The worked example draws the pill it teaches.** `.workedacts` is a picture of
+the four verbs, not the verbs — pressing a drawn DONE would act on somebody
+else's note — so it was drawn at the stamp radius, which taught a silhouette no
+control in the product has. It is a pill now, and what says it is inert is what
+always said so: no shadow, no fill, no cursor.
 
 **The outline scales with the object, and never goes thin.** 3px is the mark's
 own weight and the default everywhere. 2px is the one step down, and it is
@@ -1363,9 +1381,17 @@ The deck's stack is three cards translated by multiples of an 8px offset and
 rotated between 0.7° and 1.8°, randomised on every card change. Nothing in this
 world sits perfectly square, because nothing handled ever does.
 
-**Dashed means this does nothing.** The escape chip out of the interval picker,
-the disclosure that has opened and become its own way back, the new-chore form
-when shut, the rule above a chore's timer: all dashed, and nothing else is.
+**Dashed means this does nothing, or this is a place you are not.** The escape
+chip out of the interval picker, the disclosure that has opened and become its
+own way back, the new-chore form when shut, the rule above a chore's timer: all
+dashed because pressing them changes nothing.
+
+The rail took the mark for a second meaning on 28 August and it went unrecorded
+until 30 August: every room you are *not* in is dashed, and the room you are in
+is solid. That is the desktop's only "you are here" besides the fill, so the
+dash stays and the sentence widens to admit it. The stroke went from 2.5px to
+2px in the same change — there is no third step, and a rail is exactly the small
+control inside a larger structure the 2px step is for.
 
 Icons are authored SVG in the same language, all at a 2.4px round-capped stroke:
 the acorn from the cap badge, the search glyph, the hamburger, the cross, the

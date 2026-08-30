@@ -362,7 +362,8 @@
     border: 2px solid currentColor; border-radius: 999px;
     padding: 2px 6px 1px; opacity: .72;
   }
-  .make .key, .chip:active .key, .chip.hit .key { opacity: 1; }
+  .make .key, .chip:active .key, .chip.hit .key,
+  .abtn.did .key, .abtn.stop .key { opacity: 1; }
 
   /* A button wears the colour of what it does, at rest and not only under the
      thumb. Doing it is a done; stopping is a drop; how often is a setting, and
@@ -1396,11 +1397,12 @@
      Seven columns cannot do better without cropping the month to weekdays or
      scrolling it sideways, and both are worse than the pixel. */
   .calgrid label.day, .calgrid span.gone {
-    min-height: 44px; display: grid; place-items: center; border-radius: 999px;
+    min-height: 44px; display: grid; place-items: center; border-radius: var(--r);
     font-size: 13.5px; font-variation-settings: var(--precise), "wght" 700;
     border: 2px solid var(--outline); background: var(--paper); color: var(--outline);
     cursor: pointer;
   }
+  .calgrid span.gone { cursor: default; }
   .calgrid label.day input { position: absolute; opacity: 0; pointer-events: none; }
   .calgrid label.day:has(input:checked) {
     background: var(--violet); color: var(--paper); box-shadow: 0 3px 0 0 var(--outline);
@@ -1557,7 +1559,7 @@
     font-variation-settings: var(--casual), "wght" 560;
     text-decoration: none; color: var(--cream);
     background: rgba(28, 17, 11, .18);
-    border: 2.5px dashed rgba(254, 214, 167, .38);
+    border: 2px dashed rgba(254, 214, 167, .38);
     border-radius: var(--r);
     transition: background 90ms, border-color 90ms;
   }
@@ -1782,7 +1784,7 @@
   .hit { width: 100%; margin: 0; }
   .hit button {
     display: block; width: 100%; text-align: left; cursor: pointer;
-    padding: 9px 12px; border-radius: 999px;
+    padding: 9px 12px; border-radius: var(--r);
     background: rgba(255, 251, 243, .12);
     border: 2px solid rgba(254, 214, 167, .4);
     color: var(--paper); font: inherit;
@@ -1845,7 +1847,7 @@
      lands on one finds nothing to press rather than something that fails. */
   .workedacts { display: flex; flex-wrap: wrap; gap: 9px; margin: 0; }
   .workedacts span {
-    padding: 9px 14px; border: var(--line) solid var(--outline); border-radius: 10px;
+    padding: 9px 14px; border: var(--line) solid var(--outline); border-radius: 999px;
     font-size: 13px; letter-spacing: .06em;
     font-variation-settings: var(--precise), "wght" 800;
     color: var(--outline); background: var(--paper);

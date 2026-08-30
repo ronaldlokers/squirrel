@@ -259,7 +259,7 @@ func ruleFor(t *testing.T, css, selector string) string {
 	return body[:strings.Index(body, "}")]
 }
 
-func TestThePillRuleHasNoExceptions(t *testing.T) {
+func TestAPillIsASingleLineLabelYouPress(t *testing.T) {
 	css, err := staticFS.ReadFile("static/pile.css")
 	require.NoError(t, err)
 	sheet := string(css)
@@ -267,15 +267,24 @@ func TestThePillRuleHasNoExceptions(t *testing.T) {
 	for _, selector := range []string{
 		".letmein",
 		".roomsheet > summary",
-		".hit button",
-		".calgrid label.day, .calgrid span.gone",
 		".post",
 		".abtn",
 		".chip",
 		".enough .leavehere",
 	} {
 		require.Contains(t, ruleFor(t, sheet, selector), "border-radius: 999px",
-			"%s draws a pressable shape and is not a pill", selector)
+			"%s is a single-line label you press and is not a pill", selector)
+	}
+
+	// The other half of the rule, and the half the last round got wrong: a
+	// pressable cell inside a structure is not a single-line label, and a
+	// pill on one costs a fifth of its own hit area to the corners.
+	for _, selector := range []string{
+		".calgrid label.day, .calgrid span.gone",
+		".hit button",
+	} {
+		require.Contains(t, ruleFor(t, sheet, selector), "border-radius: var(--r)",
+			"%s wraps or sits in a grid, so a pill clips what it can be pressed by", selector)
 	}
 }
 
