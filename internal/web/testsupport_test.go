@@ -36,8 +36,9 @@ type choreRhythm struct {
 // The recorded fields — what was written, answered, refused, marked — are here
 // so a test can assert on the write rather than on a rendering of it.
 type fakeStore struct {
-	whoName string
-	whoFace []byte
+	whoName     string
+	whoFace     []byte
+	whoFaceType string
 	// The exit ramp, and what the screen did about it.
 	ramp        squirrel.Timer
 	hasRamp     bool
@@ -1359,5 +1360,9 @@ func (f *fakeStore) PersonFace(_ context.Context, _ int64) ([]byte, string, bool
 	if f.whoFace == nil {
 		return nil, "", false, nil
 	}
-	return f.whoFace, "image/png", true, nil
+	kind := f.whoFaceType
+	if kind == "" {
+		kind = "image/png"
+	}
+	return f.whoFace, kind, true, nil
 }

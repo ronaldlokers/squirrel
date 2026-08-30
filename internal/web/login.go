@@ -6,11 +6,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -231,6 +234,20 @@ func lifeOf(opts Options) time.Duration {
 	return sessionLife
 }
 
+// aPicture is every type this will store and serve, and the list is short on
+// purpose.
+//
+// image/svg+xml is an image type and is deliberately absent: an SVG is a
+// document, it runs script, and one served from this origin at /me/face would
+// be stored cross-site scripting wearing somebody's avatar. Nothing here needs
+// vector art, so nothing here accepts it.
+var aPicture = map[string]bool{
+	"image/png":  true,
+	"image/jpeg": true,
+	"image/gif":  true,
+	"image/webp": true,
+}
+
 // faceLimit is the most of a picture worth keeping. Authentik serves an avatar,
 // not a photograph, and a provider that answers with something enormous is a
 // provider to ignore rather than to store.
@@ -277,7 +294,7 @@ func fetchFace(ctx context.Context, opts Options, from string) ([]byte, string) 
 	}
 	client := opts.Fetch
 	if client == nil {
-		client = http.DefaultClient
+		client = onlyTheOpenInternet()
 	}
 	res, err := client.Do(req)
 	if err != nil {
@@ -289,14 +306,24 @@ func fetchFace(ctx context.Context, opts Options, from string) ([]byte, string) 
 		slog.Warn("the picture answered badly", "status", res.StatusCode)
 		return nil, ""
 	}
-	kind := res.Header.Get("Content-Type")
-	if !strings.HasPrefix(kind, "image/") {
-		slog.Warn("that is not a picture", "type", kind)
+	// The declared type, without its parameters: "image/png; charset=utf-8" is
+	// a picture with something to say about itself.
+	kind, _, _ := strings.Cut(res.Header.Get("Content-Type"), ";")
+	kind = strings.TrimSpace(strings.ToLower(kind))
+	if !aPicture[kind] {
+		slog.Warn("that is not a picture worth serving", "type", kind)
 		return nil, ""
 	}
 	body, err := io.ReadAll(io.LimitReader(res.Body, faceLimit+1))
 	if err != nil || len(body) == 0 || len(body) > faceLimit {
 		slog.Warn("ignoring a picture that would not fit", "bytes", len(body))
+		return nil, ""
+	}
+	// And the bytes have to agree with the header, because the header is the
+	// remote server's opinion and the bytes are what a browser will act on.
+	sniffed, _, _ := strings.Cut(http.DetectContentType(body), ";")
+	if sniffed != kind {
+		slog.Warn("a picture that is not what it says it is", "said", kind, "is", sniffed)
 		return nil, ""
 	}
 	return body, kind
@@ -325,13 +352,83 @@ func faceHandler(s Store) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if kind == "" {
+		// Never the stored string on trust: a row written before this list
+		// existed could say anything, and what a browser does with a document
+		// is decided by this header.
+		if !aPicture[kind] {
 			kind = "application/octet-stream"
 		}
 		w.Header().Set("Content-Type", kind)
+		// And no sniffing, so a mislabelled body cannot be promoted into
+		// something that runs.
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		// Yours, so it never belongs to a shared cache, and short so a picture
 		// changed at the provider arrives on the next sign-in rather than never.
 		w.Header().Set("Cache-Control", "private, max-age=300")
 		_, _ = w.Write(face)
 	}
+}
+
+// onlyTheOpenInternet is the client that fetches a picture, and the reason it
+// is not http.DefaultClient.
+//
+// The URL is somebody else's. It arrives in the `picture` claim of a verified
+// id token, which proves Authentik said it and proves nothing about where it
+// points: a misconfigured or compromised provider could aim it at
+// 169.254.169.254, at a service on the cluster network, or at localhost, and
+// this server would fetch it, store the bytes and serve them back at /me/face.
+// A signed claim is not a safe URL.
+//
+// The check is on the address actually being dialled rather than on a
+// hostname resolved beforehand, because a name resolved twice can answer twice
+// — public on the check and private on the connection. Control runs after
+// resolution and before connect, so there is no gap to win.
+func onlyTheOpenInternet() *http.Client {
+	dial := &net.Dialer{
+		Timeout: 5 * time.Second,
+		Control: func(_, address string, _ syscall.RawConn) error {
+			host, _, err := net.SplitHostPort(address)
+			if err != nil {
+				return fmt.Errorf("refusing an address that will not split: %w", err)
+			}
+			if ip := net.ParseIP(host); !onTheOpenInternet(ip) {
+				return fmt.Errorf("refusing a picture from %s", host)
+			}
+			return nil
+		},
+	}
+	return &http.Client{
+		Transport: &http.Transport{DialContext: dial.DialContext},
+		// A redirect is a second URL nobody checked. Same two rules, every hop.
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 5 {
+				return errors.New("too many redirects for a picture")
+			}
+			if req.URL.Scheme != "https" {
+				return errors.New("refusing a redirect that is not https")
+			}
+			return nil
+		},
+	}
+}
+
+// onTheOpenInternet is whether an address is somewhere on the open internet, which is
+// the only place a picture may come from. Everything else is either this
+// machine, this network, or the cloud metadata service.
+func onTheOpenInternet(ip net.IP) bool {
+	if ip == nil {
+		return false
+	}
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() {
+		return false
+	}
+	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() {
+		return false
+	}
+	// Shared address space (RFC 6598), which is neither private by Go's
+	// reckoning nor anywhere a picture lives.
+	if four := ip.To4(); four != nil && four[0] == 100 && four[1] >= 64 && four[1] <= 127 {
+		return false
+	}
+	return true
 }
