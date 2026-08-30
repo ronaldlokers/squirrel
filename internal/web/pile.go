@@ -24,6 +24,14 @@ type Mux interface {
 //
 // Every write below carries both checks. The identity says who is asking;
 // sameOrigin says which page asked.
+// posting is what every press goes through: signed in, same origin, and
+// carrying the room it was made in. Composed once rather than spelled out per
+// route, because the room is invisible when it is forgotten — see
+// inTheRoomItCameFrom.
+func posting(opts Options, h http.HandlerFunc) http.HandlerFunc {
+	return guard(opts, sameOrigin(inTheRoomItCameFrom(h)))
+}
+
 func Mount(m Mux, s Store, opts Options) error {
 	// Refused rather than defaulted, and the only value here where a default would be
 	// dangerous: everything else missing degrades to less product, and an empty
@@ -63,9 +71,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// roomHandler.
 	m.Get("/r/{room}", guard(opts, roomRoute(s, opts)))
 	// The dock, in whichever room it was typed in. See fromTheDock.
-	m.Post("/capture", guard(opts, sameOrigin(fromTheDock(captureHandler(s, opts)))))
+	m.Post("/capture", posting(opts, captureHandler(s, opts)))
 	// The door, as it was until 28 August 2026. See openHandler.
-	m.Post("/open", guard(opts, sameOrigin(openHandler(s, opts))))
+	m.Post("/open", posting(opts, openHandler(s, opts)))
 	// A photograph, behind the same guard as everything else: a picture of a
 	// letter is at least as private as the note beside it.
 	if opts.Photos != nil {
@@ -73,80 +81,80 @@ func Mount(m Mux, s Store, opts Options) error {
 		// The card asks for this one. See thumbHandler.
 		m.Get("/photo/{id}/thumb", guard(opts, thumbHandler(s, opts)))
 	}
-	m.Post("/mood", guard(opts, sameOrigin(threadMoodHandler(s, opts))))
+	m.Post("/mood", posting(opts, threadMoodHandler(s, opts)))
 	// The one thing's three answers.
-	m.Post("/now/act", guard(opts, sameOrigin(nowActHandler(s, opts))))
+	m.Post("/now/act", posting(opts, nowActHandler(s, opts)))
 	// I can't start. Its own route rather than a fourth act, because it is the
 	// one answer that is about you rather than about the thing.
-	m.Post("/now/stuck", guard(opts, sameOrigin(nowStuckHandler(s, opts))))
+	m.Post("/now/stuck", posting(opts, nowStuckHandler(s, opts)))
 	// Where to reach this browser. Only mounted when there is a key to
 	// subscribe with — a route that always answers 400 is a route that teaches
 	// the client to stop asking.
 	if opts.PushKey != "" {
 		m.Post("/push/subscribe", guard(opts, sameOrigin(pushSubscribeHandler(s, opts))))
 	}
-	m.Post("/pile/act", guard(opts, sameOrigin(actHandler(s, opts))))
+	m.Post("/pile/act", posting(opts, actHandler(s, opts)))
 	// Starting fresh, when Buddy offers you back a run you were part way
 	// through. Its other answer — carry on — is an ordinary door press and
 	// needs no route of its own.
-	m.Post("/place/fresh", guard(opts, sameOrigin(freshHandler(s, opts))))
+	m.Post("/place/fresh", posting(opts, freshHandler(s, opts)))
 	// Triage, in the conversation: skipping one, and changing your mind.
-	m.Post("/pile/later", guard(opts, sameOrigin(laterHandler(s, opts))))
-	m.Post("/pile/undo", guard(opts, sameOrigin(undoHandler(s, opts))))
+	m.Post("/pile/later", posting(opts, laterHandler(s, opts)))
+	m.Post("/pile/undo", posting(opts, undoHandler(s, opts)))
 	// The three questions a note can be asked, rather than the three verbs that
 	// end it. Each reuses the shape the chores already have, and each arrives
 	// behind /pile/more — see moreHandler for why they are a turn rather than a
 	// panel.
-	m.Post("/pile/often", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
+	m.Post("/pile/often", posting(opts, askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askHowOften("/pile/chore",
 			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"}, "", "", "")
-	}))))
-	m.Post("/pile/reword", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
+	})))
+	m.Post("/pile/reword", posting(opts, askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askForWords("/pile/fix",
 			map[string]string{"id": strconv.FormatInt(it.ID, 10), "from": "thread"},
 			it.RawText, "say it this way")
-	}))))
-	m.Post("/find", guard(opts, sameOrigin(findHandler(s, opts))))
+	})))
+	m.Post("/find", posting(opts, findHandler(s, opts)))
 	// One result, opened into a card you can act on. A hit is quiet because it
 	// is a thing you are finding; this is the moment it becomes a thing you are
 	// deciding about. See findOpenHandler.
-	m.Post("/find/open", guard(opts, sameOrigin(findOpenHandler(s, opts))))
-	m.Post("/pile/more", guard(opts, sameOrigin(moreHandler(s, opts))))
-	m.Post("/pile/why", guard(opts, sameOrigin(askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
+	m.Post("/find/open", posting(opts, findOpenHandler(s, opts)))
+	m.Post("/pile/more", posting(opts, moreHandler(s, opts)))
+	m.Post("/pile/why", posting(opts, askAbout(s, opts, func(it squirrel.Item) squirrel.Turn {
 		return askWhyNot(it.ID)
-	}))))
-	m.Post("/pile/chore", guard(opts, sameOrigin(choreHandler(s, opts))))
-	m.Post("/pile/fix", guard(opts, sameOrigin(fixHandler(s, opts))))
+	})))
+	m.Post("/pile/chore", posting(opts, choreHandler(s, opts)))
+	m.Post("/pile/fix", posting(opts, fixHandler(s, opts)))
 	// Four thoughts captured as one note, offered as four. Both halves —
 	// asking, and keeping what was asked for — because they are the only two
 	// things you can do to a proposal.
-	m.Post("/pile/split", guard(opts, sameOrigin(splitHandler(s, opts))))
+	m.Post("/pile/split", posting(opts, splitHandler(s, opts)))
 	// Buddy, as turns rather than a page of his own: there is a conversation to
 	// join now, so closing went with it. You stop talking.
-	m.Post("/buddy/ask", guard(opts, sameOrigin(fromTheDock(coachAskHandler(s, opts)))))
+	m.Post("/buddy/ask", posting(opts, coachAskHandler(s, opts)))
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
-	m.Post("/find/ask", guard(opts, sameOrigin(findAskHandler(s, opts))))
+	m.Post("/find/ask", posting(opts, findAskHandler(s, opts)))
 	// What Squirrel thinks it knows about you, and the way to throw it away.
 	// A POST for both: reading it is something you asked, and it goes into the
 	// record like anything else you say. See knowing.go.
-	m.Post("/knowing", guard(opts, sameOrigin(knowingHandler(s, opts))))
-	m.Post("/knowing/forget", guard(opts, sameOrigin(forgetKnowingHandler(s, opts))))
+	m.Post("/knowing", posting(opts, knowingHandler(s, opts)))
+	m.Post("/knowing/forget", posting(opts, forgetKnowingHandler(s, opts)))
 	// A new one, at every door. Each asks for words; the routes underneath are
 	// the ones the screens posted to. See newone.go.
-	m.Post("/chores/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
-		"a new chore", "What should come back?", "/chores/name", "name", "next"))))
-	m.Post("/chores/name", guard(opts, sameOrigin(fromTheDock(choreNameHandler(s, opts)))))
-	m.Post("/tasks/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
-		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it"))))
-	m.Post("/pile/ask", guard(opts, sameOrigin(askNameHandler(s, opts,
-		"put something down", "What is it?", "/capture", "text", "keep it"))))
-	m.Post("/buddy/say", guard(opts, sameOrigin(fromTheDock(coachSayHandler(s, opts)))))
+	m.Post("/chores/ask", posting(opts, askNameHandler(s, opts,
+		"a new chore", "What should come back?", "/chores/name", "name", "next")))
+	m.Post("/chores/name", posting(opts, choreNameHandler(s, opts)))
+	m.Post("/tasks/ask", posting(opts, askNameHandler(s, opts,
+		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it")))
+	m.Post("/pile/ask", posting(opts, askNameHandler(s, opts,
+		"put something down", "What is it?", "/capture", "text", "keep it")))
+	m.Post("/buddy/say", posting(opts, coachSayHandler(s, opts)))
 	// "That landed badly." One press, about the thing you just read.
-	m.Post("/buddy/badly", guard(opts, sameOrigin(coachBadlyHandler(s, opts))))
+	m.Post("/buddy/badly", posting(opts, coachBadlyHandler(s, opts)))
 	// A proposal, applied because it was pressed. Four things and no more —
 	// see coachDoHandler for why it is a switch rather than a dispatcher.
-	m.Post("/buddy/do", guard(opts, sameOrigin(coachDoHandler(s, opts))))
+	m.Post("/buddy/do", posting(opts, coachDoHandler(s, opts)))
 	// It was /coach, then /buddy, and now it is the conversation. A bookmark that
 	// dies quietly is worse than a redirect nobody notices. The query string is
 	// dropped: nothing at the other end reads one any more.
@@ -157,32 +165,32 @@ func Mount(m Mux, s Store, opts Options) error {
 	}
 	// A step finished, or a sequence thrown away. One route because they are
 	// the only two things you can do to a breakdown.
-	m.Post("/steps", guard(opts, sameOrigin(stepsHandler(s, opts))))
+	m.Post("/steps", posting(opts, stepsHandler(s, opts)))
 	// One fixed point, as a real page: a notification sent yesterday is still
 	// on a lock screen, and tapping it has to land somewhere. See sw.js.
 	m.Get("/at/{id}", guard(opts, atOneHandler(s, opts)))
 	// One fixed point, drawn into the conversation. See atOpenHandler.
-	m.Post("/at/open", guard(opts, sameOrigin(atOpenHandler(s, opts))))
+	m.Post("/at/open", posting(opts, atOpenHandler(s, opts)))
 	// Which day, and what time. See askForADay.
-	m.Post("/at/new", guard(opts, sameOrigin(fromTheDock(atNewHandler(s, opts)))))
-	m.Post("/at/make", guard(opts, sameOrigin(atMakeHandler(s, opts))))
-	m.Post("/at/{id}/note", guard(opts, sameOrigin(atNoteHandler(s, opts))))
-	m.Post("/at/{id}/detach", guard(opts, sameOrigin(atDetachHandler(s, opts))))
+	m.Post("/at/new", posting(opts, atNewHandler(s, opts)))
+	m.Post("/at/make", posting(opts, atMakeHandler(s, opts)))
+	m.Post("/at/{id}/note", posting(opts, atNoteHandler(s, opts)))
+	m.Post("/at/{id}/detach", posting(opts, atDetachHandler(s, opts)))
 	// Setting something aside and picking it back up. What you set aside is a
 	// message now — see elsewhere.go.
-	m.Post("/held/act", guard(opts, sameOrigin(heldActHandler(s, opts))))
+	m.Post("/held/act", posting(opts, heldActHandler(s, opts)))
 	// How you have been, and only when asked for by name. Nothing links here
 	// except the check-in you just answered.
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
 	// Stopping. It reads nothing and counts nothing; it forgets one row.
 	m.Get("/enough", guard(opts, enoughHandler(s, opts)))
-	m.Post("/tasks/act", guard(opts, sameOrigin(taskActHandler(s, opts))))
-	m.Post("/tasks/new", guard(opts, sameOrigin(fromTheDock(newTaskHandler(s, opts)))))
-	m.Post("/chores/act", guard(opts, sameOrigin(choreActHandler(s, opts))))
+	m.Post("/tasks/act", posting(opts, taskActHandler(s, opts)))
+	m.Post("/tasks/new", posting(opts, newTaskHandler(s, opts)))
+	m.Post("/chores/act", posting(opts, choreActHandler(s, opts)))
 	// How often, as a number and a unit. See askHowOften.
-	m.Post("/chores/often", guard(opts, sameOrigin(oftenHandler(s, opts))))
-	m.Post("/chores/new", guard(opts, sameOrigin(newChoreHandler(s, opts))))
-	m.Post("/timer", guard(opts, sameOrigin(timerHandler(s, opts))))
+	m.Post("/chores/often", posting(opts, oftenHandler(s, opts)))
+	m.Post("/chores/new", posting(opts, newChoreHandler(s, opts)))
+	m.Post("/timer", posting(opts, timerHandler(s, opts)))
 	// The chores screen lived here for its whole life. A bookmark that dies
 	// quietly is worse than a redirect nobody notices.
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
