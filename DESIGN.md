@@ -1438,6 +1438,26 @@ origin as `/me/face`, exactly as a note's photograph already is. Neither
 `name` nor `picture` cost a scope: both were already in the `profile` scope the
 gate has always asked for and always thrown away.
 
+**The URL it is fetched from is somebody else's.** A `picture` claim in a
+verified id token proves Authentik said it and proves nothing about where it
+points; a misconfigured or compromised provider could aim it at the cloud
+metadata service, at something on the cluster network, or at this machine, and
+the answer would be stored and served back at `/me/face`. So the fetch refuses
+anything that is not the open internet — loopback, private, link-local, shared
+address space, multicast — and checks the address actually being dialled rather
+than a hostname resolved beforehand, because a name resolved twice can answer
+public once and private once. Redirects are re-checked at every hop, since a
+redirect is a second URL nobody looked at.
+
+**Four formats, and `image/svg+xml` is refused on purpose.** An SVG is a
+document: it runs script, and one stored under somebody's avatar and served
+from this origin at `/me/face` is stored cross-site scripting. PNG, JPEG, GIF
+and WebP cover every avatar anyone serves. The bytes have to agree with the
+header the remote server sent, because the header is that server's opinion and
+the bytes are what a browser acts on; what is served back carries the type this
+product decided and `X-Content-Type-Options: nosniff`, so a mislabelled body
+cannot be promoted into something that runs.
+
 **No picture is a shape, not a hole.** The monogram takes the card stock, the
 3px outline and the sticker shadow every other object here is drawn with — one
 letter, taken from the first *letter* in the name rather than its first
