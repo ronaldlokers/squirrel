@@ -345,6 +345,59 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.49.0 — 31 August 2026
+
+**A press answers in the room it was made in.** Four reports from the phone in
+one evening, and three of them were one defect wearing different clothes.
+
+`pile.js` bound the dock's whole enhancement to `.slot[action="/capture"]`.
+That is the dock in Buddy's room, the pile and the two shelves — and not the
+dock in the agenda, the chores or the tasks, which post to their own routes. In
+those three nothing intercepted the press: the browser submitted the form
+itself, the server answered its 303 to `/`, and you arrived in Buddy having
+filed the thing in the room you had been standing in. The selector was written
+when there was one dock and never revisited when there were seven.
+
+**Binding it everywhere then found the second half.** Those three docks have no
+camera, and the handler read `input.files` off nothing. A throw inside a submit
+handler that has already called `preventDefault` is the worst shape a failure
+can take: the press does nothing, and says nothing about doing nothing.
+
+**Sixty-one redirects named `/`.** `answerWith` and every fallback in the
+package sent you to Buddy's room, which was the only room there was until
+28 August. They ask the request which room it is in now. This is the scriptless
+floor for the same bug, and it is why the fix is in two places rather than one.
+
+**Turning the calendar's month said the question again.** Paging to November
+left five "Which day?" in a record that is never rewritten — paging is not
+something you said. The turn comes back under the id it already has carrying
+`X-Replaces`, and the script swaps it where it stands; nothing is kept, so a
+reload shows the question once, in the month it was first asked in. Without the
+script it is kept and redrawn the old way, which is the floor holding.
+
+**An appointment can be at a quarter past.** The three times were the
+vocabulary rather than a shortcut, so this product could hold an appointment at
+09:00, 14:30 or 18:00 and no other. There is a field that takes any time now,
+with the three beside it filling it in, and the guard went from a membership
+test to a clock check. `TestATimeThatWasNeverOfferedDoesNothing` had pinned the
+old rule; it now pins what still holds — something that is not a time at all
+still does nothing.
+
+**The way out is named rather than narrated.** "close the door" was the
+product's voice doing the wrong job on the one control you look for by name at
+the moment something has gone wrong. It is **log out**, under an authored door
+with the way through it, on the same 2.4px round-capped stroke as the chevron
+and the camera.
+
+**Your face is round in the rail.** It drew a bare `<img class="youface">`, and
+the rule that rounds a picture is `.youface img` — which can never reach it. One
+markup in both places now.
+
+**Ten mutations, ten assertion failures.** Two of them are the ones worth
+keeping: reverting the dock's selector fails three rooms with "the press did
+nothing at all", and reverting the camera guard fails four. Neither would have
+been caught by reading the diff.
+
 ### The dev screen — 28 August 2026, unreleased
 
 **Everything this product looks like is compiled into the binary**, and that had
