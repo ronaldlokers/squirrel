@@ -44,7 +44,7 @@ func knowingHandler(s Store, opts Options) http.HandlerFunc {
 			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 				{Who: squirrel.SpeakerYou, Words: "what do you know about me"},
 				{Who: squirrel.SpeakerBuddy, Words: "I cannot reach that just now."},
-			}), "/")
+			}), backToTheRoom(r))
 			return
 		}
 
@@ -57,7 +57,7 @@ func knowingHandler(s Store, opts Options) http.HandlerFunc {
 				Words: "Nothing yet. I read back what we have said about once a week, " +
 					"and write down what it seems to show.",
 			})
-			answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+			answerWith(w, r, keepSaid(r.Context(), s, personID, said), backToTheRoom(r))
 			return
 		}
 
@@ -69,7 +69,7 @@ func knowingHandler(s Store, opts Options) http.HandlerFunc {
 
 		said = append(said, sayWithCards(
 			"This is what our conversations seem to show. I could be wrong about any of it.", sh))
-		answerWith(w, r, keepSaid(r.Context(), s, personID, said), "/")
+		answerWith(w, r, keepSaid(r.Context(), s, personID, said), backToTheRoom(r))
 	}
 }
 
@@ -93,7 +93,7 @@ func forgetKnowingHandler(s Store, opts Options) http.HandlerFunc {
 			{Who: squirrel.SpeakerYou, Words: "forget all of it"},
 			{Who: squirrel.SpeakerBuddy,
 				Words: "Forgotten. I will start again from what we say from here."},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 

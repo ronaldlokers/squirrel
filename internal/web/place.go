@@ -33,6 +33,6 @@ func freshHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "start fresh"},
 			pileTurn(r.Context(), s, opts, personID, 0, ""),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }

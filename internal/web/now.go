@@ -68,13 +68,13 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
 		kind := squirrel.OfferKind(r.FormValue("kind"))
 		if !offerKinds[kind] {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		// A missing or unparseable id is zero, which is what an offer that
@@ -91,7 +91,7 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 		case "start":
 			err = startFromOffer(s, r, personID)
 		default:
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		if err != nil {
@@ -102,7 +102,7 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 		// What the two of you said about it. After the write, because a
 		// conversation must not claim something happened that did not.
 		answerWith(w, r, keepSaid(r.Context(), s, personID,
-			saidAboutTheOffer(r.FormValue("act"), r.FormValue("label"))), "/")
+			saidAboutTheOffer(r.FormValue("act"), r.FormValue("label"))), backToTheRoom(r))
 	}
 }
 
@@ -128,7 +128,7 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		b, ok := squirrel.ParseBlocker(r.FormValue("why"))
@@ -136,7 +136,7 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 			// Not one of the four. Nothing is done and nothing is said: this
 			// arrives from a form, and a value that was never offered is read
 			// the way a stranger's typing is read.
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -157,7 +157,7 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 			// would replace the thing you have just said you cannot start.
 			forgetOffer(opts, personID)
 			answerWith(w, r, keepSaid(r.Context(), s, personID,
-				saidAboutTheOffer("later", r.FormValue("label"))), "/")
+				saidAboutTheOffer("later", r.FormValue("label"))), backToTheRoom(r))
 			return
 		}
 		// Broken into steps first, when that is what this blocker wants and
@@ -168,7 +168,7 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 			smallerFor(s, opts, r, b, o)
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID,
-			saidAboutBeingStuck(s, opts, r, personID, b)), "/")
+			saidAboutBeingStuck(s, opts, r, personID, b)), backToTheRoom(r))
 	}
 }
 

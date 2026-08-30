@@ -61,10 +61,18 @@
   // multipart form, which posts a photograph perfectly well and shows you
   // nothing — the floor, and it is the floor this was built on.
   (() => {
-    // The capture slot on home, camera or no camera. Two things live here and
-    // only one of them needs a camera: holding a chosen photograph, and
-    // keeping a capture without the page going anywhere.
-    const form = document.querySelector('form.slot[action="/capture"]');
+    // The dock, in whatever room this is. Camera or no camera, two things live
+    // here and only one of them needs a camera: holding a chosen photograph,
+    // and keeping a capture without the page going anywhere.
+    //
+    // Selected by what it is rather than where it posts. It was
+    // `.slot[action="/capture"]`, which is the dock in Buddy's room, the pile
+    // and the two shelves — and not the dock in the agenda, the chores or the
+    // tasks, which post to their own routes. In those three rooms nothing
+    // intercepted the press: the browser submitted the form itself, the server
+    // answered its 303, and you arrived in Buddy having filed something in the
+    // room you had been standing in. See TestBrowserEveryRoomsDockStaysPut.
+    const form = document.querySelector("form.slot");
     if (!form) return;
 
     // DataTransfer is how a file gets back onto an input. Without it a
@@ -260,7 +268,12 @@
       e.preventDefault();
       if (post.disabled) return;
 
-      const carrying = !!input.files?.length;
+      // `input?`, because three of the seven docks have no camera: the
+      // agenda, the chores and the tasks ask a question a photograph cannot
+      // answer. Reading `.files` off nothing threw here, and a throw inside a
+      // submit handler that has already prevented the default is a press that
+      // does nothing at all and says nothing about it.
+      const carrying = !!input?.files?.length;
       // The same bytes the form itself would have sent. FormData when there is
       // a file, because that is what multipart is for; URLSearchParams when
       // there is not, so the worker can still hold it offline.
@@ -290,7 +303,7 @@
           if (res.headers.get("X-Kept") === "1") {
             box.value = "";
             box.style.height = "auto";
-            if (input.files?.length) { input.value = ""; enctypeFor(); hide(); forget().catch(() => {}); }
+            if (input?.files?.length) { input.value = ""; enctypeFor(); hide(); forget().catch(() => {}); }
           }
           post.disabled = false;
           return;
@@ -306,7 +319,7 @@
         if (which === "kept" || which === "held") {
           box.value = "";
           box.style.height = "auto";
-          if (input.files?.length) { input.value = ""; enctypeFor(); hide(); forget().catch(() => {}); }
+          if (input?.files?.length) { input.value = ""; enctypeFor(); hide(); forget().catch(() => {}); }
         }
       } catch {
         // The network went while it was in the air. The words and the

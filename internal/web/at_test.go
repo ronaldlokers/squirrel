@@ -312,17 +312,29 @@ func TestThePickerAndTheSentenceAgreeAboutTheTime(t *testing.T) {
 	require.Equal(t, typed.Starts, f.moments[0].Starts)
 }
 
-// A time nobody offered does nothing, and the time is a real one: 25:99 proves
-// nothing, because the parser refuses that on its own. 03:00 is a time this
-// picker does not draw, and pressing it is something only a hand-made post can
-// do — which is exactly what arriving from a form means.
-func TestATimeThatWasNeverOfferedDoesNothing(t *testing.T) {
+// A time this picker does not draw is still a time. 03:00 was refused here
+// until 31 August 2026, when the three chips stopped being the vocabulary and
+// became a shortcut into a field that takes any of them.
+func TestATimeThePickerDoesNotDrawIsStillATime(t *testing.T) {
 	f := &fakeStore{}
 	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
 		"label=dentist&day="+now().AddDate(0, 0, 1).Format("2006-01-02")+"&at=03:00"))
 
-	require.Empty(t, f.moments)
-	require.Empty(t, f.appended)
+	require.Len(t, f.moments, 1)
+	require.Equal(t, 3, f.moments[0].Starts.Hour())
+}
+
+// What is refused is what is not a time at all. A form is the only thing that
+// can post one, and it must not reach the parser as a sentence.
+func TestSomethingThatIsNotATimeDoesNothing(t *testing.T) {
+	for _, at := range []string{"teatime", "1130", "25:99", "", "11:15 dentist"} {
+		f := &fakeStore{}
+		routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
+			"label=dentist&day="+now().AddDate(0, 0, 1).Format("2006-01-02")+"&at="+url.QueryEscape(at)))
+
+		require.Empty(t, f.moments, at)
+		require.Empty(t, f.appended, at)
+	}
 }
 
 // And a day in the past does nothing either: the picker offers none, and an
@@ -345,6 +357,18 @@ func TestTurningTheMonthAsksAgainAndMakesNothing(t *testing.T) {
 	require.Empty(t, f.moments)
 	require.Len(t, f.appended, 1, "turning a page is not something you said")
 	require.Contains(t, string(f.appended[0].Shown), `"month"`)
+}
+
+// The same press made by the script, which can put the new month where the old
+// one is. Then it is not said at all — see insteadOf.
+func TestTurningTheMonthForTheScriptSaysNothing(t *testing.T) {
+	f := &fakeStore{}
+	res := routed(t, f).callFragment(t, "/at/new",
+		"turn=7&label=dentist&month="+now().AddDate(0, 1, 0).Format("2006-01"))
+
+	require.Empty(t, f.moments)
+	require.Empty(t, f.appended, "paging a calendar was written into the conversation")
+	require.Equal(t, "turn-7", res.Header().Get("X-Replaces"))
 }
 
 // routedSplitting is a real mux with a coach that will split, for the routes

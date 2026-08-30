@@ -122,6 +122,20 @@
         return;
       }
       const html = await res.text();
+      // An answer that re-draws something already on the screen rather than
+      // adding to it — turning the calendar's month is the one that does this.
+      // It comes back under the id it already had; swapping it keeps the
+      // conversation the length it was, which is what paging should cost.
+      const instead = res.headers.get("X-Replaces");
+      if (instead && html.trim()) {
+        const there = document.getElementById(instead);
+        if (there) {
+          there.outerHTML = html;
+          const now = document.getElementById(instead);
+          announce(now?.querySelector(".calhead b")?.textContent || "");
+          return;
+        }
+      }
       // Nothing back means the server decided there was nothing to do — an
       // empty box, pressed. Say nothing; it did nothing.
       if (html.trim()) {
@@ -256,3 +270,17 @@
   // top, which is the beginning of everything you have ever said.
   toTheEnd();
 })();
+
+// The three times fill the field rather than being three of four answers.
+//
+// Delegated, because a calendar arrives in a fragment long after this file
+// ran. Enhancement only: with the script gone the chips do nothing and the
+// field still takes any time, which is the whole answer either way.
+document.addEventListener("click", event => {
+  const chip = event.target.closest?.("[data-at]");
+  if (!chip) return;
+  const field = chip.closest(".pickrow")?.querySelector(".attime");
+  if (!field) return;
+  field.value = chip.dataset.at;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+});

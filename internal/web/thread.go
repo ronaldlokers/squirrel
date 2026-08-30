@@ -394,7 +394,7 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		ctx := r.Context()
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		m, ok := squirrel.ParseMood(r.FormValue("mood"))
@@ -402,7 +402,7 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 			// Not one of the five. This arrives from a form, so it is read the
 			// way a stranger's typing is read: no answer rather than a wrong
 			// one, and nothing said about it in the record.
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		if err := s.RecordCheckin(ctx, personID, m, "screen", now()); err != nil {
@@ -423,7 +423,7 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(ctx, s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: squirrel.Words[m]},
 			{Who: squirrel.SpeakerBuddy, Words: "Noted.", Shown: again},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -632,6 +632,28 @@ func wantsFragment(r *http.Request) bool { return r.Header.Get("X-Thread") == "f
 
 // answerWith is what a press gets back: a fragment for the script, a redirect
 // for a browser posting a form.
+// insteadOf says this answer re-draws something already on the screen rather
+// than adding to it, and reports whether it can.
+//
+// Turning the calendar's month appended a whole new "Which day?" every time,
+// so paging through to November left five of them in a record that is never
+// rewritten. Paging is not something you said. The turn comes back under the
+// id it already had and the script swaps it in place, and nothing is kept — so
+// a reload shows the question once, in the month it was first asked in.
+//
+// Only for a press the script made. Without one there is nothing on the page
+// to swap, and the honest fallback is the old behaviour: keep it, and let the
+// redirect draw a conversation with the question in it. Enhancement only, the
+// way everything else on this screen is.
+func insteadOf(w http.ResponseWriter, r *http.Request, said *squirrel.Turn, replacing int64) bool {
+	if !wantsFragment(r) || replacing <= 0 {
+		return false
+	}
+	said.ID = replacing
+	w.Header().Set("X-Replaces", "turn-"+strconv.FormatInt(replacing, 10))
+	return true
+}
+
 func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, back string) {
 	if !wantsFragment(r) {
 		http.Redirect(w, r, back, http.StatusSeeOther)
@@ -689,12 +711,12 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		where := r.FormValue("where")
 		if _, ok := roomByKey(where); !ok {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		from, _ := strconv.Atoi(r.FormValue("from"))
@@ -1234,9 +1256,25 @@ type calDay struct {
 	Gone bool   `json:"gone,omitempty"`
 }
 
-// pickTimes are the hours offered: three and a way out. Anything else is a
-// sentence — the dock already understands "at 08:15 dentist".
+// pickTimes are the three the picker puts within one press. They are a
+// shortcut and not the vocabulary: the field beside them takes any time, which
+// is what an appointment at 11:15 needs and what three chips could never say.
 var pickTimes = []string{"09:00", "14:30", "18:00"}
+
+// aTimeOfDay is the guard on a value that arrives from a form: 24-hour, on the
+// clock, and nothing else. It was a membership test against the three chips,
+// which is why the field could not have existed beside them.
+func aTimeOfDay(at string) bool {
+	if len(at) != 5 || at[2] != ':' {
+		return false
+	}
+	h, err := strconv.Atoi(at[:2])
+	if err != nil || h > 23 {
+		return false
+	}
+	m, err := strconv.Atoi(at[3:])
+	return err == nil && m <= 59
+}
 
 // askForADay is the question. Monday first. Days already gone are drawn and not
 // offered, and there is no way back past this month.
@@ -1546,18 +1584,18 @@ func findHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		q := strings.TrimSpace(r.FormValue("q"))
 		if q == "" {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: q},
 			searchTurn(r.Context(), s, personID, q),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -1571,12 +1609,12 @@ func findOpenHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil || id < 1 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		it, found, err := s.ItemByID(r.Context(), personID, id)
@@ -1605,12 +1643,12 @@ func findOpenHandler(s Store, opts Options) http.HandlerFunc {
 		body, err := json.Marshal(drawn{Cards: []cardView{card}})
 		if err != nil {
 			slog.Error("drawing a result", "error", err)
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: v.Text},
 			{Who: squirrel.SpeakerBuddy, Words: "That one.", Shown: body},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }

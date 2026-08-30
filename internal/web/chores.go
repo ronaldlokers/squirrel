@@ -58,7 +58,7 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			d, ok := composeEvery(count, unit)
 			if !ok {
 				// Neither was offered. Nothing is done and nothing is said.
-				http.Redirect(w, r, "/", http.StatusSeeOther)
+				http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 				return
 			}
 			made, err := s.UpsertChore(r.Context(), personID, c.Name, d, squirrel.DefaultTolerance(d))
@@ -90,7 +90,7 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 				{Who: squirrel.SpeakerYou, Words: said},
 				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + said + " now."},
-			}), "/")
+			}), backToTheRoom(r))
 			return
 		}
 
@@ -111,7 +111,7 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 				{Who: squirrel.SpeakerYou, Words: every},
 				{Who: squirrel.SpeakerBuddy, Words: c.Name + " comes back " + every + " now."},
-			}), "/")
+			}), backToTheRoom(r))
 			return
 		}
 
@@ -136,7 +136,7 @@ func choreActHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		// What the two of you said about it, after the write, because a
 		// conversation must not claim something happened that did not.
-		answerWith(w, r, keepSaid(r.Context(), s, personID, saidAboutAChore(act, c.Name)), "/")
+		answerWith(w, r, keepSaid(r.Context(), s, personID, saidAboutAChore(act, c.Name)), backToTheRoom(r))
 	}
 }
 
@@ -232,7 +232,7 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 			every, ok = offered(r.FormValue("every"))
 		}
 		if !ok {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		part, ok := squirrel.ParseDayPart(r.FormValue("part"))
@@ -259,7 +259,7 @@ func newChoreHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: name + " — " + saidRhythm(c.Every)},
 			madeAChore(c),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -299,12 +299,12 @@ func oftenHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -333,7 +333,7 @@ func oftenHandler(s Store, opts Options) http.HandlerFunc {
 			{Who: squirrel.SpeakerYou, Words: "how often — " + c.Name},
 			askHowOften("/chores/act",
 				map[string]string{"id": strconv.FormatInt(c.ID, 10)}, count, unit, dayChosen(c)),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 

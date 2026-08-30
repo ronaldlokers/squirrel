@@ -82,7 +82,7 @@ func coachAskHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "ask Buddy"},
 			askInWords(question, "/buddy/say", "say it", nil),
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -97,7 +97,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -113,7 +113,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 		if said == "" {
 			// An empty press says nothing, so nothing is said back. Not an
 			// error: the box was there and you did not use it.
-			answerWith(w, r, nil, "/")
+			answerWith(w, r, nil, backToTheRoom(r))
 			return
 		}
 
@@ -124,7 +124,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 				{Who: squirrel.SpeakerYou, Words: said},
 				coachReply("Which of these is it?", true, false, nil, stepFor(s, opts, r)),
-			}), "/")
+			}), backToTheRoom(r))
 			return
 		}
 
@@ -137,7 +137,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 				{Who: squirrel.SpeakerYou, Words: said},
 				coachReply("I cannot think just now. Which of these is it?",
 					true, false, nil, stepFor(s, opts, r)),
-			}), "/")
+			}), backToTheRoom(r))
 			return
 		}
 
@@ -165,7 +165,7 @@ func coachSayHandler(s Store, opts Options) http.HandlerFunc {
 			turns = append(turns, alsoOffer(place, newChipFor(answer.Open)...))
 		}
 
-		answerWith(w, r, keepSaid(r.Context(), s, personID, turns), "/")
+		answerWith(w, r, keepSaid(r.Context(), s, personID, turns), backToTheRoom(r))
 	}
 }
 
@@ -185,7 +185,7 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 		// Back to where the rest of the screen is. Turning something down is
 		// the end of the conversation about it, not the start of one.
 		forget(opts, personID, roomOf(r.Context()))
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 		return
 	}
 
@@ -208,7 +208,7 @@ func answerBlocker(w http.ResponseWriter, r *http.Request, s Store, opts Options
 	answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 		{Who: squirrel.SpeakerYou, Words: squirrel.BlockerWords[b]},
 		coachReply(squirrel.UnstuckFor(b).Line, false, false, nil, stepFor(s, opts, r)),
-	}), "/")
+	}), backToTheRoom(r))
 }
 
 // coachBadlyHandler records that the last thing Buddy said did not land.
@@ -243,7 +243,7 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "that went badly"},
 			{Who: squirrel.SpeakerBuddy, Words: words},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 
@@ -330,7 +330,7 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -354,7 +354,7 @@ func coachDoHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID, []squirrel.Turn{
 			{Who: squirrel.SpeakerYou, Words: "keep it"},
 			{Who: squirrel.SpeakerBuddy, Words: "Kept."},
-		}), "/")
+		}), backToTheRoom(r))
 	}
 }
 

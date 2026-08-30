@@ -26,7 +26,7 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 
@@ -55,7 +55,7 @@ func timerHandler(s Store, opts Options) http.HandlerFunc {
 
 		mins, err := strconv.Atoi(r.FormValue("minutes"))
 		if err != nil || mins < shortestTimer || mins > longestTimer {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
 		label := strings.TrimSpace(r.FormValue("label"))
