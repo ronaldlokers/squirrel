@@ -182,6 +182,11 @@ type view struct {
 	// Camera is whether a photograph can be kept at all. False draws no
 	// camera: a control that cannot work is worse than one never drawn.
 	Camera bool
+	// Notifying is what the panel says about notifications, and empty when
+	// there is no key to subscribe with — a control that cannot work is
+	// furniture. The browser refines it: only the browser knows whether the
+	// permission was refused.
+	Notifying string
 	// PushKey is the VAPID public key, or empty when pushing is not
 	// configured. The script offers to subscribe only when there is one.
 	PushKey string
@@ -344,6 +349,23 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 	if personID, ok := personOf(r); ok {
 		v.Rooms = roomsFor(r.Context(), s, personID, roomOf(r.Context()))
 		v.You = youFor(r.Context(), s, personID)
+		// Whether anything would be sent to. Read here rather than asked of
+		// the browser, because the browser can only say whether it has been
+		// given permission — which is not the same question and was the whole
+		// of what the old one-shot button could report.
+		if opts.PushKey != "" {
+			on, err := s.Notifying(r.Context(), personID)
+			if err != nil {
+				// A state that cannot be read is not a state to guess at. The
+				// panel says so rather than claiming either answer.
+				slog.Error("reading whether we notify", "error", err)
+				v.Notifying = unknownIfNotifying
+			} else if on {
+				v.Notifying = notifying
+			} else {
+				v.Notifying = notNotifying
+			}
+		}
 	}
 	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
@@ -532,3 +554,13 @@ func fail(w http.ResponseWriter, err error) {
 // means. Nothing else in this package needs one, which is why it is here
 // rather than threaded through Options.
 var now = time.Now
+
+// What the settings panel says about notifications before the script has had a
+// look. Three states rather than a boolean, because "I could not read it" is an
+// answer and guessing either of the other two would be a screen that lies about
+// whether it can reach you.
+const (
+	notifying          = "on"
+	notNotifying       = "off"
+	unknownIfNotifying = "unknown"
+)

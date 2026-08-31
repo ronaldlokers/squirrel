@@ -1,21 +1,25 @@
 //go:build browser
 
-// Whether the one control that can turn push on is ever visible.
+// Whether the one control that can turn push on is ever visible, and whether it
+// can say what it is.
 //
-// It was not, for the whole life of the feature. The template ships the button
-// with `hidden` on it, and `pile.js` set `hidden = true` in the branch that
-// declines to offer it and attached a click listener in the branch that offers
-// it — without ever taking `hidden` off. So the offer could not be accepted,
-// permission was never requested, and `push_subscriptions` held zero rows on a
-// production database that had been running the feature for weeks.
+// It was not visible for the whole life of the feature. The template shipped
+// the button with `hidden` on it, and `pile.js` set `hidden = true` in the
+// branch that declines to offer it and attached a click listener in the branch
+// that offers it — without ever taking `hidden` off. So the offer could not be
+// accepted, permission was never requested, and `push_subscriptions` held zero
+// rows on a production database that had been running the feature for weeks.
 //
-// The existing test asserted `id="askPush"` was in the markup, which was true
-// and told nobody anything. DESIGN.md already carries the rule this needed,
+// The test that covered that asserted `id="askPush"` was in the markup, which
+// was true and told nobody anything. DESIGN.md carries the rule it needed,
 // written for the opposite direction: "when something is meant to disappear,
 // assert that it is invisible, not that it is unmarked." A thing meant to
 // appear wants the same assertion the other way up, and it has to come from a
 // browser — `hidden` plus the global `[hidden] { display: none !important }` is
 // a cascade result, not a string in a template.
+//
+// The control is a setting in the panel now rather than a one-shot button, so
+// there is a second thing to prove: that it says which way it is set.
 package web
 
 import (
@@ -45,53 +49,107 @@ func pushScreen(t *testing.T, f *fakeStore) *httptest.Server {
 	return srv
 }
 
+// The setting is inside a disclosure, so it is opened before it is measured:
+// a control nobody has opened to is not the thing under test.
+// A desktop width, because below 980px the rail is the room sheet's contents
+// and a control inside a closed sheet is display:none whatever its own
+// attribute says — which is the exact confusion this file exists to refuse.
+func openSettings(t *testing.T, c *cdp) {
+	t.Helper()
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false,
+	})
+	c.eval(t, `const d = document.querySelector(".youare"); if (d) d.open = true; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(() => r(1), 120))`)
+}
+
+// permitted grants the permission this browser would otherwise be asked for, so a
+// test about the "on" state is not really a test about "not asked yet".
+func permitted(t *testing.T, c *cdp, origin string) {
+	t.Helper()
+	c.send(t, "Browser.setPermission", map[string]any{
+		"permission": map[string]any{"name": "notifications"},
+		"setting":    "granted",
+		"origin":     origin,
+	})
+}
+
 func TestTheWayToTurnPushOnCanBeSeen(t *testing.T) {
 	srv := pushScreen(t, aPile())
 	c := browserAt(t, srv, "/")
+	openSettings(t, c)
 
 	require.Equal(t, "default", c.eval(t, `return Notification.permission`),
 		"this browser has already answered, so the test would pass for the wrong reason")
 
-	require.Equal(t, false, c.eval(t, `return document.getElementById("askPush").hidden`),
-		"the offer to turn push on is in the markup but cannot be seen, so it cannot be accepted")
+	require.Equal(t, false, c.eval(t, `return document.getElementById("pushon").hidden`),
+		"the way to turn notifications on is in the markup but cannot be seen")
 
 	// Not just the attribute: `[hidden]` is enforced globally with `!important`,
 	// so the property and the pixels are two different claims.
 	require.Equal(t, true, c.eval(t, `
-		const el = document.getElementById("askPush");
+		const el = document.getElementById("pushon");
 		const r = el.getBoundingClientRect();
 		return r.width > 0 && r.height > 0 && getComputedStyle(el).display !== "none";`),
 		"it takes up no space on the page")
 }
 
-// And it stays hidden where there is nothing behind it: a control that cannot
+// And it stays absent where there is nothing behind it: a control that cannot
 // change anything is furniture, which is the rule the original code was
 // enforcing correctly in the branch it got right.
 func TestTheWayToTurnPushOnIsAbsentWithoutAKey(t *testing.T) {
 	srv := screen(t, aPile())
 	c := browserAt(t, srv, "/")
+	openSettings(t, c)
 
-	require.Equal(t, nil, c.eval(t, `return document.getElementById("askPush")`),
-		"no key, no button at all")
+	require.Equal(t, nil, c.eval(t, `return document.getElementById("pushbit")`),
+		"no key, no setting at all")
 }
 
-// The way back once notifications have been refused. Issue #147: a browser that
-// has been told no will not ask again and this site cannot make it, so a no was
-// the end of it with nothing said.
-func TestARefusalSaysWhereTheSwitchIs(t *testing.T) {
-	body := withPush(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+// A setting says which way it is set. The old control could not: it hid itself
+// the moment it was answered, either way, so "on" and "refused" looked the same
+// from the outside — which is nothing at all.
+func TestTheSettingSaysWhetherItIsOn(t *testing.T) {
+	f := aPile()
+	f.notifying = true
+	srv := pushScreen(t, f)
+	c := browserAt(t, srv, "/")
+	permitted(t, c, srv.URL)
+	c.navigate(t, srv.URL+"/")
+	openSettings(t, c)
 
-	require.Contains(t, body, `id="pushRefused"`)
-	require.Contains(t, body, "Turn notifications on for this site")
-	// Hidden until the script has established that the answer was no. A page
-	// that says this to somebody who has not been asked is a page telling them
-	// off for a thing they did not do.
-	require.Contains(t, body, `id="pushRefused" class="pushrefused" hidden`)
+	require.Contains(t, c.eval(t, `return document.getElementById("pushsays").textContent`), "On.",
+		"the panel does not say that notifications are on")
+	require.Equal(t, false, c.eval(t, `return document.getElementById("pushoff").hidden`),
+		"there is no way to turn them off")
+	require.Equal(t, true, c.eval(t, `return document.getElementById("pushon").hidden`),
+		"it offers to turn on something that is already on")
+}
+
+// And the way back once a browser has refused. Issue #147: a browser that has
+// been told no will not ask again and this site cannot make it, so a no was the
+// end of it with nothing said.
+func TestARefusalSaysWhereTheSwitchIs(t *testing.T) {
+	srv := pushScreen(t, aPile())
+	c := browserAt(t, srv, "/")
+	c.send(t, "Browser.setPermission", map[string]any{
+		"permission": map[string]any{"name": "notifications"},
+		"setting":    "denied",
+		"origin":     srv.URL,
+	})
+	c.navigate(t, srv.URL+"/")
+	openSettings(t, c)
+
+	require.Contains(t, c.eval(t, `return document.getElementById("pushsays").textContent`),
+		"Turn notifications on for this site",
+		"a refusal says nothing about where the switch is")
+	require.Equal(t, true, c.eval(t, `return document.getElementById("pushon").hidden`),
+		"it offers a button the browser will not honour")
 }
 
 // And no key, no sentence: there is nothing to turn on.
 func TestNoKeyMeansNothingIsSaidAboutNotifications(t *testing.T) {
 	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 
-	require.NotContains(t, body, "pushRefused")
+	require.NotContains(t, body, "Notifications")
 }

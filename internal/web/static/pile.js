@@ -522,48 +522,78 @@
     return Uint8Array.from(raw, c => c.charCodeAt(0));
   }
 
-  // The button, which only appears when there is a key and permission has not
-  // been answered. Once it has been answered — either way — it goes: a control
-  // that cannot change anything is furniture, and one that asks again after a
-  // no is a nag.
-  const askPush = document.getElementById("askPush");
-  const refused = document.getElementById("pushRefused");
-  if (askPush) {
-    // Once a browser has been told no it will not ask again, and this site
-    // cannot re-ask. A button would be a control that cannot work, so what is
-    // shown instead is the only thing that can change it: where the switch is.
-    // Issue #147 — before this, a no was the end of it with nothing said.
-    if (refused && document.body.dataset.pushKey && "Notification" in window &&
-        Notification.permission === "denied") {
-      refused.hidden = false;
-    }
-    if (!document.body.dataset.pushKey || !("Notification" in window) ||
-        Notification.permission !== "default") {
-      askPush.hidden = true;
-    } else {
-      // Taking `hidden` off is the whole of this control working, and it was
-      // missing. The template ships the button hidden — which is right, because
-      // a control that flashes on and then decides it should not be there is
-      // worse than one that arrives a moment late — and this branch attached a
-      // listener to something nobody could press. Permission was therefore
-      // never requested on any device, `push_subscriptions` held zero rows, and
-      // every leave-by warning fanned out over an empty list in silence.
-      //
-      // The test that covered this asserted the button was in the markup. It
-      // was. See askpush_test.go.
-      askPush.hidden = false;
-      askPush.addEventListener("click", async () => {
-        askPush.hidden = true;
-        if (await Notification.requestPermission() !== "granted") {
-          // Said now rather than on the next visit: the moment you refused is
-          // the moment the sentence is about something you just did.
-          if (refused) refused.hidden = false;
-          return;
-        }
-        const registration = await navigator.serviceWorker.ready;
-        await subscribe(registration);
-      });
-    }
-  }
+  // Notifications, in the settings panel.
+  //
+  // It was a floating button reading "tell me when to leave" that hid itself
+  // for ever the moment it was answered either way — so once you had said yes
+  // there was nothing that said it was on, and once you had said no there was
+  // nothing at all. A setting you cannot read is not a setting.
+  //
+  // The server says whether it would send to anything; only the browser knows
+  // whether the permission was refused, and a refusal cannot be re-asked by a
+  // site. So the panel is drawn from the record and corrected here.
+  function theSetting() {
+    const bit = document.getElementById("pushbit");
+    if (!bit) return;
+    const says = document.getElementById("pushsays");
+    const on = document.getElementById("pushon");
+    const off = document.getElementById("pushoff");
+    const key = document.body.dataset.pushKey;
 
+    const can = key && "Notification" in window && "PushManager" in window;
+    if (!can) {
+      says.textContent = "This browser cannot take notifications.";
+      on.hidden = off.hidden = true;
+      return;
+    }
+    if (Notification.permission === "denied") {
+      // Once a browser has been told no it will not ask again and this site
+      // cannot re-ask, so a button here would be a control that cannot work.
+      // What is offered instead is the one thing that can change it: where the
+      // switch is. Issue #147 — before this, a no was the end of it in silence.
+      says.textContent = "Blocked by this browser. Turn notifications on for " +
+        "this site in its own settings and I can tell you when to leave.";
+      on.hidden = off.hidden = true;
+      return;
+    }
+    // Told, and still permitted: the record and the browser agree.
+    if (bit.dataset.state === "on" && Notification.permission === "granted") {
+      on.hidden = true;
+      off.hidden = false;
+      return;
+    }
+    on.hidden = false;
+    off.hidden = true;
+
+    on.addEventListener("click", async () => {
+      if (Notification.permission === "default" &&
+          await Notification.requestPermission() !== "granted") {
+        theSetting();
+        return;
+      }
+      await subscribe(await navigator.serviceWorker.ready);
+      says.textContent = "On. Squirrel can tell you when to leave for something.";
+      on.hidden = true;
+      off.hidden = false;
+    });
+
+    off.addEventListener("click", async () => {
+      // Both halves, or neither works. The browser's own subscription is the
+      // only thing that can stop a notification arriving; the row is the only
+      // thing that stops one being sent. Dropping one and not the other leaves
+      // either a notification from nowhere or a row sent to for ever.
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        await (await reg.pushManager.getSubscription())?.unsubscribe();
+      } catch {
+        // The browser would not let go. The server half still stops the
+        // sending, which is the half that decides whether anything arrives.
+      }
+      await fetch("/push/forget", { method: "POST", credentials: "same-origin" });
+      says.textContent = "Off. Squirrel will not interrupt you.";
+      off.hidden = true;
+      on.hidden = false;
+    });
+  }
+  theSetting();
 })();

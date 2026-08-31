@@ -1438,6 +1438,40 @@ into. Your face, your name, and the way out sit under the same rule the two
 non-places above them already follow: no box, cream ink, and *leaving must
 never look louder.*
 
+**Everything about you is in one place, and it is where it says who you are.**
+
+The identity block at the foot of the rail is a `<details>`: the face and the
+name are the summary, and the panel under them holds notifications, what
+Squirrel knows about you, and the way out. A disclosure rather than a page —
+settings is state rather than a conversation, the one thing on this screen that
+is neither, so it opens where it lives instead of being somewhere to go. With
+the script gone every control inside it is still a form and the disclosure is
+still the platform's own.
+
+**It was three transient chips.** A floating button reading *tell me when to
+leave* that hid itself the moment it was answered either way; *what do you know
+about me* beside one model-written reply; the mood history behind a chip that
+lasted one turn. None of the three had a state you could see or come back to —
+once notifications were on there was nothing that said so, and once they were
+refused there was nothing at all.
+
+**A setting says which way it is set.** Notifications read **on**, **off**, or
+**blocked by this browser**, and the state comes from two places because it
+lives in two: the server knows whether anything would be sent to, and only the
+browser knows whether the permission was refused. A refusal cannot be re-asked
+by a site, so what is offered there is the one thing that can change it — where
+the switch is. A state that cannot be read says *that*, rather than guessing at
+either answer.
+
+**The label names the setting; the sentence says what it does.** *Notifications*
+over "On. Squirrel can tell you when to leave for something." — the same
+division "log out" settled, and the reason *tell me when to leave* was the wrong
+label for a switch: it is a lovely sentence and a poor name for a thing with two
+positions.
+
+**The mood check-in stays in `everything`.** It is not a setting — it is a
+question the product asks, and it belongs where the asking happens.
+
 **The way out is named, not narrated** — **log out**, under a drawn door with
 the way through it. It was "lock it behind you" for an hour, which
 `TestChoresNeverCounts` refused — **behind** is on the same list as *overdue*,

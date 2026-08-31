@@ -98,6 +98,9 @@ func Mount(m Mux, s Store, opts Options) error {
 	// the client to stop asking.
 	if opts.PushKey != "" {
 		m.Post("/push/subscribe", guard(opts, sameOrigin(pushSubscribeHandler(s, opts))))
+		// And the way off. Not `posting`: this is a setting rather than
+		// something said, so it answers no turn and belongs in no room.
+		m.Post("/push/forget", guard(opts, sameOrigin(pushForgetHandler(s, opts))))
 	}
 	m.Post("/pile/act", posting(opts, actHandler(s, opts)))
 	// Starting fresh, when Buddy offers you back a run you were part way

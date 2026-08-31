@@ -59,11 +59,11 @@ func TestASubscriptionThatCouldNeverBeSentToIsRefused(t *testing.T) {
 func TestTheKeyIsOnThePageOnlyWhenThereIsOne(t *testing.T) {
 	with := withPush(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, with, `data-push-key="BKtestkey"`)
-	require.Contains(t, with, `id="askPush"`)
+	require.Contains(t, with, `id="pushbit"`, "no key on the page means no setting to use it")
 
 	without := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 	require.NotContains(t, without, "data-push-key")
-	require.NotContains(t, without, `id="askPush"`)
+	require.NotContains(t, without, `id="pushbit"`)
 }
 
 func postJSON(t *testing.T, m *testMux, path, body string) *httptest.ResponseRecorder {

@@ -167,25 +167,77 @@
        link would be broken and a cross-site GET away from being a way to sign
        somebody else out. */}}
   {{if .You.Known}}
-  <div class="whoami">
-    {{if .You.Face}}
-    <span class="youface"><img src="/me/face" alt="" width="36" height="36"></span>
-    {{else}}
-    <span class="youface mono" aria-hidden="true">{{.You.Letter}}</span>
-    {{end}}
-    {{if .You.Name}}<span class="whoname">{{.You.Name}}</span>{{end}}
-    <form method="post" action="/auth/out">
-      <button class="signout" type="submit">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
-             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M13 4H5v16h8"/>
-          <path d="M21 12H10"/>
-          <path d="M17 8l4 4-4 4"/>
-        </svg>
-        log out
-      </button>
-    </form>
-  </div>
+  {{/* Who you are, and everything about you this product can be asked to
+       change. One block, because they are one subject: the face and the name
+       say who is signed in and the panel under them is what being signed in
+       can be adjusted to.
+
+       A <details> rather than a page. Settings is a place with state rather
+       than a conversation, and it is the one thing on this screen that is
+       neither — so it opens where it lives instead of taking you somewhere.
+       With the script gone every control inside it is still a form and the
+       disclosure is still the platform's own. */}}
+  <details class="youare">
+    <summary class="whoami">
+      {{if .You.Face}}
+      <span class="youface"><img src="/me/face" alt="" width="36" height="36"></span>
+      {{else}}
+      <span class="youface mono" aria-hidden="true">{{.You.Letter}}</span>
+      {{end}}
+      {{if .You.Name}}<span class="whoname">{{.You.Name}}</span>{{end}}
+      <svg class="youarrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 10l5 5 5-5"/>
+      </svg>
+    </summary>
+
+    <div class="youset">
+      {{/* Notifications, with a state rather than an offer.
+
+           It was one floating button reading "tell me when to leave", which
+           hid itself for ever the moment it was answered either way — so once
+           you had said yes there was no way to see that it was on, and once
+           you had said no there was no way to anything at all. A setting you
+           cannot read is not a setting.
+
+           The label names the setting and the sentence under it says what it
+           does, which is the same division "log out" settled. */}}
+      {{if .Notifying}}
+      <div class="youbit" id="pushbit" data-state="{{.Notifying}}">
+        <p class="youname">Notifications</p>
+        <p class="yousays" id="pushsays">
+          {{if eq .Notifying "on"}}On. Squirrel can tell you when to leave for something.
+          {{else if eq .Notifying "off"}}Off. Squirrel will not interrupt you.
+          {{else}}I cannot tell just now whether this is on.{{end}}
+        </p>
+        <button class="youdo" id="pushon" type="button" hidden>Turn on</button>
+        <button class="youdo" id="pushoff" type="button" {{if ne .Notifying "on"}}hidden{{end}}>Turn off</button>
+      </div>
+      {{end}}
+
+      {{/* What is behind an answer, asked for from here rather than caught as
+           a chip beside one reply. It answers in the conversation you are in,
+           which is where an answer belongs. */}}
+      <form class="youbit" method="post" action="/knowing">
+        {{if .Here}}<input type="hidden" name="room" value="{{.Here}}">{{end}}
+        <p class="youname">What Squirrel knows about you</p>
+        <p class="yousays">What it has worked out, and the way to make it forget.</p>
+        <button class="youdo" type="submit">Show me</button>
+      </form>
+
+      <form method="post" action="/auth/out">
+        <button class="signout" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 4H5v16h8"/>
+            <path d="M21 12H10"/>
+            <path d="M17 8l4 4-4 4"/>
+          </svg>
+          log out
+        </button>
+      </form>
+    </div>
+  </details>
   {{end}}
 </nav>
 

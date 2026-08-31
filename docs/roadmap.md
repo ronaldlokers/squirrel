@@ -345,6 +345,42 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.53.0 — 31 August 2026
+
+**Everything about you is in one place, and it is where it says who you are.**
+
+Three account-level concerns were transient chips that scrolled away: a floating
+button reading *tell me when to leave* that hid itself the moment it was
+answered either way, *what do you know about me* beside one model-written reply,
+and the mood history behind a chip that lasted a turn. None had a state you
+could see or come back to. Once notifications were on there was nothing that
+said so; once they were refused there was nothing at all.
+
+**The identity block is a disclosure now.** Face and name as the summary;
+notifications, what Squirrel knows, and the way out inside. A panel rather than
+a page — settings is state rather than a conversation, the one thing on this
+screen that is neither.
+
+**A setting says which way it is set**, and the state comes from two places
+because it lives in two. `Store.Notifying` answers whether anything would be
+sent to; only the browser knows whether the permission was refused, and a
+refusal cannot be re-asked by a site, so what is offered there is where the
+switch is. A state that cannot be read says so rather than guessing.
+
+**And there is a way off**, which there has never been. `StopNotifying` retires
+every browser with the same `gone_at` a dead endpoint gets — a subscription you
+turned off and one that stopped answering are the same thing to the sender, and
+a second column would be a second thing to check before every send. The script
+drops the browser's own subscription in the same press: either half alone
+leaves a notification from nowhere, or a row sent to for ever.
+
+**The label names the setting; the sentence says what it does.** *tell me when
+to leave* is a lovely sentence and a poor name for a thing with two positions —
+the same lesson "close the door" taught two releases ago.
+
+**The mood check-in stays in `everything`,** on the owner's call. It is not a
+setting; it is a question the product asks, and it belongs where the asking is.
+
 ### v0.52.0 — 31 August 2026
 
 **A room's list stops being a turn, and the chores stop going stale.**

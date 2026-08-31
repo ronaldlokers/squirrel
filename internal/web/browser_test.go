@@ -649,7 +649,11 @@ func TestBrowserNothingPaintsOverTheOpenRoomSheet(t *testing.T) {
 
 	// The last thing in the rail, which is the one most likely to be under
 	// something. It was the stopping link until 31 August 2026, when that
-	// screen went; it is the way out of the product now.
+	// screen went, and then the way out — which is inside the settings panel
+	// now, so the panel is opened first: a control nobody has opened to is not
+	// the thing this is about.
+	c.eval(t, `const d = document.querySelector(".youare"); if (d) d.open = true; return 1`)
+	c.eval(t, `return new Promise(r => setTimeout(() => r(1), 120))`)
 	hit := c.eval(t, `
 		const out = document.querySelector(".rail .signout");
 		out.scrollIntoView({block: "center"});
