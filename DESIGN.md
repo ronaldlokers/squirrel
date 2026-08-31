@@ -2364,6 +2364,41 @@ the live edge holds one thing.
 
 ### The Conversation
 
+**When it was said, once per run, under the face.**
+
+Added 31 August 2026, because the record goes back weeks and nothing on it said
+when anything was. Two rules make it a conversation rather than a log:
+
+- **One time per run, where the face goes.** Consecutive turns by one speaker
+  are one utterance — that is already why a face is drawn once per run rather
+  than on every line — and one time is the whole truth about an utterance. A
+  clock on every bubble is a minute-by-minute record of your afternoon, which is
+  the thing the run-resumption sentence refuses a clock time to avoid.
+- **The day is a seam, not a stamp.** A divider carries *today*, *yesterday*, or
+  the date, centred across the conversation and only where the day turns over.
+  Those two words by name because they are the days you are most often looking
+  for and a date makes you work out which one it was. A date on every line to
+  answer the same question would be the log again.
+
+**It lives in the gutter, under the face, and that took three attempts.** In the
+words' column it pushed every run down by the height of an avatar — the face
+stopped sitting beside what was said. In the gutter on its own line below the
+turn it read as a label on whatever came next. Face and time are one element
+now, so the time belongs to the run that starts there and the words keep the
+face's line. All three were correct markup and only the third is right, which is
+why `TestBrowserTheTimeDoesNotPushTheWordsOffTheFacesLine` measures boxes rather
+than reading the DOM.
+
+Cream rather than a dimmed paper: cream is the quietest colour that still
+measures 4.8:1 on the field, and a time you have to work to read is a time doing
+nothing. Tabular figures, because every one of them is four characters wide and
+proportional digits make a column of them ragged. 24-hour, which is what the
+agenda and the day picker already speak.
+
+**Read in your zone, never the container's.** `Options.Location` reaches the
+turn through the same middleware that carries who you are; a time drawn off the
+process clock is issue #148 again.
+
 **Buddy's words are in a tint. Yours are in stock. Neither is the other.**
 
 Two kinds of thing wore one costume until 26 August 2026: a sentence and an

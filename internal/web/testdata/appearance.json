@@ -298,7 +298,7 @@
       "font-size": "16px",
       "font-variation-settings": "\"CASL\" 0, \"MONO\" 0",
       "letter-spacing": "normal",
-      "margin": "287.25px 169px 0px",
+      "margin": "253.75px 169px 0px",
       "min-height": "auto",
       "outline-color": "rgb(255, 251, 243)",
       "padding": "22px 22px 0px",
@@ -382,6 +382,28 @@
       "text-transform": "none",
       "transform": "none",
       "width": "533.906px"
+    },
+    ".whenday": {
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border-radius": "0px",
+      "border-width": "0px",
+      "box-shadow": "none",
+      "color": "rgb(254, 214, 167)",
+      "display": "block",
+      "font-size": "11.5px",
+      "font-variation-settings": "\"CASL\" 0, \"MONO\" 0, \"wght\" 700",
+      "letter-spacing": "1.15px",
+      "margin": "12px 0px 2px",
+      "min-height": "auto",
+      "outline-color": "rgb(254, 214, 167)",
+      "padding": "0px",
+      "text-decoration-line": "none",
+      "text-transform": "uppercase",
+      "transform": "none",
+      "width": "676px"
+    },
+    ".whensaid": {
+      "missing": "yes"
     },
     ".wordmark": {
       "background-color": "rgba(0, 0, 0, 0)",

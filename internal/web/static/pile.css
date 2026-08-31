@@ -1112,6 +1112,47 @@
     text-shadow: none;
   }
 
+  /* When it was said, once per run, in the same column as the words.
+     
+     Cream rather than a dimmed paper: on the purple field cream measures
+     4.8:1, and anything quieter than the quietest passing colour is a time you
+     cannot read at a glance — which is the whole of what it is for. The
+     precise axis and tabular figures because it is a measurement: proportional
+     digits make a column of times ragged where every one of them is four
+     characters wide.
+     
+     No date on it. The divider above carries the day, so the line here never
+     grows past a clock — four characters, which is what lets it live in the
+     gutter under the face rather than taking a row of its own above the words.
+     It had one for an hour: the face stopped sitting beside what was said and
+     every run grew by the height of an avatar. */
+  .whensaid {
+    color: var(--cream);
+    font: 400 11px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise), "wght" 560;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
+  }
+
+  /* The day, between the last turn of one and the first of the next.
+     
+     Centred and the full width of the conversation, which is what tells you it
+     is a seam rather than something either speaker said. It carries no rule or
+     line: a horizontal rule across a conversation is a divider drawn twice,
+     and the space either side already says the same thing.
+     
+     Today and yesterday by name. A date makes you work out which day it was,
+     and those two are the ones you are most often looking for. */
+  .whenday {
+    margin: 12px 0 2px;
+    text-align: center;
+    color: var(--cream);
+    font: 400 11.5px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: var(--precise), "wght" 700;
+    text-transform: uppercase; letter-spacing: .1em;
+  }
+  .thread > .whenday:first-child { margin-top: 0; }
+
   .turn {
     display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr);
     align-items: start; column-gap: 10px; row-gap: 10px;
@@ -1129,7 +1170,6 @@
     max-width: 80%;
   }
   .fromyou > * { grid-column: 1; }
-  .fromyou .youface { grid-column: 2; grid-row: 1; }
 
   /* Nothing around the face.
      
@@ -1142,8 +1182,17 @@
      face; a silhouette has to fit the ears and the headphones inside the same
      width, so at the same size the face itself comes out about a fifth
      smaller. Six pixels of gutter buys that back. */
-  .buddyface {
+  /* Who spoke, and when, as one thing in the gutter. Placed after `.turn > *`
+     deliberately: that rule sends every child to the words' column at the same
+     specificity, so a placement written above it loses and the face lands in
+     the middle of the conversation. */
+  .whoat {
     grid-column: 1; grid-row: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .fromyou .whoat { grid-column: 2; grid-row: 1; }
+
+  .buddyface {
     width: var(--gutter); height: auto;
     display: block;
   }
@@ -1154,7 +1203,6 @@
      when there is no picture the letter has to make its own shape, so it takes
      the card stock and the outline every other object here is drawn with. */
   .youface {
-    grid-column: 1; grid-row: 1;
     width: var(--gutter); height: auto;
     display: block;
   }

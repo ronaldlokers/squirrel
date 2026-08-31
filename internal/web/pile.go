@@ -41,7 +41,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	}
 	// Every handler can find out who is asking, without fifty routes each
 	// remembering to arrange it. See knowsYou.
-	m = knowsYou(m, s)
+	m = knowsYou(m, s, opts.Location)
 	if opts.Gate == nil {
 		return fmt.Errorf("refusing to mount the pile: no way in")
 	}

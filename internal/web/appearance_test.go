@@ -82,6 +82,10 @@ var appearanceScreens = map[string][]string{
 		// phone is held by nothing, and saying so is better than a line that
 		// looks like cover.
 		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",
+		// When it was said and which day it was. Both are quiet text on the
+		// field, which is exactly the kind of thing a colour change elsewhere
+		// takes with it without anybody noticing.
+		".whensaid", ".whenday",
 		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
 		".dock", ".slot", ".slot textarea", ".slot .post",
 	},
