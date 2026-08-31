@@ -95,3 +95,38 @@ func TestTheConversationSaysWhenItWas(t *testing.T) {
 		"the day is said more than once for one day")
 	require.Contains(t, body, `<p class="whenday">today</p>`)
 }
+
+// The check-in is drawn and never written, so asking every hour does not fill a
+// record whose job is to hold what you said. Your answer is kept; the question
+// is not.
+func TestTheCheckinIsDrawnAndTheAnswerIsKept(t *testing.T) {
+	f := &fakeStore{}
+	m := routed(t, f)
+
+	body := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, body, "how do you feel")
+	require.Empty(t, f.appended, "the question was written into the record")
+
+	m.callFragment(t, "/mood", "room=everything&mood=calm")
+
+	require.NotEmpty(t, f.appended, "the answer was not kept")
+	require.Equal(t, squirrel.MoodCalm, f.recorded, "the reading was not kept")
+	for _, said := range f.appended {
+		require.NotContains(t, said.Words, "how do you feel",
+			"answering wrote the question into the record after all")
+	}
+}
+
+// Sixteen a day is what an hourly question costs a record that keeps it. Drawn,
+// it costs nothing however many times you arrive.
+func TestArrivingAgainDoesNotStackTheQuestion(t *testing.T) {
+	f := &fakeStore{}
+	m := routed(t, f)
+
+	for i := 0; i < 5; i++ {
+		body := m.call(t, "GET", "/", nil).Body.String()
+		require.Equal(t, 1, strings.Count(body, "how do you feel"),
+			"the question is on the screen more than once")
+	}
+	require.Empty(t, f.appended)
+}

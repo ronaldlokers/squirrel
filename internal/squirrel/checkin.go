@@ -68,8 +68,27 @@ type Checkin struct {
 // Fresh reports whether this reading still describes now. Six hours: a stale
 // reading is not a bad one, it is simply not an answer to the question being
 // asked, and treating it as one lets a rough Tuesday govern a fine Thursday.
+//
+// Not the same question as JustAsked, and they were one constant until
+// 31 August 2026. "Does this still describe you" and "should I ask again" are
+// different, and answering both with six hours meant asking more often would
+// have quietly shortened how long a wiped afternoon kept Squirrel gentle.
 func (c Checkin) Fresh(now time.Time) bool {
 	return now.Sub(c.SaidAt) < 6*time.Hour
+}
+
+// askAgainAfter is how long the check-in waits before asking again. An hour, on
+// the owner's instruction: how you are is a thing that changes inside a day and
+// a question that comes twice a day is a question about a different day.
+//
+// What makes an hour bearable is that the question is drawn and never written —
+// see view.Edge. Kept, it would be sixteen "how do you feel?" in a record whose
+// job is to hold what you said.
+const askAgainAfter = time.Hour
+
+// JustAsked reports whether this was answered recently enough to leave alone.
+func (c Checkin) JustAsked(now time.Time) bool {
+	return now.Sub(c.SaidAt) < askAgainAfter
 }
 
 // moodWindow is how far back the readings go: a fortnight, long enough to see

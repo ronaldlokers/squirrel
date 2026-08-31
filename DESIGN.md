@@ -1470,7 +1470,21 @@ label for a switch: it is a lovely sentence and a poor name for a thing with two
 positions.
 
 **The mood check-in stays in `everything`.** It is not a setting — it is a
-question the product asks, and it belongs where the asking happens.
+question the product asks, and it belongs where the asking happens. It is asked
+**every hour**, and it is drawn at the edge rather than written.
+
+That pairing is the whole of it. The question was a turn on the argument that a
+question the record cannot show you answering is half-recorded — an argument
+made when it came four times a day. At hourly it inverts: sixteen "how do you
+feel?" would be most of a record whose job is to hold what *you* said. Drawn, it
+costs nothing however many times you arrive, and your answer is still kept —
+the reading has always lived in its own table, and the "calm / Noted." pair is
+written by the answer's own handler.
+
+**Two clocks, not one.** *Should I ask again* is an hour; *does this reading
+still describe you* is six. They were one constant, and asking more often would
+have quietly shortened how long a wiped afternoon keeps Squirrel gentle — which
+is a different question that deserves its own answer.
 
 **The way out is named, not narrated** — **log out**, under a drawn door with
 the way through it. It was "lock it behind you" for an hour, which
