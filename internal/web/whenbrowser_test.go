@@ -32,7 +32,7 @@ func TestBrowserTheTimeDoesNotPushTheWordsOffTheFacesLine(t *testing.T) {
 	c.until(t, "the times", `document.querySelectorAll(".whensaid").length >= 2`)
 
 	require.Equal(t, true, c.eval(t, `
-		return [...document.querySelectorAll(".turn")].filter(t => t.querySelector(".whoat")).every(t => {
+		return [...document.querySelectorAll(".turn")].filter(t => t.querySelector(".whensaid")).every(t => {
 			const face = t.querySelector(".buddyface, .youface");
 			const words = t.querySelector(".bub, .said");
 			if (!face || !words) return true;

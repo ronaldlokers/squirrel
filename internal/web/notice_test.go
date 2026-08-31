@@ -31,7 +31,8 @@ func TestADoorMaySayWhatItNoticed(t *testing.T) {
 
 	f.appended = nil
 	m.call(t, "GET", "/r/tasks", nil)
-	said := f.appended[len(f.appended)-1].Words
+	drew := drewInWith(t, f, c.options(signedInOptions()), "tasks")
+	said := drew[len(drew)-1].Words
 
 	require.Contains(t, said, "3 things you decided")
 	require.Contains(t, said, "all about the car")
@@ -69,12 +70,9 @@ func TestASetThatChangedIsNoticedAgain(t *testing.T) {
 func TestWithNoCoachADoorJustCounts(t *testing.T) {
 	noticed.Clear()
 	f := someTasks(3)
-	m := routed(t, f)
+	drew := drewIn(t, f, "tasks")
 
-	f.appended = nil
-	m.call(t, "GET", "/r/tasks", nil)
-
-	require.Equal(t, "3 things you decided.", f.appended[len(f.appended)-1].Words)
+	require.Equal(t, "3 things you decided.", drew[len(drew)-1].Words)
 }
 
 // One thing is not a set, and "one thing you notice about this one thing" is a
@@ -96,13 +94,11 @@ func TestADoorThatCannotAskStillOpens(t *testing.T) {
 	noticed.Clear()
 	f := someTasks(3)
 	c := &fakeCoach{err: errTest}
-	m := mountedWith(t, f, c)
+	drew := drewInWith(t, f, c.options(signedInOptions()), "tasks")
+	last := drew[len(drew)-1]
 
-	f.appended = nil
-	m.call(t, "GET", "/r/tasks", nil)
-
-	require.Equal(t, "3 things you decided.", f.appended[len(f.appended)-1].Words)
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "a thing about the car")
+	require.Equal(t, "3 things you decided.", last.Words)
+	require.Contains(t, string(last.Shown), "a thing about the car")
 }
 
 // The bounds are the product's, not the model's, and they are checked rather
@@ -131,12 +127,9 @@ func TestTheChoresMaySayWhatTheyNoticed(t *testing.T) {
 		{ID: 2, Name: "recycling out", Active: true, Every: 14 * 24 * time.Hour, EveryDays: 14},
 	}}
 	c := &fakeCoach{reply: "both of these are bin day"}
-	m := mountedWith(t, f, c)
+	drew := drewInWith(t, f, c.options(signedInOptions()), "chores")
 
-	f.appended = nil
-	m.call(t, "GET", "/r/chores", nil)
-
-	require.Contains(t, f.appended[len(f.appended)-1].Words, "both of these are bin day")
+	require.Contains(t, drew[len(drew)-1].Words, "both of these are bin day")
 }
 
 // It shipped as a sync.Map nothing ever evicted, growing by one entry per

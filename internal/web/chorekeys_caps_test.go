@@ -25,7 +25,7 @@ func TestBrowserTheLiveEdgeWearsItsLetters(t *testing.T) {
 		"the four letters are not on the four buttons they press")
 
 	require.Equal(t, true, c.eval(t, `
-		const last = document.querySelector("#thread .turn:last-child");
+		const last = document.querySelector("#edge .turn:last-child");
 		return [...document.querySelectorAll(".key")].every(k =>
 			k.closest(".turn") === last && k.getAttribute("aria-hidden") === "true")`),
 		"a keycap is outside the live edge, or is not hidden from a screen reader")

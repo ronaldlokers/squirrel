@@ -259,6 +259,15 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
+		// Everything has no list of its own, so its edge is empty — but the
+		// script asks whichever room it is standing in, and a handler that
+		// ignored the ask would answer with the whole page and have it pasted
+		// into the element the ask was about.
+		if r.Header.Get("X-Edge") == "1" {
+			edgeOnly(w, r, nil)
+			return
+		}
+
 		buddy, _ := roomByKey("everything")
 		v := view{
 			Home:   true,
@@ -1724,5 +1733,66 @@ func findOpenHandler(s Store, opts Options) http.HandlerFunc {
 			{Who: squirrel.SpeakerYou, Words: v.Text},
 			{Who: squirrel.SpeakerBuddy, Words: "That one.", Shown: body},
 		}), backToTheRoom(r))
+	}
+}
+
+// atTheEdge draws what is true now.
+//
+// The same turn machinery the record uses, with two differences that matter.
+// Nothing here has an id, because nothing here is a row anybody can point at —
+// and two live turns both called turn-0 would be one element as far as the
+// script is concerned. Everything here is live, because the whole of what it
+// is for is being the thing you can act on.
+func atTheEdge(ctx context.Context, where string, turns []squirrel.Turn) []turnView {
+	out := turnViews(ctx, turns)
+	for i := range out {
+		out[i].ID = 0
+		out[i].Live = true
+		out[i].Day, out[i].When = "", ""
+		// Said here, because nothing said it. turnView.Room comes off the
+		// stored turn and an edge turn was never stored, so every form it
+		// draws would post with no room on it and every press would land in
+		// everything — the defect #221 was about, arriving by a new road.
+		out[i].Room = where
+	}
+	return out
+}
+
+// saidAndDone takes the controls off the record when there is an edge below it.
+//
+// Only the newest thing may be acted on — that rule is older than the edge and
+// is why a question from this morning is a thing that was asked rather than a
+// thing to answer. With the room's list drawn below the conversation, the
+// newest thing is down there, and a live turn in the scrollback would be a
+// second set of buttons for the same room.
+func saidAndDone(said []turnView, hasEdge bool) []turnView {
+	if !hasEdge {
+		return said
+	}
+	for i := range said {
+		said[i].Live = false
+	}
+	return said
+}
+
+// edgeOnly answers with the edge and nothing around it.
+//
+// The same template the page uses, so there is one description of a list
+// rather than two that can disagree — the argument every fragment on this
+// screen is written under.
+func edgeOnly(w http.ResponseWriter, r *http.Request, edge []turnView) {
+	t := pages["thread"]
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	// Said back, so the script can tell this answer from a page. A handler that
+	// did not know about X-Edge would answer with the whole screen, and the
+	// script would paste a page into the element it asked about — which is what
+	// happened on the front door before this header existed.
+	w.Header().Set("X-Edge", "1")
+	for _, v := range edge {
+		if err := t.ExecuteTemplate(w, "turn", v); err != nil {
+			slog.Error("drawing the edge", "error", err)
+			return
+		}
 	}
 }

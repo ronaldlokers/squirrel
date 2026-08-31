@@ -1186,12 +1186,26 @@ func pressedShelf(t *testing.T, f *fakeStore, which string) *httptest.ResponseRe
 // that assert on the write rather than on a rendering of it.
 func drewIn(t *testing.T, f *fakeStore, where string) []squirrel.Turn {
 	t.Helper()
+	// A shelf is a press and a press is kept, so what it drew is in the record.
 	if shelfByKey(where) {
 		pressedShelf(t, f, where)
 		return f.appended
 	}
+	// A room's list is drawn and not kept since 31 August 2026 — see
+	// view.Edge — so the record is the wrong place to look for it. This asks
+	// the room the same question the handler asks; that the handler asks it is
+	// covered by the tests that read the rendered page.
+	return drewInWith(t, f, signedInOptions(), where)
+}
+
+// drewInWith is the same for a room whose list depends on something in the
+// options — a coach that says what it noticed about a set, which is the only
+// one there is.
+func drewInWith(t *testing.T, f *fakeStore, opts Options, where string) []squirrel.Turn {
+	t.Helper()
 	routed(t, f).call(t, "GET", "/r/"+where, nil)
-	return f.appended
+	ctx := context.WithValue(context.Background(), whoKey{}, who{personID: 1})
+	return roomEdge(ctx, f, opts, 1, where)
 }
 
 // What Squirrel thinks it knows, faked. The weekly pass that writes these is

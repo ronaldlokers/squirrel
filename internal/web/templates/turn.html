@@ -10,7 +10,7 @@
      part of one: it belongs to the gap between two turns, and it is the whole
      width of the conversation because that is what a divider is. */}}
 {{if .Day}}<p class="whenday">{{.Day}}</p>{{end}}
-<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal .Say .Cut}} wide{{end}}" id="turn-{{.ID}}">
+<div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal .Say .Cut}} wide{{end}}"{{if .ID}} id="turn-{{.ID}}"{{end}}>
   {{/* A face where a speaker starts speaking, once per run.
 
        Yours was refused here until 30 August 2026, on the argument that a

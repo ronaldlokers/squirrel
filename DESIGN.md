@@ -2362,6 +2362,44 @@ card with the same DONE / KEEP / DROP the pile draws, built from the note's
 real state. One at a time, which is the rule the whole conversation runs on —
 the live edge holds one thing.
 
+### The Conversation and the Edge
+
+**Two containers, one column.** `#thread` is what was said. `#edge` below it is
+what is true now: a room's list, and the check-in when it is time to ask. They
+share every layout rule — measure, gutter, padding, the run spacing — because
+the seam between them is a fact about where words are *kept*, not something the
+eye should have to find.
+
+**Why the edge exists.** A room wrote its list into the conversation and then
+refused to write it again while the last turn still had anything to act on —
+which a list always does. So the chores you came back to were a photograph of
+the first time you opened the room, with a chore you had already done still
+asking. The guard was not the bug; the bug was that **a list is not something
+somebody said.** State kept as history is stale by definition.
+
+Nothing in the edge is written, so it cannot go stale and cannot pile up. It
+carries no id and no time — an id would be `turn-0` on every one of them, and a
+time on what is true *now* is a clock on the present tense.
+
+**One place carries the controls.** Only the newest thing may be acted on, and
+with the list below the conversation the newest thing is down there; the
+scrollback is drawn with its buttons off. A question in progress is the one
+exception and it owns the keys, because a question is always the newest thing
+said rather than part of a list.
+
+**A press answers in two places.** The conversation gains what you said and
+Buddy's reply; the edge is asked for again and replaced. One extra GET per
+press, deliberately — the alternative is threading a store and a room through
+fifty `answerWith` call sites so a press can render its own list. The answer
+carries `X-Edge: 1` and the script refuses anything without it, because a
+handler that did not know the header would answer with the whole screen and
+have it pasted into the element that asked.
+
+**Focus survives the swap.** On the chores the focus *is* the selection — the
+letters act on the card you are focused in — so the edge is put back by position
+and class after it is replaced. Losing it silently means the next letter acts on
+nothing, or on the wrong card.
+
 ### The Conversation
 
 **When it was said, once per run, under the face.**

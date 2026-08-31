@@ -34,10 +34,31 @@
     drawKeys();
   }
 
+  // Where the live edge is.
+  //
+  // It was always the last turn in the conversation, and since 31 August 2026
+  // a room draws its list below the conversation instead of writing it into
+  // one — so the thing you can act on is down there when there is a down
+  // there. Every keyboard shortcut and every retirement asks this rather than
+  // assuming, because assuming is what left the letters on nothing.
+  const edge = () => document.getElementById("edge");
+  function liveTurn() {
+    // A question in progress owns the keys, and a question is always the
+    // newest thing said rather than part of a room's list. Without this the
+    // letters aimed at an interval picker went to the list underneath it and
+    // acted on somebody else's note.
+    const said = thread.querySelector(".turn:last-child");
+    if (said && said.querySelector(".pick, .calbox, .wordbox, .cut")) return said;
+    return edge()?.querySelector(".turn:last-child") || said;
+  }
+
   // Controls belong to the live edge alone. When new turns arrive the turns
   // that were the edge stop being it — the same rule the server renders by,
   // applied to what is already on the screen. Without this a card keeps a
   // button that acts on a state nobody is looking at any more.
+  //
+  // Never the edge itself: what is down there is what is true now, and it is
+  // the one thing on the screen that has not stopped being the edge.
   function retire() {
     thread.querySelectorAll(".turn .turnacts, .turn .turnchips, .turn .faces")
       .forEach(el => el.remove());
@@ -57,6 +78,7 @@
   window.__threadAppend = html => {
     retire();
     thread.insertAdjacentHTML("beforeend", html);
+    refreshTheEdge();
     toTheEnd();
     // `.said` as well as `.bub`, and this is not a tidy-up.
     //
@@ -147,6 +169,7 @@
         // words ever reach the page unescaped. Nothing here ever writes text
         // that did not come back from the server.
         thread.insertAdjacentHTML("beforeend", html);
+        refreshTheEdge();
         const box = form.querySelector("textarea");
         if (box) { box.value = ""; box.style.height = "auto"; }
         if (file && file.files?.length) file.value = "";
@@ -194,8 +217,8 @@
   }
 
   function drawKeys() {
-    thread.querySelectorAll(".key").forEach(el => el.remove());
-    const last = thread.querySelector(".turn:last-child");
+    document.querySelectorAll(".key").forEach(el => el.remove());
+    const last = liveTurn();
     if (!last) return;
 
     for (const [letter, act] of Object.entries(PILE_KEYS)) {
@@ -225,7 +248,7 @@
   // Only the interval question: a digit inside the day picker would be a day of
   // the month, and guessing which of the two you meant would book the wrong one.
   function askedAKey(event) {
-    const pick = thread.querySelector(".turn:last-child .pick");
+    const pick = liveTurn()?.querySelector(".pick");
     if (!pick) return false;
 
     if (event.key === "Enter") {
@@ -258,13 +281,64 @@
     if (!act) return;
     // The live edge only, and only when it is holding a note out: the same
     // rule the server renders by.
-    const card = thread.querySelector(".turn:last-child .turncard");
+    const card = liveTurn()?.querySelector(".turncard");
     const press = card?.querySelector(`input[name="act"][value="${act}"]`)?.form
       ?.querySelector("button");
     if (!press) return;
     event.preventDefault();
     press.click();
   });
+
+  // What is true now, asked for again because a press has just changed it.
+  //
+  // The room's list is drawn rather than remembered, and a press answers into the
+  // conversation — so without this the list above your answer still describes the
+  // world as it was before you pressed. That is the staleness the edge exists to
+  // end, one element further down.
+  //
+  // One extra GET per press, deliberately: the alternative is threading a store
+  // and a room through fifty answerWith call sites so a press can render its own
+  // list, which is fifty chances to render somebody else's.
+  async function refreshTheEdge() {
+    const edge = document.getElementById("edge");
+    if (!edge || typeof fetch !== "function") return;
+    try {
+      const res = await fetch(location.pathname, {
+        credentials: "same-origin", headers: { "X-Edge": "1" },
+      });
+      // The answer has to say it is one. Without this a handler that does not
+      // know the header answers with the whole screen and it lands inside the
+      // element that asked — a page pasted into the room it is already in, which
+      // is the bug this product keeps finding new roads to.
+      if (!res.ok || res.redirected || res.headers.get("X-Edge") !== "1") return;
+
+      // Where the keyboard was, so it can be put back. Replacing the edge
+      // throws away the element holding focus, and on the chores the focus
+      // *is* the selection — the letters act on the card you are focused in,
+      // so losing it means the next letter acts on nothing or on the wrong
+      // one. By position and by class, because the element itself is gone.
+      const was = edge.contains(document.activeElement) ? document.activeElement : null;
+      const cards = [...edge.querySelectorAll("article")];
+      const wasIn = was ? cards.indexOf(was.closest("article")) : -1;
+      const wasOn = (was?.className || "").trim();
+
+      edge.innerHTML = await res.text();
+      // The letters belong to the live edge and the live edge has just been
+      // replaced, so they are on nothing until they are drawn again.
+      drawKeys();
+
+      if (wasIn >= 0) {
+        const card = edge.querySelectorAll("article")[wasIn];
+        const back = (wasOn && card?.querySelector("." + wasOn.split(/\s+/).join(".")))
+          || card?.querySelector("button, summary");
+        back?.focus();
+      }
+    } catch {
+      // The network went. The conversation still holds the answer, and the list
+      // is right again on the next arrival — which is the floor this whole
+      // change is built on.
+    }
+  }
 
   // Open at the end of the conversation. Without this the page opens at the
   // top, which is the beginning of everything you have ever said.

@@ -53,9 +53,9 @@ func TestBrowserTurningTheMonthDoesNotSayItAgain(t *testing.T) {
 	srv := screen(t, aPile())
 	c := browserAt(t, srv, "/r/at")
 	c.navigate(t, srv.URL+"/r/at")
-	c.until(t, "the agenda", `!!document.querySelector("#thread .turn")`)
+	c.until(t, "the agenda", `!!document.querySelector("#edge .turn")`)
 
-	c.eval(t, `const b = [...document.querySelectorAll("#thread form button")]
+	c.eval(t, `const b = [...document.querySelectorAll("#edge form button")]
 		.find(x => x.textContent.includes("appointment"));
 		b.closest("form").requestSubmit(b); return 1`)
 	settle(t, c)
@@ -85,9 +85,9 @@ func TestBrowserTheTimeIsAFieldAndNotThreeAnswers(t *testing.T) {
 	srv := screen(t, aPile())
 	c := browserAt(t, srv, "/r/at")
 	c.navigate(t, srv.URL+"/r/at")
-	c.until(t, "the agenda", `!!document.querySelector("#thread .turn")`)
+	c.until(t, "the agenda", `!!document.querySelector("#edge .turn")`)
 
-	c.eval(t, `const b = [...document.querySelectorAll("#thread form button")]
+	c.eval(t, `const b = [...document.querySelectorAll("#edge form button")]
 		.find(x => x.textContent.includes("appointment"));
 		b.closest("form").requestSubmit(b); return 1`)
 	settle(t, c)

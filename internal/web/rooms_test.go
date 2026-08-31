@@ -88,18 +88,53 @@ func TestEnteringARoomWritesNothingWhenItAlreadyEndsOpen(t *testing.T) {
 }
 
 // The room's own turn goes in the room, not in the record Buddy's room holds.
-func TestEnteringARoomPutsItsTurnInThatRoom(t *testing.T) {
-	f := &fakeStore{}
+// Entering a room writes nothing at all, and draws what is true now.
+//
+// It wrote its list into the conversation until 31 August 2026, which is why a
+// chore you had done was still on the screen asking: the room refused to write
+// the list a second time while the first one was still the last thing said.
+// See view.Edge.
+func TestEnteringARoomWritesNothingAndDrawsWhatIsThere(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, Name: "the bins", EveryDays: 7, SinceDays: 8, Active: true},
+	}}
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
 	rec := m.call(t, "GET", "/r/chores", nil)
+
 	require.Equal(t, 200, rec.Code)
-	require.NotEmpty(t, f.appended, "the chores drew nothing")
-	for _, turn := range f.appended {
-		require.Equal(t, "chores", turn.Room,
-			"a turn drawn in the chores landed in %q", turn.Room)
+	require.Empty(t, f.appended, "entering a room wrote to the record")
+	require.Contains(t, rec.Body.String(), "the bins", "the chores drew nothing")
+}
+
+// And what it draws is current, however many times you come back.
+//
+// The conversation holds a list from an earlier visit, which is what used to
+// stop a room drawing anything at all: endsOpen saw cards on the last turn and
+// said nothing more. Read on the edge alone and never on the whole page — the
+// old list is still in the scrollback, so a page-wide assertion would pass on
+// the very thing this is about.
+func TestARoomIsCurrentEveryTimeYouComeBack(t *testing.T) {
+	f := &fakeStore{
+		chores: []squirrel.Chore{
+			{ID: 2, Name: "water the plants", EveryDays: 3, SinceDays: 4, Active: true},
+		},
+		turns: []squirrel.Turn{{
+			ID: 1, Who: squirrel.SpeakerBuddy, Words: "1 comes back.",
+			Shown: []byte(`{"cards":[{"kind":"chore","title":"the bins"}]}`),
+		}},
 	}
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, signedInOptions()))
+
+	body := m.call(t, "GET", "/r/chores", nil).Body.String()
+	edge := body[strings.Index(body, `id="edge"`):]
+
+	require.Contains(t, edge, "water the plants",
+		"the room drew nothing, because the conversation already ended open")
+	require.NotContains(t, edge, "the bins",
+		"the edge is showing a chore that is only in the scrollback")
 }
 
 // A typo is not a page. Not a redirect to Buddy either: a URL that silently

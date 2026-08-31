@@ -1068,8 +1068,15 @@
      sits above the dock and a long one scrolls from its beginning. */
   .threadpage .scroll > :first-child { margin-block-start: auto; }
 
-  /* THE TRANSCRIPT. */
-  .thread {
+  /* THE TRANSCRIPT, and the edge below it.
+     
+     One set of rules for both, because they are one column as far as anybody
+     reading is concerned — the seam between what was said and what is true now
+     is a fact about where the words are kept, not something the eye should
+     have to find. The edge had none of this for an hour and the gutter went
+     with it: `--gutter` is declared here, so a face outside this rule had no
+     width to take and rendered at whatever the image happened to be. */
+  .thread, .edge {
     --gutter: 40px;
     width: min(720px, 100%); margin: 0 auto;
     /* No bottom clearance here — see main.threadpage, which is the last thing
@@ -1152,6 +1159,11 @@
     text-transform: uppercase; letter-spacing: .1em;
   }
   .thread > .whenday:first-child { margin-top: 0; }
+  /* No padding above the edge: it is the same column continuing, and a second
+     22px there would draw a line nobody asked for between the conversation and
+     the thing you are meant to act on. */
+  .edge { padding-top: 0; }
+  .edge:empty { display: none; }
 
   .turn {
     display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr);
@@ -1350,7 +1362,7 @@
   .dock .slot { width: min(676px, 100%); margin: 0 auto; }
 
   @media (max-width: 620px) {
-    .thread, .worked { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
+    .thread, .edge, .worked { --gutter: 36px; padding: 18px 14px 0; gap: 8px; }
     .turn { max-width: 96%; }
     .fromyou { max-width: 88%; }
     .dock { padding: 8px 14px max(10px, env(safe-area-inset-bottom)); }

@@ -201,6 +201,20 @@ type view struct {
 	// Turns is the conversation, oldest first. The screen is one page now;
 	// see internal/web/thread.go.
 	Turns []turnView
+	// Edge is what is true now rather than what was said: a room's list, and the
+	// check-in when it is time to ask. Drawn on every arrival and written to the
+	// record never.
+	//
+	// It was a turn until 31 August 2026, and that is why the chores went stale.
+	// A room appended its list to the conversation and then refused to append it
+	// again while the last turn had anything on it to act on — which a list
+	// always does — so what you came back to was a photograph of the first time
+	// you opened the room, with a chore you had already done still asking.
+	//
+	// The category error underneath: a list is not something somebody said. The
+	// record is the conversation; this is the state, and state kept as history
+	// is stale by definition.
+	Edge []turnView
 	// MoreAbove and Oldest are the page above this one. Oldest is the id the
 	// "earlier" control walks back from.
 	MoreAbove bool

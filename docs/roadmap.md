@@ -345,6 +345,40 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.52.0 — 31 August 2026
+
+**A room's list stops being a turn, and the chores stop going stale.**
+
+Reported as "can't get to the list of chores", and it was worse than that. A
+room wrote its list into the conversation and then refused to write it again
+while the last turn still had something on it to act on — which a list always
+does. So every visit after the first showed a photograph of the first one: a
+chore you had done still asking, a count that no longer counted anything.
+
+**The category error is the finding.** A list is not something somebody said.
+The record is the conversation; the list is the state; state kept as history is
+stale by definition. `#edge` is a second container below `#thread` holding what
+is true now, drawn on every arrival and written nowhere. `endsOpen` no longer
+guards it, because there is nothing to duplicate into.
+
+**A press answers in two places** — the conversation gains what you said, and
+the edge is asked for again and replaced. The answer carries `X-Edge: 1` and the
+script refuses anything without it: a handler that did not know the header
+answered with the whole screen, and it landed inside the element that asked. The
+front door was doing exactly that for an hour.
+
+**Three things only a browser could have caught.** The edge had none of the
+transcript's layout, so `--gutter` was undeclared and Buddy's face rendered at
+118px. The keyboard shortcuts assumed the live edge was the last turn in the
+conversation, which is where it stopped being. And replacing the edge threw away
+whatever had focus — on the chores the focus *is* the selection, so the next
+letter would have acted on nothing.
+
+**A test of mine was vacuous and a mutation found it.** It asserted the room
+redraws by looking for a chore name anywhere on the page, and the name was also
+in the scrollback. It reads the edge alone now, and only then did restoring the
+old guard fail it.
+
 ### v0.51.0 — 31 August 2026
 
 **The conversation says when it was.** The record goes back weeks and nothing on
