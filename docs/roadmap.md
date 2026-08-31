@@ -345,6 +345,35 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.55.1 — 31 August 2026
+
+**How you felt before is a turn, not a page.**
+
+The last screen in this product that was not a conversation. Six weeks by seven
+days, reached by a link from a chip that lasted one turn — so asking for it took
+you out of the room you were standing in, and it was reachable from nowhere else
+at all. It is a press now, from that chip and from the settings panel, and it
+draws where you are.
+
+**Kept rather than drawn**, unlike a room's list, and the difference is the
+point: a list is the state and goes stale, where a reading you asked for in
+August is what August looked like. The same rule the two shelves follow.
+
+**The grid is unchanged** — the gaps drawn as empty outlines, nothing counted or
+trended. It moved into `drawn` and spans the turn's full width the way the faces
+and the pickers do.
+
+**A vocabulary rule caught the settings label.** "How you have been" was the
+obvious name and *you have been* is on the same list as *overdue* and *streak*:
+a phrase that characterises the person rather than reporting what they said.
+`TestTheCheckinSaysNothingAboutYou` scans the whole page and refused it. It is
+*how you felt before* in both places now, which is the name the chip already
+had.
+
+**`/moods` answers 301** — it may be on a home screen — and `backFrom` loses its
+one remaining destination, because there is nowhere else a timer can be stopped
+from.
+
 ### v0.54.0 — 31 August 2026
 
 **How you feel, asked every hour, in the room where the asking happens.**

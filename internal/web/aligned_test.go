@@ -85,7 +85,14 @@ func aFortnight() *fakeStore {
 // not flex.
 func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	srv := screen(t, aFortnight())
-	c := browserAt(t, srv, "/moods")
+	c := browserAt(t, srv, "/")
+	c.navigate(t, srv.URL+"/")
+	// A turn rather than a page since 31 August 2026, so it is asked for the
+	// way a person asks for it.
+	c.until(t, "the settings panel", `!!document.querySelector('form[action="/me/moods"]')`)
+	c.eval(t, `const f = document.querySelector('form[action="/me/moods"]');
+		f.requestSubmit(f.querySelector("button")); return 1`)
+	c.until(t, "the readings", `document.querySelectorAll(".weekrow").length === 6`)
 
 	starts := numbers(t, c, "return ("+lefts+`)(".weekrow .dots")`)
 	require.Len(t, starts, 6, "the screen did not draw six weeks")

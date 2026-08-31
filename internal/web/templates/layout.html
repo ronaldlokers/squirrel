@@ -218,6 +218,20 @@
       {{/* What is behind an answer, asked for from here rather than caught as
            a chip beside one reply. It answers in the conversation you are in,
            which is where an answer belongs. */}}
+      {{/* How you have been, asked for from here as well as from the chip
+           beside the answer you just gave. It answers in the conversation you
+           are in — the same place the shelves answer. */}}
+      <form class="youbit" method="post" action="/me/moods">
+        {{if .Here}}<input type="hidden" name="room" value="{{.Here}}">{{end}}
+        {{/* The chip's own name, and not "how you have been": *you have been*
+             is on the same list as *overdue* and *streak* — a phrase that
+             characterises the person rather than reporting what they said.
+             TestTheCheckinSaysNothingAboutYou refuses it, and caught this. */}}
+        <p class="youname">How you felt before</p>
+        <p class="yousays">The last six weeks, as you said them. Nothing is counted.</p>
+        <button class="youdo" type="submit">Show me</button>
+      </form>
+
       <form class="youbit" method="post" action="/knowing">
         {{if .Here}}<input type="hidden" name="room" value="{{.Here}}">{{end}}
         <p class="youname">What Squirrel knows about you</p>

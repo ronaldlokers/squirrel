@@ -1,6 +1,8 @@
 package web
 
 import (
+	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -22,16 +24,42 @@ func moodsHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
-		readings, err := s.CheckinsSince(r.Context(), personID, squirrel.MoodCalendarStart(now()))
+		ctx := r.Context()
+		readings, err := s.CheckinsSince(ctx, personID, squirrel.MoodCalendarStart(now()))
 		if err != nil {
-			fail(w, err)
+			// A grid that cannot be read is a sentence saying so, in the
+			// conversation you asked from. Everything else on this screen
+			// answers a failure that way, and a page of nothing was the only
+			// reason this one did not.
+			slog.Error("reading how you have been", "error", err)
+			answerWith(w, r, keepSaid(ctx, s, personID, []squirrel.Turn{
+				{Who: squirrel.SpeakerYou, Words: howYouFeltBefore},
+				{Who: squirrel.SpeakerBuddy, Words: "I cannot reach those just now."},
+			}), backToTheRoom(r))
 			return
 		}
-		renderWith(w, r, s, opts, "moods", view{
-			Here: "moods", Scrolling: true, Weeks: moodWeeks(readings, now()),
-		})
+
+		weeks := moodWeeks(readings, now())
+		said := squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "The last six weeks."}
+		if len(weeks) == 0 {
+			said.Words = "You have not said how you are lately."
+		} else if body, err := json.Marshal(drawn{Weeks: weeks}); err != nil {
+			slog.Error("drawing how you have been", "error", err)
+		} else {
+			said.Shown = body
+		}
+
+		answerWith(w, r, keepSaid(ctx, s, personID, []squirrel.Turn{
+			{Who: squirrel.SpeakerYou, Words: howYouFeltBefore},
+			said,
+		}), backToTheRoom(r))
 	}
 }
+
+// howYouFeltBefore is what the chip says and what the record says you said. One
+// string, because a chip whose label and whose echo differ is two things as far
+// as anybody reading the conversation back is concerned.
+const howYouFeltBefore = "how you felt before"
 
 // moodWeeks lays the readings out as six weeks by seven days.
 //

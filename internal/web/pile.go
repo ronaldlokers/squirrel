@@ -211,9 +211,16 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Setting something aside and picking it back up. What you set aside is a
 	// message now — see elsewhere.go.
 	m.Post("/held/act", posting(opts, heldActHandler(s, opts)))
-	// How you have been, and only when asked for by name. Nothing links here
-	// except the check-in you just answered.
-	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
+	// How you have been, asked for by name from the settings panel or from the
+	// chip beside the answer you just gave. A press rather than a page since
+	// 31 August 2026: it was the last screen in this product that was not a
+	// conversation, and asking for it took you out of the room you were in.
+	m.Post("/me/moods", posting(opts, moodsHandler(s, opts)))
+	// The page it was. A bookmark that dies quietly is worse than a redirect
+	// nobody notices.
+	m.Get("/moods", guard(opts, func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+	}))
 	m.Post("/tasks/act", posting(opts, taskActHandler(s, opts)))
 	m.Post("/tasks/new", posting(opts, newTaskHandler(s, opts)))
 	m.Post("/chores/act", posting(opts, choreActHandler(s, opts)))

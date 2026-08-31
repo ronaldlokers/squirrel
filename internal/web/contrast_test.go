@@ -194,7 +194,7 @@ func TestEveryWordCanBeRead(t *testing.T) {
 		// task card, a note being triaged and the interval picker on it, and
 		// the dock.
 		"/",
-		"/moods", "/r/notes",
+		"/r/chores", "/r/notes",
 		"/at/4",
 	}
 

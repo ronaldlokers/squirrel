@@ -322,7 +322,7 @@ func TestNoScreenSaysWhatItHasCostBeforeYouAsk(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
 	m := mountedWith(t, withOffer(nil), c)
 
-	for _, path := range []string{"/", "/moods"} {
+	for _, path := range []string{"/", "/r/chores"} {
 		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
 			"the spend leaked onto %s", path)
 	}

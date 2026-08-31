@@ -32,7 +32,7 @@ func TestARunningTimerShowsOnEveryScreen(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	for _, url := range []string{"/", "/moods"} {
+	for _, url := range []string{"/", "/r/chores"} {
 		body := m.call(t, "GET", url, nil).Body.String()
 		require.Contains(t, body, "the kitchen", url)
 		require.Contains(t, body, `class="running"`, url)
@@ -62,7 +62,10 @@ func TestStoppingATimerLeavesNothing(t *testing.T) {
 	w := post(t, mounted(t, f), "/timer", url.Values{"stop": {"1"}, "from": {"moods"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/moods", w.Header().Get("Location"), "back where you pressed it")
+	// The readings were the last screen that was not a conversation and they
+	// are a turn now, so there is nowhere else a timer can have been stopped
+	// from — every way back is the conversation.
+	require.Equal(t, "/", w.Header().Get("Location"), "back where you pressed it")
 	require.Nil(t, f.timer)
 }
 
