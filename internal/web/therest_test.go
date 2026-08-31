@@ -33,9 +33,8 @@ func TestTheRestOfTheTasksIsTheRestOfTheTasks(t *testing.T) {
 	f := nineTasks()
 	m := routed(t, f)
 
-	f.appended = nil
-	m.call(t, "GET", "/r/tasks", nil)
-	first := string(f.appended[len(f.appended)-1].Shown)
+	drew := drewIn(t, f, "tasks")
+	first := string(drew[len(drew)-1].Shown)
 	require.Contains(t, first, "decided thing a")
 	require.Contains(t, first, "decided thing e")
 	require.NotContains(t, first, "decided thing f")
@@ -91,9 +90,8 @@ func TestTheRestOfTheChores(t *testing.T) {
 	f := &fakeStore{chores: chores}
 	m := routed(t, f)
 
-	f.appended = nil
-	m.call(t, "GET", "/r/chores", nil)
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"from":"5"`)
+	drew := drewIn(t, f, "chores")
+	require.Contains(t, string(drew[len(drew)-1].Shown), `"from":"5"`)
 
 	f.appended = nil
 	m.call(t, "POST", "/open", strings.NewReader("where=chores&from=5"))
@@ -114,9 +112,8 @@ func TestTheAgendaOffersTheRest(t *testing.T) {
 	f := &fakeStore{upcoming: coming}
 	m := routed(t, f)
 
-	f.appended = nil
-	m.call(t, "GET", "/r/at", nil)
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), `"from":"5"`)
+	drew := drewIn(t, f, "at")
+	require.Contains(t, string(drew[len(drew)-1].Shown), `"from":"5"`)
 
 	f.appended = nil
 	m.call(t, "POST", "/open", strings.NewReader("where=at&from=5"))

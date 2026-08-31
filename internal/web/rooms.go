@@ -234,16 +234,29 @@ func roomHandler(s Store, opts Options) http.HandlerFunc {
 			turns, more = nil, false
 		}
 
-		// The room's own current state. Never while walking back — reading the
-		// past must not add to it — and never onto a conversation that already
-		// ends with something to act on.
-		if !walkingBack && !unreadable && !endsOpen(turns) {
-			if reply, has := placeSaid(ctx, s, opts, personID, here.Key, 0); has {
-				saved := keepSaid(ctx, s, personID, []squirrel.Turn{
-					alsoOffer(reply, newChipFor(here.Key)...),
-				})
-				turns = append(turns, saved...)
-			}
+		// The room's own current state, drawn and not kept. Never while walking
+		// back: reading the past must not put the present in the middle of it.
+		//
+		// There is no endsOpen guard any more and that is the whole fix. It
+		// existed because the list was written into the record, so drawing it
+		// twice meant saying the same thing twice — and refusing to draw it
+		// meant a chore you had done was still on the screen asking. A list
+		// that is drawn every time is current every time and duplicates
+		// nothing, because it is nowhere to duplicate into.
+		var edge []squirrel.Turn
+		if !walkingBack && !unreadable {
+			edge = roomEdge(ctx, s, opts, personID, here.Key)
+		}
+
+		// The edge on its own, for a press that has just changed what is in it.
+		//
+		// A press appends its answer to the conversation and leaves the list
+		// above it describing the world as it was a moment ago — the same
+		// staleness this change is about, one element down. The script asks
+		// for this the moment a press lands.
+		if r.Header.Get("X-Edge") == "1" {
+			edgeOnly(w, r, atTheEdge(ctx, here.Key, edge))
+			return
 		}
 
 		v := view{
@@ -253,7 +266,8 @@ func roomHandler(s Store, opts Options) http.HandlerFunc {
 			Thread:    true,
 			Here:      here.Key,
 			Scrolling: true,
-			Turns:     turnViews(r.Context(), turns),
+			Turns:     saidAndDone(turnViews(r.Context(), turns), len(edge) > 0),
+			Edge:      atTheEdge(r.Context(), here.Key, edge),
 			MoreAbove: more,
 		}
 		if len(turns) > 0 {
@@ -364,4 +378,18 @@ func backToTheRoom(r *http.Request) string {
 		return "/"
 	}
 	return "/r/" + where
+}
+
+// roomEdge is what a room is showing you right now: its list, and the way to
+// make one more.
+//
+// Its own function because it is what the room means, and because a test about
+// what a room draws should be asking the thing the room asks rather than
+// reading a record that no longer holds it.
+func roomEdge(ctx context.Context, s Store, opts Options, personID int64, where string) []squirrel.Turn {
+	reply, has := placeSaid(ctx, s, opts, personID, where, 0)
+	if !has {
+		return nil
+	}
+	return []squirrel.Turn{alsoOffer(reply, newChipFor(where)...)}
 }

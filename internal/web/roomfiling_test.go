@@ -157,6 +157,9 @@ func TestEveryFormATurnDrawsCarriesItsRoom(t *testing.T) {
 	body := m.call(t, "GET", "/r/chores", nil).Body.String()
 
 	// Only the turns, not the rail or the dock, which are tested elsewhere.
+	// The conversation and the edge below it — the room's list is drawn there
+	// rather than written into the record since 31 August 2026, and it is the
+	// list that carries most of the forms.
 	turns := body[strings.Index(body, `<div class="thread"`):]
 	turns = turns[:strings.Index(turns, `<div class="dock">`)]
 

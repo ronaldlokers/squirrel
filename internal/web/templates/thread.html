@@ -48,6 +48,14 @@
   {{range .Turns}}{{template "turn" .}}{{end}}
 </div>
 
+{{/* What is true now, which is not what was said.
+     
+     Its own element and outside #thread, because a press appends to the
+     conversation and replaces this — the two answers to one press go to two
+     places. Everything in here is drawn on arrival and written nowhere, so it
+     cannot go stale and cannot pile up. See view.Edge. */}}
+<div class="edge" id="edge">{{range .Edge}}{{template "turn" .}}{{end}}</div>
+
 {{/* Anything the script changes without a navigation is said out loud here
      too, or the screen is silent for exactly the person who cannot see it
      change. */}}

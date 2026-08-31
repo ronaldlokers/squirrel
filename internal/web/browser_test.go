@@ -425,10 +425,13 @@ func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
 	}
 	c, srv := open(t, f)
 	c.navigate(t, srv.URL+"/r/notes")
-	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
+	c.until(t, "the note to arrive", `!!document.querySelector("#edge .turncard")`)
 
 	c.key(t, "k")
-	c.until(t, "it to be kept", `document.querySelectorAll("#thread .turn").length >= 4`)
+	// Two turns: what the letter did, and what Buddy said back. The room's own
+	// list is not among them any more — it is drawn below the conversation
+	// rather than written into it, so the conversation starts empty here.
+	c.until(t, "it to be kept", `document.querySelectorAll("#thread .turn").length >= 2`)
 
 	require.Equal(t, squirrel.ItemKept, f.states[9], "the letter did not act")
 }
@@ -441,7 +444,7 @@ func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
 	}
 	c, srv := open(t, f)
 	c.navigate(t, srv.URL+"/r/notes")
-	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
+	c.until(t, "the note to arrive", `!!document.querySelector("#edge .turncard")`)
 
 	c.eval(t, `document.querySelector(".dock textarea").focus()`)
 	c.key(t, "k")

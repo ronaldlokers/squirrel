@@ -260,11 +260,10 @@ func TestBuddysRoomHoldsNothing(t *testing.T) {
 			"Buddy's room drew a place")
 	}
 
-	// And the pile's does, so this measured the difference rather than an
-	// empty store.
-	f.appended = nil
-	m.call(t, "GET", "/r/notes", nil)
-	require.NotEmpty(t, f.appended)
+	// And the notes' does, so this measured the difference rather than an empty
+	// store. Drawn rather than kept since 31 August 2026 — see view.Edge — so
+	// the difference is read where a room's list now lives.
+	require.NotEmpty(t, drewIn(t, f, "notes"), "the notes drew no place")
 }
 
 // Nothing here renders a total, in either direction. The conversation is a
