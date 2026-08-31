@@ -62,3 +62,25 @@ func pushSubscribeHandler(s Store, opts Options) http.HandlerFunc {
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
+
+// pushForgetHandler is the way off, and it is half of the answer.
+//
+// The other half is the browser's own subscription, which only the browser can
+// drop — so the script unsubscribes there and posts here, and either half
+// alone leaves a notification that arrives from nowhere or a row that is sent
+// to for ever. Answering 204 rather than a fragment: this changes a setting,
+// and a setting is not something said.
+func pushForgetHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := s.StopNotifying(r.Context(), personID, now()); err != nil {
+			fail(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

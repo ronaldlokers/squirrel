@@ -122,6 +122,9 @@ type fakeStore struct {
 	// The conversation: what has been said, what this render said, and
 	// whether there is a page above.
 	turns       []squirrel.Turn
+	notifying   bool
+	notifyErr   error
+	stopped     bool
 	roomRead    string
 	appended    []squirrel.Turn
 	moreTurns   bool
@@ -375,6 +378,28 @@ func (f *fakeStore) RecordAnswer(_ context.Context, _ int64, kind squirrel.Offer
 		return f.err
 	}
 	f.answers = append(f.answers, string(answer)+":"+string(kind))
+	return nil
+}
+
+// Whether anything would be sent to, and the way off.
+func (f *fakeStore) Notifying(_ context.Context, _ int64) (bool, error) {
+	// Its own error, so a test about an unreadable notification state is not
+	// also a test about an unreadable everything — with f.err set there is no
+	// identity either, and the panel it lives in is not drawn at all.
+	if f.notifyErr != nil {
+		return false, f.notifyErr
+	}
+	if f.err != nil {
+		return false, f.err
+	}
+	return f.notifying, nil
+}
+
+func (f *fakeStore) StopNotifying(_ context.Context, _ int64, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.notifying, f.stopped = false, true
 	return nil
 }
 

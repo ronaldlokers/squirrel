@@ -184,6 +184,11 @@ type Store interface {
 	// Where to reach you when you are not looking at the room. Only the
 	// leave-by warning ever uses it.
 	SaveSubscription(ctx context.Context, personID int64, sub squirrel.Subscription) error
+	// Notifying is whether anything would be sent to, and StopNotifying is the
+	// way off. Both exist so that settings can say what the state is rather
+	// than offer a control that cannot report one.
+	Notifying(ctx context.Context, personID int64) (bool, error)
+	StopNotifying(ctx context.Context, personID int64, at time.Time) error
 
 	// The body double. One per person, replaced each time, and nothing kept
 	// once it is over.

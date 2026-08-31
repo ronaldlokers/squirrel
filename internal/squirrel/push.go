@@ -341,3 +341,37 @@ func vapidKey(private string) (*ecdsa.PrivateKey, error) {
 // b64 is base64url without padding, which is what every part of this
 // specification uses and what the browser hands back.
 var b64 = base64.RawURLEncoding
+
+// Notifying is whether anything would be sent to at all.
+//
+// The screen needs this to say what the state is rather than to offer a button
+// that cannot report one. Asked as a question rather than by counting the rows:
+// how many browsers you have told is not a fact worth putting on a screen, and
+// it is not a fact this product would know what to say about.
+func (s *Store) Notifying(ctx context.Context, personID int64) (bool, error) {
+	var live bool
+	if err := s.pool.QueryRow(ctx, `
+		select exists (
+			select 1 from push_subscriptions
+			 where person_id = $1 and gone_at is null)`, personID).Scan(&live); err != nil {
+		return false, fmt.Errorf("reading whether we notify: %w", err)
+	}
+	return live, nil
+}
+
+// StopNotifying retires every browser this person has told.
+//
+// The same `gone_at` a dead endpoint gets, deliberately: a subscription you
+// turned off and one that stopped answering are the same thing as far as
+// sending is concerned, and a second column would be a second thing to check
+// before every send. Nothing is deleted — the row is the record that the
+// browser was once told, and the browser's own subscription is dropped on the
+// other side.
+func (s *Store) StopNotifying(ctx context.Context, personID int64, at time.Time) error {
+	if _, err := s.pool.Exec(ctx,
+		`update push_subscriptions set gone_at = $2
+		  where person_id = $1 and gone_at is null`, personID, at); err != nil {
+		return fmt.Errorf("turning notifications off: %w", err)
+	}
+	return nil
+}

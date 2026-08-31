@@ -767,19 +767,6 @@
     color: var(--paper);
   }
 
-  /* The one permission this product asks for, and it asks quietly. Not a
-     banner and not a dialog: a line under the slot that is gone the moment it
-     has been answered either way. */
-  .askpush {
-    display: block; margin: 14px auto 0; min-height: 44px;
-    background: none; border: 0; padding: 10px 4px;
-    color: var(--cream); cursor: pointer;
-    font: 600 13px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 620;
-    text-decoration: underline; text-underline-offset: 3px;
-  }
-  .askpush:hover { color: var(--paper); }
-
   /* The readings: six weeks by seven days, and the only grid in the product.
      
      A grid rather than the list of answered days this screen used to be,
@@ -1228,14 +1215,51 @@
     box-shadow: 0 3px 0 0 var(--outline);
   }
 
-  /* Who you are, at the foot of the rooms. A row rather than a stack: the rail
-     is already a column of places and a second column inside it would read as
-     one more. */
+  /* Who you are, at the foot of the rooms, and everything about you this
+     product can be asked to change. A row rather than a stack: the rail is
+     already a column of places and a second column inside it would read as one
+     more.
+     
+     The row is the summary of a disclosure now. Settings is a place with state
+     rather than a conversation — the one thing on this screen that is neither
+     — so it opens where it lives rather than being somewhere to go. */
+  .youare { margin-top: 14px; padding-top: 14px; border-top: var(--line) solid rgba(254, 214, 167, .28); }
+  .youare > summary { list-style: none; cursor: pointer; }
+  .youare > summary::-webkit-details-marker { display: none; }
   .whoami {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    margin-top: 14px; padding-top: 14px;
-    border-top: var(--line) solid rgba(254, 214, 167, .28);
+    min-height: 44px;
   }
+  .youarrow {
+    width: 18px; height: 18px; flex: none; color: var(--cream);
+    transition: transform 120ms ease-out;
+  }
+  .youare[open] .youarrow { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) { .youarrow { transition: none; } }
+  .youare > summary:focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+
+  /* One setting per block: its name, what it does, and the control. The name
+     names the setting and the sentence says what it is for — the same division
+     "log out" settled, and the reason "tell me when to leave" was the wrong
+     label for a switch. */
+  .youset { display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
+  .youbit { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+  .youname {
+    margin: 0; color: var(--paper); font-size: 13.5px;
+    font-variation-settings: var(--casual), "wght" 700;
+  }
+  .yousays {
+    margin: 0; color: var(--cream); font-size: 12.5px; line-height: 1.4;
+    font-variation-settings: var(--precise), "wght" 500;
+  }
+  .youdo {
+    align-self: flex-start; margin-top: 4px; min-height: 44px;
+    padding: 8px 0; background: none; border: 0; cursor: pointer;
+    color: var(--paper); font: 600 13px/1 "Recursive", sans-serif;
+    font-variation-settings: var(--precise), "wght" 620;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .youdo:hover { color: var(--orange-lit); }
   .whoami .youface { width: 36px; flex: none; }
   .whoami .youface.mono { font-size: 15px; }
   .whoname {
@@ -1518,16 +1542,6 @@
     font-size: 16px; font-variation-settings: var(--casual), "wght" 500;
   }
   .cut .make { align-self: flex-start; margin-top: 4px; }
-
-  /* The way back once notifications have been refused. Not a control — the
-     browser will not ask again and this site cannot make it — so it is a
-     sentence saying where the switch is, in the quiet the rest of the foot
-     wears. Issue #147. */
-  .pushrefused {
-    width: min(676px, 100%); margin: 10px auto 0;
-    font-size: 13.5px; line-height: 1.45; color: var(--cream);
-    font-variation-settings: var(--precise), "wght" 500;
-  }
 
   /* The way in.
    *
