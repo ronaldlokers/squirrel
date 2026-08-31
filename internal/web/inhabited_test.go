@@ -55,7 +55,7 @@ func TestNoControlRenamesItself(t *testing.T) {
 	// `something else?`, because seven equally-shaped buttons is six too many
 	// on a screen whose premise is that deciding is expensive. What a hand
 	// learns is now four verbs and one chip, and the chip is pinned below.
-	deck := opened(t, f, "pile")
+	deck := opened(t, f, "notes")
 	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "something else?"} {
 		require.Contains(t, deck, label, "the pile stopped saying %q", label)
 	}

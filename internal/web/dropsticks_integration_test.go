@@ -31,7 +31,7 @@ func TestDroppingANoteSurvivesLeavingTheRoom(t *testing.T) {
 			require.NotEmpty(t, items)
 			note := items[0]
 
-			shown := m.call(t, "GET", "/r/pile", nil).Body.String()
+			shown := m.call(t, "GET", "/r/notes", nil).Body.String()
 			require.Contains(t, shown, note.RawText, "the room does not offer it to begin with")
 
 			form := url.Values{
@@ -39,7 +39,7 @@ func TestDroppingANoteSurvivesLeavingTheRoom(t *testing.T) {
 				"act":  {"drop"},
 				"was":  {string(squirrel.ItemOpen)},
 				"from": {"thread"},
-				"room": {"pile"},
+				"room": {"notes"},
 			}.Encode()
 
 			var code int
@@ -57,7 +57,7 @@ func TestDroppingANoteSurvivesLeavingTheRoom(t *testing.T) {
 				"the press said it was handled and the note is still %s", after.State)
 
 			m.call(t, "GET", "/r/chores", nil)
-			back := m.call(t, "GET", "/r/pile", nil).Body.String()
+			back := m.call(t, "GET", "/r/notes", nil).Body.String()
 			require.NotContains(t, back, `name="id" value="`+strconv.FormatInt(note.ID, 10)+`"`,
 				"the room offers the dropped note again after leaving and coming back")
 		})

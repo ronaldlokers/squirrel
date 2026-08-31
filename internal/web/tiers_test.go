@@ -17,7 +17,7 @@ import (
 // that four of them end the note and three do not.
 func TestTheCardCarriesFourVerbsAndNoQuestions(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)}}
-	deck := opened(t, f, "pile")
+	deck := opened(t, f, "notes")
 
 	for _, verb := range []string{"DONE", "KEEP", "DROP", "A TASK"} {
 		require.Contains(t, deck, verb)
@@ -33,7 +33,7 @@ func TestTheCardCarriesFourVerbsAndNoQuestions(t *testing.T) {
 // about the note rather than a thing you do to it.
 func TestTheQuestionsAreBehindOnePress(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)}}
-	deck := opened(t, f, "pile")
+	deck := opened(t, f, "notes")
 
 	require.Contains(t, deck, "something else?")
 	require.Contains(t, deck, `action="/pile/more"`)

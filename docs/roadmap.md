@@ -345,6 +345,49 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.50.0 — 31 August 2026
+
+**Seven rooms became five, and two of the seven were never rooms.**
+
+The rail had been carrying two different kinds of thing under one shape. Five
+were places you keep something. Two — *the things you kept* and *what you set
+aside* — were **states a note is in**, promoted to doors on 28 August because
+there was nowhere else to put them. A state with a door on the rail reads as a
+fourth pile to stay on top of, which is the weight this product exists to
+remove.
+
+**everything · the notes · the chores · the agenda · the tasks.** The pile and
+both shelves are one room; the shelves are two chips on every branch of its
+turn, drawing where you already are. Buddy's room is named for what it holds
+rather than for who is in it — *general* was the other candidate and is Slack's
+word, the register `#chores` was refused for when these rooms were built.
+
+**A shelf is still a place and is no longer a room**, which is the distinction
+the whole change is about. `placeName` covers seven things where `doorName`
+covers five, so Buddy's `open` still draws a shelf by name and `/open` still
+pages one. Nothing about either shelf's contents changed.
+
+**The record moved with the rooms.** Migration 0035 collapses three room keys
+into one and renames a fourth, so it is a data migration and not a schema one —
+and it is proved by rewinding its own row in `schema_migrations` and running it
+over turns that are already there, which is the only ordering it will ever meet.
+Reverting either `update` fails the test.
+
+**The four URLs that stopped being rooms answer 301.** A room was a URL you
+could put on a home screen.
+
+**Stopping went, on the owner's call.** `/enough` was one sentence behind a link
+at the foot of the rail, and the link was the whole of it — a door to a
+sentence, under a rule as if it were the important thing there. What the screen
+was for still happens: the run is forgotten where a place is entered rather than
+where a link was pressed. Its composition was already the way in's, so the
+drawing stays and only the screen goes.
+
+**The button walk follows the shelves.** `TestEveryButtonAnswersWithAFragment`
+walked seven GET screens; a shelf that stopped being a URL would have quietly
+left its cards uncovered, so the walk presses both chips and walks what comes
+back.
+
 ### v0.49.0 — 31 August 2026
 
 **A press answers in the room it was made in.** Four reports from the phone in

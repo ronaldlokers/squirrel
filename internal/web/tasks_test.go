@@ -32,7 +32,7 @@ func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
 	// the door drew rather than on the page, which by now also holds the tasks
 	// this test just asked for.
 	f.appended = nil
-	fDrew := drewIn(t, f, "pile")
+	fDrew := drewIn(t, f, "notes")
 	pile := string(fDrew[len(fDrew)-1].Shown)
 	require.Contains(t, pile, "buy milk")
 	require.NotContains(t, pile, "ring the vet")

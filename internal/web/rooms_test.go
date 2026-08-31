@@ -13,13 +13,11 @@ import (
 
 func TestTheRoomsAreTheProductsOwnNames(t *testing.T) {
 	want := map[string]string{
-		"buddy":  "Buddy",
-		"pile":   "the pile",
-		"chores": "the chores",
-		"at":     "the agenda",
-		"tasks":  "the tasks",
-		"held":   "what you set aside",
-		"kept":   "the things you kept",
+		"everything": "everything",
+		"notes":      "the notes",
+		"chores":     "the chores",
+		"at":         "the agenda",
+		"tasks":      "the tasks",
 	}
 	require.Len(t, rooms, len(want), "a room was added or removed without this test")
 	for _, r := range rooms {
@@ -47,24 +45,24 @@ func TestNoTwoRoomsShareAButtonUnlessTheyShareADestination(t *testing.T) {
 	}
 }
 
-// Buddy's is the one button that names no room, because his room is where you
-// talk rather than where a thing lands.
+// Everything's is the one button that names no room, because that room is where
+// you talk rather than where a thing lands.
 func TestOnlyBuddysButtonNamesNoPlace(t *testing.T) {
 	for _, r := range rooms {
-		if r.Key == "buddy" {
+		if r.Key == "everything" {
 			require.Equal(t, "Tell it", r.Button)
 			continue
 		}
 		require.True(t, strings.Contains(r.Button, "chore") ||
 			strings.Contains(r.Button, "task") ||
-			strings.Contains(r.Button, "pile") ||
+			strings.Contains(r.Button, "notes") ||
 			strings.Contains(r.Button, "agenda"),
 			"%s's button %q does not say where the words go", r.Key, r.Button)
 	}
 }
 
 func TestTheRoomIsBuddysWhenNobodySaidWhich(t *testing.T) {
-	require.Equal(t, "buddy", roomOf(context.Background()))
+	require.Equal(t, "everything", roomOf(context.Background()))
 }
 
 func TestTheRoomOnTheRequestIsTheRoomThatIsRead(t *testing.T) {
@@ -83,7 +81,7 @@ func TestEnteringARoomWritesNothingWhenItAlreadyEndsOpen(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	rec := m.call(t, "GET", "/r/pile", nil)
+	rec := m.call(t, "GET", "/r/notes", nil)
 	require.Equal(t, 200, rec.Code)
 	require.Empty(t, f.appended,
 		"entering a room appended to a conversation that already ended open")
@@ -132,19 +130,17 @@ func TestTheOldDoorSendsYouToTheRoomAndWritesNothing(t *testing.T) {
 
 func TestTheRailCountsWhatIsWaitingAndNothingElse(t *testing.T) {
 	f := &fakeStore{waiting: squirrel.Waiting{Pile: 2, Chores: 1}}
-	rail := roomsFor(context.Background(), f, 1, "buddy")
+	rail := roomsFor(context.Background(), f, 1, "everything")
 
 	by := map[string]railView{}
 	for _, r := range rail {
 		by[r.Key] = r
 	}
 	require.Len(t, by, len(rooms))
-	require.Equal(t, 2, by["pile"].Count)
+	require.Equal(t, 2, by["notes"].Count)
 	require.Equal(t, 1, by["chores"].Count)
 	require.Zero(t, by["tasks"].Count, "an empty room carries a number")
-	require.Zero(t, by["kept"].Count, "a shelf carries a number")
-	require.Zero(t, by["held"].Count, "a shelf carries a number")
-	require.Zero(t, by["buddy"].Count, "Buddy's room carries a number")
+	require.Zero(t, by["everything"].Count, "the room you are standing in carries a number")
 }
 
 func TestTheRailSaysWhichRoomYouAreIn(t *testing.T) {
@@ -165,7 +161,7 @@ func TestTheRailIsOnEveryScreen(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	for _, where := range []string{"/", "/r/chores", "/r/kept"} {
+	for _, where := range []string{"/", "/r/chores", "/r/notes"} {
 		t.Run(where, func(t *testing.T) {
 			body := m.call(t, "GET", where, nil).Body.String()
 			require.Contains(t, body, `<nav class="rail"`)
@@ -183,8 +179,8 @@ func TestTheRailIsOnEveryScreen(t *testing.T) {
 // in — which is Buddy's whole toolset, silently.
 func TestTheRoomNamesAgreeWithTheCoach(t *testing.T) {
 	for _, r := range rooms {
-		if r.Key == "buddy" {
-			// Buddy's own is deliberately absent there: it is not a room he is
+		if r.Key == "everything" {
+			// Everything is deliberately absent there: it is not a room he is
 			// confined to, it is where he is.
 			require.Empty(t, coach.RoomName(r.Key))
 			continue

@@ -71,7 +71,7 @@ var readsTool = []map[string]any{
 					// about it" are the same judgement being written once.
 					"open": map[string]any{
 						"type":        "string",
-						"enum":        []string{"", "pile", "tasks", "chores", "at", "held", "kept"},
+						"enum":        []string{"", "notes", "tasks", "chores", "at", "held", "kept"},
 						"description": "A place to show them, when they asked to see one rather than asking about it. Empty otherwise.",
 					},
 				},

@@ -184,7 +184,7 @@ func TestThePileShowsAPhotographByTheNotesID(t *testing.T) {
 		ID: 7, RawText: "", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
 		PhotoName: "photo-1.jpg", PhotoType: "image/jpeg",
 	}}}
-	body := opened(t, f, "pile")
+	body := opened(t, f, "notes")
 	require.Contains(t, body, `src="/photo/7/thumb"`)
 	require.Contains(t, body, `href="/photo/7"`)
 	require.NotContains(t, body, "photo-1.jpg")

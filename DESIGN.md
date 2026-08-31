@@ -481,7 +481,7 @@ Paper on `#e66d0d` measures **3.1:1**. Every orange control in the product is a
 13px uppercase label, so every one of them failed, on five screens, for the
 whole life of the screen: *tell it*, *make a chore* on the deck and again on
 each search result, *make it a chore*, *decide it*, *say it*, and the door out
-of `/enough`. The keycap inside *make a chore* was worse at **2.28:1**, because
+of the stopping screen. The keycap inside *make a chore* was worse at **2.28:1**, because
 the keycap sits at 72% of its label's ink — so it stands at full strength on
 this one button and nowhere else. The selection band went the same way; white
 on that orange was a selected sentence you could not read.
@@ -649,11 +649,21 @@ in the casual axis, with the mascot above it. A screen that is an absence is a
 different composition, not a different size of the same one. Two headings with a
 reason, rather than five without one.
 
-**Stopping is not an empty state, and it has its own drawing to say so.** The
+**Stopping was not an empty state, and it had its own drawing to say so.** The
 empty pile, the empty chores, the empty tasks and the empty archive share the
-mark. `/enough` does not: it has a resting pose — leaning on a closed lid, cap
+mark. `/enough` did not: it had a resting pose — leaning on a closed lid, cap
 forward, tail settled — at `resting.png`, drawn at 300×207 rather than the
 shared 186×140.
+
+**The screen went on 31 August 2026, and the drawing did not.** `/enough` was
+one sentence behind a link at the foot of the rail, and the link was the whole
+of it — a door to a sentence, sitting under a rule as if it were the important
+thing on the screen. The owner called it useless in the navigation and was
+right: *stopping is normal* is a thing this product has to mean, and it does not
+need a page to say it. What the screen was actually for — forgetting where you
+got to, so nothing offers your place back — still happens, where a place is
+entered rather than where a link was pressed. `resting.png` is the way in's
+drawing now, which is where the composition had already been borrowed.
 
 Both halves of that are load-bearing. For its whole life this screen used the
 same drawing at the same size as the four true empty states, so **choosing to
@@ -914,8 +924,9 @@ back on.
 **An empty place is a sentence, not a drawing.** The empty states were their
 own treatment — the mascot, a headline in the casual axis, a screen that is an
 absence. A place that is a message has no screen to be absent: Buddy says
-*nothing to decide about* and the conversation carries on. `/enough` is the last
-screen in the product that is an absence, and it keeps the treatment.
+*nothing to decide about* and the conversation carries on. The way in is the
+last screen in the product that is an absence, and it keeps the treatment —
+`/enough` had it until 31 August 2026, when the screen went.
 
 What that costs, stated rather than discovered: the drawing was doing work a
 sentence does not, which is to make an empty pile feel like a place rather than
@@ -1964,7 +1975,7 @@ on the screen above it.
   two treatments, and which one you get is the only thing that differs. Inside
   the dialog it is a card: cream stock, a 3px outline, its own little lid at
   17px, dark ink. Reached as a page it has no card at all — the conversation
-  stands directly on the field the way `/enough` and every other screen's
+  stands directly on the field the way every other screen's
   content does, and its name is that screen's title, in the wordmark's face at
   21px on paper, under The One Title Rule.
 
@@ -2525,9 +2536,38 @@ beginning.
 
 ### The Rooms
 
-The seven rooms, and the whole of this product's navigation as of 28 August
-2026. **Rewritten the same day**, because the first version dressed navigation
-as content — see the end of this section.
+The five rooms, and the whole of this product's navigation. Seven on 28 August
+2026, **rewritten the same day** because the first version dressed navigation as
+content, and five since 31 August.
+
+**Five, because two of the seven were not places.** The rail was carrying two
+different kinds of thing under one shape. Five were places you keep something —
+everything, the notes, the chores, the agenda, the tasks. Two were *states a
+note is in*: **the things you kept** and **what you set aside**, promoted to
+doors because there was nowhere else to put them. A state with a door on the
+rail reads as a fourth pile to stay on top of, which is the weight this product
+exists to remove. Both are chips inside the notes now, and the shelves
+themselves are unchanged — a shelf is still something you can be shown; it is
+just not somewhere you go.
+
+**The notes are the pile and both shelves.** It opens on the pile exactly as
+before — one open note, four ways out of it — and carries the two shelf chips on
+every branch of its turn, including the branch that says there is nothing to
+decide about. Pressing one draws that shelf as a turn in the same conversation.
+Deliberately not a list with a state on each card: a stream of everything you
+have ever decided about is the inbox shape PRODUCT.md names, and it is the one
+way this change could have made the product worse.
+
+**Everything, not Buddy and not general.** The room was named for the speaker;
+it is named for what it holds. *general* was the other candidate and is Slack's
+word — the register `#chores` was refused for when these rooms were built.
+Buddy still speaks there. It carries no count: nothing waits in the room you are
+standing in.
+
+**The record moved with the rooms.** `turns.room` collapses three keys into one,
+so migration 0035 is a data migration and not a schema one, and the four URLs
+that stopped being rooms answer 301 — a room was a URL you could put on a home
+screen.
 
 **Two shapes from one markup**, because two markups are two things to keep in
 step. The control and the list are siblings, not parent and child: a closed
@@ -2544,8 +2584,12 @@ it.
 rail's 212 plus the transcript's 720 plus gutters. At 861 the rail was a
 quarter of the screen and squeezed the conversation below its own measure, for
 seven labels of at most nineteen characters. **212px is not a preference** — it
-is what *the things you kept* needs on one line, and narrowing it wrapped four
-of the nine rows and turned an even column into a ragged one. So the width is
+was what *the things you kept* needed on one line, and narrowing it wrapped four
+of the nine rows and turned an even column into a ragged one. The longest label
+is *look something up* now that the two shelves are chips, so the column has
+room it did not have; it is kept at 212 because the measure either side of it
+was chosen against this width, and a narrower rail buys nothing the
+conversation asked for. So the width is
 fixed and the breakpoint moved. Below it the phone's shape is not a fallback,
 it is the better one.
 
@@ -2691,7 +2735,8 @@ card-stock links above, with their own art and their own headings — and reusin
 the word for the thing you sign in through would make every mention of either
 ambiguous.
 
-- **Composition:** `/enough`'s, exactly. The resting mascot at 300×207, a
+- **Composition:** the stopping screen's, exactly — and this page is where it
+  lives now that that screen has gone. The resting mascot at 300×207, a
   headline in the casual axis at `wght` 800 with the 2px outline, one sentence
   in cream, one control. Nothing new is invented for it: a screen with four
   states that invented its own treatment would be inventing four.

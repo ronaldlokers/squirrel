@@ -14,8 +14,8 @@ import (
 func TestBrowserTheLiveEdgeWearsItsLetters(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "the bike rack", squirrel.ItemOpen)}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/pile")
-	c.navigate(t, srv.URL+"/r/pile")
+	c := browserAt(t, srv, "/r/notes")
+	c.navigate(t, srv.URL+"/r/notes")
 	c.until(t, "the card", `!!document.querySelector('input[name="act"]')`)
 
 	require.Equal(t, []any{"D", "K", "X", "T"}, c.eval(t, `
@@ -66,11 +66,11 @@ func TestBrowserTheIntervalQuestionWearsItsLetters(t *testing.T) {
 func TestBrowserAPhoneHasNoKeycaps(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "the bike rack", squirrel.ItemOpen)}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/pile")
+	c := browserAt(t, srv, "/r/notes")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.navigate(t, srv.URL+"/r/pile")
+	c.navigate(t, srv.URL+"/r/notes")
 	c.until(t, "the card", `!!document.querySelector('input[name="act"]')`)
 
 	require.Equal(t, true, c.eval(t, `

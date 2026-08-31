@@ -69,9 +69,9 @@ func TestTheEmptyShelfDoesNotInstruct(t *testing.T) {
 // It hung off the drawn card, so the moment there was nothing to decide about
 // it was reachable from nowhere at all.
 func TestThePileOffersTheShelfEvenWithNothingToDecide(t *testing.T) {
-	require.Contains(t, opened(t, aShelf(), "pile"), "the things you kept")
+	require.Contains(t, opened(t, aShelf(), "notes"), "the things you kept")
 
-	empty := opened(t, &fakeStore{}, "pile")
+	empty := opened(t, &fakeStore{}, "notes")
 	require.Contains(t, empty, "the things you kept", "an empty pile reached nowhere")
 	require.Contains(t, empty, "what you set aside")
 }

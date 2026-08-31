@@ -15,13 +15,22 @@ func aside(state squirrel.ItemState, id int64, text, because string) squirrel.He
 	return squirrel.HeldItem{ID: id, Text: text, State: state, Because: because}
 }
 
-// What the room drew on arrival, as the record kept it.
+// What the place drew, as the record kept it.
+//
+// A room draws one turn on arrival. A shelf is a press since 31 August 2026, so
+// it draws two — what you asked for and the answer — and it is the answer this
+// reads.
 func drewFor(t *testing.T, f *fakeStore, where string) string {
 	t.Helper()
 	f.appended = nil
 	drew := drewIn(t, f, where)
-	require.Len(t, drew, 1, "a room draws one turn on arrival")
-	return string(drew[0].Shown) + " " + drew[0].Words
+	want := 1
+	if shelfByKey(where) {
+		want = 2
+	}
+	require.Len(t, drew, want, "%s did not draw what a place draws", where)
+	last := drew[len(drew)-1]
+	return string(last.Shown) + " " + last.Words
 }
 
 // Each card says which of the three it is and what would move it. The page
@@ -139,18 +148,22 @@ func TestAnUnknownWayToSetSomethingAsideDoesNothing(t *testing.T) {
 	require.Empty(t, f.aside)
 }
 
-// Reachable from the menu and not on the conversation: what you set aside in
+// Reachable from the notes and not on the conversation: what you set aside in
 // front of you is the one thing setting it aside was for.
+//
+// It was a door on the rail until 31 August 2026 and is a chip in the notes
+// now. What must not change is the second half — a shelf you did not ask for
+// is a shelf on top of the conversation.
 func TestWhatYouSetAsideIsNotOnTheConversation(t *testing.T) {
 	f := &fakeStore{
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood},
 		aside:   []squirrel.HeldItem{aside(squirrel.ItemWaiting, 1, "ring the vet", "the vet")},
 	}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := opened(t, f, "notes")
 
 	require.Contains(t, body, "what you set aside", "there is no way to it at all")
 	require.NotContains(t, body, "ring the vet",
-		"what you set aside is on the conversation rather than behind a door")
+		"what you set aside is on the conversation rather than a press away")
 }
 
 // Reached from the tasks, which is where you look when you wonder what
@@ -160,7 +173,7 @@ func TestTheTasksReachIt(t *testing.T) {
 	body := opened(t, f, "tasks")
 
 	require.Contains(t, body, "what you set aside")
-	require.Contains(t, body, `href="/r/held"`)
+	require.Contains(t, body, `value="held"`, "the tasks cannot reach it")
 }
 
 // And the page itself is gone.

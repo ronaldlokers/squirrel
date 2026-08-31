@@ -68,14 +68,28 @@ var (
 func TestEveryButtonAnswersWithAFragment(t *testing.T) {
 	m := routed(t, aScreenful())
 
+	screens := map[string]string{}
 	for _, screen := range []string{
-		"/", "/r/pile", "/r/chores", "/r/at", "/r/tasks", "/r/held", "/r/kept",
-		"/moods", "/enough",
+		"/", "/r/everything", "/r/notes", "/r/chores", "/r/at", "/r/tasks",
+		"/moods",
 	} {
 		page := m.call(t, "GET", screen, nil)
 		require.Equal(t, 200, page.Code, "%s does not render", screen)
+		screens[screen] = page.Body.String()
+	}
+	// The two shelves, which are drawn by a press rather than reached by a URL
+	// since 31 August 2026. Their cards carry buttons like any other card, and
+	// a walk that only walks GETs would stop covering them the day they stopped
+	// being rooms — which is the exact way coverage goes quiet.
+	for _, shelf := range []string{"kept", "held"} {
+		press := m.callFragment(t, "/notes/shelf",
+			url.Values{"room": {"notes"}, "shelf": {shelf}}.Encode())
+		require.Equal(t, 200, press.Code, "the %s shelf does not draw", shelf)
+		screens["the "+shelf+" shelf"] = press.Body.String()
+	}
 
-		for _, form := range formPattern.FindAllStringSubmatch(page.Body.String(), -1) {
+	for screen, drawn := range screens {
+		for _, form := range formPattern.FindAllStringSubmatch(drawn, -1) {
 			whole, action, fields := form[0], form[1], form[2]
 			isTheDock := strings.Contains(whole, `class="slot"`)
 			if strings.HasPrefix(action, "/auth/") {

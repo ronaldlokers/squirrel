@@ -23,7 +23,7 @@ func TestBuddyOffersBackWhereYouGotTo(t *testing.T) {
 	}
 	body := thread(t, f)
 
-	require.Contains(t, body, "part way through the pile")
+	require.Contains(t, body, "part way through the notes")
 	require.Contains(t, body, "40 minutes ago")
 	require.Contains(t, body, "carry on")
 	require.Contains(t, body, "start fresh")
@@ -97,17 +97,6 @@ func TestStartingFreshForgetsTheRun(t *testing.T) {
 	require.Equal(t, 1, f.ended, "start fresh did not forget the run")
 	require.Equal(t, squirrel.ItemOpen, f.items[0].State,
 		"start fresh changed a note; it is only meant to forget the run")
-}
-
-// Stopping ends it too. Being offered your place back after choosing to stop
-// would make the screen that says stopping is normal argue with you about it.
-func TestStoppingForgetsTheRun(t *testing.T) {
-	f := &fakeStore{run: squirrel.Run{Place: squirrel.RunPile}, hasRun: true}
-	m := routed(t, f)
-
-	m.call(t, "GET", "/enough", nil)
-
-	require.Equal(t, 1, f.ended, "stopping left a run to be offered back")
 }
 
 // The sentence never names a clock time. How long ago is a fact about the gap;

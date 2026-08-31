@@ -67,12 +67,12 @@ func storeWithPhoto(id int64) *fakeStore {
 // original is a photograph from a phone.
 func TestACardAsksForTheSmallerCopy(t *testing.T) {
 	f := storeWithPhoto(7)
-	fDrew := drewIn(t, f, "pile")
+	fDrew := drewIn(t, f, "notes")
 
 	shown := string(fDrew[len(fDrew)-1].Shown)
 	require.Contains(t, shown, `"photo":"/photo/7"`)
 
-	body := opened(t, storeWithPhoto(7), "pile")
+	body := opened(t, storeWithPhoto(7), "notes")
 	require.Contains(t, body, `src="/photo/7/thumb"`, "the card downloaded the original")
 	require.Contains(t, body, `href="/photo/7"`, "there is no way to the whole picture")
 }

@@ -150,16 +150,12 @@
     {{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}
   </a>
   {{end}}
-  {{/* Neither of these is a place, so both sit below the rule rather than
-       among the seven — and both are always in view now, which they were not
-       when they lived at the end of a strip that scrolled. */}}
+  {{/* Not a place, so it sits below the rule rather than among the five — and
+       it is always in view now, which it was not when it lived at the end of a
+       strip that scrolled. */}}
   <form class="lookup" method="post" action="/find/ask">
     <button type="submit">look something up</button>
   </form>
-  {{/* The way out, last and under a rule. It is the end of the evening, and
-       it must never look like failure — its own place at the bottom says
-       that without a louder word. The wording moves with the day. */}}
-  <a class="leaving" href="/enough">{{.SayStop}}</a>
   {{/* Who the screen is talking to, and the way out.
 
        In the rail rather than the lid, and that is the whole placement
