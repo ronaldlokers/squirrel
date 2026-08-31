@@ -379,14 +379,23 @@ func (l *lazyWhom) get(ctx context.Context) whom {
 	return l.val
 }
 
-// knowsYou wraps a mux so every handler it mounts can find out who is asking
-// without being handed a store. One place, so a route added later cannot miss
-// it — the same argument fromTheDock's rename records.
-func knowsYou(m Mux, s Store) Mux { return knowing{m: m, s: s} }
+// knowsYou wraps a mux so every handler it mounts can find out who is asking,
+// and what the clock says where you are, without being handed either. One
+// place, so a route added later cannot miss it — the same argument
+// inTheRoomItCameFrom's rename records.
+//
+// The zone rides along because a turn's time is drawn from a fragment as often
+// as from a page, and answerWith has no options to read one from. Threading it
+// through fifty call sites would be fifty chances to hand over the container's
+// zone instead, which is the defect issue #148 was about.
+func knowsYou(m Mux, s Store, where *time.Location) Mux {
+	return knowing{m: m, s: s, where: where}
+}
 
 type knowing struct {
-	m Mux
-	s Store
+	m     Mux
+	s     Store
+	where *time.Location
 }
 
 func (k knowing) Get(pattern string, h http.HandlerFunc)  { k.m.Get(pattern, k.wrap(h)) }
@@ -401,8 +410,29 @@ func (k knowing) wrap(h http.HandlerFunc) http.HandlerFunc {
 			}
 			return youFor(ctx, k.s, personID)
 		}}
-		h(w, r.WithContext(context.WithValue(r.Context(), whomKey{}, lazy)))
+		ctx := context.WithValue(r.Context(), whomKey{}, lazy)
+		if k.where != nil {
+			ctx = context.WithValue(ctx, zoneKey{}, k.where)
+		}
+		h(w, r.WithContext(ctx))
 	}
+}
+
+// zoneKey is the context key for where you are. Its own type, so nothing in
+// any package can collide with it.
+type zoneKey struct{}
+
+// zoneOf is the clock to read a time by: yours, never the container's.
+//
+// UTC when nobody said, which is honest rather than convenient — a time drawn
+// in the wrong zone is worse than one drawn in a zone you can recognise as
+// wrong. Options.Location is set from DIGEST_TZ and reaches here through
+// knowsYou.
+func zoneOf(ctx context.Context) *time.Location {
+	if where, ok := ctx.Value(zoneKey{}).(*time.Location); ok && where != nil {
+		return where
+	}
+	return time.UTC
 }
 
 // whomOf is who the screen is talking to, read once per request.

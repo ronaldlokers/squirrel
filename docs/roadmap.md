@@ -345,6 +345,38 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.51.0 — 31 August 2026
+
+**The conversation says when it was.** The record goes back weeks and nothing on
+it said when anything happened, so "what did I tell it about the boiler" could
+be found and not placed.
+
+**One time per run, under the face.** Consecutive turns by one speaker are one
+utterance — already why a face is drawn once per run — and one time is the whole
+truth about an utterance. A clock on every bubble is a minute-by-minute record
+of your afternoon, which is what the run-resumption sentence refuses a clock
+time to avoid; the rule that sentence was written under is intact.
+
+**The day is a seam.** *today*, *yesterday*, or the date, centred across the
+conversation and drawn only where the day turns over. Those two by name because
+they are the days you are most often looking for.
+
+**Three attempts at where it goes, and only a browser could tell them apart.**
+In the words' column the time pushed every run down by the height of an avatar.
+In the gutter on a line of its own it read as a label on whatever came next.
+Face and time are one element now. All three were correct markup, which is why
+the test measures boxes rather than reading the DOM.
+
+**Read in your zone.** `Options.Location` reaches the turn through the
+middleware that already carries who you are, rather than being threaded through
+fifty call sites — fifty chances to hand over the container's zone, which is
+issue #148.
+
+**A test caught its own time-of-day dependency.** `TestTheConversationSaysWhenItWas`
+put a fixture two hours before `now`, which is the same day at noon and the day
+before at one in the morning. It was written at one in the morning and failed
+immediately; the clock is pinned now.
+
 ### v0.50.0 — 31 August 2026
 
 **Seven rooms became five, and two of the seven were never rooms.**

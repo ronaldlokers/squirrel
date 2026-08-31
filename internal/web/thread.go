@@ -80,6 +80,18 @@ type turnView struct {
 	// face goes: consecutive turns are one utterance, and a face on every one
 	// is wallpaper by the third day.
 	Opens bool
+	// When is the clock time this was said, on the turn that opens a run and
+	// empty on the rest — the same rule the face follows, for the same reason.
+	// A time on every line turns a conversation into a log of your day, which
+	// is the shape the run-resumption sentence refuses a clock time to avoid.
+	//
+	// A run is one utterance, so one time is the whole truth about it.
+	When string
+	// Day is the divider above this turn, and empty when the day has not
+	// changed. A time alone cannot answer "when was this" once you have
+	// scrolled past midnight, and a date on every line to answer it would be
+	// the log again.
+	Day string
 	// Place is the <h2> when this turn opens one, and empty otherwise. The
 	// thread has no <h1> — home's exemption, because nobody arrives at the
 	// place they started wondering where they are — so these are what heading
@@ -342,6 +354,23 @@ func turnViews(ctx context.Context, turns []squirrel.Turn) []turnView {
 		out[i].Opens = i == 0 || out[i-1].Buddy != out[i].Buddy
 	}
 
+	// The clock, on the openers only, and a divider wherever the day turns
+	// over. Read in your zone rather than the container's — see zoneOf.
+	where := zoneOf(ctx)
+	for i := range out {
+		said := turns[i].SaidAt
+		if said.IsZero() {
+			continue
+		}
+		said = said.In(where)
+		if out[i].Opens {
+			out[i].When = said.Format("15:04")
+		}
+		if i == 0 || !sameDay(turns[i-1].SaidAt.In(where), said) {
+			out[i].Day = dayCalled(said, now().In(where))
+		}
+	}
+
 	for i := len(out) - 1; i >= 0; i-- {
 		if out[i].Buddy {
 			out[i].Live = true
@@ -349,6 +378,32 @@ func turnViews(ctx context.Context, turns []squirrel.Turn) []turnView {
 		}
 	}
 	return out
+}
+
+// sameDay is whether two times fall on the same date, in whatever zone they are
+// already carrying. Compared as a date rather than as a gap: two turns eleven
+// hours apart can be one day or two, and only the calendar knows which.
+func sameDay(a, b time.Time) bool {
+	ay, am, ad := a.Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
+}
+
+// dayCalled is the divider's words.
+//
+// Today and yesterday by name, because they are the two days you are most
+// likely to be looking for and a date makes you work out which one it was.
+// Everything older gets the date it has: "Monday 25 August" is what the agenda
+// already says, and one vocabulary for a day is what keeps two screens from
+// disagreeing about it.
+func dayCalled(said, today time.Time) string {
+	switch {
+	case sameDay(said, today):
+		return "today"
+	case sameDay(said, today.AddDate(0, 0, -1)):
+		return "yesterday"
+	}
+	return said.Format("Monday 2 January")
 }
 
 // menuFor is everywhere else, behind the lid's one control. Order is by how
@@ -662,6 +717,18 @@ func answerWith(w http.ResponseWriter, r *http.Request, said []squirrel.Turn, ba
 	vs := turnViews(r.Context(), said)
 	for i := range vs {
 		vs[i].Live = false
+	}
+	// A fragment is appended to a conversation that is already on screen, and
+	// the turn above it is not in this batch — so the divider turnViews marks
+	// on the first turn would say "today" under a "today" that is already
+	// there. Cleared here rather than not computed there, because the page
+	// path wants it and this is the one path that does not.
+	//
+	// What that costs: a press made after midnight with the page still open
+	// gets no divider until the next reload. A duplicate one on every press is
+	// the worse of the two.
+	if len(vs) > 0 {
+		vs[0].Day = ""
 	}
 	for i := len(vs) - 1; i >= 0; i-- {
 		if vs[i].Buddy {

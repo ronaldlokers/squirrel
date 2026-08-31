@@ -6,6 +6,10 @@
      Everything you can press is behind `.Live`: a question from this morning is
      a thing that was asked, not a thing to answer now. */}}
 {{define "turn"}}
+{{/* The day, above the first turn of it. A sibling of the turn rather than a
+     part of one: it belongs to the gap between two turns, and it is the whole
+     width of the conversation because that is what a divider is. */}}
+{{if .Day}}<p class="whenday">{{.Day}}</p>{{end}}
 <div class="turn {{if .Buddy}}frombuddy{{else}}fromyou{{end}}{{if or .Faces .Pick .Cal .Say .Cut}} wide{{end}}" id="turn-{{.ID}}">
   {{/* A face where a speaker starts speaking, once per run.
 
@@ -28,17 +32,28 @@
        DESIGN.md calls it the mascot's sticker drawing, and a sticker has no
        plate under it. */}}
   {{if .Opens}}
-  {{if .Buddy}}
-  <span class="buddyface" aria-hidden="true">
-    <img src="/static/buddy.png?v={{$.V}}" alt="" width="40" height="41">
+  {{/* Who, and when, as one thing in the gutter. Two things until they were
+       drawn: the time sat in the words' own column and pushed them off the
+       face's line, so every run grew by the height of an avatar; put in the
+       gutter under the face on its own it read as a label on whatever came
+       next. It belongs to the run that starts here, and this is the markup
+       that says so. */}}
+  <span class="whoat">
+    {{if .Buddy}}
+    <span class="buddyface" aria-hidden="true">
+      <img src="/static/buddy.png?v={{$.V}}" alt="" width="40" height="41">
+    </span>
+    {{else if .You.Known}}
+    {{/* The monogram is drawn rather than served, so a person with no picture
+         still gets a face rather than a hole. */}}
+    <span class="youface{{if not .You.Face}} mono{{end}}" aria-hidden="true">
+      {{if .You.Face}}<img src="/me/face" alt="" width="40" height="40">{{else}}{{.You.Letter}}{{end}}
+    </span>
+    {{end}}
+    {{/* Not aria-hidden, where the face is: a time is a fact a screen reader
+         wants and a repeated portrait is not. */}}
+    {{if .When}}<time class="whensaid">{{.When}}</time>{{end}}
   </span>
-  {{else if .You.Known}}
-  {{/* The monogram is drawn rather than served, so a person with no picture
-       still gets a face rather than a hole. */}}
-  <span class="youface{{if not .You.Face}} mono{{end}}" aria-hidden="true">
-    {{if .You.Face}}<img src="/me/face" alt="" width="40" height="40">{{else}}{{.You.Letter}}{{end}}
-  </span>
-  {{end}}
   {{end}}
   {{/* The place's name, when this turn opens one. The thread has no <h1>, so
        these are what heading navigation walks — see The One Title Rule. */}}
