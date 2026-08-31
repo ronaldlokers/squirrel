@@ -195,7 +195,7 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 		{"their note, opened from a result", "POST", "/find/open",
 			url.Values{"id": {theirNote}}},
 		{"what Squirrel knows", "POST", "/knowing", nil},
-		{"the readings", "GET", "/moods", nil},
+		{"the readings", "POST", "/me/moods", nil},
 		{"asking Buddy", "POST", "/buddy/ask", url.Values{"said": {"what should I do"}}},
 		{"their note, opened", "POST", "/pile/why", url.Values{"id": {theirNote}}},
 		{"their note, reworded", "POST", "/pile/reword", url.Values{"id": {theirNote}}},

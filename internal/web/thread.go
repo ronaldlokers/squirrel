@@ -56,6 +56,17 @@ type drawn struct {
 	// already exists; rendering them as words would be a different control
 	// wearing the same question.
 	Faces bool `json:"faces,omitempty"`
+	// Weeks is how you have been: six weeks by seven days, and nothing else.
+	//
+	// It was a page until 31 August 2026 — the last screen in this product that
+	// was not a conversation, reached by a link from a chip that lasted one
+	// turn. A turn instead, so asking for it does not take you out of the room
+	// you are standing in.
+	//
+	// Kept rather than drawn, unlike a room's list: this is a thing you asked
+	// to be shown, and what the record holds is what you were shown when you
+	// asked. The same rule the two shelves follow.
+	Weeks []moodWeekView `json:"weeks,omitempty"`
 }
 
 type turnView struct {
@@ -98,6 +109,8 @@ type turnView struct {
 	// navigation walks.
 	Place string
 	Cards []cardView
+	// Weeks is how you have been, when you have asked to see it.
+	Weeks []moodWeekView
 	Hits  []hitView
 	Chips []turnChip
 	Faces []faceView
@@ -363,6 +376,7 @@ func turnViews(ctx context.Context, turns []squirrel.Turn) []turnView {
 				v.Hits = sh.Hits
 				v.Cost = sh.Cost
 				v.Pick, v.Cal, v.Say, v.Cut = sh.Pick, sh.Cal, sh.Say, sh.Cut
+				v.Weeks = sh.Weeks
 				if sh.Faces {
 					v.Faces = theFaces()
 				}
@@ -495,7 +509,7 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 		// scrollback and scrollback carries no controls.
 		again, err := json.Marshal(drawn{Chips: []turnChip{
 			{Label: "say something else", Href: "/?ask=1"},
-			{Label: "how you felt before", Href: "/moods"},
+			{Label: howYouFeltBefore, Action: "/me/moods"},
 		}})
 		if err != nil {
 			slog.Error("drawing the way back", "error", err)

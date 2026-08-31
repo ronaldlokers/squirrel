@@ -1469,6 +1469,26 @@ division "log out" settled, and the reason *tell me when to leave* was the wrong
 label for a switch: it is a lovely sentence and a poor name for a thing with two
 positions.
 
+**How you felt before is a turn, not a page.** It was the last screen in this
+product that was not a conversation — six weeks by seven days, reached by a link
+from a chip that lasted one turn, so asking for it took you out of the room you
+were standing in. It is a press now, from that same chip and from the settings
+panel, and it draws where you are.
+
+Kept rather than drawn, unlike a room's list: this is a thing you *asked* to be
+shown, and what the record holds is what you were shown when you asked. The same
+rule the two shelves follow. A room's list is the state and goes stale; a
+reading you asked for in August is what August looked like.
+
+The grid itself is unchanged — six weeks by seven days, the gaps drawn as empty
+outlines, nothing counted, averaged or trended. It spans the turn's full width
+the way the faces and the pickers do.
+
+**And it is called *how you felt before*, in both places.** Not "how you have
+been": *you have been* is on the same list as *overdue* and *streak* — a phrase
+that characterises the person rather than reporting what they said.
+`TestTheCheckinSaysNothingAboutYou` refuses it, and caught it here.
+
 **The mood check-in stays in `everything`.** It is not a setting — it is a
 question the product asks, and it belongs where the asking happens. It is asked
 **every hour**, and it is drawn at the edge rather than written.

@@ -53,13 +53,13 @@ func (f *fakeSessions) EndSession(_ context.Context, token []byte) error {
 
 func TestAPageWithNoSessionGoesToTheGate(t *testing.T) {
 	m := mounted(t, &fakeStore{})
-	w := m.callAnonymously(t, "GET", "/moods", nil)
+	w := m.callAnonymously(t, "GET", "/r/chores", nil)
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
 	to, err := url.Parse(w.Header().Get("Location"))
 	require.NoError(t, err)
 	require.Equal(t, "/auth", to.Path)
-	require.Equal(t, "/moods", to.Query().Get("next"))
+	require.Equal(t, "/r/chores", to.Query().Get("next"))
 }
 
 // A POST does not redirect. A form that followed a 303 to the gate would post

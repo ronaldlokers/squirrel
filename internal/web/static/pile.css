@@ -778,6 +778,10 @@
      compared to anything else on it, which is what keeps it a record rather
      than a score. */
   .readings { width: min(720px, 100%); }
+  /* Inside a turn it takes the turn's column rather than its own measure: the
+     conversation has already decided how wide a thing is. */
+  .turn .readings, .turn .moodkey { width: 100%; grid-column: 1 / -1; }
+  .turn .readings { margin-top: 4px; }
   .weekrow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .weekrow .wl {
     width: 5.4em; flex: none;

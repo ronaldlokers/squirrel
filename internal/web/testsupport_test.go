@@ -124,6 +124,7 @@ type fakeStore struct {
 	turns       []squirrel.Turn
 	notifying   bool
 	notifyErr   error
+	readingsErr error
 	stopped     bool
 	roomRead    string
 	appended    []squirrel.Turn
@@ -421,6 +422,11 @@ func (f *fakeStore) RecordCheckin(_ context.Context, _ int64, m squirrel.Mood, _
 }
 
 func (f *fakeStore) CheckinsSince(_ context.Context, _ int64, since time.Time) ([]squirrel.Checkin, error) {
+	// Its own error, so a test about unreadable readings is not also a test
+	// about an unreadable everything.
+	if f.readingsErr != nil {
+		return nil, f.readingsErr
+	}
 	if f.err != nil {
 		return nil, f.err
 	}

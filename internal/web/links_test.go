@@ -42,7 +42,7 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 
 	pages := map[string]string{
 		"the conversation": "/",
-		"the readings":     "/moods",
+		"the chores":       "/r/chores",
 	}
 
 	href := regexp.MustCompile(`href="(/[^"]*)"`)

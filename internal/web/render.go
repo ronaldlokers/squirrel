@@ -55,12 +55,10 @@ func page(files ...string) *template.Template {
 // the files cannot change under a running process.
 var pageFiles = map[string][]string{
 	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html"},
-	"moods":  {"templates/layout.html", "templates/moods.html"},
 }
 
 var pages = map[string]*template.Template{
 	"thread": page(pageFiles["thread"]...),
-	"moods":  page(pageFiles["moods"]...),
 }
 
 // pageFor is the template to render with.

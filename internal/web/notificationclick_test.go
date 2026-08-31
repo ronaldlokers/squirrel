@@ -70,7 +70,7 @@ func notificationClick(t *testing.T, c *cdp, at string, open bool) map[string]an
 func TestBrowserTappingANotificationReachesTheFrontDoor(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	got := notificationClick(t, c, "/moods", true)
+	got := notificationClick(t, c, "/r/notes", true)
 
 	require.Equal(t, "/", got["ended"],
 		"the tap raised a window still sitting on %v", got["ended"])
@@ -94,7 +94,7 @@ func TestBrowserTappingANotificationDoesNotReloadTheFrontDoor(t *testing.T) {
 func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	got := notificationClick(t, c, "/moods", false)
+	got := notificationClick(t, c, "/r/notes", false)
 
 	require.Equal(t, []any{"opened /"}, got["went"])
 }
@@ -107,7 +107,7 @@ func TestBrowserTappingANotificationWithNothingOpenOpensTheFrontDoor(t *testing.
 func TestBrowserTappingALeaveByNotificationLandsOnTheFixedPoint(t *testing.T) {
 	c, _ := open(t, aPile())
 
-	setup := `const DATA = { url: "/at/4" }; const AT = "/moods"; const OPEN = true;`
+	setup := `const DATA = { url: "/at/4" }; const AT = "/r/notes"; const OPEN = true;`
 	got, ok := c.eval(t, setup+runNotificationClick).(map[string]any)
 	require.True(t, ok)
 

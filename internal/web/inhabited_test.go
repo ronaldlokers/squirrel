@@ -31,8 +31,9 @@ func TestTheMoodHistoryIsNamedForFeelingRatherThanForSaying(t *testing.T) {
 	require.NotContains(t, thread, "what you said before",
 		"the pile's door is the one that is about what you said")
 
-	// The link and the page it opens agree, or the rename made it worse.
-	require.Contains(t, m.call(t, "GET", "/moods", nil).Body.String(), "how you felt before")
+	// The chip and what it draws agree, or the rename made it worse: the label
+	// and the echo in the record are one string. See howYouFeltBefore.
+	require.Contains(t, shownMoods(t, f), "how you felt before")
 }
 
 // Control labels never vary, whatever the day.

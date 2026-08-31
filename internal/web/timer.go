@@ -95,12 +95,8 @@ const (
 // backFrom returns to the screen the button was on, so stopping a timer from
 // the pile does not land you on the chores.
 func backFrom(r *http.Request) string {
-	switch r.FormValue("from") {
-	case "home":
-		return "/"
-	case "moods":
-		return "/moods"
-	}
+	// "moods" was a screen and is a turn now, so there is nowhere else for a
+	// timer to have been stopped from.
 	return "/"
 }
 

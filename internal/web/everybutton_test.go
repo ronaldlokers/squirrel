@@ -71,7 +71,7 @@ func TestEveryButtonAnswersWithAFragment(t *testing.T) {
 	screens := map[string]string{}
 	for _, screen := range []string{
 		"/", "/r/everything", "/r/notes", "/r/chores", "/r/at", "/r/tasks",
-		"/moods",
+		"/r/chores",
 	} {
 		page := m.call(t, "GET", screen, nil)
 		require.Equal(t, 200, page.Code, "%s does not render", screen)
