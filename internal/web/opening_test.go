@@ -225,22 +225,23 @@ func TestTheOfferStillWillNotTalkOverACard(t *testing.T) {
 	require.NotContains(t, thread(t, f), "ring the vet")
 }
 
-// A question you have not answered is not asked again.
+// A question you have not answered cannot stack, because it is never written.
 //
-// It is still on the screen; asking again does not make it easier to answer,
-// it makes a column of the same question — which is what a phone showed, three
-// deep, with opening lines in between them.
+// It stacked three deep on a phone when it was a turn, with opening lines in
+// between them. Drawn at the edge there is exactly one of it however many times
+// you arrive, and the record holds none.
 func TestAnUnansweredCheckinIsNotAskedAgain(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)
 
-	m.call(t, "GET", "/", nil)
-	require.Len(t, f.appended, 1, "it did not ask at all")
-	require.Contains(t, f.appended[0].Words, "how do you feel")
-	f.turns, f.appended = append(f.turns, f.appended...), nil
+	first := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, first, "how do you feel", "it did not ask at all")
+	require.Empty(t, f.appended, "the question was written into the record")
 
-	m.call(t, "GET", "/", nil)
-	require.Empty(t, f.appended, "it asked how you feel a second time")
+	again := m.call(t, "GET", "/", nil).Body.String()
+	require.Equal(t, 1, strings.Count(again, "how do you feel"),
+		"it asked how you feel a second time")
+	require.Empty(t, f.appended)
 }
 
 // Not even with other things said after it. Buddy says more after asking —

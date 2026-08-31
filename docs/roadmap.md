@@ -345,6 +345,28 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.54.0 — 31 August 2026
+
+**How you feel, asked every hour, in the room where the asking happens.**
+
+Six hours before, on the owner's instruction. What makes an hour bearable is
+the second half: the question is drawn at the edge and never written. It was a
+turn on the argument that a question the record cannot show you answering is
+half-recorded, and that argument was made when it came four times a day. At
+hourly it inverts — sixteen "how do you feel?" would be most of a record whose
+job is to hold what you said. Your answer is still kept; the reading has always
+lived in its own table.
+
+**Two clocks where there was one.** *Should I ask again* is an hour;
+*does this reading still describe you* is six. `Checkin.Fresh` answered both,
+so changing the number would have quietly shortened how long a wiped afternoon
+keeps Squirrel gentle. `JustAsked` is the new one and `Fresh` is unchanged.
+
+**Two guards had to learn the question left the record.** "Do not hand somebody
+a job while you are asking how they are" was enforced by looking at the end of
+the conversation, and the question is not in the conversation any more. Both
+now ask whether it is being asked *now* as well.
+
 ### v0.53.0 — 31 August 2026
 
 **Everything about you is in one place, and it is where it says who you are.**

@@ -215,23 +215,38 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// out. Never while walking back, and never when the record could not be read.
 		first := !walkingBack && !unreadable && !more && len(turns) == 0
 
-		// The check-in, written rather than rendered: a question that is not in the
-		// record is one the record cannot show you answering.
+		// The check-in, drawn rather than written, and asked every hour rather
+		// than every six.
 		//
-		// Never while walking back — reading the past must not add to it — and never
-		// twice over, which put the same question on screen three deep.
+		// It was a written turn on the argument that a question the record
+		// cannot show you answering is a question half-recorded. That argument
+		// was made when the question came four times a day; at hourly it
+		// inverts, and a record whose job is to hold what you said would be
+		// mostly what you were asked. Your answer is still kept — the readings
+		// table has always been where the mood itself lives, and the "you said
+		// calm / Noted." pair is written by the answer's own handler.
+		//
+		// Never while walking back: reading the past must not put a question
+		// about now in the middle of it.
+		var edge []squirrel.Turn
 		asked := false
-		if !walkingBack && !unreadable && !alreadyAsking(turns) {
+		if !walkingBack && !unreadable {
 			if t, ask := checkinTurn(ctx, s, personID, r.URL.Query().Get("ask") != ""); ask {
 				asked = true
-				say(t, "asking how you are")
+				edge = append(edge, t)
 			}
 		}
 
 		// Only once the question has been answered. Asking how you are and then handing
 		// you a job in the same breath is the interruption this product exists to
 		// reduce, and the answer shapes the offer anyway.
-		if !walkingBack && !unreadable && !endsOpen(turns) {
+		//
+		// `asked` as well as endsOpen since 31 August 2026: the check-in is
+		// drawn at the edge rather than written, so the conversation no longer
+		// ends with it and endsOpen cannot see it. Both guards, because they
+		// are guarding against different things — one against a question that
+		// is open in the record, one against the question being asked now.
+		if !walkingBack && !asked && !unreadable && !endsOpen(turns) {
 			if st := stepFor(s, opts, r); st != nil {
 				say(coachReply("Where you were.", false, false, nil, st),
 					"drawing where you were")
@@ -240,7 +255,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 
 		// The opening line, before the offer: what is happening, then what to do about
 		// it.
-		if !walkingBack && !unreadable && !endsAsking(turns) {
+		if !walkingBack && !asked && !unreadable && !endsAsking(turns) {
 			if t, has := openingTurn(ctx, s, opts, personID, turns); has {
 				// Squirrel has something to say about your world, so you have
 				// one.
@@ -259,12 +274,12 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
-		// Everything has no list of its own, so its edge is empty — but the
-		// script asks whichever room it is standing in, and a handler that
-		// ignored the ask would answer with the whole page and have it pasted
-		// into the element the ask was about.
+		// Everything's edge is the check-in when it is time to ask and nothing
+		// otherwise. The script asks whichever room it is standing in, and a
+		// handler that ignored the ask would answer with the whole page and
+		// have it pasted into the element the ask was about.
 		if r.Header.Get("X-Edge") == "1" {
-			edgeOnly(w, r, nil)
+			edgeOnly(w, r, atTheEdge(ctx, "everything", edge))
 			return
 		}
 
@@ -279,7 +294,8 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			Held:      r.URL.Query().Get("held") != "",
 			Here:      "thread",
 			Scrolling: true,
-			Turns:     turnViews(r.Context(), turns),
+			Turns:     saidAndDone(turnViews(r.Context(), turns), len(edge) > 0),
+			Edge:      atTheEdge(r.Context(), "everything", edge),
 			MoreAbove: more,
 		}
 		if first {
@@ -435,7 +451,7 @@ func checkinTurn(ctx context.Context, s Store, personID int64, again bool) (squi
 		slog.Error("reading how you are", "error", err)
 		return squirrel.Turn{}, false
 	}
-	if found && c.Fresh(now()) && !again {
+	if found && c.JustAsked(now()) && !again {
 		return squirrel.Turn{}, false
 	}
 	body, err := json.Marshal(drawn{Faces: true})

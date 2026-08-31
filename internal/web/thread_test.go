@@ -200,25 +200,37 @@ func TestAFailedKeepStillLeavesTheWordsInTheThread(t *testing.T) {
 	require.Equal(t, "milk", f.appended[0].Words)
 }
 
-// Buddy asks while the reading is stale, and the question is a turn — so the
-// morning is still in the record this evening. Home used to let the answer
-// replace the question, and the morning was gone.
+// Buddy asks when the last answer is an hour old, and the question is drawn
+// rather than written — so asking every hour does not fill a record whose job
+// is to hold what you said.
 func TestBuddyAsksHowYouAreWhenTheReadingIsStale(t *testing.T) {
-	f := &fakeStore{}
-	thread(t, f)
+	f := &fakeStore{checkin: &squirrel.Checkin{
+		Mood: squirrel.MoodGood, SaidAt: now().Add(-90 * time.Minute),
+	}}
+	body := thread(t, f)
 
-	require.Len(t, f.appended, 1)
-	require.Equal(t, squirrel.SpeakerBuddy, f.appended[0].Who)
-	require.Contains(t, string(f.appended[0].Shown), "faces")
+	require.Contains(t, body, "how do you feel")
+	require.Contains(t, body, "mood-good.png", "the five drawings are not offered")
+	require.Empty(t, f.appended, "the question was written into the record")
 }
 
-// And does not ask again while the answer still describes now. A question
-// re-asked on every render would fill the record with the same turn.
+// And does not ask again inside the hour.
 func TestBuddyDoesNotAskWhileTheReadingIsFresh(t *testing.T) {
 	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}}
-	thread(t, f)
+	body := thread(t, f)
 
+	require.NotContains(t, body, "how do you feel")
 	require.Empty(t, f.appended)
+}
+
+// An hour, not six. They were one constant, and asking more often would have
+// quietly shortened how long a wiped afternoon keeps Squirrel gentle — which is
+// a different question with a different answer. See Checkin.Fresh.
+func TestTheQuestionComesBackAfterAnHourAndTheReadingLastsSix(t *testing.T) {
+	said := squirrel.Checkin{Mood: squirrel.MoodWiped, SaidAt: now().Add(-2 * time.Hour)}
+
+	require.False(t, said.JustAsked(now()), "two hours on and it has not asked again")
+	require.True(t, said.Fresh(now()), "two hours on and a wiped afternoon stopped counting")
 }
 
 // The five drawings, not five words. They are the control the capacity gate
