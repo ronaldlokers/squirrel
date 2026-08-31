@@ -157,7 +157,10 @@ func TestEveryChipGoesSomewhereThatExists(t *testing.T) {
 	f := nineTasks()
 	f.checkin = fresh()
 	f.aside = []squirrel.HeldItem{{ID: 5, Text: "the referral", State: squirrel.ItemWaiting}}
-	body := opened(t, f, "tasks")
+	// A run, because "carry on" is the one chip left that is a link: the two
+	// shelves became presses on 31 August 2026 when they stopped being rooms.
+	f.run, f.hasRun = squirrel.Run{Place: squirrel.RunPile, Since: time.Minute}, true
+	body := opened(t, f, "everything")
 
 	m := mounted(t, &fakeStore{})
 	hrefs := regexp.MustCompile(`<a class="chip" href="([^"]+)"`).FindAllStringSubmatch(body, -1)
@@ -270,7 +273,6 @@ func TestAPillIsASingleLineLabelYouPress(t *testing.T) {
 		".post",
 		".abtn",
 		".chip",
-		".enough .leavehere",
 	} {
 		require.Contains(t, ruleFor(t, sheet, selector), "border-radius: 999px",
 			"%s is a single-line label you press and is not a pill", selector)

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,6 +122,7 @@ type fakeStore struct {
 	// The conversation: what has been said, what this render said, and
 	// whether there is a page above.
 	turns       []squirrel.Turn
+	roomRead    string
 	appended    []squirrel.Turn
 	moreTurns   bool
 	pagedBefore int64
@@ -633,7 +635,7 @@ func (m *testMux) call(t *testing.T, method, target string, body io.Reader) *htt
 // ServeMux resolves an overlap.
 //
 // Fewer wildcards wins first, and only then the longer literal. Length alone
-// picked "/r/{room}" over "/r/buddy" — thirteen characters against twelve — so
+// picked "/r/{room}" over "/r/everything" — thirteen characters against twelve — so
 // every test asking for Buddy's room reached the generic handler while the
 // server reached his own. That is a test helper answering a different question
 // from the product, which is worse than no helper.
@@ -650,7 +652,7 @@ func moreSpecific(pattern, best string) bool {
 
 // matchesPath is prefix matching that understands a wildcard segment.
 //
-// A plain HasPrefix cannot see one: "/r/{room}" is not a prefix of "/r/pile",
+// A plain HasPrefix cannot see one: "/r/{room}" is not a prefix of "/r/notes",
 // so a route with a wildcard was unreachable in these tests while the real
 // ServeMux served it — which is a test helper answering a different question
 // from the product.
@@ -1111,7 +1113,8 @@ func (f *fakeStore) AppendTurn(_ context.Context, _ int64, room string, t squirr
 	return t, nil
 }
 
-func (f *fakeStore) RecentTurns(_ context.Context, _ int64, _ string, limit int) ([]squirrel.Turn, bool, error) {
+func (f *fakeStore) RecentTurns(_ context.Context, _ int64, room string, limit int) ([]squirrel.Turn, bool, error) {
+	f.roomRead = room
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -1163,13 +1166,30 @@ func opened(t *testing.T, f *fakeStore, where string) string {
 	if f.checkin == nil {
 		f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
 	}
+	if shelfByKey(where) {
+		return pressedShelf(t, f, where).Body.String()
+	}
 	return routed(t, f).call(t, "GET", "/r/"+where, nil).Body.String()
+}
+
+// pressedShelf is how the two shelves are reached since 31 August 2026: a chip
+// inside the notes rather than a door on the rail. The helpers take a shelf
+// where they took a room, so a test about what a shelf draws stays a test about
+// what a shelf draws.
+func pressedShelf(t *testing.T, f *fakeStore, which string) *httptest.ResponseRecorder {
+	t.Helper()
+	return routed(t, f).callFragment(t, "/notes/shelf",
+		url.Values{"room": {"notes"}, "shelf": {which}}.Encode())
 }
 
 // drewIn goes into a room and hands back the turns it wrote, for the tests
 // that assert on the write rather than on a rendering of it.
 func drewIn(t *testing.T, f *fakeStore, where string) []squirrel.Turn {
 	t.Helper()
+	if shelfByKey(where) {
+		pressedShelf(t, f, where)
+		return f.appended
+	}
 	routed(t, f).call(t, "GET", "/r/"+where, nil)
 	return f.appended
 }

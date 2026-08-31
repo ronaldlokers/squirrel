@@ -91,7 +91,7 @@ type Turn struct {
 	// the log and nothing else, and it is what makes "which surface produces
 	// the answers that land badly" a question with an answer.
 	Kind string
-	// Room is which room this was said in: "buddy", "pile", "chores", "at",
+	// Room is which room this was said in: "everything", "notes", "chores", "at",
 	// "tasks", "held", "kept". Empty means Buddy's own room, which is where
 	// every turn was said before 28 August 2026.
 	//
@@ -258,18 +258,16 @@ func Trim(recent []Exchange, now time.Time) []Exchange {
 // The rooms this package knows the names of, and it is a copy: internal/coach
 // must not import internal/web, and Buddy has to be able to say where he is.
 //
-// Buddy's own room is deliberately absent. It is not a room he is confined to
-// — it is where he is, and every other room is the narrowing.
+// Everything is deliberately absent. It is not a room he is confined to — it is
+// where he is, and every other room is the narrowing.
 //
 // TestTheRoomNamesAgreeWithTheCoach fails when the two lists drift, because
-// two lists of the same seven names is one list that goes stale.
+// two lists of the same four names is one list that goes stale.
 var roomNames = map[string]string{
-	"pile":   "the pile",
+	"notes":  "the notes",
 	"chores": "the chores",
 	"at":     "the agenda",
 	"tasks":  "the tasks",
-	"held":   "what you set aside",
-	"kept":   "the things you kept",
 }
 
 // RoomName is what a room is called, or empty for Buddy's own and for anything

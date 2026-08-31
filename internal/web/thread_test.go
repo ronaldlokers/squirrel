@@ -62,8 +62,7 @@ func TestTheRailHoldsEverywhereElse(t *testing.T) {
 	})
 
 	for _, name := range []string{
-		"Buddy", "the pile", "the tasks", "the chores", "the agenda",
-		"what you set aside", "the things you kept",
+		"everything", "the notes", "the tasks", "the chores", "the agenda",
 		"look something up",
 	} {
 		require.Contains(t, body, name, "the rail lost %s", name)
@@ -76,7 +75,7 @@ func TestTheRailHoldsEverywhereElse(t *testing.T) {
 func TestARoomWithNothingWaitingShowsNoNumber(t *testing.T) {
 	body := thread(t, &fakeStore{waiting: squirrel.Waiting{}})
 
-	require.Contains(t, body, "the pile")
+	require.Contains(t, body, "the notes")
 	require.NotContains(t, body, `class="cnt"`)
 }
 
@@ -136,7 +135,7 @@ func TestThreadWalksBackwardsWhenAsked(t *testing.T) {
 func TestTheDoorsSurviveACountThatFails(t *testing.T) {
 	body := thread(t, &fakeStore{waitingErr: errTest})
 
-	for _, name := range []string{"the pile", "the tasks", "the chores", "the agenda"} {
+	for _, name := range []string{"the notes", "the tasks", "the chores", "the agenda"} {
 		require.Contains(t, body, name)
 	}
 	require.NotContains(t, body, `class="cnt"`)
@@ -511,7 +510,7 @@ func TestOpeningThePileHandsYouOneNote(t *testing.T) {
 		note(9, "the boiler makes a noise", squirrel.ItemOpen),
 		note(8, "meter reading 48213", squirrel.ItemOpen),
 	}}
-	fDrew := drewIn(t, f, "pile")
+	fDrew := drewIn(t, f, "notes")
 
 	require.Len(t, fDrew, 1)
 	shown := string(fDrew[len(fDrew)-1].Shown)
@@ -569,7 +568,7 @@ func TestLaterHandsYouTheNextAndDecidesNothing(t *testing.T) {
 // Nothing left says so rather than handing you an empty card.
 func TestAnEmptyPileSaysSo(t *testing.T) {
 	f := &fakeStore{}
-	fDrew := drewIn(t, f, "pile")
+	fDrew := drewIn(t, f, "notes")
 
 	require.Len(t, fDrew, 1)
 	require.NotContains(t, string(fDrew[len(fDrew)-1].Shown), `"cards"`)
@@ -695,7 +694,7 @@ func TestThePileNeverRanks(t *testing.T) {
 	for i := int64(1); i <= 7; i++ {
 		items = append(items, note(i, "a thought", squirrel.ItemOpen))
 	}
-	body := strings.ToLower(opened(t, &fakeStore{items: items}, "pile"))
+	body := strings.ToLower(opened(t, &fakeStore{items: items}, "notes"))
 
 	for _, ranked := range []string{"of 7", "(7)", "1 of ", "7 left", "7 to go"} {
 		require.NotContains(t, body, ranked)
@@ -704,7 +703,7 @@ func TestThePileNeverRanks(t *testing.T) {
 
 // Nothing to decide about does not celebrate and does not nag.
 func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
-	body := strings.ToLower(opened(t, &fakeStore{}, "pile"))
+	body := strings.ToLower(opened(t, &fakeStore{}, "notes"))
 
 	require.Contains(t, body, "nothing to decide about")
 	for _, said := range []string{"well done", "all clear", "inbox zero", "congratulations", "great"} {
@@ -714,7 +713,7 @@ func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
 
 func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
 	f := &fakeStore{itemsErr: errTest}
-	fDrew := drewIn(t, f, "pile")
+	fDrew := drewIn(t, f, "notes")
 
 	require.Contains(t, fDrew[len(fDrew)-1].Words, "cannot reach the pile")
 }

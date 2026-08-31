@@ -17,7 +17,7 @@ func TestTheRouteTable(t *testing.T) {
 
 	for _, route := range []string{
 		"GET /{$}",
-		"GET /r/buddy",
+		"GET /r/everything",
 		"GET /r/{room}",
 		"POST /capture",
 		"POST /find",
@@ -57,13 +57,17 @@ func TestTheRouteTable(t *testing.T) {
 		// with the identity rather than with a note.
 		"GET /me/face",
 		"POST /held/act",
-		"GET /enough",
 		"POST /tasks/act",
 		"POST /tasks/new",
 		"POST /chores/act",
 		"POST /chores/often",
 		"POST /chores/new",
 		"GET /pile/chores",
+		"GET /r/buddy",
+		"GET /r/pile",
+		"GET /r/held",
+		"GET /r/kept",
+		"POST /notes/shelf",
 		"GET /manifest.webmanifest",
 		"GET /sw.js",
 		"GET /static/",
@@ -86,7 +90,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 60, "a route was added without being pinned here")
+	require.Len(t, m.routes, 64, "a route was added without being pinned here")
 }
 
 // And the count above is the whole table rather than a number somebody bumped.
@@ -177,14 +181,14 @@ func TestMountRefusesWithoutWhatItNeeds(t *testing.T) {
 
 // The helper resolves an overlap the way the server does.
 //
-// It picked the longest pattern, so "/r/{room}" beat "/r/buddy" by one
+// It picked the longest pattern, so "/r/{room}" beat "/r/everything" by one
 // character and every test asking for Buddy's room reached the generic handler
 // while the server reached his own. A helper that answers a different question
 // from the product is worse than no helper.
 func TestTheTestMuxPrefersTheSpecificRoute(t *testing.T) {
 	m := mounted(t, &fakeStore{})
 
-	require.Equal(t, "GET /r/buddy", m.route(t, "GET", "/r/buddy"))
+	require.Equal(t, "GET /r/everything", m.route(t, "GET", "/r/everything"))
 	require.Equal(t, "GET /r/{room}", m.route(t, "GET", "/r/chores"))
 	require.Equal(t, "GET /{$}", m.route(t, "GET", "/"))
 }

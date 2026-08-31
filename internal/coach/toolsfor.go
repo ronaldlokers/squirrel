@@ -18,8 +18,10 @@ package coach
 //   - The agenda cannot write. An appointment is a fixed point and the
 //     product's rule 1 is to prefer it, so a model that can move one can move
 //     the thing everything else is arranged around. It proposes, and you press.
-//   - The two shelves cannot write at all. The way off a shelf is a card's own
-//     button, which is what the shelf turns already draw.
+//   - The two shelves stopped being rooms on 31 August 2026 and are not
+//     narrowed in any more. They are drawn inside the notes, where the notes'
+//     own toolset applies — and the way off a shelf was never a tool anyway,
+//     it is a card's own button.
 var roomTools = map[string]struct {
 	// Tools is every tool name this room may use, reads and writes together.
 	Tools []string
@@ -29,7 +31,10 @@ var roomTools = map[string]struct {
 	Propose []string
 	Refuse  []string
 }{
-	"pile": {
+	// The notes: the pile's toolset unchanged. It absorbed the two shelves on
+	// 31 August 2026, and their tools were a subset of these — a shelf could
+	// only look and talk, which is what `item`, `say` and `open` are.
+	"notes": {
 		Tools:   []string{"now", "item", "open_work", "typically", "create_task", "propose", "say", "open"},
 		Propose: []string{"chore", "moment", "drop"},
 	},
@@ -45,8 +50,6 @@ var roomTools = map[string]struct {
 		Tools:   []string{"now", "next_fixed", "propose", "say", "open"},
 		Propose: []string{"moment"},
 	},
-	"held": {Tools: []string{"now", "item", "say", "open"}},
-	"kept": {Tools: []string{"now", "item", "say", "open"}},
 }
 
 // mayUse says this room is allowed this tool.

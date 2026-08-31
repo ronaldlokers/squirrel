@@ -11,7 +11,7 @@ import (
 
 func TestEveryActionIsAFormSubmissionNotAScriptHook(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := opened(t, f, "pile")
+	body := opened(t, f, "notes")
 
 	require.Contains(t, body, `method="post"`)
 	require.Contains(t, body, `action="/pile/act"`)

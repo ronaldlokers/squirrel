@@ -424,7 +424,7 @@ func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
 	}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/r/pile")
+	c.navigate(t, srv.URL+"/r/notes")
 	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
 
 	c.key(t, "k")
@@ -440,7 +440,7 @@ func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
 	}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/r/pile")
+	c.navigate(t, srv.URL+"/r/notes")
 	c.until(t, "the note to arrive", `!!document.querySelector("#thread .turncard")`)
 
 	c.eval(t, `document.querySelector(".dock textarea").focus()`)
@@ -644,8 +644,11 @@ func TestBrowserNothingPaintsOverTheOpenRoomSheet(t *testing.T) {
 	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
 	c.eval(t, `return new Promise(r => setTimeout(r, 200))`)
 
+	// The last thing in the rail, which is the one most likely to be under
+	// something. It was the stopping link until 31 August 2026, when that
+	// screen went; it is the way out of the product now.
 	hit := c.eval(t, `
-		const out = document.querySelector(".rail .leaving");
+		const out = document.querySelector(".rail .signout");
 		out.scrollIntoView({block: "center"});
 		const b = out.getBoundingClientRect();
 		const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
@@ -954,8 +957,13 @@ func TestBrowserARedirectedPressGoesThere(t *testing.T) {
 	f := aPile()
 	f.items = []squirrel.Item{note(1, "the boiler code", squirrel.ItemKept)}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/kept")
-	c.navigate(t, srv.URL+"/r/kept")
+	c := browserAt(t, srv, "/r/notes")
+	c.navigate(t, srv.URL+"/r/notes")
+	// The shelf, which is a press inside the notes since 31 August 2026 rather
+	// than a room of its own. A kept note is where the redirecting press is.
+	c.until(t, "the shelf chip", `!!document.querySelector('input[name="shelf"][value="kept"]')`)
+	c.eval(t, `const i = document.querySelector('input[name="shelf"][value="kept"]');
+		i.form.requestSubmit(i.form.querySelector("button")); return 1`)
 	c.until(t, "the kept note", `!!document.querySelector('input[name="act"][value="open"]')`)
 
 	// A mark that only survives if the page never went anywhere. The redirect
@@ -966,7 +974,7 @@ func TestBrowserARedirectedPressGoesThere(t *testing.T) {
 		.querySelector("button").click(); return 1`)
 	c.until(t, "the browser to go", `!window.__stillHere && !!document.querySelector("#thread")`)
 
-	require.Equal(t, "/r/kept", c.eval(t, `return location.pathname`),
+	require.Equal(t, "/r/notes", c.eval(t, `return location.pathname`),
 		"the press left the room it was made in")
 	require.Equal(t, float64(0), c.eval(t, `
 		return document.querySelectorAll("#thread nav, #thread .rail").length`),

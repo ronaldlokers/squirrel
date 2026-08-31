@@ -17,10 +17,17 @@ import (
 // Buddy can do in it.
 //
 // A slice rather than a map, because the rail has an order and a map has none
-// — the order was the one thing the menu's map could not say. Buddy first: he
-// is where you talk, and where a press with nothing in mind should land. The
-// four that hold things next, in the order the menu carried them. The two
-// shelves last, because they are where a decision has already been made.
+// — the order was the one thing the menu's map could not say. Everything
+// first: it is where you talk, and where a press with nothing in mind should
+// land. The four that hold things follow, in the order the menu carried them.
+//
+// Five rooms and not seven since 31 August 2026. The rail had been carrying
+// two different kinds of thing under one shape: five were places you keep
+// something, and two — the things you kept, what you set aside — were states a
+// note is in, promoted to doors because there was nowhere else to put them. A
+// state with a door on the rail reads as a fourth pile to stay on top of,
+// which is the weight this product exists to remove. They are two chips inside
+// the notes now; see shelfChips.
 type room struct {
 	// Key is the room in a URL and in the turns table.
 	Key string
@@ -48,11 +55,14 @@ type room struct {
 }
 
 var rooms = []room{
-	{Key: "buddy", Name: "Buddy",
+	// Named for what it holds rather than for who is in it. "general" was the
+	// other candidate and is Slack's word — the same register #chores was
+	// refused for when these rooms were built.
+	{Key: "everything", Name: "everything",
 		Placeholder: "what's going on?", Button: "Tell it",
 		Action: "/capture", Field: "text"},
-	{Key: "pile", Name: "the pile",
-		Placeholder: "what is it", Button: "Put it in the pile",
+	{Key: "notes", Name: "the notes",
+		Placeholder: "what is it", Button: "Put it in the notes",
 		Action: "/capture", Field: "text"},
 	{Key: "chores", Name: "the chores",
 		Placeholder: "what comes back?", Button: "Make a chore",
@@ -63,17 +73,62 @@ var rooms = []room{
 	{Key: "tasks", Name: "the tasks",
 		Placeholder: "what did you decide?", Button: "Make a task",
 		Action: "/tasks/new", Field: "text"},
-	// The two shelves. Nothing is kept or set aside by being typed — both
-	// states are reached by deciding about a note that already exists. A shelf
-	// with no dock would be the one screen where the thumb has nowhere to go,
-	// and a shelf whose dock lied about its destination would be worse than
-	// either. So the room still decides, and a shelf's decision is the pile.
-	{Key: "held", Name: "what you set aside",
-		Placeholder: "what is it", Button: "Put it in the pile",
-		Action: "/capture", Field: "text"},
-	{Key: "kept", Name: "the things you kept",
-		Placeholder: "what is it", Button: "Put it in the pile",
-		Action: "/capture", Field: "text"},
+}
+
+// The two shelves, as they are reached now: a press inside the notes rather
+// than a door on the rail.
+//
+// Nothing is kept or set aside by being typed. Both states are reached by
+// deciding about a note that already exists, which is why neither was ever a
+// place you could put something — a shelf with a dock had to borrow the pile's,
+// and a shelf whose dock lied about its destination would have been worse.
+//
+// On the room's opening turn only. Two chips under every note would be two
+// chips that are not about that note.
+// One name for each, on the chip and on the place it draws. Two words for one
+// shelf is two things as far as anybody reading the screen is concerned.
+var shelves = []struct{ Key, Name string }{
+	{"kept", "the things you kept"},
+	{"held", "what you set aside"},
+}
+
+// placeName is what a place is called — the five rooms and the two shelves.
+//
+// A shelf is a place you can be shown and not a room you can go to, which is
+// the whole distinction this change is about. Buddy can still open one by name
+// and /open can still draw one; neither is a door on the rail.
+func placeName(key string) (string, bool) {
+	if name, ok := doorName(key); ok {
+		return name, true
+	}
+	for _, sh := range shelves {
+		if sh.Key == key {
+			return sh.Name, true
+		}
+	}
+	return "", false
+}
+
+// shelfChips is what the notes offer besides a new one.
+func shelfChips() []turnChip {
+	out := make([]turnChip, 0, len(shelves))
+	for _, sh := range shelves {
+		out = append(out, turnChip{
+			Label: sh.Name, Action: "/notes/shelf",
+			Fields: map[string]string{"shelf": sh.Key},
+		})
+	}
+	return out
+}
+
+// shelfByKey is a shelf named by a form.
+func shelfByKey(key string) bool {
+	for _, sh := range shelves {
+		if sh.Key == key {
+			return true
+		}
+	}
+	return false
 }
 
 func roomByKey(key string) (room, bool) {
@@ -91,14 +146,14 @@ type roomKey struct{}
 
 // roomOf is which room this request is in.
 //
-// Buddy's when nobody said. A handler mounted outside a room still has to put
-// its turn somewhere, and the somewhere is the room the whole conversation
+// Everything's when nobody said. A handler mounted outside a room still has to
+// put its turn somewhere, and the somewhere is the room the whole conversation
 // lived in before 28 August.
 func roomOf(ctx context.Context) string {
 	if r, ok := ctx.Value(roomKey{}).(string); ok && r != "" {
 		return r
 	}
-	return "buddy"
+	return "everything"
 }
 
 // withRoom is how the room gets onto the request.
@@ -237,10 +292,9 @@ type railView struct {
 
 // roomsFor is the rail.
 //
-// Counts on the four that earn one. The three without — Buddy's room and the
-// two shelves — carry nothing, and that is not an omission: a shelf is where a
-// decision has already been made, and a number on it would be a reproach for
-// having made it.
+// Counts on the four that earn one. Everything carries none: nothing waits in
+// the room you are standing in, and a number there would be counting the whole
+// product at you on the way past.
 func roomsFor(ctx context.Context, s Store, personID int64, here string) []railView {
 	out := make([]railView, 0, len(rooms))
 	for _, r := range rooms {
@@ -256,7 +310,7 @@ func roomsFor(ctx context.Context, s Store, personID int64, here string) []railV
 	}
 	for i := range out {
 		switch out[i].Key {
-		case "pile":
+		case "notes":
 			out[i].Count = waiting.Pile
 		case "at":
 			out[i].Count = waiting.Agenda
@@ -306,7 +360,7 @@ func inTheRoomItCameFrom(h http.HandlerFunc) http.HandlerFunc {
 // press having gone to the wrong place — it had not; the way back had.
 func backToTheRoom(r *http.Request) string {
 	where := roomOf(r.Context())
-	if where == "buddy" {
+	if where == "everything" {
 		return "/"
 	}
 	return "/r/" + where

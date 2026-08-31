@@ -2,6 +2,7 @@ package web
 
 import (
 	"html"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -163,4 +164,18 @@ func TestEveryFormATurnDrawsCarriesItsRoom(t *testing.T) {
 	require.Positive(t, forms, "no forms drawn, so this measured nothing")
 	require.Equal(t, forms, strings.Count(turns, `name="room" value="chores"`),
 		"a form in the chores does not say which room it is in")
+}
+
+// And the room it falls back to is a room. A held capture replayed into a room
+// that no longer exists is a thought filed where nothing reads, which is the
+// one failure the worker exists to prevent.
+func TestTheWorkerFallsBackToARoomThatExists(t *testing.T) {
+	worker, err := staticFS.ReadFile("static/sw.js")
+	require.NoError(t, err)
+
+	for _, fallback := range regexp.MustCompile(`room[^"\n]*\|\| "([a-z]+)"`).
+		FindAllStringSubmatch(string(worker), -1) {
+		_, ok := roomByKey(fallback[1])
+		require.True(t, ok, "sw.js falls back to %q, which is not a room", fallback[1])
+	}
 }

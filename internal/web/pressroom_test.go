@@ -9,7 +9,7 @@ import (
 )
 
 func TestAPressComesBackToTheRoomItWasMadeIn(t *testing.T) {
-	for _, room := range []string{"at", "chores", "tasks", "pile", "held", "kept"} {
+	for _, room := range []string{"at", "chores", "tasks", "notes"} {
 		t.Run(room, func(t *testing.T) {
 			f := &fakeStore{}
 			body := url.Values{"room": {room}, "label": {""}}.Encode()
@@ -23,7 +23,7 @@ func TestAPressComesBackToTheRoomItWasMadeIn(t *testing.T) {
 
 func TestAPressFromBuddysRoomComesBackToTheFrontDoor(t *testing.T) {
 	f := &fakeStore{}
-	body := url.Values{"room": {"buddy"}, "label": {""}}.Encode()
+	body := url.Values{"room": {"everything"}, "label": {""}}.Encode()
 	res := routed(t, f).call(t, "POST", "/at/new", strings.NewReader(body))
 
 	require.Equal(t, "/", res.Header().Get("Location"))

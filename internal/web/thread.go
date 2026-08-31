@@ -171,9 +171,9 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		before, perr := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
 		walkingBack := perr == nil && before > 0
 		if walkingBack {
-			turns, more, err = s.TurnsBefore(ctx, personID, "buddy", before, threadLimit)
+			turns, more, err = s.TurnsBefore(ctx, personID, "everything", before, threadLimit)
 		} else {
-			turns, more, err = s.RecentTurns(ctx, personID, "buddy", threadLimit)
+			turns, more, err = s.RecentTurns(ctx, personID, "everything", threadLimit)
 		}
 		// A record that cannot be read is not a reason to take the screen away: the dock
 		// still writes to the spool. Said out loud rather than rendered as an empty
@@ -188,7 +188,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		// record leaves a hole in the conversation, which is recoverable;
 		// refusing the page over it would not be.
 		say := func(t squirrel.Turn, doing string) {
-			saved, err := s.AppendTurn(ctx, personID, "buddy", t)
+			saved, err := s.AppendTurn(ctx, personID, "everything", t)
 			if err != nil {
 				slog.Error(doing, "error", err)
 				return
@@ -247,7 +247,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		}
 
-		buddy, _ := roomByKey("buddy")
+		buddy, _ := roomByKey("everything")
 		v := view{
 			Home:   true,
 			Thread: true,
@@ -715,7 +715,7 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		where := r.FormValue("where")
-		if _, ok := roomByKey(where); !ok {
+		if _, ok := placeName(where); !ok {
 			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return
 		}
@@ -738,7 +738,7 @@ func openHandler(s Store, opts Options) http.HandlerFunc {
 
 // placeTurn is what you said and what Buddy answered, or nothing at all.
 func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where string, from int) []squirrel.Turn {
-	name, ok := doorName(where)
+	name, ok := placeName(where)
 	if !ok {
 		return nil
 	}
@@ -767,7 +767,7 @@ func placeTurn(ctx context.Context, s Store, opts Options, personID int64, where
 // putting "the tasks" in your mouth would be the record inventing a sentence
 // you did not say. See coachSayHandler.
 func placeSaid(ctx context.Context, s Store, opts Options, personID int64, where string, from int) (squirrel.Turn, bool) {
-	name, ok := doorName(where)
+	name, ok := placeName(where)
 	if !ok {
 		return squirrel.Turn{}, false
 	}
@@ -779,8 +779,11 @@ func placeSaid(ctx context.Context, s Store, opts Options, personID int64, where
 		reply = tasksTurn(ctx, s, opts, personID, name, from)
 	case "at":
 		reply = agendaTurn(ctx, s, personID, name, from)
-	case "pile":
+	case "notes":
 		reply = pileTurn(ctx, s, opts, personID, 0, name)
+	// The two shelves. Not rooms since 31 August 2026, and still places: a
+	// shelf is something you can be shown, which is what the chips inside the
+	// notes and Buddy's own `open` both ask for.
 	case "kept":
 		reply = keptTurn(ctx, s, personID, name)
 	case "held":
@@ -1070,8 +1073,12 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 		})
 	}
 	// The way to what you set aside, from the room a task is set aside out of.
-	// A link, because it is a room and going to one writes nothing.
-	sh.Chips = []turnChip{{Label: "what you set aside", Href: "/r/held"}}
+	// A press, because a shelf is drawn where you are standing rather than
+	// entered — so this one draws it here, in the tasks.
+	sh.Chips = []turnChip{{
+		Label: "what you set aside", Action: "/notes/shelf",
+		Fields: map[string]string{"shelf": "held"},
+	}}
 	if more {
 		sh.Chips = append(sh.Chips, theRest("tasks", from+listLimit))
 	}

@@ -24,7 +24,7 @@ func settle(t *testing.T, c *cdp) {
 // to "/", and you arrived in Buddy having filed something in the room you had
 // been standing in.
 func TestBrowserEveryRoomsDockStaysPut(t *testing.T) {
-	for _, room := range []string{"at", "chores", "tasks", "pile", "held", "kept", "buddy"} {
+	for _, room := range []string{"at", "chores", "tasks", "notes", "everything"} {
 		t.Run(room, func(t *testing.T) {
 			srv := screen(t, aPile())
 			c := browserAt(t, srv, "/r/"+room)

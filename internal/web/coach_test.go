@@ -37,7 +37,7 @@ func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
 	}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, `href="/r/buddy"`)
+	require.Contains(t, body, `href="/r/everything"`)
 	require.Contains(t, body, "look something up")
 	require.Contains(t, body, `action="/find/ask"`)
 }
@@ -53,7 +53,7 @@ func TestTheWayToBuddyIsThereBeforeAnythingIsSaid(t *testing.T) {
 	f := &fakeStore{checkin: fresh()}
 	body := thread(t, f)
 
-	require.Contains(t, body, `href="/r/buddy"`)
+	require.Contains(t, body, `href="/r/everything"`)
 	require.Contains(t, body, "look something up")
 }
 
@@ -253,7 +253,7 @@ func TestBuddysRoomHoldsNothing(t *testing.T) {
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
 	f.appended = nil
-	m.call(t, "GET", "/r/buddy", nil)
+	m.call(t, "GET", "/r/everything", nil)
 
 	for _, turn := range f.appended {
 		require.NotContains(t, string(turn.Shown), `"place":`,
@@ -263,7 +263,7 @@ func TestBuddysRoomHoldsNothing(t *testing.T) {
 	// And the pile's does, so this measured the difference rather than an
 	// empty store.
 	f.appended = nil
-	m.call(t, "GET", "/r/pile", nil)
+	m.call(t, "GET", "/r/notes", nil)
 	require.NotEmpty(t, f.appended)
 }
 

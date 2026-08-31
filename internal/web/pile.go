@@ -62,14 +62,14 @@ func Mount(m Mux, s Store, opts Options) error {
 	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
-	m.Get("/{$}", guard(opts, withRoom("buddy", threadHandler(s, opts))))
+	m.Get("/{$}", guard(opts, withRoom("everything", threadHandler(s, opts))))
 	// Buddy's room, by its own name. The same handler as "/": the worked
 	// example, the check-in and the offer all live on the thread, and a second
 	// handler for the same room would be a second set of them.
 	//
 	// Go's ServeMux prefers the more specific pattern, so this wins over
 	// /r/{room} without any ordering care here.
-	m.Get("/r/buddy", guard(opts, withRoom("buddy", threadHandler(s, opts))))
+	m.Get("/r/everything", guard(opts, withRoom("everything", threadHandler(s, opts))))
 	// Any other room. A GET, because entering a place is navigation — see
 	// roomHandler.
 	m.Get("/r/{room}", guard(opts, roomRoute(s, opts)))
@@ -160,6 +160,9 @@ func Mount(m Mux, s Store, opts Options) error {
 		"a new appointment", "What is it?", "/at/new", "label", "next")))
 	m.Post("/tasks/ask", posting(opts, askNameHandler(s, opts,
 		"a new task", "What did you decide to do?", "/tasks/new", "text", "keep it")))
+	// The two shelves. Doors on the rail until 31 August 2026, and a press
+	// inside the notes since. See shelfHandler.
+	m.Post("/notes/shelf", posting(opts, shelfHandler(s, opts)))
 	m.Post("/pile/ask", posting(opts, askNameHandler(s, opts,
 		"put something down", "What is it?", "/capture", "text", "keep it")))
 	m.Post("/buddy/say", posting(opts, coachSayHandler(s, opts)))
@@ -171,6 +174,19 @@ func Mount(m Mux, s Store, opts Options) error {
 	// It was /coach, then /buddy, and now it is the conversation. A bookmark that
 	// dies quietly is worse than a redirect nobody notices. The query string is
 	// dropped: nothing at the other end reads one any more.
+	// And the four rooms that stopped being rooms on 31 August 2026. A room
+	// was a URL you could put on a home screen, so these are the same promise
+	// /coach and /buddy were given: a bookmark that dies quietly is worse than
+	// a redirect nobody notices. The two shelves land in the notes, which is
+	// where they are now — a press away rather than a door.
+	for from, to := range map[string]string{
+		"/r/buddy": "/", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
+	} {
+		where := to
+		m.Get(from, guard(opts, func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, where, http.StatusMovedPermanently)
+		}))
+	}
 	for _, gone := range []string{"/coach", "/buddy"} {
 		m.Get(gone, guard(opts, func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusMovedPermanently)
@@ -195,8 +211,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	// How you have been, and only when asked for by name. Nothing links here
 	// except the check-in you just answered.
 	m.Get("/moods", guard(opts, moodsHandler(s, opts)))
-	// Stopping. It reads nothing and counts nothing; it forgets one row.
-	m.Get("/enough", guard(opts, enoughHandler(s, opts)))
 	m.Post("/tasks/act", posting(opts, taskActHandler(s, opts)))
 	m.Post("/tasks/new", posting(opts, newTaskHandler(s, opts)))
 	m.Post("/chores/act", posting(opts, choreActHandler(s, opts)))

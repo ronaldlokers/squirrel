@@ -48,11 +48,15 @@ func TestTheConversationHasFewerObjectsInIt(t *testing.T) {
 	require.Positive(t, strings.Count(body, "frombuddy"))
 }
 
-func TestTheWayOutIsStillOnePress(t *testing.T) {
+// The rail carries no way out of its own any more. Stopping was a screen with
+// a link at the foot of the rail, and the link was the whole of it — a door to
+// a sentence. It went on 31 August 2026; ending a run still happens, where a
+// place is entered rather than where a link was pressed.
+func TestTheRailOffersNoScreenThatIsOnlyASentence(t *testing.T) {
 	body := thread(t, &fakeStore{})
 
-	require.Contains(t, body, `href="/enough"`)
-	require.Contains(t, body, `class="leaving"`)
+	require.NotContains(t, body, `href="/enough"`)
+	require.NotContains(t, body, `class="leaving"`)
 }
 
 // The rooms need no script.
@@ -78,9 +82,9 @@ func TestTheRoomsNeedNoScript(t *testing.T) {
 func TestTheRailIsOnEveryOtherScreenToo(t *testing.T) {
 	m := mounted(t, &fakeStore{checkin: fresh()})
 
-	for _, screen := range []string{"/", "/moods", "/enough"} {
+	for _, screen := range []string{"/", "/moods", "/r/notes"} {
 		body := m.call(t, "GET", screen, nil).Body.String()
 		require.Contains(t, body, `<nav class="rail"`, "%s has no rail", screen)
-		require.Contains(t, body, `href="/r/pile"`, "%s cannot reach the pile", screen)
+		require.Contains(t, body, `href="/r/notes"`, "%s cannot reach the notes", screen)
 	}
 }

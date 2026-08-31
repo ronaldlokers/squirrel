@@ -47,7 +47,7 @@ func TestEveryWordCanBeReadWhilePressed(t *testing.T) {
 		c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 			"width": width, "height": 844, "deviceScaleFactor": 1, "mobile": width < 620,
 		})
-		for _, path := range []string{"/", "/enough", "/at/4"} {
+		for _, path := range []string{"/", "/r/notes", "/at/4"} {
 			for _, state := range []string{"hover", "active", "focus-visible"} {
 				c.navigate(t, srv.URL+path)
 				forceEveryPseudo(t, c, state)

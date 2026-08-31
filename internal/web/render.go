@@ -56,13 +56,11 @@ func page(files ...string) *template.Template {
 var pageFiles = map[string][]string{
 	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html"},
 	"moods":  {"templates/layout.html", "templates/moods.html"},
-	"enough": {"templates/layout.html", "templates/enough.html"},
 }
 
 var pages = map[string]*template.Template{
 	"thread": page(pageFiles["thread"]...),
 	"moods":  page(pageFiles["moods"]...),
-	"enough": page(pageFiles["enough"]...),
 }
 
 // pageFor is the template to render with.
@@ -138,7 +136,6 @@ type view struct {
 	// documented enemy, and phrasing is one of the two things allowed to move.
 	// Every control label is deliberately absent from this list.
 	SaySlot   string
-	SayStop   string
 	SayEnough string
 	// You is who the screen is talking to: the name at the foot of the rooms
 	// and the face on your own turns. Zero when there is no person, which is
@@ -452,7 +449,6 @@ func render(w http.ResponseWriter, name string, v view) {
 	// What the sentences say today. Chosen from the day, so both viewports
 	// agree and a reload is not a slot machine — see squirrel.Say.
 	v.SaySlot = squirrel.Say(squirrel.SayingSlot, now())
-	v.SayStop = squirrel.Say(squirrel.SayingStop, now())
 	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
 	v.Tilt = squirrel.Tilt(now())
 	v.Light = squirrel.Light(now())

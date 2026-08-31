@@ -44,21 +44,22 @@ func TestTheAgendaCannotWrite(t *testing.T) {
 }
 
 // The way off a shelf is a card's own button. Nothing here writes.
-func TestAShelfOnlyTalks(t *testing.T) {
-	for _, room := range []string{"held", "kept"} {
-		t.Run(room, func(t *testing.T) {
-			for _, name := range namesOf(t, toolsFor(room, true)) {
-				require.Contains(t, []string{"now", "item", "open", "say"}, name,
-					"a shelf was given %q", name)
-			}
-		})
+// A shelf is not a room and is narrowed by nothing, because there is nothing
+// left to narrow: it is drawn inside the notes, under the notes' own toolset.
+// It had two of its own until 31 August 2026, when the rail stopped carrying a
+// note's state as if it were a place.
+func TestAShelfIsNotARoom(t *testing.T) {
+	for _, shelf := range []string{"held", "kept"} {
+		require.Empty(t, RoomName(shelf), "%s is still a room the coach narrows in", shelf)
+		_, narrowed := roomTools[shelf]
+		require.False(t, narrowed, "%s still has a narrowing of its own", shelf)
 	}
 }
 
-// Buddy's own room is the one that is not narrowed. It is where you talk, and
-// the other six are the narrowing.
+// Everything is the room that is not narrowed. It is where you talk, and the
+// other four are the narrowing.
 func TestBuddysOwnRoomKeepsEverything(t *testing.T) {
-	all := namesOf(t, toolsFor("buddy", true))
+	all := namesOf(t, toolsFor("everything", true))
 	for _, name := range namesOf(t, append(readTools(), writeTools...)) {
 		require.Contains(t, all, name, "Buddy's own room lost %q", name)
 	}
@@ -70,10 +71,10 @@ func TestBuddysOwnRoomKeepsEverything(t *testing.T) {
 // call is dispatched and not only where the request is built.
 func TestAToolTheRoomWasNotOfferedIsRefused(t *testing.T) {
 	require.False(t, mayUse("chores", "complete"))
-	require.False(t, mayUse("kept", "create_task"))
+	require.False(t, mayUse("notes", "complete_chore"))
 	require.False(t, mayUse("at", "start_timer"))
 	require.True(t, mayUse("chores", "complete_chore"))
-	require.True(t, mayUse("buddy", "complete"))
+	require.True(t, mayUse("everything", "complete"))
 }
 
 // A narrowing that leaves the wide enum in place only looks like one.
@@ -154,10 +155,11 @@ func enumOf(t *testing.T, specs []map[string]any, tool, arg string) []string {
 func TestBuddyIsToldWhichRoomHeIsIn(t *testing.T) {
 	require.Contains(t, inTheRoom("chores"), "the chores")
 	require.Contains(t, inTheRoom("at"), "the agenda")
-	require.Contains(t, inTheRoom("kept"), "the things you kept")
+	require.Contains(t, inTheRoom("notes"), "the notes")
 
 	// His own room says nothing. It is not a room he is confined to.
-	require.Empty(t, inTheRoom("buddy"))
+	require.Empty(t, inTheRoom("everything"))
+	require.Empty(t, inTheRoom("kept"), "a shelf is not a room he is in")
 	require.Empty(t, inTheRoom(""))
 	require.Empty(t, inTheRoom("nowhere"))
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -17,18 +18,16 @@ import (
 //
 // The way to the shelf used to hang off the drawn card in the pile's turn, so
 // the moment there was nothing to decide about it was reachable from nowhere at
-// all. Both are in the menu now, and elsewhereFromThePile puts them on every
-// branch of the pile's turn.
+// all. elsewhereFromThePile puts both on every branch of the notes' turn.
 
 // elsewhereFromThePile is the way to both, and it is on every branch of the
-// pile's turn — the one that hands you a note, the one that says there is
+// notes' turn — the one that hands you a note, the one that says there is
 // nothing to decide about, and the bottom you reach by skipping.
-func elsewhereFromThePile() []turnChip {
-	return []turnChip{
-		{Label: "the things you kept", Href: "/r/kept"},
-		{Label: "what you set aside", Href: "/r/held"},
-	}
-}
+//
+// A press rather than a link since 31 August 2026, because a shelf stopped
+// being a room you go to and became a thing you are shown where you already
+// are. See shelfChips.
+func elsewhereFromThePile() []turnChip { return shelfChips() }
 
 // sayWithChips is a sentence that can still take you somewhere. Without it a
 // turn with no cards has nowhere to hang a chip, which is the whole of the
@@ -179,4 +178,30 @@ func heldMeta(h squirrel.HeldItem) string {
 		return word
 	}
 	return word + " — " + h.Because
+}
+
+// shelfHandler is a shelf, asked for by name from inside the notes.
+//
+// One handler for both, because the only thing that differs is which turn is
+// drawn — and two copies of the same eight lines is two places for one of them
+// to drift. The same reasoning askNameHandler is written under.
+//
+// It is a press and it is kept, which is the difference between this and
+// turning a calendar's month: asking to see what you set aside is something
+// you did, and the answer is a thing you can act on.
+func shelfHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil || !shelfByKey(r.FormValue("shelf")) {
+			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
+			return
+		}
+		ctx := r.Context()
+		said := placeTurn(ctx, s, opts, personID, r.FormValue("shelf"), 0)
+		answerWith(w, r, keepSaid(ctx, s, personID, said), backToTheRoom(r))
+	}
 }

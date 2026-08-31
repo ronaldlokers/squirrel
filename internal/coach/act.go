@@ -75,7 +75,7 @@ var openTool = spec("open",
 	map[string]any{
 		"where": map[string]any{
 			"type":        "string",
-			"enum":        []string{"pile", "tasks", "chores", "at", "held", "kept"},
+			"enum":        []string{"notes", "tasks", "chores", "at", "held", "kept"},
 			"description": "pile: everything untriaged. tasks: what is open. chores: what comes back. at: what is at a fixed time. held: what they set aside. kept: what they kept for later.",
 		},
 	})
@@ -387,7 +387,7 @@ func saidIn(call toolCall) string {
 // — this list exists so a model naming "inbox" is refused here rather than
 // producing an empty turn there.
 var places = map[string]bool{
-	"pile": true, "tasks": true, "chores": true, "at": true, "held": true, "kept": true,
+	"notes": true, "tasks": true, "chores": true, "at": true, "held": true, "kept": true,
 }
 
 // openIn reads which place, and reports whether it is one.

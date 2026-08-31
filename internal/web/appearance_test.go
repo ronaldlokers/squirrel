@@ -72,7 +72,7 @@ var appearanceScreens = map[string][]string{
 		// difference between them is the whole of how this rail says where you
 		// are — a recessed well against a solid one.
 		".rail", ".rail .room:not(.in)", ".rail .room.in",
-		".rail .lookup button", ".rail .leaving", ".rail .cnt",
+		".rail .lookup button", ".rail .cnt",
 		// The control that names the room you are in is deliberately NOT here.
 		// This snapshot visits one viewport and it is a desktop one, where the
 		// control is inside a display:none parent — getComputedStyle still
@@ -94,7 +94,6 @@ var appearanceScreens = map[string][]string{
 	// that overrides it. The size is the difference between a different drawing
 	// and the same one shrunk, and the HTML attribute cannot hold it — the
 	// shared rule would win.
-	"/enough": {".empty h1", ".empty p", ".empty img", ".leavehere", ".onemore a"},
 }
 
 const appearanceFile = "testdata/appearance.json"

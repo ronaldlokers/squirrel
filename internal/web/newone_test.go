@@ -21,7 +21,7 @@ func TestEveryDoorOffersANewOne(t *testing.T) {
 		{"chores", "a new chore"},
 		{"tasks", "a new task"},
 		{"at", "a new appointment"},
-		{"pile", "put something down"},
+		{"notes", "put something down"},
 	} {
 		t.Run(d.where, func(t *testing.T) {
 			full := &fakeStore{

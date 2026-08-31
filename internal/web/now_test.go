@@ -74,7 +74,7 @@ func TestTheOfferFailingLeavesHomeStanding(t *testing.T) {
 	w := mounted(t, s).call(t, "GET", "/", nil)
 
 	require.Equal(t, 200, w.Code)
-	require.Contains(t, w.Body.String(), "the pile")
+	require.Contains(t, w.Body.String(), "the notes")
 }
 
 // Saying you are wiped must not be a wall.

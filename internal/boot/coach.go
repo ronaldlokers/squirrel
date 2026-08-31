@@ -452,7 +452,7 @@ func coachChat(ask turnFn) Asker {
 		// Chat has no rooms, and Buddy's room is where a conversation with no
 		// room lives — it is the one he is not narrowed in, which is what
 		// chat has always had.
-		reply, err := ask(ctx, personID, kind, "buddy", said, subject)
+		reply, err := ask(ctx, personID, kind, "everything", said, subject)
 		if err != nil {
 			return "", nil, err
 		}

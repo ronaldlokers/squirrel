@@ -106,7 +106,7 @@ async function flush() {
     // to. The defaults are what a note held by an older worker looks like.
     const body = new URLSearchParams({
       [note.field || "text"]: note.text,
-      room: note.room || "buddy",
+      room: note.room || "everything",
     });
     let res;
     try {
@@ -170,7 +170,7 @@ self.addEventListener("fetch", event => {
         return await fetch(request);
       } catch {
         const form = await copy.formData();
-        const room = String(form.get("room") || "buddy");
+        const room = String(form.get("room") || "everything");
         // The field name is the room's, not always `text`: a chore posts
         // `name` and an appointment posts `label`.
         const field = FIELDS[new URL(request.url).pathname] || "text";

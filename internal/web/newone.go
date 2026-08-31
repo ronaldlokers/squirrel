@@ -16,7 +16,7 @@ import (
 // A note is a thought you had; a chore or an appointment is one you decided to
 // have. So each door's turn carries one chip, and pressing it asks.
 //
-// The pile's chip posts to the same capture route as the dock, deliberately:
+// The notes' chip posts to the same capture route as the dock, deliberately:
 // everything typed lands in the pile, and a second way in with weaker
 // durability guarantees would be a second way in nobody could tell apart.
 
@@ -32,7 +32,7 @@ func newChipFor(where string) []turnChip {
 		// label, so posting to it with none was a press that could only
 		// redirect.
 		return []turnChip{{Label: "a new appointment", Action: "/at/ask"}}
-	case "pile":
+	case "notes":
 		return []turnChip{{Label: "put something down", Action: "/pile/ask"}}
 	}
 	return nil

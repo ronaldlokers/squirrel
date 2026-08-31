@@ -406,25 +406,10 @@
 
   .empty { width: min(560px, 100%); text-align: center; }
 
-  /* The ending gets a beat before its doors. Every other .ends here is a
-     footer under a list; this one is the last thing on a screen whose whole
-     job is to let you stop, and running it straight on from the sentence
-     hurries the one moment that should not be hurried. */
-  .enough .ends { margin-top: 30px; }
   .empty img {
     width: 186px; height: 140px; display: block; margin: 0 auto 22px;
     filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .3));
   }
-  /* The stopping screen's own pose, and the one drawing here that is not the
-     shared mark. It is a whole figure rather than a head, so at 186px the face
-     — which is the character — landed at a third of the width it has on every
-     other screen. Sized to put the face back at roughly the size the mark
-     gives it, which is what makes the two screens read as different rather
-     than as the same drawing at two scales.
-     
-     300px fits a 390px phone inside the field's own 22px padding with room to
-     spare, so there is no second size to keep in step. */
-  .empty img.resting { width: 300px; height: 207px; }
   .empty h1 {
     margin: 0 0 10px;
     font-size: clamp(27px, 3.4vw, 36px); line-height: 1.15;
@@ -668,7 +653,7 @@
       animation-iteration-count: 1 !important;
     }
     .chip:active, .chip.hit, .abtn:active, .post:active, .why:active,
-    .letmein:active, .enough .leavehere:active,
+    .letmein:active,
     .pick .make:active, .cal .make:active, .wordbox .make:active, .cut .make:active {
       transform: none;
     }
@@ -865,9 +850,7 @@
      ways of writing a heading here, and most templates had no <h1> at all, so
      heading navigation did not work in a product built for someone who might
      well use it.
-     
-     /enough keeps its own larger treatment: a screen that is an absence is a
-     different composition, not a different size of the same one. */
+     */
   .deckhead {
     margin: 0 0 18px;
     display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
@@ -997,41 +980,10 @@
  * icon; `.findbox .find input` outranks it, so the floor silently stopped
  * applying and the field went back to 15px. */
 
-  /* The way back in, on an ending. Underlined text below the door out, so the
-     screen has an opinion about which of the two it is for. */
-  .enough .onemore { margin-top: 14px; }
-  .enough .onemore a {
-    font-size: 13.5px;
-    font-variation-settings: var(--precise), "wght" 560;
-    color: var(--cream);
-    text-decoration: underline; text-underline-offset: 3px;
-    text-decoration-color: rgba(254, 214, 167, .45);
-    display: inline-flex; align-items: center; min-height: 44px;
-  }
-  .enough .onemore a:hover { color: var(--paper); }
-
   /* Each day is one row and its width is the frame's, not the words'. The
      `min-width` that used to live here said 8em and silently outranked the
      9.5em stated where the row is built, which is how a floor became a floor
      nothing reached. The column is stated once now, where the row is. */
-
-  /* The door out of the ending, and it is the point of the room. Orange
-     because leaving is the thing this screen is for — the one place in the
-     product where going is what was made. */
-  .enough .leavehere {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 52px; padding: 14px 26px;
-    background: var(--orange); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
-    box-shadow: 0 5px 0 0 var(--outline);
-    font: 700 14px/1 "Recursive", sans-serif;
-    font-variation-settings: var(--precise), "wght" 830;
-    letter-spacing: .08em; text-transform: uppercase;
-    text-decoration: none;
-    transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 90ms ease-out;
-  }
-  .enough .leavehere:hover { background: var(--orange-lit); color: var(--outline); }
-  .enough .leavehere:active { transform: translateY(5px); box-shadow: 0 0 0 0 var(--outline); }
 
 /* ---------------------------------------------------------------- */
 /* 8. The meta label, and three things measured against it.          */
@@ -1521,9 +1473,10 @@
    *
    * The first thing anybody ever sees of this product, and for a demo user
    * possibly the only thing they see before deciding whether they trust it. It
-   * is /enough's composition — the mascot, a headline in the casual axis, one
-   * sentence, an absence — because that treatment already exists and inventing
-   * a second one for a screen with four states would be inventing four.
+   * is the composition the stopping screen carried until 31 August 2026 — the
+   * mascot, a headline in the casual axis, one sentence, an absence. That
+   * screen has gone and this one keeps the treatment, which is now stated here
+   * and nowhere else.
    *
    * It carries no lid. Every control up there goes somewhere a signed-out
    * person cannot reach, so offering them offers a bounce straight back here.
@@ -1658,7 +1611,6 @@
      off-screen and undiscoverable. */
   .rail .lookup { margin: 8px 0 0; display: flex; }
   .rail .lookup button,
-  .rail .leaving,
   .signout {
     display: flex; align-items: center; width: 100%;
     min-height: 44px; padding: 10px 13px;
@@ -1667,21 +1619,13 @@
     font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-variation-settings: var(--casual), "wght" 500;
   }
-  .rail .lookup button:hover, .rail .leaving:hover, .signout:hover { color: var(--paper); }
+  .rail .lookup button:hover, .signout:hover { color: var(--paper); }
   /* A door with the way out drawn through it. The control said "close the
      door", which is the product's voice and the wrong job for a label: the way
      out is the one control you look for by name when something has gone wrong,
      and a sentence you have to interpret is a sentence in the way. */
   .signout { gap: 9px; }
   .signout svg { width: 19px; height: 19px; flex: none; }
-  /* The way out is last and under a rule of its own. It is not a destination
-     like the others: it is the end of the evening, and its place at the bottom
-     says that without a louder word. Principle 3 — leaving must never look
-     like failure — is why it is not smaller or greyer, only elsewhere. */
-  .rail .leaving {
-    margin-top: 2px; padding-top: 14px;
-    border-top: var(--line) solid rgba(255, 251, 243, .28);
-  }
 
   /* On a phone the summary is the control and the rail is the sheet it opens.
      It names the room you are in, which is the half the strip never had. */
@@ -1713,7 +1657,6 @@
     .roomsheet[open] ~ .rail { flex-flow: row wrap; align-content: flex-start; }
     .roomsheet[open] ~ .rail .room { width: calc(50% - 3px); }
     .roomsheet[open] ~ .rail .lookup,
-    .roomsheet[open] ~ .rail .leaving { width: 100%; }
   }
 
   /* On a desktop it is furniture: a fixed column beside the conversation, and

@@ -175,7 +175,7 @@ func whereYouGotTo(ctx context.Context, s Store, personID int64) (squirrel.Turn,
 		// time the page is drawn.
 		Opened: "place:" + run.Place,
 		Chips: []turnChip{
-			{Label: "carry on", Href: "/r/" + run.Place},
+			{Label: "carry on", Href: "/r/" + roomForRun(run.Place)},
 			{Label: "start fresh", Action: "/place/fresh"},
 		},
 	}
@@ -337,15 +337,24 @@ func waitedInWords(since time.Duration) string {
 
 // placeCalled is the door in the words the menu uses for it.
 func placeCalled(place string) string {
-	switch place {
-	case squirrel.RunPile:
-		return "the pile"
-	case "chores":
-		return "the chores"
-	case "tasks":
-		return "the tasks"
+	if name, ok := placeName(roomForRun(place)); ok {
+		return name
 	}
 	return "something"
+}
+
+// roomForRun is which room a run's place is in.
+//
+// `runs.place` is written into the database and says "pile", which was a room
+// until 31 August 2026 and is the notes now. Mapped here rather than migrated:
+// a run is a few hours old at most and the column means "where you were
+// working", which the pile still is — it is the rail that stopped having a
+// door called that.
+func roomForRun(place string) string {
+	if place == squirrel.RunPile {
+		return "notes"
+	}
+	return place
 }
 
 // agoInWords never gives a clock time. "40 minutes ago" is a fact about the gap;
