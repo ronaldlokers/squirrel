@@ -486,3 +486,65 @@ func TestTheFindFieldIsAField(t *testing.T) {
 	require.Contains(t, body, `<form class="find" method="get" action="/">`)
 	require.Contains(t, body, `name="find"`)
 }
+
+// An appointment is not answered the way work is: it happened, or it stopped
+// mattering, and nothing anywhere records which of the two it was.
+func TestAnAppointmentCanBeClosed(t *testing.T) {
+	f := aBoardStore()
+	f.upcoming = []squirrel.Moment{{ID: 21, Label: "dentist", Starts: time.Now().Add(2 * time.Hour)}}
+	m := mounted(t, f)
+
+	body := m.call(t, "GET", "/?bay=agenda", nil).Body.String()
+	require.Contains(t, body, `value="over"`)
+
+	m.call(t, "POST", "/board/act", strings.NewReader("what=moment&id=21&answer=over&bay=agenda"))
+	require.Equal(t, []int64{21}, f.momentsDone)
+}
+
+// Making a chore out of a note needs a rhythm, and the note already exists —
+// so the question is asked on the strip rather than in a field, and the strip
+// that was asked about is the only one that shows it.
+func TestMakingAChoreAsksForTheRhythmOnThatStripOnly(t *testing.T) {
+	f := aBoardStore()
+	m := mounted(t, f)
+
+	body := m.call(t, "GET", "/?chore=1", nil).Body.String()
+
+	require.Contains(t, body, `name="every" value="7"`)
+	require.Equal(t, 1, strings.Count(body, `action="/board/chore"`),
+		"more than one strip is asking how often")
+}
+
+func TestPressingARhythmMakesTheChore(t *testing.T) {
+	f := aBoardStore()
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/chore", strings.NewReader("id=1&every=14"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, int64(1), f.promoted.id)
+	require.Equal(t, 14*24*time.Hour, f.promoted.every)
+}
+
+func TestANoteOffersToBecomeAChore(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `href="/?chore=1`)
+}
+
+// The same guard every press has: a note that is not yours is not yours to
+// turn into a chore.
+func TestPromotingWhatIsNotYoursMakesNothing(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{
+		ID: 99, RawText: "somebody else's note", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
+	})
+	f.notMine = map[int64]bool{99: true}
+	m := mounted(t, f)
+
+	m.call(t, "POST", "/board/chore", strings.NewReader("id=99&every=7"))
+
+	require.Zero(t, f.promoted.id, "a note that is not yours became a chore")
+}

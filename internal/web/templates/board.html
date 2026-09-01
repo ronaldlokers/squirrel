@@ -174,13 +174,23 @@
         <article class="strip h-{{$bay.Key}}{{if .Answers}} answerable{{end}}">
           <span class="holder"></span>
           <div class="words">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}
-            {{if .Answers}}
+            {{if .Rhythms}}
+            <form class="stamps" method="post" action="/board/chore">
+              <input type="hidden" name="id" value="{{.ID}}">
+              {{range .Rhythms}}
+              <button class="stamp small" name="every" value="{{.Days}}">{{.Words}}</button>
+              {{end}}
+            </form>
+            {{else if .Answers}}
             <form class="stamps" method="post" action="/board/act">
               <input type="hidden" name="what" value="{{.What}}">
               <input type="hidden" name="id" value="{{.ID}}">
               <input type="hidden" name="bay" value="{{$bay.Key}}">
               {{range .Answers}}
               <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
+              {{end}}
+              {{if eq .What "note"}}
+              <a class="stamp go" href="/?chore={{.ID}}">make a chore<span class="k">C</span></a>
               {{end}}
             </form>
             {{end}}

@@ -251,10 +251,11 @@ ledge from the store; a strip can be answered on it, with the strike, the
 the notes through the spool, a chore with one of four rhythm stamps, an
 appointment as the sentence chat already parses.
 
-What the board still cannot do, and what the link in its own lid is for: there is no Buddy, no search, no photograph, no way
-to make a chore out of a note, and nothing in the agenda can be answered. All of
-those are one press away in the conversation, which is why that press is the
-last thing in the ops bar rather than a footnote. Nothing here is described from intention: what the route renders
+The board also searches, keeps a photograph and opens the strip that carries
+one, asks Buddy on a press and marks what he wrote, makes a chore out of a note,
+and closes an appointment. What is left in the conversation, and left there on
+purpose, is Buddy's longer conversation: that is what the link in the ops bar is
+for, and a conversation belongs where conversations are. Nothing here is described from intention: what the route renders
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
 
@@ -657,6 +658,17 @@ in a 2px-radius box at 70% opacity. Four fills:
 
 A stamp is always in the same place on the object it acts on, and always carries
 its key. There are no pill buttons in this product any more.
+
+**What each bay answers.** A note takes *done*, *keep*, *drop*, and *make a
+chore*; a chore takes *did it* and *later*; a task takes *done* and *drop*; an
+appointment takes *it is over*, because it is not answered the way work is — you
+left, or it stopped mattering, and nothing records which of the two it was.
+
+**Make a chore asks on the strip.** The note already exists, so there is nothing
+being held while the question is asked: pressing it swaps that one strip's
+answers for the four rhythms, and pressing a rhythm promotes the note. One strip
+asks at a time — a rack where every row asks a question is a rack you have to
+answer to read.
 
 ### Buddy, and the acorn
 

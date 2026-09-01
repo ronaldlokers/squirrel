@@ -48,7 +48,10 @@ type stripView struct {
 	Back bool
 	// Photo says this note has a photograph. The strip says so; opening it is
 	// what shows it.
-	Photo   bool
+	Photo bool
+	// Rhythms is the four intervals, on the one note that was asked how often
+	// it comes back.
+	Rhythms []rhythmView
 	ID      int64
 	What    string
 	Words   string
@@ -93,6 +96,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		at := now()
 		in := r.URL.Query().Get("bay")
+		asking, _ := strconv.ParseInt(r.URL.Query().Get("chore"), 10, 64)
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
 		blockers, unstuck := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
@@ -110,7 +114,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Tray:     trayStrips(r, s, opts, personID, at),
 			Bays: baysIn(in, []bayView{
 				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Camera: opts.Photos != nil, Shelves: true,
-					Strips: noteStrips(r, s, personID, at)},
+					Strips: askedForARhythm(noteStrips(r, s, personID, at), asking)},
 				{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true, Rhythms: theRhythms,
 					Strips: choreStrips(r, s, personID)},
 				{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
@@ -166,6 +170,21 @@ func whatMatched(r *http.Request, s Store, personID int64, find string, at time.
 		})
 	}
 	return out
+}
+
+// askedForARhythm marks the one note that was asked how often it comes back.
+// It is one strip, never all of them: a rack where every row asks a question is
+// a rack you have to answer to read.
+func askedForARhythm(strips []stripView, asking int64) []stripView {
+	if asking == 0 {
+		return strips
+	}
+	for i := range strips {
+		if strips[i].ID == asking {
+			strips[i].Rhythms = theRhythms
+		}
+	}
+	return strips
 }
 
 // baysIn lights the rack you are standing in, which is only ever one and is the
@@ -242,7 +261,10 @@ func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) []stri
 	}
 	out := make([]stripView, 0, len(soon))
 	for _, m := range soon {
-		out = append(out, stripView{ID: m.ID, What: "moment", Words: m.Label, Mark: markOfMoment(m, at), Big: true})
+		out = append(out, stripView{
+			ID: m.ID, What: "moment", Words: m.Label,
+			Mark: markOfMoment(m, at), Big: true, Answers: momentAnswers,
+		})
 	}
 	return out
 }
@@ -256,6 +278,10 @@ var noteAnswers = []answerView{
 var taskAnswers = []answerView{
 	{Act: "done", Words: "done", Key: "D", Look: "did"},
 	{Act: "drop", Words: "drop", Key: "X", Look: "no"},
+}
+
+var momentAnswers = []answerView{
+	{Act: "over", Words: "it is over", Key: "D", Look: "did"},
 }
 
 var choreAnswers = []answerView{
@@ -389,6 +415,10 @@ func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer str
 		}
 		_, err = s.MoveItemState(r.Context(), it.ID, it.State, state, at)
 		return err
+	case "moment":
+		if answer == "over" {
+			return s.MomentDone(r.Context(), personID, id, at)
+		}
 	case "chore":
 		switch answer {
 		case "did":
@@ -742,4 +772,40 @@ func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripV
 		v.Answers = noteAnswers
 	}
 	return v
+}
+
+// boardChoreHandler makes a chore out of a note that already exists. The note is
+// the thing that was kept, so the rhythm can be asked for on its own strip
+// without a thought sitting in a form waiting for the answer.
+func boardChoreHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		days, _ := strconv.Atoi(r.FormValue("every"))
+		if id == 0 || days <= 0 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		if _, mine, err := s.ItemByID(r.Context(), personID, id); err != nil || !mine {
+			if err != nil {
+				fail(w, err)
+				return
+			}
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		if _, _, err := s.PromoteItem(r.Context(), personID, id, time.Duration(days)*24*time.Hour); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/?bay=chores", http.StatusSeeOther)
+	}
 }
