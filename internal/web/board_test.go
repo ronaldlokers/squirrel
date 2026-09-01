@@ -548,3 +548,50 @@ func TestPromotingWhatIsNotYoursMakesNothing(t *testing.T) {
 
 	require.Zero(t, f.promoted.id, "a note that is not yours became a chore")
 }
+
+// The ledge opens a shelf where the racks are, the way search does. Its links
+// pointed at rooms until now, which meant the two shelves were the one part of
+// the board that left the board.
+func TestTheLedgeOpensAShelfOnTheBoard(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{ID: 41, RawText: "the boiler serial plate", State: squirrel.ItemKept, Kind: squirrel.ItemNote})
+	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
+	m := mounted(t, f)
+
+	board := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, board, `href="/?shelf=held"`)
+	require.Contains(t, board, `href="/?shelf=kept"`)
+
+	kept := m.call(t, "GET", "/?shelf=kept", nil).Body.String()
+	require.Contains(t, kept, "the boiler serial plate")
+	require.Contains(t, kept, "back in the pile")
+	require.NotContains(t, kept, `data-bay="tasks"`, "the racks are still drawn behind the shelf")
+
+	held := m.call(t, "GET", "/?shelf=held", nil).Body.String()
+	require.Contains(t, held, "chase the landlord")
+	require.Contains(t, held, "he replies", "the shelf does not say what would move it")
+}
+
+// A shelf never counts, and the sign is where that would show.
+func TestAShelfCountsNothing(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items,
+		squirrel.Item{ID: 41, RawText: "one kept thing", State: squirrel.ItemKept, Kind: squirrel.ItemNote},
+		squirrel.Item{ID: 42, RawText: "another kept thing", State: squirrel.ItemKept, Kind: squirrel.ItemNote},
+	)
+	body := mounted(t, f).call(t, "GET", "/?shelf=kept", nil).Body.String()
+
+	require.Contains(t, body, "the things you kept")
+	require.NotContains(t, body, `the things you kept <span class="n"`)
+}
+
+// An empty rack and a rack that could not be read look identical, and one of
+// them is a lie: if the database is down the board says so rather than showing
+// a quiet morning.
+func TestARackThatCannotBeReadSaysSo(t *testing.T) {
+	body := mounted(t, &fakeStore{err: errTest}).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, "cannot reach the notes")
+	require.Contains(t, body, "cannot reach the chores")
+	require.Contains(t, body, "nothing is lost")
+}

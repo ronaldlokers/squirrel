@@ -505,3 +505,16 @@ a.stamp { text-decoration: none; }
   background: var(--card-deep);
   border: var(--line) solid var(--outline); border-radius: var(--r);
 }
+
+.trouble {
+  flex: 0 0 auto; margin: 0 0 7px; padding: 8px 10px;
+  background: rgba(28, 17, 11, .3);
+  border: var(--line) dashed rgba(230, 109, 13, .8); border-radius: var(--r);
+  color: var(--cream); font-size: 13.5px; line-height: 1.35;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+
+.baysign.shelf {
+  background: rgba(28, 17, 11, .34);
+  border-style: dashed; border-color: rgba(254, 214, 167, .5);
+}
