@@ -229,7 +229,7 @@
       "width": "57.7656px"
     },
     ".stamp": {
-      "background-color": "rgb(113, 167, 62)",
+      "background-color": "rgb(230, 109, 13)",
       "border-radius": "3px",
       "border-width": "2px",
       "box-shadow": "rgba(28, 17, 11, 0.5) 0px 2px 0px 0px",
@@ -245,7 +245,7 @@
       "text-decoration-line": "none",
       "text-transform": "uppercase",
       "transform": "none",
-      "width": "77.8906px"
+      "width": "112.281px"
     },
     ".stamp .k": {
       "background-color": "rgba(255, 251, 243, 0.62)",

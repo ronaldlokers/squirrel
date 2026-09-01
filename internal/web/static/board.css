@@ -316,6 +316,8 @@ body::before {
   background: rgba(28, 17, 11, .14); border-radius: 2px;
   font-size: 10.5px; letter-spacing: 0; opacity: .7;
 }
+.stamp.go { background: var(--orange); }
+.stamp.go:hover { background: var(--orange-lit); }
 .stamp.did { background: #71a73e; }
 .stamp.did .k, .stamp.go .k { background: rgba(255, 251, 243, .62); opacity: 1; }
 .stamp.did:hover { background: #89b65f; }

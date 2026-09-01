@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -12,16 +13,18 @@ import (
 )
 
 type boardView struct {
-	V      string
-	In     string
-	Light  int
-	Tray   []trayView
-	Kept   bool
-	Now    string
-	Day    string
-	Pulled *offerView
-	Timer  *timerView
-	Bays   []bayView
+	V        string
+	Blockers []blockerView
+	Unstuck  string
+	In       string
+	Light    int
+	Tray     []trayView
+	Kept     bool
+	Now      string
+	Day      string
+	Pulled   *offerView
+	Timer    *timerView
+	Bays     []bayView
 }
 
 type bayView struct {
@@ -80,14 +83,17 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		at := now()
 		in := r.URL.Query().Get("bay")
+		blockers, unstuck := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
-			In:     in,
-			Kept:   r.URL.Query().Get("kept") == "1",
-			Now:    at.Format("15:04"),
-			Day:    at.Format("Monday 2 January"),
-			Pulled: offerFor(s, opts, r, false, false),
-			Timer:  runningTimer(s, opts, r),
-			Tray:   trayStrips(r, s, opts, personID, at),
+			In:       in,
+			Blockers: blockers,
+			Unstuck:  unstuck,
+			Kept:     r.URL.Query().Get("kept") == "1",
+			Now:      at.Format("15:04"),
+			Day:      at.Format("Monday 2 January"),
+			Pulled:   offerFor(s, opts, r, false, false),
+			Timer:    runningTimer(s, opts, r),
+			Tray:     trayStrips(r, s, opts, personID, at),
 			Bays: baysIn(in, []bayView{
 				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Shelves: true,
 					Strips: noteStrips(r, s, personID, at)},
@@ -474,4 +480,95 @@ func keepAsANote(r *http.Request, opts Options, words string) error {
 		return err
 	}
 	return nil
+}
+
+// boardNowHandler is the pulled strip's own three answers, and the ladder
+// behind the third.
+//
+// Nothing is stored between being asked what is in the way and answering it:
+// the blocker is in the address, so a reload shows the same sentence rather
+// than repeating a press. The sentences are the core's, unchanged — a second
+// ladder in the web package would be a second product.
+func boardNowHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		kind := squirrel.OfferKind(r.FormValue("kind"))
+		refID, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+
+		switch r.FormValue("act") {
+		case "did":
+			if err := s.Did(r.Context(), personID, squirrel.Offer{Kind: kind, RefID: refID}, now()); err != nil {
+				fail(w, err)
+				return
+			}
+			forgetOffer(opts, personID)
+		case "later":
+			if err := refuseTheOffer(r, s, opts, personID, kind, refID); err != nil {
+				fail(w, err)
+				return
+			}
+		case "stuck":
+			why := r.FormValue("why")
+			if why == "" {
+				http.Redirect(w, r, "/?stuck=1", http.StatusSeeOther)
+				return
+			}
+			b, ok := squirrel.ParseBlocker(why)
+			if !ok {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			// "Not today" is not an obstacle, it is a no, and it is the same no
+			// that turning the offer down writes.
+			if squirrel.UnstuckFor(b).Refuse {
+				if err := refuseTheOffer(r, s, opts, personID, kind, refID); err != nil {
+					fail(w, err)
+					return
+				}
+				break
+			}
+			http.Redirect(w, r, "/?stuck="+url.QueryEscape(why), http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func refuseTheOffer(r *http.Request, s Store, opts Options, personID int64, kind squirrel.OfferKind, refID int64) error {
+	if !offerKinds[kind] {
+		return nil
+	}
+	if err := s.Refuse(r.Context(), personID, kind, refID, now()); err != nil {
+		return err
+	}
+	forgetOffer(opts, personID)
+	return nil
+}
+
+// stuckView is what the pulled strip says while you are stuck: the four answers
+// when nothing has been pressed, and one sentence when something has.
+func stuckView(asked string) (blockers []blockerView, said string) {
+	if asked == "" {
+		return nil, ""
+	}
+	if b, ok := squirrel.ParseBlocker(asked); ok {
+		return nil, squirrel.UnstuckFor(b).Line
+	}
+	for _, b := range squirrel.Blockers {
+		blockers = append(blockers, blockerView{Why: squirrel.BlockerWords[b], Words: squirrel.BlockerWords[b]})
+	}
+	return blockers, ""
+}
+
+type blockerView struct {
+	Why   string
+	Words string
 }

@@ -299,3 +299,79 @@ func TestAPressComesBackToTheBayItWasMadeIn(t *testing.T) {
 	made := m.call(t, "POST", "/board/new", strings.NewReader("bay=tasks&words=book+it"))
 	require.Equal(t, "/?bay=tasks", made.Header().Get("Location"))
 }
+
+func TestThePulledStripCarriesItsThreeAnswers(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
+	m := mounted(t, f)
+
+	body := m.call(t, "GET", "/", nil).Body.String()
+
+	for _, want := range []string{`action="/board/now"`, `value="did"`, `value="later"`, `value="stuck"`} {
+		require.Contains(t, body, want)
+	}
+}
+
+func TestDoingTheOfferedThingRecordsIt(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 7, Text: "bins out"}
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/now", strings.NewReader("act=did&kind=chore&id=7"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Contains(t, f.answers, "did:chore", "the offered thing was not recorded as done")
+}
+
+func TestTurningTheOfferDownRefusesItForTheDay(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 7, Text: "bins out"}
+	m := mounted(t, f)
+
+	m.call(t, "POST", "/board/now", strings.NewReader("act=later&kind=chore&id=7"))
+
+	require.Equal(t, []int64{7}, f.refused, "the offer was not turned down")
+}
+
+// Being stuck asks what is in the way, and the four answers are the product's
+// own four. Nothing is stored between the question and the answer: which
+// blocker you pressed is in the address, so a reload shows the same sentence
+// rather than repeating a press.
+func TestBeingStuckAsksWhatIsInTheWay(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading"}
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/now", strings.NewReader("act=stuck&kind=task&id=3"))
+	require.Equal(t, "/?stuck=1", w.Header().Get("Location"))
+
+	body := m.call(t, "GET", "/?stuck=1", nil).Body.String()
+	// The apostrophe arrives escaped, as it does in a browser, so the words are
+	// matched by the half that carries no punctuation.
+	for _, want := range []string{"too big", "know how", "boring", "not today"} {
+		require.Contains(t, body, want)
+	}
+}
+
+func TestAnAnswerToBeingStuckSaysOneSentence(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading"}
+	m := mounted(t, f)
+
+	body := m.call(t, "GET", "/?stuck=too+big", nil).Body.String()
+
+	require.Contains(t, body, squirrel.UnstuckFor(squirrel.BlockerBig).Line)
+	require.NotContains(t, body, "know how", "the four answers are still on screen after one was pressed")
+}
+
+// "Not today" reached through being stuck is the same no as turning it down,
+// and it has to leave the same mark.
+func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 7, Text: "bins out"}
+	m := mounted(t, f)
+
+	m.call(t, "POST", "/board/now", strings.NewReader("act=stuck&why=not+today&kind=chore&id=7"))
+
+	require.Equal(t, []int64{7}, f.refused)
+}
