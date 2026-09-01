@@ -251,8 +251,7 @@ ledge from the store; a strip can be answered on it, with the strike, the
 the notes through the spool, a chore with one of four rhythm stamps, an
 appointment as the sentence chat already parses.
 
-What the board still cannot do, and what the link in its own lid is for: the
-pulled strip has no stamps, there is no Buddy, no search, no photograph, no way
+What the board still cannot do, and what the link in its own lid is for: there is no Buddy, no search, no photograph, no way
 to make a chore out of a note, and nothing in the agenda can be answered. All of
 those are one press away in the conversation, which is why that press is the
 last thing in the ops bar rather than a footnote. Nothing here is described from intention: what the route renders
@@ -574,7 +573,21 @@ product brighter than stock — with a 3px `orange-lit` ring, a 14px holder in t
 colour of the bay it came from, and its stamps down the right edge in a column.
 
 Above the words: the tag `PULLED` and, beside it in sentence case, the rule that
-chose it. The rule is printed on the strip rather than hidden behind a why,
+chose it. Below them, its three answers — `I'll do it` in the orange every
+make-something stamp takes, `not today` and `I'm stuck` in the fill that does
+nothing to the world.
+
+**Being stuck asks, and then says one sentence.** Pressing `I'm stuck` replaces
+the three answers with the product's own four — *too big*, *don't know how*,
+*boring*, *not today* — and pressing one of those replaces them with the
+ladder's fixed line. Which blocker you pressed lives in the address rather than
+in the server, so a reload shows the same sentence instead of repeating a press.
+`not today` reached this way is the same no as turning the offer down, and
+leaves the same mark.
+
+That sentence carries **no acorn**: the ladder's lines are fixed and are
+Squirrel's own, and the acorn is what marks a sentence a model wrote. Principle
+8 decides which mark a line gets, not who is speaking on that strip. The rule is printed on the strip rather than hidden behind a why,
 because an offer nobody can account for is a demand.
 
 ### The holder

@@ -24,6 +24,23 @@
     <div class="body">
       <p class="why"><b>pulled</b>{{.Because}}</p>
       <p class="said">{{.Text}}</p>
+      {{if $.Unstuck}}
+      <p class="pencil"><span>{{$.Unstuck}}</span></p>
+      {{end}}
+      <form class="stamps" method="post" action="/board/now">
+        <input type="hidden" name="kind" value="{{.Kind}}">
+        <input type="hidden" name="id" value="{{.RefID}}">
+        {{if $.Blockers}}
+        {{range $.Blockers}}
+        <button class="stamp no" name="why" value="{{.Why}}">{{.Words}}</button>
+        {{end}}
+        <input type="hidden" name="act" value="stuck">
+        {{else if not $.Unstuck}}
+        <button class="stamp go" name="act" value="did">I'll do it<span class="k">D</span></button>
+        <button class="stamp no" name="act" value="later">not today<span class="k">N</span></button>
+        <button class="stamp no" name="act" value="stuck">I'm stuck<span class="k">S</span></button>
+        {{end}}
+      </form>
     </div>
   </article>
   {{end}}
