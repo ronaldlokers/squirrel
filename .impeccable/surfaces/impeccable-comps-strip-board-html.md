@@ -24,8 +24,13 @@ interaction, motion grammar, cross-surface reach, honest risk. Built code-led
 (no image generation on this machine), so that contract is what the finish
 review audits rather than a rendered comp.
 
-**Not implemented.** `DESIGN.md` describes this world and the running code does
-not, and both say so: the document carries the line `design-ahead-of-code`, and
+**Landing, phase by phase.** As of 1 September 2026 the board is mounted at
+`/board` and draws the four bays, the pulled strip, the running timer and the
+ledge from the store. It has no actions on it: no stamps, no capture, no tray,
+and `/` is still the conversation. The next phase is the answer path — a stamp
+that strikes a strip, holds 1150ms, and drops it into the tray.
+
+`DESIGN.md` still runs ahead of the stylesheet, and both say so: the document carries the line `design-ahead-of-code`, and
 `TestTheRadiusVocabularyIsClosed` stands down while it is there. Everything
 shipped through v0.55.1 is the conversation. When the board lands, delete that
 line and the check closes again.
@@ -109,6 +114,12 @@ Named rather than discovered later. None of these are drawn yet:
   with first if the sofa scene suffers.
 - **A photograph on a strip.** Shown by opening the strip, never by shrinking a
   photograph into a 42px row. Not drawn.
+- **The phone's bay tabs.** The document says four racks become one with the
+  signs as tabs. What is built stacks the four racks in one scrolling column
+  instead, which works and is not what is written; the tabs come with the
+  interaction phase.
+- **The tray.** Nothing leaves the board yet, so there is nothing for it to
+  hold. It arrives with the answer path rather than as an empty band.
 - **Search results, first run, the gate, and the evening message.** All still
   wear the previous world.
 
