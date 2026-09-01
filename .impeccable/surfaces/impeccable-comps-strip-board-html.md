@@ -26,9 +26,15 @@ review audits rather than a rendered comp.
 
 **Landing, phase by phase.** As of 1 September 2026 the board is mounted at
 `/board` and draws the four bays, the pulled strip, the running timer and the
-ledge from the store. It has no actions on it: no stamps, no capture, no tray,
-and `/` is still the conversation. The next phase is the answer path — a stamp
-that strikes a strip, holds 1150ms, and drops it into the tray.
+ledge from the store. A strip can be answered on it: a stamp
+strikes it, the strike holds 1150ms, the strip travels, and it lands in today's
+tray carrying `put it back`. Without scripting the same stamp posts a form and
+the board comes back with the strip in the tray, so the answer path works with
+the script off and the animation is the enhancement.
+
+Not built: capture, the pulled strip's own three stamps, making a chore from a
+note (it needs a rhythm, which is a second step), answering anything in the
+agenda, and the phone's bay tabs. `/` is still the conversation.
 
 `DESIGN.md` still runs ahead of the stylesheet, and both say so: the document carries the line `design-ahead-of-code`, and
 `TestTheRadiusVocabularyIsClosed` stands down while it is there. Everything
@@ -116,10 +122,11 @@ Named rather than discovered later. None of these are drawn yet:
   photograph into a 42px row. Not drawn.
 - **The phone's bay tabs.** The document says four racks become one with the
   signs as tabs. What is built stacks the four racks in one scrolling column
-  instead, which works and is not what is written; the tabs come with the
-  interaction phase.
-- **The tray.** Nothing leaves the board yet, so there is nothing for it to
-  hold. It arrives with the answer path rather than as an empty band.
+  instead, which works and is not what is written.
+- **Capture.** The blank strip is drawn and inert.
+- **The pulled strip's stamps.** The offer draws and cannot be answered from the
+  board; its three answers already exist behind `/now/act`.
+- **Making a chore from a note**, which needs a rhythm and so a second step.
 - **Search results, first run, the gate, and the evening message.** All still
   wear the previous world.
 

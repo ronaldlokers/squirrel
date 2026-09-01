@@ -82,6 +82,8 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Your own face is not one of them: it arrives with the identity rather
 	// than with a note, so it is mounted whether or not photographs are.
 	m.Get("/board", guard(opts, boardHandler(s, opts)))
+	m.Post("/board/act", posting(opts, boardActHandler(s, opts)))
+	m.Post("/board/undo", posting(opts, boardUndoHandler(s, opts)))
 	m.Get("/me/face", guard(opts, faceHandler(s)))
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))

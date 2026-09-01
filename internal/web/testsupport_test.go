@@ -109,6 +109,14 @@ type fakeStore struct {
 	attachedItems []int64
 	detached      []int64
 
+	// What left the board today, newest first.
+	triaged []squirrel.Item
+
+	// Rows that exist and are somebody else's. ItemByID answers for the person
+	// asking, so this is how a test says "this row is not yours" without a
+	// second person and a second store.
+	notMine map[int64]bool
+
 	// What was set aside, and what was picked back up.
 	aside  []squirrel.HeldItem
 	unheld []int64
@@ -313,6 +321,13 @@ func (f *fakeStore) SearchItems(_ context.Context, _ int64, q string, limit int)
 	return out, more, nil
 }
 
+func (f *fakeStore) TriagedSince(_ context.Context, _ int64, _ time.Time) ([]squirrel.Item, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.triaged, nil
+}
+
 func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
@@ -515,6 +530,9 @@ func (f *fakeStore) InsertItemReturningID(_ context.Context, i squirrel.Item) (i
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {
 	if f.err != nil {
 		return squirrel.Item{}, false, f.err
+	}
+	if f.notMine[id] {
+		return squirrel.Item{}, false, nil
 	}
 	for _, it := range f.items {
 		if it.ID == id {

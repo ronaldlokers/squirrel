@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -11,6 +12,7 @@ import (
 
 type boardView struct {
 	V      string
+	Tray   []trayView
 	Now    string
 	Day    string
 	Pulled *offerView
@@ -27,10 +29,27 @@ type bayView struct {
 }
 
 type stripView struct {
-	ID    int64
+	ID      int64
+	What    string
+	Words   string
+	Mark    string
+	Big     bool
+	Answers []answerView
+}
+
+type answerView struct {
+	Act   string
 	Words string
-	Mark  string
-	Big   bool
+	Key   string
+	Look  string
+}
+
+type trayView struct {
+	ID     int64
+	What   string
+	Words  string
+	Left   string
+	Newest bool
 }
 
 func boardHandler(s Store, opts Options) http.HandlerFunc {
@@ -46,6 +65,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Day:    at.Format("Monday 2 January"),
 			Pulled: offerFor(s, opts, r, false, false),
 			Timer:  runningTimer(s, opts, r),
+			Tray:   trayStrips(r, s, opts, personID, at),
 			Bays: []bayView{
 				{Key: "notes", Name: "the notes", Question: "what is it", Shelves: true,
 					Strips: noteStrips(r, s, personID, at)},
@@ -69,7 +89,10 @@ func noteStrips(r *http.Request, s Store, personID int64, at time.Time) []stripV
 	}
 	out := make([]stripView, 0, len(items))
 	for _, it := range items {
-		out = append(out, stripView{ID: it.ID, Words: it.RawText, Mark: markOfDay(it.ReceivedAt, at)})
+		out = append(out, stripView{
+			ID: it.ID, What: "note", Words: it.RawText,
+			Mark: markOfDay(it.ReceivedAt, at), Answers: noteAnswers,
+		})
 	}
 	return out
 }
@@ -82,7 +105,10 @@ func taskStrips(r *http.Request, s Store, personID int64, at time.Time) []stripV
 	}
 	out := make([]stripView, 0, len(items))
 	for _, it := range items {
-		out = append(out, stripView{ID: it.ID, Words: it.RawText, Mark: markOfDay(it.ReceivedAt, at)})
+		out = append(out, stripView{
+			ID: it.ID, What: "task", Words: it.RawText,
+			Mark: markOfDay(it.ReceivedAt, at), Answers: taskAnswers,
+		})
 	}
 	return out
 }
@@ -95,7 +121,10 @@ func choreStrips(r *http.Request, s Store, personID int64) []stripView {
 	}
 	out := make([]stripView, 0, len(chores))
 	for _, c := range chores {
-		out = append(out, stripView{ID: c.ID, Words: c.Name, Mark: squirrel.Cadence(c.EveryDays)})
+		out = append(out, stripView{
+			ID: c.ID, What: "chore", Words: c.Name,
+			Mark: squirrel.Cadence(c.EveryDays), Answers: choreAnswers,
+		})
 	}
 	return out
 }
@@ -108,9 +137,58 @@ func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) []stri
 	}
 	out := make([]stripView, 0, len(soon))
 	for _, m := range soon {
-		out = append(out, stripView{ID: m.ID, Words: m.Label, Mark: markOfMoment(m, at), Big: true})
+		out = append(out, stripView{ID: m.ID, What: "moment", Words: m.Label, Mark: markOfMoment(m, at), Big: true})
 	}
 	return out
+}
+
+var noteAnswers = []answerView{
+	{Act: "done", Words: "done", Key: "D", Look: "did"},
+	{Act: "keep", Words: "keep", Key: "K"},
+	{Act: "drop", Words: "drop", Key: "X", Look: "no"},
+}
+
+var taskAnswers = []answerView{
+	{Act: "done", Words: "done", Key: "D", Look: "did"},
+	{Act: "drop", Words: "drop", Key: "X", Look: "no"},
+}
+
+var choreAnswers = []answerView{
+	{Act: "did", Words: "did it", Key: "D", Look: "did"},
+	{Act: "later", Words: "later", Key: "L", Look: "no"},
+}
+
+var leftWords = map[squirrel.ItemState]string{
+	squirrel.ItemDone:    "done",
+	squirrel.ItemKept:    "kept",
+	squirrel.ItemDropped: "dropped",
+}
+
+func trayStrips(r *http.Request, s Store, opts Options, personID int64, at time.Time) []trayView {
+	gone, err := s.TriagedSince(r.Context(), personID, dayOpened(at, opts.Location))
+	if err != nil {
+		slog.Error("reading today's tray", "error", err)
+		return nil
+	}
+	out := make([]trayView, 0, len(gone))
+	for i, it := range gone {
+		out = append(out, trayView{
+			ID: it.ID, What: "note", Words: it.RawText,
+			Left: leftWords[it.State], Newest: i == 0,
+		})
+	}
+	return out
+}
+
+// dayOpened is when today began where the person is, which is what the tray
+// empties on. Not midnight UTC: a note kept at 23:30 belongs to the evening it
+// was kept in.
+func dayOpened(at time.Time, loc *time.Location) time.Time {
+	if loc == nil {
+		loc = time.Local
+	}
+	there := at.In(loc)
+	return time.Date(there.Year(), there.Month(), there.Day(), 0, 0, 0, 0, loc)
 }
 
 func markOfDay(said, today time.Time) string {
@@ -154,5 +232,93 @@ func renderBoard(w http.ResponseWriter, v boardView) {
 	}
 	if err := t.ExecuteTemplate(w, "board", v); err != nil {
 		slog.Error("drawing the board", "error", err)
+	}
+}
+
+func boardActHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			return
+		}
+		id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err := answerOnTheBoard(r, s, personID, r.FormValue("what"), r.FormValue("answer"), id); err != nil {
+			slog.Error("answering a strip", "error", err)
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/board", http.StatusSeeOther)
+	}
+}
+
+func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer string, id int64) error {
+	at := now()
+	switch what {
+	case "note", "task":
+		state, ok := boardStates[answer]
+		if !ok {
+			return nil
+		}
+		it, mine, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			return err
+		}
+		if !mine {
+			return nil
+		}
+		_, err = s.MoveItemState(r.Context(), it.ID, it.State, state, at)
+		return err
+	case "chore":
+		switch answer {
+		case "did":
+			return s.RecordCompletion(r.Context(), id, personID, "board", at)
+		case "later":
+			return s.Refuse(r.Context(), personID, squirrel.OfferChore, id, at)
+		}
+	}
+	return nil
+}
+
+var boardStates = map[string]squirrel.ItemState{
+	"done": squirrel.ItemDone,
+	"keep": squirrel.ItemKept,
+	"drop": squirrel.ItemDropped,
+}
+
+// boardUndoHandler puts a strip back in the rack it left. The state it goes
+// back to is `open` for every exit, because the three exits are the same door
+// from the pile's side and nothing else is remembered about which one was taken.
+func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			return
+		}
+		if id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64); id != 0 {
+			it, mine, err := s.ItemByID(r.Context(), personID, id)
+			if err != nil {
+				slog.Error("reading the strip to put back", "error", err)
+				fail(w, err)
+				return
+			}
+			if mine {
+				if _, err := s.MoveItemState(r.Context(), it.ID, it.State, squirrel.ItemOpen, now()); err != nil {
+					slog.Error("putting a strip back", "error", err)
+					fail(w, err)
+					return
+				}
+			}
+		}
+		http.Redirect(w, r, "/board", http.StatusSeeOther)
 	}
 }

@@ -1,6 +1,8 @@
 package web
 
 import (
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,4 +54,72 @@ func TestTheShelvesAreReachedFromTheNotesRackAndCountNothing(t *testing.T) {
 	require.Contains(t, body, "what you set aside")
 	require.Contains(t, body, "the things you kept")
 	require.NotContains(t, body, "ledge\"><span class=\"tab\">what you set aside <span")
+}
+
+func TestAStripCarriesTheAnswersItsBayAllows(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/board", nil).Body.String()
+
+	for _, want := range []string{">done<", ">keep<", ">drop<", ">did it<", ">later<"} {
+		require.Contains(t, body, want)
+	}
+}
+
+func TestAnsweringAStripMovesItAndComesBackToTheBoard(t *testing.T) {
+	f := aBoardStore()
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=1&answer=keep"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.Equal(t, squirrel.ItemKept, f.states[1], "the note is kept")
+}
+
+func TestTheTrayHoldsWhatLeftTheBoardTodayAndOffersTheWayBack(t *testing.T) {
+	f := aBoardStore()
+	f.triaged = []squirrel.Item{
+		{ID: 9, RawText: "washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote},
+		{ID: 8, RawText: "the thing about the bike lights", State: squirrel.ItemDropped, Kind: squirrel.ItemNote},
+	}
+	m := mounted(t, f)
+
+	body := m.call(t, "GET", "/board", nil).Body.String()
+
+	require.Contains(t, body, "washing machine one")
+	require.Contains(t, body, "the thing about the bike lights")
+	require.Contains(t, body, "put it back")
+	require.NotContains(t, body, "tray\"><span class=\"sign\">today's tray</span> <span class=\"n\">")
+}
+
+// A row that is not yours is not yours to answer. SetItemState takes an item id
+// and no person, so the guard has to be the read before it: the board looks the
+// strip up as yours, and writes nothing when it is not.
+func TestAStripThatIsNotYoursIsNotYoursToAnswer(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{
+		ID: 99, RawText: "somebody else's note", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
+	})
+	f.notMine = map[int64]bool{99: true}
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=99&answer=drop"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.NotContains(t, f.states, int64(99), "a strip that is not yours was answered")
+}
+
+func TestPuttingBackWhatIsNotYoursWritesNothing(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{
+		ID: 99, RawText: "somebody else's note", State: squirrel.ItemDropped, Kind: squirrel.ItemNote,
+	})
+	f.notMine = map[int64]bool{99: true}
+	m := mounted(t, f)
+
+	m.call(t, "POST", "/board/undo", strings.NewReader("id=99"))
+
+	require.NotContains(t, f.states, int64(99), "a strip that is not yours was put back")
 }
