@@ -374,8 +374,8 @@ func inTheRoomItCameFrom(h http.HandlerFunc) http.HandlerFunc {
 // press having gone to the wrong place — it had not; the way back had.
 func backToTheRoom(r *http.Request) string {
 	where := roomOf(r.Context())
-	if where == "everything" {
-		return "/"
+	if where == "" {
+		where = "everything"
 	}
 	return "/r/" + where
 }

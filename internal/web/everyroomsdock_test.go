@@ -120,11 +120,11 @@ func TestBrowserYourFaceIsRoundEverywhere(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers", whoFace: []byte("\x89PNG\r\n\x1a\n")}
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerYou, Words: "the tasks"}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "both faces", `document.querySelectorAll(".youface img").length === 2`)
 
 	require.Equal(t, true, c.eval(t, `

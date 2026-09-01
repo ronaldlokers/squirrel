@@ -24,8 +24,9 @@ interaction, motion grammar, cross-surface reach, honest risk. Built code-led
 (no image generation on this machine), so that contract is what the finish
 review audits rather than a rendered comp.
 
-**Landing, phase by phase.** As of 1 September 2026 the board is mounted at
-`/board` and draws the four bays, the pulled strip, the running timer and the
+**Landing, phase by phase.** As of 1 September 2026 the board is the front door:
+`/` draws it, and the conversation kept its own address at `/r/everything`. The
+board also answers at `/board`, and draws the four bays, the pulled strip, the running timer and the
 ledge from the store. A strip can be answered on it: a stamp
 strikes it, the strike holds 1150ms, the strip travels, and it lands in today's
 tray carrying `put it back`. Without scripting the same stamp posts a form and
@@ -39,9 +40,13 @@ the sentence chat has always parsed — `at 14:30 dentist`. Words that are not
 what a rack asked for go to the notes rather than being dropped, and the board
 says so.
 
-Not built: the pulled strip's own three stamps, making a chore from a note,
-answering anything in the agenda, a photograph from the board, and the phone's
-bay tabs. `/` is still the conversation.
+Not built on the board, and each of them one press away in the conversation
+until it is: the pulled strip's own three stamps, Buddy, search, a photograph,
+making a chore from a note, answering anything in the agenda, and the phone's
+bay tabs. That press is the last thing in the ops bar and it is load-bearing —
+the front door moved before the board could do everything the conversation can,
+which was the owner's call and is the trade to revisit if a day's work needs
+both screens.
 
 `DESIGN.md` still runs ahead of the stylesheet, and both say so: the document carries the line `design-ahead-of-code`, and
 `TestTheRadiusVocabularyIsClosed` stands down while it is there. Everything

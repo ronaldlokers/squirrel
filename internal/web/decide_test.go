@@ -30,7 +30,7 @@ func TestTheModelCanChooseSomethingElse(t *testing.T) {
 		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
 	}}
 
-	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
+	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "put the bins out")
 	require.Contains(t, body, "they go out tonight")
@@ -45,7 +45,7 @@ func TestTheModelDecliningLeavesThePickerAlone(t *testing.T) {
 	f := withOffer(&squirrel.Offer{
 		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
 	})
-	body := mountedWith(t, f, &fakeCoach{}).call(t, "GET", "/", nil).Body.String()
+	body := mountedWith(t, f, &fakeCoach{}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "ring the vet")
 	require.Contains(t, body, "you decided this one")
@@ -61,7 +61,7 @@ func TestTheModelIsNotAskedAboutATimerOrAFixedPoint(t *testing.T) {
 			kind: "task", refID: 7, text: "ring the vet", because: "anything",
 		}}
 
-		body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
+		body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
 
 		require.Empty(t, c.picked, "the model was asked about %s", kind)
 		require.Contains(t, body, "the kitchen")
@@ -76,7 +76,7 @@ func TestTheModelIsNotAskedWhenThePickerFoundNothing(t *testing.T) {
 	c := &fakeCoach{decision: &fakeDecision{
 		kind: "task", refID: 7, text: "ring the vet", because: "anything",
 	}}
-	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/", nil).Body.String()
+	body := mountedWith(t, withOffer(nil), c).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Empty(t, c.picked)
 	require.NotContains(t, body, "ring the vet")
@@ -90,7 +90,7 @@ func TestAChoiceWithNoClauseIsNotUsed(t *testing.T) {
 	})
 	c := &fakeCoach{decision: &fakeDecision{kind: "chore", refID: 3, text: "put the bins out"}}
 
-	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
+	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, body, "ring the vet")
 }
 
@@ -105,7 +105,7 @@ func TestTheButtonsActOnWhatWasChosen(t *testing.T) {
 		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
 	}}
 
-	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
+	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, body, `name="kind" value="chore"`)
 	require.Contains(t, body, `name="id" value="3"`)
 }

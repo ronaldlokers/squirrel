@@ -26,7 +26,7 @@ func TestTheMoodHistoryIsNamedForFeelingRatherThanForSaying(t *testing.T) {
 	post(t, m, "/mood", url.Values{"mood": {"calm"}})
 	f.turns, f.appended = f.appended, nil
 
-	thread := m.call(t, "GET", "/", nil).Body.String()
+	thread := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, thread, "how you felt before")
 	require.NotContains(t, thread, "what you said before",
 		"the pile's door is the one that is about what you said")
@@ -60,5 +60,5 @@ func TestNoControlRenamesItself(t *testing.T) {
 	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "something else?"} {
 		require.Contains(t, deck, label, "the pile stopped saying %q", label)
 	}
-	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), ">Tell it<")
+	require.Contains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), ">Tell it<")
 }

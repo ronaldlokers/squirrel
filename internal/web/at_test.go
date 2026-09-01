@@ -396,7 +396,7 @@ func TestTheNotificationsURLLandsInTheConversation(t *testing.T) {
 	w := routed(t, f).call(t, "GET", "/at/4", nil)
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Len(t, f.appended, 2)
 	require.Contains(t, string(f.appended[1].Shown), "take keys, wallet")
 	require.Contains(t, string(f.appended[1].Shown), "LEAVING")
@@ -424,5 +424,5 @@ func landsInTheThread(t *testing.T, f *fakeStore) string {
 	m := routed(t, f)
 	m.call(t, "GET", "/at/4", nil)
 	f.turns, f.appended = append(f.turns, f.appended...), nil
-	return m.call(t, "GET", "/", nil).Body.String()
+	return m.call(t, "GET", "/r/everything", nil).Body.String()
 }

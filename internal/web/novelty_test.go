@@ -22,7 +22,7 @@ func TestTheDayReachesTheStylesheet(t *testing.T) {
 	now = func() time.Time { return day }
 	t.Cleanup(func() { now = was })
 
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body,
 		fmt.Sprintf("--tilt: %ddeg", squirrel.Tilt(day)),

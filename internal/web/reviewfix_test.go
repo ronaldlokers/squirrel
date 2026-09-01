@@ -93,7 +93,7 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	// a card. The sheet was the third cream surface a key could reach and it
 	// went on 25 August 2026; these two are what is left, and they are the two
 	// that were wrong when this was written.
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	tabTo(t, c, ".dock .post")
 	onSlot := contrast(t, c, ".dock .post", "outline-color", ".dock .slot")
 	require.GreaterOrEqual(t, onSlot, 3.0,

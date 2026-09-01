@@ -43,7 +43,7 @@ func TestAShelfNobodyNamedDrawsNothing(t *testing.T) {
 // A room was a URL you could put on a home screen. All four still land.
 func TestTheRoomsThatStoppedBeingRoomsStillLandSomewhere(t *testing.T) {
 	for from, to := range map[string]string{
-		"/r/buddy": "/", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
+		"/r/buddy": "/r/everything", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
 	} {
 		res := mounted(t, &fakeStore{}).call(t, "GET", from, nil)
 

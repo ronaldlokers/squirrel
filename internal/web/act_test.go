@@ -23,7 +23,7 @@ func TestActMovesTheNoteAndComesBack(t *testing.T) {
 	w := post(t, m, "/pile/act", url.Values{"id": {"1"}, "act": {"done"}})
 
 	require.Equal(t, 303, w.Code, "a write answers with See Other so a reload does not repeat it")
-	require.Equal(t, "/", w.Header().Get("Location"), "there is one place to come back to")
+	require.Equal(t, "/r/everything", w.Header().Get("Location"), "there is one place to come back to")
 	require.Equal(t, squirrel.ItemDone, f.items[0].State)
 }
 

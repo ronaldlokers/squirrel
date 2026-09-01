@@ -45,6 +45,11 @@ var aNavigation = map[string]bool{
 	// you are standing in. There is nothing left to answer into.
 	"/pile/act": true,
 	"/held/act": true,
+	// The board has no thread to answer into: every press on it re-draws the
+	// board, which is a navigation by construction rather than by omission.
+	"/board/act":  true,
+	"/board/undo": true,
+	"/board/new":  true,
 }
 
 var (
@@ -70,7 +75,7 @@ func TestEveryButtonAnswersWithAFragment(t *testing.T) {
 
 	screens := map[string]string{}
 	for _, screen := range []string{
-		"/", "/r/everything", "/r/notes", "/r/chores", "/r/at", "/r/tasks",
+		"/", "/board", "/r/everything", "/r/notes", "/r/chores", "/r/at", "/r/tasks",
 		"/r/chores",
 	} {
 		page := m.call(t, "GET", screen, nil)

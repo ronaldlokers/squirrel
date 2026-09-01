@@ -28,7 +28,7 @@ func aDump() *fakeStore {
 
 // With no coach at all the pile is exactly the screen it was.
 func TestTheCardOffersNothingWithNoCoach(t *testing.T) {
-	require.NotContains(t, mounted(t, aDump()).call(t, "GET", "/", nil).Body.String(),
+	require.NotContains(t, mounted(t, aDump()).call(t, "GET", "/r/everything", nil).Body.String(),
 		"this is more than one thing")
 }
 
@@ -44,7 +44,7 @@ func TestTheProposalTravelsInTheForm(t *testing.T) {
 	m := routedSplitting(t, f, "ring the vet", "put the bins out")
 	m.call(t, "POST", "/pile/split", strings.NewReader("act=propose&id=1&from=thread"))
 	f.turns, f.appended = append(f.turns, f.appended...), nil
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `name="piece" value="ring the vet"`)
 	require.Contains(t, body, `name="piece" value="put the bins out"`)
@@ -65,7 +65,7 @@ func TestKeepingWritesThePiecesAndKeepsTheOriginal(t *testing.T) {
 
 	// It goes through the same transition every other exit uses, and what is
 	// said about it is said the same way — see TestKeepingASplitInTheThread.
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 }
 
 // One piece is not a split, and a form that arrives with one is a form that
@@ -87,7 +87,7 @@ func TestACoachThatCannotSplitChangesNothing(t *testing.T) {
 
 	w := mountedWith(t, f, c).call(t, "POST", "/pile/split", strings.NewReader("act=propose&id=1"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Empty(t, f.inserted)
 }
 
@@ -98,7 +98,7 @@ func TestThePiecesAreOrdinaryNotes(t *testing.T) {
 	mounted(t, f).call(t, "POST", "/pile/split",
 		strings.NewReader("act=keep&id=1&piece=ring+the+vet&piece=put+the+bins+out"))
 
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 	require.NotContains(t, body, "suggested")
 	require.NotContains(t, body, "split from")
 }

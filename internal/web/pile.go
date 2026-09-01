@@ -62,7 +62,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// `{$}` and not `/`: a bare "/" is Go's catch-all, and the home screen would
 	// then answer for every URL nobody else claimed — including the typos, which
 	// would arrive looking like a working page.
-	m.Get("/{$}", guard(opts, withRoom("everything", threadHandler(s, opts))))
+	m.Get("/{$}", guard(opts, boardHandler(s, opts)))
 	// Buddy's room, by its own name. The same handler as "/": the worked
 	// example, the check-in and the offer all live on the thread, and a second
 	// handler for the same room would be a second set of them.
@@ -187,7 +187,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// a redirect nobody notices. The two shelves land in the notes, which is
 	// where they are now — a press away rather than a door.
 	for from, to := range map[string]string{
-		"/r/buddy": "/", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
+		"/r/buddy": "/r/everything", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
 	} {
 		where := to
 		m.Get(from, guard(opts, func(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +196,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	}
 	for _, gone := range []string{"/coach", "/buddy"} {
 		m.Get(gone, guard(opts, func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/", http.StatusMovedPermanently)
+			http.Redirect(w, r, "/r/everything", http.StatusMovedPermanently)
 		}))
 	}
 	// A step finished, or a sequence thrown away. One route because they are
@@ -223,7 +223,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// The page it was. A bookmark that dies quietly is worse than a redirect
 	// nobody notices.
 	m.Get("/moods", guard(opts, func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/r/everything", http.StatusMovedPermanently)
 	}))
 	m.Post("/tasks/act", posting(opts, taskActHandler(s, opts)))
 	m.Post("/tasks/new", posting(opts, newTaskHandler(s, opts)))
@@ -235,7 +235,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// The chores screen lived here for its whole life. A bookmark that dies
 	// quietly is worse than a redirect nobody notices.
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/r/everything", http.StatusMovedPermanently)
 	}))
 	// The way in, and the three routes that work it. Outside the guard
 	// necessarily: a person with no session has to be able to get one.

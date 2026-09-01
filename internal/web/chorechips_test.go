@@ -31,7 +31,7 @@ func TestTheCurrentIntervalSaysSoAndNotOnlyInPurple(t *testing.T) {
 	m.call(t, "GET", "/r/chores", nil)
 	m.call(t, "POST", "/chores/often", strings.NewReader("id=1"))
 	f.turns, f.appended = append(f.turns, f.appended...), nil
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `<input type="radio" name="count" value="1" checked>`,
 		"the number in effect does not say so")

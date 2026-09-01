@@ -82,7 +82,7 @@ func TestTheRoomsNeedNoScript(t *testing.T) {
 func TestTheRailIsOnEveryOtherScreenToo(t *testing.T) {
 	m := mounted(t, &fakeStore{checkin: fresh()})
 
-	for _, screen := range []string{"/", "/r/chores", "/r/notes"} {
+	for _, screen := range []string{"/r/everything", "/r/chores", "/r/notes"} {
 		body := m.call(t, "GET", screen, nil).Body.String()
 		require.Contains(t, body, `<nav class="rail"`, "%s has no rail", screen)
 		require.Contains(t, body, `href="/r/notes"`, "%s cannot reach the notes", screen)

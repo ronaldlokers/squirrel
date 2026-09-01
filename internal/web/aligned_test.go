@@ -85,8 +85,8 @@ func aFortnight() *fakeStore {
 // not flex.
 func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	srv := screen(t, aFortnight())
-	c := browserAt(t, srv, "/")
-	c.navigate(t, srv.URL+"/")
+	c := browserAt(t, srv, "/r/everything")
+	c.navigate(t, srv.URL+"/r/everything")
 	// A turn rather than a page since 31 August 2026, so it is asked for the
 	// way a person asks for it.
 	c.until(t, "the settings panel", `!!document.querySelector('form[action="/me/moods"]')`)
@@ -121,7 +121,7 @@ func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
 		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 
 	// There is one screen, and its meta labels are the picker's — which arrives
 	// by pressing HOW OFTEN on a chore.

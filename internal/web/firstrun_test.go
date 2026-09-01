@@ -12,7 +12,7 @@ import (
 // Somebody who has never seen this sees the loop played through once before
 // being asked to trust it with anything.
 func TestAFirstRunPlaysTheLoopThrough(t *testing.T) {
-	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, answered(nil)).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `class="worked"`)
 	require.Contains(t, body, "post the parcel back")
@@ -25,7 +25,7 @@ func TestAFirstRunPlaysTheLoopThrough(t *testing.T) {
 // of it.
 func TestTheWorkedExampleIsNeverWritten(t *testing.T) {
 	f := answered(nil)
-	mounted(t, f).call(t, "GET", "/", nil)
+	mounted(t, f).call(t, "GET", "/r/everything", nil)
 
 	for _, turn := range f.appended {
 		require.NotContains(t, turn.Words, "parcel")
@@ -36,7 +36,7 @@ func TestTheWorkedExampleIsNeverWritten(t *testing.T) {
 // Inert by construction. The verbs are words, not controls: the one thing
 // worse than not knowing what DONE does is finding out on somebody else's note.
 func TestTheWorkedExampleHasNothingToPress(t *testing.T) {
-	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, answered(nil)).call(t, "GET", "/r/everything", nil).Body.String()
 
 	worked := body[strings.Index(body, `class="worked"`):strings.Index(body, `class="workedends"`)]
 	require.NotContains(t, worked, "<form")
@@ -48,7 +48,7 @@ func TestTheWorkedExampleHasNothingToPress(t *testing.T) {
 // last turn in the thread — and the live edge must never be a turn nobody
 // said.
 func TestTheWorkedExampleIsNotInTheThread(t *testing.T) {
-	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, answered(nil)).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Less(t, strings.Index(body, `class="worked"`), strings.Index(body, `id="thread"`))
 }
@@ -57,7 +57,7 @@ func TestTheWorkedExampleIsNotInTheThread(t *testing.T) {
 func TestSayingAnythingEndsTheWorkedExample(t *testing.T) {
 	f := answered(nil)
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerYou, Words: "the boiler"}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, "post the parcel back")
 }
@@ -69,7 +69,7 @@ func TestSayingAnythingEndsTheWorkedExample(t *testing.T) {
 func TestAFullPileEndsTheWorkedExample(t *testing.T) {
 	f := answered(nil)
 	f.waiting = squirrel.Waiting{Pile: 3}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, "post the parcel back")
 }
@@ -80,7 +80,7 @@ func TestAFullPileEndsTheWorkedExample(t *testing.T) {
 func TestSomethingToBeHandedEndsTheWorkedExample(t *testing.T) {
 	f := answered(nil)
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, Text: "ring the vet"}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, "post the parcel back")
 }

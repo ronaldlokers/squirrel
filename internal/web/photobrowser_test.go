@@ -49,7 +49,7 @@ func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *ht
 func openCamera(t *testing.T, sp *fakeSpool, ph *fakePhotos) (*cdp, *httptest.Server) {
 	t.Helper()
 	srv := cameraScreen(t, aPile(), sp, ph)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	return c, srv
 }
 
@@ -162,7 +162,7 @@ func TestBrowserAPhotographSurvivesTheWorker(t *testing.T) {
 	// activate, but a page that started loading before it was active is not
 	// one of them, and waiting for a controller on that page waits forever.
 	c.eval(t, `await navigator.serviceWorker.ready`)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
 
 	c.attach(t, ".slot input[name=photo]", aPhotograph(t))
@@ -234,7 +234,7 @@ func TestBrowserAPhotographSurvivesTheAppBeingReclaimed(t *testing.T) {
 	// restore. CI is slow enough to lose that race and did.
 	c.until(t, "the photograph to be held", heldPhoto)
 
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "the photograph to come back",
 		`(`+visible+`)(".slot .gotphoto")`)
 	require.Equal(t, float64(1), c.eval(t,
@@ -270,7 +270,7 @@ func TestBrowserAKeptPhotographIsNotOfferedAgain(t *testing.T) {
 	c.until(t, "the hold to be let go", `!(await (`+heldPhoto+`))`)
 	require.Len(t, sp.written, 1)
 
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "the slot", `!!document.querySelector(".slot input[name=photo]")`)
 	require.Equal(t, false, c.eval(t,
 		`return (`+visible+`)(".slot .gotphoto")`),

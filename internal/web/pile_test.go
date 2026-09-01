@@ -138,7 +138,7 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 	require.Equal(t, http.StatusMovedPermanently, w.Code)
 	// Home, since the chores are a message rather than a page. The redirect
 	// stays because the URL is in somebody's history.
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 }
 
 // Everything Mount refuses to start without, and the refusal each one gives.

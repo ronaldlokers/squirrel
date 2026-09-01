@@ -95,9 +95,10 @@ const (
 // backFrom returns to the screen the button was on, so stopping a timer from
 // the pile does not land you on the chores.
 func backFrom(r *http.Request) string {
-	// "moods" was a screen and is a turn now, so there is nowhere else for a
-	// timer to have been stopped from.
-	return "/"
+	// The conversation by name since the board took the front door: a timer
+	// stopped from a turn belongs back among the turns, and the board carries
+	// its own way to stop one.
+	return "/r/everything"
 }
 
 // runningTimer is the strip in the lid: what you are doing and how long is

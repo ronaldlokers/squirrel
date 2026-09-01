@@ -16,7 +16,7 @@ import (
 // behind the room control on a phone — so this is both surfaces at once.
 func TestTheRailSaysWhoYouAreAndTheWayOut(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers"}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `<span class="whoname">Ronald Lokers</span>`,
 		"the rail does not say who it is talking to")
@@ -30,7 +30,7 @@ func TestTheRailSaysWhoYouAreAndTheWayOut(t *testing.T) {
 // drawn rather than fetched, so there is nothing to go missing.
 func TestWithoutAPictureTheFaceIsDrawn(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers"}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `<span class="youface mono" aria-hidden="true">R</span>`,
 		"no picture and no monogram either, so the name stands beside nothing")
@@ -40,7 +40,7 @@ func TestWithoutAPictureTheFaceIsDrawn(t *testing.T) {
 
 func TestWithAPictureTheFaceIsServedFromHere(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers", whoFace: []byte("not really a png")}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `src="/me/face"`, "the picture is not shown")
 	require.NotContains(t, body, "https://", "a face is fetched from somewhere that is not this origin")
@@ -53,7 +53,7 @@ func TestYourTurnsCarryYourFace(t *testing.T) {
 		{ID: 1, Who: squirrel.SpeakerYou, Words: "the tasks"},
 		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back round."},
 	}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	// Inside the turn, not merely somewhere on the page: the rail draws a
 	// youface too, so a bare substring passes with the turn's face deleted.
@@ -204,7 +204,7 @@ func TestAPictureIsNotFollowedOffHttps(t *testing.T) {
 func TestYourFaceIsTheSameShapeInBothPlaces(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers", whoFace: []byte("not really a png")}
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerYou, Words: "the tasks"}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, `<img class="youface"`,
 		"the rail draws a bare image, which .youface img cannot round")

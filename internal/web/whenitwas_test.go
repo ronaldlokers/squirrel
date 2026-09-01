@@ -103,7 +103,7 @@ func TestTheCheckinIsDrawnAndTheAnswerIsKept(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)
 
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, body, "how do you feel")
 	require.Empty(t, f.appended, "the question was written into the record")
 
@@ -124,7 +124,7 @@ func TestArrivingAgainDoesNotStackTheQuestion(t *testing.T) {
 	m := routed(t, f)
 
 	for i := 0; i < 5; i++ {
-		body := m.call(t, "GET", "/", nil).Body.String()
+		body := m.call(t, "GET", "/r/everything", nil).Body.String()
 		require.Equal(t, 1, strings.Count(body, "how do you feel"),
 			"the question is on the screen more than once")
 	}

@@ -76,7 +76,7 @@ func permitted(t *testing.T, c *cdp, origin string) {
 
 func TestTheWayToTurnPushOnCanBeSeen(t *testing.T) {
 	srv := pushScreen(t, aPile())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	openSettings(t, c)
 
 	require.Equal(t, "default", c.eval(t, `return Notification.permission`),
@@ -99,7 +99,7 @@ func TestTheWayToTurnPushOnCanBeSeen(t *testing.T) {
 // enforcing correctly in the branch it got right.
 func TestTheWayToTurnPushOnIsAbsentWithoutAKey(t *testing.T) {
 	srv := screen(t, aPile())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	openSettings(t, c)
 
 	require.Equal(t, nil, c.eval(t, `return document.getElementById("pushbit")`),
@@ -113,9 +113,9 @@ func TestTheSettingSaysWhetherItIsOn(t *testing.T) {
 	f := aPile()
 	f.notifying = true
 	srv := pushScreen(t, f)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	permitted(t, c, srv.URL)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	openSettings(t, c)
 
 	require.Contains(t, c.eval(t, `return document.getElementById("pushsays").textContent`), "On.",
@@ -131,13 +131,13 @@ func TestTheSettingSaysWhetherItIsOn(t *testing.T) {
 // end of it with nothing said.
 func TestARefusalSaysWhereTheSwitchIs(t *testing.T) {
 	srv := pushScreen(t, aPile())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Browser.setPermission", map[string]any{
 		"permission": map[string]any{"name": "notifications"},
 		"setting":    "denied",
 		"origin":     srv.URL,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	openSettings(t, c)
 
 	require.Contains(t, c.eval(t, `return document.getElementById("pushsays").textContent`),
@@ -149,7 +149,7 @@ func TestARefusalSaysWhereTheSwitchIs(t *testing.T) {
 
 // And no key, no sentence: there is nothing to turn on.
 func TestNoKeyMeansNothingIsSaidAboutNotifications(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, "Notifications")
 }

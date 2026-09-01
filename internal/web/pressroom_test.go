@@ -26,7 +26,7 @@ func TestAPressFromBuddysRoomComesBackToTheFrontDoor(t *testing.T) {
 	body := url.Values{"room": {"everything"}, "label": {""}}.Encode()
 	res := routed(t, f).call(t, "POST", "/at/new", strings.NewReader(body))
 
-	require.Equal(t, "/", res.Header().Get("Location"))
+	require.Equal(t, "/r/everything", res.Header().Get("Location"))
 }
 
 func TestATimeOfDayTakesAnyTimeOnTheClock(t *testing.T) {

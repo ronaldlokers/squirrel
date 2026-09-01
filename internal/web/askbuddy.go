@@ -114,10 +114,10 @@ func stepCard(st *stepView) cardView {
 		Title: c.Title, Meta: c.Meta,
 		Acts: []actView{
 			{Label: "done", Action: "/steps", Style: "did", Fields: map[string]string{
-				"act": "done", "id": strconv.FormatInt(st.ID, 10), "from": "/",
+				"act": "done", "id": strconv.FormatInt(st.ID, 10), "from": "/r/everything",
 			}},
 			{Label: "throw it away", Action: "/steps", Style: "why", Fields: map[string]string{
-				"act": "clear", "from": "/",
+				"act": "clear", "from": "/r/everything",
 			}},
 		},
 	}

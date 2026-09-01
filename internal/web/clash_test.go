@@ -36,7 +36,7 @@ func TestADecisionThePileHasOvertakenDoesNotOverwriteIt(t *testing.T) {
 	require.Equal(t, squirrel.ItemDropped, f.items[0].State,
 		"the screen's stale decision overwrote the one made in the room")
 	// And it said so — see TestAClashIsSaidInTheConversation.
-	require.Equal(t, "/", res.Header().Get("Location"))
+	require.Equal(t, "/r/everything", res.Header().Get("Location"))
 	require.Contains(t, f.appended[0].Words, "moved while you were looking at it",
 		"and it went back saying nothing about it")
 }

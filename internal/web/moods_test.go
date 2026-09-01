@@ -105,7 +105,7 @@ func TestTheThreadOffersIt(t *testing.T) {
 	post(t, m, "/mood", url.Values{"mood": {"good"}})
 	f.turns, f.appended = f.appended, nil
 
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, body, `action="/me/moods"`)
 	require.NotContains(t, body, "mood-wiped.png", "no series")
 	require.NotContains(t, body, `class="weekrow"`, "the series is on the screen unasked")
@@ -114,7 +114,7 @@ func TestTheThreadOffersIt(t *testing.T) {
 // It is not in the lid and not a door. You go looking, or you do not see it.
 func TestTheMoodsPageIsNotInTheLid(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	for _, path := range []string{"/", "/r/notes"} {
+	for _, path := range []string{"/r/everything", "/r/notes"} {
 		body := mounted(t, f).call(t, "GET", path, nil).Body.String()
 		require.NotContains(t, body, `href="/moods"`, "reachable from %s", path)
 	}
@@ -148,7 +148,7 @@ func TestTheReadingsPageIsGoneAndItsURLStillLands(t *testing.T) {
 	res := mounted(t, &fakeStore{}).call(t, "GET", "/moods", nil)
 
 	require.Equal(t, 301, res.Code)
-	require.Equal(t, "/", res.Header().Get("Location"))
+	require.Equal(t, "/r/everything", res.Header().Get("Location"))
 	require.NotContains(t, res.Body.String(), "weekrow", "the page still draws")
 }
 

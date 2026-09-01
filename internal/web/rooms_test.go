@@ -196,7 +196,7 @@ func TestTheRailIsOnEveryScreen(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	for _, where := range []string{"/", "/r/chores", "/r/notes"} {
+	for _, where := range []string{"/r/everything", "/r/chores", "/r/notes"} {
 		t.Run(where, func(t *testing.T) {
 			body := m.call(t, "GET", where, nil).Body.String()
 			require.Contains(t, body, `<nav class="rail"`)
@@ -256,6 +256,6 @@ func TestOnlyTheFrontDoorHasNoWayBack(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `<a class="brand" href="/"`)
+	require.NotContains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), `<a class="brand" href="/"`)
 	require.Contains(t, m.call(t, "GET", "/r/chores", nil).Body.String(), `<a class="brand" href="/"`)
 }
