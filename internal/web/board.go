@@ -14,6 +14,8 @@ import (
 
 type boardView struct {
 	V        string
+	Shelf    string
+	Shelved  []stripView
 	Opened   *stripView
 	Find     string
 	Found    []stripView
@@ -31,6 +33,10 @@ type boardView struct {
 }
 
 type bayView struct {
+	// Trouble says this rack could not be read. An empty rack and a rack that
+	// failed look identical, and one of them is a lie: if the database is down
+	// the screen says so rather than showing you a quiet morning.
+	Trouble  bool
 	Camera   bool
 	In       bool
 	Key      string
@@ -98,10 +104,14 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		in := r.URL.Query().Get("bay")
 		asking, _ := strconv.ParseInt(r.URL.Query().Get("chore"), 10, 64)
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
+		shelf := r.URL.Query().Get("shelf")
+		shelved := whatIsOnTheShelf(r, s, personID, shelf, at)
 		blockers, unstuck := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
 			In:       in,
 			Find:     find,
+			Shelf:    shelfNames[shelf],
+			Shelved:  shelved,
 			Opened:   openedStrip(r, s, personID, at),
 			Found:    whatMatched(r, s, personID, find, at),
 			Blockers: blockers,
@@ -112,19 +122,59 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Pulled:   offerFor(s, opts, r, false, r.URL.Query().Get("ask") == "1"),
 			Timer:    runningTimer(s, opts, r),
 			Tray:     trayStrips(r, s, opts, personID, at),
-			Bays: baysIn(in, []bayView{
-				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Camera: opts.Photos != nil, Shelves: true,
-					Strips: askedForARhythm(noteStrips(r, s, personID, at), asking)},
-				{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true, Rhythms: theRhythms,
-					Strips: choreStrips(r, s, personID)},
-				{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
-					Strips: taskStrips(r, s, personID, at)},
-				{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
-					Strips: agendaStrips(r, s, personID, at)},
-			}),
+			Bays:     baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
 		}
 		renderBoard(w, v)
 	}
+}
+
+// shelfNames is what each shelf is called, and the map is the guard: a shelf
+// nobody named is not a shelf, so an address with anything else in it draws the
+// board.
+var shelfNames = map[string]string{
+	"kept": "the things you kept",
+	"held": "what you set aside",
+}
+
+// whatIsOnTheShelf is a shelf, opened. It takes the racks' place the way search
+// does — the board has one place where things are — and what it holds carries
+// the way back and nothing else, because a thing on a shelf has already been
+// decided about.
+func whatIsOnTheShelf(r *http.Request, s Store, personID int64, shelf string, at time.Time) []stripView {
+	switch shelf {
+	case "kept":
+		items, _, err := s.KeptItems(r.Context(), personID, boardDeep)
+		if err != nil {
+			slog.Error("reading what you kept", "error", err)
+			return nil
+		}
+		out := make([]stripView, 0, len(items))
+		for _, it := range items {
+			out = append(out, stripView{
+				ID: it.ID, What: "note", Words: it.RawText,
+				Mark: markOfDay(it.ReceivedAt, at), Back: true, Photo: it.PhotoName != "",
+			})
+		}
+		return out
+	case "held":
+		items, _, err := s.HeldItems(r.Context(), personID, boardDeep)
+		if err != nil {
+			slog.Error("reading what you set aside", "error", err)
+			return nil
+		}
+		out := make([]stripView, 0, len(items))
+		for _, it := range items {
+			// The mark is what would move it, in his own words. A shelf that
+			// counted them would be a reproach; a shelf that says when each
+			// one ends is the reason there are three of these rather than one.
+			out = append(out, stripView{
+				ID: it.ID, What: "note", Words: it.Text,
+				Mark: it.Words(), Back: true, Photo: it.PhotoName != "",
+			})
+		}
+		return out
+	}
+	return nil
 }
 
 // whatMatched is the search, which takes the racks' place rather than opening
@@ -187,6 +237,25 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 	return strips
 }
 
+// theBaysOf reads all four racks, each saying whether it could be read at all.
+func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.Time, asking int64) []bayView {
+	notes, notesOK := noteStrips(r, s, personID, at)
+	chores, choresOK := choreStrips(r, s, personID)
+	tasks, tasksOK := taskStrips(r, s, personID, at)
+	agenda, agendaOK := agendaStrips(r, s, personID, at)
+	return []bayView{
+		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
+			Camera: opts.Photos != nil, Shelves: true, Trouble: !notesOK,
+			Strips: askedForARhythm(notes, asking)},
+		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
+			Rhythms: theRhythms, Trouble: !choresOK, Strips: chores},
+		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
+			Trouble: !tasksOK, Strips: tasks},
+		{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
+			Trouble: !agendaOK, Strips: agenda},
+	}
+}
+
 // baysIn lights the rack you are standing in, which is only ever one and is the
 // notes when nothing says otherwise. It is a class rather than a filter: the
 // desktop draws all four racks and the phone shows the lit one, so the same
@@ -204,11 +273,11 @@ func baysIn(in string, bays []bayView) []bayView {
 	return bays
 }
 
-func noteStrips(r *http.Request, s Store, personID int64, at time.Time) []stripView {
+func noteStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool) {
 	items, _, err := s.OpenItems(r.Context(), personID, boardDeep)
 	if err != nil {
 		slog.Error("reading the notes for the board", "error", err)
-		return nil
+		return nil, false
 	}
 	out := make([]stripView, 0, len(items))
 	for _, it := range items {
@@ -218,14 +287,14 @@ func noteStrips(r *http.Request, s Store, personID int64, at time.Time) []stripV
 			Photo: it.PhotoName != "",
 		})
 	}
-	return out
+	return out, true
 }
 
-func taskStrips(r *http.Request, s Store, personID int64, at time.Time) []stripView {
+func taskStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool) {
 	items, _, err := s.Tasks(r.Context(), personID, boardDeep)
 	if err != nil {
 		slog.Error("reading the tasks for the board", "error", err)
-		return nil
+		return nil, false
 	}
 	out := make([]stripView, 0, len(items))
 	for _, it := range items {
@@ -234,14 +303,14 @@ func taskStrips(r *http.Request, s Store, personID int64, at time.Time) []stripV
 			Mark: markOfDay(it.ReceivedAt, at), Answers: taskAnswers,
 		})
 	}
-	return out
+	return out, true
 }
 
-func choreStrips(r *http.Request, s Store, personID int64) []stripView {
+func choreStrips(r *http.Request, s Store, personID int64) ([]stripView, bool) {
 	chores, err := s.ActiveChores(r.Context(), personID)
 	if err != nil {
 		slog.Error("reading the chores for the board", "error", err)
-		return nil
+		return nil, false
 	}
 	out := make([]stripView, 0, len(chores))
 	for _, c := range chores {
@@ -250,14 +319,14 @@ func choreStrips(r *http.Request, s Store, personID int64) []stripView {
 			Mark: squirrel.Cadence(c.EveryDays), Answers: choreAnswers,
 		})
 	}
-	return out
+	return out, true
 }
 
-func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) []stripView {
+func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool) {
 	soon, err := s.Upcoming(r.Context(), personID, at, boardDeep)
 	if err != nil {
 		slog.Error("reading what is coming for the board", "error", err)
-		return nil
+		return nil, false
 	}
 	out := make([]stripView, 0, len(soon))
 	for _, m := range soon {
@@ -276,7 +345,7 @@ func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) []stri
 		}
 		out = append(out, strip)
 	}
-	return out
+	return out, true
 }
 
 var noteAnswers = []answerView{

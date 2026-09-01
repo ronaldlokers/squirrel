@@ -100,6 +100,29 @@
   </section>
 </main>
 {{end}}
+{{else if .Shelf}}
+<main class="racks found">
+  <section class="rack in">
+    <p class="baysign shelf">{{.Shelf}}</p>
+    <a class="strip back" href="/"><span class="words">back to the board</span></a>
+    <div class="channel">
+      <div class="strips">
+        {{range .Shelved}}
+        <article class="strip h-notes">
+          <span class="holder"></span>
+          <div class="words">{{.Words}}
+            <form class="stamps" method="post" action="/board/undo">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <button class="stamp">back in the pile<span class="k">Z</span></button>
+            </form>
+          </div>
+          <span class="mark">{{.Mark}}</span>
+        </article>
+        {{end}}
+      </div>
+    </div>
+  </section>
+</main>
 {{else if .Find}}
 <main class="racks found">
   <section class="rack in">
@@ -169,6 +192,7 @@
     </form>
     {{end}}
     <div class="channel">
+      {{if .Trouble}}<p class="trouble">cannot reach {{.Name}} — nothing is lost, and nothing here is what you have</p>{{end}}
       <div class="strips">
         {{range .Strips}}
         <article class="strip h-{{$bay.Key}}{{if .Answers}} answerable{{end}}">
@@ -201,8 +225,8 @@
       </div>
       {{if .Shelves}}
       <nav class="ledge">
-        <a class="tab" href="/r/held">what you set aside</a>
-        <a class="tab" href="/r/kept">the things you kept</a>
+        <a class="tab" href="/?shelf=held">what you set aside</a>
+        <a class="tab" href="/?shelf=kept">the things you kept</a>
       </nav>
       {{end}}
     </div>

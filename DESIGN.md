@@ -809,10 +809,18 @@ the dock, and the rail. **What it gives up:** being where a note is triaged.
 Those presses have a board now, and two places to answer the same thing is the
 problem this product exists to solve rather than one it may create.
 
-**Not yet true, and the next change:** the four object rooms — the notes, the
-chores, the agenda, the tasks — are still mounted and still draw lists of rows
-the board owns. They retire into the bays, and it is a change of its own because
-two dozen tests describe what those rooms draw.
+**Not yet true, and harder than it looks:** the four object rooms — the notes,
+the chores, the agenda, the tasks — are still mounted and still draw lists of
+rows the board owns. Retiring them was attempted on 1 September 2026 and backed
+out, and what it found is worth writing down rather than rediscovering: a room
+is not only a screen. A turn belongs to one, the coach is asked *as* one, a
+notice is about one, and every form a turn draws carries the room it was drawn
+in. Removing four of the five is a decision about what those four things mean
+for a room that no longer exists, and that decision has not been made.
+
+Two things came out of the attempt and stayed, because they were right whether
+or not the rooms go: the shelves open on the board, and a rack says when it
+could not be read.
 
 ## Do's and Don'ts
 
