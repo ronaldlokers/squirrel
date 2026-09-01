@@ -241,8 +241,15 @@ highlight or a badge, it is a strip pulled out of its rack — a physical act yo
 can read from across the room. Answering something strikes it and drops it into
 the day's tray, and the tray is empty again tomorrow.
 
-**Status, and what this replaces.** This document describes the design of
-record, not the running code, and it says so to the tests as well: while the
+**Status, and what this replaces.** This document is ahead of the running code
+and is landing behind it. As of 1 September 2026 the board is mounted at
+`/board`, drawing the four bays, the pulled strip, the running timer and the
+ledge from the store; it has no actions on it yet, and `/` is still the
+conversation. Nothing here is described from intention: what the route renders
+is what this document says, and the parts it does not render yet are named in
+the surface brief.
+
+It says the same thing to the tests: while the
 line `design-ahead-of-code` is in this file, the radius vocabulary is not
 checked against the shipped stylesheet. Delete that line when the board ships
 and the check closes again. Everything shipped through v0.55.1 is the previous

@@ -1,0 +1,65 @@
+{{define "board"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squirrel</title>
+<link rel="stylesheet" href="/static/board.css?v={{.V}}">
+</head>
+<body>
+<header class="ops">
+  <img class="markart" src="/static/logo.png" alt="">
+  <h1 class="wordmark">Squirrel</h1>
+  <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
+  <span class="spacer"></span>
+  <a class="opslink" href="/">the conversation</a>
+</header>
+
+{{if or .Pulled .Timer}}
+<section class="working">
+  {{with .Pulled}}
+  <article class="pulled">
+    <span class="holder"></span>
+    <div class="body">
+      <p class="why"><b>pulled</b>{{.Because}}</p>
+      <p class="said">{{.Text}}</p>
+    </div>
+  </article>
+  {{end}}
+  {{with .Timer}}
+  <aside class="ticking">
+    <span class="lbl">running</span>
+    <span class="row"><span class="what">{{.Label}}</span><span class="left">{{.Left}}</span></span>
+  </aside>
+  {{end}}
+</section>
+{{end}}
+
+<main class="racks">
+  {{range $bay := .Bays}}
+  <section class="rack">
+    <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
+    <p class="strip blank"><span class="words">{{.Question}}</span><span class="newmark">+</span></p>
+    <div class="channel">
+      <div class="strips">
+        {{range .Strips}}
+        <article class="strip h-{{$bay.Key}}">
+          <span class="holder"></span>
+          <span class="words">{{.Words}}</span>
+          <span class="mark{{if .Big}} time{{end}}">{{.Mark}}</span>
+        </article>
+        {{end}}
+      </div>
+      {{if .Shelves}}
+      <nav class="ledge">
+        <a class="tab" href="/r/held">what you set aside</a>
+        <a class="tab" href="/r/kept">the things you kept</a>
+      </nav>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+</main>
+</body>
+</html>
+{{end}}
