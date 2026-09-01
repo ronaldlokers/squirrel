@@ -563,8 +563,11 @@ The single content object. A three-column grid: holder, words, mark.
 - The mark column is the right edge: `mark` type, or `figure` when the thing has
   a time, which is the one case where the mark outranks the words in weight.
 - A strip never carries an icon, a thumbnail, an avatar or a progress bar. A
-  photograph on a note is shown by opening the strip, not by shrinking it into
-  the row.
+  photograph on a note is shown by **opening the strip**: the words become the
+  way in, a note with no words says *a photograph*, and what opens is that one
+  strip drawn whole above the racks — the picture at up to 38vh, contained
+  rather than cropped, with the answers it would carry in its rack. A note whose
+  photograph is of words is a note that cropping loses.
 
 ### The pulled strip
 
@@ -616,7 +619,14 @@ lands in the bay you are looking at, which is what retired the composer and its
 row of destination chips together.
 
 Typing turns it solid: `paper` stock, solid outline, the focus ring. The camera
-lives on the same row as the plus.
+lives on the same row as the plus, in the notes rack and nowhere else, and only
+where there is a volume to keep photographs on — with nowhere to put them the
+camera is never offered.
+
+A photograph goes through the same path every other capture takes: the bytes
+reach the volume and are fsynced there before the spool entry that points at
+them exists. A photograph with no words is a capture, which is most of the point
+of having a camera.
 
 **Every bay has one, and none of them has a second step.** A chore needs a
 rhythm and an appointment needs a day, and the obvious build was to take the

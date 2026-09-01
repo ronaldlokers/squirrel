@@ -88,6 +88,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/board/now", posting(opts, boardNowHandler(s, opts)))
 	m.Post("/board/buddy", posting(opts, boardBuddyHandler(s, opts)))
 	m.Post("/board/badly", posting(opts, boardBadlyHandler(s, opts)))
+	m.Post("/board/capture", posting(opts, boardCaptureHandler(s, opts)))
 	m.Get("/me/face", guard(opts, faceHandler(s)))
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
