@@ -1,7 +1,6 @@
 package web
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -63,28 +62,27 @@ func TestAChoreKeepsItsOwnClass(t *testing.T) {
 
 // Every kind that has a body is a different word in the markup. A test that
 // only checked one would pass with the other five collapsed back into one.
+// Each kind is still told apart at a glance, and on the board that job belongs
+// to the holder: the colour down a strip's left edge says which bay it is in.
+// The four rooms that used to draw four kinds of card are those four bays since
+// 1 September 2026.
 func TestTheKindsAreDistinguishable(t *testing.T) {
-	seen := map[string]bool{}
-	for _, c := range []struct {
-		where string
-		f     *fakeStore
-	}{
-		{"at", &fakeStore{upcoming: []squirrel.Moment{{ID: 1, Label: "dentist", Starts: now().Add(3 * time.Hour)}}}},
-		{"tasks", &fakeStore{items: []squirrel.Item{task(1, "book the MOT", squirrel.ItemOpen)}}},
-		{"chores", &fakeStore{chores: []squirrel.Chore{{ID: 1, Name: "the bins", EveryDays: 7, Active: true}}}},
-		{"held", &fakeStore{aside: []squirrel.HeldItem{{ID: 5, Text: "the referral", State: squirrel.ItemWaiting}}}},
-	} {
-		drew := drewIn(t, c.f, c.where)
-		require.NotEmpty(t, drew)
-		shown := string(drew[len(drew)-1].Shown)
-		for _, kind := range []string{"at", "task", "chore", "held"} {
-			if strings.Contains(shown, `"kind":"`+kind+`"`) {
-				require.False(t, seen[kind], "%s claims a kind another already used", c.where)
-				seen[kind] = true
-			}
-		}
+	f := &fakeStore{
+		items: []squirrel.Item{
+			note(1, "kaas", squirrel.ItemOpen),
+			task(2, "book the MOT", squirrel.ItemOpen),
+		},
+		chores:   []squirrel.Chore{{ID: 3, Name: "the bins", EveryDays: 7, Active: true}},
+		upcoming: []squirrel.Moment{{ID: 4, Label: "dentist", Starts: now().Add(3 * time.Hour)}},
 	}
-	require.Len(t, seen, 4, "four kinds went in and %d came out distinguishable", len(seen))
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	seen := map[string]bool{}
+	for _, holder := range []string{"h-notes", "h-chores", "h-tasks", "h-agenda"} {
+		require.Contains(t, body, `class="strip `+holder, "%s draws no strip", holder)
+		require.False(t, seen[holder], "%s is drawn twice", holder)
+		seen[holder] = true
+	}
 }
 
 // drawnAs renders one turn carrying a card of that kind, so a test can look at

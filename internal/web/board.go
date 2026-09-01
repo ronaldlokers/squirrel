@@ -261,10 +261,20 @@ func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) []stri
 	}
 	out := make([]stripView, 0, len(soon))
 	for _, m := range soon {
-		out = append(out, stripView{
+		strip := stripView{
 			ID: m.ID, What: "moment", Words: m.Label,
 			Mark: markOfMoment(m, at), Big: true, Answers: momentAnswers,
-		})
+		}
+		// Inside the window the strip stops being a time and becomes a thing
+		// you are about to leave for: the mark says when to go, and LEAVING is
+		// the answer. Outside it there is nothing to press — a button that
+		// closes a thing three hours early is one that gets pressed by
+		// accident.
+		if m.Open(at) {
+			strip.Mark = "leave " + m.LeaveAt().Format("15:04")
+			strip.Answers = leavingAnswers
+		}
+		out = append(out, strip)
 	}
 	return out
 }
@@ -278,6 +288,11 @@ var noteAnswers = []answerView{
 var taskAnswers = []answerView{
 	{Act: "done", Words: "done", Key: "D", Look: "did"},
 	{Act: "drop", Words: "drop", Key: "X", Look: "no"},
+}
+
+var leavingAnswers = []answerView{
+	{Act: "leaving", Words: "leaving", Key: "D", Look: "did"},
+	{Act: "over", Words: "it is over", Key: "X", Look: "no"},
 }
 
 var momentAnswers = []answerView{
@@ -416,8 +431,13 @@ func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer str
 		_, err = s.MoveItemState(r.Context(), it.ID, it.State, state, at)
 		return err
 	case "moment":
-		if answer == "over" {
+		switch answer {
+		case "over":
 			return s.MomentDone(r.Context(), personID, id, at)
+		case "leaving":
+			// The same write the conversation's LEAVING makes: you left, which
+			// is what closes a fixed point and stops it being raised again.
+			return s.Did(r.Context(), personID, squirrel.Offer{Kind: squirrel.OfferMoment, RefID: id}, at)
 		}
 	case "chore":
 		switch answer {

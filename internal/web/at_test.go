@@ -163,9 +163,9 @@ func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	// Soonest first, in the turn the door draws now.
-	fDrew := drewIn(t, f, "at")
-	body := string(fDrew[len(fDrew)-1].Shown)
+	// Soonest first, in the agenda rack — the door that used to draw this is a
+	// bay on the board since 1 September 2026.
+	body := mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String()
 
 	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
 }
@@ -177,39 +177,40 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	fDrew := drewIn(t, f, "at")
-	said := strings.ToLower(fDrew[len(fDrew)-1].Words)
-	drawn := strings.ToLower(string(fDrew[len(fDrew)-1].Shown))
+	drawn := strings.ToLower(mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String())
 
-	// Counting what is ahead is permitted, and is the only number here.
-	require.Contains(t, said, "2 things have a time")
+	// Counting what is ahead is permitted, and the bay sign is where it is
+	// said. The words that would make it a reproach are not on the board at
+	// all.
+	require.Contains(t, drawn, `the agenda <span class="n">2</span>`)
 	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
-		require.NotContains(t, said, banned)
 		require.NotContains(t, drawn, banned)
 	}
 }
 
+// An empty rack is room rather than absence, and it says nothing at all: no
+// encouragement, no plan, and no number where there is nothing to count.
 func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
-	f := &fakeStore{}
-	fDrew := drewIn(t, f, "at")
-	body := strings.ToLower(fDrew[len(fDrew)-1].Words)
+	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/?bay=agenda", nil).Body.String())
 
-	require.Contains(t, body, "when something has a time you can be late for")
-	require.NotContains(t, body, "plan")
+	require.Contains(t, body, "the agenda")
+	require.NotContains(t, body, `the agenda <span class="n">`)
+	for _, banned := range []string{"plan", "nothing coming", "all clear"} {
+		require.NotContains(t, body, banned)
+	}
 }
 
 // The agenda arrives as cards, and each says when to leave in the core's own
 // words — so the card, chat and the notification cannot drift apart about it.
-func TestOpeningTheAgendaDrawsWhatIsComing(t *testing.T) {
+func TestTheAgendaRackDrawsWhatIsComing(t *testing.T) {
 	m := aMoment(3*time.Hour, "keys, wallet")
 	f := withUpcoming(*m)
-	fDrew := drewIn(t, f, "at")
 
-	require.Len(t, fDrew, 1)
-	shown := string(fDrew[len(fDrew)-1].Shown)
+	shown := mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String()
+
 	require.Contains(t, shown, "dentist")
-	require.Contains(t, shown, `"place":"the agenda"`)
-	require.Contains(t, shown, squirrel.LeaveWords(*m))
+	require.Contains(t, shown, `class="strip h-agenda`, "it is not drawn as an appointment")
+	require.Contains(t, shown, markOfMoment(*m, now()), "the strip does not say when")
 }
 
 // LEAVING only inside the window. Outside it there is nothing to press: the
@@ -217,24 +218,25 @@ func TestOpeningTheAgendaDrawsWhatIsComing(t *testing.T) {
 // thing three hours early is one that gets pressed by accident.
 func TestLeavingIsAbsentOutsideTheWindow(t *testing.T) {
 	far := withUpcoming(*aMoment(3*time.Hour, ""))
-	farDrew := drewIn(t, far, "at")
-	require.NotContains(t, string(farDrew[len(farDrew)-1].Shown), "LEAVING")
+	farShown := mounted(t, far).call(t, "GET", "/?bay=agenda", nil).Body.String()
+	require.NotContains(t, farShown, "leaving")
 
 	near := withUpcoming(*aMoment(20*time.Minute, ""))
-	nearDrew := drewIn(t, near, "at")
-	require.Contains(t, string(nearDrew[len(nearDrew)-1].Shown), "LEAVING")
+	nearShown := mounted(t, near).call(t, "GET", "/?bay=agenda", nil).Body.String()
+	require.Contains(t, nearShown, "leaving")
+	require.Contains(t, nearShown, "leave "+near.upcoming[0].LeaveAt().Format("15:04"))
 }
 
-// An absence, not an encouragement. Nothing here says you ought to be making
-// plans, and nothing counts what is not there.
+// An absence, not an encouragement. An empty rack is room rather than a place
+// with an opinion: nothing says you ought to be making plans, and no sign
+// counts what is not there.
 func TestAnEmptyAgendaSaysSoWithoutEncouraging(t *testing.T) {
-	f := &fakeStore{}
-	fDrew := drewIn(t, f, "at")
+	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/?bay=agenda", nil).Body.String())
 
-	require.Len(t, fDrew, 1)
-	require.Contains(t, strings.ToLower(fDrew[len(fDrew)-1].Words), "when something has a time you can be late for")
-	for _, nag := range []string{"why not", "get started", "add your first", "0"} {
-		require.NotContains(t, strings.ToLower(fDrew[len(fDrew)-1].Words), nag)
+	require.Contains(t, body, "the agenda")
+	require.NotContains(t, body, `the agenda <span class="n">`, "a sign counted what is not there")
+	for _, nag := range []string{"why not", "get started", "add your first"} {
+		require.NotContains(t, body, nag)
 	}
 }
 

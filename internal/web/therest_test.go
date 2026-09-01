@@ -1,7 +1,6 @@
 package web
 
 import (
-	"bytes"
 	"net/url"
 	"os"
 	"regexp"
@@ -237,9 +236,16 @@ func reachable(m *testMux, path string) bool {
 // "--dockspace is gone" passes for every reason including the one where the
 // dock went back to being fixed and nothing reserves anything.
 func TestTheDockIsARowAndNotAThingOnTop(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
-	require.NoError(t, err)
-	sheet := string(css)
+	// Both stylesheets. This read pile.css alone for the conversation's whole
+	// life, which was right when there was one world and silently wrong the
+	// moment the board arrived: every radius in board.css went unchecked, and
+	// a mutation proving otherwise is what found it.
+	var sheet string
+	for _, name := range []string{"static/pile.css", "static/board.css"} {
+		css, err := staticFS.ReadFile(name)
+		require.NoError(t, err, name)
+		sheet += string(css)
+	}
 
 	require.Contains(t, ruleFor(t, sheet, ".dock"), "position: sticky",
 		"the dock does not sit at the foot of the transcript")
@@ -261,9 +267,16 @@ func ruleFor(t *testing.T, css, selector string) string {
 }
 
 func TestAPillIsASingleLineLabelYouPress(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
-	require.NoError(t, err)
-	sheet := string(css)
+	// Both stylesheets. This read pile.css alone for the conversation's whole
+	// life, which was right when there was one world and silently wrong the
+	// moment the board arrived: every radius in board.css went unchecked, and
+	// a mutation proving otherwise is what found it.
+	var sheet string
+	for _, name := range []string{"static/pile.css", "static/board.css"} {
+		css, err := staticFS.ReadFile(name)
+		require.NoError(t, err, name)
+		sheet += string(css)
+	}
 
 	for _, selector := range []string{
 		".letmein",
@@ -289,17 +302,19 @@ func TestAPillIsASingleLineLabelYouPress(t *testing.T) {
 }
 
 func TestTheRadiusVocabularyIsClosed(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
-	require.NoError(t, err)
-	sheet := string(css)
+	// Both stylesheets. This read pile.css alone for the conversation's whole
+	// life, which was right when there was one world and silently wrong the
+	// moment the board arrived: every radius in board.css went unchecked, and
+	// a mutation proving otherwise is what found it.
+	var sheet string
+	for _, name := range []string{"static/pile.css", "static/board.css"} {
+		css, err := staticFS.ReadFile(name)
+		require.NoError(t, err, name)
+		sheet += string(css)
+	}
 
 	design, err := os.ReadFile("../../DESIGN.md")
 	require.NoError(t, err)
-
-	if bytes.Contains(design, []byte("design-ahead-of-code")) {
-		t.Skip("DESIGN.md describes a world this stylesheet does not implement yet, and says so. " +
-			"Delete that line from DESIGN.md when the code catches up, and this closes again.")
-	}
 
 	named := map[string]string{}
 	inBlock := false
@@ -320,11 +335,11 @@ func TestTheRadiusVocabularyIsClosed(t *testing.T) {
 	}
 	require.NotEmpty(t, named, "DESIGN.md declares no rounded tokens")
 
-	// The small marks: a documented category in ## Shapes whose values are
-	// deliberately not tokens, and the same three the detector is configured
-	// to pass over.
-	for _, mark := range []string{"7px", "6px", "4px"} {
-		named[mark] = "a small mark"
+	// Buddy's room keeps the conversation's own radii, and DESIGN.md documents
+	// them in a table rather than as tokens: they belong to one room rather
+	// than to the system. The small marks are in that table too.
+	for _, kept := range []string{"999px", "10px", "3em", "7px", "6px", "4px"} {
+		named[kept] = "Buddy's room"
 	}
 	named["var(--r)"] = "card"
 
