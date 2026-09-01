@@ -1,6 +1,8 @@
 package web
 
 import (
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,4 +54,41 @@ func TestTheShelvesAreReachedFromTheNotesRackAndCountNothing(t *testing.T) {
 	require.Contains(t, body, "what you set aside")
 	require.Contains(t, body, "the things you kept")
 	require.NotContains(t, body, "ledge\"><span class=\"tab\">what you set aside <span")
+}
+
+func TestAStripCarriesTheAnswersItsBayAllows(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/board", nil).Body.String()
+
+	for _, want := range []string{">done<", ">keep<", ">drop<", ">did it<", ">later<"} {
+		require.Contains(t, body, want)
+	}
+}
+
+func TestAnsweringAStripMovesItAndComesBackToTheBoard(t *testing.T) {
+	f := aBoardStore()
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=1&answer=keep"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.Equal(t, squirrel.ItemKept, f.states[1], "the note is kept")
+}
+
+func TestTheTrayHoldsWhatLeftTheBoardTodayAndOffersTheWayBack(t *testing.T) {
+	f := aBoardStore()
+	f.triaged = []squirrel.Item{
+		{ID: 9, RawText: "washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote},
+		{ID: 8, RawText: "the thing about the bike lights", State: squirrel.ItemDropped, Kind: squirrel.ItemNote},
+	}
+	m := mounted(t, f)
+
+	body := m.call(t, "GET", "/board", nil).Body.String()
+
+	require.Contains(t, body, "washing machine one")
+	require.Contains(t, body, "the thing about the bike lights")
+	require.Contains(t, body, "put it back")
+	require.NotContains(t, body, "tray\"><span class=\"sign\">today's tray</span> <span class=\"n\">")
 }

@@ -109,6 +109,9 @@ type fakeStore struct {
 	attachedItems []int64
 	detached      []int64
 
+	// What left the board today, newest first.
+	triaged []squirrel.Item
+
 	// What was set aside, and what was picked back up.
 	aside  []squirrel.HeldItem
 	unheld []int64
@@ -311,6 +314,13 @@ func (f *fakeStore) SearchItems(_ context.Context, _ int64, q string, limit int)
 		out = out[:limit]
 	}
 	return out, more, nil
+}
+
+func (f *fakeStore) TriagedSince(_ context.Context, _ int64, _ time.Time) ([]squirrel.Item, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.triaged, nil
 }
 
 func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {

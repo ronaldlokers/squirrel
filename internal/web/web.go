@@ -138,6 +138,7 @@ type Store interface {
 	OpenItemsAfter(ctx context.Context, personID, afterID int64, limit int) ([]squirrel.Item, bool, error)
 	SearchItems(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Item, bool, error)
 	KeptItems(ctx context.Context, personID int64, limit int) ([]squirrel.Item, bool, error)
+	TriagedSince(ctx context.Context, personID int64, since time.Time) ([]squirrel.Item, error)
 	// The screen captures as of v0.12.0. See captureHandler for what that
 	// overruled and what it cost.
 	InsertItem(ctx context.Context, i squirrel.Item) (bool, error)

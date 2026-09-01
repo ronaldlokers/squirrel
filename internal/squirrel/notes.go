@@ -360,6 +360,37 @@ func (s *Store) PromoteItem(ctx context.Context, personID, itemID int64, every t
 //
 // No history table. A note that left went to done, dropped or kept, and putting
 // it back means open.
+func (s *Store) TriagedSince(ctx context.Context, personID int64, since time.Time) ([]Item, error) {
+	rows, err := s.pool.Query(ctx, `
+		select id, raw_text, received_at, payload, state, kind,
+		       coalesce(attachment_path, ''), coalesce(attachment_type, '')
+		  from items
+		 where person_id = $1 and has_content
+		   and state <> 'open' and state_at is not null and state_at >= $2
+		 order by state_at desc, id desc
+		 limit 40`, personID, since)
+	if err != nil {
+		return nil, fmt.Errorf("reading what left the board: %w", err)
+	}
+	defer rows.Close()
+
+	out := []Item{}
+	for rows.Next() {
+		var it Item
+		var payload json.RawMessage
+		if err := rows.Scan(&it.ID, &it.RawText, &it.ReceivedAt, &payload, &it.State, &it.Kind,
+			&it.PhotoName, &it.PhotoType); err != nil {
+			return nil, fmt.Errorf("scanning item: %w", err)
+		}
+		it.Payload = payload
+		out = append(out, it)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading what left the board: %w", err)
+	}
+	return out, nil
+}
+
 func (s *Store) LastTriaged(ctx context.Context, personID int64) (Item, bool, error) {
 	rows, err := s.pool.Query(ctx, `
 		select id, raw_text, received_at, payload, state, kind,

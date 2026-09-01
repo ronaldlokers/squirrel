@@ -244,8 +244,10 @@ the day's tray, and the tray is empty again tomorrow.
 **Status, and what this replaces.** This document is ahead of the running code
 and is landing behind it. As of 1 September 2026 the board is mounted at
 `/board`, drawing the four bays, the pulled strip, the running timer and the
-ledge from the store; it has no actions on it yet, and `/` is still the
-conversation. Nothing here is described from intention: what the route renders
+ledge from the store, and a strip can be answered on it: a stamp strikes it,
+the strike holds for 1150ms, the strip travels, and it lands in today's tray
+with its way back. Capture, the pulled strip's own stamps and the phone's bay
+tabs are not built yet, and `/` is still the conversation. Nothing here is described from intention: what the route renders
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
 
@@ -543,6 +545,12 @@ exists because motion is what it is replacing.
 The single content object. A three-column grid: holder, words, mark.
 
 - 2px outline, 3px radius, `card` stock, `0 2px 0` cast.
+- **Its stamps are behind the cock.** Where there is a pointer, a strip's
+  answers are collapsed to nothing and the row opens along the rack's axis when
+  the strip is cocked or focused; where there is no hover they are always on the
+  strip, because a thumb has nothing to hover with and an answer you cannot
+  reach is not an answer. The buttons stay in the markup either way, so the
+  keyboard reaches them and a page with no stylesheet still works.
 - The words column takes 8px 10px of padding and may run to two lines. Below
   the words, when the strip is cocked, its stamps.
 - The mark column is the right edge: `mark` type, or `figure` when the thing has
