@@ -36,15 +36,28 @@
 </section>
 {{end}}
 
+{{if .Kept}}
+<p class="wentto">that went to the notes — an appointment needs a time in it, and a chore needs a rhythm.</p>
+{{end}}
+
 <main class="racks">
   {{range $bay := .Bays}}
   <section class="rack">
     <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
     {{if .Writes}}
-    <form class="strip blank" method="post" action="/board/new">
+    <form class="blankstrip" method="post" action="/board/new">
       <input type="hidden" name="bay" value="{{.Key}}">
-      <input class="words" name="words" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done">
-      <button class="newmark" aria-label="keep it">+</button>
+      <p class="strip blank">
+        <input class="words" name="words" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done">
+        <button class="newmark" aria-label="keep it">+</button>
+      </p>
+      {{if .Rhythms}}
+      <span class="rhythms">
+        {{range .Rhythms}}
+        <button class="stamp small" name="every" value="{{.Days}}">{{.Words}}</button>
+        {{end}}
+      </span>
+      {{end}}
     </form>
     {{end}}
     <div class="channel">

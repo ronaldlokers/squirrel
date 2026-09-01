@@ -373,3 +373,24 @@ body::before {
   .tray { padding: 9px 12px calc(11px + env(safe-area-inset-bottom)); }
   .stamp { min-height: 34px; }
 }
+
+.blankstrip { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; margin: 0; }
+.blankstrip .strip.blank { margin: 0; }
+.rhythms { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 1px; }
+.rhythms .stamp {
+  background: rgba(28, 17, 11, .2); color: var(--cream);
+  border: var(--line) dashed rgba(254, 214, 167, .38); box-shadow: none;
+  letter-spacing: .06em; font-variation-settings: var(--precise), "wght" 750;
+}
+.rhythms .stamp:hover { background: rgba(28, 17, 11, .3); border-color: rgba(254, 214, 167, .7); color: var(--paper); }
+.rhythms .stamp:active { transform: translateY(1px); }
+
+.wentto {
+  margin: 0; padding: 10px 18px 0;
+  color: var(--cream); font-size: 14px;
+  font-variation-settings: var(--casual), "wght" 470;
+}
+
+@media (max-width: 620px) {
+  .wentto { padding: 10px 12px 0; }
+}

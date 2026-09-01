@@ -179,3 +179,69 @@ func TestTheBlankStripIsAFieldYouCanType(t *testing.T) {
 	require.Contains(t, body, `name="words"`)
 	require.Contains(t, body, `value="notes"`)
 }
+
+// A chore is a name and a rhythm, and the rack asks for both in one press.
+// There is no pending state anywhere: the rhythm is a button beside the field
+// rather than a question asked after the words are already typed.
+func TestTypingAChoreWithItsRhythmMakesOne(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=chores&words=defrost+the+freezer&every=14"))
+
+	require.Equal(t, "defrost the freezer", f.reinterval.name)
+	require.Equal(t, 14*24*time.Hour, f.reinterval.every)
+	require.Empty(t, sp.written, "a chore with a rhythm is a chore, not a note")
+}
+
+// Words with no rhythm are still a thought, so they go where a thought goes.
+// The one thing that may not happen is that they are dropped.
+func TestChoreWordsWithNoRhythmGoToTheNotes(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=chores&words=defrost+the+freezer"))
+
+	require.Empty(t, f.reinterval.name, "a chore was made without a rhythm")
+	require.Len(t, sp.written, 1, "the words were dropped")
+	require.Equal(t, "defrost the freezer", sp.written[0].Text)
+}
+
+func TestTypingWhenSomethingHappensMakesAMoment(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=agenda&words=tomorrow+at+14%3A30+dentist"))
+
+	require.Len(t, f.moments, 1, "nothing was put in the agenda")
+	require.Equal(t, "dentist", f.moments[0].Label)
+	require.Empty(t, sp.written)
+}
+
+// An appointment needs a time in it. Without one there is nothing to be on time
+// for, so the words are a note — and the board says where they went rather than
+// swallowing them.
+func TestAgendaWordsWithNoTimeInThemGoToTheNotes(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	w := m.call(t, "POST", "/board/new", strings.NewReader("bay=agenda&words=ring+the+dentist"))
+
+	require.Empty(t, f.moments)
+	require.Len(t, sp.written, 1)
+	require.Equal(t, "/board?kept=notes", w.Header().Get("Location"))
+}
+
+func TestTheChoresRackAsksForARhythmBesideTheField(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/board", nil).Body.String()
+
+	for _, want := range []string{`value="chores"`, `name="every" value="1"`, `name="every" value="7"`, `name="every" value="14"`, `name="every" value="30"`} {
+		require.Contains(t, body, want)
+	}
+}
