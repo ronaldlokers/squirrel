@@ -14,6 +14,7 @@ import (
 
 type boardView struct {
 	V        string
+	Opened   *stripView
 	Find     string
 	Found    []stripView
 	Blockers []blockerView
@@ -30,6 +31,7 @@ type boardView struct {
 }
 
 type bayView struct {
+	Camera   bool
 	In       bool
 	Key      string
 	Name     string
@@ -43,7 +45,10 @@ type bayView struct {
 type stripView struct {
 	// Back is a strip that has already left the pile: it carries the way back
 	// and nothing else.
-	Back    bool
+	Back bool
+	// Photo says this note has a photograph. The strip says so; opening it is
+	// what shows it.
+	Photo   bool
 	ID      int64
 	What    string
 	Words   string
@@ -93,6 +98,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		v := boardView{
 			In:       in,
 			Find:     find,
+			Opened:   openedStrip(r, s, personID, at),
 			Found:    whatMatched(r, s, personID, find, at),
 			Blockers: blockers,
 			Unstuck:  unstuck,
@@ -103,7 +109,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Timer:    runningTimer(s, opts, r),
 			Tray:     trayStrips(r, s, opts, personID, at),
 			Bays: baysIn(in, []bayView{
-				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Shelves: true,
+				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Camera: opts.Photos != nil, Shelves: true,
 					Strips: noteStrips(r, s, personID, at)},
 				{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true, Rhythms: theRhythms,
 					Strips: choreStrips(r, s, personID)},
@@ -190,6 +196,7 @@ func noteStrips(r *http.Request, s Store, personID int64, at time.Time) []stripV
 		out = append(out, stripView{
 			ID: it.ID, What: "note", Words: it.RawText,
 			Mark: markOfDay(it.ReceivedAt, at), Answers: noteAnswers,
+			Photo: it.PhotoName != "",
 		})
 	}
 	return out
@@ -658,4 +665,81 @@ func boardBadlyHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+}
+
+// boardCaptureHandler is the notes rack's own slot when it carries a
+// photograph. It is the same path the conversation's capture takes — readCapture
+// writes the bytes to the volume and fsyncs them before the spool entry that
+// points at them exists — because a second way into the pile would be a second
+// way to lose a thought.
+func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := personOf(r); !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		text, photo, kind, err := readCapture(r, opts)
+		if err != nil {
+			slog.Warn("a capture from the board was refused", "error", err)
+			fail(w, err)
+			return
+		}
+		// Nothing said and nothing photographed is nothing to keep. A
+		// photograph on its own is a capture, which is most of the point of
+		// having a camera.
+		if text == "" && photo == "" {
+			http.Redirect(w, r, "/?bay=notes", http.StatusSeeOther)
+			return
+		}
+		sender := subOf(r)
+		if _, err := opts.Spool.Write(squirrel.Capture{
+			Transport:  squirrel.ScreenTransport,
+			SenderID:   &sender,
+			Text:       text,
+			Payload:    []byte(squirrel.ScreenCapture),
+			ReceivedAt: now(),
+			PhotoName:  photo,
+			PhotoType:  kind,
+		}); err != nil {
+			slog.Warn("a capture from the board could not be spooled", "error", err)
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/?bay=notes", http.StatusSeeOther)
+	}
+}
+
+// opened is the one strip you asked to see, drawn whole: its photograph at the
+// size a photograph needs, and the answers it would carry in its rack.
+//
+// A strip in a rack never carries the picture — it says it has one and this is
+// what opening it does. Reading it back as yours is the same guard every other
+// press has: a row that is not yours is not yours to look at either.
+func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripView {
+	id, _ := strconv.ParseInt(r.URL.Query().Get("open"), 10, 64)
+	if id == 0 {
+		return nil
+	}
+	it, mine, err := s.ItemByID(r.Context(), personID, id)
+	if err != nil {
+		slog.Error("opening a strip", "error", err)
+		return nil
+	}
+	if !mine {
+		return nil
+	}
+	v := &stripView{
+		ID: it.ID, What: "note", Words: it.RawText,
+		Mark: markOfDay(it.ReceivedAt, at), Photo: it.PhotoName != "",
+	}
+	switch {
+	case it.State != squirrel.ItemOpen:
+		v.Back = true
+		v.Mark = string(it.State)
+	case it.Kind == squirrel.ItemTask:
+		v.What, v.Answers = "task", taskAnswers
+	default:
+		v.Answers = noteAnswers
+	}
+	return v
 }

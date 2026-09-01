@@ -134,8 +134,6 @@ Named rather than discovered later. None of these are drawn yet:
   with first if the sofa scene suffers.
 - **A photograph on a strip.** Shown by opening the strip, never by shrinking a
   photograph into a 42px row. Not drawn.
-- **A photograph on the board.** The conversation's capture takes one; the
-  board's does not yet.
 - **The pulled strip's stamps.** The offer draws and cannot be answered from the
   board; its three answers already exist behind `/now/act`.
 - **Making a chore from a note**, which needs a rhythm and so a second step.
