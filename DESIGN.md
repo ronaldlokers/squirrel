@@ -241,7 +241,18 @@ highlight or a badge, it is a strip pulled out of its rack — a physical act yo
 can read from across the room. Answering something strikes it and drops it into
 the day's tray, and the tray is empty again tomorrow.
 
-**Status, and what this replaces.** This document is ahead of the running code
+**The ending, decided 1 September 2026: the conversation is not retired. It
+becomes Buddy's room.** The plan of record was that it would go once the board
+could do everything; the board can, and what that made obvious is that the last
+thing it cannot do is the one thing a conversation is actually for. So the
+thread stays, at `/r/everything`, reached by the last link in the ops bar —
+*talk to Buddy* — and it stops being where the pile is worked.
+
+That decision is what closes this document's own gap. Two worlds live here now,
+and both are described: the board, which is everything above, and **Buddy's
+room**, which keeps the shapes the conversation was drawn in.
+
+**Status.** This document is ahead of the running code
 and is landing behind it. **As of 1 September 2026 the board is the front door**:
 `/` draws it, and the conversation kept its own address at `/r/everything`, with
 every press made inside it coming back there. The board is also still at
@@ -259,10 +270,10 @@ for, and a conversation belongs where conversations are. Nothing here is describ
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
 
-It says the same thing to the tests: while the
-line `design-ahead-of-code` is in this file, the radius vocabulary is not
-checked against the shipped stylesheet. Delete that line when the board ships
-and the check closes again. Everything shipped through v0.55.1 is the previous
+The radius vocabulary is checked against both stylesheets again: the board's
+values are in the frontmatter above, and the conversation's are the table under
+*Buddy's room*. The exemption this document carried while the board was being
+built is gone. Everything shipped through v0.55.1 is the previous
 world — the conversation, where every object was a turn in a thread, drawn on
 cream card stock with a 3px outline and a 14px corner. That world's document is
 in git history (`git show HEAD~1:DESIGN.md`) and it stays the accurate
@@ -775,6 +786,33 @@ a result carries is decided by where it is: something still in the pile keeps
 its four answers, and something that already left carries `back in the pile` and
 nothing else — offering the exits to a note that has taken one is asking a
 question that has been answered. Its mark is the state it went to.
+
+## Buddy's room
+
+One room, and the only place the conversation's own shapes survive. It is not a
+lesser board and it is not a second pile: it holds what was said, which is a
+different kind of thing from what is waiting.
+
+**Its shapes, documented rather than tolerated.** The board is square because a
+strip is printed; a conversation is not, and its radii stay what they were:
+
+| Value | What it is |
+|---|---|
+| `999px` | A chip, and the scrollbar's thumb. A pill is the shape of a thing you say back. |
+| `14px` (`--r`) | A card in the conversation, and the boxes that hold one. |
+| `10px` | The stamp, and a photograph inside a card. |
+| `3em` | Buddy's speech, which is Campfire's own message radius and deliberately far from any card corner: at a glance the two can never be the same object. |
+| `7px`, `6px`, `4px` | The small marks — a page tab, a keycap, a notch. Deliberately not tokens, because each is a drawing rather than a size. |
+
+**What the room keeps:** the bubble, the face in the gutter, the day divider,
+the dock, and the rail. **What it gives up:** being where a note is triaged.
+Those presses have a board now, and two places to answer the same thing is the
+problem this product exists to solve rather than one it may create.
+
+**Not yet true, and the next change:** the four object rooms — the notes, the
+chores, the agenda, the tasks — are still mounted and still draw lists of rows
+the board owns. They retire into the bays, and it is a change of its own because
+two dozen tests describe what those rooms draw.
 
 ## Do's and Don'ts
 
