@@ -92,3 +92,34 @@ func TestTheTrayHoldsWhatLeftTheBoardTodayAndOffersTheWayBack(t *testing.T) {
 	require.Contains(t, body, "put it back")
 	require.NotContains(t, body, "tray\"><span class=\"sign\">today's tray</span> <span class=\"n\">")
 }
+
+// A row that is not yours is not yours to answer. SetItemState takes an item id
+// and no person, so the guard has to be the read before it: the board looks the
+// strip up as yours, and writes nothing when it is not.
+func TestAStripThatIsNotYoursIsNotYoursToAnswer(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{
+		ID: 99, RawText: "somebody else's note", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
+	})
+	f.notMine = map[int64]bool{99: true}
+	m := mounted(t, f)
+
+	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=99&answer=drop"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.NotContains(t, f.states, int64(99), "a strip that is not yours was answered")
+}
+
+func TestPuttingBackWhatIsNotYoursWritesNothing(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{
+		ID: 99, RawText: "somebody else's note", State: squirrel.ItemDropped, Kind: squirrel.ItemNote,
+	})
+	f.notMine = map[int64]bool{99: true}
+	m := mounted(t, f)
+
+	m.call(t, "POST", "/board/undo", strings.NewReader("id=99"))
+
+	require.NotContains(t, f.states, int64(99), "a strip that is not yours was put back")
+}

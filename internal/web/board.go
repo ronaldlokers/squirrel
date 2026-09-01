@@ -264,7 +264,15 @@ func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer str
 		if !ok {
 			return nil
 		}
-		return s.SetItemState(r.Context(), id, state, at)
+		it, mine, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			return err
+		}
+		if !mine {
+			return nil
+		}
+		_, err = s.MoveItemState(r.Context(), it.ID, it.State, state, at)
+		return err
 	case "chore":
 		switch answer {
 		case "did":
@@ -287,7 +295,8 @@ var boardStates = map[string]squirrel.ItemState{
 // from the pile's side and nothing else is remembered about which one was taken.
 func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := personOf(r); !ok {
+		personID, ok := personOf(r)
+		if !ok {
 			fail(w, errNoOwner)
 			return
 		}
@@ -296,10 +305,18 @@ func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64); id != 0 {
-			if err := s.SetItemState(r.Context(), id, squirrel.ItemOpen, now()); err != nil {
-				slog.Error("putting a strip back", "error", err)
+			it, mine, err := s.ItemByID(r.Context(), personID, id)
+			if err != nil {
+				slog.Error("reading the strip to put back", "error", err)
 				fail(w, err)
 				return
+			}
+			if mine {
+				if _, err := s.MoveItemState(r.Context(), it.ID, it.State, squirrel.ItemOpen, now()); err != nil {
+					slog.Error("putting a strip back", "error", err)
+					fail(w, err)
+					return
+				}
 			}
 		}
 		http.Redirect(w, r, "/board", http.StatusSeeOther)
