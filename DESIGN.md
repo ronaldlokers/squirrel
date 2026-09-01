@@ -648,9 +648,25 @@ in a 2px-radius box at 70% opacity. Four fills:
 A stamp is always in the same place on the object it acts on, and always carries
 its key. There are no pill buttons in this product any more.
 
+### Buddy, and the acorn
+
+**Opening the board never spends a model call.** The pulled strip carries the
+picker's own clause, and under it one quiet press: *ask Buddy about this*. That
+press is what pays, and it is the only thing on the board that does.
+
+When a model answered, its sentence **replaces** the rule's clause rather than
+sitting beside it — there is one clause on a strip and the acorn beside it says
+who wrote this one. The mark appears only when the words actually changed: a
+model that declined leaves the rules' clause standing and no acorn, because a
+mark on it would be the product claiming an author it does not have.
+
+Beside his line, one more quiet press: *that did not land*. It marks the answer
+rather than arguing with it, and the marked ones are what the next prompt is
+shown as examples of what does not work here.
+
 ### The pencil line
 
-Buddy's whole surface. A 16px pencil glyph, `ink-soft`, sentence case, at most
+A pencil glyph, `ink-soft`, sentence case, at most
 one underlined action in the line. It sits in the strip's margin under the
 words, above the stamps. He has no face here, no bubble, no timestamp and no
 column of his own; nothing renders the distinction between his sentences and
