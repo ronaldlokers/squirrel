@@ -35,7 +35,7 @@ func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
 		items:   []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)},
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood},
 	}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `href="/r/everything"`)
 	require.Contains(t, body, "look something up")
@@ -103,7 +103,7 @@ func TestTheConversationMayPayForADecision(t *testing.T) {
 		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
 	}}
 
-	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
+	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Zero(t, c.peeked, "the conversation went through the cache instead of asking")
 	require.Contains(t, body, "put the bins out")
@@ -158,7 +158,7 @@ func TestSayingSomethingAsksAboutWhatIsOnScreen(t *testing.T) {
 	w := m.call(t, "POST", "/buddy/say", strings.NewReader("said=I+can%27t+face+it"))
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 
 	require.Len(t, c.asked, 1)
 	require.Equal(t, "thread", c.asked[0].kind)
@@ -208,7 +208,7 @@ func TestAChipIsAnsweredByTheLadderAndNotByAModel(t *testing.T) {
 	w := m.call(t, "POST", "/buddy/say", strings.NewReader("why=big"))
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Empty(t, c.asked, "a chip called a model")
 	require.Equal(t, squirrel.BlockerWords[squirrel.BlockerBig], f.appended[0].Words)
 	require.Contains(t, f.appended[1].Words, squirrel.UnstuckFor(squirrel.BlockerBig).Line)
@@ -226,7 +226,7 @@ func TestNotTodayTurnsTheThingDownAndEndsTheConversation(t *testing.T) {
 	w := m.call(t, "POST", "/buddy/say", strings.NewReader("why=not+today"))
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Equal(t, []int64{7}, f.refused)
 	require.Equal(t, 1, c.forgot, "turning something down left the conversation open")
 }
@@ -322,7 +322,7 @@ func TestNoScreenSaysWhatItHasCostBeforeYouAsk(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
 	m := mountedWith(t, withOffer(nil), c)
 
-	for _, path := range []string{"/", "/r/chores"} {
+	for _, path := range []string{"/r/everything", "/r/chores"} {
 		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
 			"the spend leaked onto %s", path)
 	}
@@ -374,7 +374,7 @@ func TestTheOldCoachURLsRedirect(t *testing.T) {
 	for _, gone := range []string{"/coach", "/buddy"} {
 		w := m.call(t, "GET", gone, nil)
 		require.Equal(t, 301, w.Code, "%s died quietly", gone)
-		require.Equal(t, "/", w.Header().Get("Location"))
+		require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	}
 }
 

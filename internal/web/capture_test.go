@@ -19,7 +19,7 @@ func TestTheSlotKeepsAThought(t *testing.T) {
 	w := post(t, m, "/capture", url.Values{"text": {"ask the garage about the rattle"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 
 	// Through the spool, not straight to Postgres. Durable before anything
 	// says it was kept, which is what the room's captures have always had and
@@ -70,7 +70,7 @@ func TestAFailedCaptureKeepsTheWords(t *testing.T) {
 	w := post(t, m, "/capture", url.Values{"text": {"the boiler makes a noise"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 
 	// The words are in the conversation and Buddy says they were not kept.
 	// The old shape carried them back in the address bar to be re-rendered
@@ -107,7 +107,7 @@ func TestAnEmptySlotDoesNothing(t *testing.T) {
 	w := post(t, mounted(t, f), "/capture", url.Values{"text": {"   "}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Empty(t, f.items, "whitespace is not a thought")
 }
 
@@ -116,7 +116,7 @@ func TestAnEmptySlotDoesNothing(t *testing.T) {
 func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 	body := mounted(t, &fakeStore{turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerYou, Words: "<script>alert(1)</script>"},
-	}}).call(t, "GET", "/", nil).Body.String()
+	}}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, "<script>alert(1)</script>")
 	require.Contains(t, body, "&lt;script&gt;")
@@ -127,7 +127,7 @@ func TestTheSlotEscapesWhatItGivesBack(t *testing.T) {
 // also the one answer that is not a turn, because a turn needs a database and
 // this is what happens when there is no network to reach one.
 func TestTheSlotSaysWhenWordsAreHeld(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/?held=1", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything?held=1", nil).Body.String()
 
 	require.Contains(t, body, "No network")
 	require.Contains(t, body, "goes in when you are back")

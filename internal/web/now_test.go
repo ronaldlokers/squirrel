@@ -29,7 +29,7 @@ var aTask = &squirrel.Offer{
 }
 
 func TestHomeOffersOneThingWithItsClause(t *testing.T) {
-	body := mounted(t, answered(aTask)).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, answered(aTask)).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "ring the vet about the booster")
 	require.Contains(t, body, "you decided this on tuesday")
@@ -38,7 +38,7 @@ func TestHomeOffersOneThingWithItsClause(t *testing.T) {
 
 // The hardest rule in the product, on the newest surface. One thing means one.
 func TestTheOfferIsNeverAListAndNeverACount(t *testing.T) {
-	body := mounted(t, answered(aTask)).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, answered(aTask)).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Equal(t, 1, strings.Count(body, `class="turncard"`))
 	require.Equal(t, 1, strings.Count(body, `value="did"`))
@@ -50,7 +50,7 @@ func TestTheOfferIsNeverAListAndNeverACount(t *testing.T) {
 // a reassuring sentence in its place would be the product deciding you ought
 // to be busy.
 func TestNothingToOfferRendersNoRegionAtAll(t *testing.T) {
-	body := mounted(t, answered(nil)).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, answered(nil)).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, `class="turncard"`)
 	for _, reassurance := range []string{"nothing to do", "all clear", "you are up to date"} {
@@ -61,7 +61,7 @@ func TestNothingToOfferRendersNoRegionAtAll(t *testing.T) {
 // The question comes first: with no fresh reading the region is the check-in,
 // so there is still exactly one interactive thing above the doors.
 func TestWithNoFreshReadingTheRegionAsksInstead(t *testing.T) {
-	body := mounted(t, &fakeStore{offer: aTask}).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, &fakeStore{offer: aTask}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "how do you feel?")
 	require.NotContains(t, body, "ring the vet about the booster",
@@ -71,7 +71,7 @@ func TestWithNoFreshReadingTheRegionAsksInstead(t *testing.T) {
 func TestTheOfferFailingLeavesHomeStanding(t *testing.T) {
 	s := answered(aTask)
 	s.err = errTest
-	w := mounted(t, s).call(t, "GET", "/", nil)
+	w := mounted(t, s).call(t, "GET", "/r/everything", nil)
 
 	require.Equal(t, 200, w.Code)
 	require.Contains(t, w.Body.String(), "the notes")
@@ -82,12 +82,12 @@ func TestALowDayOffersTheWayThrough(t *testing.T) {
 	s := answered(aTask)
 	s.gated = true
 
-	body := mounted(t, s).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, s).call(t, "GET", "/r/everything", nil).Body.String()
 	require.NotContains(t, body, "ring the vet about the booster", "nothing is handed to you")
 	require.Contains(t, body, "show me something anyway")
 
 	s.appended = nil
-	body = mounted(t, s).call(t, "GET", "/?anyway=1", nil).Body.String()
+	body = mounted(t, s).call(t, "GET", "/r/everything?anyway=1", nil).Body.String()
 	require.Contains(t, body, "ring the vet about the booster")
 	require.NotContains(t, body, "show me something anyway",
 		"the way through does not offer itself again once taken")
@@ -100,7 +100,7 @@ func TestDidItCompletesTheOfferedThing(t *testing.T) {
 	})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Equal(t, []string{"did:task"}, s.answers)
 }
 
@@ -146,7 +146,7 @@ func TestAnUnknownKindWritesNothing(t *testing.T) {
 func TestARunningTimerOfferCarriesNoButtons(t *testing.T) {
 	body := mounted(t, answered(&squirrel.Offer{
 		Kind: squirrel.OfferTimer, Text: "the kitchen", Because: "you are on this",
-	})).call(t, "GET", "/", nil).Body.String()
+	})).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "the kitchen")
 	require.NotContains(t, body, `class="turnacts"`, "a running timer offered something to press")
@@ -158,7 +158,7 @@ func TestTheBreadcrumbOffersOnlyTheWayBackIn(t *testing.T) {
 	body := mounted(t, answered(&squirrel.Offer{
 		Kind: squirrel.OfferAgain, Text: "the kitchen",
 		Because: "you were on this a little while ago",
-	})).call(t, "GET", "/", nil).Body.String()
+	})).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "PICK IT UP")
 	require.NotContains(t, body, "DID IT")

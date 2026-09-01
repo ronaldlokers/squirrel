@@ -116,7 +116,7 @@ func TestPickingItBackUpReturnsIt(t *testing.T) {
 	w := mounted(t, f).call(t, "POST", "/held/act", strings.NewReader("act=back&id=1&from=thread"))
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Equal(t, []int64{1}, f.unheld)
 }
 
@@ -129,7 +129,7 @@ func TestSettingAsideFromTheCardTakesItOutOfThePile(t *testing.T) {
 	// Back to the conversation, where Buddy says so — the way out used to
 	// travel in this redirect, which is what made setting one aside the only
 	// disposition with no undo. It travels with what was said now.
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Len(t, f.appended, 3)
 	require.Contains(t, f.appended[1].Words, "Set aside")
 

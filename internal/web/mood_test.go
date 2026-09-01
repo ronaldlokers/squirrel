@@ -12,7 +12,7 @@ import (
 )
 
 func TestTheThreadAsksHowRightNowIs(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "how do you feel?")
 	// All five, in the one order both surfaces use.
@@ -43,7 +43,7 @@ func TestEveryAnswerStaysAndOnlyTheLiveEdgeDrawsFaces(t *testing.T) {
 	}
 	f.turns, f.appended = f.appended, nil
 
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 	for _, said := range []string{"wiped", "low", "good"} {
 		require.Contains(t, body, said, "what you said stays")
 	}
@@ -57,7 +57,7 @@ func TestTheCheckinSaysNothingAboutYou(t *testing.T) {
 	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodLow, SaidAt: time.Now()}}
 	post(t, mounted(t, f), "/mood", url.Values{"mood": {"low"}})
 	f.turns, f.appended = f.appended, nil
-	body := strings.ToLower(mounted(t, f).call(t, "GET", "/", nil).Body.String())
+	body := strings.ToLower(mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String())
 
 	require.Contains(t, body, "noted")
 	for _, said := range []string{
@@ -75,7 +75,7 @@ func TestAStaleReadingIsAskedAgain(t *testing.T) {
 	f := &fakeStore{checkin: &squirrel.Checkin{
 		Mood: squirrel.MoodGood, SaidAt: time.Now().Add(-7 * time.Hour),
 	}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "how do you feel?")
 	require.NotContains(t, body, "noted")
@@ -87,11 +87,11 @@ func TestSayingSomethingElseAsksAgain(t *testing.T) {
 	m := mounted(t, f)
 
 	// A fresh reading, so nothing is asked...
-	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), "how do you feel?")
+	require.NotContains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), "how do you feel?")
 	// ...until you say you want to say something else. The way to do that
 	// travels with Buddy's acknowledgement, because the answer is about to be
 	// scrollback and scrollback carries no controls.
-	require.Contains(t, m.call(t, "GET", "/?ask=1", nil).Body.String(), "how do you feel?")
+	require.Contains(t, m.call(t, "GET", "/r/everything?ask=1", nil).Body.String(), "how do you feel?")
 }
 
 // Not one of the five is no answer rather than a wrong one — this arrives from
@@ -110,7 +110,7 @@ func TestAMoodThatIsNotOneOfTheFiveIsIgnored(t *testing.T) {
 // rendering an empty conversation, because an empty conversation looks like
 // your history is gone.
 func TestTheThreadStillStandsWhenNothingCanBeRead(t *testing.T) {
-	w := mounted(t, &fakeStore{err: errTest}).call(t, "GET", "/", nil)
+	w := mounted(t, &fakeStore{err: errTest}).call(t, "GET", "/r/everything", nil)
 
 	require.Equal(t, 200, w.Code)
 	require.Contains(t, w.Body.String(), "I cannot reach what we said")

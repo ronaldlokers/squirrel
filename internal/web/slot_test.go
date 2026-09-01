@@ -38,7 +38,7 @@ func TestBrowserKeepingSomethingDoesNotTakeThePageAway(t *testing.T) {
 	// passes with the script deleted, because the redirect would put it there.
 	require.Equal(t, true, c.eval(t, `return window.__stillHere === true`),
 		"the page navigated; the swap did not happen")
-	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
+	require.Equal(t, "/r/everything", c.eval(t, `return location.pathname + location.search`),
 		"the capture navigated")
 }
 
@@ -127,7 +127,7 @@ func TestBrowserAnEmptySlotSaysNothing(t *testing.T) {
 	require.Equal(t, before, c.eval(t, `return document.querySelectorAll("#thread .turn").length`),
 		"an empty capture claimed something happened")
 	require.Empty(t, sp.written)
-	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`))
+	require.Equal(t, "/r/everything", c.eval(t, `return location.pathname + location.search`))
 }
 
 // thread.js announces the newest turn by reading it out of the DOM. Buddy's

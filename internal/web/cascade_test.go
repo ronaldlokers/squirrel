@@ -66,7 +66,7 @@ func TestBrowserTheOffersThirdControlIsTheSameShapeAsTheOtherTwo(t *testing.T) {
 	}
 
 	srv := cameraScreen(t, f, &fakeSpool{}, &fakePhotos{})
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 
 	for _, prop := range []string{"border-top-width", "border-top-color"} {
 		// .abtn now: the offer is an ordinary card in the thread, wearing the
@@ -104,7 +104,7 @@ func TestBrowserEveryQuestionIsCutFromTheSameStock(t *testing.T) {
 		f := aPile()
 		f.checkin = fresh()
 		f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "?", Shown: []byte(d.shown)}}
-		c := browserAt(t, screen(t, f), "/")
+		c := browserAt(t, screen(t, f), "/r/everything")
 
 		stock := c.eval(t, `
 			const el = document.querySelector("`+d.sel+`");

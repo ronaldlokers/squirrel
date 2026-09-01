@@ -104,11 +104,11 @@ func TestBuddyDoesNotOpenWithTheSameThingTwice(t *testing.T) {
 	}
 	m := routed(t, f)
 
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 	require.Len(t, f.appended, 1, "it did not open at all")
 	f.turns, f.appended = append(f.turns, f.appended...), nil
 
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 	require.Empty(t, f.appended, "it said the same thing again")
 }
 
@@ -121,11 +121,11 @@ func TestBuddyOpensAgainWhenSomethingElseIsTrue(t *testing.T) {
 	}
 	m := routed(t, f)
 
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 	f.turns, f.appended = append(f.turns, f.appended...), nil
 
 	f.upcoming = []squirrel.Moment{{ID: 2, Label: "the school run", Starts: now().Add(4 * time.Hour)}}
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 
 	require.Len(t, f.appended, 1, "it stayed quiet about something new")
 	require.Contains(t, f.appended[0].Words, "the school run")
@@ -169,7 +169,7 @@ func TestTheOpeningLineIsOneThing(t *testing.T) {
 func TestAStoreThatCannotCountOpensWithNothing(t *testing.T) {
 	f := &fakeStore{checkin: fresh(), err: errTest}
 	m := routed(t, f)
-	w := m.call(t, "GET", "/", nil)
+	w := m.call(t, "GET", "/r/everything", nil)
 
 	require.NotContains(t, strings.ToLower(w.Body.String()), "cannot count")
 }
@@ -234,11 +234,11 @@ func TestAnUnansweredCheckinIsNotAskedAgain(t *testing.T) {
 	f := &fakeStore{}
 	m := routed(t, f)
 
-	first := m.call(t, "GET", "/", nil).Body.String()
+	first := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, first, "how do you feel", "it did not ask at all")
 	require.Empty(t, f.appended, "the question was written into the record")
 
-	again := m.call(t, "GET", "/", nil).Body.String()
+	again := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Equal(t, 1, strings.Count(again, "how do you feel"),
 		"it asked how you feel a second time")
 	require.Empty(t, f.appended)

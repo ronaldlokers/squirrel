@@ -47,7 +47,7 @@ func TestSayingItLandedBadlyIsHeardAndNothingElse(t *testing.T) {
 
 	f.appended = nil
 	w := m.call(t, "POST", "/buddy/badly", strings.NewReader(""))
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Len(t, f.landedBadly, 1, "the press was not recorded")
 
 	body := f.appended[1].Words
@@ -88,5 +88,5 @@ func TestAFailureToRecordIsNotAnErrorPage(t *testing.T) {
 	res := mountedWith(t, f, c).call(t, "POST", "/buddy/badly", strings.NewReader(""))
 
 	require.Equal(t, 303, res.Code, "it failed loudly at the worst moment to fail loudly")
-	require.Equal(t, "/", res.Header().Get("Location"))
+	require.Equal(t, "/r/everything", res.Header().Get("Location"))
 }

@@ -79,7 +79,7 @@ func TestTheWorkerNeverCachesThePileItself(t *testing.T) {
 
 func TestThePageOffersItselfForInstalling(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `rel="manifest" href="/manifest.webmanifest`)
 	require.Contains(t, body, `name="theme-color"`)
@@ -113,7 +113,7 @@ func TestTheWorkerIsNotBehindTheYearLongCache(t *testing.T) {
 // when the manifest was the thing that never arrived.
 func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `rel="manifest"`)
 	require.Regexp(t, `rel="manifest"[^>]*crossorigin="use-credentials"`, body)
@@ -130,7 +130,7 @@ func TestTheStatusBandTakesTheBarColour(t *testing.T) {
 	require.Contains(t, sheet, "--lid-h: calc(env(safe-area-inset-top)",
 		"the lid grew by the inset and whatever reserves it did not")
 
-	page := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	page := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 	require.NotContains(t, page, `content="black-translucent"`,
 		"black-translucent hands the page a viewport shorter than the screen")
 	require.Contains(t, page,

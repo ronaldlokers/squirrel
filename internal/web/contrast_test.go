@@ -199,7 +199,7 @@ func TestEveryWordCanBeRead(t *testing.T) {
 	}
 
 	srv := screen(t, everyScreen())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 
 	for _, width := range []int{1280, 390} {
 		c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{

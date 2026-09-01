@@ -254,7 +254,7 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 // redirect from a page behind a session is still an open redirect.
 func backTolerant(from string) string {
 	if !strings.HasPrefix(from, "/") || strings.HasPrefix(from, "//") {
-		return "/"
+		return "/r/everything"
 	}
 	return from
 }

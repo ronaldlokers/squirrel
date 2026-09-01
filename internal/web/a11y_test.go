@@ -14,7 +14,7 @@ import (
 // live region that is itself replaced announces nothing.
 func TestTheLiveRegionSitsOutsideTheConversation(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `id="threadsay"`)
 	require.Contains(t, body, `aria-live="polite"`)

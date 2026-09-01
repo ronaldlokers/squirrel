@@ -242,14 +242,21 @@ can read from across the room. Answering something strikes it and drops it into
 the day's tray, and the tray is empty again tomorrow.
 
 **Status, and what this replaces.** This document is ahead of the running code
-and is landing behind it. As of 1 September 2026 the board is mounted at
-`/board`, drawing the four bays, the pulled strip, the running timer and the
+and is landing behind it. **As of 1 September 2026 the board is the front door**:
+`/` draws it, and the conversation kept its own address at `/r/everything`, with
+every press made inside it coming back there. The board is also still at
+`/board`, and drawing the four bays, the pulled strip, the running timer and the
 ledge from the store; a strip can be answered on it, with the strike, the
 1150ms hold, the travel and the tray; and every rack can be written into,
 the notes through the spool, a chore with one of four rhythm stamps, an
-appointment as the sentence chat already parses. The pulled strip still has no
-stamps of its own and the phone has no bay tabs. `/` is still the
-conversation. Nothing here is described from intention: what the route renders
+appointment as the sentence chat already parses.
+
+What the board still cannot do, and what the link in its own lid is for: the
+pulled strip has no stamps, there is no Buddy, no search, no photograph, no way
+to make a chore out of a note, and nothing in the agenda can be answered. All of
+those are one press away in the conversation, which is why that press is the
+last thing in the ops bar rather than a footnote. The phone has no bay tabs
+either. Nothing here is described from intention: what the route renders
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
 

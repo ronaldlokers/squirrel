@@ -108,7 +108,7 @@ func openWith(t *testing.T, f *fakeStore, coach *fakeCoach) (*cdp, *httptest.Ser
 	t.Helper()
 
 	srv := screenWith(t, f, coach)
-	return browserAt(t, srv, "/"), srv
+	return browserAt(t, srv, "/r/everything"), srv
 }
 
 // browserAt is the browser half on its own, for the tests that stand a screen
@@ -182,8 +182,8 @@ func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
 	// are already on their way before the worker takes control, so nothing goes
 	// through it and its cache is legitimately empty — asserting on that load
 	// was testing how quickly a worker installs rather than what it does.
-	c.navigate(t, srv.URL+"/")
-	waitForTheWorker(t, c, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
+	waitForTheWorker(t, c, srv.URL+"/r/everything")
 	// Wait for the asset itself, not merely for a cache to exist.
 	//
 	// A cache appears the moment the worker opens one, which is before any
@@ -252,7 +252,7 @@ func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
 // than as one louder than the others.
 func TestBrowserTheFacesAreAllOneSize(t *testing.T) {
 	c, srv := open(t, aPile())
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	heights := c.eval(t, `return [...document.querySelectorAll(".face img")]
 		.map(i => Math.round(i.getBoundingClientRect().height))`)
@@ -271,7 +271,7 @@ func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	require.Equal(t, float64(0), c.eval(t, `
 		return document.documentElement.scrollWidth - document.documentElement.clientWidth`),
@@ -303,8 +303,8 @@ func waitForTheWorker(t *testing.T, c *cdp, url string) {
 
 func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
 	c, srv := open(t, aPile())
-	c.navigate(t, srv.URL+"/")
-	waitForTheWorker(t, c, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
+	waitForTheWorker(t, c, srv.URL+"/r/everything")
 
 	srv.Close()
 
@@ -392,7 +392,7 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 	f := aPile()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
 	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	// A chip on the live edge rather than a field in the lid: it asks for
 	// words, and /find answers them.
@@ -406,7 +406,7 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 	c.until(t, "the answer to arrive",
 		`!!document.querySelector("#thread .turn:last-child .hit")`)
 
-	require.Equal(t, "/", c.eval(t, `return location.pathname + location.search`),
+	require.Equal(t, "/r/everything", c.eval(t, `return location.pathname + location.search`),
 		"searching navigated")
 
 	// And tapping one turns it into the ordinary card, with the ordinary
@@ -486,7 +486,7 @@ func aScrollingThread() *fakeStore {
 func atTheBottomOfAPhone(t *testing.T) *cdp {
 	t.Helper()
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
@@ -573,7 +573,7 @@ func TestBrowserBuddysFaceIsTheGutterAndNothingElse(t *testing.T) {
 	f := aPile()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
-	c := browserAt(t, screen(t, f), "/")
+	c := browserAt(t, screen(t, f), "/r/everything")
 
 	require.Equal(t, float64(40), c.eval(t, `
 		return Math.round(document.querySelector(".buddyface").getBoundingClientRect().width);`),
@@ -598,7 +598,7 @@ func TestBrowserTheArtworkFillsTheGutter(t *testing.T) {
 	f := aPile()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
 	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
-	c := browserAt(t, screen(t, f), "/")
+	c := browserAt(t, screen(t, f), "/r/everything")
 
 	require.Equal(t, float64(40), c.eval(t, `
 		return Math.round(document.querySelector(".buddyface img").getBoundingClientRect().width);`))
@@ -611,7 +611,7 @@ func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
 	f.turns = []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: []byte(`{"faces":true}`)},
 	}
-	c := browserAt(t, screen(t, f), "/")
+	c := browserAt(t, screen(t, f), "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
@@ -725,7 +725,7 @@ func TestBrowserTheWorkedExampleIsInsideTheScreen(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "the worked example", `!!document.querySelector(".worked")`)
 
 	left := c.eval(t, `return Math.round(document.querySelector(".workedsays").getBoundingClientRect().left)`)
@@ -749,7 +749,7 @@ func TestBrowserTheWorkedExampleIsInsideTheScreen(t *testing.T) {
 
 func TestBrowserTheTranscriptClearsTheLidAndNoMore(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 
 	for _, size := range []struct {
 		what          string
@@ -763,7 +763,7 @@ func TestBrowserTheTranscriptClearsTheLidAndNoMore(t *testing.T) {
 			"width": size.width, "height": size.height,
 			"deviceScaleFactor": 0, "mobile": size.mobile,
 		})
-		c.navigate(t, srv.URL+"/")
+		c.navigate(t, srv.URL+"/r/everything")
 
 		require.Equal(t, float64(8), c.eval(t, `
 			const lid = document.querySelector(".lid").getBoundingClientRect();
@@ -776,11 +776,11 @@ func TestBrowserTheTranscriptClearsTheLidAndNoMore(t *testing.T) {
 
 func TestBrowserTheRailClearsTheLidToo(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 1280, "height": 900, "deviceScaleFactor": 0, "mobile": false,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	require.Equal(t, float64(10), c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
@@ -792,14 +792,14 @@ func TestBrowserTheRailClearsTheLidToo(t *testing.T) {
 
 func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 0},
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	require.Equal(t, float64(108), c.eval(t, `
 		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
@@ -831,14 +831,14 @@ func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 
 func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	require.Equal(t, "34px", c.eval(t, `
 		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
@@ -847,7 +847,7 @@ func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
 		"insets": map[string]any{"top": 0, "left": 0, "right": 0, "bottom": 0},
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	require.Equal(t, "10px", c.eval(t, `
 		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
@@ -856,14 +856,14 @@ func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {
 
 func TestBrowserTheShellFillsTheViewport(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	require.Equal(t, float64(0), c.eval(t, `
 		return Math.round(window.innerHeight - document.body.getBoundingClientRect().bottom)`),
@@ -876,11 +876,11 @@ func TestBrowserTheShellFillsTheViewport(t *testing.T) {
 
 func TestBrowserTheTranscriptPassesUnderTheDock(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
 	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
@@ -928,11 +928,11 @@ func lidTopBand(t *testing.T, c *cdp) []string {
 
 func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
 	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": true,
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/r/everything")
 
 	c.eval(t, `document.querySelector(".scroll").scrollTop = 0; return 1`)
 	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)

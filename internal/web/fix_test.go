@@ -47,7 +47,7 @@ func TestTheFieldStartsFromWhatTheNoteSays(t *testing.T) {
 	m := routed(t, f)
 	m.call(t, "POST", "/pile/reword", strings.NewReader("id=1"))
 	f.turns, f.appended = append(f.turns, f.appended...), nil
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `>the boler makes a noise</textarea>`)
 }

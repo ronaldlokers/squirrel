@@ -13,6 +13,7 @@ import (
 
 type boardView struct {
 	V      string
+	Light  int
 	Tray   []trayView
 	Kept   bool
 	Now    string
@@ -237,6 +238,7 @@ var boardPage = template.Must(
 
 func renderBoard(w http.ResponseWriter, v boardView) {
 	v.V = stamp()
+	v.Light = squirrel.Light(now())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t := boardPage
 	if devDir != "" {

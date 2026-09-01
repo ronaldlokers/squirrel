@@ -13,7 +13,7 @@ import (
 
 func thread(t *testing.T, f *fakeStore) string {
 	t.Helper()
-	return routed(t, f).call(t, "GET", "/", nil).Body.String()
+	return routed(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 }
 
 // The conversation reads top to bottom, newest at the end.
@@ -123,7 +123,7 @@ func TestThreadWalksBackwardsWhenAsked(t *testing.T) {
 		{ID: 1, Who: squirrel.SpeakerYou, Words: "older"},
 		{ID: 9, Who: squirrel.SpeakerYou, Words: "newer"},
 	}}
-	body := routed(t, f).call(t, "GET", "/?before=9", nil).Body.String()
+	body := routed(t, f).call(t, "GET", "/r/everything?before=9", nil).Body.String()
 
 	require.Equal(t, int64(9), f.pagedBefore)
 	require.Contains(t, body, "older")
@@ -246,7 +246,7 @@ func TestTheQuestionCarriesTheFiveFaces(t *testing.T) {
 // being read, and reading it must not add to it.
 func TestWalkingBackDoesNotAsk(t *testing.T) {
 	f := &fakeStore{turns: []squirrel.Turn{{ID: 9, Who: squirrel.SpeakerYou, Words: "hello"}}}
-	routed(t, f).call(t, "GET", "/?before=9", nil)
+	routed(t, f).call(t, "GET", "/r/everything?before=9", nil)
 
 	require.Empty(t, f.appended)
 }
@@ -366,11 +366,11 @@ func TestTheOfferIsNotOfferedAgainOverItself(t *testing.T) {
 	}
 	m := routed(t, f)
 
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 	require.Len(t, f.appended, 1)
 
 	f.turns, f.appended = f.appended, nil
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 	require.Empty(t, f.appended, "a reload must not say it again")
 }
 
@@ -422,7 +422,7 @@ func TestAnOrdinaryPressStillRedirects(t *testing.T) {
 	w := routed(t, &fakeStore{}).call(t, "POST", "/capture", strings.NewReader("text=milk"))
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 }
 
 // The turns a press produces arrive with the controls on the last of them, so
@@ -840,7 +840,7 @@ func TestOpeningSomebodyElsesResultFindsNothing(t *testing.T) {
 // threw it away. Nothing failed, because nothing was watching.
 func TestHomeCountsWhatIsWaitingOnceForEachThingThatShowsIt(t *testing.T) {
 	f := &fakeStore{checkin: fresh()}
-	mounted(t, f).call(t, "GET", "/", nil)
+	mounted(t, f).call(t, "GET", "/r/everything", nil)
 
 	require.Equal(t, 2, f.waitingAsked,
 		"home read the counts %d times; the opening line and the menu are the only two that show them",

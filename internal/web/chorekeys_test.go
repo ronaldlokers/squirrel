@@ -27,7 +27,7 @@ func twoChores() *fakeStore {
 func TestBrowserAKeyReachesTheSlotOnHome(t *testing.T) {
 	f := aPile()
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 
 	c.key(t, "t")
 

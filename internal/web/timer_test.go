@@ -17,7 +17,7 @@ func TestStartingATimerFromAChore(t *testing.T) {
 		url.Values{"minutes": {"10"}, "label": {"the kitchen"}, "from": {"chores"}})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.NotNil(t, f.timer)
 	require.Equal(t, "the kitchen", f.timer.Label)
 	require.Equal(t, 10*time.Minute, f.timer.Ends.Sub(f.timer.Started))
@@ -32,7 +32,7 @@ func TestARunningTimerShowsOnEveryScreen(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	for _, url := range []string{"/", "/r/chores"} {
+	for _, url := range []string{"/r/everything", "/r/chores"} {
 		body := m.call(t, "GET", url, nil).Body.String()
 		require.Contains(t, body, "the kitchen", url)
 		require.Contains(t, body, `class="running"`, url)
@@ -45,7 +45,7 @@ func TestTheStripSaysWhatIsLeft(t *testing.T) {
 	f := &fakeStore{timer: &squirrel.Timer{
 		Label: "the kitchen", Started: time.Now(), Ends: time.Now().Add(6*time.Minute + 12*time.Second),
 	}}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "06:1")
 }
@@ -65,13 +65,13 @@ func TestStoppingATimerLeavesNothing(t *testing.T) {
 	// The readings were the last screen that was not a conversation and they
 	// are a turn now, so there is nowhere else a timer can have been stopped
 	// from — every way back is the conversation.
-	require.Equal(t, "/", w.Header().Get("Location"), "back where you pressed it")
+	require.Equal(t, "/r/everything", w.Header().Get("Location"), "back where you pressed it")
 	require.Nil(t, f.timer)
 }
 
 // No timer, no strip. There is nothing to say about not having started one.
 func TestNoTimerNoStrip(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.NotContains(t, body, `class="running"`)
 }

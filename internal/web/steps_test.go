@@ -26,10 +26,10 @@ func TestPressingTooBigShowsOneStepAndNeverTheList(t *testing.T) {
 
 	w := m.call(t, "POST", "/now/stuck", strings.NewReader("why=big&kind=task&id=7"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 
 	f.turns, f.appended = f.appended, nil
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, body, "open the letter")
 	require.NotContains(t, body, "find the reference")
 	require.NotContains(t, body, "ring the number")
@@ -54,7 +54,7 @@ func TestTooBigFallsBackToTheLineOnTheScreen(t *testing.T) {
 	require.Equal(t, 1, c.broke, "it did not even ask for a breakdown")
 
 	f.turns, f.appended = f.appended, nil
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, body, squirrel.UnstuckFor(squirrel.BlockerBig).Line,
 		"a model that broke nothing down took the fixed line down with it")
 }
@@ -90,9 +90,9 @@ func TestWhereYouWereIsNotSaidTwice(t *testing.T) {
 	f.steps = []squirrel.Step{{ID: 1, Label: "the tax thing", Body: "open the letter"}}
 	m := routed(t, f)
 
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 	f.turns, f.appended = append(f.turns, f.appended...), nil
-	m.call(t, "GET", "/", nil)
+	m.call(t, "GET", "/r/everything", nil)
 
 	require.Empty(t, f.appended, "it said where you were a second time")
 }
@@ -105,9 +105,9 @@ func TestFinishingAStepMovesToTheNext(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/steps", strings.NewReader("act=done&id=1&from=%2F"))
+	w := m.call(t, "POST", "/steps", strings.NewReader("act=done&id=1&from=%2Fr%2Feverything"))
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 	require.Equal(t, []int64{1}, f.finished)
 
 	f.checkin = fresh()
@@ -141,7 +141,7 @@ func TestFinishingAStepWillNotSendYouSomewhereElse(t *testing.T) {
 
 	w := mounted(t, f).call(t, "POST", "/steps",
 		strings.NewReader("act=done&id=1&from=https%3A%2F%2Fexample.com%2F"))
-	require.Equal(t, "/", w.Header().Get("Location"))
+	require.Equal(t, "/r/everything", w.Header().Get("Location"))
 }
 
 func TestAStepOnTheScreenNeverSaysHowManyAreLeft(t *testing.T) {
@@ -164,7 +164,7 @@ func TestAnUnreadableSequenceIsNoStep(t *testing.T) {
 	f.err = errTest
 
 	require.NotPanics(t, func() {
-		_ = routed(t, f).call(t, "GET", "/", nil)
+		_ = routed(t, f).call(t, "GET", "/r/everything", nil)
 	})
 }
 

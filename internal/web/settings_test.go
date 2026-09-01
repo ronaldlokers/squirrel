@@ -17,7 +17,7 @@ import (
 // you could see or come back to.
 func TestSettingsHoldsWhatCanBeChangedAboutYou(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers"}
-	body := withPush(t, f).call(t, "GET", "/", nil).Body.String()
+	body := withPush(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `class="youare"`, "there is no settings panel")
 	require.Contains(t, body, "Ronald Lokers", "the panel does not say who you are")
@@ -29,7 +29,7 @@ func TestSettingsHoldsWhatCanBeChangedAboutYou(t *testing.T) {
 // It is a disclosure and not a page: settings is state rather than a
 // conversation, and this product has no third thing for it to be.
 func TestSettingsOpensWhereItLives(t *testing.T) {
-	body := withPush(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	body := withPush(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "<details class=\"youare\">")
 	require.NotContains(t, body, `href="/settings"`, "settings became somewhere to go")
@@ -40,18 +40,18 @@ func TestSettingsOpensWhereItLives(t *testing.T) {
 // but "would anything be sent at all" is the server's to answer.
 func TestTheRecordSaysWhetherNotificationsAreOn(t *testing.T) {
 	on := &fakeStore{notifying: true}
-	require.Contains(t, withPush(t, on).call(t, "GET", "/", nil).Body.String(),
+	require.Contains(t, withPush(t, on).call(t, "GET", "/r/everything", nil).Body.String(),
 		`data-state="on"`)
 
 	off := &fakeStore{}
-	require.Contains(t, withPush(t, off).call(t, "GET", "/", nil).Body.String(),
+	require.Contains(t, withPush(t, off).call(t, "GET", "/r/everything", nil).Body.String(),
 		`data-state="off"`)
 }
 
 // A state that cannot be read is not a state to guess at.
 func TestAnUnreadableNotificationStateSaysSo(t *testing.T) {
 	f := &fakeStore{notifyErr: errTest}
-	body := withPush(t, f).call(t, "GET", "/", nil).Body.String()
+	body := withPush(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, `data-state="unknown"`)
 	require.Contains(t, body, "I cannot tell just now")

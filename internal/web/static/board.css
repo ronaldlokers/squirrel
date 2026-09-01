@@ -317,6 +317,7 @@ body::before {
   font-size: 10.5px; letter-spacing: 0; opacity: .7;
 }
 .stamp.did { background: #71a73e; }
+.stamp.did .k, .stamp.go .k { background: rgba(255, 251, 243, .62); opacity: 1; }
 .stamp.did:hover { background: #89b65f; }
 .stamp.no { background: var(--card-deep); }
 .stamp.no:hover { background: #efc48f; }

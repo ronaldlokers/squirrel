@@ -54,6 +54,18 @@ var appearanceProps = []string{
 // of something, the first is enough: what this catches is a rule moving, and a
 // rule moves all of them at once.
 var appearanceScreens = map[string][]string{
+	// The board, which is the front door now. Its furniture and its one
+	// content object: a strip is the only shape here that carries words, so
+	// recording it and its parts records most of the world.
+	"/": {
+		".ops", ".ops .wordmark", ".ops .clock .t", ".ops .clock .d",
+		".baysign", ".baysign .n", ".channel",
+		".strip", ".strip .holder", ".strip .words", ".strip .mark",
+		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
+		".rhythms .stamp", ".ledge .tab", ".pulled", ".pulled .why b", ".pulled .said",
+		".ticking .left", ".tray", ".tray .strip.out .words",
+	},
+
 	// The thread, which is the whole app. Only the newest Buddy turn carries
 	// controls, so one load can record one interactive shape and no more: the
 	// card is the one worth having, and the picker, the word box and the split
@@ -61,7 +73,7 @@ var appearanceScreens = map[string][]string{
 	//
 	// Buddy's words are `.said` and yours are `.bub`, so there is no
 	// `.frombuddy .bub` to record.
-	"/": {
+	"/r/everything": {
 		".lid", ".brand img", ".wordmark",
 		// The rail, which is furniture on every screen and the largest thing
 		// this snapshot could miss.
@@ -92,7 +104,7 @@ var appearanceScreens = map[string][]string{
 	// The check-in as a question. It is a turn like any other, and the faces
 	// are worth their own visit: they are the control the capacity gate
 	// depends on.
-	"/?ask=1": {".faces", ".face", ".face img", ".face span"},
+	"/r/everything?ask=1": {".faces", ".face", ".face img", ".face span"},
 	// `.empty img` is here and nowhere else because /enough is the one screen
 	// that overrides it. The size is the difference between a different drawing
 	// and the same one shrunk, and the HTML attribute cannot hold it — the
@@ -121,6 +133,12 @@ func appearanceFixture() *fakeStore {
 		EveryDays: 7, SinceDays: 6, Active: true, EverDone: true,
 	}}
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
+	// A timer and a tray, so the board's two bands that only exist when
+	// something is happening are recorded rather than silently absent.
+	f.timer = &squirrel.Timer{Label: "the kitchen", Started: now(), Ends: now().Add(11 * time.Minute)}
+	f.triaged = []squirrel.Item{
+		{ID: 91, RawText: "the washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote},
+	}
 	f.readings = []squirrel.Checkin{{Mood: squirrel.MoodCalm, SaidAt: time.Now()}}
 	f.items = append(f.items,
 		note(91, "the bike rack", squirrel.ItemKept),
@@ -155,7 +173,7 @@ func TestTheScreensLookLikeThemselves(t *testing.T) {
 	t.Cleanup(func() { now = was })
 
 	srv := screenWith(t, f, &fakeCoach{reply: "one thing at a time."})
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false,
 	})
