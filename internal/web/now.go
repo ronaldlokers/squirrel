@@ -30,6 +30,7 @@ func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offe
 		// question.
 		return nil
 	}
+	picked := o
 	o = judged(opts, r, personID, o, mayAsk)
 	v := &offerView{
 		Kind:    string(o.Kind),
@@ -37,6 +38,12 @@ func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offe
 		Text:    o.Text,
 		Because: o.Because,
 	}
+	// Whether a model wrote these words, which is the only thing the acorn is
+	// allowed to say. Compared against what the rules answered rather than
+	// asked of the coach: a model that declined leaves the picker's clause
+	// standing, and a mark on it would be the product claiming an author it
+	// does not have.
+	v.Buddy = o.Text != picked.Text || o.Because != picked.Because
 	// A running timer is a thing you are doing rather than a row that was
 	// picked, so it carries no buttons of its own: the lid already has the one
 	// control it needs, which is the way to stop.

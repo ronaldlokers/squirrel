@@ -375,3 +375,60 @@ func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
 
 	require.Equal(t, []int64{7}, f.refused)
 }
+
+// Opening the board costs nothing. The picker's own clause is what the pulled
+// strip says until you ask for better, which is the rule the coach has always
+// been under: a surface that has to cost nothing to open may not spend a call.
+func TestOpeningTheBoardSpendsNoCall(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
+	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 3, text: "start with the meter", because: "it is five minutes"}}
+	m := mountedWith(t, f, c)
+
+	body := m.call(t, "GET", "/", nil).Body.String()
+
+	require.Equal(t, 1, c.peeked, "the board asked a model on load")
+	require.Contains(t, body, "the oldest thing you decided to do")
+	require.NotContains(t, body, "it is five minutes")
+	require.Contains(t, body, `action="/board/buddy"`, "there is no way to ask")
+}
+
+// And asking is a press, whose answer is drawn on the thing it is about, under
+// the acorn, with nowhere of its own to live.
+func TestAskingBuddyDrawsHisLineOnThePulledStrip(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
+	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 3, text: "start with the meter", because: "it is five minutes"}}
+	m := mountedWith(t, f, c)
+
+	w := m.call(t, "POST", "/board/buddy", strings.NewReader(""))
+	require.Equal(t, "/?ask=1", w.Header().Get("Location"))
+
+	body := m.call(t, "GET", "/?ask=1", nil).Body.String()
+	require.Contains(t, body, "it is five minutes")
+	require.Contains(t, body, `class="why buddy"`, "his line is not marked as his")
+	require.Contains(t, body, `action="/board/badly"`, "there is no way to say it did not land")
+}
+
+// A model that answers nothing leaves the picker's clause standing, and no
+// acorn: the mark says a model wrote this, so it may not appear when none did.
+func TestNoAcornWhenNoModelAnswered(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
+	m := mountedWith(t, f, &fakeCoach{})
+
+	body := m.call(t, "GET", "/?ask=1", nil).Body.String()
+
+	require.Contains(t, body, "the oldest thing you decided to do")
+	require.NotContains(t, body, `class="why buddy"`)
+}
+
+func TestSayingItLandedBadlyFromTheBoard(t *testing.T) {
+	f := aBoardStore()
+	m := mountedWith(t, f, &fakeCoach{})
+
+	w := m.call(t, "POST", "/board/badly", strings.NewReader(""))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Len(t, f.landedBadly, 1, "nothing was marked as having landed badly")
+}

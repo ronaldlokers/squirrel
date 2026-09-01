@@ -91,7 +91,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Kept:     r.URL.Query().Get("kept") == "1",
 			Now:      at.Format("15:04"),
 			Day:      at.Format("Monday 2 January"),
-			Pulled:   offerFor(s, opts, r, false, false),
+			Pulled:   offerFor(s, opts, r, false, r.URL.Query().Get("ask") == "1"),
 			Timer:    runningTimer(s, opts, r),
 			Tray:     trayStrips(r, s, opts, personID, at),
 			Bays: baysIn(in, []bayView{
@@ -571,4 +571,38 @@ func stuckView(asked string) (blockers []blockerView, said string) {
 type blockerView struct {
 	Why   string
 	Words string
+}
+
+// boardBuddyHandler is the acorn on the pulled strip: the press that spends a
+// call. Opening the board never does — a surface that has to cost nothing to
+// open may not spend one — so asking is a press and its answer is drawn on the
+// thing it is about.
+//
+// The press stores nothing. `?ask=1` is what lets the next render pay, and the
+// cache behind Decide is what stops a reload paying twice.
+func boardBuddyHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := personOf(r); !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		http.Redirect(w, r, "/?ask=1", http.StatusSeeOther)
+	}
+}
+
+// boardBadlyHandler is the one press that says the last thing Buddy said did
+// not land. It marks the answer rather than arguing with it, and the marked
+// ones are what the next prompt is shown as examples of what does not work.
+func boardBadlyHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if _, err := s.LandedBadlyLatest(r.Context(), personID, now()); err != nil {
+			slog.Error("marking what did not land", "error", err)
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 }

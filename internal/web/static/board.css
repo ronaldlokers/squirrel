@@ -427,3 +427,15 @@ body::before {
   .rack .baysign { display: none; }
   .racks { padding-top: 12px; }
 }
+
+.pulled .why.buddy { align-items: center; }
+.pulled .why svg { width: 19px; height: 19px; flex: 0 0 auto; }
+.asking { display: flex; margin-top: 10px; }
+.asking .quiet {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--ink-soft); font: 400 13px/1.3 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-decoration: underline; text-underline-offset: 3px;
+  font-variation-settings: var(--precise), "wght" 640;
+}
+.asking .quiet:hover { color: var(--outline); }
+.asking .quiet:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
