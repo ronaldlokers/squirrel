@@ -70,10 +70,10 @@ func TestAnsweringAStripMovesItAndComesBackToTheBoard(t *testing.T) {
 	f := aBoardStore()
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=1&answer=keep"))
+	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=1&answer=keep&bay=notes"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.Equal(t, "/?bay=notes", w.Header().Get("Location"))
 	require.Equal(t, squirrel.ItemKept, f.states[1], "the note is kept")
 }
 
@@ -107,7 +107,7 @@ func TestAStripThatIsNotYoursIsNotYoursToAnswer(t *testing.T) {
 	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=99&answer=drop"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 	require.NotContains(t, f.states, int64(99), "a strip that is not yours was answered")
 }
 
@@ -136,7 +136,7 @@ func TestWritingOnABlankStripSpoolsTheWords(t *testing.T) {
 	w := m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=meter+reading+48213"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.Equal(t, "/?bay=notes", w.Header().Get("Location"))
 	require.Len(t, sp.written, 1, "the words did not reach the spool")
 	require.Equal(t, "meter reading 48213", sp.written[0].Text)
 	require.Len(t, f.items, 3, "a note typed on the board went straight to the database")
@@ -233,7 +233,7 @@ func TestAgendaWordsWithNoTimeInThemGoToTheNotes(t *testing.T) {
 
 	require.Empty(t, f.moments)
 	require.Len(t, sp.written, 1)
-	require.Equal(t, "/board?kept=notes", w.Header().Get("Location"))
+	require.Equal(t, "/?bay=notes&kept=1", w.Header().Get("Location"))
 }
 
 func TestTheChoresRackAsksForARhythmBesideTheField(t *testing.T) {
@@ -262,4 +262,40 @@ func TestTheFrontDoorIsTheBoardAndTheConversationHasItsOwnAddress(t *testing.T) 
 	w := m.call(t, "POST", "/pile/act", strings.NewReader("id=1&act=keep"))
 	require.Equal(t, "/r/everything", w.Header().Get("Location"),
 		"a press in the conversation landed on the board")
+}
+
+// On a phone the four racks become one and the bay signs become the tabs above
+// it. The server draws all four either way — which rack you are in is a class,
+// so the desktop board is untouched and the phone needs no script.
+func TestTheBayYouAreInIsTheOneThatIsLit(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/?bay=chores", nil).Body.String()
+
+	require.Contains(t, body, `class="rack in" data-bay="chores"`)
+	require.Contains(t, body, `class="rack" data-bay="notes"`)
+	require.Contains(t, body, `<a class="baytab in" href="/?bay=chores">`)
+	require.Contains(t, body, `<a class="baytab" href="/?bay=notes">`)
+}
+
+func TestTheNotesAreTheBayYouLandIn(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `class="rack in" data-bay="notes"`)
+}
+
+// A press in a bay comes back to that bay. Answering a chore on a phone and
+// being returned to the notes is the board losing your place, which on this
+// surface is the whole complaint the redesign started from.
+func TestAPressComesBackToTheBayItWasMadeIn(t *testing.T) {
+	f := aBoardStore()
+	m := mountedSpooling(t, f, &fakeSpool{})
+
+	act := m.call(t, "POST", "/board/act", strings.NewReader("what=chore&id=7&answer=did&bay=chores"))
+	require.Equal(t, "/?bay=chores", act.Header().Get("Location"))
+
+	made := m.call(t, "POST", "/board/new", strings.NewReader("bay=tasks&words=book+it"))
+	require.Equal(t, "/?bay=tasks", made.Header().Get("Location"))
 }

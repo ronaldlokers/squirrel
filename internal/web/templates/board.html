@@ -40,9 +40,15 @@
 <p class="wentto">that went to the notes — an appointment needs a time in it, and a chore needs a rhythm.</p>
 {{end}}
 
+<nav class="baytabs">
+  {{range .Bays}}
+  <a class="baytab{{if .In}} in{{end}}" href="/?bay={{.Key}}">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</a>
+  {{end}}
+</nav>
+
 <main class="racks">
   {{range $bay := .Bays}}
-  <section class="rack">
+  <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
     {{if .Writes}}
     <form class="blankstrip" method="post" action="/board/new">
@@ -70,6 +76,7 @@
             <form class="stamps" method="post" action="/board/act">
               <input type="hidden" name="what" value="{{.What}}">
               <input type="hidden" name="id" value="{{.ID}}">
+              <input type="hidden" name="bay" value="{{$bay.Key}}">
               {{range .Answers}}
               <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
               {{end}}

@@ -42,8 +42,7 @@ says so.
 
 Not built on the board, and each of them one press away in the conversation
 until it is: the pulled strip's own three stamps, Buddy, search, a photograph,
-making a chore from a note, answering anything in the agenda, and the phone's
-bay tabs. That press is the last thing in the ops bar and it is load-bearing —
+making a chore from a note, and answering anything in the agenda. That press is the last thing in the ops bar and it is load-bearing —
 the front door moved before the board could do everything the conversation can,
 which was the owner's call and is the trade to revisit if a day's work needs
 both screens.
@@ -132,9 +131,6 @@ Named rather than discovered later. None of these are drawn yet:
   with first if the sofa scene suffers.
 - **A photograph on a strip.** Shown by opening the strip, never by shrinking a
   photograph into a 42px row. Not drawn.
-- **The phone's bay tabs.** The document says four racks become one with the
-  signs as tabs. What is built stacks the four racks in one scrolling column
-  instead, which works and is not what is written.
 - **A photograph on the board.** The conversation's capture takes one; the
   board's does not yet.
 - **The pulled strip's stamps.** The offer draws and cannot be answered from the

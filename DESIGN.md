@@ -255,8 +255,7 @@ What the board still cannot do, and what the link in its own lid is for: the
 pulled strip has no stamps, there is no Buddy, no search, no photograph, no way
 to make a chore out of a note, and nothing in the agenda can be answered. All of
 those are one press away in the conversation, which is why that press is the
-last thing in the ops bar rather than a footnote. The phone has no bay tabs
-either. Nothing here is described from intention: what the route renders
+last thing in the ops bar rather than a footnote. Nothing here is described from intention: what the route renders
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
 
