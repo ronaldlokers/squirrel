@@ -1,0 +1,94 @@
+---
+version: 1
+slug: "impeccable-comps-strip-board-html"
+primary_target: ".impeccable/comps/strip-board.html"
+related_targets: ["internal/web"]
+---
+
+# Surface: the board
+
+**Mode:** Operate. The visitor works a rack — reads what was pulled for them,
+answers a strip in front of them, writes a new one, and stops. Scanability, the
+keyboard, and the real usage scene outrank expression; the world lives in the
+material, not in ornament.
+
+**Direction locked 1 September 2026.** The roll assigned the departure board;
+the owner took the pick card, the strip board, from the same hand. The other
+cards on that table — the iridescent edge, the modular system, and the four
+declined challengers whose disciplines were donated into the assigned card — are
+spent and carry no approval.
+
+**Reference comp:** `.impeccable/comps/strip-board.html`, which carries its own
+written build contract: world, first viewport, visitor path, signature
+interaction, motion grammar, cross-surface reach, honest risk. Built code-led
+(no image generation on this machine), so that contract is what the finish
+review audits rather than a rendered comp.
+
+**Not implemented.** `DESIGN.md` describes this world and the running code does
+not, and both say so: the document carries the line `design-ahead-of-code`, and
+`TestTheRadiusVocabularyIsClosed` stands down while it is there. Everything
+shipped through v0.55.1 is the conversation. When the board lands, delete that
+line and the check closes again.
+
+## The composition
+
+Four bands, top to bottom, and their order never changes: the ops bar (mark,
+clock, day, find, settings); the working row (the one pulled strip, and a
+running timer's panel beside it when one is running); the racks (four bays,
+`1.18fr 1fr 1fr 1fr`, each a sign, then a blank strip, then a channel); the
+day's tray along the foot, with the check-in's five faces at its right end.
+
+Below 620px the four racks become one and the signs become tabs. There is no
+second layout.
+
+## What must not be literalized
+
+- **Exactly one strip is pulled.** The pulled strip is not a "featured card" that
+  could become two on a busy day. Two pulled strips is the picker having failed
+  to choose, drawn as though it succeeded.
+- **The holder is a sleeve, not an accent.** Eleven pixels, ruled off with the
+  same outline as everything else, carrying the grip. The moment it renders as a
+  coloured left border it is a list item with decoration and the mechanism is
+  gone.
+- **State is a mark.** Struck words and a change of position. A strip is never
+  filled with a state colour, and the four holder colours are only safe because
+  of this.
+- **The 1150ms hold is a requirement, not a transition.** An answered strip stays
+  put while the undo has somewhere to live, then travels. Shortening it to feel
+  snappy removes the undo's home. Carried from the previous world unchanged.
+- **An empty rack is room, not absence.** The channel runs to the foot of the
+  board whether or not it is full. Collapsing it to its content turns a quiet day
+  into a screen that looks broken.
+- **Habituation is a documented risk for this user.** In the previous world the
+  answer was the deck's randomised rotation. Here it is the field's light, whose
+  horizontal position is the day's, between 8% and 26%. A board that sits
+  identically every morning has failed even though it screenshots the same.
+- **Sample content is authored.** The boiler code, the meter reading, kaas, the
+  bins, the dentist. The owner's real notes are in production and must never be
+  pasted into a comp.
+
+## What this surface still owes
+
+Named rather than discovered later. None of these are drawn yet:
+
+- **The two shelves.** `kept` and `held` had a home in the previous world as
+  chips inside the notes, and they have none here. They are not a fifth bay —
+  PRODUCT.md refuses a fourth door on home for the same reason — so they need a
+  way in from inside the notes rack.
+- **The thinning rule.** The honest risk on this direction is density. The
+  mitigation written into the comp is that a `wiped` or `frazzled` reading thins
+  the board to the pulled strip and the tray. That is a picker rule and it is
+  specified nowhere.
+- **Capture costs a press on the phone.** Pick the bay, then write, where the
+  dock was one gesture. Capture is Principle 1, so this is the trade to argue
+  with first if the sofa scene suffers.
+- **A photograph on a strip.** Shown by opening the strip, never by shrinking a
+  photograph into a 42px row. Not drawn.
+- **Search results, first run, the gate, and the evening message.** All still
+  wear the previous world.
+
+## Deferred
+
+The interval picker, the day picker's calendar, and Buddy's longer answers all
+need a home in this world and have not been given one. They were sheets and
+turns; a rack has no sheet.
