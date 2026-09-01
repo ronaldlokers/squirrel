@@ -14,6 +14,8 @@ import (
 
 type boardView struct {
 	V        string
+	Find     string
+	Found    []stripView
 	Blockers []blockerView
 	Unstuck  string
 	In       string
@@ -39,6 +41,9 @@ type bayView struct {
 }
 
 type stripView struct {
+	// Back is a strip that has already left the pile: it carries the way back
+	// and nothing else.
+	Back    bool
 	ID      int64
 	What    string
 	Words   string
@@ -83,9 +88,12 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		at := now()
 		in := r.URL.Query().Get("bay")
+		find := strings.TrimSpace(r.URL.Query().Get("find"))
 		blockers, unstuck := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
 			In:       in,
+			Find:     find,
+			Found:    whatMatched(r, s, personID, find, at),
 			Blockers: blockers,
 			Unstuck:  unstuck,
 			Kept:     r.URL.Query().Get("kept") == "1",
@@ -107,6 +115,51 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		renderBoard(w, v)
 	}
+}
+
+// whatMatched is the search, which takes the racks' place rather than opening
+// anywhere else: search is the only navigation on this board besides the four
+// bays.
+//
+// Every state, on one screen, which is what the pile has always promised. What
+// a result carries is decided by where it is: something still in the pile keeps
+// its four answers, and something that already left carries the way back and
+// nothing else, because offering the exits to a note that has taken one is
+// asking a question that has been answered.
+func whatMatched(r *http.Request, s Store, personID int64, find string, at time.Time) []stripView {
+	if find == "" {
+		return nil
+	}
+	out := []stripView{}
+	items, _, err := s.SearchItems(r.Context(), personID, find, boardDeep)
+	if err != nil {
+		slog.Error("looking for something", "error", err)
+		return nil
+	}
+	for _, it := range items {
+		strip := stripView{ID: it.ID, Words: it.RawText, Mark: markOfDay(it.ReceivedAt, at)}
+		switch {
+		case it.State != squirrel.ItemOpen:
+			strip.What, strip.Mark, strip.Back = "note", string(it.State), true
+		case it.Kind == squirrel.ItemTask:
+			strip.What, strip.Answers = "task", taskAnswers
+		default:
+			strip.What, strip.Answers = "note", noteAnswers
+		}
+		out = append(out, strip)
+	}
+	chores, err := s.SearchChores(r.Context(), personID, find, boardDeep)
+	if err != nil {
+		slog.Error("looking for a chore", "error", err)
+		return out
+	}
+	for _, c := range chores {
+		out = append(out, stripView{
+			ID: c.ID, What: "chore", Words: c.Name,
+			Mark: squirrel.Cadence(c.EveryDays), Answers: choreAnswers,
+		})
+	}
+	return out
 }
 
 // baysIn lights the rack you are standing in, which is only ever one and is the

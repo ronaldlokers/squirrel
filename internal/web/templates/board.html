@@ -12,6 +12,10 @@
   <img class="markart" src="/static/logo.png" alt="">
   <h1 class="wordmark">Squirrel</h1>
   <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
+  <form class="find" method="get" action="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+    <input name="find" value="{{.Find}}" placeholder="look for something" autocomplete="off" enterkeyhint="search" aria-label="look for something">
+  </form>
   <span class="spacer"></span>
   <a class="opslink" href="/">the conversation</a>
 </header>
@@ -65,6 +69,41 @@
 <p class="wentto">that went to the notes — an appointment needs a time in it, and a chore needs a rhythm.</p>
 {{end}}
 
+{{if .Find}}
+<main class="racks found">
+  <section class="rack in">
+    <p class="baysign">what matched &ldquo;{{.Find}}&rdquo;{{if .Found}} <span class="n">{{len .Found}}</span>{{end}}</p>
+    <a class="strip back" href="/"><span class="words">back to the board</span></a>
+    <div class="channel">
+      <div class="strips">
+        {{range .Found}}
+        <article class="strip h-notes{{if .Answers}} answerable{{end}}">
+          <span class="holder"></span>
+          <div class="words">{{.Words}}
+            {{if .Answers}}
+            <form class="stamps" method="post" action="/board/act">
+              <input type="hidden" name="what" value="{{.What}}">
+              <input type="hidden" name="id" value="{{.ID}}">
+              {{range .Answers}}
+              <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
+              {{end}}
+            </form>
+            {{end}}
+            {{if .Back}}
+            <form class="stamps" method="post" action="/board/undo">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <button class="stamp">back in the pile<span class="k">Z</span></button>
+            </form>
+            {{end}}
+          </div>
+          <span class="mark">{{.Mark}}</span>
+        </article>
+        {{end}}
+      </div>
+    </div>
+  </section>
+</main>
+{{else}}
 <nav class="baytabs">
   {{range .Bays}}
   <a class="baytab{{if .In}} in{{end}}" href="/?bay={{.Key}}">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</a>
@@ -122,6 +161,7 @@
   </section>
   {{end}}
 </main>
+{{end}}
 
 {{if .Tray}}
 <footer class="tray">

@@ -44,7 +44,7 @@ Buddy is on the board as one press on the pulled strip and the acorn on what he
 answers; his longer conversation is not, and neither are the chips.
 
 Not built on the board, and each of them one press away in the conversation
-until it is: his conversation, search, a photograph,
+until it is: his conversation, a photograph,
 making a chore from a note, and answering anything in the agenda. That press is the last thing in the ops bar and it is load-bearing —
 the front door moved before the board could do everything the conversation can,
 which was the owner's call and is the trade to revisit if a day's work needs

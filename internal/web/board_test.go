@@ -432,3 +432,57 @@ func TestSayingItLandedBadlyFromTheBoard(t *testing.T) {
 	require.Equal(t, http.StatusSeeOther, w.Code)
 	require.Len(t, f.landedBadly, 1, "nothing was marked as having landed badly")
 }
+
+func aSearchableStore() *fakeStore {
+	f := aBoardStore()
+	f.items = append(f.items,
+		squirrel.Item{ID: 21, RawText: "the boiler serial plate is behind the panel", State: squirrel.ItemKept, Kind: squirrel.ItemNote},
+		squirrel.Item{ID: 22, RawText: "the boiler pressure thing", State: squirrel.ItemOpen, Kind: squirrel.ItemNote},
+	)
+	f.chores = append(f.chores, squirrel.Chore{ID: 31, Name: "bleed the boiler", Active: true, EveryDays: 30, SinceDays: 4})
+	return f
+}
+
+// Search is the only navigation on this board besides the four bays, so it
+// takes the racks' place rather than opening anywhere else.
+func TestSearchingTakesTheRacksPlace(t *testing.T) {
+	m := mounted(t, aSearchableStore())
+
+	body := m.call(t, "GET", "/?find=boiler", nil).Body.String()
+
+	require.Contains(t, body, "the boiler serial plate is behind the panel")
+	require.Contains(t, body, "the boiler pressure thing")
+	require.Contains(t, body, "bleed the boiler", "chores are not searched")
+	require.NotContains(t, body, `data-bay="tasks"`, "the racks are still drawn behind the results")
+	require.Contains(t, body, "back to the board")
+}
+
+// Every state, on the same screen: something that left the pile is found, and
+// what it carries is the way back rather than the four answers.
+func TestAResultThatLeftThePileCarriesTheWayBack(t *testing.T) {
+	m := mounted(t, aSearchableStore())
+
+	body := m.call(t, "GET", "/?find=serial", nil).Body.String()
+
+	require.Contains(t, body, "kept")
+	require.Contains(t, body, `action="/board/undo"`)
+	require.NotContains(t, body, `value="drop"`, "a note that already left is being offered the exits again")
+}
+
+func TestAnEmptySearchIsJustTheBoard(t *testing.T) {
+	m := mounted(t, aSearchableStore())
+
+	body := m.call(t, "GET", "/?find=+", nil).Body.String()
+
+	require.Contains(t, body, `data-bay="tasks"`)
+	require.NotContains(t, body, "back to the board")
+}
+
+func TestTheFindFieldIsAField(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `<form class="find" method="get" action="/">`)
+	require.Contains(t, body, `name="find"`)
+}
