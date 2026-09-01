@@ -245,10 +245,10 @@ the day's tray, and the tray is empty again tomorrow.
 and is landing behind it. As of 1 September 2026 the board is mounted at
 `/board`, drawing the four bays, the pulled strip, the running timer and the
 ledge from the store; a strip can be answered on it, with the strike, the
-1150ms hold, the travel and the tray; and the notes and tasks racks can be
-written into, the notes through the spool. The chores and agenda racks have no
-blank strip yet because both need a second answer, the pulled strip has no
-stamps of its own, and the phone has no bay tabs. `/` is still the
+1150ms hold, the travel and the tray; and every rack can be written into,
+the notes through the spool, a chore with one of four rhythm stamps, an
+appointment as the sentence chat already parses. The pulled strip still has no
+stamps of its own and the phone has no bay tabs. `/` is still the
 conversation. Nothing here is described from intention: what the route renders
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
@@ -599,13 +599,20 @@ row of destination chips together.
 Typing turns it solid: `paper` stock, solid outline, the focus ring. The camera
 lives on the same row as the plus.
 
-**A bay only has one where one press is enough.** A chore needs a rhythm and an
-appointment needs a day, so both need a second answer before there is anything
-to keep, and a blank strip that took the words and then asked would be holding a
-thought in a form field — which is the one thing this product may never do. Until
-that second step is drawn, those two racks open with their first strip and no
-question. An empty field that quietly drops what you typed is worse than no
-field.
+**Every bay has one, and none of them has a second step.** A chore needs a
+rhythm and an appointment needs a day, and the obvious build was to take the
+words and then ask — which would hold a thought in a form field, the one thing
+this product may never do. So the question moved into the strip instead of after
+it. The chores rack carries four rhythm stamps under its field — *a day*, *a
+week*, *2 weeks*, *a month* — and pressing one is the whole act. The agenda's
+field teaches its own grammar in the placeholder, `at 14:30 dentist`, which is
+the sentence chat has always parsed.
+
+**And the floor under all four: words that are not what the rack asked for are
+still a thought.** A chore typed with no rhythm and an appointment typed with no
+time go to the notes, through the spool like any other capture, and the board
+says where they went. A bay may refuse to make what you asked for. No bay may
+drop what you typed.
 
 ### The stamp
 

@@ -14,6 +14,7 @@ import (
 type boardView struct {
 	V      string
 	Tray   []trayView
+	Kept   bool
 	Now    string
 	Day    string
 	Pulled *offerView
@@ -26,6 +27,7 @@ type bayView struct {
 	Name     string
 	Question string
 	Writes   bool
+	Rhythms  []rhythmView
 	Shelves  bool
 	Strips   []stripView
 }
@@ -37,6 +39,18 @@ type stripView struct {
 	Mark    string
 	Big     bool
 	Answers []answerView
+}
+
+type rhythmView struct {
+	Days  int
+	Words string
+}
+
+var theRhythms = []rhythmView{
+	{Days: 1, Words: "a day"},
+	{Days: 7, Words: "a week"},
+	{Days: 14, Words: "2 weeks"},
+	{Days: 30, Words: "a month"},
 }
 
 type answerView struct {
@@ -63,6 +77,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		at := now()
 		v := boardView{
+			Kept:   r.URL.Query().Get("kept") == "notes",
 			Now:    at.Format("15:04"),
 			Day:    at.Format("Monday 2 January"),
 			Pulled: offerFor(s, opts, r, false, false),
@@ -71,11 +86,11 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Bays: []bayView{
 				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Shelves: true,
 					Strips: noteStrips(r, s, personID, at)},
-				{Key: "chores", Name: "the chores", Question: "what comes back?",
+				{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true, Rhythms: theRhythms,
 					Strips: choreStrips(r, s, personID)},
 				{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
 					Strips: taskStrips(r, s, personID, at)},
-				{Key: "agenda", Name: "the agenda", Question: "what is happening?",
+				{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
 					Strips: agendaStrips(r, s, personID, at)},
 			},
 		}
@@ -358,16 +373,37 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 		}
 
 		switch r.FormValue("bay") {
+		case "chores":
+			if days, _ := strconv.Atoi(r.FormValue("every")); days > 0 {
+				every := time.Duration(days) * 24 * time.Hour
+				if _, err := s.UpsertChore(r.Context(), personID, words, every, every/10); err != nil {
+					fail(w, err)
+					return
+				}
+				break
+			}
+			if err := keepAsANote(r, opts, words); err != nil {
+				fail(w, err)
+				return
+			}
+			http.Redirect(w, r, "/board?kept=notes", http.StatusSeeOther)
+			return
+		case "agenda":
+			if m, ok := squirrel.ParseMomentIn(opts.Location, words, now()); ok {
+				if _, err := s.CreateMoment(r.Context(), personID, m); err != nil {
+					fail(w, err)
+					return
+				}
+				break
+			}
+			if err := keepAsANote(r, opts, words); err != nil {
+				fail(w, err)
+				return
+			}
+			http.Redirect(w, r, "/board?kept=notes", http.StatusSeeOther)
+			return
 		case "notes":
-			sender := subOf(r)
-			if _, err := opts.Spool.Write(squirrel.Capture{
-				Transport:  squirrel.ScreenTransport,
-				SenderID:   &sender,
-				Text:       words,
-				Payload:    []byte(squirrel.ScreenCapture),
-				ReceivedAt: now(),
-			}); err != nil {
-				slog.Warn("a capture from the board could not be spooled", "error", err)
+			if err := keepAsANote(r, opts, words); err != nil {
 				fail(w, err)
 				return
 			}
@@ -387,4 +423,22 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/board", http.StatusSeeOther)
 	}
+}
+
+// keepAsANote is the floor under every blank strip: words that are not what the
+// rack asked for are still a thought, and a thought goes to the spool. The one
+// thing a bay may not do is drop what you typed because it was the wrong shape.
+func keepAsANote(r *http.Request, opts Options, words string) error {
+	sender := subOf(r)
+	if _, err := opts.Spool.Write(squirrel.Capture{
+		Transport:  squirrel.ScreenTransport,
+		SenderID:   &sender,
+		Text:       words,
+		Payload:    []byte(squirrel.ScreenCapture),
+		ReceivedAt: now(),
+	}); err != nil {
+		slog.Warn("a capture from the board could not be spooled", "error", err)
+		return err
+	}
+	return nil
 }

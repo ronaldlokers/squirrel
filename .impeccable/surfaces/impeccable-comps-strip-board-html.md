@@ -32,15 +32,16 @@ tray carrying `put it back`. Without scripting the same stamp posts a form and
 the board comes back with the strip in the tray, so the answer path works with
 the script off and the animation is the enhancement.
 
-The notes and tasks racks can be written into: the notes bay writes to the spool
-the way every other capture in this product does, the tasks bay inserts a
-decision. The chores and agenda racks have no blank strip, because both need a
-second answer first.
+Every rack can be written into. The notes bay writes to the spool the way every
+other capture does, the tasks bay inserts a decision, the chores bay takes a
+name and one of four rhythm stamps in a single press, and the agenda bay takes
+the sentence chat has always parsed — `at 14:30 dentist`. Words that are not
+what a rack asked for go to the notes rather than being dropped, and the board
+says so.
 
-Not built: the second step for a chore's rhythm and an appointment's day, the
-pulled strip's own three stamps, making a chore from a note, answering anything
-in the agenda, a photograph, and the phone's bay tabs. `/` is still the
-conversation.
+Not built: the pulled strip's own three stamps, making a chore from a note,
+answering anything in the agenda, a photograph from the board, and the phone's
+bay tabs. `/` is still the conversation.
 
 `DESIGN.md` still runs ahead of the stylesheet, and both say so: the document carries the line `design-ahead-of-code`, and
 `TestTheRadiusVocabularyIsClosed` stands down while it is there. Everything
@@ -129,9 +130,6 @@ Named rather than discovered later. None of these are drawn yet:
 - **The phone's bay tabs.** The document says four racks become one with the
   signs as tabs. What is built stacks the four racks in one scrolling column
   instead, which works and is not what is written.
-- **The second step.** A chore's rhythm and an appointment's day. Until it is
-  drawn, those two racks have no blank strip at all — an empty field that drops
-  what you typed while it asks a question is the one thing capture may never be.
 - **A photograph on the board.** The conversation's capture takes one; the
   board's does not yet.
 - **The pulled strip's stamps.** The offer draws and cannot be answered from the
