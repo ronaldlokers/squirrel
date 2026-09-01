@@ -123,3 +123,59 @@ func TestPuttingBackWhatIsNotYoursWritesNothing(t *testing.T) {
 
 	require.NotContains(t, f.states, int64(99), "a strip that is not yours was put back")
 }
+
+// A thought typed into the notes rack goes to the spool, not to the database.
+// Capture is sacred: the words reach fsynced disk before anybody answers, and
+// the drain resolves whose they are — the same path a capture from the
+// conversation takes.
+func TestWritingOnABlankStripSpoolsTheWords(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	w := m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=meter+reading+48213"))
+
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/board", w.Header().Get("Location"))
+	require.Len(t, sp.written, 1, "the words did not reach the spool")
+	require.Equal(t, "meter reading 48213", sp.written[0].Text)
+	require.Len(t, f.items, 3, "a note typed on the board went straight to the database")
+}
+
+func TestWritingInTheTasksRackDecidesSomething(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=tasks&words=book+the+boiler+service"))
+
+	require.Empty(t, sp.written, "a task is a decision rather than a capture")
+	var found bool
+	for _, it := range f.items {
+		if it.RawText == "book the boiler service" && it.Kind == squirrel.ItemTask {
+			found = true
+		}
+	}
+	require.True(t, found, "the words are not a task in the store")
+}
+
+func TestABlankStripWithNothingOnItKeepsNothing(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=+"))
+
+	require.Empty(t, sp.written)
+	require.Len(t, f.items, 3, "an empty strip kept something")
+}
+
+func TestTheBlankStripIsAFieldYouCanType(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	body := m.call(t, "GET", "/board", nil).Body.String()
+
+	require.Contains(t, body, `action="/board/new"`)
+	require.Contains(t, body, `name="words"`)
+	require.Contains(t, body, `value="notes"`)
+}

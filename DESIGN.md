@@ -244,10 +244,12 @@ the day's tray, and the tray is empty again tomorrow.
 **Status, and what this replaces.** This document is ahead of the running code
 and is landing behind it. As of 1 September 2026 the board is mounted at
 `/board`, drawing the four bays, the pulled strip, the running timer and the
-ledge from the store, and a strip can be answered on it: a stamp strikes it,
-the strike holds for 1150ms, the strip travels, and it lands in today's tray
-with its way back. Capture, the pulled strip's own stamps and the phone's bay
-tabs are not built yet, and `/` is still the conversation. Nothing here is described from intention: what the route renders
+ledge from the store; a strip can be answered on it, with the strike, the
+1150ms hold, the travel and the tray; and the notes and tasks racks can be
+written into, the notes through the spool. The chores and agenda racks have no
+blank strip yet because both need a second answer, the pulled strip has no
+stamps of its own, and the phone has no bay tabs. `/` is still the
+conversation. Nothing here is described from intention: what the route renders
 is what this document says, and the parts it does not render yet are named in
 the surface brief.
 
@@ -589,14 +591,21 @@ channel is why an empty bay looks like room rather than like absence.
 
 ### The blank strip
 
-The head of every rack, dashed, in cream at 80%: `write on a new strip` on the
-phone, and the bay's own question on the desk — *what comes back?* in the
-chores, *what did you decide?* in the tasks. What you type lands in the bay you
-are looking at, which is what retired the composer and its row of destination
-chips together.
+The head of a rack, dashed, in cream at 80%, carrying that bay's own question —
+*what is it* in the notes, *what did you decide?* in the tasks. What you type
+lands in the bay you are looking at, which is what retired the composer and its
+row of destination chips together.
 
 Typing turns it solid: `paper` stock, solid outline, the focus ring. The camera
 lives on the same row as the plus.
+
+**A bay only has one where one press is enough.** A chore needs a rhythm and an
+appointment needs a day, so both need a second answer before there is anything
+to keep, and a blank strip that took the words and then asked would be holding a
+thought in a form field — which is the one thing this product may never do. Until
+that second step is drawn, those two racks open with their first strip and no
+question. An empty field that quietly drops what you typed is worse than no
+field.
 
 ### The stamp
 
