@@ -242,7 +242,10 @@ can read from across the room. Answering something strikes it and drops it into
 the day's tray, and the tray is empty again tomorrow.
 
 **Status, and what this replaces.** This document describes the design of
-record, not the running code. Everything shipped through v0.55.1 is the previous
+record, not the running code, and it says so to the tests as well: while the
+line `design-ahead-of-code` is in this file, the radius vocabulary is not
+checked against the shipped stylesheet. Delete that line when the board ships
+and the check closes again. Everything shipped through v0.55.1 is the previous
 world — the conversation, where every object was a turn in a thread, drawn on
 cream card stock with a 3px outline and a 14px corner. That world's document is
 in git history (`git show HEAD~1:DESIGN.md`) and it stays the accurate
