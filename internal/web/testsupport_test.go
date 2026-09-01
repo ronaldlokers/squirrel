@@ -1178,6 +1178,37 @@ func (f *fakeStore) AppendTurn(_ context.Context, _ int64, room string, t squirr
 	return t, nil
 }
 
+func (f *fakeStore) EverythingSaid(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	f.roomRead = "everything said"
+	out := f.turns
+	more := f.moreTurns || len(out) > limit
+	if len(out) > limit {
+		out = out[len(out)-limit:]
+	}
+	return out, more, nil
+}
+
+func (f *fakeStore) EverythingBefore(_ context.Context, _ int64, before int64, limit int) ([]squirrel.Turn, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	f.pagedBefore = before
+	out := []squirrel.Turn{}
+	for _, t := range f.turns {
+		if t.ID < before {
+			out = append(out, t)
+		}
+	}
+	more := len(out) > limit
+	if more {
+		out = out[len(out)-limit:]
+	}
+	return out, more, nil
+}
+
 func (f *fakeStore) RecentTurns(_ context.Context, _ int64, room string, limit int) ([]squirrel.Turn, bool, error) {
 	f.roomRead = room
 	if f.err != nil {

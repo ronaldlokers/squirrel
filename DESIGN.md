@@ -809,7 +809,14 @@ the dock, and the rail. **What it gives up:** being where a note is triaged.
 Those presses have a board now, and two places to answer the same thing is the
 problem this product exists to solve rather than one it may create.
 
-**Not yet true, and harder than it looks:** the four object rooms — the notes,
+**One piece of it landed on 2 September 2026:** Buddy's room reads the whole
+record rather than one room's share of it. Nothing was rewritten — every turn
+keeps the room it was said in — and what changed is that the reading stopped
+asking. That is the piece the retirement needs and the piece that is true
+whatever happens to the rooms: a record with four rooms' worth of holes in it
+would be the thing that made retiring them lossy.
+
+**Still not true, and harder than it looks:** the four object rooms — the notes,
 the chores, the agenda, the tasks — are still mounted and still draw lists of
 rows the board owns. Retiring them was attempted on 1 September 2026 and backed
 out, and what it found is worth writing down rather than rediscovering: a room

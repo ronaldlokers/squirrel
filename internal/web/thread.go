@@ -196,9 +196,13 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 		before, perr := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
 		walkingBack := perr == nil && before > 0
 		if walkingBack {
-			turns, more, err = s.TurnsBefore(ctx, personID, "everything", before, threadLimit)
+			// The whole record rather than one room's share of it. Four rooms
+			// stopped being places on 2 September 2026 and their rows kept the
+			// room they were said in; what changed is that the reading stopped
+			// asking, so nothing said is unreachable.
+			turns, more, err = s.EverythingBefore(ctx, personID, before, threadLimit)
 		} else {
-			turns, more, err = s.RecentTurns(ctx, personID, "everything", threadLimit)
+			turns, more, err = s.EverythingSaid(ctx, personID, threadLimit)
 		}
 		// A record that cannot be read is not a reason to take the screen away: the dock
 		// still writes to the spool. Said out loud rather than rendered as an empty
