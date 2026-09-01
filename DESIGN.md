@@ -737,10 +737,22 @@ you could write into would be lying about where its contents come from.
 held note its purple one, so one shelf holds both without needing a second
 label. This is the holder rule doing real work rather than decorating.
 
-### The find field
+### The find field, and what it finds
 
-In the ops bar, 260px, `rgba(28,17,11,.32)` behind a 2px cream edge. Search is
-the only navigation in the product besides the four bays.
+In the ops bar, behind a 2px cream edge. Search is the only navigation in this
+product besides the four bays, and it is a GET: what you looked for is in the
+address, so it survives a reload and can be kept.
+
+**What matched takes the racks' place.** One rack, centred, headed
+`what matched "…"`, opening with the way back. Not a fifth bay, not an overlay:
+the board has one place where things are, and looking for something puts what
+you found there.
+
+**Every state, on one screen**, which is what the pile has always promised. What
+a result carries is decided by where it is: something still in the pile keeps
+its four answers, and something that already left carries `back in the pile` and
+nothing else — offering the exits to a note that has taken one is asking a
+question that has been answered. Its mark is the state it went to.
 
 ## Do's and Don'ts
 
