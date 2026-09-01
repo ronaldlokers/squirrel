@@ -421,8 +421,8 @@ speaking, which the furniture must never do.
 further from a tired face than a monitor is, and the strip's words are the part
 that has to survive that.
 
-**No All-Caps Sentences.** Caps are for signs, stamps and marks: three words,
-never a sentence. The rule that pulled a strip is set in sentence case with a
+**No All-Caps Sentences.** Caps are for signs, stamps and marks: a name, never
+a sentence. The rule that pulled a strip is set in sentence case with a
 small caps tag beside it — `PULLED` — because forty characters of uppercase is a
 sentence somebody has to decode rather than read.
 
@@ -624,6 +624,53 @@ or `frazzled` reading thins the board — see the risk noted in the strip-board
 comp; the thinning rule belongs to the picker, and until it is written this is
 the design's largest unfinished edge.
 
+### The ledge, and the two shelves
+
+The lip at the foot of the notes rack, below every live strip: a hairline, then
+two dashed tabs in sentence case — `what you set aside` and `the things you
+kept`. They are not bay signs and are deliberately not set in caps, because they
+are a way through rather than a place you are standing.
+
+Pressing one turns the notes rack into that shelf and nothing else on the board
+moves. The sign becomes the shelf's name in the dashed variant, and where every
+rack opens with something to write on, a shelf opens with `back to the notes`.
+
+**A held strip** is recessed rather than raised: `rgba(28,17,11,.16)` behind a
+2px dashed cream edge, cream ink, no shadow, and it does not cock. Present, and
+not a thing you can pick up. Its holder stays the colour of the bay it came
+from, and where a live strip carries a mark, a held strip carries **what would
+move it** in his own words — *when he replies*, *when the part arrives*,
+*someday*. The three ways to say you cannot act stay three, because they end
+differently.
+
+**A kept strip** is flat printed stock — `card-deep`, no shadow, no mark, no
+cocking. A fact rather than a job, which is what `kept` has always meant: a
+serial number or a link is not a task and will never be done.
+
+Both carry exactly one stamp, `back in the pile`, because every transition in
+this product reverses.
+
+### Named Rules
+
+**A Shelf Never Counts.** The sign carries the name and no number, and this is
+the one place in the product where that is a rule rather than a preference. A
+number beside stalled work is a reproach, and the point of setting something
+aside is to stop being asked about it. PRODUCT.md's retirement of the count rule
+does not reach here: it permitted counts on doors, and a shelf is not a door.
+
+**A Shelf Is Not A Bay.** Four bays, and there is no fifth sign on the board. A
+shelf borrows the notes rack for as long as you are reading it. A door for
+stalled work would put it in front of you every morning, which is precisely what
+setting it aside was for.
+
+**A Shelf Has No Blank Strip.** Nothing is kept or set aside by being typed —
+both states are reached by deciding about a strip that already exists. A shelf
+you could write into would be lying about where its contents come from.
+
+**The Holder Says Where It Came From.** A held task keeps its amber holder and a
+held note its purple one, so one shelf holds both without needing a second
+label. This is the holder rule doing real work rather than decorating.
+
 ### The find field
 
 In the ops bar, 260px, `rgba(28,17,11,.32)` behind a 2px cream edge. Search is
@@ -640,6 +687,9 @@ the only navigation in the product besides the four bays.
 - **Do** keep the 1150ms hold before anything leaves the board.
 - **Do** let an empty rack look like an empty rack.
 - **Do** set times, dates and countdowns in Inter Black with tabular figures.
+- **Do** keep the shelves on the ledge, below the strips you have not decided
+  about.
+- **Do** let a held strip carry what would move it where its mark would go.
 
 ### Don't:
 
@@ -651,3 +701,7 @@ the only navigation in the product besides the four bays.
 - **Don't** use white anywhere, and don't let a surface read as neutral.
 - **Don't** add a hover elevation, a modal, or a floating panel; depth here only
   ever means distance from the rack.
+- **Don't** give a shelf a bay sign of its own, a count, or anything to type
+  into.
+- **Don't** draw a held strip so it can be picked up, or a kept strip so it
+  looks like work.

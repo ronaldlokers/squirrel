@@ -38,8 +38,37 @@ running timer's panel beside it when one is running); the racks (four bays,
 `1.18fr 1fr 1fr 1fr`, each a sign, then a blank strip, then a channel); the
 day's tray along the foot, with the check-in's five faces at its right end.
 
+At the foot of the notes rack, inside its channel and below every live strip,
+the ledge: two dashed tabs in sentence case, `what you set aside` and `the
+things you kept`. Pressing one turns the notes rack into that shelf — the sign
+becomes the shelf's name, the blank strip becomes `back to the notes`, and
+nothing else on the board moves.
+
 Below 620px the four racks become one and the signs become tabs. There is no
 second layout.
+
+## The shelves, resolved 1 September 2026
+
+They are the ledge under the notes rack, not a fifth bay. What that buys, in the
+order the rules were argued:
+
+- **A shelf is not a door.** A fifth sign would put stalled work in front of you
+  every morning, which is what setting something aside exists to stop. The ledge
+  sits below every strip you have not decided about, so it is reached by going
+  past your own pile rather than by being shown.
+- **A shelf never counts.** The sign carries a name and no number. PRODUCT.md
+  retired the count rule for doors; a shelf is not a door, and a number beside
+  stalled work is a reproach.
+- **A shelf has no blank strip.** Nothing is kept or set aside by being typed,
+  so a shelf opens with the way back instead.
+- **Two different objects.** Set aside is recessed and dashed, carrying what
+  would move it where its mark would go — *when he replies*, *when the part
+  arrives*, *someday*, still three because they end differently. Kept is flat
+  printed stock with no mark: a fact rather than a job.
+- **The holder does the labelling.** A held task keeps its amber holder and a
+  held note its purple one, so one shelf holds both.
+
+Both drawn in the comp as the notes rack in its two shelf states.
 
 ## What must not be literalized
 
@@ -71,10 +100,6 @@ second layout.
 
 Named rather than discovered later. None of these are drawn yet:
 
-- **The two shelves.** `kept` and `held` had a home in the previous world as
-  chips inside the notes, and they have none here. They are not a fifth bay —
-  PRODUCT.md refuses a fourth door on home for the same reason — so they need a
-  way in from inside the notes rack.
 - **The thinning rule.** The honest risk on this direction is density. The
   mitigation written into the comp is that a `wiped` or `frazzled` reading thins
   the board to the pulled strip and the tray. That is a picker rule and it is
