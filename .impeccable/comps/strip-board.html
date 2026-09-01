@@ -233,7 +233,7 @@ body {
 .stamp.go { background: var(--orange); }
 .stamp.did { background: #71a73e; }
 .stamp.no { background: var(--card-deep); }
-.stamp.small { min-width: 0; min-height: 30px; padding: 6px 9px; font-size: 11.5px; box-shadow: 0 2px 0 0 rgba(28,17,11,.5); }
+.stamp.small { min-width: 0; white-space: nowrap; min-height: 30px; padding: 6px 9px; font-size: 11.5px; box-shadow: 0 2px 0 0 rgba(28,17,11,.5); }
 
 .racks {
   display: grid; grid-template-columns: 1.18fr 1fr 1fr 1fr; gap: 14px;
@@ -340,6 +340,60 @@ body {
 }
 .tray .feel .face img { height: 26px; width: auto; display: block; }
 
+
+.channel { display: flex; flex-direction: column; }
+.ledge {
+  flex: 0 0 auto; display: flex; gap: 6px; margin-top: 7px; padding-top: 7px;
+  border-top: 1px solid rgba(254, 214, 167, .22);
+}
+.ledge .tab {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+  padding: 6px 9px; border: 2px dashed rgba(254, 214, 167, .38);
+  border-radius: var(--r-strip); color: rgba(254, 214, 167, .85);
+  font-size: 13px; letter-spacing: .01em;
+  font-variation-settings: var(--casual), "wght" 560;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ledge .tab svg { width: 13px; height: 13px; flex: 0 0 auto; opacity: .8; }
+.baysign.shelf { background: rgba(28, 17, 11, .34); border-style: dashed; border-color: rgba(254, 214, 167, .5); color: var(--cream); }
+.strip.back {
+  grid-template-columns: max-content minmax(0,1fr); background: transparent;
+  border: 2px dashed rgba(254, 214, 167, .45); box-shadow: none; color: rgba(254, 214, 167, .85);
+}
+.strip.back .arrow { display: flex; align-items: center; padding-left: 9px; }
+.strip.back .arrow svg { width: 15px; height: 15px; display: block; }
+.strip.back .words { font-size: 13px; letter-spacing: .07em; text-transform: uppercase; font-variation-settings: var(--precise), "wght" 750; }
+.strip.held {
+  background: rgba(28, 17, 11, .16);
+  border: 2px dashed rgba(254, 214, 167, .5);
+  box-shadow: none; color: var(--cream);
+}
+.strip.held .holder { opacity: .55; border-right-color: rgba(28, 17, 11, .6); }
+.strip.held .words { color: var(--cream); }
+.strip.held .when {
+  display: flex; align-items: center; gap: 6px; padding: 8px 10px 8px 6px; white-space: nowrap;
+  font-size: 12.5px; color: rgba(254, 214, 167, .82);
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.strip.held .when svg { width: 13px; height: 13px; flex: 0 0 auto; }
+.strip.kept { box-shadow: none; background: var(--card-deep); }
+.strip.kept .words { font-variation-settings: var(--casual), "wght" 500; }
+
+.shelfpair { display: flex; gap: 22px; flex-wrap: wrap; }
+.rackframe {
+  width: 372px; padding: 14px;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .3) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .06) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+  border: var(--strip-line) solid var(--outline); border-radius: 4px;
+  box-shadow: 0 20px 36px -18px rgba(0, 0, 0, .75);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--paper);
+}
+.rackframe .rack { gap: 8px; }
+.rackframe .channel { min-height: 430px; }
 .pockbays { display: flex; gap: 6px; overflow: hidden; flex: 0 0 auto; }
 .pockbays .b {
   display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
@@ -463,7 +517,12 @@ body {
             <div class="strip h-notes"><span class="holder"></span><span class="words">the thing about the bike lights</span><span class="mark">tue</span></div>
             <div class="strip h-notes"><span class="holder"></span><span class="words">check whether the bin day moves for the holiday</span><span class="mark">mon</span></div>
             <div class="strip h-notes"><span class="holder"></span><span class="words">kruidvat, the small batteries</span><span class="mark">mon</span></div>
-          </div></div>
+            </div>
+            <div class="ledge">
+              <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h16M6 15V9m12 6V9M4 19h16"/></svg>what you set aside</span>
+              <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>the things you kept</span>
+            </div>
+          </div>
         </div>
 
         <div class="rack">
@@ -684,6 +743,92 @@ body {
       <dt>The doors and the rail</dt><dd>Bay signs. Enamel, always visible, and the count on them is what is in the rack rather than what you owe.</dd>
       <dt>Undo</dt><dd>The tray. A strip that leaves the board lands there struck through, and PUT IT BACK is a stamp like any other until the tray empties overnight.</dd>
     </dl>
+  </section>
+
+  <section class="block">
+    <header>
+      <h2>The shelf is the lip under the rack</h2>
+      <p>What you kept and what you set aside are not a fifth bay and never were. They are the ledge at the foot of the notes rack, past every strip you have not decided about, and reaching one turns that rack into the shelf.</p>
+    </header>
+    <p class="framelabel">Shelf states <i>the notes rack, 372 wide</i></p>
+    <div class="shelfpair">
+      <div class="rackframe">
+        <div class="rack">
+          <p class="baysign shelf">what you set aside</p>
+          <div class="strip back">
+            <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6l-5 6 5 6M6 12h12"/></svg></span>
+            <span class="words">back to the notes</span>
+          </div>
+          <div class="channel">
+            <div class="strips">
+              <div class="strip held h-tasks cocked two">
+                <span class="holder"></span>
+                <div class="words">
+                  chase the landlord about the window
+                  <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+                    <span class="stamp small">back in the pile<span class="k">Z</span></span>
+                  </span>
+                </div>
+                <span class="when"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>when he replies</span>
+              </div>
+              <div class="strip held h-tasks"><span class="holder"></span><span class="words">fit the new shower head</span><span class="when"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>when the part arrives</span></div>
+              <div class="strip held h-notes"><span class="holder"></span><span class="words">ask Anna about the trailer</span><span class="when"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>when she is back</span></div>
+              <div class="strip held h-notes"><span class="holder"></span><span class="words">learn to solder</span><span class="when"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>someday</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rackframe">
+        <div class="rack">
+          <p class="baysign shelf">the things you kept</p>
+          <div class="strip back">
+            <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6l-5 6 5 6M6 12h12"/></svg></span>
+            <span class="words">back to the notes</span>
+          </div>
+          <div class="channel">
+            <div class="strips">
+              <div class="strip kept h-notes cocked two">
+                <span class="holder"></span>
+                <div class="words">
+                  boiler service code is 4471, engineer said keep it somewhere
+                  <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+                    <span class="stamp small">back in the pile<span class="k">Z</span></span>
+                  </span>
+                </div>
+              </div>
+              <div class="strip kept h-notes"><span class="holder"></span><span class="words">meter reading 48213</span></div>
+              <div class="strip kept h-notes"><span class="holder"></span><span class="words">wifi for the flat: brandnetel-42</span></div>
+              <div class="strip kept h-notes"><span class="holder"></span><span class="words">bin day moves to Tuesday in the holiday week</span></div>
+              <div class="strip kept h-notes"><span class="holder"></span><span class="words">passport photos are in the blue folder</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes" style="padding-top:0">
+        <section>
+          <h3>Why a ledge and not a bay</h3>
+          <p>A fifth sign on the board would put stalled work back in front of you every morning, which is the thing setting something aside exists to stop. The ledge is inside the notes rack and below every live strip, so you reach it by going past what you have not decided rather than by being shown it.</p>
+        </section>
+        <section>
+          <h3>A shelf never counts</h3>
+          <p>The sign carries the name and no number, and this is the one place in the product where that is a rule rather than a choice. <b>A number beside stalled work is a reproach</b>, and the point of setting something aside is to stop being asked about it.</p>
+        </section>
+        <section>
+          <h3>No blank strip</h3>
+          <p>Where every rack opens with something to write on, a shelf opens with the way back. Nothing is kept or set aside by being typed — both states are reached by deciding about a strip that already exists, so a shelf that could be written into would be lying about where its contents come from.</p>
+        </section>
+        <section>
+          <h3>Two different objects</h3>
+          <p>Set aside is recessed and dashed: present, and not a thing you can pick up. Kept is flat printed stock with no shadow and no mark — a fact rather than a job. Neither can be mistaken for a live strip lying in a rack, which is the whole point of them being off the board.</p>
+        </section>
+        <section>
+          <h3>The holder still says where it came from</h3>
+          <p>A held task keeps its amber holder and a held note its purple one, so the shelf can hold both without a second label. <b>What would move it</b> takes the mark's place, in his own words: <i>when he replies</i>, <i>when the part arrives</i>, <i>someday</i> — the three ways to say you cannot act, kept apart because they end differently.</p>
+        </section>
+      </div>
+    </div>
   </section>
 </main>
 </body>
