@@ -112,6 +112,13 @@ type fakeStore struct {
 	// What left the board today, newest first.
 	triaged []squirrel.Item
 
+	// What was promoted into a chore, and the fixed points that were closed.
+	promoted struct {
+		id    int64
+		every time.Duration
+	}
+	momentsDone []int64
+
 	// Rows that exist and are somebody else's. ItemByID answers for the person
 	// asking, so this is how a test says "this row is not yours" without a
 	// second person and a second store.
@@ -599,10 +606,11 @@ func (f *fakeStore) SetItemState(_ context.Context, id int64, state squirrel.Ite
 	return nil
 }
 
-func (f *fakeStore) PromoteItem(_ context.Context, _ int64, id int64, _ time.Duration) (squirrel.Chore, bool, error) {
+func (f *fakeStore) PromoteItem(_ context.Context, _ int64, id int64, every time.Duration) (squirrel.Chore, bool, error) {
 	if f.err != nil {
 		return squirrel.Chore{}, false, f.err
 	}
+	f.promoted.id, f.promoted.every = id, every
 	for i := range f.items {
 		if f.items[i].ID == id {
 			f.items[i].State = squirrel.ItemDone
@@ -822,6 +830,14 @@ func (f *fakeStore) Unhold(_ context.Context, _, itemID int64, _ time.Time) (boo
 
 // A fixed point the coach proposed and you kept. The screen's own `!at`
 // equivalent, faked; the moment parsing itself is proved in internal/squirrel.
+func (f *fakeStore) MomentDone(_ context.Context, _ int64, id int64, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.momentsDone = append(f.momentsDone, id)
+	return nil
+}
+
 func (f *fakeStore) CreateMoment(_ context.Context, _ int64, m squirrel.Moment) (squirrel.Moment, error) {
 	if f.err != nil {
 		return squirrel.Moment{}, f.err

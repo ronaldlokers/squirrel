@@ -238,6 +238,9 @@ type Store interface {
 	// The list was refused for this product's whole life; see at.go for what
 	// the owner overturned on 24 August 2026 and what replaced it.
 	MomentByID(ctx context.Context, personID, id int64) (squirrel.Moment, bool, error)
+	// MomentDone closes one: you left, or it stopped mattering, and nothing
+	// records which of the two it was.
+	MomentDone(ctx context.Context, personID, id int64, at time.Time) error
 	Upcoming(ctx context.Context, personID int64, now time.Time, limit int) ([]squirrel.Moment, error)
 	NotesFor(ctx context.Context, personID, momentID int64) ([]squirrel.Item, error)
 	// Pointing a note at a fixed point, and putting it back. The pointer is the
