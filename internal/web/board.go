@@ -13,6 +13,7 @@ import (
 
 type boardView struct {
 	V      string
+	In     string
 	Light  int
 	Tray   []trayView
 	Kept   bool
@@ -24,6 +25,7 @@ type boardView struct {
 }
 
 type bayView struct {
+	In       bool
 	Key      string
 	Name     string
 	Question string
@@ -77,14 +79,16 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		at := now()
+		in := r.URL.Query().Get("bay")
 		v := boardView{
-			Kept:   r.URL.Query().Get("kept") == "notes",
+			In:     in,
+			Kept:   r.URL.Query().Get("kept") == "1",
 			Now:    at.Format("15:04"),
 			Day:    at.Format("Monday 2 January"),
 			Pulled: offerFor(s, opts, r, false, false),
 			Timer:  runningTimer(s, opts, r),
 			Tray:   trayStrips(r, s, opts, personID, at),
-			Bays: []bayView{
+			Bays: baysIn(in, []bayView{
 				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Shelves: true,
 					Strips: noteStrips(r, s, personID, at)},
 				{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true, Rhythms: theRhythms,
@@ -93,10 +97,27 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 					Strips: taskStrips(r, s, personID, at)},
 				{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
 					Strips: agendaStrips(r, s, personID, at)},
-			},
+			}),
 		}
 		renderBoard(w, v)
 	}
+}
+
+// baysIn lights the rack you are standing in, which is only ever one and is the
+// notes when nothing says otherwise. It is a class rather than a filter: the
+// desktop draws all four racks and the phone shows the lit one, so the same
+// page serves both and neither needs a script.
+func baysIn(in string, bays []bayView) []bayView {
+	found := false
+	for i := range bays {
+		if bays[i].Key == in {
+			bays[i].In, found = true, true
+		}
+	}
+	if !found {
+		bays[0].In = true
+	}
+	return bays
 }
 
 func noteStrips(r *http.Request, s Store, personID int64, at time.Time) []stripView {
@@ -262,7 +283,7 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 			return
 		}
 		id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
@@ -271,8 +292,18 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/board", http.StatusSeeOther)
+		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 	}
+}
+
+// backToTheBay is the rack the press was made in, so a phone that shows one bay
+// at a time does not answer a chore by putting you back in the notes.
+func backToTheBay(r *http.Request) string {
+	switch bay := r.FormValue("bay"); bay {
+	case "notes", "chores", "tasks", "agenda":
+		return "/?bay=" + bay
+	}
+	return "/"
 }
 
 func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer string, id int64) error {
@@ -320,7 +351,7 @@ func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 			return
 		}
 		if id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64); id != 0 {
@@ -338,7 +369,7 @@ func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
 				}
 			}
 		}
-		http.Redirect(w, r, "/board", http.StatusSeeOther)
+		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 	}
 }
 
@@ -362,12 +393,12 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 			return
 		}
 		words := strings.TrimSpace(r.FormValue("words"))
 		if words == "" {
-			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 			return
 		}
 		if len(words) > captureLimit {
@@ -388,7 +419,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
-			http.Redirect(w, r, "/board?kept=notes", http.StatusSeeOther)
+			http.Redirect(w, r, "/?bay=notes&kept=1", http.StatusSeeOther)
 			return
 		case "agenda":
 			if m, ok := squirrel.ParseMomentIn(opts.Location, words, now()); ok {
@@ -402,7 +433,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
-			http.Redirect(w, r, "/board?kept=notes", http.StatusSeeOther)
+			http.Redirect(w, r, "/?bay=notes&kept=1", http.StatusSeeOther)
 			return
 		case "notes":
 			if err := keepAsANote(r, opts, words); err != nil {
@@ -423,7 +454,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				return
 			}
 		}
-		http.Redirect(w, r, "/board", http.StatusSeeOther)
+		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 	}
 }
 

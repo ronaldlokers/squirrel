@@ -395,3 +395,33 @@ body::before {
 @media (max-width: 620px) {
   .wentto { padding: 10px 12px 0; }
 }
+
+.baytabs { display: none; }
+
+@media (max-width: 620px) {
+  body { grid-template-rows: min-content min-content min-content 1fr; }
+  .baytabs {
+    display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain;
+    padding: 12px 12px 0;
+  }
+  .baytab {
+    display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap;
+    padding: 7px 11px; text-decoration: none;
+    background: rgba(28, 17, 11, .22); color: var(--cream);
+    border: var(--line) dashed rgba(254, 214, 167, .38); border-radius: var(--r);
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 800;
+  }
+  .baytab .n {
+    font-size: 12.5px; letter-spacing: 0; opacity: .8; font-variant-numeric: tabular-nums;
+  }
+  .baytab.in {
+    background: var(--purple-dark); color: var(--paper);
+    border: var(--line) solid var(--outline);
+  }
+  .baytab:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
+  .rack { display: none; }
+  .rack.in { display: flex; }
+  .rack .baysign { display: none; }
+  .racks { padding-top: 12px; }
+}
