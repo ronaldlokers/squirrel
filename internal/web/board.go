@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -24,6 +25,7 @@ type bayView struct {
 	Key      string
 	Name     string
 	Question string
+	Writes   bool
 	Shelves  bool
 	Strips   []stripView
 }
@@ -67,11 +69,11 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Timer:  runningTimer(s, opts, r),
 			Tray:   trayStrips(r, s, opts, personID, at),
 			Bays: []bayView{
-				{Key: "notes", Name: "the notes", Question: "what is it", Shelves: true,
+				{Key: "notes", Name: "the notes", Question: "what is it", Writes: true, Shelves: true,
 					Strips: noteStrips(r, s, personID, at)},
 				{Key: "chores", Name: "the chores", Question: "what comes back?",
 					Strips: choreStrips(r, s, personID)},
-				{Key: "tasks", Name: "the tasks", Question: "what did you decide?",
+				{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
 					Strips: taskStrips(r, s, personID, at)},
 				{Key: "agenda", Name: "the agenda", Question: "what is happening?",
 					Strips: agendaStrips(r, s, personID, at)},
@@ -317,6 +319,70 @@ func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
 					fail(w, err)
 					return
 				}
+			}
+		}
+		http.Redirect(w, r, "/board", http.StatusSeeOther)
+	}
+}
+
+// boardNewHandler is what a blank strip does. Its bay decides what the words
+// become, which is the whole reason each rack asks its own question.
+//
+// The notes bay writes to the spool rather than to the database, because that
+// is what capture is: the words reach fsynced disk before anything answers, and
+// the drain resolves whose they are. The tasks bay does not — a task is a
+// decision you already made about something, and a decision has no spool.
+//
+// The chores and agenda bays are not here. Both need a second answer before
+// there is anything to keep — a rhythm, a day — and a blank strip that quietly
+// dropped the words while it asked would be the one thing this product may
+// never do.
+func boardNewHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			return
+		}
+		words := strings.TrimSpace(r.FormValue("words"))
+		if words == "" {
+			http.Redirect(w, r, "/board", http.StatusSeeOther)
+			return
+		}
+		if len(words) > captureLimit {
+			words = words[:captureLimit]
+		}
+
+		switch r.FormValue("bay") {
+		case "notes":
+			sender := subOf(r)
+			if _, err := opts.Spool.Write(squirrel.Capture{
+				Transport:  squirrel.ScreenTransport,
+				SenderID:   &sender,
+				Text:       words,
+				Payload:    []byte(squirrel.ScreenCapture),
+				ReceivedAt: now(),
+			}); err != nil {
+				slog.Warn("a capture from the board could not be spooled", "error", err)
+				fail(w, err)
+				return
+			}
+		case "tasks":
+			id, err := s.InsertItemReturningID(r.Context(), squirrel.Item{
+				Transport: "screen", PersonID: &personID, RawText: words,
+				Payload: []byte(squirrel.ScreenCapture), ReceivedAt: now(),
+			})
+			if err != nil {
+				fail(w, err)
+				return
+			}
+			if _, err := s.SetItemKind(r.Context(), personID, id, squirrel.ItemTask); err != nil {
+				fail(w, err)
+				return
 			}
 		}
 		http.Redirect(w, r, "/board", http.StatusSeeOther)
