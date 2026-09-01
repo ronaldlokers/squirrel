@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Desk</title>
+<style>
+@font-face {
+  font-family: "Recursive";
+  src: url("../../internal/web/static/recursive.woff2") format("woff2");
+  font-weight: 300 900; font-style: normal; font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+  font-weight: 900; font-style: normal; font-display: swap;
+}
+
+:root {
+  --purple: #6c4da9;
+  --purple-deep: #58388a;
+  --purple-dark: #3b2560;
+  --purple-bar: #472e70;
+  --violet: #5e23b1;
+  --orange: #e66d0d;
+  --orange-lit: #ff8a2b;
+  --outline: #1c110b;
+  --cream: #fed6a7;
+  --card: #fdecd4;
+  --card-deep: #f6d5ab;
+  --paper: #fffbf3;
+  --paper-deep: #f7e9d4;
+  --brown: #58413d;
+  --placeholder: #7e6857;
+  --done: #529414;
+  --kept: #ffb300;
+  --dropped: #8a6a55;
+  --mood-good: #3fa08a;
+  --line: 3px;
+  --r: 14px;
+  --casual: "MONO" 0, "CASL" 1;
+  --precise: "MONO" 0, "CASL" 0;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 70% at 12% -6%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+  background-attachment: fixed;
+  color: var(--paper);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise);
+  padding: 0 0 90px;
+}
+
+::selection { background: var(--orange); color: var(--outline); }
+
+::-webkit-scrollbar { width: 14px; }
+
+::-webkit-scrollbar-track { background: var(--purple-dark); }
+
+::-webkit-scrollbar-thumb { background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 999px; }
+
+* { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
+
+:focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+
+.sheet { width: min(1180px, 100% - 44px); margin: 0 auto; }
+
+.hold { overflow: hidden; border-radius: var(--r); }
+
+.art {
+  transform-origin: top left;
+  position: relative; overflow: hidden;
+  background-color: var(--purple-bar);
+  border: var(--line) solid var(--outline);
+  border-radius: var(--r);
+  box-shadow: 0 24px 44px -18px rgba(0, 0, 0, .75);
+  color: var(--paper);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise);
+}
+
+.art::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+}
+
+.art > * { position: relative; z-index: 1; }
+
+.desk { width: 1440px; height: 900px; display: flex; flex-direction: column; }
+
+.pocket { width: 390px; height: 844px; }
+
+.hold { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+
+.scaled { width: 1182px; height: 739px; }
+
+.scaled .art { transform: scale(.82); }
+
+.checkin .ask {
+  font-size: 15px; color: var(--cream);
+  font-variation-settings: var(--casual), "wght" 520;
+}
+
+.checkin .faces { display: flex; gap: 8px; }
+
+.checkin .face {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 9px 5px; border-radius: 12px;
+  background: rgba(254, 214, 167, .1);
+  color: var(--cream); font-size: 11px; letter-spacing: .04em;
+  font-variation-settings: var(--precise), "wght" 640;
+}
+
+.checkin .face img { height: 34px; width: auto; display: block; }
+
+.pockbody { padding: 26px 14px 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+
+.pockfoot { margin-top: auto; }
+
+.lid {
+  display: flex; align-items: center; gap: 18px;
+  padding: 11px 22px 13px;
+  background: linear-gradient(to bottom, var(--purple-bar) 0 4px, rgba(71, 46, 112, 0) 20px), rgba(59, 37, 96, .72);
+  border-bottom: var(--line) solid var(--outline);
+}
+
+.lid img.markart { width: 84px; height: 63px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+
+.lid .wordmark {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-variation-settings: normal; font-size: 26px;
+  letter-spacing: -.028em; color: var(--paper);
+  -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+}
+
+.lid .spacer { flex: 1; }
+
+.lidbtn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 8px 15px;
+  background: rgba(254, 214, 167, .16); border: 2px solid rgba(254, 214, 167, .38);
+  border-radius: 999px; color: var(--cream);
+  font: 400 14.5px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--casual), "wght" 560;
+}
+
+.pocket .lid { padding: 9px 14px 11px; gap: 10px; }
+
+.pocket .lid img.markart { width: 62px; height: 47px; }
+
+.pocket .lid .wordmark { font-size: 20px; -webkit-text-stroke: 1.6px var(--outline); }
+
+.card {
+  padding: 14px 16px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+}
+
+.card .name { margin: 0; font-size: 19px; line-height: 1.32; font-variation-settings: var(--casual), "wght" 520; }
+
+.card .meta {
+  margin: 5px 0 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--brown); font-variation-settings: var(--precise), "wght" 750;
+}
+
+.card .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 38px; padding: 9px 14px;
+  background: var(--paper); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 4px 0 0 var(--outline);
+  font: 400 13px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 830;
+}
+
+.chip.make { background: var(--orange); }
+
+.chip.did { background: #71a73e; }
+
+.chip.stop { background: #9f8574; }
+
+.chip.soft {
+  background: rgba(254, 214, 167, .16); color: var(--cream);
+  border: 2px solid rgba(254, 214, 167, .38); box-shadow: none;
+  text-transform: none; letter-spacing: 0; font-size: 14px;
+  font-variation-settings: var(--casual), "wght" 560;
+}
+
+.chip .key {
+  display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px;
+  background: rgba(28, 17, 11, .16); border-radius: 5px;
+  font-size: 11px; letter-spacing: 0; opacity: .62;
+  font-variation-settings: var(--precise), "wght" 800;
+}
+
+.slot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 8px 16px;
+  background: var(--card); border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline);
+}
+
+.slot .ph {
+  flex: 1; color: var(--placeholder); font-size: 18px;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+
+.slot .post {
+  min-height: 44px; padding: 11px 18px;
+  background: var(--orange); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 4px 0 0 var(--outline);
+  font: 400 13px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 830;
+  display: inline-flex; align-items: center;
+}
+
+.slot .cam {
+  display: inline-grid; place-items: center; width: 44px; height: 44px;
+  background: var(--paper); border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 4px 0 0 var(--outline); color: var(--outline);
+}
+
+.slot .cam svg { width: 20px; height: 20px; display: block; }
+
+.plate {
+  padding: 16px 18px;
+  background: rgba(28, 17, 11, .22);
+  border: 2px solid rgba(254, 214, 167, .3);
+  border-radius: var(--r);
+}
+
+.plate > h3, .colhead {
+  margin: 0 0 12px; display: flex; align-items: baseline; gap: 9px;
+  font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--cream);
+  font-variation-settings: var(--precise), "wght" 750;
+}
+
+.colhead .cnt {
+  font-size: 14px; letter-spacing: 0; text-transform: none;
+  font-variant-numeric: tabular-nums; color: rgba(254, 214, 167, .72);
+  font-variation-settings: var(--precise), "wght" 640;
+}
+
+.offer {
+  padding: 18px 20px 16px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline), 0 18px 30px -16px rgba(0, 0, 0, .7);
+  position: relative;
+}
+
+.offer { display: flex; flex-direction: column; }
+
+.offer .tab {
+  position: absolute; top: calc(var(--line) * -1 - 12px); right: 22px;
+  width: 42px; height: 15px;
+  background: var(--orange); border: var(--line) solid var(--outline);
+  border-bottom: 0; border-radius: 6px 6px 0 0;
+}
+
+.offer .acts { margin-top: auto; padding-top: 14px; }
+
+.offer .what { margin: 0; font-size: 26px; line-height: 1.18; letter-spacing: -.008em; font-variation-settings: var(--casual), "wght" 620; }
+
+.offer .clause { margin: 8px 0 0; font-size: 15.5px; line-height: 1.42; color: var(--brown); font-variation-settings: var(--casual), "wght" 460; }
+
+.offer .acts { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.quiet {
+  background: none; border: 0; padding: 0;
+  color: var(--cream); font-size: 13.5px; text-decoration: underline; text-underline-offset: 4px;
+  font-variation-settings: var(--precise), "wght" 560;
+}
+
+.tick { display: flex; align-items: baseline; gap: 10px; padding: 7px 0; }
+
+.tick + .tick { border-top: 1px solid rgba(254, 214, 167, .18); }
+
+.tick time {
+  font-size: 14px; color: var(--paper); font-variant-numeric: tabular-nums; letter-spacing: .02em;
+  font-variation-settings: var(--precise), "wght" 700; flex: 0 0 auto; min-width: 5ch;
+}
+
+.tick span { font-size: 15px; color: var(--cream); font-variation-settings: var(--casual), "wght" 470; }
+
+.tick em {
+  margin-left: auto; font-style: normal; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .66); font-variation-settings: var(--precise), "wght" 700; flex: 0 0 auto;
+}
+
+.running {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: rgba(28, 17, 11, .3); border: 2px solid rgba(254, 214, 167, .34); border-radius: var(--r);
+}
+
+.running .what { font-size: 16px; color: var(--paper); font-variation-settings: var(--casual), "wght" 560; }
+
+.running .left { margin-left: auto; font-size: 15px; color: var(--cream); font-variant-numeric: tabular-nums; font-variation-settings: var(--precise), "wght" 700; }
+
+.peek { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+
+.peek li {
+  font-size: 14.5px; line-height: 1.35; color: var(--cream);
+  font-variation-settings: var(--casual), "wght" 450;
+  display: flex; gap: 9px; align-items: baseline;
+}
+
+.peek li b {
+  flex: 0 0 auto; width: 9px; height: 9px; border-radius: 3px; background: rgba(254, 214, 167, .5);
+  transform: translateY(-1px);
+}
+
+.peek li.done b { background: var(--done); }
+
+.peek li.kept b { background: var(--kept); }
+
+.sheethead { padding: 64px 0 8px; max-width: 66ch; }
+.sheethead .mark { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.sheethead .mark img { width: 84px; height: 63px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+.sheethead .mark b {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-variation-settings: normal; font-size: 26px;
+  letter-spacing: -.028em; color: var(--paper);
+  -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+}
+.sheethead h1 {
+  margin: 0 0 18px; font-size: clamp(27px, 3.4vw, 36px); line-height: 1.1;
+  letter-spacing: -.02em; font-variation-settings: var(--casual), "wght" 800; max-width: 20ch;
+}
+.sheethead p { margin: 0; max-width: 62ch; color: var(--cream); font-size: 18px; line-height: 1.5; font-variation-settings: var(--casual), "wght" 460; }
+.sheethead p + p { margin-top: 14px; }
+
+.block { padding: 62px 0 0; }
+.block > header { max-width: 74ch; margin-bottom: 24px; }
+.block h2 { margin: 0 0 8px; font-size: 26px; line-height: 1.12; letter-spacing: -.012em; font-variation-settings: var(--casual), "wght" 780; }
+.block > header p { margin: 0; font-size: 17px; color: var(--cream); font-variation-settings: var(--casual), "wght" 470; }
+.framelabel {
+  display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px;
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .72); font-variation-settings: var(--precise), "wght" 750;
+}
+.framelabel i { font-style: normal; color: rgba(254, 214, 167, .45); letter-spacing: .06em; }
+.hold { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+.scaled { width: 1182px; height: 739px; }
+.scaled .art { transform: scale(.82); }
+.pair { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
+.notes { flex: 1 1 320px; min-width: 300px; max-width: 46ch; padding-top: 30px; display: grid; gap: 18px; }
+.notes section h3 {
+  margin: 0 0 7px; font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cream); font-variation-settings: var(--precise), "wght" 750;
+}
+.notes section p { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--paper); font-variation-settings: var(--casual), "wght" 450; }
+.notes section p b { font-variation-settings: var(--casual), "wght" 700; }
+
+.swap { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 26px; max-width: 1000px; }
+.swap > div { padding: 14px 0; border-top: 1px solid rgba(254, 214, 167, .2); }
+.swap .was { color: rgba(254, 214, 167, .66); font-size: 15.5px; font-variation-settings: var(--casual), "wght" 450; }
+.swap .now { color: var(--paper); font-size: 15.5px; font-variation-settings: var(--casual), "wght" 520; }
+.swap .lbl {
+  display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .5); margin-bottom: 4px;
+  font-variation-settings: var(--precise), "wght" 750;
+}
+
+.deskframe { display: flex; flex-direction: column; }
+.lid .find {
+  display: flex; align-items: center; gap: 9px; width: 300px;
+  min-height: 40px; padding: 8px 14px;
+  background: rgba(28, 17, 11, .28); border: 2px solid rgba(254, 214, 167, .34);
+  border-radius: 999px; color: rgba(254, 214, 167, .8);
+  font-size: 14.5px; font-variation-settings: var(--casual), "wght" 500;
+}
+.lid .find svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.lidlink {
+  color: var(--cream); font-size: 14.5px; text-decoration: none;
+  font-variation-settings: var(--casual), "wght" 560;
+}
+
+.nowband { display: grid; grid-template-columns: 1.45fr 1fr; gap: 18px; padding: 34px 24px 0; align-items: start; }
+.nowside { display: flex; flex-direction: column; gap: 12px; }
+.acornsay {
+  display: flex; align-items: flex-start; gap: 9px;
+  margin: 10px 0 0; padding-top: 10px;
+  border-top: 2.5px dashed rgba(28, 17, 11, .3);
+}
+.acornsay svg, .acornsay img { width: 24px; height: 24px; display: block; flex: 0 0 auto; margin-top: 1px; }
+.acornsay p { margin: 0; font-size: 14.5px; line-height: 1.4; color: var(--brown); font-variation-settings: var(--casual), "wght" 470; }
+.acornsay .act {
+  margin-left: auto; flex: 0 0 auto; align-self: center;
+  background: none; border: 0; padding: 0; color: var(--state-chore, #b0530a);
+  font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+  text-decoration: underline; text-underline-offset: 3px;
+  font-variation-settings: var(--precise), "wght" 780;
+}
+
+.columns {
+  display: grid; grid-template-columns: 1.12fr 1fr 1fr 1fr;
+  gap: 16px; padding: 20px 24px 0; flex: 1; min-height: 0;
+}
+.col { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; }
+.colhead { margin: 0 2px 0; }
+.shelves { display: flex; gap: 14px; margin: -4px 2px 0; }
+.shelves .quiet { font-size: 13px; }
+.addrow {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 42px; padding: 6px 8px 6px 13px;
+  background: rgba(28, 17, 11, .2);
+  border: 2px dashed rgba(254, 214, 167, .4); border-radius: var(--r);
+  color: rgba(254, 214, 167, .78); font-size: 14.5px;
+  font-variation-settings: var(--casual), "wght" 480;
+}
+.addrow .plus {
+  margin-left: auto; display: inline-grid; place-items: center; width: 30px; height: 30px;
+  border-radius: 999px; background: var(--orange); color: var(--outline);
+  border: 2px solid var(--outline); flex: 0 0 auto;
+}
+.addrow .plus svg { width: 15px; height: 15px; display: block; }
+.addrow.live {
+  background: var(--card); border: var(--line) solid var(--outline);
+  box-shadow: 0 4px 0 0 var(--outline); color: var(--placeholder);
+  outline: var(--line) solid var(--violet); outline-offset: 2px;
+}
+.stack {
+  display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent 100%);
+}
+.card.picked { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+.card.ticket { position: relative; margin-left: 8px; display: flex; flex-direction: column; }
+.card.ticket .notch {
+  position: absolute; left: calc(var(--line) * -1 - 9px); top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; border-radius: 999px;
+  background: var(--purple-deep); border: var(--line) solid var(--outline);
+}
+.card.ticket .when {
+  order: -1; margin: 0 0 2px;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-variation-settings: normal; font-size: 19px;
+  letter-spacing: -.02em; color: var(--outline);
+}
+.card.ticket .name { font-size: 15px; font-variation-settings: var(--casual), "wght" 500; }
+.card.pagetabbed { position: relative; }
+.card .pagetab {
+  position: absolute; top: calc(var(--line) * -1 - 12px); right: 18px;
+  width: 34px; height: 15px; background: var(--kept);
+  border: var(--line) solid var(--outline); border-bottom: none; border-radius: 6px 6px 0 0;
+}
+
+.today {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 24px 16px;
+  background: rgba(59, 37, 96, .82); border-top: var(--line) solid var(--outline);
+}
+.today .lbl {
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: rgba(254, 214, 167, .72);
+  font-variation-settings: var(--precise), "wght" 750; flex: 0 0 auto;
+}
+.today .items { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; min-width: 0; }
+.stamp {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(28, 17, 11, .28); border: 2px solid rgba(254, 214, 167, .28);
+  color: var(--cream); font-size: 13.5px; font-variation-settings: var(--casual), "wght" 480;
+  max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto;
+}
+.stamp b { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; background: rgba(254,214,167,.5); }
+.stamp b.done { background: var(--done); }
+.stamp b.kept { background: var(--kept); }
+.stamp b.dropped { background: var(--dropped); }
+.stamp.done b { background: var(--done); }
+.stamp.kept b { background: var(--kept); }
+.stamp.dropped b { background: var(--dropped); }
+.stamp.fresh {
+  max-width: none; background: var(--card); color: var(--outline); border: var(--line) solid var(--outline);
+  box-shadow: 0 3px 0 0 var(--outline); font-variation-settings: var(--casual), "wght" 560;
+}
+.stamp .undo {
+  color: var(--outline); text-decoration: underline; text-underline-offset: 3px;
+  font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 780;
+}
+.today .feel { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.today .feel .ask { font-size: 14px; color: var(--cream); font-variation-settings: var(--casual), "wght" 500; }
+.today .feel .faces { display: flex; gap: 6px; }
+.today .feel .face {
+  display: grid; place-items: center; padding: 4px 6px; border-radius: 10px;
+  background: rgba(254, 214, 167, .1);
+}
+.today .feel .face img { height: 28px; width: auto; display: block; }
+
+.pocktabs { display: flex; gap: 7px; overflow: hidden; }
+.pocktabs .t {
+  display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
+  padding: 8px 13px; border-radius: 999px;
+  background: rgba(28, 17, 11, .18); border: 2px dashed rgba(254, 214, 167, .38);
+  color: var(--cream); font-size: 14px; font-variation-settings: var(--casual), "wght" 560;
+}
+.pocktabs .t.in {
+  background: var(--purple-dark); color: var(--paper);
+  border: var(--line) solid var(--outline); font-variation-settings: var(--casual), "wght" 700;
+}
+.pocktabs .t .n { font-size: 12.5px; font-variant-numeric: tabular-nums; opacity: .72; }
+.pockbody { display: flex; flex-direction: column; gap: 11px; padding: 16px 14px 0; overflow: hidden; }
+.pockfoot { margin-top: auto; }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <div class="sheethead">
+    <div class="mark">
+      <img src="../../internal/web/static/logo.png" alt="">
+      <b>Squirrel</b>
+    </div>
+    <h1>The desk, with the conversation taken out of it</h1>
+    <p>No transcript, no bubbles, no composer at the bottom. The rooms are columns of the things themselves, you type where the thing will land, and what happened today sits in a strip that empties overnight.</p>
+    <p>Buddy is still here and is never a window: he writes a line on the object he is talking about, marked with the acorn. Sample words are authored.</p>
+  </div>
+
+  <section class="block">
+    <header>
+      <h2>The desk</h2>
+      <p>Four rooms, four columns, each with the slot that fills it. Everything that was a turn is now an object you can see and press.</p>
+    </header>
+    <p class="framelabel">Desktop <i>1440 × 900</i></p>
+    <div class="hold"><div class="scaled"><div class="art desk deskframe">
+
+      <div class="lid">
+        <img class="markart" src="../../internal/web/static/logo.png" alt="">
+        <span class="wordmark">Squirrel</span>
+        <span class="spacer"></span>
+        <span class="find">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          look for something
+        </span>
+        <a class="lidlink" href="#">settings</a>
+      </div>
+
+      <div class="nowband">
+        <div class="offer">
+          <p class="what">send the meter reading, before the bill comes out</p>
+          <p class="clause">the oldest thing you decided to do</p>
+          <div class="acts">
+            <span class="chip make">I'll do it<span class="key">D</span></span>
+            <span class="chip">not today<span class="key">N</span></span>
+            <span class="chip">I'm stuck<span class="key">S</span></span>
+          </div>
+          <div class="acornsay">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6v2.2" stroke="#1c110b" stroke-width="1.5" stroke-linecap="round"/><path d="M4.7 8.5c0-2 3.3-3.6 7.3-3.6s7.3 1.6 7.3 3.6c0 .9-.8 1.5-1.8 1.5H6.5c-1 0-1.8-.6-1.8-1.5Z" fill="#e66d0d" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.9 11.4h10.2c0 4.6-2.3 8.5-5.1 8.5s-5.1-3.9-5.1-8.5Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            <p>it has been sat there since Tuesday. two steps would do it.</p>
+            <span class="act">break it up</span>
+          </div>
+        </div>
+        <div class="nowside">
+          <div class="running">
+            <span class="what">bins out</span>
+            <span class="left">7:12 left</span>
+            <span class="chip stop">stop</span>
+          </div>
+          <div class="plate">
+            <h3>what is coming</h3>
+            <div class="tick"><time>13:40</time><span>dentist</span><em>leave 13:05</em></div>
+            <div class="tick"><time>Tue</time><span>boiler service, morning</span></div>
+            <div class="tick"><time>Fri</time><span>Anna's train gets in</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="columns">
+        <div class="col">
+          <p class="colhead">the notes <span class="cnt">6</span></p>
+          <p class="shelves"><span class="quiet">the things you kept</span><span class="quiet">what you set aside</span></p>
+          <div class="addrow live">
+            <span>meter reading 48</span>
+            <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="stack">
+            <div class="card picked">
+              <p class="name">boiler service code is 4471, engineer said keep it somewhere</p>
+              <p class="meta">this morning</p>
+              <div class="acts">
+                <span class="chip did">done<span class="key">D</span></span>
+                <span class="chip">keep<span class="key">K</span></span>
+                <span class="chip stop">drop<span class="key">X</span></span>
+                <span class="chip make">make a chore<span class="key">C</span></span>
+              </div>
+            </div>
+            <div class="card"><p class="name">kaas</p><p class="meta">yesterday</p></div>
+            <div class="card"><p class="name">ask the landlord what the window is called</p><p class="meta">Tuesday</p></div>
+          </div>
+        </div>
+
+        <div class="col">
+          <p class="colhead">the chores <span class="cnt">2</span></p>
+          <div class="addrow">
+            <span>what comes back?</span>
+            <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <p class="name">bins out</p>
+              <p class="meta">every week &middot; due today</p>
+              <div class="acts">
+                <span class="chip did">did it<span class="key">D</span></span>
+                <span class="chip">later<span class="key">L</span></span>
+              </div>
+            </div>
+            <div class="card"><p class="name">water the plants</p><p class="meta">every 3 days &middot; tomorrow</p></div>
+            <div class="card"><p class="name">washing machine filter</p><p class="meta">every month &middot; Sunday</p></div>
+          </div>
+        </div>
+
+        <div class="col">
+          <p class="colhead">the tasks <span class="cnt">4</span></p>
+          <div class="addrow">
+            <span>what did you decide?</span>
+            <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="stack">
+            <div class="card pagetabbed">
+              <span class="pagetab"></span>
+              <p class="name">book the boiler service</p>
+              <p class="meta">decided last week</p>
+              <div class="acornsay">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6v2.2" stroke="#1c110b" stroke-width="1.5" stroke-linecap="round"/><path d="M4.7 8.5c0-2 3.3-3.6 7.3-3.6s7.3 1.6 7.3 3.6c0 .9-.8 1.5-1.8 1.5H6.5c-1 0-1.8-.6-1.8-1.5Z" fill="#e66d0d" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.9 11.4h10.2c0 4.6-2.3 8.5-5.1 8.5s-5.1-3.9-5.1-8.5Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <p>the code is on the shelf, if they ask.</p>
+              </div>
+            </div>
+            <div class="card"><p class="name">vet about the booster</p><p class="meta">decided Tuesday</p></div>
+            <div class="card"><p class="name">chase the landlord about the window</p><p class="meta">decided Tuesday</p></div>
+          </div>
+        </div>
+
+        <div class="col">
+          <p class="colhead">the agenda <span class="cnt">3</span></p>
+          <div class="addrow">
+            <span>what is happening?</span>
+            <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="stack">
+            <div class="card ticket">
+              <span class="notch"></span>
+              <p class="when">13:40 &middot; leave 13:05</p>
+              <p class="name">dentist</p>
+            </div>
+            <div class="card ticket">
+              <span class="notch"></span>
+              <p class="when">Tue 09:00</p>
+              <p class="name">boiler service</p>
+            </div>
+            <div class="card ticket">
+              <span class="notch"></span>
+              <p class="when">Fri 18:20</p>
+              <p class="name">Anna's train gets in</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="today">
+        <span class="lbl">today</span>
+        <span class="items">
+          <span class="stamp fresh"><b class="kept"></b>kept &middot; boiler service code<span class="undo">undo</span></span>
+          <span class="stamp done"><b></b>washing machine one</span>
+          <span class="stamp dropped"><b></b>the thing about bike lights</span>
+          <span class="stamp done"><b></b>bins out</span>
+        </span>
+        <span class="feel">
+          <span class="ask">how do you feel?</span>
+          <span class="faces">
+            <span class="face"><img src="../../internal/web/static/mood-good.png" alt="good"></span>
+            <span class="face"><img src="../../internal/web/static/mood-calm.png" alt="calm"></span>
+            <span class="face"><img src="../../internal/web/static/mood-low.png" alt="low"></span>
+            <span class="face"><img src="../../internal/web/static/mood-frazzled.png" alt="frazzled"></span>
+            <span class="face"><img src="../../internal/web/static/mood-wiped.png" alt="wiped"></span>
+          </span>
+        </span>
+      </div>
+
+    </div></div></div>
+  </section>
+
+  <section class="block">
+    <header>
+      <h2>What the chat feel was doing, and what does it now</h2>
+      <p>Nothing in the product's rules changed. Every job the conversation was carrying has somewhere else to be.</p>
+    </header>
+    <div class="swap">
+      <div><span class="lbl">was</span><span class="was">A note arrives as a turn, and you scroll back to find it again.</span></div>
+      <div><span class="lbl">now</span><span class="now">A card that stays in the column its room owns, in the order it arrived.</span></div>
+      <div><span class="lbl">was</span><span class="was">One composer at the bottom, and a row of chips deciding where the words go.</span></div>
+      <div><span class="lbl">now</span><span class="now">A slot at the top of each column. What you type lands in the room you are looking at.</span></div>
+      <div><span class="lbl">was</span><span class="was">Buddy speaks in bubbles, with a face and a time, in a column of his own.</span></div>
+      <div><span class="lbl">now</span><span class="now">Buddy writes one line on the thing he is talking about, under the acorn, with at most one press beside it.</span></div>
+      <div><span class="lbl">was</span><span class="was">What happened is scrollback, and it goes back for ever.</span></div>
+      <div><span class="lbl">now</span><span class="now">Today, in a strip along the bottom that empties overnight. The newest thing still carries its undo.</span></div>
+      <div><span class="lbl">was</span><span class="was">A room called everything, where a thought could go before you had decided anything about it.</span></div>
+      <div><span class="lbl">now</span><span class="now">The notes column is that room. The other three are decisions you have already made, which is why each has its own slot.</span></div>
+      <div><span class="lbl">was</span><span class="was">The check-in arrives as a question drawn at the edge of the conversation.</span></div>
+      <div><span class="lbl">now</span><span class="now">Five faces at the end of today's strip. Still asked once an hour, still never written into anything.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <header>
+      <h2>The same app, on a thumb</h2>
+      <p>The columns become the tabs and the slot travels with them, so typing still lands where you are looking.</p>
+    </header>
+    <div class="pair">
+      <div>
+        <p class="framelabel">Phone <i>390 × 844</i></p>
+        <div class="art pocket deskframe">
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+            <span class="spacer"></span>
+            <span class="find" style="width:auto;padding:8px 11px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            </span>
+          </div>
+          <div class="pockbody" style="height:calc(100% - 79px)">
+            <div class="offer" style="padding:15px 17px 14px">
+              <p class="what" style="font-size:21px">send the meter reading</p>
+              <p class="clause" style="font-size:14px">the oldest thing you decided to do</p>
+              <div class="acts" style="padding-top:12px">
+                <span class="chip make">I'll do it</span>
+                <span class="chip">not today</span>
+              </div>
+              <div class="acornsay" style="margin-top:11px;padding-top:9px">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6v2.2" stroke="#1c110b" stroke-width="1.5" stroke-linecap="round"/><path d="M4.7 8.5c0-2 3.3-3.6 7.3-3.6s7.3 1.6 7.3 3.6c0 .9-.8 1.5-1.8 1.5H6.5c-1 0-1.8-.6-1.8-1.5Z" fill="#e66d0d" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.9 11.4h10.2c0 4.6-2.3 8.5-5.1 8.5s-5.1-3.9-5.1-8.5Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <p style="font-size:13.5px">two steps would do it.</p>
+                <span class="act" style="font-size:12px">break it up</span>
+              </div>
+            </div>
+            <div class="pocktabs" style="margin-right:-14px">
+              <span class="t in">the notes <span class="n">6</span></span>
+              <span class="t">the chores <span class="n">2</span></span>
+              <span class="t">the tasks <span class="n">4</span></span>
+              <span class="t">the agenda</span>
+            </div>
+            <div class="addrow">
+              <span>what is it</span>
+              <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <p class="name" style="font-size:18px">boiler service code is 4471, engineer said keep it somewhere</p>
+                <p class="meta">this morning</p>
+                <div class="acts">
+                  <span class="chip did">done</span>
+                  <span class="chip">keep</span>
+                  <span class="chip stop">drop</span>
+                </div>
+              </div>
+              <div class="card"><p class="name" style="font-size:18px">kaas</p><p class="meta">yesterday</p></div>
+              <div class="card"><p class="name" style="font-size:18px">ask the landlord what the window is called</p><p class="meta">Tuesday</p></div>
+              <div class="card"><p class="name" style="font-size:18px">meter reading 48213</p><p class="meta">yesterday</p></div>
+            </div>
+            <div class="pockfoot">
+              <div class="today" style="margin:0 -14px;padding:11px 14px 15px;gap:9px;flex-wrap:wrap">
+                <span class="lbl">today</span>
+                <span class="items">
+                  <span class="stamp fresh"><b class="kept"></b>kept &middot; boiler service code<span class="undo">undo</span></span>
+                </span>
+                <span class="feel" style="gap:8px;margin-left:0;width:100%">
+                  <span class="ask" style="font-size:13.5px">how do you feel?</span>
+                  <span class="faces">
+                    <span class="face" style="padding:3px 4px"><img src="../../internal/web/static/mood-good.png" alt="good" style="height:24px"></span>
+                    <span class="face" style="padding:3px 4px"><img src="../../internal/web/static/mood-calm.png" alt="calm" style="height:24px"></span>
+                    <span class="face" style="padding:3px 4px"><img src="../../internal/web/static/mood-low.png" alt="low" style="height:24px"></span>
+                    <span class="face" style="padding:3px 4px"><img src="../../internal/web/static/mood-frazzled.png" alt="frazzled" style="height:24px"></span>
+                    <span class="face" style="padding:3px 4px"><img src="../../internal/web/static/mood-wiped.png" alt="wiped" style="height:24px"></span>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <section>
+          <h3>The slot travels</h3>
+          <p>On the desk each column has its own slot and there are four of them at once. Here there is one, directly under the tabs, and it says what this room does with words: <b>what is it</b> in the notes, <b>what comes back?</b> in the chores.</p>
+        </section>
+        <section>
+          <h3>The offer stays on top of the tabs</h3>
+          <p>It belongs to no room. On a phone you are usually here for one thing, so the thing Squirrel picked is above the choosing.</p>
+        </section>
+        <section>
+          <h3>Today is a bar, not a screen</h3>
+          <p>One line: what just happened, its undo, and the five faces. It empties overnight, so it can never grow into a list you are behind on.</p>
+        </section>
+        <section>
+          <h3>What this costs</h3>
+          <p>Capture is now two presses on a phone — pick the room, then type — where the dock was one. That is the price of never asking "where did this go", and it is the trade to argue with if the sofa scene starts to suffer.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

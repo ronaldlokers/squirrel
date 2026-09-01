@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Strip Board</title>
+<style>
+@font-face {
+  font-family: "Recursive";
+  src: url("../../internal/web/static/recursive.woff2") format("woff2");
+  font-weight: 300 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+  font-weight: 900; font-style: normal; font-display: swap;
+}
+
+:root {
+  --purple: #6c4da9;
+  --purple-deep: #58388a;
+  --purple-dark: #3b2560;
+  --purple-bar: #472e70;
+  --violet: #5e23b1;
+  --orange: #e66d0d;
+  --orange-lit: #ff8a2b;
+  --outline: #1c110b;
+  --cream: #fed6a7;
+  --card: #fdecd4;
+  --card-deep: #f6d5ab;
+  --paper: #fffbf3;
+  --paper-deep: #f7e9d4;
+  --brown: #58413d;
+  --placeholder: #7e6857;
+  --done: #529414;
+  --kept: #ffb300;
+  --dropped: #8a6a55;
+  --ink-soft: #6a4f3e;
+  --casual: "MONO" 0, "CASL" 1;
+  --precise: "MONO" 0, "CASL" 0;
+  --strip-line: 2px;
+  --r-strip: 3px;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; padding: 0 0 90px;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 70% at 12% -6%, rgba(150, 110, 220, .32) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+  background-attachment: fixed;
+  color: var(--paper);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise);
+}
+::selection { background: var(--orange); color: var(--outline); }
+::-webkit-scrollbar { width: 14px; }
+::-webkit-scrollbar-track { background: var(--purple-dark); }
+::-webkit-scrollbar-thumb { background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 999px; }
+* { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
+:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 3px; }
+
+.sheet { width: min(1180px, 100% - 44px); margin: 0 auto; }
+.sheethead { padding: 62px 0 8px; max-width: 66ch; }
+.sheethead .mark { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.sheethead .mark img { width: 72px; height: 54px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+.sheethead .mark b {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-size: 26px; letter-spacing: -.028em; color: var(--paper);
+  -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+}
+.sheethead h1 {
+  margin: 0 0 16px; font-size: clamp(27px, 3.4vw, 36px); line-height: 1.1;
+  letter-spacing: -.01em; font-variation-settings: var(--casual), "wght" 800;
+}
+.sheethead p { margin: 0; max-width: 62ch; color: var(--cream); font-size: 17px; line-height: 1.5; font-variation-settings: var(--casual), "wght" 460; }
+.sheethead p + p { margin-top: 12px; }
+
+.block { padding: 58px 0 0; }
+.block > header { max-width: 74ch; margin-bottom: 22px; }
+.block h2 { margin: 0 0 8px; font-size: 26px; line-height: 1.14; letter-spacing: -.012em; font-variation-settings: var(--casual), "wght" 780; }
+.block > header p { margin: 0; font-size: 17px; color: var(--cream); font-variation-settings: var(--casual), "wght" 470; }
+
+.contract { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 22px; max-width: 96ch; }
+.contract dt {
+  padding: 11px 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .72); font-variation-settings: var(--precise), "wght" 750;
+  border-top: 1px solid rgba(254, 214, 167, .2);
+}
+.contract dd {
+  margin: 0; padding: 11px 0; font-size: 15.5px; line-height: 1.5; color: var(--paper);
+  font-variation-settings: var(--casual), "wght" 450;
+  border-top: 1px solid rgba(254, 214, 167, .2);
+}
+.contract dd b { font-variation-settings: var(--casual), "wght" 700; }
+
+.framelabel {
+  display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px;
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .72); font-variation-settings: var(--precise), "wght" 750;
+}
+.framelabel i { font-style: normal; color: rgba(254, 214, 167, .45); letter-spacing: .06em; }
+.hold { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+.scaled { width: 1182px; height: 739px; }
+.scaled .art { transform: scale(.82); transform-origin: top left; }
+.pair { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
+.notes { flex: 1 1 320px; min-width: 300px; max-width: 44ch; padding-top: 30px; display: grid; gap: 16px; }
+.notes section h3 {
+  margin: 0 0 6px; font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cream); font-variation-settings: var(--precise), "wght" 750;
+}
+.notes section p { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--paper); font-variation-settings: var(--casual), "wght" 450; }
+.notes section p b { font-variation-settings: var(--casual), "wght" 700; }
+
+.art {
+  position: relative; overflow: hidden;
+  background-color: var(--purple-bar);
+  border: var(--strip-line) solid var(--outline);
+  border-radius: 4px;
+  box-shadow: 0 24px 44px -18px rgba(0, 0, 0, .75);
+  color: var(--paper);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise);
+  display: flex; flex-direction: column;
+}
+.art::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .3) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .06) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+}
+.art > * { position: relative; z-index: 1; }
+.desk { width: 1440px; height: 900px; }
+.pocket { width: 390px; height: 844px; }
+
+.ops {
+  display: flex; align-items: center; gap: 16px; flex: 0 0 auto;
+  padding: 9px 18px; background: var(--purple-dark);
+  border-bottom: var(--strip-line) solid var(--outline);
+}
+.ops img.markart { width: 42px; height: 32px; display: block; }
+.ops .wordmark {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-size: 19px; letter-spacing: -.028em; color: var(--paper);
+  -webkit-text-stroke: 1.6px var(--outline); paint-order: stroke fill;
+}
+.ops .clock {
+  display: flex; align-items: baseline; gap: 9px; padding-left: 16px;
+  border-left: 1px solid rgba(254, 214, 167, .28);
+}
+.ops .clock .t {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 900;
+  font-size: 19px; letter-spacing: -.02em; color: var(--cream); font-variant-numeric: tabular-nums;
+}
+.ops .clock .d {
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .66); font-variation-settings: var(--precise), "wght" 750;
+}
+.ops .spacer { flex: 1; }
+.ops .find {
+  display: flex; align-items: center; gap: 8px; width: 260px; min-height: 34px; padding: 6px 12px;
+  background: rgba(28, 17, 11, .32); border: var(--strip-line) solid rgba(254, 214, 167, .3);
+  border-radius: var(--r-strip); color: rgba(254, 214, 167, .8); font-size: 14px;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.ops .find svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.ops a { color: var(--cream); font-size: 14px; text-decoration: none; font-variation-settings: var(--casual), "wght" 560; }
+
+.working { flex: 0 0 auto; padding: 20px 18px 0; display: grid; grid-template-columns: minmax(0,1fr) 292px; gap: 14px; align-items: stretch; }
+.ticking {
+  display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 15px 16px;
+  background: rgba(28, 17, 11, .3); border: var(--strip-line) solid rgba(254, 214, 167, .26); border-radius: var(--r-strip);
+}
+.ticking .lbl { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: rgba(254,214,167,.72); font-variation-settings: var(--precise), "wght" 750; }
+.ticking .row { display: flex; align-items: baseline; gap: 10px; }
+.ticking .what { font-size: 16px; color: var(--paper); font-variation-settings: var(--casual), "wght" 560; }
+.ticking .left { margin-left: auto; font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 900; font-size: 26px; letter-spacing: -.02em; color: var(--cream); font-variant-numeric: tabular-nums; }
+
+.pulled {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) max-content;
+  background: var(--paper); color: var(--outline);
+  border: var(--strip-line) solid var(--outline); border-radius: var(--r-strip);
+  box-shadow: 0 6px 0 0 rgba(28, 17, 11, .55), 0 20px 30px -18px rgba(0, 0, 0, .8);
+  outline: 3px solid var(--orange-lit); outline-offset: 3px;
+}
+.pulled .holder { background: var(--kept); border-right: var(--strip-line) solid var(--outline); position: relative; }
+.pulled .holder::after {
+  content: ""; position: absolute; left: 3px; top: 50%; transform: translateY(-50%);
+  width: 8px; height: 26px; border-radius: 4px; background: rgba(28, 17, 11, .3);
+}
+.pulled .body { padding: 15px 18px 15px 16px; min-width: 0; }
+.pulled .why {
+  display: flex; align-items: baseline; gap: 9px;
+  margin: 0 0 6px; font-size: 13.5px; color: var(--brown);
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.pulled .why b {
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--outline);
+  font-variation-settings: var(--precise), "wght" 800;
+  padding: 2px 6px; border: 1.5px solid var(--outline); border-radius: 2px; background: var(--card-deep);
+}
+.pulled .said { margin: 0; font-size: 27px; line-height: 1.16; letter-spacing: -.01em; font-variation-settings: var(--casual), "wght" 620; }
+.pulled .pencil {
+  display: flex; align-items: flex-start; gap: 8px; margin: 11px 0 0;
+  font-size: 14.5px; line-height: 1.4; color: var(--ink-soft);
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.pulled .pencil svg { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 2px; }
+.pulled .pencil u { text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.pulled .stamps {
+  display: flex; flex-direction: column; justify-content: center; gap: 7px;
+  padding: 13px 15px 13px 0;
+}
+
+.stamp {
+  display: inline-flex; align-items: center; gap: 9px; justify-content: space-between;
+  min-height: 36px; padding: 8px 11px; min-width: 132px;
+  background: var(--paper); color: var(--outline);
+  border: var(--strip-line) solid var(--outline); border-radius: var(--r-strip);
+  box-shadow: 0 3px 0 0 rgba(28, 17, 11, .55);
+  font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 800;
+}
+.stamp .k {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px;
+  background: rgba(28, 17, 11, .14); border-radius: 2px; font-size: 11px; letter-spacing: 0; opacity: .7;
+}
+.stamp.go { background: var(--orange); }
+.stamp.did { background: #71a73e; }
+.stamp.no { background: var(--card-deep); }
+.stamp.small { min-width: 0; min-height: 30px; padding: 6px 9px; font-size: 11.5px; box-shadow: 0 2px 0 0 rgba(28,17,11,.5); }
+
+.racks {
+  display: grid; grid-template-columns: 1.18fr 1fr 1fr 1fr; gap: 14px;
+  padding: 18px 18px 0; flex: 1; min-height: 0;
+}
+.rack { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
+.channel {
+  flex: 1; min-height: 0; padding: 7px;
+  background: rgba(28, 17, 11, .2);
+  border: var(--strip-line) solid rgba(254, 214, 167, .2);
+  border-radius: var(--r-strip);
+  display: flex; flex-direction: column; gap: 7px;
+  overflow: hidden;
+}
+.baysign {
+  display: flex; align-items: center; gap: 9px; flex: 0 0 auto;
+  padding: 6px 11px; background: var(--purple-dark);
+  border: var(--strip-line) solid var(--outline); border-radius: var(--r-strip);
+  font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--cream);
+  font-variation-settings: var(--precise), "wght" 800;
+}
+.baysign .n {
+  margin-left: auto; font-size: 13px; letter-spacing: 0; color: rgba(255, 251, 243, .82);
+  font-variant-numeric: tabular-nums; font-variation-settings: var(--precise), "wght" 700;
+}
+.strips {
+  display: flex; flex-direction: column; gap: 5px; min-height: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%);
+}
+.strip {
+  display: grid; grid-template-columns: 11px minmax(0, 1fr) max-content; align-items: stretch;
+  background: var(--card); color: var(--outline);
+  border: var(--strip-line) solid var(--outline); border-radius: var(--r-strip);
+  box-shadow: 0 2px 0 0 rgba(28, 17, 11, .5);
+}
+.strip .holder { position: relative; border-right: var(--strip-line) solid var(--outline); }
+.strip .holder::after {
+  content: ""; position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+  width: 6px; height: 14px; border-radius: 3px; background: rgba(28, 17, 11, .28);
+}
+.h-notes .holder { background: var(--purple); }
+.h-chores .holder { background: var(--orange); }
+.h-tasks .holder { background: var(--kept); }
+.h-agenda .holder { background: var(--dropped); }
+.strip .words {
+  padding: 8px 10px; overflow: hidden; font-size: 14.5px; line-height: 1.3; min-width: 0;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.strip .mark {
+  display: flex; align-items: center; padding: 8px 10px 8px 6px; white-space: nowrap;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--brown);
+  font-variation-settings: var(--precise), "wght" 750; font-variant-numeric: tabular-nums;
+}
+.strip .mark.time {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 900;
+  font-size: 15px; letter-spacing: -.02em; text-transform: none; color: var(--outline);
+}
+.strip.two .words { padding-bottom: 9px; }
+.strip .pencil {
+  display: flex; align-items: flex-start; gap: 7px; margin: 6px 0 0;
+  font-size: 13px; line-height: 1.35; color: var(--ink-soft);
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.strip .pencil svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 1px; }
+.strip.cocked { transform: translateY(-3px); box-shadow: 0 5px 0 0 rgba(28, 17, 11, .55), 0 14px 20px -14px rgba(0,0,0,.7); }
+.strip.struck { background: var(--card-deep); }
+.strip.struck .words { color: var(--ink-soft); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.strip.blank {
+  background: transparent; border: var(--strip-line) dashed rgba(254, 214, 167, .45);
+  box-shadow: none; color: rgba(254, 214, 167, .8); grid-template-columns: minmax(0,1fr) max-content;
+}
+.strip.blank .words { font-variation-settings: var(--casual), "wght" 470; }
+.strip.blank .newmark {
+  display: flex; align-items: center; padding-right: 8px; color: var(--cream);
+}
+.strip.blank .newmark svg { width: 17px; height: 17px; display: block; }
+.strip.blank.typing {
+  background: var(--paper); border: var(--strip-line) solid var(--outline); color: var(--placeholder);
+  outline: 3px solid var(--orange-lit); outline-offset: 2px; box-shadow: 0 3px 0 0 rgba(28,17,11,.5);
+}
+
+.tray {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px 13px; background: rgba(28, 17, 11, .34);
+  border-top: var(--strip-line) solid var(--outline);
+}
+.tray .sign {
+  flex: 0 0 auto; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .72); font-variation-settings: var(--precise), "wght" 750;
+}
+.tray .gone { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.tray .gone .strip { box-shadow: none; }
+.tray .gone .strip .words { padding: 5px 9px; font-size: 13px; }
+.tray .gone .strip.out { background: rgba(253, 236, 212, .22); border-color: rgba(254, 214, 167, .4); }
+.tray .gone .strip.out .words { color: rgba(254, 214, 167, .82); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.tray .gone .strip.out .holder { opacity: .5; }
+.tray .feel { margin-left: auto; display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+.tray .feel .ask { font-size: 13.5px; color: var(--cream); font-variation-settings: var(--casual), "wght" 500; }
+.tray .feel .faces { display: flex; gap: 5px; }
+.tray .feel .face {
+  display: grid; place-items: center; padding: 3px 5px; border-radius: var(--r-strip);
+  background: rgba(254, 214, 167, .12); border: 1px solid rgba(254, 214, 167, .22);
+}
+.tray .feel .face img { height: 26px; width: auto; display: block; }
+
+.pockbays { display: flex; gap: 6px; overflow: hidden; flex: 0 0 auto; }
+.pockbays .b {
+  display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
+  padding: 6px 10px; border: var(--strip-line) solid rgba(254, 214, 167, .34);
+  border-radius: var(--r-strip); background: rgba(28, 17, 11, .22);
+  font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--cream);
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.pockbays .b.in { background: var(--purple-dark); border-color: var(--outline); color: var(--paper); }
+.pockbays .b .n { font-size: 12px; letter-spacing: 0; opacity: .8; font-variant-numeric: tabular-nums; }
+.pockbody { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px 0; overflow: hidden; flex: 1; min-height: 0; }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <div class="sheethead">
+    <div class="mark">
+      <img src="../../internal/web/static/logo.png" alt="">
+      <b>Squirrel</b>
+    </div>
+    <h1>The strip board</h1>
+    <p>Every thing you told Squirrel is a printed strip in a holder. The holder's colour says which bay it belongs to; the words on it are yours; the marks in the margin are Buddy's. Nothing is a message and nothing is a card.</p>
+    <p>Squirrel choosing is a physical act: it pulls one strip half out of its rack, which is the whole of what an offer is. Answering a strip strikes it and slides it into the day's tray, and the tray is empty again tomorrow.</p>
+    <p>Fonts and colours are the ones you pinned. Everything else — material, composition, controls, motion — is new. Sample words are authored.</p>
+  </div>
+
+  <section class="block">
+    <header>
+      <h2>The contract</h2>
+      <p>Built from code rather than from a rendered comp, so the ambition is written down here and the finish is audited against it.</p>
+    </header>
+    <dl class="contract">
+      <dt>World</dt>
+      <dd>Air-traffic flight progress strips. Printed slips in coloured holders, racked in bays, annotated by hand, pulled out when they need attention and removed when they are done. A controller's board carries no totals and no history — <b>what has left the airspace is off the board</b>, which is this product's oldest rule wearing somebody else's uniform.</dd>
+      <dt>First viewport</dt>
+      <dd>An operations header with the mark, the clock and the day. Under it, one strip pulled proud of everything else: what Squirrel picked, the rule that picked it printed above the words, three stamps down its right edge. Below that, four racks running to the bottom of the screen, each headed by an enamel bay sign and opening with a blank strip you can write on. Along the foot, the day's tray: what left the board today, struck through, the newest still recoverable.</dd>
+      <dt>Visitor path</dt>
+      <dd>Read the pulled strip. Stamp it, or leave it. Drop your eyes to a rack and work the strips in front of you. Type on a blank strip when a thought arrives. Stop whenever — the board looks the same whether you did four or none, because nothing on it counts.</dd>
+      <dt>Signature interaction</dt>
+      <dd><b>Cocking a strip.</b> A strip lifts 3px out of its rack when it has your attention and stays there while it is the one being worked; that is how a controller marks a flight that needs something, and it replaces every highlight, badge and selected state in the product. The pulled strip at the top is the same gesture at full size.</dd>
+      <dt>Motion grammar</dt>
+      <dd>Everything moves along the rack's own axes and nothing fades. A strip lifts on the vertical, an answered strip strikes then travels sideways into the tray, and a new strip enters by pushing the rack down one row. The travel starts after the 1150ms the undo needs, so the strike is visible before the strip goes. Reduced motion keeps the strike and the tray and drops the travel.</dd>
+      <dt>Cross-surface reach</dt>
+      <dd>The strip is the unit everywhere: one bay at a time on a phone, one strip per row in the evening message, and the same holder colours in Campfire when a thing is named there. A future surface inherits the rack rather than a page layout.</dd>
+      <dt>Honest risk</dt>
+      <dd>Strips are close to cards, so the rethink lives in the rules rather than the silhouette: dense rows, no chips, no bubbles, state by mark rather than by fill. If those slip, this reads as the old world with sharper corners. The second risk is density — a board of 14pt rows is harder on a bad day than four big cards, and the pulled strip is the mitigation.</dd>
+    </dl>
+  </section>
+
+  <section class="block">
+    <header>
+      <h2>The board</h2>
+      <p>Four bays, the pulled strip above them, the day's tray beneath.</p>
+    </header>
+    <p class="framelabel">Desktop <i>1440 × 900</i></p>
+    <div class="hold"><div class="scaled"><div class="art desk">
+
+      <div class="ops">
+        <img class="markart" src="../../internal/web/static/logo.png" alt="">
+        <span class="wordmark">Squirrel</span>
+        <span class="clock"><span class="t">09:14</span><span class="d">Monday 1 September</span></span>
+        <span class="spacer"></span>
+        <span class="find">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          look for something
+        </span>
+        <a href="#">settings</a>
+      </div>
+
+      <div class="working">
+        <div class="pulled">
+          <span class="holder"></span>
+          <div class="body">
+            <p class="why"><b>pulled</b>the oldest thing you decided to do</p>
+            <p class="said">send the meter reading, before the bill comes out</p>
+            <p class="pencil">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#58413d" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 2.8 2.8L8 18.8z"/><path d="M14.6 6.4l3 3"/></svg>
+              <span>sat there since Tuesday. two steps would do it — <u>break it up</u></span>
+            </p>
+          </div>
+          <div class="stamps">
+            <span class="stamp go">I'll do it<span class="k">D</span></span>
+            <span class="stamp no">not today<span class="k">N</span></span>
+            <span class="stamp no">I'm stuck<span class="k">S</span></span>
+          </div>
+        </div>
+        <div class="ticking">
+          <span class="lbl">running</span>
+          <span class="row"><span class="what">bins out</span><span class="left">7:12</span></span>
+          <span class="stamp no" style="align-self:flex-start">stop the clock<span class="k">.</span></span>
+        </div>
+      </div>
+
+      <div class="racks">
+        <div class="rack">
+          <p class="baysign">the notes <span class="n">6</span></p>
+          <div class="strip blank typing">
+            <span class="words">meter reading 48213</span>
+            <span class="newmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="channel"><div class="strips">
+            <div class="strip h-notes cocked two">
+              <span class="holder"></span>
+              <div class="words">
+                boiler service code is 4471, engineer said keep it somewhere
+                <span class="pencil">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#6a4f3e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 2.8 2.8L8 18.8z"/><path d="M14.6 6.4l3 3"/></svg>
+                  <span>this is a keeper, not a job</span>
+                </span>
+                <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+                  <span class="stamp small did">done<span class="k">D</span></span>
+                  <span class="stamp small">keep<span class="k">K</span></span>
+                  <span class="stamp small no">drop<span class="k">X</span></span>
+                  <span class="stamp small go">chore<span class="k">C</span></span>
+                </span>
+              </div>
+              <span class="mark">09:02</span>
+            </div>
+            <div class="strip h-notes"><span class="holder"></span><span class="words">kaas</span><span class="mark">yest</span></div>
+            <div class="strip h-notes"><span class="holder"></span><span class="words">ask the landlord what the window is called</span><span class="mark">tue</span></div>
+            <div class="strip h-notes"><span class="holder"></span><span class="words">the thing about the bike lights</span><span class="mark">tue</span></div>
+            <div class="strip h-notes"><span class="holder"></span><span class="words">check whether the bin day moves for the holiday</span><span class="mark">mon</span></div>
+            <div class="strip h-notes"><span class="holder"></span><span class="words">kruidvat, the small batteries</span><span class="mark">mon</span></div>
+          </div></div>
+        </div>
+
+        <div class="rack">
+          <p class="baysign">the chores <span class="n">4</span></p>
+          <div class="strip blank">
+            <span class="words">what comes back?</span>
+            <span class="newmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="channel"><div class="strips">
+            <div class="strip h-chores two">
+              <span class="holder"></span>
+              <div class="words">
+                bins out
+                <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+                  <span class="stamp small did">did it<span class="k">D</span></span>
+                  <span class="stamp small no">later<span class="k">L</span></span>
+                </span>
+              </div>
+              <span class="mark">today</span>
+            </div>
+            <div class="strip h-chores"><span class="holder"></span><span class="words">water the plants</span><span class="mark">tmrw</span></div>
+            <div class="strip h-chores"><span class="holder"></span><span class="words">washing machine filter</span><span class="mark">sun</span></div>
+            <div class="strip h-chores"><span class="holder"></span><span class="words">defrost the freezer</span><span class="mark">14 sep</span></div>
+          </div></div>
+        </div>
+
+        <div class="rack">
+          <p class="baysign">the tasks <span class="n">4</span></p>
+          <div class="strip blank">
+            <span class="words">what did you decide?</span>
+            <span class="newmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="channel"><div class="strips">
+            <div class="strip h-tasks two">
+              <span class="holder"></span>
+              <div class="words">
+                book the boiler service
+                <span class="pencil">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#6a4f3e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 2.8 2.8L8 18.8z"/><path d="M14.6 6.4l3 3"/></svg>
+                  <span>the code is on the shelf, if they ask</span>
+                </span>
+              </div>
+              <span class="mark">wk 35</span>
+            </div>
+            <div class="strip h-tasks"><span class="holder"></span><span class="words">vet about the booster</span><span class="mark">tue</span></div>
+            <div class="strip h-tasks"><span class="holder"></span><span class="words">chase the landlord about the window</span><span class="mark">tue</span></div>
+            <div class="strip h-tasks"><span class="holder"></span><span class="words">passport photos</span><span class="mark">wk 34</span></div>
+          </div></div>
+        </div>
+
+        <div class="rack">
+          <p class="baysign">the agenda <span class="n">3</span></p>
+          <div class="strip blank">
+            <span class="words">what is happening?</span>
+            <span class="newmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          </div>
+          <div class="channel"><div class="strips">
+            <div class="strip h-agenda two">
+              <span class="holder"></span>
+              <div class="words">
+                dentist
+                <span class="pencil">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#6a4f3e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 2.8 2.8L8 18.8z"/><path d="M14.6 6.4l3 3"/></svg>
+                  <span>leave at 13:05, it is 20 minutes</span>
+                </span>
+              </div>
+              <span class="mark time">13:40</span>
+            </div>
+            <div class="strip h-agenda"><span class="holder"></span><span class="words">boiler service</span><span class="mark time">Tue</span></div>
+            <div class="strip h-agenda"><span class="holder"></span><span class="words">Anna's train gets in</span><span class="mark time">Fri</span></div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="tray">
+        <span class="sign">today's tray</span>
+        <span class="gone">
+          <span class="strip h-notes out"><span class="holder"></span><span class="words">washing machine one</span><span class="mark">done</span></span>
+          <span class="strip h-notes out"><span class="holder"></span><span class="words">bike lights</span><span class="mark">dropped</span></span>
+          <span class="strip h-chores out"><span class="holder"></span><span class="words">bins out</span><span class="mark">done</span></span>
+          <span class="stamp small">put it back<span class="k">Z</span></span>
+        </span>
+        <span class="feel">
+          <span class="ask">how do you feel?</span>
+          <span class="faces">
+            <span class="face"><img src="../../internal/web/static/mood-good.png" alt="good"></span>
+            <span class="face"><img src="../../internal/web/static/mood-calm.png" alt="calm"></span>
+            <span class="face"><img src="../../internal/web/static/mood-low.png" alt="low"></span>
+            <span class="face"><img src="../../internal/web/static/mood-frazzled.png" alt="frazzled"></span>
+            <span class="face"><img src="../../internal/web/static/mood-wiped.png" alt="wiped"></span>
+          </span>
+        </span>
+      </div>
+
+    </div></div></div>
+  </section>
+
+  <section class="block">
+    <header>
+      <h2>One bay at a time</h2>
+      <p>The phone gets the same board with one rack showing. Nothing here is a smaller version of something — a strip is a strip at both sizes.</p>
+    </header>
+    <div class="pair">
+      <div>
+        <p class="framelabel">Phone <i>390 × 844</i></p>
+        <div class="art pocket">
+          <div class="ops" style="padding:8px 12px;gap:10px">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="" style="width:34px;height:26px">
+            <span class="wordmark" style="font-size:16px">Squirrel</span>
+            <span class="clock" style="padding-left:10px"><span class="t" style="font-size:16px">09:14</span></span>
+            <span class="spacer"></span>
+            <span class="find" style="width:auto;padding:6px 8px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            </span>
+          </div>
+          <div class="pockbody">
+            <div class="pulled" style="grid-template-columns:12px minmax(0,1fr)">
+              <span class="holder"></span>
+              <div class="body" style="padding:12px 14px">
+                <p class="why"><b>pulled</b>oldest thing you decided to do</p>
+                <p class="said" style="font-size:21px">send the meter reading</p>
+                <p class="pencil" style="font-size:13.5px;margin-top:9px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#58413d" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 2.8 2.8L8 18.8z"/><path d="M14.6 6.4l3 3"/></svg>
+                  <span>two steps would do it — <u>break it up</u></span>
+                </p>
+                <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px">
+                  <span class="stamp small go">I'll do it</span>
+                  <span class="stamp small no">not today</span>
+                  <span class="stamp small no">stuck</span>
+                </span>
+              </div>
+            </div>
+            <div class="pockbays" style="margin-right:-12px">
+              <span class="b in">notes <span class="n">6</span></span>
+              <span class="b">chores <span class="n">4</span></span>
+              <span class="b">tasks <span class="n">4</span></span>
+              <span class="b">agenda <span class="n">3</span></span>
+            </div>
+            <div class="channel">
+              <div class="strip blank">
+                <span class="words">write on a new strip</span>
+                <span class="newmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+              </div>
+              <div class="strips">
+                <div class="strip h-notes cocked two">
+                  <span class="holder"></span>
+                  <div class="words">
+                    boiler service code is 4471, engineer said keep it somewhere
+                    <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+                      <span class="stamp small did">done</span>
+                      <span class="stamp small">keep</span>
+                      <span class="stamp small no">drop</span>
+                      <span class="stamp small go">chore</span>
+                    </span>
+                  </div>
+                  <span class="mark">09:02</span>
+                </div>
+                <div class="strip h-notes"><span class="holder"></span><span class="words">kaas</span><span class="mark">yest</span></div>
+                <div class="strip h-notes"><span class="holder"></span><span class="words">ask the landlord what the window is called</span><span class="mark">tue</span></div>
+                <div class="strip h-notes"><span class="holder"></span><span class="words">the thing about the bike lights</span><span class="mark">tue</span></div>
+                <div class="strip h-notes"><span class="holder"></span><span class="words">check whether the bin day moves for the holiday</span><span class="mark">mon</span></div>
+                <div class="strip h-notes"><span class="holder"></span><span class="words">kruidvat, the small batteries</span><span class="mark">mon</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="tray" style="padding:9px 12px 12px;gap:9px;flex-wrap:wrap">
+            <span class="sign">tray</span>
+            <span class="gone">
+              <span class="strip h-chores out"><span class="holder"></span><span class="words">bins out</span><span class="mark">done</span></span>
+              <span class="stamp small">put it back</span>
+            </span>
+            <span class="feel" style="margin-left:0;width:100%;gap:8px">
+              <span class="ask">how do you feel?</span>
+              <span class="faces">
+                <span class="face"><img src="../../internal/web/static/mood-good.png" alt="good" style="height:23px"></span>
+                <span class="face"><img src="../../internal/web/static/mood-calm.png" alt="calm" style="height:23px"></span>
+                <span class="face"><img src="../../internal/web/static/mood-low.png" alt="low" style="height:23px"></span>
+                <span class="face"><img src="../../internal/web/static/mood-frazzled.png" alt="frazzled" style="height:23px"></span>
+                <span class="face"><img src="../../internal/web/static/mood-wiped.png" alt="wiped" style="height:23px"></span>
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <section>
+          <h3>The bay signs replace navigation</h3>
+          <p>Four signs, one lit. There is no menu, no rail and no back button: you are always looking at one rack of one board.</p>
+        </section>
+        <section>
+          <h3>The pulled strip does not scroll away</h3>
+          <p>It sits above the bays because it belongs to none of them. When you stamp it, the next one is pulled — or nothing is, and the space closes.</p>
+        </section>
+        <section>
+          <h3>Writing is a blank strip</h3>
+          <p>Always the first row of the rack you are in, so a thought lands in the bay you are looking at. The camera lives on the same row.</p>
+        </section>
+        <section>
+          <h3>What this costs</h3>
+          <p>Strips are dense, and dense is harder than big soft cards when you are wiped. The mitigations are the pulled strip and the check-in: a <b>wiped</b> reading should thin the board to the pulled strip and the tray, and that is a rule to write into the picker rather than a nicety.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <header>
+      <h2>What each part of the old app became</h2>
+      <p>Nothing in PRODUCT.md changed. The whole redesign is a change of material and of where state lives.</p>
+    </header>
+    <dl class="contract">
+      <dt>The turn</dt><dd>A strip. It does not scroll away, it does not repeat, and it carries no timestamp of when it was said — only the mark that matters: when it arrived, when it is due, or what time it happens.</dd>
+      <dt>The card</dt><dd>Retired with its 3px outline, 14px corner and drop shadow. A strip is 2px, square-cornered, and sits in a holder — the outline language stays, the sticker does not.</dd>
+      <dt>The chip</dt><dd>A stamp: rectangular, keyed, and always in the same place on the object it acts on.</dd>
+      <dt>The dock</dt><dd>The blank strip at the head of each rack.</dd>
+      <dt>Buddy's bubble</dt><dd>A pencil line in the strip's margin, in the ink colour, with at most one underlined action. He never occupies space of his own.</dd>
+      <dt>The offer</dt><dd>The pulled strip. Choosing is now a physical act you can see from across the room, and the rule that chose it is printed on the strip.</dd>
+      <dt>The doors and the rail</dt><dd>Bay signs. Enamel, always visible, and the count on them is what is in the rack rather than what you owe.</dd>
+      <dt>Undo</dt><dd>The tray. A strip that leaves the board lands there struck through, and PUT IT BACK is a stamp like any other until the tray empties overnight.</dd>
+    </dl>
+  </section>
+</main>
+</body>
+</html>

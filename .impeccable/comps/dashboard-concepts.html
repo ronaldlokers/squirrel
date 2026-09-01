@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Squirrel — three ways to stop being a conversation</title>
+<style>
+@font-face {
+  font-family: "Recursive";
+  src: url("../../internal/web/static/recursive.woff2") format("woff2");
+  font-weight: 300 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../../internal/web/static/inter-900.woff2") format("woff2");
+  font-weight: 900; font-style: normal; font-display: swap;
+}
+
+:root {
+  --purple: #6c4da9;
+  --purple-deep: #58388a;
+  --purple-dark: #3b2560;
+  --purple-bar: #472e70;
+  --violet: #5e23b1;
+  --orange: #e66d0d;
+  --orange-lit: #ff8a2b;
+  --outline: #1c110b;
+  --cream: #fed6a7;
+  --card: #fdecd4;
+  --card-deep: #f6d5ab;
+  --paper: #fffbf3;
+  --paper-deep: #f7e9d4;
+  --brown: #58413d;
+  --placeholder: #7e6857;
+  --done: #529414;
+  --kept: #ffb300;
+  --dropped: #8a6a55;
+  --mood-good: #3fa08a;
+  --line: 3px;
+  --r: 14px;
+  --casual: "MONO" 0, "CASL" 1;
+  --precise: "MONO" 0, "CASL" 0;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 70% at 12% -6%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+  background-attachment: fixed;
+  color: var(--paper);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise);
+  padding: 0 0 90px;
+}
+
+::selection { background: var(--orange); color: var(--outline); }
+::-webkit-scrollbar { width: 14px; }
+::-webkit-scrollbar-track { background: var(--purple-dark); }
+::-webkit-scrollbar-thumb { background: var(--orange); border: 3px solid var(--purple-dark); border-radius: 999px; }
+* { scrollbar-color: var(--orange) var(--purple-dark); scrollbar-width: thin; }
+:focus-visible { outline: var(--line) solid var(--orange-lit); outline-offset: 3px; }
+
+.sheet { width: min(1180px, 100% - 44px); margin: 0 auto; }
+
+.sheethead { padding: 64px 0 8px; max-width: 66ch; }
+.sheethead .mark { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.sheethead .mark img { width: 84px; height: 63px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+.sheethead .mark b {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-variation-settings: normal; font-size: 26px;
+  letter-spacing: -.028em; color: var(--paper);
+  -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+}
+.sheethead h1 {
+  margin: 0 0 18px;
+  font-size: clamp(32px, 4.4vw, 52px); line-height: 1.06; letter-spacing: -.02em;
+  font-variation-settings: var(--casual), "wght" 800;
+  max-width: 22ch;
+}
+.sheethead p {
+  margin: 0; max-width: 62ch; color: var(--cream);
+  font-size: 18px; line-height: 1.5;
+  font-variation-settings: var(--casual), "wght" 460;
+}
+.sheethead p + p { margin-top: 14px; }
+
+.concept { padding: 72px 0 0; }
+.concept > header { max-width: 74ch; margin-bottom: 26px; }
+.concept h2 {
+  margin: 0 0 6px; font-size: 31px; line-height: 1.12; letter-spacing: -.012em;
+  font-variation-settings: var(--casual), "wght" 780;
+}
+.concept .premise {
+  margin: 0 0 16px; font-size: 18px; color: var(--cream);
+  font-variation-settings: var(--casual), "wght" 480;
+}
+.concept dl {
+  margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 16px; align-items: baseline;
+}
+.concept dt {
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .72);
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.concept dd {
+  margin: 0; font-size: 15.5px; color: var(--paper);
+  font-variation-settings: var(--casual), "wght" 450;
+}
+
+.frames { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+.frame { flex: 0 0 auto; }
+.framelabel {
+  display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px;
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .72);
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.framelabel i { font-style: normal; color: rgba(254, 214, 167, .45); letter-spacing: .06em; }
+.hold { overflow: hidden; border-radius: var(--r); }
+.art {
+  transform-origin: top left;
+  position: relative; overflow: hidden;
+  background-color: var(--purple-bar);
+  border: var(--line) solid var(--outline);
+  border-radius: var(--r);
+  box-shadow: 0 24px 44px -18px rgba(0, 0, 0, .75);
+  color: var(--paper);
+  font: 400 16px/1.55 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise);
+}
+.art::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background-color: var(--purple-deep);
+  background-image:
+    radial-gradient(120% 90% at 15% -10%, rgba(150, 110, 220, .35) 0%, rgba(59, 37, 96, 0) 62%),
+    radial-gradient(circle at 2px 2px, rgba(254, 214, 167, .07) 2px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+}
+.art > * { position: relative; z-index: 1; }
+
+.desk { width: 1440px; height: 900px; display: flex; flex-direction: column; }
+.pocket { width: 390px; height: 844px; }
+.hold { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+.scaled { width: 1182px; height: 739px; }
+.scaled .art { transform: scale(.82); }
+.deskgrid {
+  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 340px;
+  gap: 18px; padding: 18px 22px 0; flex: 1; min-height: 0;
+}
+.board { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
+.board .cards {
+  display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 46px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 46px), transparent 100%);
+}
+.buddycol {
+  display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden;
+  padding: 14px 15px 13px;
+  background: rgba(28, 17, 11, .26);
+  border: 2px solid rgba(254, 214, 167, .3);
+  border-radius: var(--r);
+}
+.buddycol .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.buddycol .talkslot { margin-top: auto; }
+.todayband { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; padding: 32px 22px 0; align-items: start; }
+.todayband .side { display: flex; flex-direction: column; gap: 12px; grid-column: 2; grid-row: 1 / span 2; }
+.todayband .checkin { grid-column: 1; display: flex; align-items: center; gap: 14px; padding: 4px 2px 0; flex-wrap: wrap; }
+.checkin .ask {
+  font-size: 15px; color: var(--cream);
+  font-variation-settings: var(--casual), "wght" 520;
+}
+.checkin .faces { display: flex; gap: 8px; }
+.checkin .face {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 9px 5px; border-radius: 12px;
+  background: rgba(254, 214, 167, .1);
+  color: var(--cream); font-size: 11px; letter-spacing: .04em;
+  font-variation-settings: var(--precise), "wght" 640;
+}
+.checkin .face img { height: 34px; width: auto; display: block; }
+.pockbody { padding: 26px 14px 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.pocklist {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: 12px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%);
+}
+.tabs { display: flex; gap: 8px; }
+.tabs .tab {
+  padding: 8px 13px; border-radius: 999px; white-space: nowrap;
+  background: rgba(28, 17, 11, .18); border: 2px dashed rgba(254, 214, 167, .38);
+  color: var(--cream); font-size: 14px; font-variation-settings: var(--casual), "wght" 560;
+}
+.tabs .tab.in {
+  background: var(--purple-dark); color: var(--paper);
+  border: var(--line) solid var(--outline); font-variation-settings: var(--casual), "wght" 700;
+}
+.acorn {
+  position: absolute; right: 16px; bottom: 96px; z-index: 3;
+  width: 58px; height: 58px; display: grid; place-items: center;
+  background: var(--paper); border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 5px 0 0 var(--outline), 0 14px 22px -12px rgba(0,0,0,.7);
+}
+.acorn img { width: 40px; height: auto; display: block; }
+.pockfoot { margin-top: auto; }
+.caption { flex: 1 1 300px; min-width: 280px; max-width: 46ch; padding-top: 30px; }
+.caption h3 {
+  margin: 0 0 10px; font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--cream);
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.caption p { margin: 0 0 12px; font-size: 16px; line-height: 1.5; color: var(--paper); font-variation-settings: var(--casual), "wght" 450; }
+.caption p:last-child { margin-bottom: 0; }
+.caption p b { font-variation-settings: var(--casual), "wght" 700; }
+.homehero { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; padding: 38px 30px 0; align-items: start; }
+.homecheck { padding: 16px 30px 0; }
+.roomrow { display: grid; grid-template-columns: 1.35fr 1fr 1fr 1.15fr; gap: 14px; padding: 20px 30px 0; flex: 1; min-height: 0; align-items: stretch; }
+.roomcard {
+  display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 15px 16px; overflow: hidden;
+  background: rgba(28, 17, 11, .18);
+  border: 2px dashed rgba(254, 214, 167, .38); border-radius: var(--r);
+}
+.roomcard > .head {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 16px; color: var(--paper); font-variation-settings: var(--casual), "wght" 620;
+}
+.roomcard > .head .cnt {
+  margin-left: auto; font-size: 14px; font-variant-numeric: tabular-nums;
+  color: rgba(254, 214, 167, .72); font-variation-settings: var(--precise), "wght" 640;
+}
+.roomcard.solid { background: var(--purple-dark); border: var(--line) solid var(--outline); }
+.buddystrip {
+  display: flex; align-items: center; gap: 16px;
+  margin: 20px 30px 24px; flex: 0 0 auto; padding: 14px 18px;
+  background: rgba(28, 17, 11, .26); border: 2px solid rgba(254, 214, 167, .3); border-radius: var(--r);
+}
+.buddystrip .chips { display: flex; gap: 8px; margin-left: auto; }
+.panes { display: grid; grid-template-columns: minmax(0,1fr) 404px; height: calc(100% - 79px); }
+.pane { min-height: 0; display: flex; flex-direction: column; }
+.pane.right {
+  gap: 14px; padding: 32px 22px 20px; overflow: hidden;
+  background: rgba(59, 37, 96, .55); border-left: var(--line) solid var(--outline);
+}
+.transcript { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 20px 26px 0; justify-content: flex-end; }
+
+.lid {
+  display: flex; align-items: center; gap: 18px;
+  padding: 11px 22px 13px;
+  background: linear-gradient(to bottom, var(--purple-bar) 0 4px, rgba(71, 46, 112, 0) 20px), rgba(59, 37, 96, .72);
+  border-bottom: var(--line) solid var(--outline);
+}
+.lid img.markart { width: 84px; height: 63px; display: block; filter: drop-shadow(0 3px 0 rgba(0,0,0,.3)); }
+.lid .wordmark {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-variation-settings: normal; font-size: 26px;
+  letter-spacing: -.028em; color: var(--paper);
+  -webkit-text-stroke: 2px var(--outline); paint-order: stroke fill;
+}
+.lid .spacer { flex: 1; }
+.lidbtn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 8px 15px;
+  background: rgba(254, 214, 167, .16); border: 2px solid rgba(254, 214, 167, .38);
+  border-radius: 999px; color: var(--cream);
+  font: 400 14.5px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--casual), "wght" 560;
+}
+.pocket .lid { padding: 9px 14px 11px; gap: 10px; }
+.pocket .lid img.markart { width: 62px; height: 47px; }
+.pocket .lid .wordmark { font-size: 20px; -webkit-text-stroke: 1.6px var(--outline); }
+
+.card {
+  padding: 14px 16px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline), 0 16px 26px -16px rgba(0, 0, 0, .7);
+}
+.card .name { margin: 0; font-size: 19px; line-height: 1.32; font-variation-settings: var(--casual), "wght" 520; }
+.card .meta {
+  margin: 5px 0 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--brown); font-variation-settings: var(--precise), "wght" 750;
+}
+.card .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 38px; padding: 9px 14px;
+  background: var(--paper); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 4px 0 0 var(--outline);
+  font: 400 13px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 830;
+}
+.chip.make { background: var(--orange); }
+.chip.did { background: #71a73e; }
+.chip.stop { background: #9f8574; }
+.chip.soft {
+  background: rgba(254, 214, 167, .16); color: var(--cream);
+  border: 2px solid rgba(254, 214, 167, .38); box-shadow: none;
+  text-transform: none; letter-spacing: 0; font-size: 14px;
+  font-variation-settings: var(--casual), "wght" 560;
+}
+.chip .key {
+  display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px;
+  background: rgba(28, 17, 11, .16); border-radius: 5px;
+  font-size: 11px; letter-spacing: 0; opacity: .62;
+  font-variation-settings: var(--precise), "wght" 800;
+}
+
+.well {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 9px 13px;
+  color: var(--cream);
+  background: rgba(28, 17, 11, .18);
+  border: 2px dashed rgba(254, 214, 167, .38);
+  border-radius: var(--r);
+  font: 400 15px/1.2 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--casual), "wght" 560;
+}
+.well.in {
+  background: var(--purple-dark); color: var(--paper);
+  border: var(--line) solid var(--outline);
+  font-variation-settings: var(--casual), "wght" 700;
+}
+.well .cnt {
+  margin-left: auto; padding-left: 8px;
+  font-size: 14px; font-variant-numeric: tabular-nums;
+  font-variation-settings: var(--precise), "wght" 640;
+  color: rgba(254, 214, 167, .72);
+}
+.well.in .cnt { color: rgba(255, 251, 243, .8); }
+
+.slot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 8px 16px;
+  background: var(--card); border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline);
+}
+.slot .ph {
+  flex: 1; color: var(--placeholder); font-size: 18px;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.slot .post {
+  min-height: 44px; padding: 11px 18px;
+  background: var(--orange); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 4px 0 0 var(--outline);
+  font: 400 13px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 830;
+  display: inline-flex; align-items: center;
+}
+.slot .cam {
+  display: inline-grid; place-items: center; width: 44px; height: 44px;
+  background: var(--paper); border: var(--line) solid var(--outline); border-radius: 999px;
+  box-shadow: 0 4px 0 0 var(--outline); color: var(--outline);
+}
+.slot .cam svg { width: 20px; height: 20px; display: block; }
+
+.dock {
+  padding: 12px 22px 16px;
+  background: rgba(59, 37, 96, .72);
+  border-top: var(--line) solid var(--outline);
+}
+
+.bubble {
+  background: rgba(255, 251, 243, .13);
+  border-radius: 3em; padding: .62em 2.1ch;
+  width: fit-content; max-width: 44ch;
+  font-size: 16px; line-height: 1.4;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.bubble.mine { background: var(--card); color: var(--outline); margin-left: auto; align-self: flex-end; }
+.said { display: flex; gap: 10px; align-items: flex-start; }
+.said img.face { width: 40px; height: auto; display: block; flex: 0 0 auto; }
+.whensaid {
+  color: var(--cream); font-size: 11px; line-height: 1;
+  font-variation-settings: var(--precise), "wght" 560;
+  font-variant-numeric: tabular-nums; letter-spacing: .02em;
+}
+.whenday {
+  text-align: center; color: var(--cream); font-size: 11.5px; line-height: 1;
+  text-transform: uppercase; letter-spacing: .1em;
+  font-variation-settings: var(--precise), "wght" 700;
+  margin: 6px 0 2px;
+}
+
+.plate {
+  padding: 16px 18px;
+  background: rgba(28, 17, 11, .22);
+  border: 2px solid rgba(254, 214, 167, .3);
+  border-radius: var(--r);
+}
+.plate > h3, .colhead {
+  margin: 0 0 12px; display: flex; align-items: baseline; gap: 9px;
+  font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--cream);
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.colhead .cnt {
+  font-size: 14px; letter-spacing: 0; text-transform: none;
+  font-variant-numeric: tabular-nums; color: rgba(254, 214, 167, .72);
+  font-variation-settings: var(--precise), "wght" 640;
+}
+.offer {
+  padding: 18px 20px 16px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 5px 0 0 var(--outline), 0 18px 30px -16px rgba(0, 0, 0, .7);
+  position: relative;
+}
+.offer { display: flex; flex-direction: column; }
+.offer .tab {
+  position: absolute; top: calc(var(--line) * -1 - 12px); right: 22px;
+  width: 42px; height: 15px;
+  background: var(--orange); border: var(--line) solid var(--outline);
+  border-bottom: 0; border-radius: 6px 6px 0 0;
+}
+.offer .acts { margin-top: auto; padding-top: 14px; }
+.offer .what { margin: 0; font-size: 26px; line-height: 1.18; letter-spacing: -.008em; font-variation-settings: var(--casual), "wght" 620; }
+.offer .clause { margin: 8px 0 0; font-size: 15.5px; line-height: 1.42; color: var(--brown); font-variation-settings: var(--casual), "wght" 460; }
+.offer .acts { display: flex; flex-wrap: wrap; gap: 9px; }
+.quiet {
+  background: none; border: 0; padding: 0;
+  color: var(--cream); font-size: 13.5px; text-decoration: underline; text-underline-offset: 4px;
+  font-variation-settings: var(--precise), "wght" 560;
+}
+.tick { display: flex; align-items: baseline; gap: 10px; padding: 7px 0; }
+.tick + .tick { border-top: 1px solid rgba(254, 214, 167, .18); }
+.tick time {
+  font-size: 14px; color: var(--paper); font-variant-numeric: tabular-nums; letter-spacing: .02em;
+  font-variation-settings: var(--precise), "wght" 700; flex: 0 0 auto; min-width: 5ch;
+}
+.tick span { font-size: 15px; color: var(--cream); font-variation-settings: var(--casual), "wght" 470; }
+.tick em {
+  margin-left: auto; font-style: normal; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(254, 214, 167, .66); font-variation-settings: var(--precise), "wght" 700; flex: 0 0 auto;
+}
+.running {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: rgba(28, 17, 11, .3); border: 2px solid rgba(254, 214, 167, .34); border-radius: var(--r);
+}
+.running .what { font-size: 16px; color: var(--paper); font-variation-settings: var(--casual), "wght" 560; }
+.running .left { margin-left: auto; font-size: 15px; color: var(--cream); font-variant-numeric: tabular-nums; font-variation-settings: var(--precise), "wght" 700; }
+.peek { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.peek li {
+  font-size: 14.5px; line-height: 1.35; color: var(--cream);
+  font-variation-settings: var(--casual), "wght" 450;
+  display: flex; gap: 9px; align-items: baseline;
+}
+.peek li b {
+  flex: 0 0 auto; width: 9px; height: 9px; border-radius: 3px; background: rgba(254, 214, 167, .5);
+  transform: translateY(-1px);
+}
+.peek li.done b { background: var(--done); }
+.peek li.kept b { background: var(--kept); }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <div class="sheethead">
+    <div class="mark">
+      <img src="../../internal/web/static/logo.png" alt="">
+      <b>Squirrel</b>
+    </div>
+    <h1>Three ways this could stop being a conversation</h1>
+    <p>Each one keeps the pile, the five rooms, the picker's six rules and the way a note is answered. What changes is the container it all sits in.</p>
+    <p>Sample words are authored. None of them are yours.</p>
+  </div>
+
+  <section class="concept">
+    <header>
+      <h2>One — the desk</h2>
+      <p class="premise">The conversation stops being the product's shape. Every room is a column of the things themselves, and you answer a note where it stands.</p>
+      <dl>
+        <dt>Keeps</dt><dd>The pile, the four answers, the six rules, the dock, the mark. Chat stays as the room in Campfire, which is where it always worked.</dd>
+        <dt>Costs</dt><dd>Everything shipped between v0.49 and v0.55: turns, rooms as threads, the check-in as a turn, how you felt before as a press. A note stops carrying when it was said.</dd>
+        <dt>Buddy</dt><dd>A standing column on the right. Present without being the container.</dd>
+      </dl>
+    </header>
+    <div class="frames">
+      <div class="frame" style="width:100%">
+        <p class="framelabel">Desktop <i>1440 × 900</i></p>
+        <div class="hold"><div class="scaled"><div class="art desk">
+
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+            <span class="spacer"></span>
+            <span class="lidbtn">look for something</span>
+          </div>
+
+          <div class="todayband">
+            <div class="offer">
+              <span class="tab"></span>
+              <p class="what">send the meter reading, before the bill comes out</p>
+              <p class="clause">the oldest thing you decided to do</p>
+              <div class="acts">
+                <span class="chip make">I'll do it<span class="key">D</span></span>
+                <span class="chip">not today<span class="key">N</span></span>
+                <span class="chip">I'm stuck<span class="key">S</span></span>
+              </div>
+            </div>
+            <div class="checkin">
+              <span class="ask">how do you feel?</span>
+              <span class="faces">
+                <span class="face"><img src="../../internal/web/static/mood-good.png" alt="">good</span>
+                <span class="face"><img src="../../internal/web/static/mood-calm.png" alt="">calm</span>
+                <span class="face"><img src="../../internal/web/static/mood-low.png" alt="">low</span>
+                <span class="face"><img src="../../internal/web/static/mood-frazzled.png" alt="">frazzled</span>
+                <span class="face"><img src="../../internal/web/static/mood-wiped.png" alt="">wiped</span>
+              </span>
+            </div>
+            <div class="side">
+              <div class="running">
+                <span class="what">bins out</span>
+                <span class="left">7:12 left</span>
+                <span class="chip stop">stop</span>
+              </div>
+              <div class="plate">
+                <h3>what is coming</h3>
+                <div class="tick"><time>13:40</time><span>dentist</span><em>leave 13:05</em></div>
+                <div class="tick"><time>Tue</time><span>boiler service, morning</span></div>
+                <div class="tick"><time>Fri</time><span>Anna's train gets in</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="deskgrid">
+            <div class="board">
+              <p class="colhead">the notes <span class="cnt">6</span></p>
+              <div class="cards">
+                <div class="card">
+                  <p class="name">boiler service code is 4471, engineer said keep it somewhere</p>
+                  <p class="meta">this morning</p>
+                  <div class="acts">
+                    <span class="chip did">done<span class="key">D</span></span>
+                    <span class="chip">keep<span class="key">K</span></span>
+                    <span class="chip stop">drop<span class="key">X</span></span>
+                    <span class="chip make">make a chore<span class="key">C</span></span>
+                  </div>
+                </div>
+                <div class="card"><p class="name">kaas</p><p class="meta">yesterday</p></div>
+                <div class="card"><p class="name">meter reading 48213</p><p class="meta">yesterday</p></div>
+              </div>
+            </div>
+
+            <div class="board">
+              <p class="colhead">the chores <span class="cnt">2</span></p>
+              <div class="cards">
+                <div class="card">
+                  <p class="name">bins out</p>
+                  <p class="meta">every week &middot; due today</p>
+                  <div class="acts">
+                    <span class="chip did">did it<span class="key">D</span></span>
+                    <span class="chip">later<span class="key">L</span></span>
+                  </div>
+                </div>
+                <div class="card"><p class="name">water the plants</p><p class="meta">every 3 days &middot; tomorrow</p></div>
+              </div>
+            </div>
+
+            <div class="board">
+              <p class="colhead">the tasks <span class="cnt">4</span></p>
+              <div class="cards">
+                <div class="card"><p class="name">vet about the booster</p><p class="meta">decided Tuesday</p></div>
+                <div class="card"><p class="name">book the boiler service</p><p class="meta">decided last week</p></div>
+                <ul class="peek">
+                  <li><b></b>chase the landlord about the window</li>
+                  <li class="kept"><b></b>passport photos</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="buddycol">
+              <p class="colhead">Buddy</p>
+              <div class="said">
+                <img class="face" src="../../internal/web/static/buddy.png" alt="">
+                <div>
+                  <p class="bubble" style="margin:0">the meter reading has been sat there since Tuesday. want me to break it into two?</p>
+                  <p class="whensaid" style="margin:6px 0 0">09:12</p>
+                </div>
+              </div>
+              <div class="chips">
+                <span class="chip soft">what should I do?</span>
+                <span class="chip soft">break this up</span>
+                <span class="chip soft">how have I been?</span>
+              </div>
+              <div class="talkslot">
+                <div class="slot" style="padding:6px 6px 6px 14px">
+                  <span class="ph" style="font-size:16px">ask him something</span>
+                  <span class="post" style="min-height:38px;padding:9px 13px">Say it</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dock" style="margin-top:14px">
+            <div style="display:flex;gap:10px;align-items:center;max-width:1100px;margin:0 auto 10px">
+              <span class="chip soft" style="background:var(--purple-dark);border-color:var(--outline);color:var(--paper)">into everything</span>
+              <span class="chip soft">the notes</span>
+              <span class="chip soft">a chore</span>
+              <span class="chip soft">the agenda</span>
+              <span class="chip soft">a task</span>
+            </div>
+            <div class="slot" style="max-width:1100px;margin:0 auto">
+              <span class="ph">what's going on?</span>
+              <span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg></span>
+              <span class="post">Tell it</span>
+            </div>
+          </div>
+
+        </div></div></div>
+      </div>
+      <div class="frame">
+        <p class="framelabel">Phone <i>390 × 844</i></p>
+        <div class="art pocket">
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+          </div>
+          <div class="pockbody" style="height:calc(100% - 79px)">
+            <div class="tabs" style="margin-right:-14px">
+              <span class="tab in">the notes <span style="opacity:.72">6</span></span>
+              <span class="tab">the chores <span style="opacity:.72">2</span></span>
+              <span class="tab">the tasks <span style="opacity:.72">4</span></span>
+              <span class="tab">the agenda</span>
+            </div>
+            <div class="offer" style="padding:14px 16px 13px">
+                            <p class="what" style="font-size:21px">send the meter reading</p>
+              <p class="clause" style="font-size:14px">the oldest thing you decided to do</p>
+              <div class="acts" style="margin-top:11px">
+                <span class="chip make">I'll do it</span>
+                <span class="chip">not today</span>
+              </div>
+            </div>
+            <div class="pocklist">
+              <div class="card">
+                <p class="name" style="font-size:18px">boiler service code is 4471, engineer said keep it somewhere</p>
+                <p class="meta">this morning</p>
+                <div class="acts">
+                  <span class="chip did">done</span>
+                  <span class="chip">keep</span>
+                  <span class="chip stop">drop</span>
+                </div>
+              </div>
+              <div class="card"><p class="name" style="font-size:18px">kaas</p><p class="meta">yesterday</p></div>
+              <div class="card"><p class="name" style="font-size:18px">meter reading 48213</p><p class="meta">yesterday</p></div>
+              <div class="card"><p class="name" style="font-size:18px">ask the landlord what the window is called</p><p class="meta">Tuesday</p></div>
+            </div>
+            <div class="pockfoot">
+              <div class="dock" style="margin:0 -14px;padding:10px 14px 14px">
+                <div class="slot" style="padding:6px 6px 6px 14px">
+                  <span class="ph" style="font-size:16px">what is it</span>
+                  <span class="cam" style="width:40px;height:40px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg></span>
+                  <span class="post" style="min-height:40px;padding:9px 14px">Put it in</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="acorn"><img src="../../internal/web/static/buddy.png" alt=""></div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>On a thumb</h3>
+        <p>The columns become one column and the room names become the tabs above it, so the thing you are looking at is always named. The offer stays first, because on a phone you are usually here for one thing.</p>
+        <p>Buddy is the acorn, <b>a press, not a column</b>. There is no room on this screen for a conversation that is always visible, and pretending otherwise is how the desk would break on the sofa.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept">
+    <header>
+      <h2>Two — the landing</h2>
+      <p class="premise">One screen you arrive on and mostly look at. The five rooms stay conversations; this is the place that tells you which one to walk into.</p>
+      <dl>
+        <dt>Keeps</dt><dd>Everything. Not one turn is retired. The rooms are untouched behind their doors, and the phone gets the same screen rather than a lesser one.</dd>
+        <dt>Costs</dt><dd>One more press between you and the words. And a screen whose only job is to be looked at can become a screen you tidy.</dd>
+        <dt>Buddy</dt><dd>A strip along the bottom that is already talking. Pressing it opens the conversation you were half in.</dd>
+      </dl>
+    </header>
+    <div class="frames">
+      <div class="frame" style="width:100%">
+        <p class="framelabel">Desktop <i>1440 × 900</i></p>
+        <div class="hold"><div class="scaled"><div class="art desk">
+
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+            <span class="spacer"></span>
+            <span class="lidbtn">look for something</span>
+          </div>
+
+          <div class="homehero">
+            <div class="offer" style="padding:26px 30px 22px">
+              <span class="tab"></span>
+              <p class="what" style="font-size:34px">send the meter reading, before the bill comes out</p>
+              <p class="clause" style="font-size:17px">the oldest thing you decided to do</p>
+              <div class="acts" style="margin-top:18px">
+                <span class="chip make">I'll do it<span class="key">D</span></span>
+                <span class="chip">not today<span class="key">N</span></span>
+                <span class="chip">I'm stuck<span class="key">S</span></span>
+              </div>
+            </div>
+            <div class="side">
+              <div class="running">
+                <span class="what">bins out</span>
+                <span class="left">7:12 left</span>
+                <span class="chip stop">stop</span>
+              </div>
+              <div class="plate">
+                <h3>what is coming</h3>
+                <div class="tick"><time>13:40</time><span>dentist</span><em>leave 13:05</em></div>
+                <div class="tick"><time>Tue</time><span>boiler service, morning</span></div>
+                <div class="tick"><time>Fri</time><span>Anna's train gets in</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="checkin homecheck">
+            <span class="ask">how do you feel?</span>
+            <span class="faces">
+              <span class="face"><img src="../../internal/web/static/mood-good.png" alt="">good</span>
+              <span class="face"><img src="../../internal/web/static/mood-calm.png" alt="">calm</span>
+              <span class="face"><img src="../../internal/web/static/mood-low.png" alt="">low</span>
+              <span class="face"><img src="../../internal/web/static/mood-frazzled.png" alt="">frazzled</span>
+              <span class="face"><img src="../../internal/web/static/mood-wiped.png" alt="">wiped</span>
+            </span>
+          </div>
+
+          <div class="roomrow">
+            <div class="roomcard solid">
+              <span class="head">the notes <span class="cnt">6</span></span>
+              <ul class="peek">
+                <li><b></b>boiler service code is 4471, engineer said keep it somewhere</li>
+                <li><b></b>kaas</li>
+                <li><b></b>meter reading 48213</li>
+                <li><b></b>ask the landlord what the window is called</li>
+                <li><b></b>the thing about the bike lights</li>
+              </ul>
+              <span class="chip soft" style="margin-top:auto;align-self:flex-start">answer the first one</span>
+            </div>
+            <div class="roomcard">
+              <span class="head">the chores <span class="cnt">2</span></span>
+              <ul class="peek">
+                <li><b></b>bins out &middot; today</li>
+                <li><b></b>water the plants &middot; tomorrow</li>
+                <li><b></b>washing machine filter &middot; Sunday</li>
+              </ul>
+            </div>
+            <div class="roomcard">
+              <span class="head">the tasks <span class="cnt">4</span></span>
+              <ul class="peek">
+                <li><b></b>vet about the booster</li>
+                <li><b></b>book the boiler service</li>
+                <li><b></b>chase the landlord about the window</li>
+                <li><b></b>passport photos</li>
+              </ul>
+            </div>
+            <div class="roomcard">
+              <span class="head">everything</span>
+              <div class="slot" style="margin-top:6px;padding:6px 6px 6px 13px">
+                <span class="ph" style="font-size:16px">what's going on?</span>
+                <span class="post" style="min-height:38px;padding:9px 13px">Tell it</span>
+              </div>
+              <ul class="peek" style="margin-top:8px">
+                <li class="done"><b></b>you finished the washing machine one</li>
+                <li class="kept"><b></b>you kept the boiler code</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="buddystrip">
+            <img src="../../internal/web/static/buddy.png" alt="" style="width:52px;height:auto;display:block">
+            <p class="bubble" style="margin:0;max-width:52ch">the meter reading has been sat there since Tuesday. want me to break it into two?</p>
+            <div class="chips">
+              <span class="chip soft">break this up</span>
+              <span class="chip soft">how have I been?</span>
+              <span class="chip soft">not now</span>
+            </div>
+          </div>
+
+        </div></div></div>
+      </div>
+      <div class="frame">
+        <p class="framelabel">Phone <i>390 × 844</i></p>
+        <div class="art pocket">
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+          </div>
+          <div class="pockbody" style="height:calc(100% - 79px)">
+            <div class="offer" style="padding:16px 18px 15px">
+              <p class="what" style="font-size:23px">send the meter reading</p>
+              <p class="clause" style="font-size:14.5px">the oldest thing you decided to do</p>
+              <div class="acts" style="margin-top:12px">
+                <span class="chip make">I'll do it</span>
+                <span class="chip">not today</span>
+              </div>
+            </div>
+            <div class="running">
+              <span class="what" style="font-size:15px">bins out</span>
+              <span class="left" style="font-size:14px">7:12 left</span>
+              <span class="chip stop" style="min-height:32px;padding:7px 11px">stop</span>
+            </div>
+            <div class="plate" style="padding:13px 15px">
+              <h3 style="margin-bottom:8px">what is coming</h3>
+              <div class="tick" style="padding:5px 0"><time>13:40</time><span>dentist</span><em>13:05</em></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div class="well in">the notes <span class="cnt">6</span></div>
+              <div class="well">the chores <span class="cnt">2</span></div>
+              <div class="well">the tasks <span class="cnt">4</span></div>
+              <div class="well">the agenda <span class="cnt">3</span></div>
+            </div>
+            <div class="pockfoot">
+              <div class="dock" style="margin:0 -14px;padding:10px 14px 14px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+                  <img src="../../internal/web/static/buddy.png" alt="" style="width:34px;height:auto;display:block">
+                  <p class="bubble" style="margin:0;font-size:14.5px;max-width:26ch">want me to break the meter one up?</p>
+                </div>
+                <div class="slot" style="padding:6px 6px 6px 14px">
+                  <span class="ph" style="font-size:16px">what's going on?</span>
+                  <span class="post" style="min-height:40px;padding:9px 14px">Tell it</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>On a thumb</h3>
+        <p>The same screen, stacked in the order you need it: what Squirrel picked, what is running, what is coming, then the doors with what is behind them.</p>
+        <p>This is the only one of the three whose phone view is <b>the same idea as its desktop view</b>. Nothing is desktop-only, so nothing has to be re-learned when you sit down.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept">
+    <header>
+      <h2>Three — the standing panel</h2>
+      <p class="premise">The rail you already have stops being a list of doors and becomes a column that answers what is going on. The conversation is untouched beside it, and the phone never sees any of it.</p>
+      <dl>
+        <dt>Keeps</dt><dd>Every turn, every room, the dock, the phone exactly as it shipped last night. Two views, one pile: the rule the product already lives by.</dd>
+        <dt>Costs</dt><dd>The scattered feeling only lifts at the desk. On the sofa it is the same product it is today.</dd>
+        <dt>Buddy</dt><dd>The left pane is Buddy. He is always present because he never left.</dd>
+      </dl>
+    </header>
+    <div class="frames">
+      <div class="frame" style="width:100%">
+        <p class="framelabel">Desktop <i>1440 × 900</i></p>
+        <div class="hold"><div class="scaled"><div class="art desk">
+
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+            <span class="spacer"></span>
+            <span class="lidbtn">look for something</span>
+          </div>
+
+          <div class="panes">
+            <div class="pane">
+              <div class="transcript">
+                <p class="whenday">Today</p>
+                <div class="said">
+                  <img class="face" src="../../internal/web/static/buddy.png" alt="">
+                  <div>
+                    <p class="bubble" style="margin:0">two things came in overnight. this one first?</p>
+                    <p class="whensaid" style="margin:6px 0 0">08:41</p>
+                  </div>
+                </div>
+                <div class="card" style="max-width:560px;margin-left:50px">
+                  <p class="name">boiler service code is 4471, engineer said keep it somewhere</p>
+                  <p class="meta">this morning</p>
+                  <div class="acts">
+                    <span class="chip did">done<span class="key">D</span></span>
+                    <span class="chip">keep<span class="key">K</span></span>
+                    <span class="chip stop">drop<span class="key">X</span></span>
+                    <span class="chip make">make a chore<span class="key">C</span></span>
+                  </div>
+                </div>
+                <p class="bubble mine" style="margin:0">keep</p>
+                <div class="said">
+                  <img class="face" src="../../internal/web/static/buddy.png" alt="">
+                  <div>
+                    <p class="bubble" style="margin:0">kept. it is on the shelf with the passport photos.</p>
+                    <p class="whensaid" style="margin:6px 0 0">08:42</p>
+                  </div>
+                </div>
+              </div>
+              <div class="dock">
+                <div class="slot" style="max-width:676px;margin:0 auto">
+                  <span class="ph">what's going on?</span>
+                  <span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg></span>
+                  <span class="post">Tell it</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pane right">
+              <div class="offer" style="padding:16px 18px 15px">
+                <span class="tab" style="right:20px"></span>
+                <p class="what" style="font-size:23px">send the meter reading</p>
+                <p class="clause" style="font-size:14.5px">the oldest thing you decided to do</p>
+                <div class="acts" style="margin-top:12px">
+                  <span class="chip make">I'll do it</span>
+                  <span class="chip">not today</span>
+                </div>
+              </div>
+              <div class="running">
+                <span class="what" style="font-size:15px">bins out</span>
+                <span class="left" style="font-size:14px">7:12 left</span>
+                <span class="chip stop" style="min-height:32px;padding:7px 11px">stop</span>
+              </div>
+              <div class="plate">
+                <h3>what is coming</h3>
+                <div class="tick"><time>13:40</time><span>dentist</span><em>leave 13:05</em></div>
+                <div class="tick"><time>Tue</time><span>boiler service, morning</span></div>
+                <div class="tick"><time>Fri</time><span>Anna's train gets in</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div class="well in">the notes <span class="cnt">6</span></div>
+                <div class="well">the chores <span class="cnt">2</span></div>
+                <div class="well">the tasks <span class="cnt">4</span></div>
+                <div class="well">the agenda <span class="cnt">3</span></div>
+                <div class="well">everything</div>
+              </div>
+              <p class="quiet" style="margin:auto 0 0;align-self:flex-start">what you set aside</p>
+            </div>
+          </div>
+
+        </div></div></div>
+      </div>
+      <div class="frame">
+        <p class="framelabel">Phone <i>390 × 844, unchanged</i></p>
+        <div class="art pocket">
+          <div class="lid">
+            <img class="markart" src="../../internal/web/static/logo.png" alt="">
+            <span class="wordmark">Squirrel</span>
+          </div>
+          <div class="pockbody" style="height:calc(100% - 79px)">
+            <p class="whenday" style="margin-top:auto">Today</p>
+            <div class="said">
+              <img class="face" src="../../internal/web/static/buddy.png" alt="" style="width:36px">
+              <div>
+                <p class="bubble" style="margin:0;font-size:15px">two things came in overnight. this one first?</p>
+                <p class="whensaid" style="margin:6px 0 0">08:41</p>
+              </div>
+            </div>
+            <div class="card" style="margin-left:46px">
+              <p class="name" style="font-size:17px">boiler service code is 4471, engineer said keep it somewhere</p>
+              <p class="meta">this morning</p>
+              <div class="acts">
+                <span class="chip did">done</span>
+                <span class="chip">keep</span>
+                <span class="chip stop">drop</span>
+              </div>
+            </div>
+            <p class="bubble mine" style="margin:0;font-size:15px">keep</p>
+            <div class="pockfoot" style="margin-top:0">
+              <div class="dock" style="margin:12px -14px 0;padding:10px 14px 14px">
+                <div class="slot" style="padding:6px 6px 6px 14px">
+                  <span class="ph" style="font-size:16px">what's going on?</span>
+                  <span class="cam" style="width:40px;height:40px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg></span>
+                  <span class="post" style="min-height:40px;padding:9px 14px">Tell it</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>On a thumb</h3>
+        <p>Nothing. This is the product as it stands, drawn here so the comparison is honest rather than flattering. The panel is a desk affordance and the phone keeps the conversation.</p>
+        <p>Which is either the point or the problem: <b>the scattered feeling you described does not only happen at the desk</b>.</p>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
