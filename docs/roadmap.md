@@ -345,6 +345,61 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.56.0 — 2 September 2026
+
+**The app is a strip board, not a conversation.**
+
+The complaint was that everything felt scattered and there was no way to focus
+on two things at once, which is what a conversation is: one thing at a time, in
+the order it was said, and the state of anything you are not looking at is
+somewhere further up. Three worlds were mocked against it — a dashboard of
+panels, a desk, and a strip board. The board won on the one thing the other two
+could not do: a strip is a thing you can pick up, answer and put down, and four
+racks of them are readable at a glance without any of them being a number.
+
+**Colours and fonts are the only things kept.** Everything else was replaced:
+`board.html`, `board.css`, `board.js` and `board.go` are a second application
+sharing the store, and it took the front door rather than sitting beside it.
+DESIGN.md was rewritten from 2,987 lines to 650 around the new world's own rules — The Holder
+Rule, The Four Holders, The State Is A Mark Rule, Green Is Only Done, Never A
+White Surface, and the rest.
+
+**A strip carries its own answer.** The two-step it replaced — press a row, then
+answer the card that appears — is gone: every stamp is on the strip itself, so
+nothing is ever held in a form field waiting for a second decision. What leaves
+a rack lands in today's tray at the foot of the board, with 1150ms of hold to
+undo it.
+
+**The four rooms became four bays**, and then stopped being places at all. Their
+URLs answer 301 to the rack that holds what they held. The record keeps its
+rooms — every turn still carries the room it was said in, new turns still file
+by subject, and Buddy's room reads the whole record — so nothing that was ever
+said is out of reach. The four survive as sets he can be asked to draw.
+
+**The conversation is Buddy's room.** It is where you talk to him and nowhere
+else; answering happens on the board, so triage left the conversation with the
+doors.
+
+**A rack says that there is more and never how much** — *there is more further
+back*, under the last strip it can hold. The same rule the whole product has
+followed since the beginning: a capped list may say *that* there is more.
+
+**Two capabilities were retired on purpose** and are recorded as decisions
+rather than omissions: the notice the coach could make about a set, and the
+live edge, which a rack is by construction.
+
+**The phone shows one bay at a time**, chosen by four tabs above the racks; the
+desktop shows all four side by side. One application, collapsing, rather than
+two.
+
+**The keys were drawn and never read.** Every stamp carried a letter from the
+day the board was mounted and nothing listened for one — found only when the
+rooms' own keyboard tests came looking for a home during the retirement. Letters
+act on the strip you are focused in, arrows move between strips, and a letter
+nothing answers to does nothing.
+
+No schema change: the rollback is the image tag alone.
+
 ### v0.55.1 — 31 August 2026
 
 **How you felt before is a turn, not a page.**
