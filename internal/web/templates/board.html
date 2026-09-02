@@ -1,31 +1,26 @@
 {{define "board"}}<!doctype html>
-<html lang="en">
+<html lang="en" style="--light: {{.Light}}%">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squirrel</title>
+<meta name="theme-color" content="#472e70">
+<link rel="icon" href="/static/logo.png?v={{.V}}">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
 <link rel="stylesheet" href="/static/board.css?v={{.V}}">
+<link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
 <script src="/static/board.js?v={{.V}}" defer></script>
 </head>
-<body style="--light: {{.Light}}%">
+<body>
 <header class="ops">
-  <a class="chip face" href="/r/everything" aria-label="who you are"><span>{{.You}}</span></a>
+  {{template "youchip" .You}}
   <img class="markart" src="/static/logo.png" alt="">
   <h1 class="wordmark">Squirrel</h1>
   <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
-  <form class="find{{if .Find}} open{{end}}" method="get" action="/">
-    <label class="findpress" for="findfield">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-    </label>
-    <input id="findfield" name="find" value="{{.Find}}" placeholder="look for something" autocomplete="off" enterkeyhint="search" aria-label="look for something">
-  </form>
+  {{template "findchip" .Find}}
   <span class="spacer"></span>
-  <a class="chip buddy" href="/r/everything" aria-label="talk to Buddy">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5c0 1.4-1.1 2.5-2.5 2.5H11l-4 3.2V17H6.5A2.5 2.5 0 0 1 4 14.5v-8A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5Z"/></svg>
-  </a>
-  <a class="chip bell{{if .AnyTold}} full{{end}}" href="/?told=1" aria-label="what Squirrel told you">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.4 5.4 1.9 6H4.1C4.6 14.4 6 13 6 9Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
-  </a>
+  {{template "buddychip"}}
+  {{template "bellchip" .AnyTold}}
 </header>
 
 <div class="deck">

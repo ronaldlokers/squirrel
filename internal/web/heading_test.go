@@ -28,6 +28,10 @@ var notATitle = map[string]string{
 	// not arrive at the front door wondering. A turn that opens a place carries
 	// that place's name as an <h2>, which is what heading navigation walks.
 	"thread.html": "the front door — you do not arrive there wondering",
+	// The chips both bars are made of. Not a screen at all: it defines the
+	// controls the board and the conversation share, so that one bar cannot
+	// drift from the other.
+	"chips.html": "the chrome's controls, drawn into both bars",
 }
 
 func templates(t *testing.T) map[string]string {

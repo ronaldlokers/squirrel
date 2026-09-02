@@ -54,7 +54,7 @@ func page(files ...string) *template.Template {
 // re-parse from it. Parsed once at start and never again in a shipped binary:
 // the files cannot change under a running process.
 var pageFiles = map[string][]string{
-	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html"},
+	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html", "templates/chips.html"},
 }
 
 var pages = map[string]*template.Template{
@@ -145,6 +145,8 @@ type view struct {
 	// file cannot know what day it is. See squirrel.Tilt and squirrel.Light.
 	Tilt  int
 	Light int
+	// AnyTold marks the bell: there is a record to look at.
+	AnyTold bool
 	// Home is the front door, where the mark is not a link because it would be
 	// a link to here.
 	Home bool
@@ -350,6 +352,12 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 	if personID, ok := personOf(r); ok {
 		v.Rooms = roomsFor(r.Context(), s, personID, roomOf(r.Context()))
 		v.You = youFor(r.Context(), s, personID)
+		// One row is all the bell's mark needs, and this runs on every screen.
+		if told, err := s.WhatWasSaid(r.Context(), personID, 1); err == nil {
+			v.AnyTold = len(told) > 0
+		} else {
+			slog.Error("reading what was said", "error", err)
+		}
 		// Whether anything would be sent to. Read here rather than asked of
 		// the browser, because the browser can only say whether it has been
 		// given permission — which is not the same question and was the whole

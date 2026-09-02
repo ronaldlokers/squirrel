@@ -46,6 +46,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
 <link rel="stylesheet" href="/static/pile.css?v={{.V}}">
+<link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
 {{/* crossorigin="use-credentials" looks like noise and is kept deliberately.
      A browser fetches a manifest with credentials *omitted* by default, even
      same-origin — so any guard in front of this route answers with a redirect
@@ -56,6 +57,7 @@
      The route is mounted outside the guard today, so this is belt and braces.
      It costs one attribute and it is the failure nobody would diagnose. */}}
 <link rel="manifest" href="/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
+<link rel="icon" href="/static/logo.png?v={{.V}}">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
 <meta name="theme-color" content="#3b2560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -97,12 +99,6 @@
     <button class="stopTimer" type="submit">stop</button>
   </form>
   {{end}}
-  {{/* The lid holds the mark, the room you are in on a phone, and the timer
-       when one is running. Nothing else: it was a row of words costing most of
-       a phone screen before anything you came for.
-
-       Ruled off straight since 29 August. The brim that hung here was drawn for
-       a phone and stretched flat on a desktop; see .lid in pile.css. */}}
 </div>
 {{/* The rooms, and they are the whole of this product's navigation.
 
