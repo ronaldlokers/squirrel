@@ -14,14 +14,14 @@ func TestEveryActionIsAFormSubmissionNotAScriptHook(t *testing.T) {
 	body := opened(t, f, "notes")
 
 	require.Contains(t, body, `method="post"`)
-	require.Contains(t, body, `action="/pile/act"`)
+	require.Contains(t, body, `action="/board/act"`)
 	require.NotContains(t, body, "onclick=",
 		"behaviour lives in pile.js; a page that needs inline handlers is a page that fails without them")
-	// Every act travels as a hidden field in a form rather than on the button,
-	// so a press is a form submission whatever the script is doing — and there
-	// are as many acts as there are forms that carry one.
+	// Every answer travels as a button's own value inside a form rather than on
+	// a script hook, so a press is a form submission whatever the script is
+	// doing — and every one of them names the thing it acts on.
 	require.Equal(t,
-		strings.Count(body, `<input type="hidden" name="act"`),
-		strings.Count(body, `action="/pile/act"`),
-		"an act that is not in a form is an act only a script can make")
+		strings.Count(body, `name="answer" value=`),
+		strings.Count(body, `<button class="stamp`)-strings.Count(body, `name="every" value=`),
+		"an answer that is not a submit button is an answer only a script can make")
 }

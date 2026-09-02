@@ -6,16 +6,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 // A shelf is a press inside the notes, not a door on the rail.
 func TestAShelfIsAPressInsideTheNotes(t *testing.T) {
+	// The ledge at the foot of the notes rack since 2 September 2026, where it
+	// was a chip inside the notes room before. Still inside the notes, still
+	// not a door of its own.
 	body := opened(t, aShelf(), "notes")
 
-	require.Contains(t, body, `value="kept"`, "the notes do not offer what you kept")
-	require.Contains(t, body, `value="held"`, "the notes do not offer what you set aside")
+	require.Contains(t, body, `href="/?shelf=kept"`, "the notes do not offer what you kept")
+	require.Contains(t, body, `href="/?shelf=held"`, "the notes do not offer what you set aside")
 	require.NotContains(t, body, `href="/r/kept"`, "a shelf is still a door on the rail")
 	require.NotContains(t, body, `href="/r/held"`, "a shelf is still a door on the rail")
 }
@@ -43,7 +44,8 @@ func TestAShelfNobodyNamedDrawsNothing(t *testing.T) {
 // A room was a URL you could put on a home screen. All four still land.
 func TestTheRoomsThatStoppedBeingRoomsStillLandSomewhere(t *testing.T) {
 	for from, to := range map[string]string{
-		"/r/buddy": "/r/everything", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
+		"/r/buddy": "/r/everything", "/r/pile": "/?bay=notes", "/r/held": "/?shelf=held", "/r/kept": "/?shelf=kept",
+		"/r/notes": "/?bay=notes", "/r/chores": "/?bay=chores", "/r/at": "/?bay=agenda", "/r/tasks": "/?bay=tasks",
 	} {
 		res := mounted(t, &fakeStore{}).call(t, "GET", from, nil)
 
@@ -52,16 +54,8 @@ func TestTheRoomsThatStoppedBeingRoomsStillLandSomewhere(t *testing.T) {
 	}
 }
 
-// The notes hold what three rooms held, so what was said in any of them is one
-// conversation now. The migration is what moves the record; this is the half
-// the screen is responsible for.
-func TestTheNotesReadOneConversation(t *testing.T) {
-	f := &fakeStore{turns: []squirrel.Turn{
-		{ID: 1, Who: squirrel.SpeakerYou, Words: "the boiler code"},
-		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Down it goes."},
-	}}
-	body := opened(t, f, "notes")
-
-	require.Contains(t, body, "the boiler code")
-	require.Equal(t, "notes", f.roomRead, "the notes read somebody else's conversation")
-}
+// The notes read one conversation, and that test went with the room on
+// 2 September 2026: the notes are a bay, and a bay reads the pile rather than a
+// conversation. What it protected — that three rooms' worth of record became
+// one — is Buddy's room's job now, and TestBuddysRoomReadsTheWholeRecord is
+// where it is proved.

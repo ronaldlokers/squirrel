@@ -170,10 +170,12 @@ func TestWhatYouSetAsideIsNotOnTheConversation(t *testing.T) {
 // happened to something.
 func TestTheTasksReachIt(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{task(1, "ring the vet", squirrel.ItemOpen)}}
-	body := opened(t, f, "tasks")
+	// Reached from the notes rack's ledge rather than from the tasks: one way
+	// in, below the strips you have not decided about.
+	body := opened(t, f, "notes")
 
 	require.Contains(t, body, "what you set aside")
-	require.Contains(t, body, `value="held"`, "the tasks cannot reach it")
+	require.Contains(t, body, `href="/?shelf=held"`, "the ledge cannot reach it")
 }
 
 // And the page itself is gone.

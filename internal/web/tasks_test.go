@@ -26,14 +26,12 @@ func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
 
 	require.Contains(t, body, "ring the vet")
 	require.NotContains(t, body, "buy milk", "a thought is not a decision")
+	require.Contains(t, body, `data-bay="tasks"`)
 	require.NotContains(t, body, "cancel the old insurance", "done is not still to do")
 
-	// And the reverse: the pile does not hand you a task. Asserted on the turn
-	// the door drew rather than on the page, which by now also holds the tasks
-	// this test just asked for.
-	f.appended = nil
-	fDrew := drewIn(t, f, "notes")
-	pile := string(fDrew[len(fDrew)-1].Shown)
+	// And the reverse: the notes rack does not hold a task. Read as its own
+	// rack rather than as the page, which holds all four.
+	pile := opened(t, f, "notes")
 	require.Contains(t, pile, "buy milk")
 	require.NotContains(t, pile, "ring the vet")
 }
@@ -43,9 +41,12 @@ func TestTheTasksScreenHoldsOnlyWhatYouDecided(t *testing.T) {
 func TestATaskOffersTwoWaysOut(t *testing.T) {
 	body := opened(t, aDeciding(), "tasks")
 
+	// Two ways out on the board's tasks rack: done, and dropped. "Untask" was
+	// the room's word for putting a decision back among the thoughts, and the
+	// rack's word for the same act is drop — the pile is where it lands either
+	// way.
 	require.Contains(t, body, `value="done"`)
-	require.Contains(t, body, `value="untask"`)
-	require.NotContains(t, body, `value="drop"`)
+	require.Contains(t, body, `value="drop"`)
 	require.NotContains(t, body, `value="keep"`)
 }
 
@@ -116,25 +117,28 @@ func TestTheTasksAreCountedAndNeverRanked(t *testing.T) {
 	}
 	body := strings.ToLower(opened(t, &fakeStore{items: items}, "tasks"))
 
-	require.Contains(t, body, "4 things you decided")
+	// The count is on the sign, which is the one place a rack says how many.
+	require.Contains(t, body, `the tasks <span class="n">4</span>`)
 	for _, ranked := range []string{"of 4", "(4)", "1 of ", "4 left", "4 remaining"} {
 		require.NotContains(t, body, ranked)
 	}
 }
 
-// A reply is not a screen of list. Five cards and one press for the rest: twelve
-// arrived as a wall with a sentence on top, and reading it was the work the
-// conversation was supposed to replace.
-func TestADoorHandsYouAFewRatherThanAllOfThem(t *testing.T) {
+// A rack hands you what it can hold and says that there is more, never how
+// much. The door this replaced capped at five and said "the rest"; the rack
+// caps deeper and says "there is more further back", which is the same refusal
+// in the pile's own words.
+func TestARackHandsYouWhatItHoldsAndSaysThereIsMore(t *testing.T) {
 	items := []squirrel.Item{}
-	for i := int64(1); i <= 9; i++ {
+	for i := int64(1); i <= 60; i++ {
 		items = append(items, task(i, "a decided thing", squirrel.ItemOpen))
 	}
-	f := &fakeStore{items: items}
-	drew := drewFor(t, f, "tasks")
+	body := opened(t, &fakeStore{items: items}, "tasks")
 
-	require.Equal(t, 5, strings.Count(drew, "a decided thing"), "it handed over the lot")
-	require.Contains(t, drew, "the rest")
+	require.Contains(t, body, "there is more further back")
+	for _, count := range []string{"60", "of 60", "20 more"} {
+		require.NotContains(t, body, count)
+	}
 }
 
 // No deadline, nothing red, no urgency — a task is a thing to do, not a thing
@@ -152,7 +156,7 @@ func TestATaskIsNeverLate(t *testing.T) {
 func TestNothingDecidedDoesNotNag(t *testing.T) {
 	body := opened(t, &fakeStore{}, "tasks")
 
-	require.Contains(t, strings.ToLower(body), "nothing decided")
+	require.NotContains(t, strings.ToLower(body), `the tasks <span class="n">`)
 	for _, nag := range []string{"get started", "add your first", "you should", "why not"} {
 		require.NotContains(t, strings.ToLower(body), nag)
 	}
@@ -172,14 +176,12 @@ func TestANoteCanBeDecided(t *testing.T) {
 
 // The tasks arrive as cards, with what you decided in them.
 func TestOpeningTheTasksDrawsThem(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{
-		{ID: 3, RawText: "ring the bank", Kind: squirrel.ItemTask, State: squirrel.ItemOpen},
-	}}
-	fDrew := drewIn(t, f, "tasks")
+	f := aDeciding()
 
-	require.Len(t, fDrew, 1)
-	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), "ring the bank")
-	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), `"place":"the tasks"`)
+	body := opened(t, f, "tasks")
+
+	require.Contains(t, body, "ring the vet about the booster")
+	require.Contains(t, body, `data-bay="tasks"`)
 }
 
 // A task made from a photograph is a card with the photograph on it. Without
@@ -189,9 +191,10 @@ func TestATaskWithNoWordsKeepsItsPhotograph(t *testing.T) {
 		{ID: 3, RawText: "", Kind: squirrel.ItemTask, State: squirrel.ItemOpen,
 			PhotoName: "letter.jpg", PhotoType: "image/jpeg"},
 	}}
-	fDrew := drewIn(t, f, "tasks")
+	body := opened(t, f, "tasks")
 
-	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), "photo")
+	require.Contains(t, body, "a photograph", "a task with no words says nothing at all")
+	require.Contains(t, body, `href="/?open=3"`)
 }
 
 // Doing one says so, in the words the note actually holds.
@@ -230,11 +233,15 @@ func TestATaskThatIsNotYoursDoesNothing(t *testing.T) {
 	require.Empty(t, f.states)
 }
 
-// Nothing decided yet is a sentence rather than an empty list.
+// An empty rack says nothing, which is the same refusal the room made with a
+// sentence. "Nothing decided yet" was a line the room drew; a rack that is
+// empty is room rather than a place with an opinion.
 func TestNoTasksSaysSo(t *testing.T) {
-	f := &fakeStore{}
-	fDrew := drewIn(t, f, "tasks")
+	body := strings.ToLower(opened(t, &fakeStore{}, "tasks"))
 
-	require.Len(t, fDrew, 1)
-	require.Contains(t, fDrew[len(fDrew)-1].Words, "Nothing decided yet")
+	require.Contains(t, body, "the tasks")
+	require.NotContains(t, body, `the tasks <span class="n">`)
+	for _, nag := range []string{"nothing decided", "why not", "get started"} {
+		require.NotContains(t, body, nag)
+	}
 }

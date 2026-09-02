@@ -63,11 +63,11 @@ func TestWhatYouTypeInARoomIsSaidInThatRoom(t *testing.T) {
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
 	f.appended = nil
-	m.call(t, "POST", "/tasks/new", strings.NewReader("text=ring+the+vet&room=tasks"))
+	m.call(t, "POST", "/tasks/new", strings.NewReader("text=ring+the+vet&room=everything"))
 
 	require.NotEmpty(t, f.appended, "nothing was said back")
 	for _, turn := range f.appended {
-		require.Equal(t, "tasks", turn.Room,
+		require.Equal(t, "everything", turn.Room,
 			"a turn typed in the tasks landed in %q", turn.Room)
 	}
 }
@@ -117,29 +117,18 @@ func TestAskingInARoomAsksThatRoomsBuddy(t *testing.T) {
 	c := &fakeCoach{reply: "Which bin."}
 	m := mountedWith(t, f, c)
 
-	m.call(t, "POST", "/buddy/say", strings.NewReader("said=the+bins&room=chores"))
+	m.call(t, "POST", "/buddy/say", strings.NewReader("said=the+bins&room=everything"))
 
 	require.NotEmpty(t, c.asked, "nothing was asked")
-	require.Equal(t, "chores", c.asked[len(c.asked)-1].room,
+	require.Equal(t, "everything", c.asked[len(c.asked)-1].room,
 		"the question went to Buddy's room instead of the one it was asked in")
-	require.Contains(t, c.remembered, "chores",
+	require.Contains(t, c.remembered, "everything",
 		"the exchange was remembered in the wrong room")
 }
 
-// And the room a room's own turn reads is that room's, not the page's.
-func TestTheNoticeAboutARoomIsAskedAsThatRoom(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{
-		task(1, "book the MOT", squirrel.ItemOpen),
-		task(2, "ring the vet", squirrel.ItemOpen),
-	}}
-	c := &fakeCoach{reply: "these are all errands"}
-	m := mountedWith(t, f, c)
-
-	m.call(t, "GET", "/r/tasks", nil)
-
-	require.NotEmpty(t, c.asked)
-	require.Equal(t, "tasks", c.asked[0].room)
-}
+// The notice a door carried about its set went with the doors on 2 September
+// 2026 — recorded in DESIGN.md as a capability the board does not have — and
+// the test that pinned which room it was asked as went with it.
 
 // And the page sends the room, which is the half a handler test cannot prove.
 //
@@ -154,7 +143,7 @@ func TestEveryFormATurnDrawsCarriesItsRoom(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	body := m.call(t, "GET", "/r/chores", nil).Body.String()
+	body := m.call(t, "GET", "/r/everything", nil).Body.String()
 
 	// Only the turns, not the rail or the dock, which are tested elsewhere.
 	// The conversation and the edge below it — the room's list is drawn there
@@ -165,8 +154,8 @@ func TestEveryFormATurnDrawsCarriesItsRoom(t *testing.T) {
 
 	forms := strings.Count(turns, "<form")
 	require.Positive(t, forms, "no forms drawn, so this measured nothing")
-	require.Equal(t, forms, strings.Count(turns, `name="room" value="chores"`),
-		"a form in the chores does not say which room it is in")
+	require.Equal(t, forms, strings.Count(turns, `name="room" value="everything"`),
+		"a form in Buddy's room does not say which room it is in")
 }
 
 // And the room it falls back to is a room. A held capture replayed into a room

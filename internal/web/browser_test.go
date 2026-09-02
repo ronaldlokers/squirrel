@@ -209,41 +209,11 @@ func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
 		"what it keeps is assets")
 }
 
-// The chores screen is a list, so a key needs to know which chore it means.
-// Rather than invent a selection model it uses the platform's own — the chore
-// you are focused in — and DESIGN.md's rule decides the rest: letters are
-// actions, movement is the arrow keys.
-func TestBrowserTheChoresKeysFollowFocus(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, PersonID: 1, Name: "bins out", Active: true, EverDone: true,
-			Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
-		{ID: 2, PersonID: 1, Name: "water the ferns", Active: true,
-			Every: 7 * 24 * time.Hour, EveryDays: 7},
-	}}
-	c, srv := open(t, f)
-	openChores(t, c, srv)
-
-	// Nothing focused: the first key press says where you are rather than
-	// acting on something you did not choose.
-	c.key(t, "d")
-	c.until(t, "the first chore to take focus",
-		`document.activeElement.closest("article.chore")?.querySelector(".name").textContent === "bins out"`)
-
-	c.key(t, "ArrowDown")
-	c.until(t, "the second chore to take focus",
-		`document.activeElement.closest("article.chore")?.querySelector(".name").textContent === "water the ferns"`)
-
-	// O asks that chore's own question, not the first one's. It used to open a
-	// disclosure inside the card; it posts now, and the question arrives as a
-	// turn of its own — so what this checks is which chore the question is
-	// about, which is the thing that was ever worth checking.
-	c.key(t, "o")
-	c.until(t, "the interval question to arrive", `!!document.querySelector(".pick")`)
-
-	require.Equal(t, "2", c.eval(t, `
-		return document.querySelector('.pick input[name="id"]').value`),
-		"the question is about the chore that was focused")
-}
+// The chores rack's keys are the board's keys, and they are proved in
+// TestBrowserTheBoardsKeysFollowFocus: letters act on the strip you are focused
+// in, arrows move between strips, and a letter nothing answers to does nothing.
+// The where this exercised is a rack since 2 September 2026, and a rack's
+// selection model is the platform's own focus, which is what the where used too.
 
 // Five answers, five equal drawings. They were cut from one sheet at one
 // scale, and each carries a different amount of decoration outside its tile —
@@ -363,26 +333,25 @@ func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
 
 // atChores opens the thread and presses the chores door.
 //
-// The chores are a room, so a browser test that wants them goes there and waits
+// The chores are a where, so a browser test that wants them goes there and waits
 // for the cards — which is what a person does, and what makes these tests
-// exercise the room's own draw as well as the cards.
+// exercise the where's own draw as well as the cards.
 //
-// It pressed a menu form until 28 August 2026. A room is a link now, and going
+// It pressed a menu form until 28 August 2026. A where is a link now, and going
 // somewhere writes nothing.
 func atChores(t *testing.T, srv *httptest.Server) *cdp {
 	t.Helper()
-	c := browserAt(t, srv, "/r/chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
+	c := browserAt(t, srv, "/?bay=chores")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
 	return c
 }
 
-// openChores presses the chores door on a browser already open.
+// openChores goes to the chores, which are a rack on the board since
+// 2 September 2026 rather than a where you press a door for.
 func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 	t.Helper()
-	// Straight to the room. This pressed a menu form until 28 August 2026,
-	// when rooms became links — a click on the rail is what a person does now.
-	c.navigate(t, srv.URL+"/r/chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector("article.chore")`)
+	c.navigate(t, srv.URL+"/?bay=chores")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
 }
 
 // The lid's field, on the thread. It posts and the answer arrives as a turn —
@@ -416,42 +385,11 @@ func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
 		`!!document.querySelector("#thread .turn:last-child .turncard .turnacts")`)
 }
 
-// The deck's keys came with a machine for stamping a card and holding it still;
-// none of that crosses, because the answer here is a new turn. The letters do.
-func TestBrowserAKeyActsOnTheNoteBuddyIsHoldingOut(t *testing.T) {
-	f := &fakeStore{
-		items:   []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)},
-		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
-	}
-	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/r/notes")
-	c.until(t, "the note to arrive", `!!document.querySelector("#edge .turncard")`)
-
-	c.key(t, "k")
-	// Two turns: what the letter did, and what Buddy said back. The room's own
-	// list is not among them any more — it is drawn below the conversation
-	// rather than written into it, so the conversation starts empty here.
-	c.until(t, "it to be kept", `document.querySelectorAll("#thread .turn").length >= 2`)
-
-	require.Equal(t, squirrel.ItemKept, f.states[9], "the letter did not act")
-}
-
-// And a letter typed into a field is a letter, not an action.
-func TestBrowserAKeyInTheDockIsJustALetter(t *testing.T) {
-	f := &fakeStore{
-		items:   []squirrel.Item{note(9, "the boiler", squirrel.ItemOpen)},
-		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()},
-	}
-	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/r/notes")
-	c.until(t, "the note to arrive", `!!document.querySelector("#edge .turncard")`)
-
-	c.eval(t, `document.querySelector(".dock textarea").focus()`)
-	c.key(t, "k")
-	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-
-	require.Empty(t, f.states, "a letter typed in the dock decided something")
-}
+// Triage left the conversation on 2 September 2026. The card at the live edge
+// came from the four rooms' lists, and those are the board's racks now: a strip
+// is answered where it lies, with the same letters, proved in
+// TestBrowserTheBoardsKeysFollowFocus. His where is a conversation, and a
+// conversation is not where the pile is worked.
 
 // visible is whether an element is actually shown, rather than merely present:
 // checkVisibility, because a hidden element keeps its geometry and a bounding
@@ -544,7 +482,7 @@ func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
 	require.Greater(t, after, before, "the slot did not grow, so this proves nothing")
 
 	// Scrolled to the end after the growth, because that is the claim: the end
-	// of the conversation stays reachable when the slot takes more room.
+	// of the conversation stays reachable when the slot takes more where.
 	//
 	// Not measured before scrolling. A turn inside a scrolling box that is
 	// currently out of view legitimately has a rect below the fold — clipping
@@ -626,7 +564,7 @@ func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
 		"the mood row is indented past the gutter by %v pixels", inset)
 }
 
-// Nothing paints over the open room sheet.
+// Nothing paints over the open where sheet.
 //
 // The sheet is an overlay and the way out is its last row, so the question is
 // whether anything is on top of it — which is how this failed before: the
@@ -640,7 +578,7 @@ func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
 // question; what the person can actually press does.
 func TestBrowserNothingPaintsOverTheOpenRoomSheet(t *testing.T) {
 	c, srv := open(t, &fakeStore{})
-	c.navigate(t, srv.URL+"/r/chores")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 844, "height": 390, "deviceScaleFactor": 0, "mobile": true,
 	})
@@ -662,7 +600,7 @@ func TestBrowserNothingPaintsOverTheOpenRoomSheet(t *testing.T) {
 		return top === out || out.contains(top) ? "the way out" : (top ? top.className || top.tagName : "nothing");`)
 
 	require.Equal(t, "the way out", hit,
-		"something is painted over the way out in the open room sheet")
+		"something is painted over the way out in the open where sheet")
 }
 
 func layer(t *testing.T, v any) int {
@@ -691,21 +629,23 @@ func TestBrowserTheDockGivesTheFieldItsOwnRowOnAPhone(t *testing.T) {
 		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
 	})
 
-	for _, room := range []string{"at", "buddy", "pile"} {
-		c.navigate(t, srv.URL+"/r/"+room)
+	// The dock is his room's. The board has no dock — it has a blank strip at
+	// the head of every rack — so this is one screen now rather than five.
+	for _, where := range []string{"/r/everything"} {
+		c.navigate(t, srv.URL+where)
 		gap := c.eval(t, `
 			const box = document.querySelector(".dock textarea").getBoundingClientRect();
 			const post = document.querySelector(".dock .post").getBoundingClientRect();
 			return Math.round(post.top - box.bottom);`)
 		require.GreaterOrEqual(t, gap, float64(0),
-			"in %s the button shares the field's row on a phone, by %v pixels", room, gap)
+			"in %s the button shares the field's row on a phone, by %v pixels", where, gap)
 
 		lines := c.eval(t, `
 			const t = document.querySelector(".dock textarea");
 			const cs = getComputedStyle(t);
 			return Math.round(t.getBoundingClientRect().height / parseFloat(cs.lineHeight));`)
 		require.LessOrEqual(t, lines, float64(1),
-			"in %s the placeholder wraps to %v lines in an empty field", room, lines)
+			"in %s the placeholder wraps to %v lines in an empty field", where, lines)
 	}
 }
 
@@ -787,7 +727,7 @@ func TestBrowserTheRailClearsTheLidToo(t *testing.T) {
 		const rail = document.querySelector(".rail");
 		const pad = parseFloat(getComputedStyle(rail).paddingTop);
 		return Math.round(rail.getBoundingClientRect().top + pad - lid.bottom)`),
-		"the first room does not clear the lid by 10")
+		"the first where does not clear the lid by 10")
 }
 
 func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
@@ -808,7 +748,7 @@ func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 	require.Equal(t, true, c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
 		return document.querySelector(".roomsheet > summary").getBoundingClientRect().bottom <= lid.bottom`),
-		"the room control hangs below the rule")
+		"the where control hangs below the rule")
 
 	require.Equal(t, float64(8), c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
@@ -819,7 +759,7 @@ func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 
 	require.Equal(t, true, c.eval(t, `
 		return document.querySelector(".roomsheet > summary").getBoundingClientRect().top >= 59`),
-		"the room control sits inside the top inset")
+		"the where control sits inside the top inset")
 
 	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
 	require.Equal(t, float64(0), c.eval(t, `
@@ -953,37 +893,8 @@ func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
 		"the lid's top band is not --purple-bar, which is what the strip beside it takes")
 }
 
-// A press the server answers with a redirect takes you there, instead of the
-// page it points at being pasted into the room you are standing in.
-//
-// fetch follows a redirect without telling anybody, so what comes back is a
-// whole document. This is the guard that turns that into a navigation, and it
-// is the reason "a new appointment" showed a room, and its navigation, inside
-// the room.
-func TestBrowserARedirectedPressGoesThere(t *testing.T) {
-	f := aPile()
-	f.items = []squirrel.Item{note(1, "the boiler code", squirrel.ItemKept)}
-	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/notes")
-	c.navigate(t, srv.URL+"/r/notes")
-	// The shelf, which is a press inside the notes since 31 August 2026 rather
-	// than a room of its own. A kept note is where the redirecting press is.
-	c.until(t, "the shelf chip", `!!document.querySelector('input[name="shelf"][value="kept"]')`)
-	c.eval(t, `const i = document.querySelector('input[name="shelf"][value="kept"]');
-		i.form.requestSubmit(i.form.querySelector("button")); return 1`)
-	c.until(t, "the kept note", `!!document.querySelector('input[name="act"][value="open"]')`)
-
-	// A mark that only survives if the page never went anywhere. The redirect
-	// lands back in the room the press was made in — see backToTheRoom — so
-	// the URL alone cannot tell a navigation from standing still.
-	c.eval(t, `window.__stillHere = true; return 1`)
-	c.eval(t, `document.querySelector('input[name="act"][value="open"]').form
-		.querySelector("button").click(); return 1`)
-	c.until(t, "the browser to go", `!window.__stillHere && !!document.querySelector("#thread")`)
-
-	require.Equal(t, "/r/notes", c.eval(t, `return location.pathname`),
-		"the press left the room it was made in")
-	require.Equal(t, float64(0), c.eval(t, `
-		return document.querySelectorAll("#thread nav, #thread .rail").length`),
-		"a whole page was pasted into the conversation instead of being followed")
-}
+// A redirecting press went with the shelf chip on 2 September 2026. The shelf
+// was a press inside the notes room, and the notes are a rack now: the ledge is
+// a plain link, so there is no press that redirects and no page for the script
+// to paste a whole document into. TestTheLedgeOpensAShelfOnTheBoard is where
+// the shelves are proved.

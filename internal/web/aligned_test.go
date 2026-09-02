@@ -104,47 +104,8 @@ func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	}
 }
 
-// `.lead` is the small line that says what the thing under it is. It was six
-// scoped rules and no definition, so every site none of them reached rendered
-// at the document's own size — larger and lighter than the thing it labels.
-//
-// Against the body rather than against a number: the defect is not that a
-// label was 16px, it is that it was the same size as running text.
-func TestBrowserNoMetaLabelIsAsLargeAsBodyText(t *testing.T) {
-	f := aPile()
-	f.chores = []squirrel.Chore{{
-		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
-		EveryDays: 7, SinceDays: 6, Active: true, EverDone: true,
-	}}
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
-	f.offer = &squirrel.Offer{
-		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
-	}
-	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/everything")
-
-	// There is one screen, and its meta labels are the picker's — which arrives
-	// by pressing HOW OFTEN on a chore.
-	openChores(t, c, srv)
-	c.eval(t, `document.querySelector('article.chore form[action="/chores/often"] button').click()`)
-	c.until(t, "the question", `!!document.querySelector(".pick")`)
-
-	found := c.eval(t, `
-		const body = parseFloat(getComputedStyle(document.body).fontSize);
-		return Array.from(document.querySelectorAll(".lead")).map(el => ({
-			text: el.textContent.trim(),
-			size: parseFloat(getComputedStyle(el).fontSize),
-			body: body,
-		}));`)
-
-	labels, ok := found.([]any)
-	require.True(t, ok, "the page did not answer with a list of labels")
-	require.NotEmpty(t, labels, "nothing on the screen drew a meta label at all")
-
-	for _, l := range labels {
-		label := l.(map[string]any)
-		require.Less(t, label["size"], label["body"],
-			"%s is %vpx against body text at %vpx: it is not wearing the meta role",
-			label["text"], label["size"], label["body"])
-	}
-}
+// The meta labels this measured arrived by pressing HOW OFTEN on a chore in a
+// room, and that question is four rhythm stamps beside a field now. What it
+// protected — that a label is never as large as the text it labels — is the
+// board's type ramp, where a mark is 11px against a strip's 14.5 and the
+// appearance snapshot records both.

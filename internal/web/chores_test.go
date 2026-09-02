@@ -29,7 +29,7 @@ func TestChoresListsWhatComesBack(t *testing.T) {
 
 	require.Contains(t, body, "bins out")
 	require.Contains(t, body, "water the plants")
-	require.Contains(t, body, "EVERY 2 WEEKS", "the rhythm as a person says it, not arithmetic")
+	require.Contains(t, body, "every 2 weeks", "the rhythm as a person says it, not arithmetic")
 }
 
 // The rule that governs the pile governs this too: a chore may say when it was
@@ -47,12 +47,16 @@ func TestChoresNeverCounts(t *testing.T) {
 	}
 }
 
+// An empty rack is room rather than a place with an opinion. The room this
+// replaced said "nothing comes back"; the rack says nothing at all, which is
+// the same refusal with one fewer sentence in it.
 func TestTheEmptyChoreListDoesNotNag(t *testing.T) {
-	body := opened(t, &fakeStore{}, "chores")
+	body := strings.ToLower(opened(t, &fakeStore{}, "chores"))
 
-	require.Contains(t, strings.ToLower(body), "nothing comes back")
+	require.Contains(t, body, "the chores")
+	require.NotContains(t, body, `the chores <span class="n">`, "a sign counted what is not there")
 	for _, forbidden := range []string{"should", "why not", "add one"} {
-		require.NotContains(t, strings.ToLower(body), forbidden)
+		require.NotContains(t, body, forbidden)
 	}
 }
 
@@ -109,8 +113,8 @@ func TestAChoreNeverDoneSaysOnlyItsRhythm(t *testing.T) {
 	never.EverDone = false
 	body := opened(t, &fakeStore{chores: []squirrel.Chore{never}}, "chores")
 
-	require.Contains(t, body, "EVERY MONTH")
-	require.NotContains(t, body, "LAST DONE")
+	require.Contains(t, body, "every month")
+	require.NotContains(t, strings.ToLower(body), "last done")
 	require.NotContains(t, body, "a while back")
 }
 
@@ -125,39 +129,21 @@ func TestChoresFailsVisiblyWhenTheDatabaseIsDown(t *testing.T) {
 	require.Contains(t, body, "cannot reach the chores")
 }
 
-// Roughly when, never how long. An exact day count on a chore you have not
-// done is a number that grows while you are not looking, which is the thing
-// this product does not do — and "3 days" is one small step from "3 days
-// late".
-func TestAChoreSaysRoughlyWhenNotHowLong(t *testing.T) {
-	for _, tc := range []struct {
-		since int
-		want  string
-	}{
-		{0, "today"},
-		{1, "yesterday"},
-		{3, "this week"},
-		{6, "this week"},
-		{9, "last week"},
-		{13, "last week"},
-		{20, "this month"},
-		{45, "a while back"},
-		{400, "a while back"},
-	} {
-		require.Equal(t, tc.want, lastDone(tc.since), "%d days", tc.since)
-	}
-}
-
+// A rhythm and nothing else. The room this replaced said when a chore was last
+// done in words — "this week", "a while back" — and the rack does not say it at
+// all: the mark is the rhythm, and how long ago you did something is a fact
+// about you rather than about the chore.
 func TestTheChoresScreenNeverPrintsADayCount(t *testing.T) {
-	body := opened(t, &fakeStore{chores: []squirrel.Chore{
-		chore(1, "bins out", 14, 3),
-		chore(2, "water the plants", 7, 45),
-	}}, "chores")
+	body := strings.ToLower(opened(t, &fakeStore{chores: []squirrel.Chore{
+		chore(1, "bins out", 7, 3),
+		chore(2, "the filter", 30, 45),
+	}}, "chores"))
 
-	require.Contains(t, body, "this week")
-	require.Contains(t, body, "a while back")
-	require.NotContains(t, body, "3 days ago")
-	require.NotContains(t, body, "45 days")
+	require.Contains(t, body, "every week")
+	require.Contains(t, body, "every month")
+	for _, arithmetic := range []string{"3 days ago", "45 days", "days ago", "last done"} {
+		require.NotContains(t, body, arithmetic)
+	}
 }
 
 // aChore is one that exists, so the handler's own id check passes.

@@ -83,8 +83,9 @@ var appearanceScreens = map[string][]string{
 		// recorded the current shape twice and the resting one never. The
 		// difference between them is the whole of how this rail says where you
 		// are — a recessed well against a solid one.
-		".rail", ".rail .room:not(.in)", ".rail .room.in",
-		".rail .lookup button", ".rail .cnt",
+		// One link where five rooms were, and the two controls that always sat
+		// below the rule.
+		".rail", ".rail .room", ".rail .lookup button",
 		// The control that names the room you are in is deliberately NOT here.
 		// This snapshot visits one viewport and it is a desktop one, where the
 		// control is inside a display:none parent — getComputedStyle still
@@ -153,9 +154,11 @@ func appearanceFixture() *fakeStore {
 	}
 	// Plain scrollback, so both speakers' words have a shape to record. The
 	// offer stays the live edge and draws the card.
+	// Said at a time, so the timestamp under a run of turns is recorded rather
+	// than silently absent: a turn with no SaidAt draws no time at all.
 	f.turns = []squirrel.Turn{
-		{ID: 1, Who: squirrel.SpeakerYou, Words: "the chores"},
-		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back round."},
+		{ID: 1, Who: squirrel.SpeakerYou, Words: "the chores", SaidAt: now().Add(-time.Hour)},
+		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back round.", SaidAt: now().Add(-time.Hour)},
 	}
 	return f
 }

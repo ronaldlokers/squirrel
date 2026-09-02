@@ -114,6 +114,6 @@ func TestTheThreadStillStandsWhenNothingCanBeRead(t *testing.T) {
 
 	require.Equal(t, 200, w.Code)
 	require.Contains(t, w.Body.String(), "I cannot reach what we said")
-	require.Contains(t, w.Body.String(), "the notes")
+	require.Contains(t, w.Body.String(), "back to the board", "his room lost its way out")
 	require.Contains(t, w.Body.String(), `action="/capture"`)
 }

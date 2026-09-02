@@ -16,7 +16,8 @@ func TestAPressComesBackToTheRoomItWasMadeIn(t *testing.T) {
 			res := routed(t, f).call(t, "POST", "/at/new", strings.NewReader(body))
 
 			require.Equal(t, 303, res.Code)
-			require.Equal(t, "/r/"+room, res.Header().Get("Location"))
+			require.Equal(t, theBays[room], res.Header().Get("Location"),
+				"a press made about %s does not come back to its bay", room)
 		})
 	}
 }
@@ -69,7 +70,7 @@ func TestTurningTheMonthReplacesTheQuestionInPlace(t *testing.T) {
 
 func TestAskingForADayIsKept(t *testing.T) {
 	f := &fakeStore{}
-	body := url.Values{"room": {"at"}, "label": {"dentist"}}.Encode()
+	body := url.Values{"room": {"everything"}, "label": {"dentist"}}.Encode()
 	res := routed(t, f).callFragment(t, "/at/new", body)
 
 	require.Empty(t, res.Header().Get("X-Replaces"),

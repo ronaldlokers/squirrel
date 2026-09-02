@@ -54,25 +54,42 @@ type room struct {
 	Field  string
 }
 
+// rooms is what is left of the five, and this comment is the record of why.
+//
+// Four of them — the notes, the chores, the agenda, the tasks — became the
+// board's four bays on 2 September 2026. A conversation about the same rows,
+// beside a rack of them, is two places to look for one thing: the problem this
+// product exists to solve rather than one it may create.
+//
+// This one stays, because it is not about rows. It is where Buddy is, and a
+// conversation is what he is for.
 var rooms = []room{
-	// Named for what it holds rather than for who is in it. "general" was the
-	// other candidate and is Slack's word — the same register #chores was
-	// refused for when these rooms were built.
-	{Key: "everything", Name: "everything",
+	{Key: "everything", Name: "Buddy",
 		Placeholder: "what's going on?", Button: "Tell it",
 		Action: "/capture", Field: "text"},
-	{Key: "notes", Name: "the notes",
-		Placeholder: "what is it", Button: "Put it in the notes",
-		Action: "/capture", Field: "text"},
-	{Key: "chores", Name: "the chores",
-		Placeholder: "what comes back?", Button: "Make a chore",
-		Action: "/chores/name", Field: "name"},
-	{Key: "at", Name: "the agenda",
-		Placeholder: "what is happening?", Button: "Put it in the agenda",
-		Action: "/at/new", Field: "label"},
-	{Key: "tasks", Name: "the tasks",
-		Placeholder: "what did you decide?", Button: "Make a task",
-		Action: "/tasks/new", Field: "text"},
+}
+
+// theBays is where a retired room's URL goes: the bay that holds what it used
+// to hold. A URL somebody put on a home screen still lands on the same things.
+var theBays = map[string]string{
+	"notes":  "/?bay=notes",
+	"chores": "/?bay=chores",
+	"at":     "/?bay=agenda",
+	"tasks":  "/?bay=tasks",
+}
+
+// theSets is what a retired room is called when Buddy draws it.
+//
+// The decision this encodes, made 2 September 2026: the four stopped being
+// places and did not stop being sets of things. "Show me the chores" is on
+// chat's own floor and the floor does not move because a screen did — so he
+// names them and draws them, in his room, as a turn. What they no longer are is
+// somewhere you can stand: nothing writes a turn *in* one of these.
+var theSets = map[string]string{
+	"notes":  "the notes",
+	"chores": "the chores",
+	"at":     "the agenda",
+	"tasks":  "the tasks",
 }
 
 // The two shelves, as they are reached now: a press inside the notes rather
@@ -180,7 +197,12 @@ func withRoomIn(ctx context.Context, key string) context.Context {
 func roomRoute(s Store, opts Options) http.HandlerFunc {
 	h := roomHandler(s, opts)
 	return func(w http.ResponseWriter, r *http.Request) {
-		withRoom(r.PathValue("room"), h)(w, r)
+		where := r.PathValue("room")
+		if bay, retired := theBays[where]; retired {
+			http.Redirect(w, r, bay, http.StatusMovedPermanently)
+			return
+		}
+		withRoom(where, h)(w, r)
 	}
 }
 
@@ -373,6 +395,11 @@ func inTheRoomItCameFrom(h http.HandlerFunc) http.HandlerFunc {
 // appointment in the agenda and then put you in Buddy, which reads as the
 // press having gone to the wrong place — it had not; the way back had.
 func backToTheRoom(r *http.Request) string {
+	// A press made about one of the four lands on that bay: the room it was
+	// made in is a set now, and a set's home is the rack that holds it.
+	if bay, retired := theBays[r.FormValue("room")]; retired {
+		return bay
+	}
 	where := roomOf(r.Context())
 	if where == "" {
 		where = "everything"

@@ -64,17 +64,18 @@ func TestANewChoreNeedsAnIntervalItWasOffered(t *testing.T) {
 	require.Empty(t, f.chores)
 }
 
-// How to make one is said when there is nothing there, which is when it is
-// worth knowing. Said over a list you already keep, it is nagging.
-func TestAnEmptyListSaysHowToMakeOne(t *testing.T) {
+// How to make one is said by the slot rather than by a sentence over an empty
+// list: the rack asks what comes back and offers the four rhythms beside the
+// field, whether or not there is anything in it.
+func TestTheChoresRackTeachesHowToMakeOne(t *testing.T) {
 	full := opened(t, &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "bins out", Active: true, Every: 14 * 24 * time.Hour, EveryDays: 14},
 	}}, "chores")
 	empty := opened(t, &fakeStore{}, "chores")
 
-	// The sentence rather than a form: the dock already understands
-	// "every 2 weeks: descale the kettle".
-	require.Contains(t, empty, "every 2 weeks: descale the kettle")
-	require.NotContains(t, full, "descale the kettle")
+	for _, body := range []string{full, empty} {
+		require.Contains(t, body, "what comes back?")
+		require.Contains(t, body, `name="every" value="14"`)
+	}
 	require.Contains(t, full, "bins out")
 }

@@ -29,25 +29,11 @@ func nineTasks() *fakeStore {
 	return &fakeStore{items: items}
 }
 
-func TestTheRestOfTheTasksIsTheRestOfTheTasks(t *testing.T) {
-	f := nineTasks()
-	m := routed(t, f)
-
-	drew := drewIn(t, f, "tasks")
-	first := string(drew[len(drew)-1].Shown)
-	require.Contains(t, first, "decided thing a")
-	require.Contains(t, first, "decided thing e")
-	require.NotContains(t, first, "decided thing f")
-	require.Contains(t, first, `"from":"5"`, "the chip does not say where to carry on from")
-
-	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=tasks&from=5"))
-	second := string(f.appended[len(f.appended)-1].Shown)
-	require.Contains(t, second, "decided thing f")
-	require.Contains(t, second, "decided thing i")
-	require.NotContains(t, second, "decided thing a", "it started again from the top")
-	require.NotContains(t, second, `"label":"the rest"`, "it offered a page that is not there")
-}
+// Paging inside a room went with the four rooms on 2 September 2026: a room
+// handed you a few and offered "the rest", and a rack holds what it can and
+// says "there is more further back" — that there is more, never how much. The
+// three tests that were here are that one line now, proved in
+// TestARackSaysThereIsMoreWithoutSayingHowMuch and its pair in tasks_test.go.
 
 // And what you said was that you wanted the rest, not that you opened the
 // tasks again — the record is a record of what happened.
@@ -76,48 +62,6 @@ func TestPastTheEndSaysSo(t *testing.T) {
 	routed(t, f).call(t, "POST", "/open", strings.NewReader("where=tasks&from=99"))
 
 	require.Contains(t, f.appended[len(f.appended)-1].Words, "That is all of them")
-}
-
-// The chores page the same way.
-func TestTheRestOfTheChores(t *testing.T) {
-	chores := []squirrel.Chore{}
-	for i := int64(1); i <= 8; i++ {
-		chores = append(chores, squirrel.Chore{
-			ID: i, Name: "chore " + string(rune('a'+i-1)), Active: true,
-			Every: 7 * 24 * time.Hour, EveryDays: 7,
-		})
-	}
-	f := &fakeStore{chores: chores}
-	m := routed(t, f)
-
-	drew := drewIn(t, f, "chores")
-	require.Contains(t, string(drew[len(drew)-1].Shown), `"from":"5"`)
-
-	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=chores&from=5"))
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "chore f")
-	require.NotContains(t, string(f.appended[len(f.appended)-1].Shown), "chore a")
-}
-
-// And the agenda, which had no chip at all: it drew five and said nothing
-// about the sixth.
-func TestTheAgendaOffersTheRest(t *testing.T) {
-	coming := []squirrel.Moment{}
-	for i := int64(1); i <= 8; i++ {
-		coming = append(coming, squirrel.Moment{
-			ID: i, Label: "thing " + string(rune('a'+i-1)),
-			Starts: now().Add(time.Duration(i) * 24 * time.Hour),
-		})
-	}
-	f := &fakeStore{upcoming: coming}
-	m := routed(t, f)
-
-	drew := drewIn(t, f, "at")
-	require.Contains(t, string(drew[len(drew)-1].Shown), `"from":"5"`)
-
-	f.appended = nil
-	m.call(t, "POST", "/open", strings.NewReader("where=at&from=5"))
-	require.Contains(t, string(f.appended[len(f.appended)-1].Shown), "thing f")
 }
 
 // Search's chip led to a 404. There is no second page of search, and

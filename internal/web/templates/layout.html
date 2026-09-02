@@ -139,17 +139,8 @@
      what you said to the record; a room is a place you go, and going
      somewhere writes nothing — so back steps through rooms and a room opens
      in a new tab. */}}
-<nav class="rail" aria-label="The rooms">
-  {{range .Rooms}}
-  <a class="room{{if .Current}} in{{end}}" href="/r/{{.Key}}"{{if .Current}} aria-current="page"{{end}}>
-    <span class="roomname">{{.Name}}</span>
-    {{/* What is waiting. Ink rather than the orange pill it was until
-         28 August: orange is what this product uses for *this makes
-         something happen*, and a count is a fact rather than an action.
-         Zero is no number and not a nought. */}}
-    {{if .Count}}<span class="cnt">{{.Count}}</span>{{end}}
-  </a>
-  {{end}}
+<nav class="rail" aria-label="Buddy's room">
+  <a class="room board" href="/">back to the board</a>
   {{/* Not a place, so it sits below the rule rather than among the five — and
        it is always in view now, which it was not when it lived at the end of a
        strip that scrolled. */}}

@@ -816,18 +816,36 @@ asking. That is the piece the retirement needs and the piece that is true
 whatever happens to the rooms: a record with four rooms' worth of holes in it
 would be the thing that made retiring them lossy.
 
-**Still not true, and harder than it looks:** the four object rooms — the notes,
-the chores, the agenda, the tasks — are still mounted and still draw lists of
-rows the board owns. Retiring them was attempted on 1 September 2026 and backed
-out, and what it found is worth writing down rather than rediscovering: a room
-is not only a screen. A turn belongs to one, the coach is asked *as* one, a
-notice is about one, and every form a turn draws carries the room it was drawn
-in. Removing four of the five is a decision about what those four things mean
-for a room that no longer exists, and that decision has not been made.
+**Done on 2 September 2026.** The four object rooms are retired. Their URLs
+answer 301 to the bay that holds what they held, and the decisions the sweep
+was waiting on are these:
 
-Two things came out of the attempt and stayed, because they were right whether
-or not the rooms go: the shelves open on the board, and a rack says when it
-could not be read.
+- **The record keeps its rooms.** Nothing was rewritten. Every turn still
+  carries the room it was said in, and Buddy's room reads the whole record
+  rather than one room's share, so nothing said is out of reach.
+- **The four are sets, not places.** He can still be asked to show you the
+  chores, and he draws them; what they stopped being is somewhere you can
+  stand. New turns are still filed by subject, so the record keeps saying what
+  a turn was about even though no room draws it.
+- **A rack says that there is more, never how much.** *there is more further
+  back*, under the last strip it can hold.
+- **There is no rail.** Buddy's room has one link where it was, back to the
+  board, and the board's four bay signs are the navigation.
+- **The notice a door could carry about its set is gone**, and this is the
+  record of it: the coach could say one thing about a set of rows — "these are
+  all about the car" — and no surface asks for that now. It was a door's
+  feature, and the doors went.
+- **The live edge is gone with them.** It was a room's current state under the
+  conversation; a rack is that by construction, and re-reads on every load.
+- **Triage left the conversation.** His room draws no card to answer, because
+  answering happens on the board. That is what "it stops being where the pile
+  is worked" means in the code rather than in a sentence.
+
+**And the keys are wired.** The board drew a letter on every stamp from the day
+it was mounted and read none of them, which the room's own keyboard tests
+caught the moment those rooms went. Letters act on the strip you are focused in,
+arrows move between strips, and a letter nothing answers to does nothing at
+all.
 
 ## Do's and Don'ts
 

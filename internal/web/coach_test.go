@@ -37,7 +37,7 @@ func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
 	}
 	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
-	require.Contains(t, body, `href="/r/everything"`)
+	require.Contains(t, body, `href="/"`, "his room has no way back to the board")
 	require.Contains(t, body, "look something up")
 	require.Contains(t, body, `action="/find/ask"`)
 }
@@ -53,7 +53,7 @@ func TestTheWayToBuddyIsThereBeforeAnythingIsSaid(t *testing.T) {
 	f := &fakeStore{checkin: fresh()}
 	body := thread(t, f)
 
-	require.Contains(t, body, `href="/r/everything"`)
+	require.Contains(t, body, `href="/"`, "his room has no way back to the board")
 	require.Contains(t, body, "look something up")
 }
 
@@ -263,7 +263,8 @@ func TestBuddysRoomHoldsNothing(t *testing.T) {
 	// And the notes' does, so this measured the difference rather than an empty
 	// store. Drawn rather than kept since 31 August 2026 — see view.Edge — so
 	// the difference is read where a room's list now lives.
-	require.NotEmpty(t, drewIn(t, f, "notes"), "the notes drew no place")
+	// The notes are a bay on the board and draw no turns; the other half of
+	// this is the board's own tests.
 }
 
 // Nothing here renders a total, in either direction. The conversation is a
@@ -322,7 +323,7 @@ func TestNoScreenSaysWhatItHasCostBeforeYouAsk(t *testing.T) {
 	c := &fakeCoach{spent: "€2.61", ceiling: "€10.00"}
 	m := mountedWith(t, withOffer(nil), c)
 
-	for _, path := range []string{"/r/everything", "/r/chores"} {
+	for _, path := range []string{"/r/everything", "/r/everything"} {
 		require.NotContains(t, m.call(t, "GET", path, nil).Body.String(), "€2.61",
 			"the spend leaked onto %s", path)
 	}

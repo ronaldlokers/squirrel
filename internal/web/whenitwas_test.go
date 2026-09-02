@@ -71,7 +71,7 @@ func TestTheDayIsSaidOnceWhereItTurnsOver(t *testing.T) {
 // divider the page path wants would repeat a day that is already said.
 func TestAFragmentDoesNotRepeatTheDay(t *testing.T) {
 	f := &fakeStore{}
-	body := routed(t, f).callFragment(t, "/capture", "room=notes&text=the+boiler+code").Body.String()
+	body := routed(t, f).callFragment(t, "/capture", "room=everything&text=the+boiler+code").Body.String()
 
 	require.NotContains(t, body, `class="whenday"`,
 		"a press draws the day again under the one already there")
@@ -88,7 +88,7 @@ func TestTheConversationSaysWhenItWas(t *testing.T) {
 	f := &fakeStore{turns: []squirrel.Turn{
 		{ID: 1, Who: squirrel.SpeakerYou, Words: "the boiler code", SaidAt: at(t, "2026-08-31 12:00")},
 	}}
-	body := opened(t, f, "notes")
+	body := opened(t, f, "everything")
 
 	require.Contains(t, body, `<time class="whensaid">12:00</time>`, "the conversation does not say when")
 	require.Equal(t, 1, strings.Count(body, `class="whenday"`),

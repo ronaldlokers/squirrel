@@ -56,8 +56,10 @@ func TestNoControlRenamesItself(t *testing.T) {
 	// `something else?`, because seven equally-shaped buttons is six too many
 	// on a screen whose premise is that deciding is expensive. What a hand
 	// learns is now four verbs and one chip, and the chip is pinned below.
+	// The words a note is answered with, on the rack that holds notes now.
+	// Lower case in the markup and set in caps by the stylesheet.
 	deck := opened(t, f, "notes")
-	for _, label := range []string{"DONE", "KEEP", "DROP", "A TASK", "something else?"} {
+	for _, label := range []string{"done", "keep", "drop", "make a chore"} {
 		require.Contains(t, deck, label, "the pile stopped saying %q", label)
 	}
 	require.Contains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), ">Tell it<")

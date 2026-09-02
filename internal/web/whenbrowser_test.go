@@ -27,8 +27,8 @@ func TestBrowserTheTimeDoesNotPushTheWordsOffTheFacesLine(t *testing.T) {
 		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Down it goes.", SaidAt: at(t, "2026-08-31 09:12")},
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/notes")
-	c.navigate(t, srv.URL+"/r/notes")
+	c := browserAt(t, srv, "/r/everything")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "the times", `document.querySelectorAll(".whensaid").length >= 2`)
 
 	require.Equal(t, true, c.eval(t, `
@@ -67,8 +67,8 @@ func TestBrowserTheDayIsCentredAcrossTheConversation(t *testing.T) {
 		{ID: 2, Who: squirrel.SpeakerYou, Words: "and today's", SaidAt: at(t, "2026-08-31 09:12")},
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/r/notes")
-	c.navigate(t, srv.URL+"/r/notes")
+	c := browserAt(t, srv, "/r/everything")
+	c.navigate(t, srv.URL+"/r/everything")
 	c.until(t, "the days", `document.querySelectorAll(".whenday").length >= 2`)
 
 	// The text's box, never the element's: a full-width block is centred on the
