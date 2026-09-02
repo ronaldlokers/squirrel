@@ -286,7 +286,7 @@ body::before {
   }
   .racks {
     display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto;
-    padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+    padding: 14px 12px 14px;
     overflow: visible;
   }
   .channel { flex: 1 0 auto; overflow: visible; }
