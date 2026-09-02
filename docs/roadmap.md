@@ -389,7 +389,7 @@ every desktop screenshot and browser test in this project has been taking the
 flex path. The grid path had never been rendered by anything that looks at it.
 
 Also in this release: the 15.8MB compiled `devscreen` binary that had been
-committed at the repository root since v0.38.0's dev screen is deleted and its
+committed at the repository root since the dev screen arrived in v0.46.0 is deleted, and its
 path ignored. Nothing ran it — every caller uses `go run` — but `go build` wrote
 straight over it, so looking at the dev screen once left 15.8MB of unrelated
 diff staged.
