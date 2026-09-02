@@ -501,10 +501,32 @@ the full width. No script is involved in any part of that. A field carrying a
 query stays open, because a search you cannot read is a search you cannot
 correct.
 
-**The four bays are a bar at the foot.** Four cells, each a drawn icon over its
-name in small caps-height type, on `purple-dark` with the 2px rule along its
-top. It is the last thing in the document, below the tray, so the way between
-places sits under the thumb and the tray stays content rather than furniture.
+**The four bays float at the foot.** A pill clear of all three edges — 12px at
+the sides and about 10px off the true bottom — under the 2px outline and the
+board's own shadow, with four cells inside it: a drawn icon over the bay's name,
+capitalised and without its article, so *the notes* on the rack's own sign is
+*Notes* here.
+
+**The pill is smoked, not glass.** `rgba(59,37,96,.86)` over a 13px backdrop
+blur: the board's own purple at strength, so a strip passing beneath comes
+through as a diffused shape rather than a frosted pane. It is the acetate a
+strip board is covered with, which is why it keeps its outline and its shadow —
+glass in the iOS sense has neither, and would be the one surface in this product
+that is not a thing you could pick up. Solid where the browser has no backdrop
+filter, and solid again under `prefers-reduced-transparency`.
+
+**The board scrolls beneath it**, and the reserve lives inside the scroller
+rather than on the page, so a strip travels under the pill while you move and
+the last one still clears it at rest. Labels are full-strength cream for this
+reason: measured against a cream strip diffused directly under one, they hold
+7.0:1.
+
+**The cell you are in is tinted, not filled.** Orange ink and a full-strength
+icon against 72% cream and icons at 55%. It had a well behind it while the bar
+was a band along the bottom, and the well was the trouble: it stopped above the
+home indicator's reserve, which made the reserve read as a hole under the
+buttons rather than as the ground the bar floats over. A floating bar has no
+edge to leave a gap against.
 
 Before this the bays were two rows of tabs at the top; before that, one row that
 scrolled sideways with no scrollbar, which is how the fourth place became
@@ -512,11 +534,16 @@ unreachable twice in this product — once on 28 August as the rooms, once on
 2 September as the bays. The bar cannot fail that way: four cells, one grid, no
 scroll at any width.
 
-**Only the bar pads for the home indicator.** It is the last thing on the
-screen, so it owns `env(safe-area-inset-bottom)` and nothing above it may claim
-it as well. The rack went on adding the same inset after the bar took the foot,
-which put a band of ground between the rack and the bar on every phone with a
-home indicator and none at all in a headless browser, where the inset is zero.
+**The inset is named once, and most of it is given back.** `--foot` is
+`max(8px, env(safe-area-inset-bottom) - 24px)`: a floating bar does not owe the
+home indicator the whole 34pt the way a fixed band does, because the indicator
+is drawn over it and the cells' own padding keeps the labels clear. Reserving
+all of it left the bar hovering visibly high. Everything that
+has to sit above the home indicator reads that one value: the bar's offset and
+the page's reserve. It is a rule with a test because a headless browser reports
+the inset as zero, so nothing rendered in CI can see it being claimed twice —
+which is exactly how the rack came to pad for it after the bar took the foot,
+putting a band of ground between them on every phone that has one.
 
 **No bay is lit when you are not standing in one.** A shelf, a search and an
 opened strip all light nothing, because a bar that says you are in the notes

@@ -173,11 +173,13 @@ func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
 	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
 
 	foot := c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`)
-	require.Equal(t, float64(0), foot, "the bar is not at the foot of the screen")
+	require.Less(t, foot.(float64), float64(16), "the bar is not floating at the foot of the screen")
+	require.Greater(t, c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().left)`).(float64),
+		float64(0), "the bar runs edge to edge rather than floating clear of them")
 
 	c.eval(t, `document.querySelector(".deck").scrollTop = 600; return 1`)
 	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
-	require.Equal(t, float64(0),
+	require.Equal(t, foot,
 		c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
 		"the bar scrolled away with the rack")
 
@@ -202,7 +204,7 @@ func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
 	require.LessOrEqual(t,
 		c.eval(t, `return Math.round(document.querySelector(".tray").getBoundingClientRect().bottom)`).(float64),
 		c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`).(float64),
-		"the tray sits below the way between bays")
+		"the floating bar covers the tray rather than clearing it")
 }
 
 func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
@@ -243,4 +245,27 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 	require.Equal(t, "0s", c.eval(t, `return getComputedStyle(
 		document.querySelector(".strip.answerable .stamps")).transitionDuration`),
 		"the collapse carries its own motion, so the strips animate shut on the way in")
+}
+
+func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+
+	require.Equal(t, "capitalize", c.eval(t, `return getComputedStyle(document.querySelector(".baytab .says")).textTransform`),
+		"the bay's name is not capitalised in the bar")
+	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
+		"the pill lets nothing through, so the board behind it is lost rather than diffused")
+	require.Contains(t, c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backgroundColor`),
+		"rgba", "the pill's tint is solid, so the blur behind it can never be seen")
+
+	c.send(t, "Emulation.setEmulatedMedia", map[string]any{"features": []map[string]string{
+		{"name": "prefers-reduced-transparency", "value": "reduce"},
+	}})
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
+		"asking for less transparency changes nothing")
 }
