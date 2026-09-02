@@ -502,7 +502,7 @@ query stays open, because a search you cannot read is a search you cannot
 correct.
 
 **The four bays float at the foot.** A pill clear of all three edges — 12px at
-the sides, 9px above the home indicator — on `purple-dark` under the 2px outline
+the sides and about 10px off the true bottom — on `purple-dark` under the 2px outline
 and the board's own shadow, with four cells inside it: a drawn icon over its
 name in small caps-height type. The board scrolls beneath it and the page
 reserves its height, so nothing is ever hidden behind it.
@@ -520,8 +520,11 @@ unreachable twice in this product — once on 28 August as the rooms, once on
 2 September as the bays. The bar cannot fail that way: four cells, one grid, no
 scroll at any width.
 
-**The inset is named once.** `--foot` carries
-`env(safe-area-inset-bottom)` plus the bar's own clearance, and everything that
+**The inset is named once, and most of it is given back.** `--foot` is
+`max(8px, env(safe-area-inset-bottom) - 24px)`: a floating bar does not owe the
+home indicator the whole 34pt the way a fixed band does, because the indicator
+is drawn over it and the cells' own padding keeps the labels clear. Reserving
+all of it left the bar hovering visibly high. Everything that
 has to sit above the home indicator reads that one value: the bar's offset and
 the page's reserve. It is a rule with a test because a headless browser reports
 the inset as zero, so nothing rendered in CI can see it being claimed twice —
