@@ -504,7 +504,12 @@ propagates to the canvas, which is what the phone paints under the status bar
 and inside the safe areas — so with the ground on `body::before` the strip above
 the bar was flat while everything below it was dotted. The board carries a
 `theme-color` of `purple-bar` and the mark as its favicon for the same reason:
-the parts of the window this design does not draw still belong to it. The clock goes because the
+the parts of the window this design does not draw still belong to it.
+
+**The bar reserves the top inset and nothing on top of it.** The status bar's
+own band is the margin; a second one under it is space this screen cannot spare.
+
+The clock goes because the
 phone shows one two inches above it and ours is server-rendered, so it is wrong
 by however long the page has been open.
 

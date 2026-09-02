@@ -69,7 +69,7 @@
 
 @media (max-width: 620px) {
   .ops {
-    gap: 9px; padding: calc(env(safe-area-inset-top) + 3px) 12px 5px;
+    gap: 9px; padding: env(safe-area-inset-top) 12px 5px;
     background: none; border-bottom: 0;
   }
   .ops .markart, .ops .wordmark, .ops .clock, .ops .spacer { display: none; }

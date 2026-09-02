@@ -312,10 +312,9 @@ func TestBrowserTheBarReservesTheTopInsetAndNoMore(t *testing.T) {
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "the bar", `!!document.querySelector(".ops .chip")`)
 
-	require.GreaterOrEqual(t, c.eval(t,
-		`return Math.round(document.querySelector(".ops .chip").getBoundingClientRect().top)`).(float64),
-		float64(59), "a chip sits under the status bar")
-	require.LessOrEqual(t, c.eval(t,
-		`return Math.round(document.querySelector(".ops .chip").getBoundingClientRect().top)`).(float64),
-		float64(66), "the bar wastes more than a few pixels above the chips")
+	// The inset and nothing on top of it: the status bar's own band is the
+	// margin, and a second one under it is space this screen cannot spare.
+	require.Equal(t, float64(59), c.eval(t,
+		`return Math.round(document.querySelector(".ops .chip").getBoundingClientRect().top)`),
+		"the bar reserves something other than exactly the top inset")
 }
