@@ -125,6 +125,7 @@ func TestBrowserTheLitRackReachesTheFootOfTheScreen(t *testing.T) {
 	c.navigate(t, srv.URL+"/")
 
 	foot := c.eval(t, `return document.querySelector(".rack.in .channel").getBoundingClientRect().bottom`)
-	require.Greater(t, foot.(float64), float64(760),
+	under := c.eval(t, `return document.querySelector(".baytabs").getBoundingClientRect().top`)
+	require.Greater(t, foot.(float64), under.(float64)-24,
 		"the rack stops short and the rest of the screen is nothing")
 }

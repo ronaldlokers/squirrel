@@ -501,10 +501,20 @@ the full width. No script is involved in any part of that. A field carrying a
 query stays open, because a search you cannot read is a search you cannot
 correct.
 
-**Four tabs, two rows of two.** The row never scrolls. A tab row that scrolls
-sideways on a phone with no scrollbar is how the fourth place became unreachable
-twice in this product — once on 28 August as the rooms, once on 2 September as
-the bays — and both times nothing on the screen said there was more.
+**The four bays are a bar at the foot.** Four cells, each a drawn icon over its
+name in small caps-height type, on `purple-dark` with the 2px rule along its
+top. It is the last thing in the document, below the tray, so the way between
+places sits under the thumb and the tray stays content rather than furniture.
+
+Before this the bays were two rows of tabs at the top; before that, one row that
+scrolled sideways with no scrollbar, which is how the fourth place became
+unreachable twice in this product — once on 28 August as the rooms, once on
+2 September as the bays. The bar cannot fail that way: four cells, one grid, no
+scroll at any width.
+
+**No bay is lit when you are not standing in one.** A shelf, a search and an
+opened strip all light nothing, because a bar that says you are in the notes
+while you are reading a search result is a bar you stop believing.
 
 **The lit rack takes the screen it is on.** It stretches to the foot so its
 channel has a bottom edge and the ledge sits on it. The purple below a short
@@ -526,9 +536,8 @@ unreachable and nothing needs a fallback drawn for it. The script adds the
 chevron, carries `aria-expanded` on it, and closes the open strip on Escape.
 
 **The pulled strip gives way.** Below 620px the board under the ops bar is one
-scrolling deck — the pulled strip, then the tab row, then the rack — and the tab
-row is sticky, so what you are looking at scrolls and the way between bays does
-not. The ledge still sits at the foot of the channel rather than after the last
+scrolling deck — the pulled strip, then the rack — so what you are looking at
+scrolls and the bar at the foot does not. The ledge still sits at the foot of the channel rather than after the last
 strip, because the channel still stretches to fill a short rack; the prediction
 that it would have no foot to sit on was wrong.
 
@@ -684,6 +693,25 @@ something has gone wrong.
 
 The line matters most on a phone, where one rack is the whole screen and there
 is nothing beside it to compare against.
+
+### The bay bar
+
+The phone's navigation, and the only place a bay is named there. A drawn icon at
+28px over the bay's own name — *the notes*, not *notes* — in 10.5px precise
+type. The cell you are in takes `paper` ink over a `rgba(254,214,167,.13)` well;
+the other three sit at 78% cream with their icons at 55%.
+
+**The icons are illustrated and full-colour**, which is a deliberate exception
+to a world drawn in flat shapes and 2px outlines. They belong to the mark's
+register rather than the board's: the squirrel in the ops bar is drawn the same
+way, and four line glyphs at 28px would have been four grey rectangles at a
+glance. They are the only raster art in the interface apart from the mark.
+
+**The count is an orange badge on the icon**, `orange` under a 2px outline with
+Inter's tabular figures, at the icon's top-right — and only when the bay holds
+something. No bay ever wears a nought. This is the strongest form a count has
+taken in this product, and it is a deliberate choice rather than drift: the old
+rule against counts was retired for doors, and the bar is the door.
 
 ### The channel
 

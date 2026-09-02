@@ -58,6 +58,7 @@ func TestEveryEmbeddedAssetIsAskedForSomewhere(t *testing.T) {
 	// the manifest names the app icons and nothing else does.
 	m := mounted(t, &fakeStore{})
 	asks := m.call(t, "GET", "/manifest.webmanifest", nil).Body.String()
+	asks += m.call(t, "GET", "/", nil).Body.String()
 	for _, page := range templates(t) {
 		asks += page
 	}

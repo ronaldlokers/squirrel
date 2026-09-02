@@ -105,3 +105,45 @@ func TestOnlyTheBlankAndTheNoticesAreDrawnDashed(t *testing.T) {
 		}
 	}
 }
+
+func TestTheBarLightsNoBayWhenYouAreNotInOne(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	for _, where := range []string{"/?find=kaas", "/?shelf=kept", "/?open=1"} {
+		require.NotContains(t, m.call(t, "GET", where, nil).Body.String(), `class="baytab in"`,
+			"%s lights a bay you are not standing in", where)
+	}
+	require.Contains(t, m.call(t, "GET", "/?bay=tasks", nil).Body.String(), `class="baytab in"`)
+}
+
+func TestEveryBayWearsItsOwnIcon(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+
+	for _, bay := range []string{"notes", "chores", "tasks", "agenda"} {
+		require.Contains(t, body, `src="/static/bay-`+bay+`.png`,
+			"the %s has no icon in the bar", bay)
+		_, err := staticFS.ReadFile("static/bay-" + bay + ".png")
+		require.NoError(t, err, "the %s asks for an icon that is not shipped", bay)
+	}
+}
+
+func TestTheCountIsABadgeOnTheIconAndOnlyWhenThereIsOne(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+	bar := body[strings.Index(body, `<nav class="baytabs">`):]
+
+	require.Equal(t, 3, strings.Count(bar, `<span class="n">`),
+		"the three bays that hold something do not each wear one badge")
+	for _, tab := range strings.Split(bar, `<span class="pic">`)[1:] {
+		badge := strings.Index(tab, `<span class="n">`)
+		if badge < 0 {
+			continue
+		}
+		require.Less(t, badge, strings.Index(tab, `<span class="says">`),
+			"the count is beside the name rather than on the icon")
+	}
+	require.NotContains(t, bar, `<span class="n">0</span>`, "an empty bay wears a badge saying nought")
+
+	empty := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	require.NotContains(t, empty[strings.Index(empty, `<nav class="baytabs">`):], `<span class="n">`,
+		"a board with nothing on it still wears badges")
+}
