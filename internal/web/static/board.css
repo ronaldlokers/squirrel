@@ -108,6 +108,8 @@ body::before {
 .ops .opslink:hover { color: var(--paper); }
 .ops .opslink .acorn { display: none; width: 26px; height: 26px; }
 
+.deck { display: contents; }
+
 .working { display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: 14px; padding: 20px 18px 0; align-items: start; flex: 0 0 auto; }
 
 .pulled {
@@ -208,6 +210,8 @@ body::before {
   padding: 8px 10px; overflow: hidden; font-size: 14.5px; line-height: 1.3;
   font-variation-settings: var(--casual), "wght" 500;
 }
+.strip .what { margin: 0; }
+.opener { display: none; }
 .strip .mark {
   display: flex; align-items: center; padding: 8px 10px 8px 6px; white-space: nowrap;
   font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--brown);
@@ -276,16 +280,23 @@ body::before {
   .ops .clock .d { display: none; }
   .working { grid-template-columns: minmax(0, 1fr); padding: 14px 12px 0; }
   .pulled .said { font-size: 21px; }
-  .racks {
-    display: flex; flex-direction: column; gap: 12px;
-    padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
-    overflow: hidden;
+  .deck {
+    display: flex; flex-direction: column; flex: 1 1 auto;
+    min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   }
+  .racks {
+    display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto;
+    padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+    overflow: visible;
+  }
+  .channel { flex: 1 0 auto; overflow: visible; }
+  .strips { flex: 0 0 auto; overflow: visible; }
   .strip .words { font-size: 15.5px; }
   .pulled .said {
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
     overflow: hidden;
   }
+  .working { flex: 0 0 auto; }
 }
 
 .strip.answerable .words { display: flex; flex-direction: column; }
@@ -379,6 +390,35 @@ a.stamp { text-decoration: none; }
   .stamp { min-height: 44px; }
 }
 
+.presses .strip.answerable .words { display: flex; flex-direction: column; }
+.presses .strip.answerable .stamps {
+  max-height: 0; padding-top: 0; overflow: hidden;
+  transition: max-height 160ms cubic-bezier(.2, .8, .2, 1), padding-top 160ms cubic-bezier(.2, .8, .2, 1);
+}
+.presses .strip.answerable.open .stamps { max-height: 320px; padding-top: 8px; }
+.presses .strip.answerable {
+  grid-template-columns: 11px minmax(0, 1fr) max-content max-content;
+  min-height: 44px; cursor: pointer;
+}
+.presses .strip.answerable .opener {
+  display: grid; place-items: center; width: 40px; height: 40px; align-self: start;
+  padding: 0; margin: 0; background: none; border: 0; cursor: pointer;
+  color: var(--brown);
+}
+.presses .strip.answerable .mark { align-self: start; }
+.presses .strip.answerable .opener svg {
+  width: 20px; height: 20px; display: block;
+  transition: transform 140ms cubic-bezier(.2, .8, .2, 1);
+}
+.presses .strip.answerable.open .opener svg { transform: rotate(180deg); }
+.presses .strip.answerable .opener:focus-visible { outline: 3px solid var(--violet); outline-offset: -3px; }
+.presses .strip.answerable.open { background: var(--paper); }
+
+@media (prefers-reduced-motion: reduce) {
+  .presses .strip.answerable .stamps,
+  .presses .strip.answerable .opener svg { transition: none; }
+}
+
 .blankstrip { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; margin: 0; }
 .blankstrip .strip.blank { margin: 0; }
 .rhythms { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 1px; }
@@ -405,7 +445,9 @@ a.stamp { text-decoration: none; }
 @media (max-width: 620px) {
   .baytabs {
     display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 0 0 auto;
-    padding: 12px 12px 0;
+    padding: 12px 12px; position: sticky; top: 0; z-index: 2;
+    background: var(--purple-bar);
+    box-shadow: 0 8px 12px -10px rgba(0, 0, 0, .7);
   }
   .baytab {
     display: flex; align-items: baseline; gap: 7px; min-height: 40px;
@@ -425,9 +467,9 @@ a.stamp { text-decoration: none; }
   }
   .baytab:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
   .rack { display: none; }
-  .rack.in { display: flex; flex: 1 1 auto; }
+  .rack.in { display: flex; flex: 1 0 auto; }
   .rack[data-bay] .baysign { display: none; }
-  .racks { padding-top: 12px; }
+  .racks { padding-top: 0; }
 }
 
 .pulled .why.buddy { align-items: center; }

@@ -1,0 +1,166 @@
+//go:build browser
+
+package web
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
+)
+
+func aRackOfNotes() *fakeStore {
+	f := &fakeStore{}
+	for i := int64(1); i <= 5; i++ {
+		f.items = append(f.items, squirrel.Item{
+			ID: i, RawText: "note " + string(rune('a'+i-1)), State: squirrel.ItemOpen,
+			Kind: squirrel.ItemNote, ReceivedAt: time.Now(),
+		})
+	}
+	return f
+}
+
+func touching(t *testing.T, c *cdp) {
+	t.Helper()
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": true, "maxTouchPoints": 1})
+	c.send(t, "Emulation.setEmitTouchEventsForMouse", map[string]any{"enabled": true, "configuration": "mobile"})
+}
+
+func stampsTall(c *cdp, t *testing.T, nth int) float64 {
+	t.Helper()
+	return c.eval(t, `return Math.round(document.querySelectorAll(".rack.in .strip.answerable")[`+
+		string(rune('0'+nth))+`].querySelector(".stamps").getBoundingClientRect().height)`).(float64)
+}
+
+func TestBrowserAStripOpensWhenYouPressIt(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+
+	require.Equal(t, float64(0), stampsTall(c, t, 0), "a strip arrives with its answers already out")
+	require.Equal(t, "false", c.eval(t, `return document.querySelector(".opener").getAttribute("aria-expanded")`))
+
+	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
+	c.until(t, "the stamps", `document.querySelectorAll(".rack.in .strip.answerable")[0]
+		.querySelector(".stamps").getBoundingClientRect().height > 30`)
+	require.Equal(t, "true", c.eval(t, `return document.querySelector(".opener").getAttribute("aria-expanded")`))
+
+	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[1].querySelector(".what").click(); return 1`)
+	c.until(t, "the first to shut", `document.querySelectorAll(".rack.in .strip.answerable")[0]
+		.querySelector(".stamps").getBoundingClientRect().height < 1`)
+	require.Equal(t, float64(1), c.eval(t, `return document.querySelectorAll(".strip.answerable.open").length`),
+		"two strips are open at once")
+}
+
+func TestBrowserPressingAStampDoesNotShutTheStrip(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+
+	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
+	c.until(t, "the stamps", `document.querySelectorAll(".rack.in .strip.answerable")[0]
+		.querySelector(".stamps").getBoundingClientRect().height > 30`)
+
+	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".stamp").click(); return 1`)
+	c.until(t, "the strike", `!!document.querySelector(".strip.struck")`)
+	require.Equal(t, float64(1), c.eval(t, `return document.querySelectorAll(".strip.answerable.open").length`),
+		"pressing a stamp shut the strip it was on")
+}
+
+func TestBrowserEscapeShutsTheOpenStrip(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+
+	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
+	c.until(t, "the stamps", `!!document.querySelector(".strip.answerable.open")`)
+
+	c.key(t, "Escape")
+	c.until(t, "nothing open", `!document.querySelector(".strip.answerable.open")`)
+}
+
+func TestBrowserWithNoScriptEveryStripStillCarriesItsAnswers(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.send(t, "Emulation.setScriptExecutionDisabled", map[string]any{"value": true})
+	c.navigate(t, srv.URL+"/")
+
+	require.False(t, c.eval(t, `return document.documentElement.classList.contains("presses")`).(bool),
+		"the script ran, so this measured nothing")
+	require.Greater(t, stampsTall(c, t, 0), float64(30),
+		"with the script off a strip cannot be answered at all")
+	require.Greater(t, stampsTall(c, t, 3), float64(30))
+}
+
+func TestBrowserTheKeysOpenTheStripTheyReach(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, PersonID: 1, Name: "bins out", Active: true, EverDone: true, Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
+		{ID: 2, PersonID: 1, Name: "water the ferns", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7},
+	}}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/?bay=chores")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/?bay=chores")
+	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+
+	c.key(t, "d")
+	c.until(t, "the first chore to open", `document.querySelector(".strip.answerable.open")
+		?.querySelector(".what").textContent.trim().startsWith("bins out")`)
+
+	c.key(t, "ArrowDown")
+	c.until(t, "the second chore to open", `document.querySelector(".strip.answerable.open")
+		?.querySelector(".what").textContent.trim().startsWith("water the ferns")`)
+
+	c.key(t, "d")
+	c.until(t, "the strike", `!!document.querySelector(".strip.struck")`)
+	require.Eventually(t, func() bool { return len(f.completed) == 1 },
+		4*time.Second, 50*time.Millisecond, "the key did not act on the chore a press had opened")
+}
+
+func TestBrowserTheTabsStayWhileTheRackScrolls(t *testing.T) {
+	f := aRackOfNotes()
+	for i := int64(10); i < 30; i++ {
+		f.items = append(f.items, squirrel.Item{
+			ID: i, RawText: "one more thing", State: squirrel.ItemOpen,
+			Kind: squirrel.ItemNote, ReceivedAt: time.Now(),
+		})
+	}
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"}
+	f.chores = []squirrel.Chore{{ID: 4, Name: "water the plants", Active: true, EveryDays: 7, SinceDays: 7}}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the pulled strip", `!!document.querySelector(".pulled")`)
+
+	deckTop := c.eval(t, `return Math.round(document.querySelector(".deck").getBoundingClientRect().top)`)
+	restingTop := c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`)
+	require.Greater(t, restingTop.(float64), deckTop.(float64),
+		"the pulled strip is not above the tabs, so this measured nothing")
+
+	c.eval(t, `document.querySelector(".deck").scrollTop = 400; return 1`)
+	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
+	pinned := c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`)
+	require.Equal(t, deckTop, pinned, "the tabs scrolled away with the rack")
+
+	require.LessOrEqual(t,
+		c.eval(t, `return Math.round(document.querySelector(".pulled").getBoundingClientRect().bottom)`).(float64),
+		pinned.(float64), "the pulled strip held the top of the board instead of giving way")
+
+	c.eval(t, `document.querySelector(".deck").scrollTop = 800; return 1`)
+	c.until(t, "further down", `document.querySelector(".deck").scrollTop > 700`)
+	require.Equal(t, pinned, c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`),
+		"the tabs moved once the rack was well past them")
+}

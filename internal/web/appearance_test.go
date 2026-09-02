@@ -60,7 +60,7 @@ var appearanceScreens = map[string][]string{
 	"/": {
 		".ops", ".ops .wordmark", ".ops .clock .t", ".ops .clock .d", ".ops .opslink",
 		".baysign", ".baysign .n", ".channel",
-		".strip", ".strip .holder", ".strip .words", ".strip .mark",
+		".strip", ".strip .holder", ".strip .words", ".strip .what", ".strip .mark",
 		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
 		".rhythms .stamp", ".ledge .tab", ".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
