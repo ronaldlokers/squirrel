@@ -752,6 +752,25 @@ something has gone wrong.
 The line matters most on a phone, where one rack is the whole screen and there
 is nothing beside it to compare against.
 
+### The blank strip asks rather than guesses
+
+A chore typed with no rhythm, and an appointment with no time in it, used to be
+filed as notes — in another rack, found on the next refresh. The board asks
+instead: the words come back into the field they were typed in, with the
+question under them, and the rhythm chips or the day and time beside it are the
+answer.
+
+**A rhythm is any number of days, weeks or months.** The four chips are a
+shortcut and not the vocabulary: the fourth chore you have comes back every
+three days, and a screen that can only offer four intervals is a screen that
+makes you round.
+
+**A capture is settled before the board is drawn again.** The spool is what
+makes it safe; a pass over the spool in front of the person is what makes it
+visible. Without it the board you are sent back to is drawn before the drain has
+run, and a note you have just written is not on it — which reads as the capture
+having been lost, which is the one thing this product may never do.
+
 ### The bell, and what Squirrel told you
 
 A push has been fire-and-forget since it shipped: the payload went to the push
