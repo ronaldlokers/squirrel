@@ -5,6 +5,11 @@
   var TRAVEL = 260;
 
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var byPress = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+  var CHEVRON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>';
 
   // Letters act, arrows move. The board draws a key on every stamp, and until
   // now they were a promise: the letters were on the strips and nothing read
@@ -18,11 +23,71 @@
     return document.activeElement && document.activeElement.closest(".strip.answerable");
   };
 
+  var openerIn = function (strip) {
+    return strip.querySelector(".opener");
+  };
+
+  var shut = function (strip) {
+    strip.classList.remove("open");
+    var opener = openerIn(strip);
+    if (opener) opener.setAttribute("aria-expanded", "false");
+  };
+
+  var show = function (strip) {
+    strips().forEach(function (other) {
+      if (other !== strip) shut(other);
+    });
+    strip.classList.add("open");
+    var opener = openerIn(strip);
+    if (opener) opener.setAttribute("aria-expanded", "true");
+  };
+
   var focus = function (strip) {
     if (!strip) return;
+    if (byPress) {
+      show(strip);
+      var opener = openerIn(strip);
+      if (opener) opener.focus();
+      return;
+    }
     var first = strip.querySelector(".stamp");
     if (first) first.focus();
   };
+
+  if (byPress) {
+    document.documentElement.classList.add("presses");
+    strips().forEach(function (strip) {
+      var opener = document.createElement("button");
+      opener.type = "button";
+      opener.className = "opener";
+      opener.setAttribute("aria-expanded", "false");
+      opener.setAttribute("aria-label", "what you can do with this");
+      opener.innerHTML = CHEVRON;
+      strip.insertBefore(opener, strip.querySelector(".mark"));
+    });
+
+    document.addEventListener("click", function (e) {
+      var strip = e.target.closest(".strip.answerable");
+      if (!strip) return;
+      if (e.target.closest("a, .stamp, input, label, textarea")) return;
+      e.preventDefault();
+      if (strip.classList.contains("open")) {
+        shut(strip);
+        return;
+      }
+      show(strip);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      var open = document.querySelector(".strip.answerable.open");
+      if (!open) return;
+      e.preventDefault();
+      shut(open);
+      var opener = openerIn(open);
+      if (opener) opener.focus();
+    });
+  }
 
   document.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -59,6 +124,7 @@
       }
       return;
     }
+    if (byPress) show(here);
     var stamps = [].slice.call(here.querySelectorAll(".stamp"));
     for (var i = 0; i < stamps.length; i++) {
       var key = stamps[i].querySelector(".k");

@@ -514,6 +514,24 @@ rack was not room, it was the app stopping in the middle of the screen.
 where `hover` and a fine pointer say there is a keyboard to press it with. The
 keys themselves still work the moment one appears.
 
+**A strip opens when you press it.** On a touch screen a strip is its words, a
+chevron and its mark — 44px — and pressing anywhere on it shows its stamps and
+shuts whatever was open. Five notes are in view where three were. The gate is
+`(hover: none) and (pointer: coarse)`, not the width: a tablet has no hover
+either, and the desktop's open-on-hover is no use to it.
+
+This is a script, and the base layer under it is the one that already shipped:
+with `board.js` gone every strip is open, exactly as in v0.56.1, so nothing is
+unreachable and nothing needs a fallback drawn for it. The script adds the
+chevron, carries `aria-expanded` on it, and closes the open strip on Escape.
+
+**The pulled strip gives way.** Below 620px the board under the ops bar is one
+scrolling deck — the pulled strip, then the tab row, then the rack — and the tab
+row is sticky, so what you are looking at scrolls and the way between bays does
+not. The ledge still sits at the foot of the channel rather than after the last
+strip, because the channel still stretches to fill a short rack; the prediction
+that it would have no foot to sit on was wrong.
+
 ## Elevation & Depth
 
 Three depths, and nothing floats.
@@ -606,6 +624,12 @@ The single content object. A three-column grid: holder, words, mark.
   strip drawn whole above the racks — the picture at up to 38vh, contained
   rather than cropped, with the answers it would carry in its rack. A note whose
   photograph is of words is a note that cropping loses.
+
+The words are a paragraph of their own inside the well, with the stamps under
+them, which is what lets the stamps collapse on a touch screen without taking
+the words with them. On touch a chevron sits between the words and the mark: it
+is the strip's accessible control, and it is drawn by the script, because
+without the script there is nothing to open.
 
 ### The pulled strip
 
@@ -792,6 +816,12 @@ Both carry exactly one stamp, `back in the pile`, because every transition in
 this product reverses.
 
 ### Named Rules
+
+**The Open Strip Is The Focused Strip.** One rule for both worlds. On a desktop
+hover and focus open a strip; on a touch screen a press does, and a press is
+what focus means there. The keys follow it — an arrow moves to a strip and opens
+it, a letter acts on the one that is open — so there is never a strip that is
+focused and shut, or open and unfocused.
 
 **The Blank Is Dashed.** A dashed edge means *there is nothing on this yet*. It
 belongs to the blank strip and everything inside it — the camera, the four

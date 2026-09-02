@@ -25,6 +25,7 @@
   </a>
 </header>
 
+<div class="deck">
 {{if or .Pulled .Timer}}
 <section class="working">
   {{with .Pulled}}
@@ -116,7 +117,8 @@
         {{range .Shelved}}
         <article class="strip h-notes">
           <span class="holder"></span>
-          <div class="words">{{.Words}}
+          <div class="words">
+            <p class="what">{{.Words}}</p>
             <form class="stamps" method="post" action="/board/undo">
               <input type="hidden" name="id" value="{{.ID}}">
               <button class="stamp">back in the pile<span class="k">Z</span></button>
@@ -140,7 +142,8 @@
         {{range .Found}}
         <article class="strip h-notes{{if .Answers}} answerable{{end}}">
           <span class="holder"></span>
-          <div class="words">{{.Words}}
+          <div class="words">
+            <p class="what">{{.Words}}</p>
             {{if .Answers}}
             <form class="stamps" method="post" action="/board/act">
               <input type="hidden" name="what" value="{{.What}}">
@@ -205,7 +208,8 @@
         {{range .Strips}}
         <article class="strip h-{{$bay.Key}}{{if .Answers}} answerable{{end}}">
           <span class="holder"></span>
-          <div class="words">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}
+          <div class="words">
+            <p class="what">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}</p>
             {{if .Rhythms}}
             <form class="stamps" method="post" action="/board/chore">
               <input type="hidden" name="id" value="{{.ID}}">
@@ -243,6 +247,7 @@
   {{end}}
 </main>
 {{end}}
+</div>
 
 {{if .Tray}}
 <footer class="tray">
