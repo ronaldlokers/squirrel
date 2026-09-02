@@ -345,6 +345,55 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.57.0 — 2 September 2026
+
+**A strip opens when you press it.**
+
+A note strip was 162px on a phone, so three of them filled the screen and one
+and a half were left once something was pulled. Closed it is 44px — its words, a
+chevron and its mark — and five notes are in view. Pressing anywhere on a strip
+shows its stamps and shuts whatever was open; Escape closes; the chevron carries
+`aria-expanded`.
+
+**The gate is `(hover: none) and (pointer: coarse)`, not the width.** A tablet
+has no hover either, and the desktop's open-on-hover is no use to it.
+
+**The pulled strip gives way.** Below 620px everything under the ops bar is one
+scrolling deck — the pulled strip, then the tab row, then the rack — with the
+tab row sticky inside it. What you are looking at scrolls and the way between
+bays does not. It held the top of the board before whether or not you were
+looking at it.
+
+**The rule this settles** is written into DESIGN.md as *The Open Strip Is The
+Focused Strip*: hover and focus open a strip on a desktop, a press does on a
+touch screen, and a press is what focus means there. An arrow moves to a strip
+and opens it, a letter acts on the one that is open, and there is never a strip
+that is focused and shut.
+
+**On the script.** This is the release where the standing reading of "no script"
+was corrected. What the suite actually pins is that no *place* needs JavaScript
+to be reachable — `TestTheRoomsNeedNoScript` — and that the offline capture path
+survives. Interaction was never covered by it, and `board.js` has owned the
+1150ms hold, the strike and the whole keyboard layer since the board was
+mounted. Designing around the wider reading was producing worse mechanisms; the
+base layer here is not a fallback but what already shipped, and with `board.js`
+gone every strip is open exactly as in v0.56.1.
+
+**The bug inside the fix, recorded because of how it hid.** The collapse was
+first written as the `grid-template-rows: 0fr → 1fr` pattern, which clips: a
+strip's words are a grid item stretched by the row their own content sets, so
+the fraction resolves against an imposed height and the second row of stamps is
+cut. It sliced `MAKE A CHORE` in half. It is `max-height` now — and the reason
+nothing had caught it is that **a headless browser reports `hover: none`**, so
+every desktop screenshot and browser test in this project has been taking the
+flex path. The grid path had never been rendered by anything that looks at it.
+
+Also in this release: the 15.8MB compiled `devscreen` binary that had been
+committed at the repository root since v0.38.0's dev screen is deleted and its
+path ignored. Nothing ran it — every caller uses `go run` — but `go build` wrote
+straight over it, so looking at the dev screen once left 15.8MB of unrelated
+diff staged.
+
 ### v0.56.1 — 2 September 2026
 
 **The board on a phone.**
