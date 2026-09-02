@@ -129,7 +129,7 @@ func TestBrowserTheKeysOpenTheStripTheyReach(t *testing.T) {
 		4*time.Second, 50*time.Millisecond, "the key did not act on the chore a press had opened")
 }
 
-func TestBrowserTheTabsStayWhileTheRackScrolls(t *testing.T) {
+func TestBrowserThePulledStripGivesWay(t *testing.T) {
 	f := aRackOfNotes()
 	for i := int64(10); i < 30; i++ {
 		f.items = append(f.items, squirrel.Item{
@@ -146,23 +146,63 @@ func TestBrowserTheTabsStayWhileTheRackScrolls(t *testing.T) {
 	c.until(t, "the pulled strip", `!!document.querySelector(".pulled")`)
 
 	deckTop := c.eval(t, `return Math.round(document.querySelector(".deck").getBoundingClientRect().top)`)
-	restingTop := c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`)
-	require.Greater(t, restingTop.(float64), deckTop.(float64),
-		"the pulled strip is not above the tabs, so this measured nothing")
+	require.Greater(t,
+		c.eval(t, `return Math.round(document.querySelector(".pulled").getBoundingClientRect().bottom)`).(float64),
+		deckTop.(float64), "the pulled strip is not on screen, so this measured nothing")
 
-	c.eval(t, `document.querySelector(".deck").scrollTop = 400; return 1`)
+	c.eval(t, `document.querySelector(".deck").scrollTop = 600; return 1`)
 	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
-	pinned := c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`)
-	require.Equal(t, deckTop, pinned, "the tabs scrolled away with the rack")
 
 	require.LessOrEqual(t,
 		c.eval(t, `return Math.round(document.querySelector(".pulled").getBoundingClientRect().bottom)`).(float64),
-		pinned.(float64), "the pulled strip held the top of the board instead of giving way")
+		deckTop.(float64), "the pulled strip held the top of the board instead of giving way")
+}
 
-	c.eval(t, `document.querySelector(".deck").scrollTop = 800; return 1`)
-	c.until(t, "further down", `document.querySelector(".deck").scrollTop > 700`)
-	require.Equal(t, pinned, c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`),
-		"the tabs moved once the rack was well past them")
+func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
+	f := aRackOfNotes()
+	for i := int64(10); i < 30; i++ {
+		f.items = append(f.items, squirrel.Item{
+			ID: i, RawText: "one more thing", State: squirrel.ItemOpen,
+			Kind: squirrel.ItemNote, ReceivedAt: time.Now(),
+		})
+	}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/?bay=notes")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/?bay=notes")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+
+	foot := c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`)
+	require.Equal(t, float64(0), foot, "the bar is not at the foot of the screen")
+
+	c.eval(t, `document.querySelector(".deck").scrollTop = 600; return 1`)
+	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
+	require.Equal(t, float64(0),
+		c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
+		"the bar scrolled away with the rack")
+
+	require.Equal(t, "notes", c.eval(t, `return document.querySelector(".baytab.in").getAttribute("href").split("=")[1]`),
+		"the bar lights a bay you are not in")
+	require.Equal(t, `["notes","chores","tasks","agenda"]`, c.eval(t, `return JSON.stringify(
+		[...document.querySelectorAll(".baytab img")].map(i => i.getAttribute("src").split("bay-")[1].split(".png")[0]))`),
+		"a bay wears another bay's icon")
+}
+
+func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
+	f := aRackOfNotes()
+	f.triaged = []squirrel.Item{{
+		ID: 91, RawText: "the washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote,
+	}}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the tray", `!!document.querySelector(".tray")`)
+
+	require.LessOrEqual(t,
+		c.eval(t, `return Math.round(document.querySelector(".tray").getBoundingClientRect().bottom)`).(float64),
+		c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`).(float64),
+		"the tray sits below the way between bays")
 }
 
 func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
@@ -185,4 +225,22 @@ func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
 	require.Equal(t, float64(1), c.eval(t, `return new Set([...document.querySelectorAll(".rack.in .opener")]
 		.map(o => Math.round(o.getBoundingClientRect().left))).size`),
 		"the chevrons step in and out with the rhythm beside them")
+}
+
+func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+
+	c.until(t, "the easing", `document.documentElement.classList.contains("eased")`)
+	require.NotEqual(t, "0s", c.eval(t, `return getComputedStyle(
+		document.querySelector(".strip.answerable .stamps")).transitionDuration`),
+		"a press opens the strip with no motion at all")
+
+	c.eval(t, `document.documentElement.classList.remove("eased"); return 1`)
+	require.Equal(t, "0s", c.eval(t, `return getComputedStyle(
+		document.querySelector(".strip.answerable .stamps")).transitionDuration`),
+		"the collapse carries its own motion, so the strips animate shut on the way in")
 }

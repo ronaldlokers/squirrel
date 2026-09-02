@@ -168,12 +168,6 @@
   </section>
 </main>
 {{else}}
-<nav class="baytabs">
-  {{range .Bays}}
-  <a class="baytab{{if .In}} in{{end}}" href="/?bay={{.Key}}">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</a>
-  {{end}}
-</nav>
-
 <main class="racks">
   {{range $bay := .Bays}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
@@ -268,6 +262,20 @@
     {{end}}
   </div>
 </footer>
+{{end}}
+
+{{if .Bays}}
+<nav class="baytabs">
+  {{range .Bays}}
+  <a class="baytab{{if and .In (not (or $.Opened $.Find $.Shelf))}} in{{end}}" href="/?bay={{.Key}}">
+    <span class="pic">
+      <img src="/static/bay-{{.Key}}.png?v={{$.V}}" alt="" width="38" height="38">
+      {{if .Strips}}<span class="n">{{len .Strips}}</span>{{end}}
+    </span>
+    <span class="says">{{.Name}}</span>
+  </a>
+  {{end}}
+</nav>
 {{end}}
 </body>
 </html>

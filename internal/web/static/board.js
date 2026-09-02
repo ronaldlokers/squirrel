@@ -56,6 +56,11 @@
 
   if (byPress) {
     document.documentElement.classList.add("presses");
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        document.documentElement.classList.add("eased");
+      });
+    });
     strips().forEach(function (strip) {
       var opener = document.createElement("button");
       opener.type = "button";
