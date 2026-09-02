@@ -345,6 +345,43 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.62.0 — 3 September 2026
+
+**One bar in both places, and the face opens the settings.**
+
+The conversation's lid holds the board's chips now — your face, the field, the
+way to the other place, the bell. It keeps its own frame, fixed and translucent
+and ruled off, because the transcript is seen to pass under it and the board has
+nothing to do that for.
+
+**The middle chip is always the other place.** A chat bubble on the board, the
+board in his room. That is the answer to how you get back out of a conversation
+with no rail and no mark, and it is one slot rather than a second bar.
+
+**The face opens what can be changed** rather than the room it was usually
+already in: notifications, what he knows, how you felt before, and the way out.
+The rail keeps that panel and loses the two controls the bar took over.
+
+**Why this was backed out of v0.61.0 and worked here.** One component could not
+sit in two stylesheets until three things were made the same. `--line` is 2px on
+the board and 3px in the conversation, so a shared control that read it was
+drawn at two weights. Only one of the two sets `box-sizing` globally. And
+pile.css carries a 44px control minimum that a chip inherits, which is exactly
+why his room's chips came out four pixels taller than the board's and every
+offset test failed. The chip carries its own weight, its own box model and its
+own height now, and `--lid-h` follows from that.
+
+**One behaviour changed rather than moved.** Searching from his room used to
+answer inside it, as a turn carrying hits. The field in the bar is the board's,
+so a word typed there leaves the room and answers on the board. That is one
+search rather than two — and it is a real change, not a tidy-up: the
+conversation can no longer show a result without leaving it. The test that held
+the old shape is retired where it stood, with the reason in it.
+
+Also: `TestARackHandsYouWhatItHoldsAndSaysThereIsMore` forbade the substring
+`60` anywhere on the page and began failing because an asset's version hash
+happened to contain it. It checks the number as it would be drawn.
+
 ### v0.61.0 — 3 September 2026
 
 **The board asks rather than guessing, and a capture appears at once.**
