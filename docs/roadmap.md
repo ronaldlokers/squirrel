@@ -345,6 +345,49 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.59.0 — 2 September 2026
+
+**The bays float at the foot, under smoked acetate.**
+
+A pill clear of all three edges — 12px at the sides, about 10px off the true
+bottom — rather than a band welded along the bottom of the screen. The board
+scrolls beneath it, the cell you are in is tinted rather than filled, and the
+four bays are named without their article: Notes, Chores, Tasks, Agenda. The
+rack's own sign still reads *the notes*.
+
+**Translucency in this world is not glass.** `rgba(59,37,96,.86)` over a 13px
+backdrop blur is the board's own purple at strength, so a strip passing beneath
+comes through as a diffused shape rather than a frosted pane — and the pill
+keeps its 2px outline and its shadow, which glass in the iOS sense has neither
+of. It would otherwise be the one surface in this product that is not a thing
+you could pick up. It is the acetate a strip board is covered with. Solid where
+the browser has no backdrop filter, and solid again under
+`prefers-reduced-transparency`.
+
+**The gap under the buttons is gone by construction rather than by patch.** It
+was the well behind the lit cell: the well stopped above the home indicator's
+reserve, so the reserve read as a hole beneath the buttons. A floating bar has
+no edge to leave a gap against. The reserve also shrank — `--foot` is
+`max(8px, env(safe-area-inset-bottom) - 24px)`, because a floating bar does not
+owe the indicator the whole 34pt the way a fixed band does: the indicator is
+drawn over it, and the cells' own padding keeps the labels clear.
+
+**Two things had to change for the translucency to mean anything.** The reserve
+moved inside the scroller rather than sitting on the page, because nothing ever
+passed beneath the pill and the blur showed only ground and dots. And the labels
+went to full-strength cream: measured on the rendered pixels with a cream strip
+diffused directly under a label, 72% opacity gave 4.35:1, which is under the
+floor for text that size. At full strength it is 7.0:1.
+
+**The third blind spot in one bar, recorded together.** A headless browser
+reports `env(safe-area-inset-bottom)` as zero, so no rendered test can see how
+much of the inset is reserved; the contrast walk renders a page where nothing
+sits under the bar, so it cannot see a label losing contrast against what shows
+through; and the collapse in v0.57.0 hid the same way. Everything checkable here
+is checked, and the rest was verified by rendering with the inset stubbed at
+34px and by sampling rendered pixels — which is a method, not a test, and is
+written down as such.
+
 ### v0.58.1 — 2 September 2026
 
 **One safe area at the foot, not two.**
