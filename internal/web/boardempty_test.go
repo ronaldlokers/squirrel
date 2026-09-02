@@ -147,3 +147,35 @@ func TestTheCountIsABadgeOnTheIconAndOnlyWhenThereIsOne(t *testing.T) {
 	require.NotContains(t, empty[strings.Index(empty, `<nav class="baytabs">`):], `<span class="n">`,
 		"a board with nothing on it still wears badges")
 }
+
+func TestOnlyTheFootOfThePhoneClaimsTheSafeArea(t *testing.T) {
+	css, err := staticFS.ReadFile("static/board.css")
+	require.NoError(t, err)
+
+	phone, depth, selector := false, 0, ""
+	claimed := map[string]bool{}
+	for _, line := range strings.Split(string(css), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "@media") && strings.Contains(line, "max-width: 620px") {
+			phone, depth = true, 0
+		}
+		if phone {
+			depth += strings.Count(line, "{") - strings.Count(line, "}")
+			if depth <= 0 && strings.Contains(line, "}") && selector == "" {
+				phone = false
+			}
+		}
+		if i := strings.Index(line, "{"); i > 0 {
+			selector = strings.TrimSpace(line[:i])
+		}
+		if strings.Contains(line, "}") && !strings.Contains(line, "{") {
+			selector = ""
+		}
+		if phone && strings.Contains(line, "safe-area-inset-bottom") && selector != "" {
+			claimed[selector] = true
+		}
+	}
+
+	require.Equal(t, map[string]bool{".baytabs": true}, claimed,
+		"more than the bar at the foot pads for the home indicator, so the phone shows a band of nothing above it")
+}

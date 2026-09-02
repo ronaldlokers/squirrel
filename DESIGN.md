@@ -512,6 +512,12 @@ unreachable twice in this product — once on 28 August as the rooms, once on
 2 September as the bays. The bar cannot fail that way: four cells, one grid, no
 scroll at any width.
 
+**Only the bar pads for the home indicator.** It is the last thing on the
+screen, so it owns `env(safe-area-inset-bottom)` and nothing above it may claim
+it as well. The rack went on adding the same inset after the bar took the foot,
+which put a band of ground between the rack and the bar on every phone with a
+home indicator and none at all in a headless browser, where the inset is zero.
+
 **No bay is lit when you are not standing in one.** A shelf, a search and an
 opened strip all light nothing, because a bar that says you are in the notes
 while you are reading a search result is a bar you stop believing.
