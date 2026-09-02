@@ -52,9 +52,9 @@
     --line: 3px;               /* the outline weight of the mark */
     --r: 14px;
 
-    --lid-pad-top: 11px;
-    --lid-pad-bottom: 13px;
-    --lid-mark-h: 63px;
+    --lid-pad-top: 9px;
+    --lid-pad-bottom: 9px;
+    --lid-mark-h: 40px;
     --lid-h: calc(env(safe-area-inset-top) + var(--lid-pad-top) + var(--lid-mark-h) + var(--lid-pad-bottom) + var(--line));
 
     /* His words in the casual axis, the machinery in the linear one. MONO is
@@ -661,7 +661,7 @@
   }
 
   @media (max-width: 620px) {
-    :root { --o: 5px; --lid-pad-top: 6px; --lid-pad-bottom: 6px; --lid-mark-h: 34px; }
+    :root { --o: 5px; --lid-pad-top: 0px; --lid-pad-bottom: 5px; --lid-mark-h: 40px; }
     /* Wrapping is still what lets the lid be two rows, but nothing about the
        search field needs it any more: the mark and the three icons fit one
        row at every width this product is used at. It is the running timer that

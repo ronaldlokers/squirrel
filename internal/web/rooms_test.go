@@ -181,13 +181,23 @@ func TestEveryRoomLoadsTheThreadsScript(t *testing.T) {
 	}
 }
 
-// And only the front door keeps the mark unpressable. Everywhere else it is
-// the way back, which is the convention every website has.
-func TestOnlyTheFrontDoorHasNoWayBack(t *testing.T) {
+// The mark went with the lid's brand on 3 September 2026: both screens carry
+// the same bar, and the middle chip is the other place — a chat bubble on the
+// board, the board in his room. What this has always held is that the way out
+// of where you are is on the screen, and it is the same shape in both.
+func TestTheMiddleChipIsAlwaysTheOtherPlace(t *testing.T) {
 	f := &fakeStore{}
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `<a class="brand" href="/"`)
-	require.Contains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), `<a class="brand" href="/"`)
+	board := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, board, `aria-label="talk to Buddy"`)
+	require.NotContains(t, board, `aria-label="back to the board"`,
+		"the board offers a way back to itself")
+
+	his := m.call(t, "GET", "/r/everything", nil).Body.String()
+	require.Contains(t, his, `aria-label="back to the board"`,
+		"his room has no way back to the board")
+	require.NotContains(t, his, `aria-label="talk to Buddy"`,
+		"his room offers a way to the room you are standing in")
 }

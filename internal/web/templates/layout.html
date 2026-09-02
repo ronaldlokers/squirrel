@@ -73,19 +73,11 @@
      product exactly as it shipped. See squirrel.Tilt and squirrel.Light. */}}
 <body style="--tilt: {{.Tilt}}deg; --light: {{.Light}}%"{{if .PushKey}} data-push-key="{{.PushKey}}"{{end}}>
 <div class="lid">
-  {{if .Home}}
-  <span class="brand">
-    <img alt="" src="/static/logo.png?v={{.V}}" width="84" height="63">
-    <span class="wordmark">Squirrel</span>
-  </span>
-  {{else}}
-  {{/* The convention every website has, and the cheapest possible way back. */}}
-  <a class="brand" href="/">
-    <img alt="" src="/static/logo.png?v={{.V}}" width="84" height="63">
-    <span class="wordmark">Squirrel</span>
-  </a>
-  {{end}}
+  {{template "youchip" .You}}
+  {{template "findchip" ""}}
   <span class="spacer"></span>
+  {{template "boardchip"}}
+  {{template "bellchip" .AnyTold}}
   {{/* Running, and on every screen: you started it in order to go and do
        something, and wandering to the pile should not lose it. The remaining
        time is the one number here that counts down — a fact about a thing you
@@ -136,13 +128,9 @@
      somewhere writes nothing — so back steps through rooms and a room opens
      in a new tab. */}}
 <nav class="rail" aria-label="Buddy's room">
-  <a class="room board" href="/">back to the board</a>
   {{/* Not a place, so it sits below the rule rather than among the five — and
        it is always in view now, which it was not when it lived at the end of a
        strip that scrolled. */}}
-  <form class="lookup" method="post" action="/find/ask">
-    <button type="submit">look something up</button>
-  </form>
   {{/* Who the screen is talking to, and the way out.
 
        In the rail rather than the lid, and that is the whole placement
@@ -164,7 +152,7 @@
        neither — so it opens where it lives instead of taking you somewhere.
        With the script gone every control inside it is still a form and the
        disclosure is still the platform's own. */}}
-  <details class="youare">
+  <details class="youare"{{if .YouOpen}} open{{end}}>
     <summary class="whoami">
       {{if .You.Face}}
       <span class="youface"><img src="/me/face" alt="" width="36" height="36"></span>

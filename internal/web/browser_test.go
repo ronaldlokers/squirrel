@@ -357,33 +357,16 @@ func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 // The lid's field, on the thread. It posts and the answer arrives as a turn —
 // the deck's search-as-you-type would fetch a page and paste it over the
 // conversation, so it stands aside here.
-func TestBrowserSearchingOnTheThreadAnswersInIt(t *testing.T) {
-	f := aPile()
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
-	c, srv := open(t, f)
-	c.navigate(t, srv.URL+"/r/everything")
-
-	// A chip on the live edge rather than a field in the lid: it asks for
-	// words, and /find answers them.
-	c.eval(t, `document.querySelector('form[action="/find/ask"] button').click()`)
-	c.until(t, "the question", `!!document.querySelector(".wordbox")`)
-	c.eval(t, `const f = document.querySelector(".wordbox textarea");
-		f.value = "boiler"; f.form.requestSubmit(); return 1`)
-	// A hit, not a card: a result is a thing you went looking for rather than
-	// a thing you are deciding about, and it carries no verbs until you open
-	// it. See DESIGN.md, Results.
-	c.until(t, "the answer to arrive",
-		`!!document.querySelector("#thread .turn:last-child .hit")`)
-
-	require.Equal(t, "/r/everything", c.eval(t, `return location.pathname + location.search`),
-		"searching navigated")
-
-	// And tapping one turns it into the ordinary card, with the ordinary
-	// verbs, in the next turn.
-	c.eval(t, `document.querySelector("#thread .turn:last-child .hit button").click()`)
-	c.until(t, "the card to arrive",
-		`!!document.querySelector("#thread .turn:last-child .turncard .turnacts")`)
-}
+// Searching from his room answered inside it until 3 September 2026, as a turn
+// carrying hits. His room has the board's own bar now, and its field is the
+// board's: a word typed there leaves the room and answers on the board, where
+// what matched takes the racks' place. That is one search rather than two, and
+// it is a real change rather than a tidy-up — the conversation can no longer
+// show you a result without leaving it.
+//
+// What replaced this is TestTheLedgeOpensAShelfOnTheBoard's neighbour,
+// TestBrowserTheFieldIsThereWithoutBeingAskedFor, and the board's own
+// what-matched tests.
 
 // Triage left the conversation on 2 September 2026. The card at the live edge
 // came from the four rooms' lists, and those are the board's racks now: a strip
@@ -741,9 +724,12 @@ func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/r/everything")
 
-	require.Equal(t, float64(108), c.eval(t, `
-		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`),
-		"the lid does not reserve a top inset when there is one")
+	require.Greater(t, c.eval(t, `
+		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`).(float64),
+		float64(59), "the lid does not reserve a top inset when there is one")
+	require.GreaterOrEqual(t, c.eval(t, `
+		return Math.round(document.querySelector(".lid .chip").getBoundingClientRect().top)`).(float64),
+		float64(59), "a chip in his room sits under the status bar")
 
 	require.Equal(t, true, c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
@@ -871,6 +857,12 @@ func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
 	c := browserAt(t, srv, "/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": true,
+	})
+	// With a top inset, which is the only condition this is about: the band
+	// being sampled is the one beside the status bar, and there is no such band
+	// on a screen that has no inset to reserve. The chips sit under it.
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 0},
 	})
 	c.navigate(t, srv.URL+"/r/everything")
 

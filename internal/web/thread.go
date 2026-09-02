@@ -330,6 +330,7 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 				Words: "I cannot reach what we said. Tell me things anyway — they are kept, and they go in when I can.",
 			}}
 		}
+		v.YouOpen = r.URL.Query().Get("you") == "1"
 		renderWith(w, r, s, opts, "thread", v)
 	}
 }

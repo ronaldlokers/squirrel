@@ -74,7 +74,10 @@ var appearanceScreens = map[string][]string{
 	// Buddy's words are `.said` and yours are `.bub`, so there is no
 	// `.frombuddy .bub` to record.
 	"/r/everything": {
-		".lid", ".brand img", ".wordmark",
+		// The mark, the wordmark and the rail's two controls went with the
+		// lid's contents on 3 September 2026: his room carries the board's bar,
+		// and the chips are what is in it.
+		".lid", ".lid .chip", ".lid .find input",
 		// The rail, which is furniture on every screen and the largest thing
 		// this snapshot could miss.
 		//
@@ -85,7 +88,7 @@ var appearanceScreens = map[string][]string{
 		// are — a recessed well against a solid one.
 		// One link where five rooms were, and the two controls that always sat
 		// below the rule.
-		".rail", ".rail .room", ".rail .lookup button",
+		".rail",
 		// The control that names the room you are in is deliberately NOT here.
 		// This snapshot visits one viewport and it is a desktop one, where the
 		// control is inside a display:none parent — getComputedStyle still

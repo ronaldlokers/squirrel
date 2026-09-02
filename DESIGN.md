@@ -593,6 +593,25 @@ with `board.js` gone every strip is open, exactly as in v0.56.1, so nothing is
 unreachable and nothing needs a fallback drawn for it. The script adds the
 chevron, carries `aria-expanded` on it, and closes the open strip on Escape.
 
+**His room carries the same bar.** The conversation's lid holds the chips now:
+your face, the field, the way to the other place and the bell. It keeps its own
+frame — fixed, translucent, ruled off — because the transcript is seen to pass
+under it, which the board has nothing to do.
+
+**The middle chip is always the other place.** A chat bubble on the board, the
+board in his room. One slot, one shape, and the way out of wherever you are
+standing is never somewhere else.
+
+**The chip carries its own weight and size**, rather than reading `--line` or
+inheriting a control minimum: the two stylesheets set that token differently, so
+a shared component that read it would be drawn at two weights. It is the same
+40px circle with the same 2px edge in both places.
+
+**Your face opens what can be changed**, not Buddy — the panel with
+notifications, what he knows, how you felt before, and the way out. The rail
+keeps that panel and nothing else, because the bar took the way back and the
+way to look something up.
+
 **The pulled strip gives way.** Below 620px the board under the ops bar is one
 scrolling deck — the pulled strip, then the rack — so what you are looking at
 scrolls and the bar at the foot does not. The ledge still sits at the foot of the channel rather than after the last
