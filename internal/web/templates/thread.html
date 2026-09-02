@@ -44,7 +44,7 @@
   {{/* The way up the conversation. It says that there is more and never how
        much more — not because a count is forbidden any longer, but because the
        number above you is not a thing you can act on. */}}
-  {{if .MoreAbove}}<p class="earlier"><a href="/?before={{.Oldest}}">earlier</a></p>{{end}}
+  {{if .MoreAbove}}<p class="earlier"><a href="/r/everything?before={{.Oldest}}">earlier</a></p>{{end}}
   {{range .Turns}}{{template "turn" .}}{{end}}
 </div>
 

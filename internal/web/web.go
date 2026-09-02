@@ -252,6 +252,10 @@ type Store interface {
 	// deliberately nothing that edits a turn or removes one.
 	AppendTurn(ctx context.Context, personID int64, room string, t squirrel.Turn) (squirrel.Turn, error)
 	RecentTurns(ctx context.Context, personID int64, room string, limit int) ([]squirrel.Turn, bool, error)
+	// EverythingSaid and EverythingBefore are the same read unscoped by room:
+	// Buddy's room draws what was said rather than what was said in it.
+	EverythingSaid(ctx context.Context, personID int64, limit int) ([]squirrel.Turn, bool, error)
+	EverythingBefore(ctx context.Context, personID, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
 	// Who the screen is talking to: a name to show, and whether there is a
 	// picture to show beside it.
 	WhoIs(ctx context.Context, personID int64) (squirrel.Whom, error)

@@ -93,6 +93,24 @@ func (s *Store) TurnsBefore(ctx context.Context, personID int64, room string, be
 	return s.scanTurns(ctx, limit, q, personID, room, beforeID, limit+1)
 }
 
+// EverythingBefore walks the whole record back, across every room.
+//
+// The paging half of EverythingSaid, and it exists for the same reason: Buddy's
+// room reads what was said rather than what was said in it. The four rooms that
+// stopped being places on 2 September 2026 kept their rows and kept the room
+// each was written in — nothing was rewritten — so the only thing that had to
+// change is the reading.
+func (s *Store) EverythingBefore(ctx context.Context, personID, beforeID int64, limit int) ([]Turn, bool, error) {
+	const q = `
+		select id, room, who, words, shown, said_at
+		  from turns
+		 where person_id = $1
+		   and (said_at, id) < (select said_at, id from turns where id = $2)
+		 order by said_at desc, id desc
+		 limit $3`
+	return s.scanTurns(ctx, limit, q, personID, beforeID, limit+1)
+}
+
 // scanTurns reads newest-first rows, reports whether one more than asked for
 // came back, and hands the caller the rest oldest-first.
 //

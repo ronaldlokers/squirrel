@@ -106,7 +106,7 @@ func TestThreadOffersThePageAboveWhenThereIsOne(t *testing.T) {
 		turns:     []squirrel.Turn{{ID: 7, Who: squirrel.SpeakerYou, Words: "hello"}},
 		moreTurns: true,
 	})
-	require.Contains(t, body, "/?before=7")
+	require.Contains(t, body, "/r/everything?before=7")
 }
 
 func TestThreadDoesNotOfferAPageAboveWhenThereIsNone(t *testing.T) {
