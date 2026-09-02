@@ -495,7 +495,16 @@ the board begins at the top of the screen — the same move the bay bar made at
 the foot, and for the same reason: a band of furniture costs a strip.
 
 Every chip is a glyph with an `aria-label`, because a control drawn as a glyph
-and named nowhere is a control nobody can follow. The clock goes because the
+and named nowhere is a control nobody can follow. **The first chip is your
+face** when there is a picture to show and the monogram when there is not, read
+from the same place the conversation reads it so the two cannot disagree.
+
+**The ground is painted on `html`, not on the body.** A background on the root
+propagates to the canvas, which is what the phone paints under the status bar
+and inside the safe areas — so with the ground on `body::before` the strip above
+the bar was flat while everything below it was dotted. The board carries a
+`theme-color` of `purple-bar` and the mark as its favicon for the same reason:
+the parts of the window this design does not draw still belong to it. The clock goes because the
 phone shows one two inches above it and ours is server-rendered, so it is wrong
 by however long the page has been open.
 
