@@ -69,22 +69,15 @@ func TestTheRoomsNeedNoScript(t *testing.T) {
 	body := thread(t, &fakeStore{})
 
 	require.Contains(t, body, `<details class="roomsheet">`)
-	require.Contains(t, body, `<nav class="rail"`)
-	for _, r := range rooms {
-		require.Contains(t, body, `href="/r/`+r.Key+`"`,
-			"%s is not a plain link", r.Key)
-	}
+	require.Contains(t, body, `<nav class="rail"`, "his room lost the way back to the board")
+	// One room now, so what has to be a plain link is the way back to the board
+	// and the ways into it. The four that left are the board's bay tabs, which
+	// are plain links there for the same reason.
+	require.Contains(t, body, `href="/"`, "the way back is not a plain link")
 	require.NotContains(t, body, `onclick`)
 }
 
-// Everywhere is reachable from every screen, not only the conversation. A rail
-// that emptied itself on the screen you navigated to would be a one-way door.
-func TestTheRailIsOnEveryOtherScreenToo(t *testing.T) {
-	m := mounted(t, &fakeStore{checkin: fresh()})
-
-	for _, screen := range []string{"/r/everything", "/r/chores", "/r/notes"} {
-		body := m.call(t, "GET", screen, nil).Body.String()
-		require.Contains(t, body, `<nav class="rail"`, "%s has no rail", screen)
-		require.Contains(t, body, `href="/r/notes"`, "%s cannot reach the notes", screen)
-	}
-}
+// The rail went with the four rooms on 2 September 2026: the board's four bay
+// signs are the navigation, and Buddy's room has one link back to it. What this
+// test protected — that a screen is reachable from every other screen — is the
+// ops bar's own link and the board's tabs.

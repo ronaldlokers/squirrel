@@ -63,18 +63,16 @@ func storeWithPhoto(id int64) *fakeStore {
 	}}}
 }
 
-// This is the bandwidth half of the fix: the card is 260 pixels wide and the
-// original is a photograph from a phone.
-func TestACardAsksForTheSmallerCopy(t *testing.T) {
-	f := storeWithPhoto(7)
-	fDrew := drewIn(t, f, "notes")
-
-	shown := string(fDrew[len(fDrew)-1].Shown)
-	require.Contains(t, shown, `"photo":"/photo/7"`)
-
+// A strip asks for no copy at all. The card in a room carried a thumbnail, and
+// DESIGN.md's board says a strip never carries one: a note with a photograph is
+// a way in, and opening it shows the picture at the size a photograph needs.
+// The smaller copy still exists and is still served — the conversation's own
+// cards use it — so what left is this rack's use of it.
+func TestAStripAsksForNoCopyAtAll(t *testing.T) {
 	body := opened(t, storeWithPhoto(7), "notes")
-	require.Contains(t, body, `src="/photo/7/thumb"`, "the card downloaded the original")
-	require.Contains(t, body, `href="/photo/7"`, "there is no way to the whole picture")
+
+	require.NotContains(t, body, "/photo/7/thumb", "a strip is carrying a thumbnail")
+	require.Contains(t, body, `href="/?open=7"`, "there is no way in to the photograph")
 }
 
 func TestTheThumbRouteServesTheSmallerCopy(t *testing.T) {

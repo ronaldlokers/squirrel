@@ -19,25 +19,24 @@ func TestTheCardCarriesFourVerbsAndNoQuestions(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)}}
 	deck := opened(t, f, "notes")
 
-	for _, verb := range []string{"DONE", "KEEP", "DROP", "A TASK"} {
+	for _, verb := range []string{"done", "keep", "drop", "make a chore"} {
 		require.Contains(t, deck, verb)
 	}
-	require.Equal(t, 4, strings.Count(deck, `class="abtn`),
-		"the card carries something other than the four verbs")
+	// Four answers, three of them submit buttons and one a link — make a chore
+	// asks for a rhythm on the strip, so it is a way in rather than a press.
+	require.Equal(t, 4, strings.Count(deck, `name="answer" value=`)+strings.Count(deck, `href="/?chore=`),
+		"the strip carries something other than the four verbs")
 	for _, question := range []string{"make it a chore", "say it another way", "i can't act on this"} {
 		require.NotContains(t, deck, question, "%q is still on the card", question)
 	}
 }
 
-// And they are behind one press, which is a chip because it is a thing you say
-// about the note rather than a thing you do to it.
-func TestTheQuestionsAreBehindOnePress(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen)}}
-	deck := opened(t, f, "notes")
-
-	require.Contains(t, deck, "something else?")
-	require.Contains(t, deck, `action="/pile/more"`)
-}
+// The three questions behind one press went with the card on 2 September 2026.
+// A strip carries its four answers and nothing else: correcting the words,
+// asking why, and saying you cannot act on it are Buddy's, and Buddy is one
+// press away in his room. What this protected — that a question is never a
+// verb on the object — is the strip's own shape now: four answers, all of them
+// things you do to it.
 
 // The press answers as a turn. The card above keeps its place in the record,
 // so you can see which note is being discussed — and the press itself is a

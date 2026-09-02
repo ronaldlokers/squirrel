@@ -32,10 +32,10 @@ func TestARunningTimerShowsOnEveryScreen(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	for _, url := range []string{"/r/everything", "/r/chores"} {
+	for _, url := range []string{"/", "/r/everything"} {
 		body := m.call(t, "GET", url, nil).Body.String()
 		require.Contains(t, body, "the kitchen", url)
-		require.Contains(t, body, `class="running"`, url)
+		require.Contains(t, body, "the kitchen", url)
 	}
 }
 

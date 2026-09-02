@@ -84,10 +84,12 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	srv := screenWith(t, f, &fakeCoach{reply: "one thing at a time."})
 	c := atChores(t, srv)
 
-	tabTo(t, c, ".chore .abtn")
-	onChore := contrast(t, c, ".chore .abtn", "outline-color", ".chore")
-	require.GreaterOrEqual(t, onChore, 3.0,
-		"the ring on a chore measures %.2f:1 against the card it sits on", onChore)
+	// The cream surface a key reaches on the board is a strip, and the stamp is
+	// the control that sits on it.
+	tabTo(t, c, ".strip .stamp")
+	onStrip := contrast(t, c, ".strip .stamp", "outline-color", ".strip")
+	require.GreaterOrEqual(t, onStrip, 3.0,
+		"the ring on a strip measures %.2f:1 against the stock it sits on", onStrip)
 
 	// And in the dock, where the ground under a button is the slot rather than
 	// a card. The sheet was the third cream surface a key could reach and it

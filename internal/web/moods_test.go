@@ -114,7 +114,7 @@ func TestTheThreadOffersIt(t *testing.T) {
 // It is not in the lid and not a door. You go looking, or you do not see it.
 func TestTheMoodsPageIsNotInTheLid(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	for _, path := range []string{"/r/everything", "/r/notes"} {
+	for _, path := range []string{"/", "/r/everything"} {
 		body := mounted(t, f).call(t, "GET", path, nil).Body.String()
 		require.NotContains(t, body, `href="/moods"`, "reachable from %s", path)
 	}
@@ -157,22 +157,22 @@ func TestTheReadingsPageIsGoneAndItsURLStillLands(t *testing.T) {
 func TestTheReadingsAnswerInTheRoomYouAskedFrom(t *testing.T) {
 	f := &fakeStore{readings: []squirrel.Checkin{reading(squirrel.MoodGood, time.Now())}}
 	res := routed(t, f).callFragment(t, "/me/moods",
-		url.Values{"room": {"chores"}}.Encode())
+		url.Values{"room": {"everything"}}.Encode())
 
 	require.Equal(t, 200, res.Code)
 	require.Contains(t, res.Body.String(), "weekrow")
 	require.NotContains(t, res.Body.String(), "<!doctype html>", "it answered with a page")
 	require.Len(t, f.appended, 2, "asking is something you did and is not in the record")
 	for _, said := range f.appended {
-		require.Equal(t, "chores", said.Room, "it answered in somebody else's room")
+		require.Equal(t, "everything", said.Room, "it answered in somebody else's room")
 	}
 
 	// And the scriptless press comes back to the same room rather than to the
 	// front door — the floor every press on this screen stands on.
 	back := routed(t, &fakeStore{}).call(t, "POST", "/me/moods",
-		strings.NewReader(url.Values{"room": {"chores"}}.Encode()))
+		strings.NewReader(url.Values{"room": {"everything"}}.Encode()))
 	require.Equal(t, 303, back.Code)
-	require.Equal(t, "/r/chores", back.Header().Get("Location"))
+	require.Equal(t, "/r/everything", back.Header().Get("Location"))
 }
 
 // And a failure is a sentence in the conversation rather than a screen of

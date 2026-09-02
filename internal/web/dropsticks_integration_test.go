@@ -14,52 +14,40 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-func TestDroppingANoteSurvivesLeavingTheRoom(t *testing.T) {
-	for _, press := range []struct {
-		what     string
-		fragment bool
-	}{
-		{"the browser's own form", false},
-		{"the script's fragment press", true},
-	} {
-		t.Run(press.what, func(t *testing.T) {
-			m, store, mine, _ := theSweep(t)
-			ctx := context.Background()
+// The two presses this ran for went with the rooms on 2 September 2026: the
+// board's stamp is one form, and the script animates it rather than posting a
+// fragment of its own. What the pair protected — that a drop sticks whichever
+// way it was pressed — is one path now, and this is it.
+func TestDroppingANoteSurvivesLeavingTheBay(t *testing.T) {
+	m, store, mine, _ := theSweep(t)
+	ctx := context.Background()
 
-			items, _, err := store.OpenItems(ctx, mine, 50)
-			require.NoError(t, err)
-			require.NotEmpty(t, items)
-			note := items[0]
+	items, _, err := store.OpenItems(ctx, mine, 50)
+	require.NoError(t, err)
+	require.NotEmpty(t, items)
+	note := items[0]
 
-			shown := m.call(t, "GET", "/r/notes", nil).Body.String()
-			require.Contains(t, shown, note.RawText, "the room does not offer it to begin with")
+	shown := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	require.Contains(t, shown, note.RawText, "the rack does not offer it to begin with")
 
-			form := url.Values{
-				"id":   {strconv.FormatInt(note.ID, 10)},
-				"act":  {"drop"},
-				"was":  {string(squirrel.ItemOpen)},
-				"from": {"thread"},
-				"room": {"notes"},
-			}.Encode()
+	form := url.Values{
+		"id":     {strconv.FormatInt(note.ID, 10)},
+		"what":   {"note"},
+		"answer": {"drop"},
+		"bay":    {"notes"},
+	}.Encode()
 
-			var code int
-			if press.fragment {
-				code = m.callFragment(t, "/pile/act", form).Code
-			} else {
-				code = m.call(t, "POST", "/pile/act", strings.NewReader(form)).Code
-			}
-			require.Less(t, code, 400, "the press was not reported as handled")
+	code := m.call(t, "POST", "/board/act", strings.NewReader(form)).Code
+	require.Less(t, code, 400, "the press was not reported as handled")
 
-			after, found, err := store.ItemByID(ctx, mine, note.ID)
-			require.NoError(t, err)
-			require.True(t, found)
-			require.Equal(t, squirrel.ItemDropped, after.State,
-				"the press said it was handled and the note is still %s", after.State)
+	after, found, err := store.ItemByID(ctx, mine, note.ID)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, squirrel.ItemDropped, after.State,
+		"the press said it was handled and the note is still %s", after.State)
 
-			m.call(t, "GET", "/r/chores", nil)
-			back := m.call(t, "GET", "/r/notes", nil).Body.String()
-			require.NotContains(t, back, `name="id" value="`+strconv.FormatInt(note.ID, 10)+`"`,
-				"the room offers the dropped note again after leaving and coming back")
-		})
-	}
+	m.call(t, "GET", "/?bay=chores", nil)
+	back := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	require.NotContains(t, back, `name="id" value="`+strconv.FormatInt(note.ID, 10)+`"`,
+		"the rack offers the dropped note again after leaving and coming back")
 }

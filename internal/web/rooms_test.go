@@ -12,6 +12,22 @@ import (
 )
 
 func TestTheRoomsAreTheProductsOwnNames(t *testing.T) {
+	// One room, and its name is his. Four of the five became the board's bays
+	// on 2 September 2026; what is left is not about rows, so it is not named
+	// after any.
+	require.Len(t, rooms, 1, "a room was added or removed without this test")
+	require.Equal(t, "everything", rooms[0].Key)
+	require.Equal(t, "Buddy", rooms[0].Name)
+
+	// And the four that left are still sets Buddy can be asked to draw.
+	for key, name := range theSets {
+		drawn, ok := doorName(key)
+		require.True(t, ok, "%s is not a set he can name", key)
+		require.Equal(t, name, drawn)
+	}
+}
+
+func theOldRoomNames(t *testing.T) {
 	want := map[string]string{
 		"everything": "everything",
 		"notes":      "the notes",
@@ -81,61 +97,16 @@ func TestEnteringARoomWritesNothingWhenItAlreadyEndsOpen(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	rec := m.call(t, "GET", "/r/notes", nil)
+	rec := m.call(t, "GET", "/r/everything", nil)
 	require.Equal(t, 200, rec.Code)
 	require.Empty(t, f.appended,
 		"entering a room appended to a conversation that already ended open")
 }
 
-// The room's own turn goes in the room, not in the record Buddy's room holds.
-// Entering a room writes nothing at all, and draws what is true now.
-//
-// It wrote its list into the conversation until 31 August 2026, which is why a
-// chore you had done was still on the screen asking: the room refused to write
-// the list a second time while the first one was still the last thing said.
-// See view.Edge.
-func TestEnteringARoomWritesNothingAndDrawsWhatIsThere(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, Name: "the bins", EveryDays: 7, SinceDays: 8, Active: true},
-	}}
-	m := newTestMux()
-	require.NoError(t, Mount(m, f, signedInOptions()))
-
-	rec := m.call(t, "GET", "/r/chores", nil)
-
-	require.Equal(t, 200, rec.Code)
-	require.Empty(t, f.appended, "entering a room wrote to the record")
-	require.Contains(t, rec.Body.String(), "the bins", "the chores drew nothing")
-}
-
-// And what it draws is current, however many times you come back.
-//
-// The conversation holds a list from an earlier visit, which is what used to
-// stop a room drawing anything at all: endsOpen saw cards on the last turn and
-// said nothing more. Read on the edge alone and never on the whole page — the
-// old list is still in the scrollback, so a page-wide assertion would pass on
-// the very thing this is about.
-func TestARoomIsCurrentEveryTimeYouComeBack(t *testing.T) {
-	f := &fakeStore{
-		chores: []squirrel.Chore{
-			{ID: 2, Name: "water the plants", EveryDays: 3, SinceDays: 4, Active: true},
-		},
-		turns: []squirrel.Turn{{
-			ID: 1, Who: squirrel.SpeakerBuddy, Words: "1 comes back.",
-			Shown: []byte(`{"cards":[{"kind":"chore","title":"the bins"}]}`),
-		}},
-	}
-	m := newTestMux()
-	require.NoError(t, Mount(m, f, signedInOptions()))
-
-	body := m.call(t, "GET", "/r/chores", nil).Body.String()
-	edge := body[strings.Index(body, `id="edge"`):]
-
-	require.Contains(t, edge, "water the plants",
-		"the room drew nothing, because the conversation already ended open")
-	require.NotContains(t, edge, "the bins",
-		"the edge is showing a chore that is only in the scrollback")
-}
+// Entering a room drew its list and wrote nothing. Four of the five rooms are
+// the board's bays now and the fifth is Buddy's, which draws a conversation
+// rather than a list — so what these two pinned is covered by the board's own
+// tests and by TestEnteringARoomWritesNothingWhenItAlreadyEndsOpen above.
 
 // A typo is not a page. Not a redirect to Buddy either: a URL that silently
 // becomes a different room is a URL you cannot trust in a bookmark.
@@ -163,68 +134,29 @@ func TestTheOldDoorSendsYouToTheRoomAndWritesNothing(t *testing.T) {
 	require.Empty(t, f.appended, "the old door still writes")
 }
 
-func TestTheRailCountsWhatIsWaitingAndNothingElse(t *testing.T) {
-	f := &fakeStore{waiting: squirrel.Waiting{Pile: 2, Chores: 1}}
-	rail := roomsFor(context.Background(), f, 1, "everything")
-
-	by := map[string]railView{}
-	for _, r := range rail {
-		by[r.Key] = r
-	}
-	require.Len(t, by, len(rooms))
-	require.Equal(t, 2, by["notes"].Count)
-	require.Equal(t, 1, by["chores"].Count)
-	require.Zero(t, by["tasks"].Count, "an empty room carries a number")
-	require.Zero(t, by["everything"].Count, "the room you are standing in carries a number")
-}
-
-func TestTheRailSaysWhichRoomYouAreIn(t *testing.T) {
-	f := &fakeStore{}
-	var current []string
-	for _, r := range roomsFor(context.Background(), f, 1, "chores") {
-		if r.Current {
-			current = append(current, r.Key)
-		}
-	}
-	require.Equal(t, []string{"chores"}, current)
-}
-
-// The rail is furniture: it is on every screen, not only on the one it was
-// built for. A rail that vanished inside a room would be the menu again.
-func TestTheRailIsOnEveryScreen(t *testing.T) {
-	f := &fakeStore{waiting: squirrel.Waiting{Pile: 2}}
-	m := newTestMux()
-	require.NoError(t, Mount(m, f, signedInOptions()))
-
-	for _, where := range []string{"/r/everything", "/r/chores", "/r/notes"} {
-		t.Run(where, func(t *testing.T) {
-			body := m.call(t, "GET", where, nil).Body.String()
-			require.Contains(t, body, `<nav class="rail"`)
-			for _, r := range rooms {
-				require.Contains(t, body, `href="/r/`+r.Key+`"`,
-					"the rail on %s cannot reach %s", where, r.Key)
-			}
-		})
-	}
-}
+// The rail's three tests — what it counted, which room it said you were in, and
+// that it was on every screen — went with the rail on 2 September 2026. Buddy's
+// room has one link where the rail was, back to the board, and the board's own
+// navigation is its four bay signs. What the counting rule protected is now the
+// bay signs' own test: a sign says what is in the rack and no sign says nought.
 
 // The coach keeps its own copy of the room names, because internal/coach must
 // not import internal/web. Two lists of the same six is one list that goes
 // stale, and a room the coach has never heard of is a room it does not narrow
 // in — which is Buddy's whole toolset, silently.
 func TestTheRoomNamesAgreeWithTheCoach(t *testing.T) {
-	for _, r := range rooms {
-		if r.Key == "everything" {
-			// Everything is deliberately absent there: it is not a room he is
-			// confined to, it is where he is.
-			require.Empty(t, coach.RoomName(r.Key))
-			continue
-		}
-		require.Equal(t, r.Name, coach.RoomName(r.Key),
-			"the coach calls %q something else", r.Key)
+	// The four stopped being rooms on 2 September 2026 and stayed sets he can
+	// be asked to draw, which is exactly what the coach narrows in. So the
+	// names that have to agree are the sets' — and Buddy's own is still
+	// deliberately absent there: it is not a place he is confined to, it is
+	// where he is.
+	for key, name := range theSets {
+		require.Equal(t, name, coach.RoomName(key),
+			"the coach calls %q something else", key)
 	}
-	require.Len(t, coach.RoomKeys(), len(rooms)-1,
-		"a room was added on one side only")
+	require.Empty(t, coach.RoomName("everything"))
+	require.Len(t, coach.RoomKeys(), len(theSets),
+		"a set was added on one side only")
 }
 
 // Every room is a conversation, so every room loads the conversation's script.
@@ -256,6 +188,8 @@ func TestOnlyTheFrontDoorHasNoWayBack(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	require.NotContains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), `<a class="brand" href="/"`)
-	require.Contains(t, m.call(t, "GET", "/r/chores", nil).Body.String(), `<a class="brand" href="/"`)
+	// The board is the front door and has no way back to itself; his room does,
+	// and it is the mark in the lid.
+	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `<a class="brand" href="/"`)
+	require.Contains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), `<a class="brand" href="/"`)
 }

@@ -192,7 +192,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	// a redirect nobody notices. The two shelves land in the notes, which is
 	// where they are now — a press away rather than a door.
 	for from, to := range map[string]string{
-		"/r/buddy": "/r/everything", "/r/pile": "/r/notes", "/r/held": "/r/notes", "/r/kept": "/r/notes",
+		"/r/buddy": "/r/everything", "/r/pile": "/?bay=notes", "/r/held": "/?shelf=held", "/r/kept": "/?shelf=kept",
 	} {
 		where := to
 		m.Get(from, guard(opts, func(w http.ResponseWriter, r *http.Request) {

@@ -518,3 +518,9 @@ a.stamp { text-decoration: none; }
   background: rgba(28, 17, 11, .34);
   border-style: dashed; border-color: rgba(254, 214, 167, .5);
 }
+
+.further {
+  flex: 0 0 auto; margin: 6px 2px 0;
+  color: rgba(254, 214, 167, .8); font-size: 12.5px;
+  font-variation-settings: var(--casual), "wght" 470;
+}

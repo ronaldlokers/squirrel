@@ -55,39 +55,15 @@ func TestOnlyTheNewestBuddyTurnHasControls(t *testing.T) {
 		"a card in scrollback keeps its words and loses its buttons")
 }
 
-// The seven rooms, and the one thing you can always do, on the rail.
-func TestTheRailHoldsEverywhereElse(t *testing.T) {
-	body := thread(t, &fakeStore{
-		waiting: squirrel.Waiting{Pile: 3, Tasks: 1, Chores: 2, Agenda: 1},
-	})
-
-	for _, name := range []string{
-		"everything", "the notes", "the tasks", "the chores", "the agenda",
-		"look something up",
-	} {
-		require.Contains(t, body, name, "the rail lost %s", name)
-	}
-	require.Contains(t, body, `class="cnt">3<`)
-	require.Contains(t, body, `class="cnt">2<`)
-}
-
-// Zero is no number, not a nought. A room reading "0" is a scoreboard.
-func TestARoomWithNothingWaitingShowsNoNumber(t *testing.T) {
-	body := thread(t, &fakeStore{waiting: squirrel.Waiting{}})
-
-	require.Contains(t, body, "the notes")
-	require.NotContains(t, body, `class="cnt"`)
-}
-
-// A door that has something shows it while a door that has nothing stays bare,
-// in one render — the mixed case is where an "if" is most easily written the
-// wrong way round.
-func TestOnlyTheDoorsWithSomethingWaitingCarryANumber(t *testing.T) {
-	body := thread(t, &fakeStore{waiting: squirrel.Waiting{Chores: 2}})
-
-	require.Equal(t, 1, strings.Count(body, `class="cnt"`))
-	require.Contains(t, body, `class="cnt">2<`)
-}
+// The rail's four tests — that it held on every screen, that a room with
+// nothing waiting showed no number, that only the doors with something waiting
+// carried one, and that the doors survived a count that failed — went with the
+// rail on 2 September 2026. Buddy's room has one link where the rail was.
+//
+// What they protected is the bay signs' rule now: a sign says what is in the
+// rack, a rack with nothing in it shows no number, and a rack that cannot be
+// read says so rather than showing a quiet morning. Those are the board's own
+// tests.
 
 // The thread has no <h1> — home's own exemption — but a turn that opens a place
 // carries that place's name as an <h2>, so heading navigation still works.
@@ -128,17 +104,6 @@ func TestThreadWalksBackwardsWhenAsked(t *testing.T) {
 	require.Equal(t, int64(9), f.pagedBefore)
 	require.Contains(t, body, "older")
 	require.NotContains(t, body, "newer")
-}
-
-// A database that cannot count is not a reason to take the navigation away:
-// everywhere still goes where it goes, and only the numbers are missing.
-func TestTheDoorsSurviveACountThatFails(t *testing.T) {
-	body := thread(t, &fakeStore{waitingErr: errTest})
-
-	for _, name := range []string{"the notes", "the tasks", "the chores", "the agenda"} {
-		require.Contains(t, body, name)
-	}
-	require.NotContains(t, body, `class="cnt"`)
 }
 
 // Two turns for one press: what you said, and what Buddy said back. A test
@@ -435,34 +400,13 @@ func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
 	require.Contains(t, body, `action="/me/moods"`, "the newest turn keeps its chips")
 }
 
-// Entering a room draws the room and puts no words in your mouth.
-//
-// The door it replaced wrote two turns — "the chores", said by you, and
-// Buddy's reply. Pressing a door was an utterance because a door was a POST;
-// walking into a room is not, so the record no longer holds a sentence you
-// never said.
-func TestEnteringARoomDrawsItAndSaysNothingForYou(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour,
-			EveryDays: 7, SinceDays: 8, Active: true, EverDone: true},
-	}}
-	fDrew := drewIn(t, f, "chores")
-
-	require.Len(t, fDrew, 1, "a room wrote something besides its own turn")
-	require.Equal(t, squirrel.SpeakerBuddy, fDrew[0].Who,
-		"the record has you saying a room's name out loud")
-	require.Contains(t, string(fDrew[0].Shown), "water the plants")
-}
-
-// And the turn carries the place's name as a heading, so heading navigation
-// still walks the app.
-func TestTheReplyToADoorCarriesItsHeading(t *testing.T) {
-	f := &fakeStore{}
-	fDrew := drewIn(t, f, "chores")
-
-	require.Len(t, fDrew, 1)
-	require.Contains(t, string(fDrew[len(fDrew)-1].Shown), `"place":"the chores"`)
-}
+// A door drew its list as a turn, said nothing for you, and carried a heading;
+// an empty one said where chores come from; the pile handed you one note at a
+// time. All six of those tests described the four rooms, which are the board's
+// bays since 2 September 2026 — a rack draws itself, on load, with no turn
+// written and nothing said. What each protected lives in the board's own tests:
+// that a rack holds what its bay holds, that an empty rack says nothing, that
+// one strip carries the answers, and that a rack that cannot be read says so.
 
 // A door nobody offered does nothing and says nothing. It arrives from a form,
 // so it is read the way a stranger's typing is read.
@@ -472,31 +416,6 @@ func TestADoorThatDoesNotExistDoesNothing(t *testing.T) {
 
 	require.Equal(t, 303, w.Code)
 	require.Empty(t, f.appended)
-}
-
-// Nothing behind it says where chores come from, rather than counting to zero
-// or saying nothing at all.
-//
-// Asserting on the words rather than on the absence of cards: `omitempty` makes
-// an empty card list structurally impossible, so a test about that would pass
-// with the empty branch deleted.
-func TestAnEmptyPlaceSaysWhereChoresComeFrom(t *testing.T) {
-	f := &fakeStore{}
-	fDrew := drewIn(t, f, "chores")
-
-	require.Len(t, fDrew, 1)
-	require.Contains(t, fDrew[len(fDrew)-1].Words, "Nothing comes back on its own")
-	require.NotContains(t, fDrew[len(fDrew)-1].Words, "0")
-}
-
-// A room is reached by following a link, because going somewhere is not
-// something you said. The door posted, and paid for it: no new tab, and back
-// did not step through doors.
-func TestARoomIsALinkRatherThanAPress(t *testing.T) {
-	body := thread(t, &fakeStore{})
-	require.Contains(t, body, `href="/r/chores"`)
-	require.NotContains(t, body, `action="/open"`,
-		"the rail still posts to open a place")
 }
 
 // A question is something on the table too.
@@ -515,22 +434,6 @@ func TestNothingIsOfferedOverAnUnansweredQuestion(t *testing.T) {
 
 	require.Empty(t, f.appended)
 	require.Contains(t, body, `class="pick"`, "the question keeps its answers")
-}
-
-func TestOpeningThePileHandsYouOneNote(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{
-		note(9, "the boiler makes a noise", squirrel.ItemOpen),
-		note(8, "meter reading 48213", squirrel.ItemOpen),
-	}}
-	fDrew := drewIn(t, f, "notes")
-
-	require.Len(t, fDrew, 1)
-	shown := string(fDrew[len(fDrew)-1].Shown)
-	require.Contains(t, shown, "the boiler makes a noise")
-	require.NotContains(t, shown, "meter reading", "one at a time, like the deck")
-	for _, act := range []string{"done", "keep", "drop", "task"} {
-		require.Contains(t, shown, `"act":"`+act+`"`)
-	}
 }
 
 // Acting on it says what happened and hands you the next one, so triage is a
@@ -575,16 +478,6 @@ func TestLaterHandsYouTheNextAndDecidesNothing(t *testing.T) {
 
 	require.Empty(t, f.states, "later decided something")
 	require.Contains(t, string(f.appended[1].Shown), "meter reading 48213")
-}
-
-// Nothing left says so rather than handing you an empty card.
-func TestAnEmptyPileSaysSo(t *testing.T) {
-	f := &fakeStore{}
-	fDrew := drewIn(t, f, "notes")
-
-	require.Len(t, fDrew, 1)
-	require.NotContains(t, string(fDrew[len(fDrew)-1].Shown), `"cards"`)
-	require.NotEmpty(t, fDrew[len(fDrew)-1].Words)
 }
 
 // The three questions a note can be asked, rather than the three verbs that end
@@ -711,23 +604,6 @@ func TestThePileNeverRanks(t *testing.T) {
 	for _, ranked := range []string{"of 7", "(7)", "1 of ", "7 left", "7 to go"} {
 		require.NotContains(t, body, ranked)
 	}
-}
-
-// Nothing to decide about does not celebrate and does not nag.
-func TestAnEmptyPileDoesNotCelebrate(t *testing.T) {
-	body := strings.ToLower(opened(t, &fakeStore{}, "notes"))
-
-	require.Contains(t, body, "nothing to decide about")
-	for _, said := range []string{"well done", "all clear", "inbox zero", "congratulations", "great"} {
-		require.NotContains(t, body, said)
-	}
-}
-
-func TestAPileThatCannotBeReadSaysSo(t *testing.T) {
-	f := &fakeStore{itemsErr: errTest}
-	fDrew := drewIn(t, f, "notes")
-
-	require.Contains(t, fDrew[len(fDrew)-1].Words, "cannot reach the pile")
 }
 
 // The way back actually puts it back. The chip carries the act and the state,

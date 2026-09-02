@@ -302,7 +302,10 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 
 		buddy, _ := roomByKey("everything")
 		v := view{
-			Home:   true,
+			// Not home since 2 September 2026: the board is the front door, so
+			// the mark in this lid is the way back to it rather than a mark
+			// with nowhere to go.
+			Home:   false,
 			Thread: true,
 			Room:   buddy,
 			// The worker having taken the words because there was no network.
@@ -798,8 +801,13 @@ const listLimit = 5
 // doorName is the vocabulary, and it is the rooms'. Two lists of the same
 // seven names is one list that goes stale.
 func doorName(key string) (string, bool) {
-	r, ok := roomByKey(key)
-	return r.Name, ok
+	if r, ok := roomByKey(key); ok {
+		return r.Name, true
+	}
+	// A set he can draw, which four of the five rooms became rather than
+	// stopped being. See theSets.
+	name, ok := theSets[key]
+	return name, ok
 }
 
 // openHandler is two things that used to be one.
@@ -948,7 +956,7 @@ func choresTurn(ctx context.Context, s Store, opts Options, personID int64, name
 	}
 	return squirrel.Turn{
 		Who:   squirrel.SpeakerBuddy,
-		Words: withNotice(ctx, opts, personID, "the chores", choreLead(len(sh.Cards)), sh.Cards),
+		Words: choreLead(len(sh.Cards)),
 		Shown: body,
 	}
 }
@@ -1200,7 +1208,7 @@ func tasksTurn(ctx context.Context, s Store, opts Options, personID int64, name 
 	}
 	return squirrel.Turn{
 		Who:   squirrel.SpeakerBuddy,
-		Words: withNotice(ctx, opts, personID, "the tasks", taskLead(len(sh.Cards)), sh.Cards),
+		Words: taskLead(len(sh.Cards)),
 		Shown: body,
 	}
 }

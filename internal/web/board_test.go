@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -594,4 +595,29 @@ func TestARackThatCannotBeReadSaysSo(t *testing.T) {
 	require.Contains(t, body, "cannot reach the notes")
 	require.Contains(t, body, "cannot reach the chores")
 	require.Contains(t, body, "nothing is lost")
+}
+
+// A rack says that there is more and never how much. What is further back is
+// not a thing you can act on, so a number beside it would be counting what you
+// have not got to.
+func TestARackSaysThereIsMoreWithoutSayingHowMuch(t *testing.T) {
+	f := aBoardStore()
+	for i := int64(100); i < 160; i++ {
+		f.items = append(f.items, squirrel.Item{
+			ID: i, RawText: "note " + strconv.FormatInt(i, 10),
+			State: squirrel.ItemOpen, Kind: squirrel.ItemNote, ReceivedAt: time.Now(),
+		})
+	}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, "there is more further back")
+	for _, count := range []string{"60 more", "more (", "of 63"} {
+		require.NotContains(t, body, count)
+	}
+}
+
+func TestARackThatHoldsEverythingSaysNothingAboutMore(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+
+	require.NotContains(t, body, "there is more further back")
 }

@@ -14,24 +14,28 @@ import (
 // and a chore or an appointment is not a thought you had — you decide to have
 // it, so the dock is not where it comes from.
 
-// Every door offers it, and offers it whether or not there is anything there.
-// An empty list is the moment you are most likely to want to add to it.
-func TestEveryDoorOffersANewOne(t *testing.T) {
-	for _, d := range []struct{ where, chip string }{
-		{"chores", "a new chore"},
-		{"tasks", "a new task"},
-		{"at", "a new appointment"},
-		{"notes", "put something down"},
+// Every rack offers it, and offers it whether or not there is anything in the
+// rack. An empty one is the moment you are most likely to want to add to it.
+//
+// The doors these were chips on are the board's bays since 2 September 2026,
+// and the chip is the blank strip at the head of each rack: always there rather
+// than only when the room was quiet.
+func TestEveryRackOffersANewOne(t *testing.T) {
+	for _, d := range []struct{ where, asks string }{
+		{"chores", "what comes back?"},
+		{"tasks", "what did you decide?"},
+		{"at", "at 14:30 dentist"},
+		{"notes", "what is it"},
 	} {
 		t.Run(d.where, func(t *testing.T) {
 			full := &fakeStore{
-				items:   []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen), task(2, "ring the vet", squirrel.ItemOpen)},
-				chores:  []squirrel.Chore{{ID: 1, Name: "bins out", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7}},
-				moments: []squirrel.Moment{{ID: 1, Label: "dentist", Starts: now().Add(time.Hour)}},
+				items:    []squirrel.Item{note(1, "the boiler", squirrel.ItemOpen), task(2, "ring the vet", squirrel.ItemOpen)},
+				chores:   []squirrel.Chore{{ID: 1, Name: "bins out", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7}},
+				upcoming: []squirrel.Moment{{ID: 1, Label: "dentist", Starts: now().Add(time.Hour)}},
 			}
-			require.Contains(t, drewFor(t, full, d.where), d.chip,
+			require.Contains(t, opened(t, full, d.where), d.asks,
 				"%s does not offer a new one", d.where)
-			require.Contains(t, drewFor(t, &fakeStore{}, d.where), d.chip,
+			require.Contains(t, opened(t, &fakeStore{}, d.where), d.asks,
 				"%s offers nothing when it is empty, which is when you want it", d.where)
 		})
 	}
@@ -118,17 +122,8 @@ func TestThePilesChipGoesThroughCapture(t *testing.T) {
 	require.Contains(t, string(f.appended[1].Shown), `"action":"/capture"`)
 }
 
-// The appointment chip asks what it is, then which day.
-//
-// It went straight to /at/new until 31 August 2026, on the recorded intent that
-// an appointment is a day and a time before it is anything else. That intent
-// was never reachable: /at/new asks for a day *given* a label, /at/make refuses
-// without one, and nothing in the flow ever collected one — so the chip posted
-// a form its handler could only redirect away from, and fetch followed the
-// redirect and pasted a whole room, navigation and all, into the room.
-//
-// So the agenda asks first, like every other room. The old intent described a
-// flow the code could not perform.
-func TestTheAppointmentChipAsksWhatItIs(t *testing.T) {
-	require.Contains(t, drewFor(t, &fakeStore{}, "at"), `"action":"/at/ask"`)
+// The agenda teaches the sentence it takes in its own placeholder, and the
+// chip that used to ask first is that rack's slot.
+func TestTheAgendaRackTeachesItsGrammar(t *testing.T) {
+	require.Contains(t, opened(t, &fakeStore{}, "at"), "at 14:30 dentist")
 }

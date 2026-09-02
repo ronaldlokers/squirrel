@@ -1265,7 +1265,43 @@ func opened(t *testing.T, f *fakeStore, where string) string {
 	if shelfByKey(where) {
 		return pressedShelf(t, f, where).Body.String()
 	}
+	// The four object rooms are the board's bays since 2 September 2026, so a
+	// test that opened one is asking about a bay. The shelves are a press on
+	// the ledge, which is what pressedShelf above is.
+	if bay, retired := theBays[where]; retired {
+		// The rack rather than the page. A room was a screen showing one set;
+		// a bay is one rack on a screen showing four, so a test asking what
+		// this place holds has to be handed the place rather than the board.
+		page := routed(t, f).call(t, "GET", bay, nil).Body.String()
+		return theRackIn(t, page, bay)
+	}
 	return routed(t, f).call(t, "GET", "/r/"+where, nil).Body.String()
+}
+
+// theRackIn is one rack's markup, plus the head and the bay signs above it so a
+// test can still see what the board says about that bay.
+func theRackIn(t *testing.T, page, bay string) string {
+	t.Helper()
+	key := bay[strings.Index(bay, "=")+1:]
+	mark := `data-bay="` + key + `"`
+	i := strings.Index(page, mark)
+	if i < 0 {
+		return page
+	}
+	start := strings.LastIndex(page[:i], "<section")
+	rest := page[start:]
+	end := strings.Index(rest, "</section>")
+	if end < 0 {
+		return page
+	}
+	// The tabs carry each bay's own count, and a test about what a place says
+	// about itself reads them.
+	tabs := ""
+	if from := strings.Index(page, `<nav class="baytabs">`); from >= 0 {
+		to := strings.Index(page[from:], "</nav>")
+		tabs = page[from : from+to]
+	}
+	return tabs + rest[:end+len("</section>")]
 }
 
 // pressedShelf is how the two shelves are reached since 31 August 2026: a chip
@@ -1286,6 +1322,9 @@ func drewIn(t *testing.T, f *fakeStore, where string) []squirrel.Turn {
 	if shelfByKey(where) {
 		pressedShelf(t, f, where)
 		return f.appended
+	}
+	if _, retired := theBays[where]; retired {
+		t.Fatalf("%s is a bay on the board and draws no turns; read the board instead", where)
 	}
 	// A room's list is drawn and not kept since 31 August 2026 — see
 	// view.Edge — so the record is the wrong place to look for it. This asks
