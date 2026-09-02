@@ -375,3 +375,47 @@ func (s *Store) StopNotifying(ctx context.Context, personID int64, at time.Time)
 	}
 	return nil
 }
+
+// Said is one thing Squirrel told you, as it was told.
+type Said struct {
+	ID    int64
+	Title string
+	Body  string
+	URL   string
+	At    time.Time
+}
+
+// RecordSaid keeps what was pushed.
+//
+// Written once per push rather than once per subscription: two browsers on one
+// account are two deliveries of one thing said, and a list that showed it twice
+// would be a list about plumbing.
+func (s *Store) RecordSaid(ctx context.Context, personID int64, p Push, at time.Time) error {
+	if _, err := s.pool.Exec(ctx,
+		`insert into said (person_id, title, body, url, said_at) values ($1, $2, $3, $4, $5)`,
+		personID, p.Title, p.Body, p.URL, at); err != nil {
+		return fmt.Errorf("keeping what was said: %w", err)
+	}
+	return nil
+}
+
+// WhatWasSaid reads them back, newest first.
+func (s *Store) WhatWasSaid(ctx context.Context, personID int64, limit int) ([]Said, error) {
+	rows, err := s.pool.Query(ctx,
+		`select id, title, body, url, said_at from said
+		  where person_id = $1 order by said_at desc, id desc limit $2`, personID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("reading what was said: %w", err)
+	}
+	defer rows.Close()
+
+	out := []Said{}
+	for rows.Next() {
+		var one Said
+		if err := rows.Scan(&one.ID, &one.Title, &one.Body, &one.URL, &one.At); err != nil {
+			return nil, fmt.Errorf("reading what was said: %w", err)
+		}
+		out = append(out, one)
+	}
+	return out, rows.Err()
+}

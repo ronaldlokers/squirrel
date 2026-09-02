@@ -100,6 +100,7 @@ func TestPushingSomebodySaysHowManyAndThatItLanded(t *testing.T) {
 type fakeSubs struct {
 	live    []squirrel.Subscription
 	retired []int64
+	kept    []squirrel.Push
 }
 
 func (f *fakeSubs) LiveSubscriptions(context.Context, int64) ([]squirrel.Subscription, error) {
@@ -108,6 +109,11 @@ func (f *fakeSubs) LiveSubscriptions(context.Context, int64) ([]squirrel.Subscri
 
 func (f *fakeSubs) SubscriptionGone(_ context.Context, id int64, _ time.Time) error {
 	f.retired = append(f.retired, id)
+	return nil
+}
+
+func (f *fakeSubs) RecordSaid(_ context.Context, _ int64, p squirrel.Push, _ time.Time) error {
+	f.kept = append(f.kept, p)
 	return nil
 }
 
@@ -143,4 +149,43 @@ func testSub(t *testing.T, endpoint string) squirrel.Subscription {
 		P256dh: base64.RawURLEncoding.EncodeToString(ua.PublicKey().Bytes()),
 		Auth:   base64.RawURLEncoding.EncodeToString(auth),
 	}
+}
+
+func TestWhatWasPushedIsKeptOnce(t *testing.T) {
+	service := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer service.Close()
+
+	subs := &fakeSubs{live: []squirrel.Subscription{
+		testSub(t, service.URL), testSub(t, service.URL),
+	}}
+	push := pusher(testPushCfg(t), subs)
+	require.NoError(t, push(context.Background(), 1, squirrel.Push{Title: "dentist", Body: "leave now"}))
+
+	require.Len(t, subs.kept, 1, "two browsers on one account kept two rows for one thing said")
+	require.Equal(t, "dentist", subs.kept[0].Title)
+	require.Equal(t, "leave now", subs.kept[0].Body)
+}
+
+func TestNothingIsKeptWhenEveryEndpointRefused(t *testing.T) {
+	service := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer service.Close()
+
+	subs := &fakeSubs{live: []squirrel.Subscription{testSub(t, service.URL)}}
+	push := pusher(testPushCfg(t), subs)
+	require.NoError(t, push(context.Background(), 1, squirrel.Push{Title: "dentist"}))
+
+	require.Empty(t, subs.kept,
+		"the app kept a record of saying something no push service would take")
+}
+
+func TestNothingIsKeptWhenThereIsNobodyToTell(t *testing.T) {
+	subs := &fakeSubs{}
+	push := pusher(testPushCfg(t), subs)
+	require.NoError(t, push(context.Background(), 1, squirrel.Push{Title: "dentist"}))
+
+	require.Empty(t, subs.kept, "the app kept a record of telling nobody")
 }

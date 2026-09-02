@@ -488,18 +488,21 @@ two rows: what left the board, then the faces.
 There is no second layout. The phone shows one rack of the same board, and a
 strip is a strip at both sizes.
 
-**The ops bar loses its words.** The mark and the wordmark, then two drawn
-glyphs at the right: a magnifier and Buddy's acorn. Both keep their words in the
-markup, clipped rather than removed, so a link with no visible label still has
-a name to announce. The clock goes entirely — the phone shows one two inches
-above it, and ours is server-rendered, so it is wrong by however long the page
-has been open.
+**The ops bar becomes chips on no ground.** The mark, the wordmark and the clock
+all go: a monogram where the mark was, then the find field across the middle,
+then Buddy's chat chip and the bell. The bar keeps no background and no rule, so
+the board begins at the top of the screen — the same move the bay bar made at
+the foot, and for the same reason: a band of furniture costs a strip.
 
-**The find field is drawn to nothing and the glyph is its label.** Pressing the
-glyph focuses the field, which is what opens it: it takes a second row across
-the full width. No script is involved in any part of that. A field carrying a
-query stays open, because a search you cannot read is a search you cannot
-correct.
+Every chip is a glyph with an `aria-label`, because a control drawn as a glyph
+and named nowhere is a control nobody can follow. The clock goes because the
+phone shows one two inches above it and ours is server-rendered, so it is wrong
+by however long the page has been open.
+
+**The find field is the middle of the bar and always open.** It was drawn to
+nothing behind a glyph for one afternoon; the reference app puts a control in
+that position and so does this. A search that costs a press before you can read
+what you typed is a search you cannot correct.
 
 **The four bays float at the foot.** A pill clear of all three edges — 12px at
 the sides and 21px of visible ground beneath it — under the 2px outline and the
@@ -734,6 +737,28 @@ something has gone wrong.
 
 The line matters most on a phone, where one rack is the whole screen and there
 is nothing beside it to compare against.
+
+### The bell, and what Squirrel told you
+
+A push has been fire-and-forget since it shipped: the payload went to the push
+service and nothing on this side remembered that it had. So the app could not
+answer the question a bell implies — *what did you tell me?* — and a phone that
+was off, or a notification swiped away unread, lost it for good.
+
+One row per push, written where the fan-out happens rather than once per
+subscription: two browsers on one account are two deliveries of one thing said,
+and a list that showed it twice would be a list about plumbing. Nothing is
+written when no push service took it, because a row there would be the app
+saying it said something it did not say.
+
+The bell wears **a dot, not a number**. A count there would be things you have
+not read, which is the one shape this product refuses — the bays' numbers count
+things that exist, which is a different claim. The dot says only that there is a
+record to look at.
+
+The list itself is strips in the agenda's holder: the title as the words, what
+it said under it, and the time as the mark. It is a record and not a pile, so
+nothing on it can be answered.
 
 ### The bay bar
 

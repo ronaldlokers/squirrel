@@ -3,8 +3,11 @@ package web
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 func TestARackWithNothingInItSaysSoInItsOwnWords(t *testing.T) {
@@ -57,12 +60,18 @@ func TestTheFindFieldStaysOpenWhenItCarriesAQuery(t *testing.T) {
 	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `class="find open"`)
 }
 
-func TestBuddysLinkKeepsItsWordsBesideTheAcorn(t *testing.T) {
+// Buddy's acorn became a chat chip on 2 September 2026, beside the bell and in
+// front of it. What this has always held is the half that matters: a control
+// drawn as a glyph must still carry a name, or it is a link nobody can follow.
+func TestEveryChipInTheBarCarriesAName(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+	bar := body[strings.Index(body, `<header class="ops">`):strings.Index(body, "</header>")]
 
-	require.Contains(t, body, `class="acorn"`, "the link has no mark to press on a phone")
-	require.Contains(t, body, "talk to Buddy",
-		"the link is a glyph with no name, which is a link nobody can follow")
+	for _, name := range []string{"talk to Buddy", "what Squirrel told you", "who you are"} {
+		require.Contains(t, bar, `aria-label="`+name+`"`, "no chip is named %q", name)
+	}
+	require.Equal(t, 3, strings.Count(bar, `class="chip`),
+		"the bar carries a different number of chips than it is named for")
 }
 
 func TestAnEmptyRackIsStillAPlaceYouCanPutSomething(t *testing.T) {
@@ -192,4 +201,40 @@ func TestTheBarNamesABayWithoutItsArticle(t *testing.T) {
 		"a cell in the bar still carries the article")
 	require.Contains(t, body, `<h2 class="baysign">the notes`,
 		"the rack's own sign lost the article with it")
+}
+
+func TestTheBellShowsWhatWasSaidAndSaysSoWhenNothingWas(t *testing.T) {
+	f := aBoardStore()
+	f.said = []squirrel.Said{
+		{ID: 2, Title: "time to leave", Body: "the dentist is at 14:30", At: time.Now()},
+		{ID: 1, Title: "the bins", Body: "they go out today", At: time.Now().Add(-4 * time.Hour)},
+	}
+	body := mounted(t, f).call(t, "GET", "/?told=1", nil).Body.String()
+
+	require.Contains(t, body, "what Squirrel told you")
+	require.Contains(t, body, "time to leave")
+	require.Contains(t, body, "the dentist is at 14:30")
+	require.Contains(t, body, "the bins")
+
+	quiet := mounted(t, aBoardStore()).call(t, "GET", "/?told=1", nil).Body.String()
+	require.Contains(t, quiet, "nothing has been sent to you")
+}
+
+func TestTheBellIsMarkedOnlyWhenSomethingWasSaid(t *testing.T) {
+	f := aBoardStore()
+	f.said = []squirrel.Said{{ID: 1, Title: "the bins", At: time.Now()}}
+
+	require.Contains(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), `class="chip bell full"`)
+	require.NotContains(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(),
+		`class="chip bell full"`, "the bell is marked when nothing has been sent")
+}
+
+func TestARecordThatCannotBeReadDrawsNoList(t *testing.T) {
+	f := aBoardStore()
+	f.saidErr = errTest
+	body := mounted(t, f).call(t, "GET", "/?told=1", nil).Body.String()
+
+	require.Contains(t, body, "nothing has been sent to you")
+	require.NotContains(t, body, `class="chip bell full"`,
+		"the bell is marked from a read that failed")
 }

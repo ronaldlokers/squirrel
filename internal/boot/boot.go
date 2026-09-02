@@ -620,6 +620,7 @@ func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
 type subscriptions interface {
 	LiveSubscriptions(ctx context.Context, personID int64) ([]squirrel.Subscription, error)
 	SubscriptionGone(ctx context.Context, id int64, at time.Time) error
+	RecordSaid(ctx context.Context, personID int64, p squirrel.Push, at time.Time) error
 }
 
 // pusher builds the fast channel, or nil when there is no VAPID pair — a
@@ -652,6 +653,7 @@ func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 			return nil
 		}
 		slog.Info("pushing", "subscriptions", len(subs))
+		took := 0
 		for _, sub := range subs {
 			gone, err := squirrel.SendPush(ctx, client, cfg, sub, p)
 			if err != nil {
@@ -672,6 +674,15 @@ func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 			// what the phone then does with it is not observable from here, and
 			// saying so is better than a line that implies otherwise.
 			slog.Info("pushed", "endpoint", host(sub.Endpoint))
+			took++
+		}
+		// Kept once, and only when a push service took it. A row written when
+		// every endpoint refused would be the app telling you it said something
+		// it did not say, which is worse than a list with a gap in it.
+		if took > 0 {
+			if err := store.RecordSaid(ctx, personID, p, time.Now()); err != nil {
+				slog.Error("keeping what was said", "error", err)
+			}
 		}
 		return nil
 	}

@@ -73,22 +73,24 @@ func TestBrowserEveryBayIsOnTheScreen(t *testing.T) {
 		"the board scrolls sideways")
 }
 
-func TestBrowserPressingTheGlyphOpensTheField(t *testing.T) {
+// The field was drawn to nothing and opened by pressing its glyph, from
+// 2 September 2026 until the bar became chips the same day. It is the middle of
+// the bar now and always open, which is the shape the reference app has and one
+// press cheaper. What the old test protected — that a field you cannot see is a
+// field you cannot search with — is the assertion below.
+func TestBrowserTheFieldIsThereWithoutBeingAskedFor(t *testing.T) {
 	srv := screen(t, &fakeStore{})
 	c := browserAt(t, srv, "/")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
-	})
+	touching(t, c)
 	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `!!document.querySelector(".ops .find input")`)
 
-	shut := c.eval(t, `return document.querySelector(".ops .find input").getBoundingClientRect().width`)
-	require.Equal(t, float64(0), shut, "the field is drawn before it is asked for")
-
-	c.eval(t, `document.querySelector(".findpress").click(); return 1`)
-	c.until(t, "the field", `document.activeElement.id === "findfield"`)
 	require.Greater(t, c.eval(t,
 		`return document.querySelector(".ops .find input").getBoundingClientRect().width`).(float64),
-		float64(200), "the glyph focused a field nobody can see")
+		float64(120), "the find field is drawn too small to type in")
+	require.Equal(t, float64(16), c.eval(t,
+		`return parseFloat(getComputedStyle(document.querySelector(".ops .find input")).fontSize)`),
+		"a field under 16px makes iOS zoom the page when it takes focus")
 }
 
 func TestBrowserAKeycapIsNotDrawnWhereThereIsNoKeyboard(t *testing.T) {

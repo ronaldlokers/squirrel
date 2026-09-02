@@ -285,3 +285,11 @@ func (store) TriagedSince(_ context.Context, _ int64, _ time.Time) ([]squirrel.I
 func (store) Notifying(_ context.Context, _ int64) (bool, error) { return false, nil }
 
 func (store) StopNotifying(_ context.Context, _ int64, _ time.Time) error { return nil }
+
+func (store) WhatWasSaid(_ context.Context, _ int64, _ int) ([]squirrel.Said, error) {
+	return []squirrel.Said{
+		{ID: 3, Title: "time to leave", Body: "the dentist is at 14:30", At: now().Add(-40 * time.Minute)},
+		{ID: 2, Title: "the bins", Body: "they go out today", At: now().Add(-5 * time.Hour)},
+		{ID: 1, Title: "how are you doing?", Body: "tap to say", At: now().Add(-9 * time.Hour)},
+	}, nil
+}
