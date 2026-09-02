@@ -512,9 +512,14 @@ unreachable twice in this product — once on 28 August as the rooms, once on
 2 September as the bays. The bar cannot fail that way: four cells, one grid, no
 scroll at any width.
 
-**Only the bar pads for the home indicator.** It is the last thing on the
-screen, so it owns `env(safe-area-inset-bottom)` and nothing above it may claim
-it as well. The rack went on adding the same inset after the bar took the foot,
+**The cell pads for the home indicator, not the bar around it.** The reserve
+belongs inside the tab so the lit cell's well runs to the very bottom edge of
+the screen. Padded on the nav instead, the well stopped short and the reserved
+band read as a hole under the buttons rather than as part of the one you are
+standing in — a native tab bar reserves the same 34pt and nothing there draws
+attention to it, because nothing there has a background of its own.
+
+Nothing above the bar may claim the inset as well. The rack went on adding the same inset after the bar took the foot,
 which put a band of ground between the rack and the bar on every phone with a
 home indicator and none at all in a headless browser, where the inset is zero.
 

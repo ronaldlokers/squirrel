@@ -176,6 +176,6 @@ func TestOnlyTheFootOfThePhoneClaimsTheSafeArea(t *testing.T) {
 		}
 	}
 
-	require.Equal(t, map[string]bool{".baytabs": true}, claimed,
+	require.Equal(t, map[string]bool{".baytab": true}, claimed,
 		"more than the bar at the foot pads for the home indicator, so the phone shows a band of nothing above it")
 }
