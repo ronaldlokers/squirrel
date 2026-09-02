@@ -502,10 +502,24 @@ query stays open, because a search you cannot read is a search you cannot
 correct.
 
 **The four bays float at the foot.** A pill clear of all three edges — 12px at
-the sides and about 10px off the true bottom — on `purple-dark` under the 2px outline
-and the board's own shadow, with four cells inside it: a drawn icon over its
-name in small caps-height type. The board scrolls beneath it and the page
-reserves its height, so nothing is ever hidden behind it.
+the sides and about 10px off the true bottom — under the 2px outline and the
+board's own shadow, with four cells inside it: a drawn icon over the bay's name,
+capitalised and without its article, so *the notes* on the rack's own sign is
+*Notes* here.
+
+**The pill is smoked, not glass.** `rgba(59,37,96,.86)` over a 13px backdrop
+blur: the board's own purple at strength, so a strip passing beneath comes
+through as a diffused shape rather than a frosted pane. It is the acetate a
+strip board is covered with, which is why it keeps its outline and its shadow —
+glass in the iOS sense has neither, and would be the one surface in this product
+that is not a thing you could pick up. Solid where the browser has no backdrop
+filter, and solid again under `prefers-reduced-transparency`.
+
+**The board scrolls beneath it**, and the reserve lives inside the scroller
+rather than on the page, so a strip travels under the pill while you move and
+the last one still clears it at rest. Labels are full-strength cream for this
+reason: measured against a cream strip diffused directly under one, they hold
+7.0:1.
 
 **The cell you are in is tinted, not filled.** Orange ink and a full-strength
 icon against 72% cream and icons at 55%. It had a well behind it while the bar

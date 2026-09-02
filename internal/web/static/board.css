@@ -444,7 +444,8 @@ a.stamp { text-decoration: none; }
 
 @media (max-width: 620px) {
   :root { --foot: max(8px, calc(env(safe-area-inset-bottom) - 24px)); }
-  body { padding-bottom: calc(var(--foot) + 80px); }
+  .deck { padding-bottom: calc(var(--foot) + 80px); }
+  .tray { margin-bottom: calc(var(--foot) + 82px); }
   .baytabs {
     position: fixed; left: 12px; right: 12px; bottom: var(--foot); z-index: 5;
     display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 3px;
@@ -452,10 +453,23 @@ a.stamp { text-decoration: none; }
     border: var(--line) solid var(--outline); border-radius: 999px;
     box-shadow: 0 5px 0 0 rgba(28, 17, 11, .5), 0 18px 26px -16px rgba(0, 0, 0, .75);
   }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .baytabs {
+      background: rgba(59, 37, 96, .86);
+      -webkit-backdrop-filter: blur(13px) saturate(118%);
+      backdrop-filter: blur(13px) saturate(118%);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .baytabs {
+      background: var(--purple-dark);
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+    }
+  }
   .baytab {
     display: grid; justify-items: center; gap: 2px; min-height: 62px;
     padding: 8px 2px 9px; text-decoration: none;
-    color: rgba(254, 214, 167, .72); border-radius: 999px;
+    color: var(--cream); border-radius: 999px;
   }
   .baytab .pic { position: relative; display: block; }
   .baytab img { display: block; opacity: .55; }
@@ -471,7 +485,8 @@ a.stamp { text-decoration: none; }
     font-variant-numeric: tabular-nums;
   }
   .baytab .says {
-    font-size: 10.5px; letter-spacing: .04em; white-space: nowrap;
+    font-size: 11px; letter-spacing: .03em; white-space: nowrap;
+    text-transform: capitalize;
     font-variation-settings: var(--precise), "wght" 750;
   }
   .baytab.in { color: var(--orange-lit); }

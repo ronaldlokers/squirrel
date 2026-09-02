@@ -179,3 +179,17 @@ func TestOnlyTheFootOfThePhoneClaimsTheSafeArea(t *testing.T) {
 	require.Equal(t, map[string]bool{":root": true}, claimed,
 		"more than the bar at the foot pads for the home indicator, so the phone shows a band of nothing above it")
 }
+
+func TestTheBarNamesABayWithoutItsArticle(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+	bar := body[strings.Index(body, `<nav class="baytabs">`):]
+
+	for _, bay := range []string{"notes", "chores", "tasks", "agenda"} {
+		require.Contains(t, bar, `<span class="says">`+bay+`</span>`,
+			"the bar does not name the %s", bay)
+	}
+	require.NotContains(t, bar, `<span class="says">the `,
+		"a cell in the bar still carries the article")
+	require.Contains(t, body, `<h2 class="baysign">the notes`,
+		"the rack's own sign lost the article with it")
+}

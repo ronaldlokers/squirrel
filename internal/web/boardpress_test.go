@@ -246,3 +246,26 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 		document.querySelector(".strip.answerable .stamps")).transitionDuration`),
 		"the collapse carries its own motion, so the strips animate shut on the way in")
 }
+
+func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+
+	require.Equal(t, "capitalize", c.eval(t, `return getComputedStyle(document.querySelector(".baytab .says")).textTransform`),
+		"the bay's name is not capitalised in the bar")
+	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
+		"the pill lets nothing through, so the board behind it is lost rather than diffused")
+	require.Contains(t, c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backgroundColor`),
+		"rgba", "the pill's tint is solid, so the blur behind it can never be seen")
+
+	c.send(t, "Emulation.setEmulatedMedia", map[string]any{"features": []map[string]string{
+		{"name": "prefers-reduced-transparency", "value": "reduce"},
+	}})
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
+		"asking for less transparency changes nothing")
+}
