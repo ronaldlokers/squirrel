@@ -345,6 +345,47 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.60.0 — 2 September 2026
+
+**The top bar is chips, and the bell has a record behind it.**
+
+On a phone: a monogram where the mark was, the find field across the middle,
+Buddy's chat chip, then the bell. No ground and no rule, so the board begins at
+the top of the screen — the same move the bay bar made at the foot, and for the
+same reason: a band of furniture costs a strip. The mark, the wordmark and the
+clock all go. On a desktop they stay, and the two chips replace the *talk to
+Buddy* link so there is one Buddy control at both sizes.
+
+**Buddy's acorn becomes a chat bubble** and sits in front of the bell. Every
+chip is a glyph with an `aria-label`, and a test counts the chips against the
+names, because a control drawn as a glyph and named nowhere is a control nobody
+can follow.
+
+**The find field stops hiding behind its own glyph.** It was drawn to nothing
+for one afternoon: a search that costs a press before you can read what you
+typed is a search you cannot correct.
+
+**A push had been fire-and-forget since it shipped.** The payload went to the
+push service and nothing on this side remembered that it had, so the app could
+not answer the question a bell implies — *what did you tell me?* — and a phone
+that was off, or a notification swiped away unread, lost it for good.
+
+`said` is written **at the fan-out rather than per subscription**: two browsers
+on one account are two deliveries of one thing said, and a list that showed it
+twice would be a list about plumbing. Nothing is written when no push service
+took it, because a row there would be the app claiming it said something it did
+not say.
+
+**The bell wears a dot, not a number.** A count there would be things you have
+not read, which is the one shape this product refuses. The bays' numbers count
+things that exist, which is a different claim — and the difference is worth
+keeping in writing, because the two look identical on a screen.
+
+**This is the first schema change in seven releases**, and it is additive: one
+new table and its index, nothing altered. Rolling the image back leaves the
+table behind unread rather than leaving the app unable to boot, so the rollback
+is still the image tag alone.
+
 ### v0.59.1 — 2 September 2026
 
 **The pill leaves the same ground the reference does.**
