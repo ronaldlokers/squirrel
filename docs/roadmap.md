@@ -345,6 +345,35 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.59.1 — 2 September 2026
+
+**The pill leaves the same ground the reference does.**
+
+Giving back 24 of the home indicator's 34pt put the floating bar against the
+indicator rather than clear of it. Eight is the right amount to give back, and
+the number came from measuring rather than from taste.
+
+**How it was measured**, because the method is the useful part. Both
+screenshots — the reference app's bar and this one's — were scanned column by
+column for the row where the bar's own colour ends and the ground begins. The
+reference leaves 49 image pixels under its bar; this left 12. At the
+screenshots' scale that is 21 CSS px against 5, so it was four times tighter
+than the thing it was copying, not slightly.
+
+**Where the missing five went.** The pill's `5px` hard shadow sits below its
+border and is part of the object, so half the offset was spent before the gap
+began. `--foot` reads 26 on a phone with an indicator and the visible gap reads
+21.
+
+Confirmed by rendering with the inset stubbed at 34px and scanning the render
+the same way: the outline ends 42 pixels above the foot at twice scale, which is
+the 21 the reference has.
+
+This is the fourth thing in this bar that no test in the project could see, and
+the second where the answer was to measure pixels rather than to write an
+assertion. `env(safe-area-inset-bottom)` is zero in a headless browser, so the
+gap CI renders is never the gap a phone shows.
+
 ### v0.59.0 — 2 September 2026
 
 **The bays float at the foot, under smoked acetate.**
