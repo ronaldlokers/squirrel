@@ -443,7 +443,7 @@ a.stamp { text-decoration: none; }
 .baytabs { display: none; }
 
 @media (max-width: 620px) {
-  :root { --foot: max(8px, calc(env(safe-area-inset-bottom) - 24px)); }
+  :root { --foot: max(10px, calc(env(safe-area-inset-bottom) - 8px)); }
   .deck { padding-bottom: calc(var(--foot) + 80px); }
   .tray { margin-bottom: calc(var(--foot) + 82px); }
   .baytabs {

@@ -502,7 +502,7 @@ query stays open, because a search you cannot read is a search you cannot
 correct.
 
 **The four bays float at the foot.** A pill clear of all three edges — 12px at
-the sides and about 10px off the true bottom — under the 2px outline and the
+the sides and 21px of visible ground beneath it — under the 2px outline and the
 board's own shadow, with four cells inside it: a drawn icon over the bay's name,
 capitalised and without its article, so *the notes* on the rack's own sign is
 *Notes* here.
@@ -534,11 +534,19 @@ unreachable twice in this product — once on 28 August as the rooms, once on
 2 September as the bays. The bar cannot fail that way: four cells, one grid, no
 scroll at any width.
 
-**The inset is named once, and most of it is given back.** `--foot` is
-`max(8px, env(safe-area-inset-bottom) - 24px)`: a floating bar does not owe the
+**The inset is named once, and part of it is given back.** `--foot` is
+`max(10px, env(safe-area-inset-bottom) - 8px)`: a floating bar does not owe the
 home indicator the whole 34pt the way a fixed band does, because the indicator
 is drawn over it and the cells' own padding keeps the labels clear. Reserving
-all of it left the bar hovering visibly high. Everything that
+all of it left the bar hovering visibly high; giving back 24 of the 34 put it
+against the indicator.
+
+**The number came from measuring, not from taste.** Both screenshots — the
+reference app's bar and this one's — were scanned pixel by pixel for the row
+where the bar's own colour ends and the ground begins. The reference leaves 21
+CSS px of visible ground; this leaves the same. The `5px` hard shadow counts as
+part of the object, which is why `--foot` reads 26 on a phone and the gap reads
+21. Everything that
 has to sit above the home indicator reads that one value: the bar's offset and
 the page's reserve. It is a rule with a test because a headless browser reports
 the inset as zero, so nothing rendered in CI can see it being claimed twice —
