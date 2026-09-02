@@ -33,7 +33,7 @@ type boardView struct {
 	Told     []toldView
 	Telling  bool
 	AnyTold  bool
-	You      string
+	You      whom
 }
 
 type toldView struct {
@@ -140,7 +140,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Tray:     trayStrips(r, s, opts, personID, at),
 			Bays:     baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
 			Telling:  r.URL.Query().Get("told") == "1",
-			You:      whoIsAsking(r, s, personID),
+			You:      youFor(r.Context(), s, personID),
 		}
 		// One row is enough to mark the bell, and the whole list is only read
 		// when you are looking at it: this runs on every board render.
@@ -460,7 +460,7 @@ func markOfMoment(m squirrel.Moment, at time.Time) string {
 const boardDeep = 40
 
 var boardPage = template.Must(
-	template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html"))
+	template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html", "templates/chips.html"))
 
 func renderBoard(w http.ResponseWriter, v boardView) {
 	v.V = stamp()
@@ -468,7 +468,7 @@ func renderBoard(w http.ResponseWriter, v boardView) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t := boardPage
 	if devDir != "" {
-		reparsed, err := template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html")
+		reparsed, err := template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html", "templates/chips.html")
 		if err != nil {
 			slog.Error("re-reading the board", "error", err)
 		} else {
@@ -941,13 +941,4 @@ func whatWasSaid(r *http.Request, s Store, personID int64, at time.Time, deep in
 		out = append(out, toldView{Title: one.Title, Body: one.Body, Mark: markOfDay(one.At, at)})
 	}
 	return out
-}
-
-// whoIsAsking is the letter on the chip where the mark used to be.
-func whoIsAsking(r *http.Request, s Store, personID int64) string {
-	who, err := s.WhoIs(r.Context(), personID)
-	if err != nil || who.Name == "" {
-		return "?"
-	}
-	return strings.ToUpper(who.Name[:1])
 }

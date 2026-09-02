@@ -269,3 +269,53 @@ func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
 		"asking for less transparency changes nothing")
 }
+
+// The gap under the pill, measured with the inset the phone actually reports.
+//
+// Four defects in this bar were called invisible to CI on the grounds that
+// env(safe-area-inset-bottom) reads zero in a headless browser. That was wrong:
+// Emulation.setSafeAreaInsetsOverride sets it, and this project was already
+// using it for the dock. Everything that was checked by rendering with a stub
+// and looking is checkable here.
+func TestBrowserThePillClearsTheHomeIndicator(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
+	})
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+
+	// The reference app leaves 21 CSS px of ground under its bar, measured off
+	// two screenshots. The 5px hard shadow is part of the object, so the box
+	// sits 26 from the foot and the eye sees 21.
+	require.Equal(t, float64(26), c.eval(t,
+		`return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
+		"the pill sits at a different height above the home indicator than it was measured to")
+
+	// And the rack does not pad for the indicator as well, which is what put a
+	// band of ground between the two on 2 September.
+	require.LessOrEqual(t, c.eval(t,
+		`return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top -
+			document.querySelector(".rack.in .channel").getBoundingClientRect().bottom)`).(float64),
+		float64(24), "something above the pill is reserving the indicator's band as well")
+}
+
+func TestBrowserTheBarReservesTheTopInsetAndNoMore(t *testing.T) {
+	srv := screen(t, aRackOfNotes())
+	c := browserAt(t, srv, "/")
+	touching(t, c)
+	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
+		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
+	})
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `!!document.querySelector(".ops .chip")`)
+
+	require.GreaterOrEqual(t, c.eval(t,
+		`return Math.round(document.querySelector(".ops .chip").getBoundingClientRect().top)`).(float64),
+		float64(59), "a chip sits under the status bar")
+	require.LessOrEqual(t, c.eval(t,
+		`return Math.round(document.querySelector(".ops .chip").getBoundingClientRect().top)`).(float64),
+		float64(66), "the bar wastes more than a few pixels above the chips")
+}

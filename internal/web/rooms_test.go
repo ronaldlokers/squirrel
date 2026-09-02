@@ -188,8 +188,6 @@ func TestOnlyTheFrontDoorHasNoWayBack(t *testing.T) {
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, signedInOptions()))
 
-	// The board is the front door and has no way back to itself; his room does,
-	// and it is the mark in the lid.
 	require.NotContains(t, m.call(t, "GET", "/", nil).Body.String(), `<a class="brand" href="/"`)
 	require.Contains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), `<a class="brand" href="/"`)
 }
