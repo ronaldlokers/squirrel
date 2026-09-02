@@ -514,8 +514,8 @@ rack was not room, it was the app stopping in the middle of the screen.
 where `hover` and a fine pointer say there is a keyboard to press it with. The
 keys themselves still work the moment one appears.
 
-**A strip opens when you press it.** On a touch screen a strip is its words, a
-chevron and its mark — 44px — and pressing anywhere on it shows its stamps and
+**A strip opens when you press it.** On a touch screen a strip is its words, its
+mark and a chevron at the end of the row — 44px — and pressing anywhere on it shows its stamps and
 shuts whatever was open. Five notes are in view where three were. The gate is
 `(hover: none) and (pointer: coarse)`, not the width: a tablet has no hover
 either, and the desktop's open-on-hover is no use to it.
@@ -627,9 +627,12 @@ The single content object. A three-column grid: holder, words, mark.
 
 The words are a paragraph of their own inside the well, with the stamps under
 them, which is what lets the stamps collapse on a touch screen without taking
-the words with them. On touch a chevron sits between the words and the mark: it
-is the strip's accessible control, and it is drawn by the script, because
-without the script there is nothing to open.
+the words with them. On touch a chevron sits at the end of the row, past the
+mark: it is the strip's accessible control, and it is drawn by the script,
+because without the script there is nothing to open. Past the mark and not
+before it, because a mark is as wide as its words — *every week* against *every
+28 days* — and a chevron placed inside that column steps in and out down the
+rack.
 
 ### The pulled strip
 
