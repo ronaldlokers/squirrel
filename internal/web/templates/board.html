@@ -12,12 +12,17 @@
   <img class="markart" src="/static/logo.png" alt="">
   <h1 class="wordmark">Squirrel</h1>
   <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
-  <form class="find" method="get" action="/">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-    <input name="find" value="{{.Find}}" placeholder="look for something" autocomplete="off" enterkeyhint="search" aria-label="look for something">
+  <form class="find{{if .Find}} open{{end}}" method="get" action="/">
+    <label class="findpress" for="findfield">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+    </label>
+    <input id="findfield" name="find" value="{{.Find}}" placeholder="look for something" autocomplete="off" enterkeyhint="search" aria-label="look for something">
   </form>
   <span class="spacer"></span>
-  <a class="opslink" href="/r/everything">talk to Buddy</a>
+  <a class="opslink" href="/r/everything">
+    <svg class="acorn" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6v2.2" stroke="#1c110b" stroke-width="1.5" stroke-linecap="round"/><path d="M4.7 8.5c0-2 3.3-3.6 7.3-3.6s7.3 1.6 7.3 3.6c0 .9-.8 1.5-1.8 1.5H6.5c-1 0-1.8-.6-1.8-1.5Z" fill="#e66d0d" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.9 11.4h10.2c0 4.6-2.3 8.5-5.1 8.5s-5.1-3.9-5.1-8.5Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <span class="opswords">talk to Buddy</span>
+  </a>
 </header>
 
 {{if or .Pulled .Timer}}
@@ -106,6 +111,7 @@
     <p class="baysign shelf">{{.Shelf}}</p>
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     <div class="channel">
+      {{if not .Shelved}}<p class="nothing">nothing on this shelf</p>{{end}}
       <div class="strips">
         {{range .Shelved}}
         <article class="strip h-notes">
@@ -129,6 +135,7 @@
     <p class="baysign">what matched &ldquo;{{.Find}}&rdquo;{{if .Found}} <span class="n">{{len .Found}}</span>{{end}}</p>
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     <div class="channel">
+      {{if not .Found}}<p class="nothing">nothing matched &ldquo;{{.Find}}&rdquo;</p>{{end}}
       <div class="strips">
         {{range .Found}}
         <article class="strip h-notes{{if .Answers}} answerable{{end}}">
@@ -193,6 +200,7 @@
     {{end}}
     <div class="channel">
       {{if .Trouble}}<p class="trouble">cannot reach {{.Name}} — nothing is lost, and nothing here is what you have</p>{{end}}
+      {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
       <div class="strips">
         {{range .Strips}}
         <article class="strip h-{{$bay.Key}}{{if .Answers}} answerable{{end}}">

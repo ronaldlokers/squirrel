@@ -58,7 +58,7 @@ var appearanceScreens = map[string][]string{
 	// content object: a strip is the only shape here that carries words, so
 	// recording it and its parts records most of the world.
 	"/": {
-		".ops", ".ops .wordmark", ".ops .clock .t", ".ops .clock .d",
+		".ops", ".ops .wordmark", ".ops .clock .t", ".ops .clock .d", ".ops .opslink",
 		".baysign", ".baysign .n", ".channel",
 		".strip", ".strip .holder", ".strip .words", ".strip .mark",
 		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
