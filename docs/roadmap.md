@@ -345,6 +345,58 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.56.1 — 2 September 2026
+
+**The board on a phone.**
+
+The screen the new world was never checked on. A photograph of a real phone
+showed six things wrong, four of them one bug each: an ops bar that never shrank
+below 620px, so five things fought for 390 pixels and the link to Buddy wrapped
+onto three lines while the find field was clipped mid-placeholder; four bay tabs
+scrolling sideways with no scrollbar, which put the agenda off the right edge; a
+clock reading 11:29 two inches under the phone's own 11:44; an empty rack that
+said nothing at all; and half a viewport of purple under the ledge.
+
+**The tab row is the one worth recording.** A sideways-scrolling row of places
+with no scrollbar is how the fourth place became unreachable on 28 August, as
+the rooms. It came back a week later as the bays and nothing caught it, because
+nothing tested that every bay is on the screen. Something does now.
+
+**The ops bar loses its words** — two drawn glyphs, a magnifier and Buddy's own
+acorn, both keeping their words in the markup where a screen reader still reads
+them. The clock goes: it is rendered when the page loads, so it is wrong by
+however long the page has been open, and the phone's own is right there.
+
+**The glyph is the field's label**, so pressing it focuses the field and
+focusing it is what opens it, across a second full-width row. No script is
+involved in any part of that. A field carrying a query stays open, because a
+search you cannot read is a search you cannot correct.
+
+**A rack says when it is empty**, in its own words — *nothing in the notes*,
+*nothing comes back today*, *nothing in the tasks*, *nothing left today* — and
+never at the same time as the trouble line, because a rack that could not be
+read must not also report a quiet morning. The shelf and the search say the same
+kind of thing rather than drawing an empty bordered box.
+
+**Dashed means one thing now**: there is nothing on this yet. It belongs to the
+blank strip and what sits inside it, and to the two notices that are not part of
+a rack. The bay tabs and the ledge tabs were wearing it and read as
+placeholders; they are solid. A test holds the vocabulary closed.
+
+**The body stops being a grid with a fixed row count.** It had four named rows
+and between three and six children depending on what was happening, so with
+nothing pulled the racks landed in a `min-content` row and the app ended halfway
+down the screen. It is a flex column and the racks are the part that grows,
+which closes the same latent bug on the desktop.
+
+Also: the dev screen did not build — its store had gone four methods stale
+behind the `Store` interface, so `make dev` failed on the branch that shipped
+them.
+
+Not addressed, and recorded so it is a decision rather than an oversight: on
+touch every strip shows its stamps at all times, which is why three notes fill a
+phone screen. That is the strip board's thesis rather than a phone bug.
+
 ### v0.56.0 — 2 September 2026
 
 **The app is a strip board, not a conversation.**
