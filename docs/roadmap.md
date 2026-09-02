@@ -345,6 +345,30 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.58.1 — 2 September 2026
+
+**One safe area at the foot, not two.**
+
+The rack kept padding for the home indicator after the bar took the bottom of
+the screen, so both claimed it: a band of ground between the rack's last edge
+and the bar, on every phone that has one.
+
+**Why nothing caught it, which is the part worth keeping.**
+`env(safe-area-inset-bottom)` is zero in a headless browser, and the gap is
+exactly that inset — so every screenshot and every browser test of the new bar
+rendered it flush against the rack. It exists only on a device with a home
+indicator, and it took a photograph of a real phone to see it. The same blind
+spot will hide the same class of defect again: a headless run cannot see any
+rule whose value comes from the device's own chrome.
+
+So the guard is a rule about the stylesheet rather than about a rendered page,
+because a rendered page in CI will keep measuring zero: inside the 620px block,
+`.baytabs` is the only selector allowed to name the inset. It is proved both
+ways — giving the inset back to the rack fails, and taking it off the bar fails
+— and it protects the next move of the furniture as much as this one, since
+whatever ends up last on the phone has to be the thing that pads, and only that
+thing.
+
 ### v0.58.0 — 2 September 2026
 
 **The bays are a bar at the foot, and the chevrons line up.**
