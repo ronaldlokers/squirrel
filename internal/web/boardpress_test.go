@@ -164,3 +164,25 @@ func TestBrowserTheTabsStayWhileTheRackScrolls(t *testing.T) {
 	require.Equal(t, pinned, c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`),
 		"the tabs moved once the rack was well past them")
 }
+
+func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 1, Name: "remove settled dust", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7, SinceDays: 7},
+		{ID: 2, Name: "take a shower", Active: true, Every: 24 * time.Hour, EveryDays: 1, SinceDays: 1},
+		{ID: 3, Name: "wash the windows", Active: true, Every: 28 * 24 * time.Hour, EveryDays: 28, SinceDays: 28},
+		{ID: 4, Name: "water the plants", Active: true, Every: 3 * 24 * time.Hour, EveryDays: 3, SinceDays: 3},
+	}}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/?bay=chores")
+	touching(t, c)
+	c.navigate(t, srv.URL+"/?bay=chores")
+	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+
+	require.Greater(t, c.eval(t, `return new Set([...document.querySelectorAll(".rack.in .strip .mark")]
+		.map(m => Math.round(m.getBoundingClientRect().width))).size`).(float64), float64(1),
+		"every rhythm is the same width, so this measured nothing")
+
+	require.Equal(t, float64(1), c.eval(t, `return new Set([...document.querySelectorAll(".rack.in .opener")]
+		.map(o => Math.round(o.getBoundingClientRect().left))).size`),
+		"the chevrons step in and out with the rhythm beside them")
+}

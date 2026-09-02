@@ -63,7 +63,7 @@
       opener.setAttribute("aria-expanded", "false");
       opener.setAttribute("aria-label", "what you can do with this");
       opener.innerHTML = CHEVRON;
-      strip.insertBefore(opener, strip.querySelector(".mark"));
+      strip.appendChild(opener);
     });
 
     document.addEventListener("click", function (e) {
