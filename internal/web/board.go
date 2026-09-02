@@ -30,6 +30,16 @@ type boardView struct {
 	Pulled   *offerView
 	Timer    *timerView
 	Bays     []bayView
+	Told     []toldView
+	Telling  bool
+	AnyTold  bool
+	You      string
+}
+
+type toldView struct {
+	Title string
+	Body  string
+	Mark  string
 }
 
 type bayView struct {
@@ -129,7 +139,17 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Timer:    runningTimer(s, opts, r),
 			Tray:     trayStrips(r, s, opts, personID, at),
 			Bays:     baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
+			Telling:  r.URL.Query().Get("told") == "1",
+			You:      whoIsAsking(r, s, personID),
 		}
+		// One row is enough to mark the bell, and the whole list is only read
+		// when you are looking at it: this runs on every board render.
+		deep := 1
+		if v.Telling {
+			deep = boardDeep
+		}
+		v.Told = whatWasSaid(r, s, personID, at, deep)
+		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
 }
@@ -906,4 +926,28 @@ func boardChoreHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/?bay=chores", http.StatusSeeOther)
 	}
+}
+
+// whatWasSaid is the record behind the bell: every push this person was sent,
+// newest first, as it was sent.
+func whatWasSaid(r *http.Request, s Store, personID int64, at time.Time, deep int) []toldView {
+	said, err := s.WhatWasSaid(r.Context(), personID, deep)
+	if err != nil {
+		slog.Error("reading what was said", "error", err)
+		return nil
+	}
+	out := make([]toldView, 0, len(said))
+	for _, one := range said {
+		out = append(out, toldView{Title: one.Title, Body: one.Body, Mark: markOfDay(one.At, at)})
+	}
+	return out
+}
+
+// whoIsAsking is the letter on the chip where the mark used to be.
+func whoIsAsking(r *http.Request, s Store, personID int64) string {
+	who, err := s.WhoIs(r.Context(), personID)
+	if err != nil || who.Name == "" {
+		return "?"
+	}
+	return strings.ToUpper(who.Name[:1])
 }

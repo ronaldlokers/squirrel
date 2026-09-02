@@ -157,6 +157,8 @@ type fakeStore struct {
 	// Failures that belong to one read alone, so a test can break the chores or
 	// the notes while the conversation itself still renders.
 	choresErr error
+	said      []squirrel.Said
+	saidErr   error
 	itemsErr  error
 
 	// What the chore handlers did.
@@ -1176,6 +1178,17 @@ func (f *fakeStore) AppendTurn(_ context.Context, _ int64, room string, t squirr
 	t.Room = room
 	f.appended = append(f.appended, t)
 	return t, nil
+}
+
+func (f *fakeStore) WhatWasSaid(_ context.Context, _ int64, limit int) ([]squirrel.Said, error) {
+	if f.saidErr != nil {
+		return nil, f.saidErr
+	}
+	out := f.said
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
 }
 
 func (f *fakeStore) EverythingSaid(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
