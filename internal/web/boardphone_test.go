@@ -27,7 +27,7 @@ func TestBrowserThePhoneShowsOneBayAtATime(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	c.until(t, "the tabs", `getComputedStyle(document.querySelector(".baytabs")).display === "flex"`)
+	c.until(t, "the tabs", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
 	require.Equal(t, float64(1), c.eval(t, `return [...document.querySelectorAll(".rack")]
 		.filter(r => getComputedStyle(r).display !== "none").length`),
 		"more than one rack is on the phone at once")
@@ -53,4 +53,78 @@ func TestBrowserTheDeskShowsEveryBay(t *testing.T) {
 	require.Equal(t, float64(4), c.eval(t, `return [...document.querySelectorAll(".rack")]
 		.filter(r => getComputedStyle(r).display !== "none").length`))
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).display`))
+}
+
+func TestBrowserEveryBayIsOnTheScreen(t *testing.T) {
+	srv := screen(t, &fakeStore{})
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	require.Equal(t, float64(4), c.eval(t, `return document.querySelectorAll(".baytab").length`))
+	require.Empty(t, c.eval(t, `return [...document.querySelectorAll(".baytab")]
+		.filter(t => t.getBoundingClientRect().right > innerWidth + 0.5)
+		.map(t => t.textContent.trim())`),
+		"a bay sits off the right edge of the phone")
+	require.Equal(t, float64(0), c.eval(t,
+		`return document.documentElement.scrollWidth - document.documentElement.clientWidth`),
+		"the board scrolls sideways")
+}
+
+func TestBrowserPressingTheGlyphOpensTheField(t *testing.T) {
+	srv := screen(t, &fakeStore{})
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	shut := c.eval(t, `return document.querySelector(".ops .find input").getBoundingClientRect().width`)
+	require.Equal(t, float64(0), shut, "the field is drawn before it is asked for")
+
+	c.eval(t, `document.querySelector(".findpress").click(); return 1`)
+	c.until(t, "the field", `document.activeElement.id === "findfield"`)
+	require.Greater(t, c.eval(t,
+		`return document.querySelector(".ops .find input").getBoundingClientRect().width`).(float64),
+		float64(200), "the glyph focused a field nobody can see")
+}
+
+func TestBrowserAKeycapIsNotDrawnWhereThereIsNoKeyboard(t *testing.T) {
+	f := &fakeStore{chores: []squirrel.Chore{
+		{ID: 7, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7},
+	}}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/?bay=chores")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+
+	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": true, "maxTouchPoints": 1})
+	c.send(t, "Emulation.setEmitTouchEventsForMouse", map[string]any{"enabled": true, "configuration": "mobile"})
+	c.navigate(t, srv.URL+"/?bay=chores")
+	require.True(t, c.eval(t, `return matchMedia("(hover: none) and (pointer: coarse)").matches`).(bool),
+		"the browser is not pretending to be a touch screen, so this measured nothing")
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".stamp .k")).display`),
+		"a key is drawn on a screen that cannot press one")
+
+	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": false})
+	c.send(t, "Emulation.setEmitTouchEventsForMouse", map[string]any{"enabled": false})
+	c.navigate(t, srv.URL+"/?bay=chores")
+	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".stamp .k")).display`),
+		"the key is gone where there is a keyboard to press it")
+}
+
+func TestBrowserTheLitRackReachesTheFootOfTheScreen(t *testing.T) {
+	srv := screen(t, &fakeStore{})
+	c := browserAt(t, srv, "/")
+	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
+		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
+	})
+	c.navigate(t, srv.URL+"/")
+
+	foot := c.eval(t, `return document.querySelector(".rack.in .channel").getBoundingClientRect().bottom`)
+	require.Greater(t, foot.(float64), float64(760),
+		"the rack stops short and the rest of the screen is nothing")
 }

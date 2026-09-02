@@ -258,3 +258,30 @@ func (store) WhoIs(context.Context, int64) (squirrel.Whom, error) {
 func (store) PersonFace(context.Context, int64) ([]byte, string, bool, error) {
 	return nil, "", false, nil
 }
+
+func (store) EverythingSaid(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
+	if len(said) > limit {
+		return said[len(said)-limit:], true, nil
+	}
+	return said, false, nil
+}
+
+func (store) EverythingBefore(_ context.Context, _, before int64, _ int) ([]squirrel.Turn, bool, error) {
+	out := []squirrel.Turn{}
+	for _, t := range said {
+		if t.ID < before {
+			out = append(out, t)
+		}
+	}
+	return out, false, nil
+}
+
+func (store) MomentDone(_ context.Context, _, _ int64, _ time.Time) error { return nil }
+
+func (store) TriagedSince(_ context.Context, _ int64, _ time.Time) ([]squirrel.Item, error) {
+	return nil, nil
+}
+
+func (store) Notifying(_ context.Context, _ int64) (bool, error) { return false, nil }
+
+func (store) StopNotifying(_ context.Context, _ int64, _ time.Time) error { return nil }

@@ -42,6 +42,7 @@ type bayView struct {
 	// failed look identical, and one of them is a lie: if the database is down
 	// the screen says so rather than showing you a quiet morning.
 	Trouble  bool
+	Empty    string
 	Camera   bool
 	In       bool
 	Key      string
@@ -251,13 +252,15 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	return []bayView{
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
 			Camera: opts.Photos != nil, Shelves: true, Trouble: !notesOK, More: moreNotes,
-			Strips: askedForARhythm(notes, asking)},
+			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking)},
 		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
-			Rhythms: theRhythms, Trouble: !choresOK, Strips: chores},
+			Rhythms: theRhythms, Trouble: !choresOK,
+			Empty: "nothing comes back today", Strips: chores},
 		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
-			Trouble: !tasksOK, More: moreTasks, Strips: tasks},
+			Trouble: !tasksOK, More: moreTasks,
+			Empty: "nothing in the tasks", Strips: tasks},
 		{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
-			Trouble: !agendaOK, Strips: agenda},
+			Trouble: !agendaOK, Empty: "nothing left today", Strips: agenda},
 	}
 }
 

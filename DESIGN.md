@@ -481,12 +481,38 @@ newest carrying `PUT IT BACK`. The check-in's five faces sit at its right end.
 ### Breakpoint: 620px
 
 One breakpoint, as before. Below it the four racks become one, and the bay signs
-become a row of four sign-shaped tabs with one lit. The pulled strip stays above
-the tabs because it belongs to no bay. The tray keeps its place at the foot and
-wraps to two rows: what left the board, then the faces.
+become four sign-shaped tabs with one lit. The pulled strip stays above the tabs
+because it belongs to no bay. The tray keeps its place at the foot and wraps to
+two rows: what left the board, then the faces.
 
 There is no second layout. The phone shows one rack of the same board, and a
 strip is a strip at both sizes.
+
+**The ops bar loses its words.** The mark and the wordmark, then two drawn
+glyphs at the right: a magnifier and Buddy's acorn. Both keep their words in the
+markup, clipped rather than removed, so a link with no visible label still has
+a name to announce. The clock goes entirely — the phone shows one two inches
+above it, and ours is server-rendered, so it is wrong by however long the page
+has been open.
+
+**The find field is drawn to nothing and the glyph is its label.** Pressing the
+glyph focuses the field, which is what opens it: it takes a second row across
+the full width. No script is involved in any part of that. A field carrying a
+query stays open, because a search you cannot read is a search you cannot
+correct.
+
+**Four tabs, two rows of two.** The row never scrolls. A tab row that scrolls
+sideways on a phone with no scrollbar is how the fourth place became unreachable
+twice in this product — once on 28 August as the rooms, once on 2 September as
+the bays — and both times nothing on the screen said there was more.
+
+**The lit rack takes the screen it is on.** It stretches to the foot so its
+channel has a bottom edge and the ledge sits on it. The purple below a short
+rack was not room, it was the app stopping in the middle of the screen.
+
+**A stamp is 44px tall and the keycaps go.** Every stamp's letter is drawn only
+where `hover` and a fine pointer say there is a keyboard to press it with. The
+keys themselves still work the moment one appears.
 
 ## Elevation & Depth
 
@@ -617,6 +643,21 @@ at the right in tabular figures. The count is **what is in the rack**, not what
 is owed and never what is late. A rack with nothing in it shows no number rather
 than a nought.
 
+### What a rack says when it is empty
+
+One line in the middle of the channel, in that rack's own words: *nothing in the
+notes*, *nothing comes back today*, *nothing in the tasks*, *nothing left
+today*. Never a shared sentence, and never a drawing.
+
+It is not the same thing as `.trouble`, and the two are exclusive by
+construction: a rack that could not be read says so, and does not also report a
+quiet morning. The shelf and the search have the same line — *nothing on this
+shelf*, *nothing matched "…"* — because an empty bordered box says only that
+something has gone wrong.
+
+The line matters most on a phone, where one rack is the whole screen and there
+is nothing beside it to compare against.
+
 ### The channel
 
 The rack itself: `rgba(28,17,11,.2)` inset behind a 2px `rgba(254,214,167,.2)`
@@ -726,9 +767,10 @@ the design's largest unfinished edge.
 ### The ledge, and the two shelves
 
 The lip at the foot of the notes rack, below every live strip: a hairline, then
-two dashed tabs in sentence case — `what you set aside` and `the things you
-kept`. They are not bay signs and are deliberately not set in caps, because they
-are a way through rather than a place you are standing.
+two tabs in sentence case — `what you set aside` and `the things you kept`. They
+are not bay signs and are deliberately not set in caps, because they are a way
+through rather than a place you are standing. Solid-edged since 2 September,
+under The Blank Is Dashed.
 
 Pressing one turns the notes rack into that shelf and nothing else on the board
 moves. The sign becomes the shelf's name in the dashed variant, and where every
@@ -750,6 +792,13 @@ Both carry exactly one stamp, `back in the pile`, because every transition in
 this product reverses.
 
 ### Named Rules
+
+**The Blank Is Dashed.** A dashed edge means *there is nothing on this yet*. It
+belongs to the blank strip and everything inside it — the camera, the four
+rhythms — and to the two notices that are not part of a rack: the trouble line
+and a shelf's sign. Nothing else. Anything you can press or follow is drawn
+solid, because a dashed control reads as a placeholder, which is exactly what a
+bay tab and a ledge tab looked like until 2 September.
 
 **A Shelf Never Counts.** The sign carries the name and no number, and this is
 the one place in the product where that is a rule rather than a preference. A
