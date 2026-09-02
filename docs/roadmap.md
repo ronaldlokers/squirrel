@@ -345,6 +345,68 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.61.0 — 3 September 2026
+
+**The board asks rather than guessing, and a capture appears at once.**
+
+Four things anyone could hit in a minute of using the board, and one correction
+about testing that outlives them.
+
+**A note captured on the board was not on the board you were sent back to.**
+Capture spools first — that is what makes it durable — and the drain moves it
+into the pile on a one-second interval, so the redirect beat the drain. The
+capture was safe the whole time and looked lost, which is the one impression
+this product may never give. There is a pass over the spool in front of the
+person now, before the redirect. The write is what must not fail; the pass may,
+and the background drain still finds it. Two drains over one spool is safe by
+construction: a redelivery is absorbed by `ON CONFLICT DO NOTHING`, the same
+guarantee that lets Campfire retry a webhook.
+
+**A chore typed with no rhythm became a note.** In another rack, found on the
+next refresh. The same went for an appointment with no time in it. Both are
+questions now: the words come back into the field they were typed in, with the
+question under them, and the chips or the pickers are the answer. Nothing is
+filed anywhere until it is answered. Two tests pinned the old behaviour and now
+assert the opposite, with the reason in place.
+
+**A rhythm is any number of days, weeks or months.** The four chips are a
+shortcut, not the vocabulary: the fourth chore you have comes back every three
+days, and a screen that can only offer four intervals is one that makes you
+round.
+
+**The agenda has its pickers back** — a day and a time beside the field, which
+is what the conversation had and the rack lost. A sentence with a time in it
+still works and is still quicker.
+
+**Your face is on the chip** where the mark was, read from the same place the
+conversation reads it so the two cannot drift.
+
+**The ground is painted on `html` rather than on the body.** A background on the
+root propagates to the canvas, which is what the phone paints under the status
+bar and inside the safe areas — so the strip above the bar was flat purple while
+everything below it was dotted. The board also gained a `theme-color` and the
+mark as its favicon, neither of which it had. The bar reserves the top inset and
+nothing on top of it.
+
+**The correction.** Four defects in the bay bar were written up in v0.58.1 and
+v0.59.1 as invisible to CI, on the grounds that `env(safe-area-inset-*)` reads
+zero in a headless browser. **That is wrong.**
+`Emulation.setSafeAreaInsetsOverride` sets it, and this project was already
+using it — `TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset` has done so
+since the dock was built. It was found by accident, while retargeting the lid's
+tests. There are real tests now for the pill's height above the home indicator
+and for the top inset, both mutation-proved. Those two entries overstated the
+limit, and the lesson is the ordinary one: before recording that something
+cannot be tested, look for the tool in the project's own suite.
+
+**Not done, and deliberately not smuggled in.** Buddy's room does not carry the
+board's bar yet. It was built and backed out: the conversation's layout is
+driven by `--lid-h`, computed from the logo's height, and the transcript, the
+rail and the sheet all offset from it — three browser tests fail on the offsets
+alone. The answer to *how do you get back* is built and waiting as `boardchip`:
+the middle chip is always the other place, a chat bubble on the board and the
+board in his room.
+
 ### v0.60.0 — 2 September 2026
 
 **The top bar is chips, and the bell has a record behind it.**
