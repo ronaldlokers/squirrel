@@ -345,6 +345,58 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.58.0 — 2 September 2026
+
+**The bays are a bar at the foot, and the chevrons line up.**
+
+Four cells across the bottom of the phone — a drawn icon over the bay's own
+name, with the count as an orange badge on the icon. The bar is the last thing
+in the document, under the tray, so the way between places sits where the thumb
+is and the tray goes back to being content rather than furniture.
+
+**Where the bays have been.** One row at the top that scrolled sideways with no
+scrollbar, which put the fourth place off the right edge; then two rows of tabs,
+which cost 98px of an 844px screen and put navigation at the far end of a reach;
+now a bar that cannot fail either way — four cells, one grid, no scroll at any
+width, always in the same place.
+
+**No bay is lit when you are not standing in one.** A shelf, a search and an
+opened strip light nothing, because a bar that says you are in the notes while
+you are reading a search result is a bar you stop believing.
+
+**The icons are illustrated and full-colour**, which is a deliberate exception
+to a world drawn in flat shapes and 2px outlines, and it is recorded in
+DESIGN.md as one. They belong to the mark's register rather than the board's —
+the squirrel in the ops bar is drawn the same way — and four line glyphs at this
+size would have been four grey rectangles at a glance. 64KB for all four,
+exported at 128px so they hold at three times.
+
+**The badge is the strongest form a count has taken in this product.** It is a
+choice rather than drift: the rule against counts was retired for doors, and the
+bar is the door. No bay ever wears a nought.
+
+**The chevrons line up.** The opener that press-to-open added sat between a
+strip's words and its mark, and a mark is as wide as its words — *every week*
+against *every 28 days* — so the chevron stepped in and out down the rack. It is
+the last thing in the row now, in a column of its own.
+
+**A real defect, found through a flaky assertion that was telling the truth.**
+Every page load drew the stamps open and animated them shut: the collapse
+carried its own transition, so the moment the script applied the collapsing
+class, 160ms of closing ran on every strip. The transition is gated behind a
+second class the script adds a frame later.
+
+Two tests changed because the furniture moved rather than because a promise did,
+and both are worth knowing. The rack-fills-the-screen test asserted a magic
+760px that the bar's own height broke; it reads the top of whatever sits below
+the rack now, so it cannot rot the same way again. The sticky-tabs test went
+with the sticky tabs, and the half worth keeping — that the pulled strip gives
+way — is its own test.
+
+The asset guard also changed: the four icons are named by a range over the bays,
+so no literal file name appears in the template source it scanned. It reads the
+rendered board now, which is stronger evidence than template text.
+
 ### v0.57.0 — 2 September 2026
 
 **A strip opens when you press it.**
