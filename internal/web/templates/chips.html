@@ -1,4 +1,4 @@
-{{define "youchip"}}<a class="chip face" href="/r/everything" aria-label="who you are">{{if .Face}}<img src="/me/face" alt="" width="40" height="40">{{else}}<span>{{.Letter}}</span>{{end}}</a>{{end}}
+{{define "youchip"}}<a class="chip face" href="/r/everything?you=1" aria-label="who you are, and what this can be told to do">{{if .Face}}<img src="/me/face" alt="" width="40" height="40">{{else}}<span>{{.Letter}}</span>{{end}}</a>{{end}}
 
 {{define "buddychip"}}<a class="chip buddy" href="/r/everything" aria-label="talk to Buddy">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5c0 1.4-1.1 2.5-2.5 2.5H11l-4 3.2V17H6.5A2.5 2.5 0 0 1 4 14.5v-8A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5Z"/></svg>

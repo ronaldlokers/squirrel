@@ -136,7 +136,10 @@ func TestARackHandsYouWhatItHoldsAndSaysThereIsMore(t *testing.T) {
 	body := opened(t, &fakeStore{items: items}, "tasks")
 
 	require.Contains(t, body, "there is more further back")
-	for _, count := range []string{"60", "of 60", "20 more"} {
+	// The number as it would be drawn, not the digits anywhere on the page: an
+	// asset URL carries a version hash, and a hash that happened to contain
+	// "60" failed this on 3 September for no reason a reader could see.
+	for _, count := range []string{`class="n">60<`, "of 60", "20 more"} {
 		require.NotContains(t, body, count)
 	}
 }

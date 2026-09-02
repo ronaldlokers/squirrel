@@ -30,16 +30,18 @@ func asked(t *testing.T, m *testMux, f *fakeStore, body string) string {
 // It was a chip on the live edge, then a menu entry, and it is furniture now:
 // Buddy is a room, and going to a room is a link. Looking something up is not
 // a room — it is a thing you do — so it sits below the rule with the way out.
-func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
+// The rail's two controls moved into the bar on 3 September 2026: the way back
+// is the board chip and looking something up is the field in the middle. What
+// this holds is what it always held — both are on the screen without asking.
+func TestTheWayBackAndTheWayToLookAreInTheBar(t *testing.T) {
 	f := &fakeStore{
 		items:   []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)},
 		checkin: &squirrel.Checkin{Mood: squirrel.MoodGood},
 	}
 	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
 
-	require.Contains(t, body, `href="/"`, "his room has no way back to the board")
-	require.Contains(t, body, "look something up")
-	require.Contains(t, body, `action="/find/ask"`)
+	require.Contains(t, body, `aria-label="back to the board"`, "his room has no way back to the board")
+	require.Contains(t, body, `aria-label="look for something"`, "there is nowhere to look something up")
 }
 
 // Even with nothing said yet.
@@ -49,12 +51,12 @@ func TestTheWayToBuddyIsOnTheRail(t *testing.T) {
 // none, so a way to Buddy that appears once Buddy has spoken is a way to Buddy
 // you cannot use to start. The rail settles it — it is furniture, so it is
 // there before anything is.
-func TestTheWayToBuddyIsThereBeforeAnythingIsSaid(t *testing.T) {
+func TestTheWayBackIsThereBeforeAnythingIsSaid(t *testing.T) {
 	f := &fakeStore{checkin: fresh()}
 	body := thread(t, f)
 
-	require.Contains(t, body, `href="/"`, "his room has no way back to the board")
-	require.Contains(t, body, "look something up")
+	require.Contains(t, body, `aria-label="back to the board"`, "his room has no way back to the board")
+	require.Contains(t, body, `aria-label="look for something"`)
 }
 
 // Asking costs nothing. The question is painted from the picker, which is six

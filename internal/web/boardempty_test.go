@@ -67,7 +67,7 @@ func TestEveryChipInTheBarCarriesAName(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 	bar := body[strings.Index(body, `<header class="ops">`):strings.Index(body, "</header>")]
 
-	for _, name := range []string{"talk to Buddy", "what Squirrel told you", "who you are"} {
+	for _, name := range []string{"talk to Buddy", "what Squirrel told you", "who you are, and what this can be told to do"} {
 		require.Contains(t, bar, `aria-label="`+name+`"`, "no chip is named %q", name)
 	}
 	require.Equal(t, 3, strings.Count(bar, `class="chip`),
@@ -239,4 +239,20 @@ func TestARecordThatCannotBeReadDrawsNoList(t *testing.T) {
 	require.Contains(t, body, "nothing has been sent to you")
 	require.NotContains(t, body, `class="chip bell full"`,
 		"the bell is marked from a read that failed")
+}
+
+func TestTheFaceOpensWhatCanBeChangedRatherThanBuddy(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	board := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, board, `class="chip face" href="/r/everything?you=1"`,
+		"the face opens the room rather than the settings")
+
+	shut := m.call(t, "GET", "/r/everything", nil).Body.String()
+	require.Contains(t, shut, `<details class="youare">`, "the panel is open before it was asked for")
+
+	open := m.call(t, "GET", "/r/everything?you=1", nil).Body.String()
+	require.Contains(t, open, `<details class="youare" open>`, "the face opened nothing")
+	require.Contains(t, open, "log out")
+	require.Contains(t, open, "What Squirrel knows about you")
 }
