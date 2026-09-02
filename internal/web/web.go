@@ -62,6 +62,11 @@ type Options struct {
 	// kept. Nil is refused at mount: a screen that captures without one is the
 	// gap this exists to close.
 	Spool Spool
+	// Settle makes what was just spooled visible, if it can. Nil is a working
+	// state: the drain picks a capture up on its own interval either way, and
+	// this only decides whether the strip is on the page you are sent back to
+	// or on the one after it.
+	Settle func(context.Context)
 
 	// The coach's three seams. Funcs of primitives rather than an interface, because
 	// this package must not know internal/coach exists. internal/boot supplies them.

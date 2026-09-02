@@ -60,6 +60,7 @@ type bayView struct {
 	Question string
 	Writes   bool
 	Rhythms  []rhythmView
+	Asking   string
 	Shelves  bool
 	Strips   []stripView
 }
@@ -265,6 +266,8 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 
 // theBaysOf reads all four racks, each saying whether it could be read at all.
 func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.Time, asking int64) []bayView {
+	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
+	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
 	notes, notesOK, moreNotes := noteStrips(r, s, personID, at)
 	chores, choresOK := choreStrips(r, s, personID)
 	tasks, tasksOK, moreTasks := taskStrips(r, s, personID, at)
@@ -274,13 +277,14 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 			Camera: opts.Photos != nil, Shelves: true, Trouble: !notesOK, More: moreNotes,
 			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking)},
 		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
-			Rhythms: theRhythms, Trouble: !choresOK,
+			Rhythms: theRhythms, Trouble: !choresOK, Asking: rhythmFor,
 			Empty: "nothing comes back today", Strips: chores},
 		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
 			Trouble: !tasksOK, More: moreTasks,
 			Empty: "nothing in the tasks", Strips: tasks},
 		{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
-			Trouble: !agendaOK, Empty: "nothing left today", Strips: agenda},
+			Trouble: !agendaOK, Asking: whenFor,
+			Empty: "nothing left today", Strips: agenda},
 	}
 }
 
@@ -621,34 +625,35 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 
 		switch r.FormValue("bay") {
 		case "chores":
-			if days, _ := strconv.Atoi(r.FormValue("every")); days > 0 {
-				every := time.Duration(days) * 24 * time.Hour
-				if _, err := s.UpsertChore(r.Context(), personID, words, every, every/10); err != nil {
-					fail(w, err)
-					return
-				}
-				break
+			days := everyInDays(r.FormValue("every"), r.FormValue("unit"))
+			if days <= 0 {
+				// Asked for, never guessed at. Filing this as a note was the
+				// old behaviour and it was the wrong kind of helpful: you typed
+				// a chore, and what you got was a note in another rack, found
+				// on the next refresh.
+				http.Redirect(w, r, "/?bay=chores&rhythm="+url.QueryEscape(words), http.StatusSeeOther)
+				return
 			}
-			if err := keepAsANote(r, opts, words); err != nil {
+			every := time.Duration(days) * 24 * time.Hour
+			if _, err := s.UpsertChore(r.Context(), personID, words, every, every/10); err != nil {
 				fail(w, err)
 				return
 			}
-			http.Redirect(w, r, "/?bay=notes&kept=1", http.StatusSeeOther)
-			return
 		case "agenda":
-			if m, ok := squirrel.ParseMomentIn(opts.Location, words, now()); ok {
-				if _, err := s.CreateMoment(r.Context(), personID, m); err != nil {
-					fail(w, err)
-					return
-				}
-				break
+			m, ok := momentFromPickers(opts.Location, words, r.FormValue("day"), r.FormValue("time"))
+			if !ok {
+				m, ok = squirrel.ParseMomentIn(opts.Location, words, now())
 			}
-			if err := keepAsANote(r, opts, words); err != nil {
+			if !ok {
+				// The same rule: an appointment with no time in it is a
+				// question, not a note.
+				http.Redirect(w, r, "/?bay=agenda&when="+url.QueryEscape(words), http.StatusSeeOther)
+				return
+			}
+			if _, err := s.CreateMoment(r.Context(), personID, m); err != nil {
 				fail(w, err)
 				return
 			}
-			http.Redirect(w, r, "/?bay=notes&kept=1", http.StatusSeeOther)
-			return
 		case "notes":
 			if err := keepAsANote(r, opts, words); err != nil {
 				fail(w, err)
@@ -686,6 +691,13 @@ func keepAsANote(r *http.Request, opts Options, words string) error {
 	}); err != nil {
 		slog.Warn("a capture from the board could not be spooled", "error", err)
 		return err
+	}
+	// The spool is what makes it safe; this is what makes it visible. Without
+	// it the board you are sent back to is drawn before the drain has run, so a
+	// note you have just written is not on it — which reads as the capture
+	// having been lost. The write above is what must not fail; this may.
+	if opts.Settle != nil {
+		opts.Settle(r.Context())
 	}
 	return nil
 }
@@ -941,4 +953,38 @@ func whatWasSaid(r *http.Request, s Store, personID int64, at time.Time, deep in
 		out = append(out, toldView{Title: one.Title, Body: one.Body, Mark: markOfDay(one.At, at)})
 	}
 	return out
+}
+
+// everyInDays reads the rhythm off the blank strip: a count and what it counts.
+// A bare number of days is still read, because the four shortcut chips send
+// one.
+func everyInDays(every, unit string) int {
+	n, err := strconv.Atoi(strings.TrimSpace(every))
+	if err != nil || n <= 0 {
+		return 0
+	}
+	switch unit {
+	case "weeks":
+		return n * 7
+	case "months":
+		return n * 30
+	}
+	return n
+}
+
+// momentFromPickers builds one out of the day and time beside the field, which
+// is what the pickers are for: a sentence with a time in it is quicker when you
+// have one, and unusable when you do not.
+func momentFromPickers(loc *time.Location, words, day, clock string) (squirrel.Moment, bool) {
+	if day == "" || clock == "" || words == "" {
+		return squirrel.Moment{}, false
+	}
+	if loc == nil {
+		loc = time.Local
+	}
+	starts, err := time.ParseInLocation("2006-01-02 15:04", day+" "+clock, loc)
+	if err != nil {
+		return squirrel.Moment{}, false
+	}
+	return squirrel.Moment{Label: words, Starts: starts, Guessed: true}, true
 }

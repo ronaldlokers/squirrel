@@ -92,6 +92,8 @@ func TestOnlyTheBlankAndTheNoticesAreDrawnDashed(t *testing.T) {
 		".camera:hover":             true,
 		".rhythms .stamp":           true,
 		".rhythms .stamp:hover":     true,
+		".rhythms .count":           true,
+		".rhythms select":           true,
 		".trouble":                  true,
 		".baysign.shelf":            true,
 		".strip.blank:focus-within": true,

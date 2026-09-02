@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -196,18 +197,21 @@ func TestTypingAChoreWithItsRhythmMakesOne(t *testing.T) {
 	require.Empty(t, sp.written, "a chore with a rhythm is a chore, not a note")
 }
 
-// Words with no rhythm are still a thought, so they go where a thought goes.
-// The one thing that may not happen is that they are dropped.
-func TestChoreWordsWithNoRhythmGoToTheNotes(t *testing.T) {
+// Words with no rhythm are a question, and the board asks it. They went to the
+// notes until 3 September 2026, which is the wrong kind of helpful: you typed a
+// chore and what you got was a note in another rack, found on the next refresh.
+func TestChoreWordsWithNoRhythmAreAskedAboutRatherThanFiled(t *testing.T) {
 	f := aBoardStore()
 	sp := &fakeSpool{}
 	m := mountedSpooling(t, f, sp)
 
-	m.call(t, "POST", "/board/new", strings.NewReader("bay=chores&words=defrost+the+freezer"))
+	res := m.call(t, "POST", "/board/new", strings.NewReader("bay=chores&words=defrost+the+freezer"))
 
 	require.Empty(t, f.reinterval.name, "a chore was made without a rhythm")
-	require.Len(t, sp.written, 1, "the words were dropped")
-	require.Equal(t, "defrost the freezer", sp.written[0].Text)
+	require.Empty(t, sp.written, "the words were filed as a note instead of being asked about")
+	require.Equal(t, 303, res.Code)
+	require.Equal(t, "/?bay=chores&rhythm=defrost+the+freezer", res.Header().Get("Location"),
+		"the words were dropped rather than carried back to the question")
 }
 
 func TestTypingWhenSomethingHappensMakesAMoment(t *testing.T) {
@@ -225,7 +229,7 @@ func TestTypingWhenSomethingHappensMakesAMoment(t *testing.T) {
 // An appointment needs a time in it. Without one there is nothing to be on time
 // for, so the words are a note — and the board says where they went rather than
 // swallowing them.
-func TestAgendaWordsWithNoTimeInThemGoToTheNotes(t *testing.T) {
+func TestAgendaWordsWithNoTimeInThemAreAskedAbout(t *testing.T) {
 	f := aBoardStore()
 	sp := &fakeSpool{}
 	m := mountedSpooling(t, f, sp)
@@ -233,8 +237,8 @@ func TestAgendaWordsWithNoTimeInThemGoToTheNotes(t *testing.T) {
 	w := m.call(t, "POST", "/board/new", strings.NewReader("bay=agenda&words=ring+the+dentist"))
 
 	require.Empty(t, f.moments)
-	require.Len(t, sp.written, 1)
-	require.Equal(t, "/?bay=notes&kept=1", w.Header().Get("Location"))
+	require.Empty(t, sp.written, "an appointment with no time in it was filed as a note")
+	require.Equal(t, "/?bay=agenda&when=ring+the+dentist", w.Header().Get("Location"))
 }
 
 func TestTheChoresRackAsksForARhythmBesideTheField(t *testing.T) {
@@ -620,4 +624,86 @@ func TestARackThatHoldsEverythingSaysNothingAboutMore(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 
 	require.NotContains(t, body, "there is more further back")
+}
+
+func TestThePickersMakeAMomentWithoutASentence(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/new",
+		strings.NewReader("bay=agenda&words=dentist&day=2026-09-10&time=14%3A30"))
+
+	require.Len(t, f.moments, 1, "the day and the time beside the field made nothing")
+	require.Equal(t, "dentist", f.moments[0].Label)
+	require.Equal(t, 2026, f.moments[0].Starts.Year())
+	require.Equal(t, 14, f.moments[0].Starts.Hour())
+	require.Equal(t, 30, f.moments[0].Starts.Minute())
+	require.Empty(t, sp.written)
+}
+
+func TestAnIntervalCanBeAnyNumberOfDaysWeeksOrMonths(t *testing.T) {
+	for _, one := range []struct {
+		every, unit string
+		want        time.Duration
+	}{
+		{"3", "days", 3 * 24 * time.Hour},
+		{"5", "weeks", 35 * 24 * time.Hour},
+		{"2", "months", 60 * 24 * time.Hour},
+		{"9", "", 9 * 24 * time.Hour},
+	} {
+		f := aBoardStore()
+		m := mountedSpooling(t, f, &fakeSpool{})
+		m.call(t, "POST", "/board/new", strings.NewReader(
+			"bay=chores&words=descale+the+kettle&every="+one.every+"&unit="+one.unit))
+
+		require.Equal(t, one.want, f.reinterval.every,
+			"every %s %s came out as %v", one.every, one.unit, f.reinterval.every)
+	}
+}
+
+func TestTheRackCarriesTheQuestionAndTheWordsBack(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores&rhythm=defrost+the+freezer", nil).Body.String()
+	rack := theRackIn(t, body, "bay=chores")
+
+	require.Contains(t, rack, `value="defrost the freezer"`, "the words were not carried back")
+	require.Contains(t, rack, "how often does it come back?")
+
+	when := mounted(t, aBoardStore()).call(t, "GET", "/?bay=agenda&when=ring+the+dentist", nil).Body.String()
+	require.Contains(t, theRackIn(t, when, "bay=agenda"), "when is it?")
+}
+
+func TestARackAsksNothingWhenNothingWasAsked(t *testing.T) {
+	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(), "bay=chores")
+
+	require.NotContains(t, rack, "how often does it come back?")
+	require.NotContains(t, rack, "when is it?")
+}
+
+func TestACaptureIsSettledBeforeTheBoardIsDrawnAgain(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	settled := 0
+	opts := signedInOptions()
+	opts.Spool = sp
+	opts.Settle = func(context.Context) { settled++ }
+	m := newTestMux()
+	require.NoError(t, Mount(m, f, opts))
+
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=the+boiler+code"))
+
+	require.Len(t, sp.written, 1, "the capture was not made durable")
+	require.Equal(t, 1, settled,
+		"the board is drawn again before the capture has been settled, so the strip is not on it")
+}
+
+func TestACaptureIsDurableEvenWithNothingToSettleWith(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	res := m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=the+boiler+code"))
+
+	require.Len(t, sp.written, 1, "no settler meant no capture")
+	require.Equal(t, 303, res.Code)
 }

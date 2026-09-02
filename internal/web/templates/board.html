@@ -196,7 +196,7 @@
     <form class="blankstrip" method="post" action="{{if .Camera}}/board/capture{{else}}/board/new{{end}}"{{if .Camera}} enctype="multipart/form-data"{{end}}>
       <input type="hidden" name="bay" value="{{.Key}}">
       <p class="strip blank">
-        <input class="words" name="{{if .Camera}}text{{else}}words{{end}}" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done">
+        <input class="words" name="{{if .Camera}}text{{else}}words{{end}}" value="{{.Asking}}" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done"{{if .Asking}} autofocus{{end}}>
         {{if .Camera}}
         <label class="camera">
           <input type="file" name="photo" accept="image/*" capture="environment">
@@ -207,10 +207,29 @@
         <button class="newmark" aria-label="keep it">+</button>
       </p>
       {{if .Rhythms}}
+      {{if .Asking}}<p class="asked">how often does it come back?</p>{{end}}
       <span class="rhythms">
         {{range .Rhythms}}
         <button class="stamp small" name="every" value="{{.Days}}">{{.Words}}</button>
         {{end}}
+      </span>
+      <span class="rhythms every">
+        <span class="lead">or every</span>
+        <input class="count" name="every" type="number" min="1" max="365" inputmode="numeric" aria-label="how many">
+        <select name="unit" aria-label="days, weeks or months">
+          <option value="days">days</option>
+          <option value="weeks">weeks</option>
+          <option value="months">months</option>
+        </select>
+        <button class="stamp small">keep it</button>
+      </span>
+      {{end}}
+      {{if eq .Key "agenda"}}
+      {{if .Asking}}<p class="asked">when is it?</p>{{end}}
+      <span class="rhythms every">
+        <input class="count when" name="day" type="date" aria-label="the day">
+        <input class="count when" name="time" type="time" aria-label="the time">
+        <button class="stamp small">keep it</button>
       </span>
       {{end}}
     </form>
