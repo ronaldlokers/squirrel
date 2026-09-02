@@ -501,10 +501,18 @@ the full width. No script is involved in any part of that. A field carrying a
 query stays open, because a search you cannot read is a search you cannot
 correct.
 
-**The four bays are a bar at the foot.** Four cells, each a drawn icon over its
-name in small caps-height type, on `purple-dark` with the 2px rule along its
-top. It is the last thing in the document, below the tray, so the way between
-places sits under the thumb and the tray stays content rather than furniture.
+**The four bays float at the foot.** A pill clear of all three edges — 12px at
+the sides, 9px above the home indicator — on `purple-dark` under the 2px outline
+and the board's own shadow, with four cells inside it: a drawn icon over its
+name in small caps-height type. The board scrolls beneath it and the page
+reserves its height, so nothing is ever hidden behind it.
+
+**The cell you are in is tinted, not filled.** Orange ink and a full-strength
+icon against 72% cream and icons at 55%. It had a well behind it while the bar
+was a band along the bottom, and the well was the trouble: it stopped above the
+home indicator's reserve, which made the reserve read as a hole under the
+buttons rather than as the ground the bar floats over. A floating bar has no
+edge to leave a gap against.
 
 Before this the bays were two rows of tabs at the top; before that, one row that
 scrolled sideways with no scrollbar, which is how the fourth place became
@@ -512,11 +520,13 @@ unreachable twice in this product — once on 28 August as the rooms, once on
 2 September as the bays. The bar cannot fail that way: four cells, one grid, no
 scroll at any width.
 
-**Only the bar pads for the home indicator.** It is the last thing on the
-screen, so it owns `env(safe-area-inset-bottom)` and nothing above it may claim
-it as well. The rack went on adding the same inset after the bar took the foot,
-which put a band of ground between the rack and the bar on every phone with a
-home indicator and none at all in a headless browser, where the inset is zero.
+**The inset is named once.** `--foot` carries
+`env(safe-area-inset-bottom)` plus the bar's own clearance, and everything that
+has to sit above the home indicator reads that one value: the bar's offset and
+the page's reserve. It is a rule with a test because a headless browser reports
+the inset as zero, so nothing rendered in CI can see it being claimed twice —
+which is exactly how the rack came to pad for it after the bar took the foot,
+putting a band of ground between them on every phone that has one.
 
 **No bay is lit when you are not standing in one.** A shelf, a search and an
 opened strip all light nothing, because a bar that says you are in the notes

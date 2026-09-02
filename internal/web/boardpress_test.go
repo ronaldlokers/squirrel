@@ -173,11 +173,13 @@ func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
 	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
 
 	foot := c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`)
-	require.Equal(t, float64(0), foot, "the bar is not at the foot of the screen")
+	require.Less(t, foot.(float64), float64(16), "the bar is not floating at the foot of the screen")
+	require.Greater(t, c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().left)`).(float64),
+		float64(0), "the bar runs edge to edge rather than floating clear of them")
 
 	c.eval(t, `document.querySelector(".deck").scrollTop = 600; return 1`)
 	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
-	require.Equal(t, float64(0),
+	require.Equal(t, foot,
 		c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
 		"the bar scrolled away with the rack")
 
@@ -202,7 +204,7 @@ func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
 	require.LessOrEqual(t,
 		c.eval(t, `return Math.round(document.querySelector(".tray").getBoundingClientRect().bottom)`).(float64),
 		c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`).(float64),
-		"the tray sits below the way between bays")
+		"the floating bar covers the tray rather than clearing it")
 }
 
 func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
