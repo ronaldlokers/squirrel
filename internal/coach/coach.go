@@ -195,6 +195,11 @@ type Coach interface {
 	// existed: kept, and "Kept." said back. Every failure lands on the old
 	// guarantee rather than on a lost thought.
 	Reads(ctx context.Context, personID int64, said string, n Now) (string, bool, string, error)
+	// Notice reads the board and writes at most two lines about what is on it,
+	// each attached to one thing. ErrUnavailable means nothing is written,
+	// which is also what a board with nothing worth saying about it produces —
+	// the two are the same outcome on purpose.
+	Notice(ctx context.Context, personID int64, things []Thing, refused []string) ([]Note, error)
 	// Learn reads the record of the conversation back and says what it shows
 	// about how this person works. Once a week, and everything about it is
 	// optional: ErrUnavailable leaves Squirrel knowing whatever it knew, which
@@ -213,6 +218,10 @@ func (NoCoach) Answer(context.Context, Turn) (Reply, error) {
 
 func (NoCoach) Decide(context.Context, int64) (Decision, error) {
 	return Decision{}, ErrUnavailable
+}
+
+func (NoCoach) Notice(context.Context, int64, []Thing, []string) ([]Note, error) {
+	return nil, ErrUnavailable
 }
 
 func (NoCoach) Learn(context.Context, int64, []string) ([]string, error) {

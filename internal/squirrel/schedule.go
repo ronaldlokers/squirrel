@@ -34,6 +34,10 @@ type SchedulerOptions struct {
 	// chose to raise, so it can make Squirrel quieter and has no way to make it
 	// louder.
 	Interrupt Interrupter
+	// Notice reads the board and writes at most two lines about what is on it.
+	// Nil is a working state: the strips carry no marginalia, which is what
+	// shipped before this existed.
+	Notice Noticer
 	// Learn reads the record back and says what it shows about how this person
 	// works. Nil means Squirrel never learns anything, which is a working state.
 	Learn Learner
@@ -43,6 +47,25 @@ type SchedulerOptions struct {
 // reason every other seam in this package is: internal/squirrel must not have
 // to know that internal/coach exists.
 type Learner func(ctx context.Context, personID int64, record []string) ([]string, error)
+
+// Noticer reads what is on the board and writes at most a couple of lines about
+// it, each naming the thing it is about.
+type Noticer func(ctx context.Context, personID int64, things []NoticeThing, refused []string) ([]NoticeNote, error)
+
+// NoticeThing is one row the noticer may say something about, and NoticeNote is
+// one line it wrote. Both are plain structs rather than the coach's own types,
+// because this package must not know internal/coach exists.
+type NoticeThing struct {
+	Kind  string
+	RefID int64
+	Words string
+}
+
+type NoticeNote struct {
+	Kind  string
+	RefID int64
+	Words string
+}
 
 // resurfaceOdds is how often a kept note rides along with the evening message.
 // One in three: every evening would make the shelf a stream, and a stream is a
@@ -583,6 +606,11 @@ func (s *Scheduler) Run(ctx context.Context) {
 		if err := s.KnowingTick(ctx, time.Now()); err != nil {
 			s.opts.OnError(err)
 		}
+		// And the board, once a day, for the same reason again: its clock is
+		// the rows it writes.
+		if err := s.NoticeTick(ctx, time.Now()); err != nil {
+			s.opts.OnError(err)
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -722,4 +750,70 @@ func asRecord(turns []Turn) []string {
 		out = append(out, who+": "+words)
 	}
 	return out
+}
+
+// noticeEvery is how often the board is read. A day: a note worth having is one
+// about what is on the board today, and a model asked every hour will find
+// something every hour.
+const noticeEvery = 24 * time.Hour
+
+// noticeAtMost is how much of the board one pass is shown. Forty rows — enough
+// that the connections worth finding are in it, and few enough that the model
+// is not reading a filing cabinet.
+const noticeAtMost = 40
+
+// noticeRefusals is how many refused lines the pass is shown. Ten, newest
+// first: the point is the shape of what was refused, and a hundred of them
+// would be most of the prompt.
+const noticeRefusals = 10
+
+// NoticeTick reads the board and writes what it noticed, at most once a day.
+//
+// Every failure is silent, the same as KnowingTick: a day where this could not
+// run is a day where the strips carry whatever they carried, which is what they
+// carried for the product's whole life until now.
+func (s *Scheduler) NoticeTick(ctx context.Context, now time.Time) error {
+	if s.opts.Notice == nil {
+		return nil
+	}
+	last, err := s.opts.Store.NoticedAt(ctx, s.opts.PersonID)
+	if err != nil {
+		return fmt.Errorf("reading when it last noticed: %w", err)
+	}
+	if !last.IsZero() && now.Sub(last) < noticeEvery {
+		return nil
+	}
+
+	items, _, err := s.opts.Store.OpenItems(ctx, s.opts.PersonID, noticeAtMost)
+	if err != nil {
+		return fmt.Errorf("reading the board: %w", err)
+	}
+	things := make([]NoticeThing, 0, len(items))
+	for _, it := range items {
+		things = append(things, NoticeThing{Kind: "note", RefID: it.ID, Words: it.RawText})
+	}
+	if len(things) < 2 {
+		// Nothing to connect. The whole value of this is what one row says
+		// about another, and one row says nothing about anything.
+		return nil
+	}
+
+	refused, err := s.opts.Store.WhatWasRefused(ctx, s.opts.PersonID, noticeRefusals)
+	if err != nil {
+		return fmt.Errorf("reading what was refused: %w", err)
+	}
+
+	notes, err := s.opts.Notice(ctx, s.opts.PersonID, things, refused)
+	if err != nil {
+		// Unreachable, out of budget, or nothing worth saying. Nothing is
+		// written, so the clock does not move and the next tick tries again.
+		slog.Info("the board was not read", "error", err)
+		return nil
+	}
+	for _, one := range notes {
+		if err := s.opts.Store.Notice(ctx, s.opts.PersonID, one.Kind, one.RefID, one.Words, now); err != nil {
+			return fmt.Errorf("keeping what was noticed: %w", err)
+		}
+	}
+	return nil
 }

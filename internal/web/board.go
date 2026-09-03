@@ -67,6 +67,12 @@ type bayView struct {
 }
 
 type stripView struct {
+	// Seen is the line it noticed about this thing, and SeenID is the line
+	// itself so it can be refused. Empty is the ordinary case: most strips
+	// have nothing worth saying about them, and a line under every one would
+	// be a rack nobody reads.
+	Seen   string
+	SeenID int64
 	// Back is a strip that has already left the pile: it carries the way back
 	// and nothing else.
 	Back bool
@@ -276,7 +282,9 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.Time, asking int64) []bayView {
 	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
+	seen := whatWasNoticed(r, s, personID)
 	notes, notesOK, moreNotes := noteStrips(r, s, personID, at)
+	notes = marked(notes, "note", seen)
 	chores, choresOK := choreStrips(r, s, personID)
 	tasks, tasksOK, moreTasks := taskStrips(r, s, personID, at)
 	agenda, agendaOK := agendaStrips(r, s, personID, at)
@@ -1022,6 +1030,68 @@ func boardMoodHandler(s Store) http.HandlerFunc {
 			return
 		}
 		if err := s.RecordCheckin(r.Context(), personID, m, "screen", now()); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+	}
+}
+
+// whatWasNoticed is every line not refused, keyed by the thing it is about.
+//
+// One read for the whole board rather than one per strip: the lines are few by
+// construction, and a query per row would be the thing that makes a rack slow.
+func whatWasNoticed(r *http.Request, s Store, personID int64) map[string]squirrel.Noticed {
+	lines, err := s.WhatWasNoticed(r.Context(), personID)
+	if err != nil {
+		// A rack without marginalia is the rack this product had for its whole
+		// life. Nothing is said about the failure, because nothing was
+		// promised.
+		slog.Error("reading what was noticed", "error", err)
+		return nil
+	}
+	out := make(map[string]squirrel.Noticed, len(lines))
+	for _, one := range lines {
+		out[one.Kind+":"+strconv.FormatInt(one.RefID, 10)] = one
+	}
+	return out
+}
+
+// marked hangs each line on the strip it names.
+func marked(strips []stripView, kind string, seen map[string]squirrel.Noticed) []stripView {
+	if len(seen) == 0 {
+		return strips
+	}
+	for i := range strips {
+		if one, ok := seen[kind+":"+strconv.FormatInt(strips[i].ID, 10)]; ok {
+			strips[i].Seen, strips[i].SeenID = one.Words, one.ID
+		}
+	}
+	return strips
+}
+
+// boardNotUsefulHandler is how a line is refused.
+//
+// It does not hide the line so much as answer it: the words stay, and the next
+// pass is shown them as something not to write again. A refusal that only
+// cleared the screen would leave the same line to be written tomorrow.
+func boardNotUsefulHandler(s Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if id <= 0 {
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		if _, err := s.NotUseful(r.Context(), personID, id, now()); err != nil {
 			fail(w, err)
 			return
 		}

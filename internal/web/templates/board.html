@@ -241,6 +241,15 @@
           <span class="holder"></span>
           <div class="words">
             <p class="what">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}</p>
+            {{if .Seen}}
+            <div class="seen">{{.Seen}}
+              <form method="post" action="/board/notuseful">
+                <input type="hidden" name="id" value="{{.SeenID}}">
+                <input type="hidden" name="bay" value="{{$bay.Key}}">
+                <button class="off">not useful</button>
+              </form>
+            </div>
+            {{end}}
             {{if .Rhythms}}
             <form class="stamps" method="post" action="/board/chore">
               <input type="hidden" name="id" value="{{.ID}}">
