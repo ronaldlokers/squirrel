@@ -282,9 +282,9 @@
 {{end}}
 </div>
 
-{{if .Tray}}
+{{if or .Tray .Faces}}
 <footer class="tray">
-  <span class="sign">today's tray</span>
+  {{if .Tray}}<span class="sign">today's tray</span>{{end}}
   <div class="gone">
     {{range .Tray}}
     <span class="strip out">
@@ -300,6 +300,17 @@
     </span>
     {{end}}
   </div>
+  {{if .Faces}}
+  <form class="checkin" method="post" action="/board/mood">
+    <span class="ask">how do you feel?</span>
+    {{range .Faces}}
+    <button class="face" name="mood" value="{{.Mood}}" aria-label="{{.Word}}">
+      <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+      <span>{{.Word}}</span>
+    </button>
+    {{end}}
+  </form>
+  {{end}}
 </footer>
 {{end}}
 

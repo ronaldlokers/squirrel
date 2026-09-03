@@ -12,7 +12,10 @@ import (
 )
 
 func aRackOfNotes() *fakeStore {
-	f := &fakeStore{}
+	// Answered just now, so the check-in is not drawn: these are tests about
+	// where the rack and the pill sit, and the faces are a second row in the
+	// tray that would move both without saying anything about either.
+	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}}
 	for i := int64(1); i <= 5; i++ {
 		f.items = append(f.items, squirrel.Item{
 			ID: i, RawText: "note " + string(rune('a'+i-1)), State: squirrel.ItemOpen,

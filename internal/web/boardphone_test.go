@@ -126,8 +126,12 @@ func TestBrowserTheLitRackReachesTheFootOfTheScreen(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
+	// Against the racks area it is in, rather than against the pill at the
+	// foot: what sits between them — the tray, the check-in, the pill's own
+	// reserve — moves without this promise changing, and measuring past it
+	// made this a test about the tray.
 	foot := c.eval(t, `return document.querySelector(".rack.in .channel").getBoundingClientRect().bottom`)
-	under := c.eval(t, `return document.querySelector(".baytabs").getBoundingClientRect().top`)
+	under := c.eval(t, `return document.querySelector(".racks").getBoundingClientRect().bottom`)
 	require.Greater(t, foot.(float64), under.(float64)-24,
-		"the rack stops short and the rest of the screen is nothing")
+		"the rack stops short and the rest of the racks area is nothing")
 }

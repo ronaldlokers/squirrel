@@ -707,3 +707,56 @@ func TestACaptureIsDurableEvenWithNothingToSettleWith(t *testing.T) {
 	require.Len(t, sp.written, 1, "no settler meant no capture")
 	require.Equal(t, 303, res.Code)
 }
+
+func TestTheBoardAsksHowYouFeelAtTheTraysEnd(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `action="/board/mood"`, "the board never asks")
+	for _, m := range []string{"good", "calm", "low", "frazzled", "wiped"} {
+		require.Contains(t, body, `value="`+m+`"`, "the %s face is missing", m)
+	}
+	require.Contains(t, body, `<footer class="tray">`,
+		"the faces are drawn somewhere other than the tray's end")
+}
+
+func TestTheBoardStopsAskingWhileTheAnswerStillDescribesNow(t *testing.T) {
+	f := aBoardStore()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
+
+	require.NotContains(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(),
+		`action="/board/mood"`, "it asks again while the last answer is still true")
+}
+
+func TestTheBoardStillAsksWhenTheTrayIsEmpty(t *testing.T) {
+	f := &fakeStore{}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `action="/board/mood"`,
+		"a quiet day is a day the board never asks how you are")
+}
+
+func TestAnsweringOnTheBoardKeepsAReadingAndSaysNothing(t *testing.T) {
+	f := aBoardStore()
+	m := mounted(t, f)
+
+	res := m.call(t, "POST", "/board/mood", strings.NewReader("mood=calm&bay=chores"))
+
+	require.Equal(t, 303, res.Code)
+	require.Equal(t, "/?bay=chores", res.Header().Get("Location"))
+	require.Equal(t, squirrel.MoodCalm, f.recorded, "the reading was not kept")
+	require.Empty(t, f.appended, "answering on the board wrote into the conversation")
+}
+
+func TestAWordThatIsNotOneOfTheFiveKeepsNothing(t *testing.T) {
+	f := aBoardStore()
+	m := mounted(t, f)
+
+	m.call(t, "POST", "/board/mood", strings.NewReader("mood=splendid"))
+
+	// Nothing was written at all, rather than an empty reading written: the
+	// store records whatever it is handed, so "no mood was kept" and "the
+	// zero mood was kept" look the same from the outside unless this asks
+	// whether the write happened.
+	require.Nil(t, f.checkin, "something that is not one of the five was kept")
+	require.Empty(t, f.recorded)
+}

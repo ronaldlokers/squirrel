@@ -144,6 +144,26 @@ Chosen on 20 August once Buddy shipped, and argued in
 
 ## Decided, not yet built
 
+### The conversation retires into the board
+
+Decided 3 September 2026, and it governs everything built after it rather than
+being one more item on a list.
+
+The conversation goes. What it does that the board does not yet — Buddy
+answering, the readings, whatever is left of triage — moves into the board, and
+the board becomes the whole of the app. **Chat, in the end, works only through
+Campfire.**
+
+**Campfire is always secondary to the app.** It is where a thought can be
+thrown from a phone that has the room open, and where Squirrel can say
+something without the app being in front of you. It is not where the product
+lives, and no capability may exist only there.
+
+What that means for anything built between now and then: a thing added to the
+conversation is a thing that will have to move, so it is added to the board
+unless there is a reason it cannot be. This release is the pattern — the
+check-in was asked in the conversation, and it is asked on the board now.
+
 ### Product
 
 | | Decision |
