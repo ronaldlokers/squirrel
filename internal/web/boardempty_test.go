@@ -256,3 +256,64 @@ func TestTheFaceOpensAPageOfItsOwn(t *testing.T) {
 	require.Contains(t, page, "How you felt before")
 	require.NotContains(t, page, `class="thread"`, "the settings are drawn inside a conversation")
 }
+
+func TestAStripCarriesWhatWasNoticedAboutIt(t *testing.T) {
+	f := aBoardStore()
+	f.noticed = []squirrel.Noticed{
+		{ID: 9, Kind: "note", RefID: 1, Words: "The code you need for this is in the other note."},
+	}
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=notes")
+
+	require.Contains(t, rack, "The code you need for this is in the other note.")
+	require.Contains(t, rack, `<input type="hidden" name="id" value="9">`,
+		"the line cannot be refused")
+	require.Contains(t, rack, "not useful")
+}
+
+func TestALineIsHungOnTheStripItNames(t *testing.T) {
+	f := aBoardStore()
+	f.noticed = []squirrel.Noticed{
+		{ID: 9, Kind: "note", RefID: 2, Words: "about the second one"},
+	}
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=notes")
+
+	// By the words of the strips themselves rather than by their ids: an id
+	// appears in half a dozen hidden fields per strip, which is what made the
+	// first version of this pass for the wrong reason.
+	first := strings.Index(rack, "boiler service code is 4471")
+	second := strings.Index(rack, "kaas")
+	line := strings.Index(rack, "about the second one")
+	require.Positive(t, first)
+	require.Greater(t, second, first, "this measured nothing: the strips are in the other order")
+	require.Greater(t, line, second, "the line was drawn on a strip it was not about")
+	require.Equal(t, -1, strings.Index(rack[:second], `class="seen"`),
+		"a line was drawn on the strip before the one it names")
+}
+
+func TestAStripWithNothingNoticedCarriesNoLine(t *testing.T) {
+	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(), "bay=notes")
+
+	require.NotContains(t, rack, "not useful",
+		"a strip nothing was noticed about still offers a way to refuse it")
+	require.NotContains(t, rack, `class="seen"`)
+}
+
+func TestARefusalIsRecordedAgainstTheLine(t *testing.T) {
+	f := aBoardStore()
+	res := mounted(t, f).call(t, "POST", "/board/notuseful",
+		strings.NewReader("id=9&bay=notes"))
+
+	require.Equal(t, 303, res.Code)
+	require.Equal(t, "/?bay=notes", res.Header().Get("Location"))
+	require.Equal(t, []int64{9}, f.unuseful, "nothing was refused")
+}
+
+func TestARackThatCannotReadWhatWasNoticedStillDraws(t *testing.T) {
+	f := aBoardStore()
+	f.noticeErr = errTest
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, "boiler service code is 4471",
+		"a read that failed took the rack with it")
+	require.NotContains(t, body, `class="seen"`)
+}

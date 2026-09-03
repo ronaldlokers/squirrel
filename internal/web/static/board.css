@@ -173,6 +173,21 @@ body {
   font-variation-settings: var(--casual), "wght" 500;
 }
 .strip .what { margin: 0; }
+.strip .seen {
+  margin: 7px 0 0; padding-left: 10px;
+  border-left: 3px solid var(--orange);
+  color: var(--ink-soft); font-size: 12.5px; line-height: 1.35;
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.strip .seen form { display: inline; margin-left: 7px; }
+.strip .seen .off {
+  padding: 0; background: none; border: 0; cursor: pointer;
+  color: rgba(88, 65, 61, .7); font: inherit;
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.strip .seen .off:hover { color: var(--outline); }
+.strip .seen .off:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
 .opener { display: none; }
 .strip .mark {
   display: flex; align-items: center; padding: 8px 10px 8px 6px; white-space: nowrap;

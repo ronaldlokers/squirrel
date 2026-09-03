@@ -923,6 +923,31 @@ already chose to put in front of you, cached against that thing — so the cost
 is one call per thing offered rather than one per render, and the budget is what
 says no.
 
+### Marginalia
+
+A line may also hang under an ordinary strip, in the margin of the rack rather
+than on the pulled strip. It is set small, in the muted ink, indented under the
+strip's own words — a pencil note against a line on a list, not a second voice
+in the room.
+
+**It is written on a cadence, never on a press.** Once a day the board is read
+as a whole and at most two lines come back. Nothing the person does asks for
+one, and nothing waits while one is written: a line is already there or it is
+not. This is the difference between a note in the margin and a chat.
+
+**A line earns its place by connecting two things.** The detail one thing needs
+is written in another; several of these are the same errand; this cannot start
+until that is done. A line that restates the strip it hangs under is worse than
+an empty margin, because it still has to be read.
+
+**Never a count, never about the person.** No numbers, no *again*, no *still* —
+those are the sentences that turn a board into a report card. The line is about
+the things, and it never instructs and never asks.
+
+**Refusing is the only control, and it is real.** *not useful* sits at the end
+of the line, quiet and lowercase. The words are kept, not deleted, and the next
+pass is shown them as something not to write again.
+
 ### Buddy, and the acorn
 
 **Opening the board never spends a model call.** The pulled strip carries the

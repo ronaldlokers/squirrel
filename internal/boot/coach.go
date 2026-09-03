@@ -308,6 +308,32 @@ func learner(c coach.Coach) squirrel.Learner {
 	return c.Learn
 }
 
+// noticer is the seam the board is read through, or nil. The two packages have
+// their own types for the same pair of facts, so this translates rather than
+// sharing one: internal/squirrel must not know internal/coach exists.
+func noticer(c coach.Coach) squirrel.Noticer {
+	if _, none := c.(coach.NoCoach); none {
+		return nil
+	}
+	return func(ctx context.Context, personID int64, things []squirrel.NoticeThing,
+		refused []string) ([]squirrel.NoticeNote, error) {
+
+		mine := make([]coach.Thing, 0, len(things))
+		for _, one := range things {
+			mine = append(mine, coach.Thing{Kind: one.Kind, RefID: one.RefID, Words: one.Words})
+		}
+		notes, err := c.Notice(ctx, personID, mine, refused)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]squirrel.NoticeNote, 0, len(notes))
+		for _, one := range notes {
+			out = append(out, squirrel.NoticeNote{Kind: one.Kind, RefID: one.RefID, Words: one.Words})
+		}
+		return out, nil
+	}
+}
+
 // splitter is the seam a note is separated through, or nil. The cheap half is a
 // rule and runs on every note the pile draws; the expensive half is a call and
 // runs only when something is pressed.

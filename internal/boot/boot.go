@@ -232,6 +232,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// The weekly read of the record. Nil with no key, and the scheduler
 	// checks the nil — see KnowingTick.
 	learnBack := learner(s.coach)
+	noticeBoard := noticer(s.coach)
 	spent := spentFor(s.coach, s.budget)
 	over := overFor(s.coach, s.budget)
 	// The three tiers the box judges with, as one value a test can inspect.
@@ -353,6 +354,7 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			makeSmaller: makeSmaller,
 			hold:        hold,
 			learnBack:   learnBack,
+			noticeBoard: noticeBoard,
 			over:        over,
 		})
 	}()
@@ -384,6 +386,7 @@ type draining struct {
 	makeSmaller squirrel.Breaker
 	hold        squirrel.Interrupter
 	learnBack   squirrel.Learner
+	noticeBoard squirrel.Noticer
 	over        func(context.Context, int64) bool
 }
 
@@ -471,6 +474,8 @@ func connectAndDrain(ctx context.Context, w draining) {
 				interrupt: w.hold,
 				// Once a week, and only with a key. See KnowingTick.
 				learn: w.learnBack,
+				// Once a day, and only with a key. See NoticeTick.
+				notice: w.noticeBoard,
 			}))
 
 			// A capture can carry a nudge back on the same message, and an
@@ -599,6 +604,8 @@ type schedulerWiring struct {
 	// would mean this function handling a case its only caller cannot produce.
 	conversationID string
 	interrupt      squirrel.Interrupter
+	// notice is the daily read of the board. Nil with no coach.
+	notice squirrel.Noticer
 	// learn is the weekly read of the record. Nil with no coach, which is the
 	// state the product was in for a month and works.
 	learn squirrel.Learner
@@ -620,6 +627,7 @@ func schedulerOptionsFor(w schedulerWiring) squirrel.SchedulerOptions {
 		OnError:        func(err error) { slog.Error("digest", "error", err) },
 		Interrupt:      w.interrupt,
 		Learn:          w.learn,
+		Notice:         w.notice,
 		Push:           pusher(w.config.Push, w.store),
 	}
 }

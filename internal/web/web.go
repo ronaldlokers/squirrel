@@ -262,6 +262,10 @@ type Store interface {
 	EverythingSaid(ctx context.Context, personID int64, limit int) ([]squirrel.Turn, bool, error)
 	EverythingBefore(ctx context.Context, personID, beforeID int64, limit int) ([]squirrel.Turn, bool, error)
 	WhatWasSaid(ctx context.Context, personID int64, limit int) ([]squirrel.Said, error)
+	// What it noticed about the things on the board, and the way to say a line
+	// was not worth having.
+	WhatWasNoticed(ctx context.Context, personID int64) ([]squirrel.Noticed, error)
+	NotUseful(ctx context.Context, personID, id int64, at time.Time) (bool, error)
 	// Who the screen is talking to: a name to show, and whether there is a
 	// picture to show beside it.
 	WhoIs(ctx context.Context, personID int64) (squirrel.Whom, error)

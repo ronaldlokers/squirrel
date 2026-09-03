@@ -293,3 +293,11 @@ func (store) WhatWasSaid(_ context.Context, _ int64, _ int) ([]squirrel.Said, er
 		{ID: 1, Title: "how are you doing?", Body: "tap to say", At: now().Add(-9 * time.Hour)},
 	}, nil
 }
+
+func (store) WhatWasNoticed(_ context.Context, _ int64) ([]squirrel.Noticed, error) {
+	return []squirrel.Noticed{
+		{ID: 1, Kind: "note", RefID: 1, Words: "The code you need for this is in the note about the boiler."},
+	}, nil
+}
+
+func (store) NotUseful(_ context.Context, _, _ int64, _ time.Time) (bool, error) { return true, nil }

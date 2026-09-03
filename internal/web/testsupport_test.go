@@ -159,6 +159,9 @@ type fakeStore struct {
 	choresErr error
 	said      []squirrel.Said
 	saidErr   error
+	noticed   []squirrel.Noticed
+	noticeErr error
+	unuseful  []int64
 	itemsErr  error
 
 	// What the chore handlers did.
@@ -1210,6 +1213,21 @@ func (f *fakeStore) heardIn(room string) []squirrel.Turn {
 		}
 	}
 	return out
+}
+
+func (f *fakeStore) WhatWasNoticed(_ context.Context, _ int64) ([]squirrel.Noticed, error) {
+	if f.noticeErr != nil {
+		return nil, f.noticeErr
+	}
+	return f.noticed, nil
+}
+
+func (f *fakeStore) NotUseful(_ context.Context, _, id int64, _ time.Time) (bool, error) {
+	if f.noticeErr != nil {
+		return false, f.noticeErr
+	}
+	f.unuseful = append(f.unuseful, id)
+	return true, nil
 }
 
 func (f *fakeStore) EverythingSaid(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
