@@ -117,7 +117,15 @@ Only ever choose something a tool returned in this conversation.
 Prefer something at a fixed time. Then something short. On a low-capacity
 day prefer something bodily or something under five minutes.
 The clause is lower case, one clause, no full stop, and it explains the
-choice rather than describing the thing.`
+choice rather than describing the thing.
+
+You may also be shown what else is on the board: things written down and
+not decided about. You cannot choose any of them. What they are for is
+the clause: if the detail this thing needs is written down in one of
+them, or it is the same errand as one of them, say so — that is
+something they cannot see by looking at the list. Only when it is true.
+
+Never count anything, and never say anything about the person.`
 
 // Decide asks the model what to do now.
 //
@@ -146,6 +154,9 @@ func (p *Provider) Decide(ctx context.Context, personID int64) (Decision, error)
 		if line := Context(clock); line != "" {
 			msgs = append(msgs, chatMessage{Role: "user", Content: line})
 		}
+	}
+	if line := whatElseIsThere(ctx, p.Facts, personID); line != "" {
+		msgs = append(msgs, chatMessage{Role: "user", Content: line})
 	}
 	msgs = append(msgs, chatMessage{Role: "user", Content: "What should I do now?"})
 
@@ -330,4 +341,28 @@ func asJSON(v any) string {
 		return "{}"
 	}
 	return string(raw)
+}
+
+// whatElseIsThere is the rest of the board, as text rather than as a tool.
+//
+// As text because a tool result is a thing the model was handed, and anything
+// it was handed is a thing choose() will accept. Notes go in where they cannot
+// come back: they are what a clause may point at, never what may be offered.
+//
+// A read that fails adds nothing. The clause is better without a connection
+// than the offer is without a clause.
+func whatElseIsThere(ctx context.Context, f Facts, personID int64) string {
+	written, err := f.Written(ctx, personID, writtenCap)
+	if err != nil || len(written) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("Also on the board, written down and not decided about. " +
+		"You cannot choose any of these:\n")
+	for _, one := range written {
+		if words := strings.TrimSpace(one.Text); words != "" {
+			b.WriteString("- " + words + "\n")
+		}
+	}
+	return b.String()
 }

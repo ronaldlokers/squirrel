@@ -923,6 +923,18 @@ already chose to put in front of you, cached against that thing — so the cost
 is one call per thing offered rather than one per render, and the budget is what
 says no.
 
+**The clause may point at the rest of the board.** The detail this thing needs
+is written down in a note; this is the same errand as another. That is the one
+thing a clause can say that a person cannot get by reading the list, and it is
+the same test marginalia is held to. Only when it is true, never a count, and
+never about the person.
+
+**What it may point at, it may not hand you.** The notes go in as text and
+carry no ids, so nothing on that list can come back as the thing to do. A note
+is a thought nobody has decided about, and offering one would be the product
+deciding for you — which is the line the read tools have refused to cross since
+they existed.
+
 ### Marginalia
 
 A line may also hang under an ordinary strip, in the margin of the rack rather

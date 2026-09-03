@@ -36,6 +36,11 @@ type fakeFacts struct {
 	// caps were applied here rather than hoped for in the prompt.
 	asked  []string
 	limits []int
+	// written is the rest of the board, which reaches the model as text.
+	// writtenErr is separate from err: a board that cannot be read must not
+	// stop the choosing.
+	written    []coach.Written
+	writtenErr error
 }
 
 func (f *fakeFacts) Clock(context.Context, int64) (coach.Now, error) {
@@ -47,6 +52,12 @@ func (f *fakeFacts) OpenWork(_ context.Context, _ int64, limit int) ([]coach.Wor
 	f.asked = append(f.asked, "open_work")
 	f.limits = append(f.limits, limit)
 	return f.work, f.err
+}
+
+func (f *fakeFacts) Written(_ context.Context, _ int64, limit int) ([]coach.Written, error) {
+	f.asked = append(f.asked, "written")
+	f.limits = append(f.limits, limit)
+	return f.written, f.writtenErr
 }
 
 func (f *fakeFacts) NextFixed(context.Context, int64) (coach.Fixed, bool, error) {
@@ -165,7 +176,8 @@ func TestDecideReadsThenChooses(t *testing.T) {
 	require.Equal(t, "ring the vet", d.Text)
 	require.Equal(t, "it takes two minutes and it is bothering you", d.Because)
 
-	require.Equal(t, []string{"now", "open_work"}, f.asked)
+	require.Equal(t, []string{"now", "written", "open_work"}, f.asked,
+		"the rest of the board is read on the way in, before any round trip")
 	// Two round trips, and the whole loop billed as one decision.
 	require.Len(t, api.sent, 2)
 	require.Len(t, log.recorded, 1)
@@ -253,7 +265,7 @@ func TestDecideCapsWhatAToolWillReturn(t *testing.T) {
 	)
 
 	_, _ = deciderFor(api, f, &fakeLog{}).Decide(context.Background(), 1)
-	require.Equal(t, []int{10, 10}, f.limits)
+	require.Equal(t, []int{10, 10, 10}, f.limits)
 }
 
 // A tool that cannot answer is a fact the model does not have. Telling it the

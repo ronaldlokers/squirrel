@@ -5,6 +5,7 @@ package boot
 import (
 	"context"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -277,4 +278,66 @@ func TestTypicallyReadsFinishedRunsOnly(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found)
 	require.Equal(t, 10, minutes)
+}
+
+// noteFor is a thought nobody has decided about, which is what Written reads
+// and what OpenWork refuses.
+func noteFor(t *testing.T, store *squirrel.Store, personID int64, text string) {
+	t.Helper()
+	_, err := store.InsertItem(context.Background(), squirrel.Item{
+		PersonID: &personID, RawText: text, ReceivedAt: time.Now(), Transport: "test",
+		ExternalID: squirrel.Ptr(text), Payload: []byte(`{}`),
+	})
+	require.NoError(t, err)
+}
+
+// The other half of OpenWork's refusal. The pile stays out of what may be
+// chosen and comes in here instead, where the clause can point at it.
+func TestWrittenIsThePileAndNothingElse(t *testing.T) {
+	ctx := context.Background()
+	store := factsStore(t)
+	p := factsOwner(t, store)
+
+	noteFor(t, store, p, "the number for the council is 0117 922 2100")
+	taskFor(t, store, p, "ring the council about the bins")
+	overdueChore(t, store, p, "put the bins out")
+
+	written, err := factsFor(t, store, time.Now()).Written(ctx, p, 10)
+	require.NoError(t, err)
+
+	said := []string{}
+	for _, one := range written {
+		said = append(said, one.Text)
+	}
+	require.Equal(t, []string{"the number for the council is 0117 922 2100"}, said,
+		"something that was already decided about came back as a note")
+}
+
+func TestWrittenIsCapped(t *testing.T) {
+	ctx := context.Background()
+	store := factsStore(t)
+	p := factsOwner(t, store)
+	for i := range 14 {
+		noteFor(t, store, p, "a thought number "+strconv.Itoa(i))
+	}
+
+	written, err := factsFor(t, store, time.Now()).Written(ctx, p, 10)
+	require.NoError(t, err)
+	require.Len(t, written, 10)
+}
+
+func TestWrittenIsOnlyEverYourOwn(t *testing.T) {
+	ctx := context.Background()
+	store := factsStore(t)
+	mine := factsOwner(t, store)
+	theirs, err := store.PersonForLogin(ctx, "sub-someone-else", "someone-else")
+	require.NoError(t, err)
+
+	noteFor(t, store, theirs, "their thought")
+	noteFor(t, store, mine, "my thought")
+
+	written, err := factsFor(t, store, time.Now()).Written(ctx, mine, 10)
+	require.NoError(t, err)
+	require.Len(t, written, 1, "somebody else's note reached the clause")
+	require.Equal(t, "my thought", written[0].Text)
 }
