@@ -85,17 +85,14 @@ func aFortnight() *fakeStore {
 // not flex.
 func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	srv := screen(t, aFortnight())
-	c := browserAt(t, srv, "/r/everything")
-	c.navigate(t, srv.URL+"/r/everything")
-	// The press lives on the settings page since 3 September 2026 and answers
-	// as a turn in his room. It is posted from here rather than pressed there
-	// because this is about the grid the answer draws, and the fragment path is
-	// what puts it on a screen this test can measure.
-	c.until(t, "the conversation", `!!document.querySelector("#thread")`)
-	c.eval(t, `const f = document.createElement("form");
-		f.method = "post"; f.action = "/me/moods";
-		f.innerHTML = '<input name="room" value="everything"><button type="submit"></button>';
-		document.querySelector("#thread").appendChild(f);
+	c := browserAt(t, srv, "/me")
+	// Pressed where it lives, which is the settings page since 3 September
+	// 2026, and read where it answers, which is his room. That is a full
+	// navigation, and it is only testable because the fake store reads back
+	// what it was told — it did not until this test asked it to.
+	c.navigate(t, srv.URL+"/me")
+	c.until(t, "the settings", `!!document.querySelector('form[action="/me/moods"]')`)
+	c.eval(t, `const f = document.querySelector('form[action="/me/moods"]');
 		f.requestSubmit(f.querySelector("button")); return 1`)
 	c.until(t, "the readings", `document.querySelectorAll(".weekrow").length === 6`)
 

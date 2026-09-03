@@ -1191,12 +1191,33 @@ func (f *fakeStore) WhatWasSaid(_ context.Context, _ int64, limit int) ([]squirr
 	return out, nil
 }
 
+// said is what this store would read back: the turns it was seeded with, then
+// the turns it was told, in the order they arrived.
+//
+// The two were separate lists until 3 September 2026, so a read never saw a
+// write and any test that reloaded a page could not see what the press before
+// it had said. One test passed only because it never reloaded, and the defect
+// it could have caught — a form that posts somewhere the reader cannot see —
+// is exactly the kind this fake exists to catch.
+//
+// Scoped by room where the real read is: an unscoped read that quietly returned
+// another room's turns would make a scoped one impossible to test.
+func (f *fakeStore) heardIn(room string) []squirrel.Turn {
+	out := append([]squirrel.Turn{}, f.turns...)
+	for _, t := range f.appended {
+		if room == "" || t.Room == room {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 func (f *fakeStore) EverythingSaid(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
 	}
 	f.roomRead = "everything said"
-	out := f.turns
+	out := f.heardIn("")
 	more := f.moreTurns || len(out) > limit
 	if len(out) > limit {
 		out = out[len(out)-limit:]
@@ -1210,7 +1231,7 @@ func (f *fakeStore) EverythingBefore(_ context.Context, _ int64, before int64, l
 	}
 	f.pagedBefore = before
 	out := []squirrel.Turn{}
-	for _, t := range f.turns {
+	for _, t := range f.heardIn("") {
 		if t.ID < before {
 			out = append(out, t)
 		}
@@ -1227,18 +1248,19 @@ func (f *fakeStore) RecentTurns(_ context.Context, _ int64, room string, limit i
 	if f.err != nil {
 		return nil, false, f.err
 	}
-	if len(f.turns) > limit {
-		return f.turns[len(f.turns)-limit:], true, nil
+	out := f.heardIn(room)
+	if len(out) > limit {
+		return out[len(out)-limit:], true, nil
 	}
-	return f.turns, f.moreTurns, nil
+	return out, f.moreTurns, nil
 }
 
-func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, _ string, before int64, limit int) ([]squirrel.Turn, bool, error) {
+func (f *fakeStore) TurnsBefore(_ context.Context, _ int64, room string, before int64, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
 	}
 	out := []squirrel.Turn{}
-	for _, t := range f.turns {
+	for _, t := range f.heardIn(room) {
 		if t.ID < before {
 			out = append(out, t)
 		}
@@ -1547,4 +1569,26 @@ func (f *fakeStore) PersonFace(_ context.Context, _ int64) ([]byte, string, bool
 		kind = "image/png"
 	}
 	return f.whoFace, kind, true, nil
+}
+
+// The fake is what every other test trusts, so the two things it promises about
+// turns are checked here rather than assumed: it reads back what it was told,
+// and a scoped read does not quietly hand over another room's.
+func TestTheFakeReadsBackWhatItWasTold(t *testing.T) {
+	f := &fakeStore{turns: []squirrel.Turn{{ID: 1, Room: "everything", Words: "seeded"}}}
+	ctx := context.Background()
+
+	_, err := f.AppendTurn(ctx, 1, "everything", squirrel.Turn{Words: "said here"})
+	require.NoError(t, err)
+	_, err = f.AppendTurn(ctx, 1, "somewhere-else", squirrel.Turn{Words: "said elsewhere"})
+	require.NoError(t, err)
+
+	all, _, err := f.EverythingSaid(ctx, 1, 50)
+	require.NoError(t, err)
+	require.Len(t, all, 3, "an unscoped read lost a turn it was told")
+
+	here, _, err := f.RecentTurns(ctx, 1, "everything", 50)
+	require.NoError(t, err)
+	require.Len(t, here, 2, "a scoped read handed over another room's turn")
+	require.Equal(t, "said here", here[1].Words)
 }
