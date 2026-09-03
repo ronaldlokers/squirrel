@@ -30,6 +30,7 @@ type boardView struct {
 	Pulled   *offerView
 	Timer    *timerView
 	Bays     []bayView
+	Faces    []faceView
 	Told     []toldView
 	Telling  bool
 	AnyTold  bool
@@ -139,6 +140,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Pulled:   offerFor(s, opts, r, false, r.URL.Query().Get("ask") == "1"),
 			Timer:    runningTimer(s, opts, r),
 			Tray:     trayStrips(r, s, opts, personID, at),
+			Faces:    facesIfItIsTime(r, s, personID, at),
 			Bays:     baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
 			Telling:  r.URL.Query().Get("told") == "1",
 			You:      youFor(r.Context(), s, personID),
@@ -987,4 +989,53 @@ func momentFromPickers(loc *time.Location, words, day, clock string) (squirrel.M
 		return squirrel.Moment{}, false
 	}
 	return squirrel.Moment{Label: words, Starts: starts, Guessed: true}, true
+}
+
+// facesIfItIsTime is the check-in on the board: the five faces at the tray's
+// right end, and nothing at all while the last answer still describes now.
+//
+// A reading rather than a question, which is why it is drawn at the edge and
+// never written into the record here — the record is the readings themselves.
+func facesIfItIsTime(r *http.Request, s Store, personID int64, at time.Time) []faceView {
+	c, found, err := s.LatestCheckin(r.Context(), personID)
+	if err != nil {
+		slog.Error("reading how you are", "error", err)
+		return nil
+	}
+	if found && c.JustAsked(at) {
+		return nil
+	}
+	return theFaces()
+}
+
+// boardMoodHandler keeps a reading and puts you back on the board.
+//
+// Nothing is said back. The conversation answers a check-in with a turn because
+// a conversation is a record of what was said; the board is a record of what
+// there is, and a reading is neither a strip nor something to answer.
+func boardMoodHandler(s Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		m, ok := squirrel.ParseMood(r.FormValue("mood"))
+		if !ok {
+			// Not one of the five, so nothing is kept: this arrives from a
+			// form, and a stranger's typing is read as no answer rather than
+			// as a wrong one.
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		if err := s.RecordCheckin(r.Context(), personID, m, "screen", now()); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+	}
 }

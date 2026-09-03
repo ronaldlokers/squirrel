@@ -337,6 +337,40 @@ a.stamp { text-decoration: none; }
 .tray .strip.out form { display: flex; padding-right: 6px; }
 .tray .stamp.small { min-height: 26px; padding: 5px 8px; font-size: 10.5px; }
 
+.checkin { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: 0 0 auto; }
+.checkin .ask {
+  margin-right: 3px; white-space: nowrap;
+  color: rgba(254, 214, 167, .8); font-size: 12.5px;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.checkin .face {
+  display: grid; justify-items: center; gap: 2px; padding: 3px 5px 4px;
+  background: none; border: var(--line) solid transparent; border-radius: var(--r);
+  color: rgba(254, 214, 167, .8); cursor: pointer;
+}
+.checkin .face img { width: 30px; height: 24px; object-fit: contain; display: block; }
+.checkin .face span {
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.checkin .face:hover { border-color: rgba(254, 214, 167, .45); color: var(--paper); }
+.checkin .face:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
+
+@media (max-width: 620px) {
+  /* Its own row above the day's departures, because the tray scrolls sideways
+     and a question sharing that row is a question you can push off the screen. */
+  .tray { flex-wrap: wrap; row-gap: 8px; }
+  .tray .sign, .tray .gone { order: 2; }
+  .checkin {
+    order: 1; flex: 1 0 100%; margin-left: 0;
+    justify-content: space-between; gap: 2px;
+  }
+  .checkin .ask { display: none; }
+  .checkin .face { padding: 2px 3px 3px; }
+  .checkin .face img { width: 36px; height: 29px; }
+  .checkin .face span { font-size: 9px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .strip.leaving { transition: none; transform: none; }
   .stamp { transition: none; }

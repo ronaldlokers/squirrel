@@ -938,8 +938,13 @@ history you can be behind on.
 
 ### The check-in
 
-The five faces, unchanged artwork, in 3px-radius tiles at the tray's right end.
-Asked once an hour, drawn at the edge, never written into the record. A `wiped`
+The five faces, unchanged artwork, in 3px-radius tiles at the tray's right end —
+and on a phone, on their own row above the day's departures, because the tray
+scrolls sideways and a question sharing that row is a question you can push off
+the screen. Asked once an hour, drawn at the edge, and nothing is said back:
+the conversation answers a check-in with a turn because it is a record of what
+was said, and the board is a record of what there is. A reading is neither a
+strip nor something to answer. A `wiped`
 or `frazzled` reading thins the board — see the risk noted in the strip-board
 comp; the thinning rule belongs to the picker, and until it is written this is
 the design's largest unfinished edge.
