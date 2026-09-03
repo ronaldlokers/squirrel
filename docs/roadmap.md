@@ -345,6 +345,46 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.63.0 — 3 September 2026
+
+**The rooms' furniture goes, and who you are is a page.**
+
+**The room sheet was still being drawn.** It was the phone's control for seven
+rooms, and it outlived the rooms by a day: on a phone it painted its label over
+the bar's chips. There is one room and the bar is the navigation, so it goes.
+
+**The rail goes with it.** What it held last was the way back, the way to look
+something up, and who you are — two chips and a page now. The body's grid is one
+column again rather than one column plus a rail that is not there, which is what
+was throwing the new page's layout out.
+
+**Who you are is its own page.** The picture, the name, notifications, what
+Squirrel knows, how you felt before, and the way out. It was a disclosure inside
+the rail, on the argument that settings is state rather than a conversation and
+this product had no third thing for it to be. It has one now — and a panel that
+lives inside a conversation is a panel you reach by first going somewhere you
+did not want to be.
+
+**The face in the bar fills its chip** rather than sitting on an orange square:
+`object-fit: cover` under `overflow: hidden`, so the orange is the fallback
+ground behind a monogram and not a ring around a photograph. The test that
+checks a face is round checks three places now — your own turns, the settings
+page, and the chip — where it checked two.
+
+**Six tests followed the panel to the page** rather than being deleted: the push
+setting's three, the two about who you are and the way out, and the one about
+nothing painting over the way out. That last was written for the open room sheet
+and holds the same thing without it — a control that is on the screen and cannot
+be pressed is the failure, whatever is over it.
+
+One had to change shape rather than target. The readings-alignment test asked
+for the grid from the settings panel, which is a full navigation now, and the
+fake store records appended turns separately from what it reads back — so a
+reload cannot see them and the old path only worked because it never reloaded.
+It drives the same request through the fragment path instead, and says so. The
+fake is worth fixing on its own account: a store that forgets what it was told
+can hide exactly this.
+
 ### v0.62.0 — 3 September 2026
 
 **One bar in both places, and the face opens the settings.**
