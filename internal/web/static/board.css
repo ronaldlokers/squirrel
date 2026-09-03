@@ -520,7 +520,7 @@ a.stamp { text-decoration: none; }
   .racks { padding-top: 12px; }
 }
 
-.pulled .why.buddy { align-items: center; }
+.pulled .why.noticed { align-items: center; }
 .pulled .why svg { width: 19px; height: 19px; flex: 0 0 auto; }
 .asking { display: flex; margin-top: 10px; }
 .asking .quiet {

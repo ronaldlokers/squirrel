@@ -86,7 +86,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/board/undo", posting(opts, boardUndoHandler(s, opts)))
 	m.Post("/board/new", posting(opts, boardNewHandler(s, opts)))
 	m.Post("/board/now", posting(opts, boardNowHandler(s, opts)))
-	m.Post("/board/buddy", posting(opts, boardBuddyHandler(s, opts)))
 	m.Post("/board/badly", posting(opts, boardBadlyHandler(s, opts)))
 	m.Post("/board/capture", posting(opts, boardCaptureHandler(s, opts)))
 	m.Post("/board/chore", posting(opts, boardChoreHandler(s, opts)))

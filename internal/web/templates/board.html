@@ -30,19 +30,17 @@
   <article class="pulled">
     <span class="holder"></span>
     <div class="body">
-      <p class="why{{if .Buddy}} buddy{{end}}"><b>pulled</b>{{if .Buddy}}<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6v2.2" stroke="#1c110b" stroke-width="1.5" stroke-linecap="round"/><path d="M4.7 8.5c0-2 3.3-3.6 7.3-3.6s7.3 1.6 7.3 3.6c0 .9-.8 1.5-1.8 1.5H6.5c-1 0-1.8-.6-1.8-1.5Z" fill="#e66d0d" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.9 11.4h10.2c0 4.6-2.3 8.5-5.1 8.5s-5.1-3.9-5.1-8.5Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/></svg>{{end}}{{.Because}}</p>
+      <p class="why{{if .Noticed}} noticed{{end}}"><b>pulled</b>{{if .Noticed}}<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6v2.2" stroke="#1c110b" stroke-width="1.5" stroke-linecap="round"/><path d="M4.7 8.5c0-2 3.3-3.6 7.3-3.6s7.3 1.6 7.3 3.6c0 .9-.8 1.5-1.8 1.5H6.5c-1 0-1.8-.6-1.8-1.5Z" fill="#e66d0d" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/><path d="M6.9 11.4h10.2c0 4.6-2.3 8.5-5.1 8.5s-5.1-3.9-5.1-8.5Z" fill="#fdecd4" stroke="#1c110b" stroke-width="1.5" stroke-linejoin="round"/></svg>{{end}}{{.Because}}</p>
       <p class="said">{{.Text}}</p>
       {{if $.Unstuck}}
       <p class="pencil"><span>{{$.Unstuck}}</span></p>
       {{end}}
 
+      {{if .Noticed}}
       <span class="asking">
-        {{if .Buddy}}
         <form method="post" action="/board/badly"><button class="quiet">that did not land</button></form>
-        {{else}}
-        <form method="post" action="/board/buddy"><button class="quiet">ask Buddy about this</button></form>
-        {{end}}
       </span>
+      {{end}}
       <form class="stamps" method="post" action="/board/now">
         <input type="hidden" name="kind" value="{{.Kind}}">
         <input type="hidden" name="id" value="{{.RefID}}">
