@@ -365,6 +365,42 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.64.0 — 3 September 2026
+
+**The check-in is on the board.**
+
+The five faces at the tray's right end, which DESIGN.md has specified since the
+board was drawn and which was never built. On a phone they take their own row
+above the day's departures: the tray scrolls sideways, and a question sharing
+that row is a question you can push off the screen. Asked once an hour, the same
+rule the conversation used, from the same five.
+
+**Nothing is said back.** The conversation answers a check-in with a turn
+because it is a record of what was said; the board is a record of what there is,
+and a reading is neither a strip nor something to answer.
+
+**This is the first of the moves the direction above calls for** — the
+conversation retiring into the board — and it is the pattern for the rest: the
+question was asked in one place and is asked in the other, without the answer
+becoming something the board has to draw.
+
+**A test of mine passed against broken code, and the fix is worth keeping.**
+Checking that a word which is not one of the five keeps nothing, by asserting
+the recorded mood was empty, could not tell "nothing was written" from "the zero
+mood was written" — the store keeps whatever it is handed. It asserts the write
+never happened at all now, and only then did the mutation bite.
+
+Two tests changed because the tray grew a row rather than because a promise
+moved. Both measure against the thing they are about now — the rack against the
+racks area it fills, the pill against the foot — instead of past whatever
+happens to sit between, and their fixture answers the check-in so the faces are
+not drawn.
+
+Also in this release: the fake store reads back what it was told. It kept
+appends in one list and read from another, so a write was never visible to a
+read and any test that reloaded could not see the press before it. One test
+passed only because it never reloaded; it presses the real control now.
+
 ### v0.63.0 — 3 September 2026
 
 **The rooms' furniture goes, and who you are is a page.**
