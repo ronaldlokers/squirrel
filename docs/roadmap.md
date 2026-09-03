@@ -365,6 +365,51 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.65.0 — 3 September 2026
+
+**It notices rather than answering.**
+
+The pulled strip's line appears because something was worth saying about the
+thing you were handed, not because you pressed for it. The press is gone, and so
+is the route behind it: a line you have to think of asking for is a line this
+product has failed to give you, and thinking-of is the thing it exists to
+remove.
+
+**The mark stays and stops being a person.** It says where the sentence came
+from — a model wrote it, or the picker's rules did — and not who said it,
+because nobody said it. There is no name on it and no verb of speech. The
+squirrel is the product's mark rather than somebody's face.
+
+**The refusal was already real**, which was the condition for any of this. *That
+did not land* is written into the record the next prompt reads, so a line you
+refused shapes the ones that follow. Unbidden text without that is something
+that happens to you rather than something you are in a relationship with.
+
+**What it costs, and it is a rule being traded rather than kept.** A surface
+that has to cost nothing to open may not spend a call — written for a screen you
+might open twenty times an hour. Opening the board now spends one on the first
+render of a newly picked thing. The cache keys on what was picked, so it is one
+call per thing offered rather than one per render, and the budget is what says
+no. If that turns out to be the wrong trade, the fix is a cadence — notice once
+a day rather than once per pick — and it is a small change.
+
+**Where this is going**, decided from three mocks: the reason line is register
+C, and marginalia on ordinary strips is register A, which is next and needs
+somewhere to store a line against an item plus a policy for what is worth saying
+at all. A third register — an observation as its own strip in the rack — was
+refused: a board with a feed on it is a board you scroll rather than work.
+
+Buddy's name survives in the chat chip and his room, because the conversation is
+still there. It goes when the room does.
+
+**Two mutations of mine did not bite until they were fixed**, and both are
+shapes this project has hit before. One silently did not apply, because gofmt
+had moved the line it matched on. One did not compile, because it left a
+variable unused. Neither showed as anything but a pass, which is the whole
+danger: a mutation that does not run is indistinguishable from a mutation the
+test caught. Each one now asserts that it changed the file before the test is
+believed.
+
 ### v0.64.0 — 3 September 2026
 
 **The check-in is on the board.**
