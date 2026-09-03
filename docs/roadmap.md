@@ -365,6 +365,60 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.66.0 — 3 September 2026
+
+**Marginalia: the board says one thing about itself, in the margin.**
+
+Register A, the one the mocks chose. A line now hangs under an ordinary strip —
+small, muted, set in behind an orange rule — in the margin of the rack rather
+than in a conversation. There is no name on it, no face, and no press that asked
+for it.
+
+**It is written on a cadence, never on a press.** Once a day the whole board is
+read and at most two lines come back. This is the trade v0.65.0 said would be
+made if the per-pick call turned out wrong, made here from the start: nothing
+the person does spends a call, nothing waits while a line is written, and a line
+is either already there or it is not. It is the difference between a note in the
+margin and a chat.
+
+**A line earns its place by connecting two things.** The detail one note needs
+is written in another; several of these are one errand; this cannot start until
+that is done. A line that restates the strip it hangs under is worse than an
+empty margin, because it still has to be read. The preamble refuses the rest
+absolutely — never a count, never anything about the person, never an
+instruction or a question — and it says twice that nothing is better than
+something.
+
+**Refusing is the only control, and it is real.** *not useful* keeps the words
+and marks them refused rather than deleting the row, and the next pass is shown
+them as something not to write again. A refusal that only cleared the screen
+would leave the same line to be written tomorrow.
+
+**Three places refuse, not one.** The preamble, the tool's shape, and what the
+caller will accept back: a note about an id that was not on the board is dropped
+rather than hung on whatever row happens to carry that number, and a note takes
+the kind of the thing it names rather than one the model chose. A board with
+fewer than two things on it is not read at all — the whole value is what one row
+says about another. A pass that could not run writes nothing, so the clock does
+not move and the next tick tries again.
+
+**A rack whose marginalia cannot be read draws anyway.** That is the rack this
+product had for its whole life, and nothing is said about the failure because
+nothing was promised.
+
+**The browser found a defect the string tests could not.** The line was a `<p>`
+with the refusal form inside it, and the parser closes a paragraph when a form
+opens — so the button rendered outside the line it belonged to. Every assertion
+about the rendered string still passed, because the string contained everything
+it was asked about. It is a `div` now, and reverting that kills the test.
+
+Twenty-five mutations, each asserted to have changed the file and to compile
+before its test was believed. Three of them were build errors dressed as passes
+and one was a genuine false pass: the mutation removed a `return nil` that was
+redundant with the nil map behind it, so the code did the same thing. The
+mutation had to be the defect itself — the failed read taking the rack with it —
+before the test proved anything.
+
 ### v0.65.0 — 3 September 2026
 
 **It notices rather than answering.**
