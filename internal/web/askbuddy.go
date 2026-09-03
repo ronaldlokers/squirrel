@@ -87,11 +87,11 @@ func coachReplyCosting(words, cost string, askWhich, fromModel bool, p *Proposal
 	}
 	if fromModel {
 		sh.Chips = append(sh.Chips, turnChip{Label: "that went badly", Action: "/buddy/badly"})
-		// And the way to see what is behind the answer. Only on a reply a
-		// model wrote: what Squirrel knows about you shapes those and nothing
-		// else, so beside a fixed sentence from the core it would be pointing
-		// at something that had no part in it.
-		sh.Chips = append(sh.Chips, knowingChip())
+		// And the way to see what is behind the answer, which is a link now
+		// rather than a press: what Squirrel knows about you is drawn on the
+		// page about you, and a chip that answered here would be a second
+		// place the same thing is kept.
+		sh.Chips = append(sh.Chips, turnChip{Label: "what do you know about me", Href: "/me"})
 	}
 	body, err := json.Marshal(sh)
 	if err != nil {

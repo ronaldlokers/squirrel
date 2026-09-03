@@ -93,6 +93,10 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/board/notuseful", posting(opts, boardNotUsefulHandler(s)))
 	m.Get("/me", guard(opts, meHandler(s, opts)))
 	m.Get("/me/face", guard(opts, faceHandler(s)))
+	// Throwing away what is known, from the page that shows it. A setting
+	// rather than something said, so it answers no turn and belongs in no
+	// room.
+	m.Post("/me/forget", guard(opts, sameOrigin(meForgetHandler(s))))
 	if opts.Photos != nil {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
 		// The card asks for this one. See thumbHandler.
@@ -155,11 +159,6 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Looking something up. A chip rather than a field in the lid — see
 	// findAskHandler.
 	m.Post("/find/ask", posting(opts, findAskHandler(s, opts)))
-	// What Squirrel thinks it knows about you, and the way to throw it away.
-	// A POST for both: reading it is something you asked, and it goes into the
-	// record like anything else you say. See knowing.go.
-	m.Post("/knowing", posting(opts, knowingHandler(s, opts)))
-	m.Post("/knowing/forget", posting(opts, forgetKnowingHandler(s, opts)))
 	// A new one, at every door. Each asks for words; the routes underneath are
 	// the ones the screens posted to. See newone.go.
 	m.Post("/chores/ask", posting(opts, askNameHandler(s, opts,
@@ -222,16 +221,15 @@ func Mount(m Mux, s Store, opts Options) error {
 	// Setting something aside and picking it back up. What you set aside is a
 	// message now — see elsewhere.go.
 	m.Post("/held/act", posting(opts, heldActHandler(s, opts)))
-	// How you have been, asked for by name from the settings panel or from the
-	// chip beside the answer you just gave. A press rather than a page since
-	// 31 August 2026: it was the last screen in this product that was not a
-	// conversation, and asking for it took you out of the room you were in.
-	m.Post("/me/moods", posting(opts, moodsHandler(s, opts)))
-	// The page it was. A bookmark that dies quietly is worse than a redirect
-	// nobody notices.
-	m.Get("/moods", guard(opts, func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/r/everything", http.StatusMovedPermanently)
-	}))
+	// The two readings were a press that answered in the conversation, and
+	// before that a page. They are drawn on /me now, which is the page about
+	// you, so the presses are gone and the addresses they had point at it.
+	// A bookmark that dies quietly is worse than a redirect nobody notices.
+	for _, gone := range []string{"/moods", "/knowing"} {
+		m.Get(gone, guard(opts, func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/me", http.StatusMovedPermanently)
+		}))
+	}
 	m.Post("/tasks/act", posting(opts, taskActHandler(s, opts)))
 	m.Post("/tasks/new", posting(opts, newTaskHandler(s, opts)))
 	m.Post("/chores/act", posting(opts, choreActHandler(s, opts)))

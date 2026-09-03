@@ -516,7 +516,7 @@ func threadMoodHandler(s Store, opts Options) http.HandlerFunc {
 		// scrollback and scrollback carries no controls.
 		again, err := json.Marshal(drawn{Chips: []turnChip{
 			{Label: "say something else", Href: "/?ask=1"},
-			{Label: howYouFeltBefore, Action: "/me/moods"},
+			{Label: howYouFeltBefore, Href: "/me"},
 		}})
 		if err != nil {
 			slog.Error("drawing the way back", "error", err)
@@ -1845,9 +1845,66 @@ func edgeOnly(w http.ResponseWriter, r *http.Request, edge []turnView) {
 // board nor a conversation.
 func meHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Here is his room rather than this page: what these two presses ask
-		// for is answered as a turn, and a turn has to land somewhere a person
-		// can read it. The same field is what a stopped timer returns to.
-		renderWith(w, r, s, opts, "me", view{Here: "everything"})
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		v := view{Here: "you"}
+		v.Weeks, v.MoodsSays = howYouHaveBeen(r, s, personID)
+		v.Known, v.KnownSays = whatIsKnown(r, s, personID)
+		renderWith(w, r, s, opts, "me", v)
+	}
+}
+
+// howYouHaveBeen is the grid, or the sentence that stands where it would be.
+//
+// Read on the way in rather than asked for: this page is the place a person
+// goes to look at themselves, and a reading you have to press for on the page
+// about you is a reading behind a door inside a room you already opened.
+func howYouHaveBeen(r *http.Request, s Store, personID int64) ([]moodWeekView, string) {
+	readings, err := s.CheckinsSince(r.Context(), personID, squirrel.MoodCalendarStart(now()))
+	if err != nil {
+		slog.Error("reading how you have been", "error", err)
+		return nil, "I cannot reach those just now."
+	}
+	weeks := moodWeeks(readings, now())
+	if len(weeks) == 0 {
+		return nil, "You have not said how you are lately."
+	}
+	return weeks, ""
+}
+
+// whatIsKnown is what a model wrote down about how you work, in its words.
+func whatIsKnown(r *http.Request, s Store, personID int64) ([]string, string) {
+	known, err := s.Knowing(r.Context(), personID)
+	if err != nil {
+		slog.Error("reading what is known", "error", err)
+		return nil, "I cannot reach that just now."
+	}
+	if len(known) == 0 {
+		return nil, "Nothing yet. I read back what we have said about once a week, " +
+			"and write down what it seems to show."
+	}
+	return known, "This is what our conversations seem to show. I could be wrong about any of it."
+}
+
+// meForgetHandler throws away what is known, from the page that shows it.
+//
+// One press, no confirmation, and back to the same page — where the empty
+// state now says what it costs. A setting rather than something said, so it
+// answers no turn and belongs in no room.
+func meForgetHandler(s Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := s.ForgetKnowing(r.Context(), personID); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/me", http.StatusSeeOther)
 	}
 }

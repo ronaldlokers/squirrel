@@ -1,64 +1,22 @@
 package web
 
 import (
-	"encoding/json"
-	"log/slog"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// How you have been, on the screen, and only when asked for by name.
+// How you have been, on the screen.
 //
 // This table was unreadable by construction until 20 August 2026 — the store
-// returned one reading and no function could return more, which is stronger than
-// a rule somebody has to remember. What replaced it is narrower: one page and one
-// command, both asked for by name, and nothing reads the readings on its own.
+// returned one reading and no function could return more, which is stronger
+// than a rule somebody has to remember. What replaced it is narrower: it is
+// drawn in one place, on the page about you, and nothing else reads the
+// readings at all.
 
-func moodsHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := personOf(r)
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		ctx := r.Context()
-		readings, err := s.CheckinsSince(ctx, personID, squirrel.MoodCalendarStart(now()))
-		if err != nil {
-			// A grid that cannot be read is a sentence saying so, in the
-			// conversation you asked from. Everything else on this screen
-			// answers a failure that way, and a page of nothing was the only
-			// reason this one did not.
-			slog.Error("reading how you have been", "error", err)
-			answerWith(w, r, keepSaid(ctx, s, personID, []squirrel.Turn{
-				{Who: squirrel.SpeakerYou, Words: howYouFeltBefore},
-				{Who: squirrel.SpeakerBuddy, Words: "I cannot reach those just now."},
-			}), backToTheRoom(r))
-			return
-		}
-
-		weeks := moodWeeks(readings, now())
-		said := squirrel.Turn{Who: squirrel.SpeakerBuddy, Words: "The last six weeks."}
-		if len(weeks) == 0 {
-			said.Words = "You have not said how you are lately."
-		} else if body, err := json.Marshal(drawn{Weeks: weeks}); err != nil {
-			slog.Error("drawing how you have been", "error", err)
-		} else {
-			said.Shown = body
-		}
-
-		answerWith(w, r, keepSaid(ctx, s, personID, []squirrel.Turn{
-			{Who: squirrel.SpeakerYou, Words: howYouFeltBefore},
-			said,
-		}), backToTheRoom(r))
-	}
-}
-
-// howYouFeltBefore is what the chip says and what the record says you said. One
-// string, because a chip whose label and whose echo differ is two things as far
-// as anybody reading the conversation back is concerned.
+// howYouFeltBefore is what the way back to the readings is called, beside the
+// answer you just gave.
 const howYouFeltBefore = "how you felt before"
 
 // moodWeeks lays the readings out as six weeks by seven days.

@@ -397,7 +397,7 @@ func TestTheFragmentCarriesTheLiveEdge(t *testing.T) {
 	f := &fakeStore{offer: &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"}}
 	body := routed(t, f).callFragment(t, "/mood", "mood=good").Body.String()
 
-	require.Contains(t, body, `action="/me/moods"`, "the newest turn keeps its chips")
+	require.Contains(t, body, `href="/me"`, "the newest turn keeps its chips")
 }
 
 // A door drew its list as a turn, said nothing for you, and carried a heading;
