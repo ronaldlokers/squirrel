@@ -547,43 +547,31 @@ func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
 		"the mood row is indented past the gutter by %v pixels", inset)
 }
 
-// Nothing paints over the open where sheet.
+// Nothing is painted over the way out.
 //
-// The sheet is an overlay and the way out is its last row, so the question is
-// whether anything is on top of it — which is how this failed before: the
-// sheet lived inside the lid, its z-index was scoped to the lid's stacking
-// context, and the dock painted straight over it. On a landscape phone that
-// covered the last three rooms, search and the way out, which is the failure
-// the sheet exists to fix.
-//
-// Asserted by hit-testing rather than by comparing z-indexes. The dock is in
-// flow now and carries no z-index at all, so the numbers no longer answer the
-// question; what the person can actually press does.
-func TestBrowserNothingPaintsOverTheOpenRoomSheet(t *testing.T) {
+// The room sheet it was written for went with the rooms on 3 September 2026,
+// and the way out went with it onto a page of its own. The failure is the same
+// one either way: a control that is on the screen and cannot be pressed,
+// because something else is over it. Asserted by hit-testing rather than by
+// comparing z-indexes — the dock is in flow and carries no z-index at all, so
+// the numbers do not answer the question and what can be pressed does.
+func TestBrowserNothingPaintsOverTheWayOut(t *testing.T) {
 	c, srv := open(t, &fakeStore{})
-	c.navigate(t, srv.URL+"/r/everything")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 844, "height": 390, "deviceScaleFactor": 0, "mobile": true,
 	})
-	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 200))`)
+	c.navigate(t, srv.URL+"/me")
+	c.until(t, "the way out", `!!document.querySelector(".signout")`)
 
-	// The last thing in the rail, which is the one most likely to be under
-	// something. It was the stopping link until 31 August 2026, when that
-	// screen went, and then the way out — which is inside the settings panel
-	// now, so the panel is opened first: a control nobody has opened to is not
-	// the thing this is about.
-	c.eval(t, `const d = document.querySelector(".youare"); if (d) d.open = true; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(() => r(1), 120))`)
 	hit := c.eval(t, `
-		const out = document.querySelector(".rail .signout");
+		const out = document.querySelector(".signout");
 		out.scrollIntoView({block: "center"});
 		const b = out.getBoundingClientRect();
 		const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
 		return top === out || out.contains(top) ? "the way out" : (top ? top.className || top.tagName : "nothing");`)
 
 	require.Equal(t, "the way out", hit,
-		"something is painted over the way out in the open where sheet")
+		"something is painted over the way out on the settings page")
 }
 
 func layer(t *testing.T, v any) int {
@@ -697,21 +685,10 @@ func TestBrowserTheTranscriptClearsTheLidAndNoMore(t *testing.T) {
 	}
 }
 
-func TestBrowserTheRailClearsTheLidToo(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 1280, "height": 900, "deviceScaleFactor": 0, "mobile": false,
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	require.Equal(t, float64(10), c.eval(t, `
-		const lid = document.querySelector(".lid").getBoundingClientRect();
-		const rail = document.querySelector(".rail");
-		const pad = parseFloat(getComputedStyle(rail).paddingTop);
-		return Math.round(rail.getBoundingClientRect().top + pad - lid.bottom)`),
-		"the first where does not clear the lid by 10")
-}
+// The rail cleared the lid on a desktop until 3 September 2026. It went with
+// the rooms, and what it held is the settings page — which clears the bar the
+// same way every screen does, proved by TestBrowserTheTranscriptClearsTheLidAndNoMore
+// and by the page's own test that nothing paints over the way out.
 
 func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 	srv := screen(t, aScrollingThread())
@@ -731,11 +708,6 @@ func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 		return Math.round(document.querySelector(".lid .chip").getBoundingClientRect().top)`).(float64),
 		float64(59), "a chip in his room sits under the status bar")
 
-	require.Equal(t, true, c.eval(t, `
-		const lid = document.querySelector(".lid").getBoundingClientRect();
-		return document.querySelector(".roomsheet > summary").getBoundingClientRect().bottom <= lid.bottom`),
-		"the where control hangs below the rule")
-
 	require.Equal(t, float64(8), c.eval(t, `
 		const lid = document.querySelector(".lid").getBoundingClientRect();
 		const s = document.querySelector(".scroll");
@@ -743,16 +715,6 @@ func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
 		return Math.round(s.getBoundingClientRect().top + pad - lid.bottom)`),
 		"the transcript does not clear the taller lid by 8")
 
-	require.Equal(t, true, c.eval(t, `
-		return document.querySelector(".roomsheet > summary").getBoundingClientRect().top >= 59`),
-		"the where control sits inside the top inset")
-
-	c.eval(t, `document.querySelector(".roomsheet").open = true; return 1`)
-	require.Equal(t, float64(0), c.eval(t, `
-		const lid = document.querySelector(".lid").getBoundingClientRect();
-		const rail = document.querySelector(".rail").getBoundingClientRect();
-		return Math.round(rail.top - lid.bottom)`),
-		"the open sheet does not start at the foot of the lid")
 }
 
 func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {

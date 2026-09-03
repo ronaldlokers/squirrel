@@ -607,10 +607,17 @@ inheriting a control minimum: the two stylesheets set that token differently, so
 a shared component that read it would be drawn at two weights. It is the same
 40px circle with the same 2px edge in both places.
 
-**Your face opens what can be changed**, not Buddy — the panel with
-notifications, what he knows, how you felt before, and the way out. The rail
-keeps that panel and nothing else, because the bar took the way back and the
-way to look something up.
+**Your face opens a page of its own** — *who you are*: the picture, the name,
+notifications, what he knows, how you felt before, and the way out. It was a
+disclosure inside the rail, on the argument that settings is state rather than a
+conversation and the product had no third thing for it to be. It has one now,
+and a panel that lives inside a conversation is a panel you reach by first going
+somewhere you did not want to be.
+
+**The rail and the room sheet are gone.** The sheet was the phone's control for
+seven rooms; there is one room, and the bar is the navigation. What the rail
+held last — the way back, the way to look something up, and who you are — is two
+chips and a page. The body's grid is one column again.
 
 **The pulled strip gives way.** Below 620px the board under the ops bar is one
 scrolling deck — the pulled strip, then the rack — so what you are looking at

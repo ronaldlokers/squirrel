@@ -88,13 +88,12 @@ var appearanceScreens = map[string][]string{
 		// are — a recessed well against a solid one.
 		// One link where five rooms were, and the two controls that always sat
 		// below the rule.
-		".rail",
 		// The control that names the room you are in is deliberately NOT here.
 		// This snapshot visits one viewport and it is a desktop one, where the
 		// control is inside a display:none parent — getComputedStyle still
 		// returns its own styles, so it would record a full set of values for
 		// something nobody can see and pass whatever happened to the phone.
-		// Its markup is held by TestTheRoomsNeedNoScript; its appearance on a
+		// Its markup is held by TestNothingNeedsAScriptToBeReached; its appearance on a
 		// phone is held by nothing, and saying so is better than a line that
 		// looks like cover.
 		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",

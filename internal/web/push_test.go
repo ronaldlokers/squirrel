@@ -56,14 +56,19 @@ func TestASubscriptionThatCouldNeverBeSentToIsRefused(t *testing.T) {
 
 // The key reaches the page, because the script needs it to subscribe at all —
 // and nothing is offered when there is none.
+// The setting moved to its own page on 3 September 2026, and the key follows
+// it: the key is on every screen because the script that uses it is, and the
+// control is where the setting lives.
 func TestTheKeyIsOnThePageOnlyWhenThereIsOne(t *testing.T) {
 	with := withPush(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 	require.Contains(t, with, `data-push-key="BKtestkey"`)
-	require.Contains(t, with, `id="pushbit"`, "no key on the page means no setting to use it")
+	require.Contains(t, withPush(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String(),
+		`id="pushbit"`, "no key on the page means no setting to use it")
 
 	without := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
 	require.NotContains(t, without, "data-push-key")
-	require.NotContains(t, without, `id="pushbit"`)
+	require.NotContains(t, mounted(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String(),
+		`id="pushbit"`)
 }
 
 func postJSON(t *testing.T, m *testMux, path, body string) *httptest.ResponseRecorder {

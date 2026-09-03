@@ -68,12 +68,20 @@ func TestBrowserYourFaceIsRoundEverywhere(t *testing.T) {
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false,
 	})
-	c.navigate(t, srv.URL+"/r/everything")
-	c.until(t, "both faces", `document.querySelectorAll(".youface img").length === 2`)
-
-	require.Equal(t, true, c.eval(t, `
-		return [...document.querySelectorAll(".youface img")].every(i => {
+	// Three places now: your own turns, the settings page, and the chip in the
+	// bar that opens it. The rail's copy went with the rail.
+	round := `return [...document.querySelectorAll(".youface img, .chip.face img")].every(i => {
 			const r = getComputedStyle(i).borderRadius;
-			return r === "999px" || parseFloat(r) >= i.getBoundingClientRect().width / 2;
-		})`), "a picture of you is square somewhere")
+			const own = r === "999px" || parseFloat(r) >= i.getBoundingClientRect().width / 2;
+			const p = getComputedStyle(i.parentElement).borderRadius;
+			return own || p === "999px" || parseFloat(p) >= i.getBoundingClientRect().width / 2;
+		})`
+
+	c.navigate(t, srv.URL+"/r/everything")
+	c.until(t, "the faces", `document.querySelectorAll(".youface img, .chip.face img").length === 2`)
+	require.Equal(t, true, c.eval(t, round), "a picture of you is square in his room")
+
+	c.navigate(t, srv.URL+"/me")
+	c.until(t, "the faces", `document.querySelectorAll(".youface img, .chip.face img").length === 2`)
+	require.Equal(t, true, c.eval(t, round), "a picture of you is square on the settings page")
 }

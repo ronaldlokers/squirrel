@@ -17,7 +17,7 @@ import (
 // you could see or come back to.
 func TestSettingsHoldsWhatCanBeChangedAboutYou(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers"}
-	body := withPush(t, f).call(t, "GET", "/r/everything", nil).Body.String()
+	body := withPush(t, f).call(t, "GET", "/me", nil).Body.String()
 
 	require.Contains(t, body, `class="youare"`, "there is no settings panel")
 	require.Contains(t, body, "Ronald Lokers", "the panel does not say who you are")
@@ -26,13 +26,20 @@ func TestSettingsHoldsWhatCanBeChangedAboutYou(t *testing.T) {
 	require.Contains(t, body, `action="/auth/out"`)
 }
 
-// It is a disclosure and not a page: settings is state rather than a
-// conversation, and this product has no third thing for it to be.
-func TestSettingsOpensWhereItLives(t *testing.T) {
-	body := withPush(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
+// It is a page of its own since 3 September 2026. It was a disclosure inside
+// the rail, on the argument that settings is state rather than a conversation
+// and the product had no third thing for it to be. It has one now: the rail
+// went with the rooms, and a panel that lives inside a conversation is a panel
+// you reach by first going somewhere you did not want to be.
+func TestSettingsIsAPlaceOfItsOwn(t *testing.T) {
+	m := withPush(t, &fakeStore{})
 
-	require.Contains(t, body, "<details class=\"youare\">")
-	require.NotContains(t, body, `href="/settings"`, "settings became somewhere to go")
+	page := m.call(t, "GET", "/me", nil).Body.String()
+	require.Contains(t, page, `class="youare"`)
+	require.NotContains(t, page, `class="thread"`, "the settings are drawn inside a conversation")
+
+	require.NotContains(t, m.call(t, "GET", "/r/everything", nil).Body.String(), `class="youare"`,
+		"the panel is still in the conversation as well")
 }
 
 // The panel says which way notifications are set, from the record. Only the
@@ -40,18 +47,18 @@ func TestSettingsOpensWhereItLives(t *testing.T) {
 // but "would anything be sent at all" is the server's to answer.
 func TestTheRecordSaysWhetherNotificationsAreOn(t *testing.T) {
 	on := &fakeStore{notifying: true}
-	require.Contains(t, withPush(t, on).call(t, "GET", "/r/everything", nil).Body.String(),
+	require.Contains(t, withPush(t, on).call(t, "GET", "/me", nil).Body.String(),
 		`data-state="on"`)
 
 	off := &fakeStore{}
-	require.Contains(t, withPush(t, off).call(t, "GET", "/r/everything", nil).Body.String(),
+	require.Contains(t, withPush(t, off).call(t, "GET", "/me", nil).Body.String(),
 		`data-state="off"`)
 }
 
 // A state that cannot be read is not a state to guess at.
 func TestAnUnreadableNotificationStateSaysSo(t *testing.T) {
 	f := &fakeStore{notifyErr: errTest}
-	body := withPush(t, f).call(t, "GET", "/r/everything", nil).Body.String()
+	body := withPush(t, f).call(t, "GET", "/me", nil).Body.String()
 
 	require.Contains(t, body, `data-state="unknown"`)
 	require.Contains(t, body, "I cannot tell just now")

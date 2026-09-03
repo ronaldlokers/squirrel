@@ -59,22 +59,23 @@ func TestTheRailOffersNoScreenThatIsOnlyASentence(t *testing.T) {
 	require.NotContains(t, body, `class="leaving"`)
 }
 
-// The rooms need no script.
+// Nothing here needs a script to be reached.
 //
-// A <details> on a phone and furniture on a desktop, from one markup — and a
-// <details> opens with the script off, which is the grammar every other
-// disclosure here already uses. What must never come back is a room that needs
-// JavaScript to be reachable.
-func TestTheRoomsNeedNoScript(t *testing.T) {
+// The room sheet went with the rooms on 3 September 2026: there is one room and
+// the bar is the navigation. What must never come back is a place that needs
+// JavaScript to be reachable — so the way back, the way to look something up
+// and the way to what can be changed are plain links, and the panel behind the
+// face is opened by a URL rather than by a handler.
+func TestNothingNeedsAScriptToBeReached(t *testing.T) {
 	body := thread(t, &fakeStore{})
 
-	require.Contains(t, body, `<details class="roomsheet">`)
-	require.Contains(t, body, `<nav class="rail"`, "his room lost the way back to the board")
-	// One room now, so what has to be a plain link is the way back to the board
-	// and the ways into it. The four that left are the board's bay tabs, which
-	// are plain links there for the same reason.
+	require.NotContains(t, body, "roomsheet", "the rooms' sheet outlived the rooms")
 	require.Contains(t, body, `href="/"`, "the way back is not a plain link")
+	require.Contains(t, body, `href="/me"`, "the settings are not a plain link")
 	require.NotContains(t, body, `onclick`)
+
+	page := mounted(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String()
+	require.Contains(t, page, `class="youare"`, "the settings need a script to be reached")
 }
 
 // The rail went with the four rooms on 2 September 2026: the board's four bay

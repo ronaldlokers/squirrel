@@ -55,10 +55,12 @@ func page(files ...string) *template.Template {
 // the files cannot change under a running process.
 var pageFiles = map[string][]string{
 	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html", "templates/chips.html"},
+	"me":     {"templates/layout.html", "templates/me.html", "templates/chips.html"},
 }
 
 var pages = map[string]*template.Template{
 	"thread": page(pageFiles["thread"]...),
+	"me":     page(pageFiles["me"]...),
 }
 
 // pageFor is the template to render with.
@@ -147,9 +149,6 @@ type view struct {
 	Light int
 	// AnyTold marks the bell: there is a record to look at.
 	AnyTold bool
-	// YouOpen is the settings panel, opened because the chip that opens it was
-	// the way in rather than the room.
-	YouOpen bool
 	// Home is the front door, where the mark is not a link because it would be
 	// a link to here.
 	Home bool
