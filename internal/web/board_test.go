@@ -381,10 +381,12 @@ func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
 	require.Equal(t, []int64{7}, f.refused)
 }
 
-// Opening the board costs nothing. The picker's own clause is what the pulled
-// strip says until you ask for better, which is the rule the coach has always
-// been under: a surface that has to cost nothing to open may not spend a call.
-func TestOpeningTheBoardSpendsNoCall(t *testing.T) {
+// It notices without being asked. Opening the board used to cost nothing and
+// say the picker's own clause until you pressed for better; the press went on
+// 3 September 2026, because a line you have to think of asking for is a line
+// this product has failed to give you. The cache keys on the thing that was
+// picked, so this is one call per thing offered rather than one per render.
+func TestTheBoardNoticesWithoutBeingAsked(t *testing.T) {
 	f := aBoardStore()
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
 	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 3, text: "start with the meter", because: "it is five minutes"}}
@@ -392,40 +394,24 @@ func TestOpeningTheBoardSpendsNoCall(t *testing.T) {
 
 	body := m.call(t, "GET", "/", nil).Body.String()
 
-	require.Equal(t, 1, c.peeked, "the board asked a model on load")
-	require.Contains(t, body, "the oldest thing you decided to do")
-	require.NotContains(t, body, "it is five minutes")
-	require.Contains(t, body, `action="/board/buddy"`, "there is no way to ask")
-}
-
-// And asking is a press, whose answer is drawn on the thing it is about, under
-// the acorn, with nowhere of its own to live.
-func TestAskingBuddyDrawsHisLineOnThePulledStrip(t *testing.T) {
-	f := aBoardStore()
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
-	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 3, text: "start with the meter", because: "it is five minutes"}}
-	m := mountedWith(t, f, c)
-
-	w := m.call(t, "POST", "/board/buddy", strings.NewReader(""))
-	require.Equal(t, "/?ask=1", w.Header().Get("Location"))
-
-	body := m.call(t, "GET", "/?ask=1", nil).Body.String()
-	require.Contains(t, body, "it is five minutes")
-	require.Contains(t, body, `class="why buddy"`, "his line is not marked as his")
+	require.Contains(t, body, "it is five minutes", "the board says nothing it noticed")
+	require.Contains(t, body, `class="why noticed"`, "the line is not marked as having been noticed")
 	require.Contains(t, body, `action="/board/badly"`, "there is no way to say it did not land")
+	require.NotContains(t, body, "ask Buddy", "the press that asked outlived the asking")
 }
 
 // A model that answers nothing leaves the picker's clause standing, and no
-// acorn: the mark says a model wrote this, so it may not appear when none did.
-func TestNoAcornWhenNoModelAnswered(t *testing.T) {
+// mark: the mark says where the sentence came from, so it may not appear when
+// the sentence came from the rules.
+func TestNoMarkWhenNoModelAnswered(t *testing.T) {
 	f := aBoardStore()
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
 	m := mountedWith(t, f, &fakeCoach{})
 
-	body := m.call(t, "GET", "/?ask=1", nil).Body.String()
+	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "the oldest thing you decided to do")
-	require.NotContains(t, body, `class="why buddy"`)
+	require.NotContains(t, body, `class="why noticed"`)
 }
 
 func TestSayingItLandedBadlyFromTheBoard(t *testing.T) {

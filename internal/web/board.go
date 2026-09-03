@@ -137,13 +137,19 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Kept:     r.URL.Query().Get("kept") == "1",
 			Now:      at.Format("15:04"),
 			Day:      at.Format("Monday 2 January"),
-			Pulled:   offerFor(s, opts, r, false, r.URL.Query().Get("ask") == "1"),
-			Timer:    runningTimer(s, opts, r),
-			Tray:     trayStrips(r, s, opts, personID, at),
-			Faces:    facesIfItIsTime(r, s, personID, at),
-			Bays:     baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
-			Telling:  r.URL.Query().Get("told") == "1",
-			You:      youFor(r.Context(), s, personID),
+			// It notices without being asked. The press that spent this call
+			// went on 3 September 2026: a line that only appears when you ask
+			// for it is a thing you have to think of, and this product exists
+			// to remove the thinking-of. The cache keys on the thing that was
+			// picked, so the cost is one call per thing offered rather than
+			// one per render, and the budget is what says no.
+			Pulled:  offerFor(s, opts, r, false, true),
+			Timer:   runningTimer(s, opts, r),
+			Tray:    trayStrips(r, s, opts, personID, at),
+			Faces:   facesIfItIsTime(r, s, personID, at),
+			Bays:    baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
+			Telling: r.URL.Query().Get("told") == "1",
+			You:     youFor(r.Context(), s, personID),
 		}
 		// One row is enough to mark the bell, and the whole list is only read
 		// when you are looking at it: this runs on every board render.
@@ -793,23 +799,6 @@ func stuckView(asked string) (blockers []blockerView, said string) {
 type blockerView struct {
 	Why   string
 	Words string
-}
-
-// boardBuddyHandler is the acorn on the pulled strip: the press that spends a
-// call. Opening the board never does — a surface that has to cost nothing to
-// open may not spend one — so asking is a press and its answer is drawn on the
-// thing it is about.
-//
-// The press stores nothing. `?ask=1` is what lets the next render pay, and the
-// cache behind Decide is what stops a reload paying twice.
-func boardBuddyHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := personOf(r); !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		http.Redirect(w, r, "/?ask=1", http.StatusSeeOther)
-	}
 }
 
 // boardBadlyHandler is the one press that says the last thing Buddy said did

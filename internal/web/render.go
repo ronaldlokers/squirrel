@@ -280,9 +280,14 @@ type faceView struct {
 // Because is the clause that explains the choice and is not optional — an
 // offer that cannot say why it is the offer is a demand.
 type offerView struct {
-	// Buddy says a model wrote this offer's words. It is what the acorn is
-	// drawn from, and nothing else may draw one.
-	Buddy   bool
+	// Noticed says a model wrote this offer's words rather than the picker's
+	// rules. It is what the mark is drawn from, and nothing else may draw one.
+	//
+	// A mark of where the sentence came from, not of who said it: nobody said
+	// it. The name went on 3 September 2026 along with the press that asked
+	// for it — the product notices, and a thing that notices is not a person
+	// you talk to.
+	Noticed bool
 	Kind    string
 	RefID   int64
 	Text    string

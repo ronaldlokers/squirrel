@@ -902,6 +902,27 @@ answers for the four rhythms, and pressing a rhythm promotes the note. One strip
 asks at a time — a rack where every row asks a question is a rack you have to
 answer to read.
 
+### It notices
+
+The pulled strip's reason is where the product says what it noticed. It is not
+a reply and nobody said it: there is no name on it, no face, and no press that
+asked for it. A line appears because something was worth saying about the thing
+you were handed, or the picker's own clause stands and nothing marks it.
+
+**The mark says where the sentence came from, not who said it.** The squirrel
+stays; the person goes. A model wrote it or the rules did, and the reader is
+entitled to know which.
+
+**The refusal has to be real.** *That did not land* is not a way to hide a line:
+it is written into the record the next prompt reads, so a line you refused
+shapes the ones that follow. Unbidden text without that is something that
+happens to you.
+
+**It is rare by construction.** One line, about the one thing the product
+already chose to put in front of you, cached against that thing — so the cost
+is one call per thing offered rather than one per render, and the budget is what
+says no.
+
 ### Buddy, and the acorn
 
 **Opening the board never spends a model call.** The pulled strip carries the
