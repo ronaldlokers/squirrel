@@ -365,6 +365,43 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.67.0 — 3 September 2026
+
+**The reason line may point at the rest of the board.**
+
+Register C could only ever speak about the one thing it was pulled from — the
+mock said so as its cost, and it was true of what shipped in v0.65.0. It is now
+shown what else is on the board: the things written down and not decided about.
+So the clause can say the detail this one needs is written down already, or this
+is the same errand as that. That is the one thing a clause can say which a
+person cannot get by reading the list, and it is the test marginalia is held to.
+
+**What it may point at, it may not hand you.** The notes go in as text rather
+than through a tool, and `coach.Written` carries no id at all. A tool result is
+something the model was handed, and anything it was handed is something
+`choose()` will accept; text is not, and a note it names is a number it invented
+— which was already refused. This is the exception `OpenWork`'s comment
+predicted and refused in writing, taken on the one path that cannot reach the
+offer. A note is a thought nobody has decided about, and offering one would be
+the product deciding for you.
+
+**It costs nothing new.** The board rides in on the first message rather than as
+a fourth read tool, so there are no new round trips and `maxRounds` is untouched.
+The alternative — a `notes` tool — would have needed a fourth round and would
+have put note ids in front of `choose()`, which is the thing that must not
+happen.
+
+**Two existing tests were changed on purpose**, which is worth saying plainly
+because a changed assertion is how a regression usually gets through:
+`TestDecideReadsThenChooses` and `TestDecideCapsWhatAToolWillReturn` now expect
+the board to be read on the way in. Both still fail if the read stops happening.
+
+Eleven mutations, each asserted to have changed the file and to compile before
+its test was believed. The three that matter: dropping the id check in
+`chosen()`, so a note becomes choosable; swapping `OpenItems` for `Tasks`, so
+the pile stops being the pile; and letting a failed board read take the offer
+down with it.
+
 ### v0.66.0 — 3 September 2026
 
 **Marginalia: the board says one thing about itself, in the margin.**
