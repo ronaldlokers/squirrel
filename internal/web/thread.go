@@ -330,7 +330,6 @@ func threadHandler(s Store, opts Options) http.HandlerFunc {
 				Words: "I cannot reach what we said. Tell me things anyway — they are kept, and they go in when I can.",
 			}}
 		}
-		v.YouOpen = r.URL.Query().Get("you") == "1"
 		renderWith(w, r, s, opts, "thread", v)
 	}
 }
@@ -1837,5 +1836,18 @@ func edgeOnly(w http.ResponseWriter, r *http.Request, edge []turnView) {
 			slog.Error("drawing the edge", "error", err)
 			return
 		}
+	}
+}
+
+// meHandler is who you are: the picture, the name, and everything about being
+// signed in that this product can be told to change. A page rather than a panel
+// on another screen, because it is the one part of this app that is neither a
+// board nor a conversation.
+func meHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Here is his room rather than this page: what these two presses ask
+		// for is answered as a turn, and a turn has to land somewhere a person
+		// can read it. The same field is what a stopped timer returns to.
+		renderWith(w, r, s, opts, "me", view{Here: "everything"})
 	}
 }

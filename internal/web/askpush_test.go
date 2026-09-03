@@ -54,12 +54,14 @@ func pushScreen(t *testing.T, f *fakeStore) *httptest.Server {
 // A desktop width, because below 980px the rail is the room sheet's contents
 // and a control inside a closed sheet is display:none whatever its own
 // attribute says — which is the exact confusion this file exists to refuse.
-func openSettings(t *testing.T, c *cdp) {
+// The settings are a page of their own since 3 September 2026, so opening them
+// is going there rather than opening a disclosure.
+func openSettings(t *testing.T, c *cdp, srv *httptest.Server) {
 	t.Helper()
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false,
 	})
-	c.eval(t, `const d = document.querySelector(".youare"); if (d) d.open = true; return 1`)
+	c.navigate(t, srv.URL+"/me")
 	c.eval(t, `return new Promise(r => setTimeout(() => r(1), 120))`)
 }
 
@@ -77,7 +79,7 @@ func permitted(t *testing.T, c *cdp, origin string) {
 func TestTheWayToTurnPushOnCanBeSeen(t *testing.T) {
 	srv := pushScreen(t, aPile())
 	c := browserAt(t, srv, "/r/everything")
-	openSettings(t, c)
+	openSettings(t, c, srv)
 
 	require.Equal(t, "default", c.eval(t, `return Notification.permission`),
 		"this browser has already answered, so the test would pass for the wrong reason")
@@ -100,7 +102,7 @@ func TestTheWayToTurnPushOnCanBeSeen(t *testing.T) {
 func TestTheWayToTurnPushOnIsAbsentWithoutAKey(t *testing.T) {
 	srv := screen(t, aPile())
 	c := browserAt(t, srv, "/r/everything")
-	openSettings(t, c)
+	openSettings(t, c, srv)
 
 	require.Equal(t, nil, c.eval(t, `return document.getElementById("pushbit")`),
 		"no key, no setting at all")
@@ -115,8 +117,7 @@ func TestTheSettingSaysWhetherItIsOn(t *testing.T) {
 	srv := pushScreen(t, f)
 	c := browserAt(t, srv, "/r/everything")
 	permitted(t, c, srv.URL)
-	c.navigate(t, srv.URL+"/r/everything")
-	openSettings(t, c)
+	openSettings(t, c, srv)
 
 	require.Contains(t, c.eval(t, `return document.getElementById("pushsays").textContent`), "On.",
 		"the panel does not say that notifications are on")
@@ -137,8 +138,7 @@ func TestARefusalSaysWhereTheSwitchIs(t *testing.T) {
 		"setting":    "denied",
 		"origin":     srv.URL,
 	})
-	c.navigate(t, srv.URL+"/r/everything")
-	openSettings(t, c)
+	openSettings(t, c, srv)
 
 	require.Contains(t, c.eval(t, `return document.getElementById("pushsays").textContent`),
 		"Turn notifications on for this site",

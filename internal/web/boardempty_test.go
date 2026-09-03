@@ -241,18 +241,18 @@ func TestARecordThatCannotBeReadDrawsNoList(t *testing.T) {
 		"the bell is marked from a read that failed")
 }
 
-func TestTheFaceOpensWhatCanBeChangedRatherThanBuddy(t *testing.T) {
+func TestTheFaceOpensAPageOfItsOwn(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	board := m.call(t, "GET", "/", nil).Body.String()
-	require.Contains(t, board, `class="chip face" href="/r/everything?you=1"`,
-		"the face opens the room rather than the settings")
+	for _, from := range []string{"/", "/r/everything"} {
+		require.Contains(t, m.call(t, "GET", from, nil).Body.String(), `class="chip face" href="/me"`,
+			"on %s the face opens somewhere other than who you are", from)
+	}
 
-	shut := m.call(t, "GET", "/r/everything", nil).Body.String()
-	require.Contains(t, shut, `<details class="youare">`, "the panel is open before it was asked for")
-
-	open := m.call(t, "GET", "/r/everything?you=1", nil).Body.String()
-	require.Contains(t, open, `<details class="youare" open>`, "the face opened nothing")
-	require.Contains(t, open, "log out")
-	require.Contains(t, open, "What Squirrel knows about you")
+	page := m.call(t, "GET", "/me", nil).Body.String()
+	require.Contains(t, page, "Who you are")
+	require.Contains(t, page, "log out")
+	require.Contains(t, page, "What Squirrel knows about you")
+	require.Contains(t, page, "How you felt before")
+	require.NotContains(t, page, `class="thread"`, "the settings are drawn inside a conversation")
 }

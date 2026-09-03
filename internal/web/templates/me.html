@@ -1,0 +1,57 @@
+{{define "content"}}
+<div class="youpage">
+  <h1 class="youhead">Who you are</h1>
+  {{if .You.Known}}
+    <div class="youare">
+      <div class="whoami">
+        {{if .You.Face}}
+        <span class="youface"><img src="/me/face" alt="" width="36" height="36"></span>
+        {{else}}
+        <span class="youface mono" aria-hidden="true">{{.You.Letter}}</span>
+        {{end}}
+        {{if .You.Name}}<span class="whoname">{{.You.Name}}</span>{{end}}
+      </div>
+
+      <div class="youset">
+        {{if .Notifying}}
+        <div class="youbit" id="pushbit" data-state="{{.Notifying}}">
+          <p class="youname">Notifications</p>
+          <p class="yousays" id="pushsays">
+            {{if eq .Notifying "on"}}On. Squirrel can tell you when to leave for something.
+            {{else if eq .Notifying "off"}}Off. Squirrel will not interrupt you.
+            {{else}}I cannot tell just now whether this is on.{{end}}
+          </p>
+          <button class="youdo" id="pushon" type="button" hidden>Turn on</button>
+          <button class="youdo" id="pushoff" type="button" {{if ne .Notifying "on"}}hidden{{end}}>Turn off</button>
+        </div>
+        {{end}}
+        <form class="youbit" method="post" action="/me/moods">
+          {{if .Here}}<input type="hidden" name="room" value="{{.Here}}">{{end}}
+          <p class="youname">How you felt before</p>
+          <p class="yousays">The last six weeks, as you said them. Nothing is counted.</p>
+          <button class="youdo" type="submit">Show me</button>
+        </form>
+
+        <form class="youbit" method="post" action="/knowing">
+          {{if .Here}}<input type="hidden" name="room" value="{{.Here}}">{{end}}
+          <p class="youname">What Squirrel knows about you</p>
+          <p class="yousays">What it has worked out, and the way to make it forget.</p>
+          <button class="youdo" type="submit">Show me</button>
+        </form>
+
+        <form method="post" action="/auth/out">
+          <button class="signout" type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 4H5v16h8"/>
+              <path d="M21 12H10"/>
+              <path d="M17 8l4 4-4 4"/>
+            </svg>
+            log out
+          </button>
+        </form>
+      </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

@@ -87,10 +87,15 @@ func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	srv := screen(t, aFortnight())
 	c := browserAt(t, srv, "/r/everything")
 	c.navigate(t, srv.URL+"/r/everything")
-	// A turn rather than a page since 31 August 2026, so it is asked for the
-	// way a person asks for it.
-	c.until(t, "the settings panel", `!!document.querySelector('form[action="/me/moods"]')`)
-	c.eval(t, `const f = document.querySelector('form[action="/me/moods"]');
+	// The press lives on the settings page since 3 September 2026 and answers
+	// as a turn in his room. It is posted from here rather than pressed there
+	// because this is about the grid the answer draws, and the fragment path is
+	// what puts it on a screen this test can measure.
+	c.until(t, "the conversation", `!!document.querySelector("#thread")`)
+	c.eval(t, `const f = document.createElement("form");
+		f.method = "post"; f.action = "/me/moods";
+		f.innerHTML = '<input name="room" value="everything"><button type="submit"></button>';
+		document.querySelector("#thread").appendChild(f);
 		f.requestSubmit(f.querySelector("button")); return 1`)
 	c.until(t, "the readings", `document.querySelectorAll(".weekrow").length === 6`)
 

@@ -551,7 +551,7 @@
       "text-decoration-line": "none",
       "text-transform": "none",
       "transform": "none",
-      "width": "1058px"
+      "width": "1270px"
     },
     ".frombuddy .said": {
       "background-color": "rgba(255, 251, 243, 0.13)",
@@ -648,25 +648,6 @@
       "transform": "none",
       "width": "210px"
     },
-    ".rail": {
-      "background-color": "rgba(28, 17, 11, 0.16)",
-      "border-radius": "0px",
-      "border-width": "0px 0px 0px 3px",
-      "box-shadow": "none",
-      "color": "rgb(255, 251, 243)",
-      "display": "flex",
-      "font-size": "16px",
-      "font-variation-settings": "\"CASL\" 0, \"MONO\" 0",
-      "letter-spacing": "normal",
-      "margin": "0px",
-      "min-height": "0px",
-      "outline-color": "rgb(255, 251, 243)",
-      "padding": "71px 14px 20px",
-      "text-decoration-line": "none",
-      "text-transform": "none",
-      "transform": "none",
-      "width": "212px"
-    },
     ".slot": {
       "background-color": "rgb(255, 251, 243)",
       "border-radius": "14px",
@@ -677,7 +658,7 @@
       "font-size": "16px",
       "font-variation-settings": "\"CASL\" 0, \"MONO\" 0",
       "letter-spacing": "normal",
-      "margin": "0px 169px",
+      "margin": "0px 275px",
       "min-height": "0px",
       "outline-color": "rgb(255, 251, 243)",
       "padding": "12px 12px 12px 18px",
@@ -734,7 +715,7 @@
       "font-size": "16px",
       "font-variation-settings": "\"CASL\" 0, \"MONO\" 0",
       "letter-spacing": "normal",
-      "margin": "243.969px 169px 0px",
+      "margin": "243.969px 275px 0px",
       "min-height": "auto",
       "outline-color": "rgb(255, 251, 243)",
       "padding": "22px 22px 0px",
