@@ -280,18 +280,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			// can send on: subscriptions stored, permission spent, and silence
 			// — which is the one shape worse than never offering.
 			PushKey: pushKeyFor(config.Push),
-			// The same spool the room's captures go through, so there is one
-			// durable path into the pile rather than two to keep in step.
-			Spool: spool,
-			// And a pass over it as soon as something is written, so a strip
-			// captured on the board is on the board you are sent back to. The
-			// background drain would find it a second later; a second is long
-			// enough to read as having lost it.
-			//
-			// Two drains over one spool is safe by construction: a redelivery
-			// is absorbed by ON CONFLICT DO NOTHING, which is the same
-			// guarantee that lets Campfire retry a webhook.
-			Settle: settler(spool, store),
 			// Assigned through a helper rather than straight from the pointer:
 			// a nil *squirrel.Photos in an interface field is not a nil
 			// interface, and the screen's own `opts.Photos == nil` would then
@@ -739,16 +727,4 @@ func photoStore(p *squirrel.Photos) web.Photos {
 		return nil
 	}
 	return p
-}
-
-// settler is one pass of the drain, run in front of a person rather than on an
-// interval. Errors are logged and swallowed: the capture is already durable, so
-// the worst this can do is leave the strip for the background pass.
-func settler(spool *squirrel.Spool, store *squirrel.Store) func(context.Context) {
-	once := squirrel.NewDrain(squirrel.DrainOptions{
-		Spool:   spool,
-		Store:   store,
-		OnError: func(err error) { slog.Error("settling a capture", "error", err) },
-	})
-	return func(ctx context.Context) { once.Once(ctx) }
 }

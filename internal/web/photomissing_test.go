@@ -37,7 +37,7 @@ func TestAPhotographTheDiskHasLostSaysSo(t *testing.T) {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{}, Photos: &fakePhotos{},
+		Photos:   &fakePhotos{},
 	}
 	r := httptest.NewRequest("GET", "/photo/7", nil)
 	r.SetPathValue("id", "7")

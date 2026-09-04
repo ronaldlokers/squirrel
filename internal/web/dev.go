@@ -3,9 +3,14 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -38,10 +43,136 @@ func DevServe(addr, webDir string, store Store) error {
 	if err := Mount(m, store, devOptions()); err != nil {
 		return fmt.Errorf("mounting the screen: %w", err)
 	}
+	watch := watching(webDir)
+	m.routes.HandleFunc("GET /dev/redraw", watch.serve)
+
 	fmt.Printf("the screen is at http://%s\n", addr)
-	fmt.Printf("serving %s — edit a template or the stylesheet and refresh\n", webDir)
+	fmt.Printf("serving %s — edit a template or the stylesheet and the screen redraws\n", webDir)
 	fmt.Println("nothing here is real: no database, no model, no spool")
-	return http.ListenAndServe(addr, m.routes)
+	fmt.Printf("one rack at a time: http://%s/?only=chores\n", addr)
+	return http.ListenAndServe(addr, redrawing(m.routes))
+}
+
+const redrawScript = `<script>
+(function () {
+  var source = new EventSource("/dev/redraw");
+  source.onmessage = function () { location.reload(); };
+})();
+</script>`
+
+func redrawing(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/dev/redraw" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		held := &heldPage{ResponseWriter: w, body: &bytes.Buffer{}}
+		next.ServeHTTP(held, r)
+		body := held.body.Bytes()
+		if strings.HasPrefix(held.Header().Get("Content-Type"), "text/html") {
+			if at := bytes.LastIndex(body, []byte("</body>")); at >= 0 {
+				body = append(append(append([]byte{}, body[:at]...), redrawScript...), body[at:]...)
+			}
+		}
+		held.Header().Del("Content-Length")
+		if held.code == 0 {
+			held.code = http.StatusOK
+		}
+		w.WriteHeader(held.code)
+		_, _ = w.Write(body)
+	})
+}
+
+type heldPage struct {
+	http.ResponseWriter
+	body *bytes.Buffer
+	code int
+}
+
+func (h *heldPage) WriteHeader(code int) { h.code = code }
+
+func (h *heldPage) Write(b []byte) (int, error) {
+	if h.code == 0 {
+		h.code = http.StatusOK
+	}
+	return h.body.Write(b)
+}
+
+type watcher struct {
+	dir     string
+	mu      sync.Mutex
+	waiting map[chan struct{}]struct{}
+}
+
+func watching(dir string) *watcher {
+	w := &watcher{dir: dir, waiting: map[chan struct{}]struct{}{}}
+	go w.look()
+	return w
+}
+
+func (w *watcher) look() {
+	was := w.stamps()
+	for range time.Tick(250 * time.Millisecond) {
+		now := w.stamps()
+		if now == was {
+			continue
+		}
+		was = now
+		w.mu.Lock()
+		for c := range w.waiting {
+			close(c)
+			delete(w.waiting, c)
+		}
+		w.mu.Unlock()
+	}
+}
+
+func (w *watcher) stamps() string {
+	var b strings.Builder
+	_ = filepath.WalkDir(w.dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		switch filepath.Ext(path) {
+		case ".html", ".css", ".js":
+		default:
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return nil
+		}
+		fmt.Fprintf(&b, "%s:%d:%d\n", path, info.ModTime().UnixNano(), info.Size())
+		return nil
+	})
+	return b.String()
+}
+
+func (w *watcher) serve(rw http.ResponseWriter, r *http.Request) {
+	flusher, ok := rw.(http.Flusher)
+	if !ok {
+		http.Error(rw, "no flushing here", http.StatusInternalServerError)
+		return
+	}
+	rw.Header().Set("Content-Type", "text/event-stream")
+	rw.Header().Set("Cache-Control", "no-store")
+	rw.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	changed := make(chan struct{})
+	w.mu.Lock()
+	w.waiting[changed] = struct{}{}
+	w.mu.Unlock()
+
+	select {
+	case <-changed:
+		fmt.Fprint(rw, "data: redraw\n\n")
+		flusher.Flush()
+	case <-r.Context().Done():
+		w.mu.Lock()
+		delete(w.waiting, changed)
+		w.mu.Unlock()
+	}
 }
 
 type devMux struct{ routes *http.ServeMux }
@@ -59,7 +190,6 @@ func devOptions() Options {
 		Gate:          &Gate{},
 		Sessions:      NewSessions(devSessions{}),
 		Login:         func(context.Context, string, string) (int64, error) { return 1, nil },
-		Spool:         devSpool{},
 	}
 }
 
@@ -72,10 +202,3 @@ func (devSessions) OpenSession(context.Context, int64, string, []byte, time.Time
 	return nil
 }
 func (devSessions) EndSession(context.Context, []byte) error { return nil }
-
-// A spool that accepts and forgets. The screen only asks whether it is
-// writable and whether a write succeeded.
-type devSpool struct{}
-
-func (devSpool) Write(squirrel.Capture) (string, error) { return "dev", nil }
-func (devSpool) Writable() bool                         { return true }

@@ -62,8 +62,14 @@ type bayView struct {
 	Writes   bool
 	Rhythms  []rhythmView
 	Asking   string
-	Shelves  bool
+	Settled  []settledView
 	Strips   []stripView
+}
+
+type settledView struct {
+	Name   string
+	Empty  string
+	Strips []stripView
 }
 
 type stripView struct {
@@ -75,7 +81,9 @@ type stripView struct {
 	SeenID int64
 	// Back is a strip that has already left the pile: it carries the way back
 	// and nothing else.
-	Back bool
+	Back    bool
+	Resting bool
+	State   string
 	// Photo says this note has a photograph. The strip says so; opening it is
 	// what shows it.
 	Photo bool
@@ -153,7 +161,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Timer:   runningTimer(s, opts, r),
 			Tray:    trayStrips(r, s, opts, personID, at),
 			Faces:   facesIfItIsTime(r, s, personID, at),
-			Bays:    baysIn(in, theBaysOf(r, s, opts, personID, at, asking)),
+			Bays:    baysIn(in, oneBayOnly(r, theBaysOf(r, s, opts, personID, at, asking))),
 			Telling: r.URL.Query().Get("told") == "1",
 			You:     youFor(r.Context(), s, personID),
 		}
@@ -193,7 +201,7 @@ func whatIsOnTheShelf(r *http.Request, s Store, personID int64, shelf string, at
 		for _, it := range items {
 			out = append(out, stripView{
 				ID: it.ID, What: "note", Words: it.RawText,
-				Mark: markOfDay(it.ReceivedAt, at), Back: true, Photo: it.PhotoName != "",
+				State: markOfDay(it.ReceivedAt, at), Back: true, Photo: it.PhotoName != "",
 			})
 		}
 		return out
@@ -210,12 +218,38 @@ func whatIsOnTheShelf(r *http.Request, s Store, personID int64, shelf string, at
 			// one ends is the reason there are three of these rather than one.
 			out = append(out, stripView{
 				ID: it.ID, What: "note", Words: it.Text,
-				Mark: it.Words(), Back: true, Photo: it.PhotoName != "",
+				State: it.Words(), Back: true, Photo: it.PhotoName != "",
 			})
 		}
 		return out
 	}
 	return nil
+}
+
+// whatIsSettled is what has already been decided about, under the notes that
+// have not. Both shelves in the rack rather than behind a tab at the foot of
+// it: a place you have to travel to is a place that stops being read, and what
+// you set aside is exactly the thing that must not disappear.
+func whatIsSettled(r *http.Request, s Store, personID int64, at time.Time) []settledView {
+	out := make([]settledView, 0, 2)
+	for _, shelf := range []struct{ key, empty string }{
+		{"held", "nothing set aside"},
+		{"kept", "nothing kept yet"},
+	} {
+		out = append(out, settledView{
+			Name:   shelfNames[shelf.key],
+			Empty:  shelf.empty,
+			Strips: resting(whatIsOnTheShelf(r, s, personID, shelf.key, at)),
+		})
+	}
+	return out
+}
+
+func resting(strips []stripView) []stripView {
+	for i := range strips {
+		strips[i].Resting = true
+	}
+	return strips
 }
 
 // whatMatched is the search, which takes the racks' place rather than opening
@@ -285,13 +319,15 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	seen := whatWasNoticed(r, s, personID)
 	notes, notesOK, moreNotes := noteStrips(r, s, personID, at)
 	notes = marked(notes, "note", seen)
+	settled := whatIsSettled(r, s, personID, at)
 	chores, choresOK := choreStrips(r, s, personID)
 	tasks, tasksOK, moreTasks := taskStrips(r, s, personID, at)
 	agenda, agendaOK := agendaStrips(r, s, personID, at)
 	return []bayView{
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
-			Camera: opts.Photos != nil, Shelves: true, Trouble: !notesOK, More: moreNotes,
-			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking)},
+			Camera: opts.Photos != nil, Trouble: !notesOK, More: moreNotes,
+			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
+			Settled: settled},
 		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
 			Rhythms: theRhythms, Trouble: !choresOK, Asking: rhythmFor,
 			Empty: "nothing comes back today", Strips: chores},
@@ -302,6 +338,22 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 			Trouble: !agendaOK, Asking: whenFor,
 			Empty: "nothing left today", Strips: agenda},
 	}
+}
+
+func oneBayOnly(r *http.Request, bays []bayView) []bayView {
+	if devDir == "" {
+		return bays
+	}
+	only := strings.TrimSpace(r.URL.Query().Get("only"))
+	if only == "" {
+		return bays
+	}
+	for _, bay := range bays {
+		if bay.Key == only {
+			return []bayView{bay}
+		}
+	}
+	return bays
 }
 
 // baysIn lights the rack you are standing in, which is only ever one and is the
@@ -480,7 +532,7 @@ func markOfMoment(m squirrel.Moment, at time.Time) string {
 const boardDeep = 40
 
 var boardPage = template.Must(
-	template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html", "templates/chips.html"))
+	template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html", "templates/chips.html", "templates/strip.html"))
 
 func renderBoard(w http.ResponseWriter, v boardView) {
 	v.V = stamp()
@@ -488,7 +540,7 @@ func renderBoard(w http.ResponseWriter, v boardView) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t := boardPage
 	if devDir != "" {
-		reparsed, err := template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html", "templates/chips.html")
+		reparsed, err := template.New("board.html").Funcs(helpers).ParseFS(templatesFS(), "templates/board.html", "templates/chips.html", "templates/strip.html")
 		if err != nil {
 			slog.Error("re-reading the board", "error", err)
 		} else {
@@ -656,7 +708,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				return
 			}
 		case "agenda":
-			m, ok := momentFromPickers(opts.Location, words, r.FormValue("day"), r.FormValue("time"))
+			m, ok := momentFromPickers(opts.Location, words, r.FormValue("day"), clockFrom(r))
 			if !ok {
 				m, ok = squirrel.ParseMomentIn(opts.Location, words, now())
 			}
@@ -671,7 +723,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				return
 			}
 		case "notes":
-			if err := keepAsANote(r, opts, words); err != nil {
+			if err := keepAsANote(r, s, personID, words); err != nil {
 				fail(w, err)
 				return
 			}
@@ -696,26 +748,34 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 // keepAsANote is the floor under every blank strip: words that are not what the
 // rack asked for are still a thought, and a thought goes to the spool. The one
 // thing a bay may not do is drop what you typed because it was the wrong shape.
-func keepAsANote(r *http.Request, opts Options, words string) error {
+func keepAsANote(r *http.Request, s Store, personID int64, words string) error {
+	return keptOnTheBoard(r, s, personID, words, "", "")
+}
+
+// keptOnTheBoard is the whole of capture from the screen: one row, written
+// before the redirect, so the board you are sent back to has it on it.
+//
+// It went through the spool and a drain until 4 September 2026. The spool is
+// still what Campfire's captures land in, because that path has no person in
+// front of it and nothing to tell when a write fails. This one has both: it
+// answers on the screen, and a row that did not land says so instead of being
+// promised.
+func keptOnTheBoard(r *http.Request, s Store, personID int64, words, photo, kind string) error {
 	sender := subOf(r)
-	if _, err := opts.Spool.Write(squirrel.Capture{
+	_, err := s.InsertItem(r.Context(), squirrel.Item{
 		Transport:  squirrel.ScreenTransport,
 		SenderID:   &sender,
-		Text:       words,
+		PersonID:   &personID,
+		RawText:    words,
 		Payload:    []byte(squirrel.ScreenCapture),
 		ReceivedAt: now(),
-	}); err != nil {
-		slog.Warn("a capture from the board could not be spooled", "error", err)
-		return err
+		PhotoName:  photo,
+		PhotoType:  kind,
+	})
+	if err != nil {
+		slog.Warn("a capture from the board could not be kept", "error", err)
 	}
-	// The spool is what makes it safe; this is what makes it visible. Without
-	// it the board you are sent back to is drawn before the drain has run, so a
-	// note you have just written is not on it — which reads as the capture
-	// having been lost. The write above is what must not fail; this may.
-	if opts.Settle != nil {
-		opts.Settle(r.Context())
-	}
-	return nil
+	return err
 }
 
 // boardNowHandler is the pulled strip's own three answers, and the ladder
@@ -828,12 +888,13 @@ func boardBadlyHandler(s Store, opts Options) http.HandlerFunc {
 
 // boardCaptureHandler is the notes rack's own slot when it carries a
 // photograph. It is the same path the conversation's capture takes — readCapture
-// writes the bytes to the volume and fsyncs them before the spool entry that
-// points at them exists — because a second way into the pile would be a second
-// way to lose a thought.
+// writes the bytes to the volume and fsyncs them before the row that points at
+// them exists — because a second way into the pile would be a second way to
+// lose a thought.
 func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := personOf(r); !ok {
+		personID, ok := personOf(r)
+		if !ok {
 			fail(w, errNoOwner)
 			return
 		}
@@ -850,17 +911,7 @@ func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 			http.Redirect(w, r, "/?bay=notes", http.StatusSeeOther)
 			return
 		}
-		sender := subOf(r)
-		if _, err := opts.Spool.Write(squirrel.Capture{
-			Transport:  squirrel.ScreenTransport,
-			SenderID:   &sender,
-			Text:       text,
-			Payload:    []byte(squirrel.ScreenCapture),
-			ReceivedAt: now(),
-			PhotoName:  photo,
-			PhotoType:  kind,
-		}); err != nil {
-			slog.Warn("a capture from the board could not be spooled", "error", err)
+		if err := keptOnTheBoard(r, s, personID, text, photo, kind); err != nil {
 			fail(w, err)
 			return
 		}
@@ -969,6 +1020,26 @@ func everyInDays(every, unit string) int {
 		return n * 30
 	}
 	return n
+}
+
+// clockFrom is the time the pickers were set to. The hour and the minute are
+// two fields rather than one, because a native time input renders in whatever
+// the browser's locale says and no attribute can make it say 24 hours.
+func clockFrom(r *http.Request) string {
+	if clock := strings.TrimSpace(r.FormValue("time")); clock != "" {
+		return clock
+	}
+	hour, minute := strings.TrimSpace(r.FormValue("hour")), strings.TrimSpace(r.FormValue("minute"))
+	if hour == "" || minute == "" {
+		return ""
+	}
+	if len(hour) == 1 {
+		hour = "0" + hour
+	}
+	if len(minute) == 1 {
+		minute = "0" + minute
+	}
+	return hour + ":" + minute
 }
 
 // momentFromPickers builds one out of the day and time beside the field, which

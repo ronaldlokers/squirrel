@@ -13,14 +13,19 @@
 </head>
 <body>
 <header class="ops">
-  {{template "youchip" .You}}
-  <img class="markart" src="/static/logo.png" alt="">
-  <h1 class="wordmark">Squirrel</h1>
-  <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
-  {{template "findchip" .Find}}
+  <span class="brand">
+    <img class="markart" src="/static/logo.png" alt="">
+    <h1 class="wordmark">Squirrel</h1>
+  </span>
   <span class="spacer"></span>
-  {{template "buddychip"}}
-  {{template "bellchip" .AnyTold}}
+  <span class="rail">
+    {{template "findchip" .Find}}
+    <span class="sep" aria-hidden="true"></span>
+    {{template "buddychip"}}
+    {{template "bellchip" .AnyTold}}
+    {{template "youchip" .You}}
+  </span>
+  <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
 </header>
 
 <div class="deck">
@@ -193,8 +198,32 @@
     {{if .Writes}}
     <form class="blankstrip" method="post" action="{{if .Camera}}/board/capture{{else}}/board/new{{end}}"{{if .Camera}} enctype="multipart/form-data"{{end}}>
       <input type="hidden" name="bay" value="{{.Key}}">
-      <p class="strip blank">
-        <input class="words" name="{{if .Camera}}text{{else}}words{{end}}" value="{{.Asking}}" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done"{{if .Asking}} autofocus{{end}}>
+      <p class="strip blank{{if eq .Key "agenda"}} asit{{end}}">
+        {{if eq .Key "agenda"}}<span class="holder"></span>{{end}}
+        <span class="said">
+          <input class="words" name="{{if .Camera}}text{{else}}words{{end}}" value="{{.Asking}}" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done"{{if .Asking}} autofocus{{end}}>
+          {{if .Rhythms}}
+          <span class="inline">
+            <span class="lead">every</span>
+            <input class="count" name="every" type="number" min="1" max="365" value="7" inputmode="numeric" aria-label="how many">
+            <select class="unit" name="unit" aria-label="days, weeks or months">
+              <option value="days">days</option>
+              <option value="weeks">weeks</option>
+              <option value="months">months</option>
+            </select>
+          </span>
+          {{end}}
+          {{if eq .Key "agenda"}}
+          <span class="when">
+            <input class="count when" name="day" type="date" aria-label="the day">
+            <span class="hm">
+              <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
+              <span class="colon">:</span>
+              <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
+            </span>
+          </span>
+          {{end}}
+        </span>
         {{if .Camera}}
         <label class="camera">
           <input type="file" name="photo" accept="image/*" capture="environment">
@@ -204,32 +233,8 @@
         {{end}}
         <button class="newmark" aria-label="keep it">+</button>
       </p>
-      {{if .Rhythms}}
-      {{if .Asking}}<p class="asked">how often does it come back?</p>{{end}}
-      <span class="rhythms">
-        {{range .Rhythms}}
-        <button class="stamp small" name="every" value="{{.Days}}">{{.Words}}</button>
-        {{end}}
-      </span>
-      <span class="rhythms every">
-        <span class="lead">or every</span>
-        <input class="count" name="every" type="number" min="1" max="365" inputmode="numeric" aria-label="how many">
-        <select name="unit" aria-label="days, weeks or months">
-          <option value="days">days</option>
-          <option value="weeks">weeks</option>
-          <option value="months">months</option>
-        </select>
-        <button class="stamp small">keep it</button>
-      </span>
-      {{end}}
-      {{if eq .Key "agenda"}}
-      {{if .Asking}}<p class="asked">when is it?</p>{{end}}
-      <span class="rhythms every">
-        <input class="count when" name="day" type="date" aria-label="the day">
-        <input class="count when" name="time" type="time" aria-label="the time">
-        <button class="stamp small">keep it</button>
-      </span>
-      {{end}}
+      {{if and .Rhythms .Asking}}<p class="asked">how often does it come back?</p>{{end}}
+      {{if and (eq .Key "agenda") .Asking}}<p class="asked">when is it?</p>{{end}}
     </form>
     {{end}}
     <div class="channel">
@@ -237,51 +242,20 @@
       {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
       <div class="strips">
         {{range .Strips}}
-        <article class="strip h-{{$bay.Key}}{{if .Answers}} answerable{{end}}">
-          <span class="holder"></span>
-          <div class="words">
-            <p class="what">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}</p>
-            {{if .Seen}}
-            <div class="seen">{{.Seen}}
-              <form method="post" action="/board/notuseful">
-                <input type="hidden" name="id" value="{{.SeenID}}">
-                <input type="hidden" name="bay" value="{{$bay.Key}}">
-                <button class="off">not useful</button>
-              </form>
-            </div>
-            {{end}}
-            {{if .Rhythms}}
-            <form class="stamps" method="post" action="/board/chore">
-              <input type="hidden" name="id" value="{{.ID}}">
-              {{range .Rhythms}}
-              <button class="stamp small" name="every" value="{{.Days}}">{{.Words}}</button>
-              {{end}}
-            </form>
-            {{else if .Answers}}
-            <form class="stamps" method="post" action="/board/act">
-              <input type="hidden" name="what" value="{{.What}}">
-              <input type="hidden" name="id" value="{{.ID}}">
-              <input type="hidden" name="bay" value="{{$bay.Key}}">
-              {{range .Answers}}
-              <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
-              {{end}}
-              {{if eq .What "note"}}
-              <a class="stamp go" href="/?chore={{.ID}}">make a chore<span class="k">C</span></a>
-              {{end}}
-            </form>
-            {{end}}
-          </div>
-          <span class="mark{{if .Big}} time{{end}}">{{.Mark}}</span>
-        </article>
+        {{template "strip" dict "Strip" . "Bay" $bay.Key}}
+        {{end}}
+        {{range .Settled}}
+        <p class="seam"><span class="what">{{.Name}}</span><span class="n">{{len .Strips}}</span></p>
+        {{if .Strips}}
+        {{range .Strips}}
+        {{template "strip" dict "Strip" . "Bay" $bay.Key}}
+        {{end}}
+        {{else}}
+        <p class="nothing quiet">{{.Empty}}</p>
+        {{end}}
         {{end}}
       </div>
       {{if .More}}<p class="further">there is more further back</p>{{end}}
-      {{if .Shelves}}
-      <nav class="ledge">
-        <a class="tab" href="/?shelf=held">what you set aside</a>
-        <a class="tab" href="/?shelf=kept">the things you kept</a>
-      </nav>
-      {{end}}
     </div>
   </section>
   {{end}}

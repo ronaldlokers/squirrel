@@ -20,7 +20,12 @@ import (
 // typing into the dock behave. Nothing survives a restart, which is the point.
 type store struct{}
 
-var said []squirrel.Turn
+var (
+	said  []squirrel.Turn
+	kept  []squirrel.Item
+	gone        = map[int64]bool{}
+	nextI int64 = 900
+)
 
 func now() time.Time { return time.Now() }
 
@@ -32,11 +37,13 @@ func note(id int64, text string, kind squirrel.ItemKind) squirrel.Item {
 }
 
 func (store) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
-	all := []squirrel.Item{
-		note(1, "the letter from the council about the bins", squirrel.ItemNote),
-		note(2, "ask about the boiler service", squirrel.ItemNote),
-		note(3, "that book Sam mentioned", squirrel.ItemNote),
+	all := []squirrel.Item{}
+	for _, it := range everything() {
+		if it.Kind == squirrel.ItemNote {
+			all = append(all, it)
+		}
 	}
+	all = standing(all)
 	if len(all) > limit {
 		return all[:limit], true, nil
 	}
@@ -44,10 +51,13 @@ func (store) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, 
 }
 
 func (store) Tasks(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
-	all := []squirrel.Item{
-		note(4, "book the MOT", squirrel.ItemTask),
-		note(5, "ring the vet back", squirrel.ItemTask),
+	all := []squirrel.Item{}
+	for _, it := range everything() {
+		if it.Kind == squirrel.ItemTask {
+			all = append(all, it)
+		}
 	}
+	all = standing(all)
 	if len(all) > limit {
 		return all[:limit], true, nil
 	}
@@ -148,8 +158,41 @@ func (store) OpenItemsAfter(_ context.Context, _, _ int64, _ int) ([]squirrel.It
 func (store) SearchItems(_ context.Context, _ int64, _ string, _ int) ([]squirrel.Item, bool, error) {
 	return nil, false, nil
 }
-func (store) InsertItem(_ context.Context, _ squirrel.Item) (bool, error)             { return false, nil }
-func (store) InsertItemReturningID(_ context.Context, _ squirrel.Item) (int64, error) { return 0, nil }
+func (store) InsertItem(_ context.Context, it squirrel.Item) (bool, error) {
+	keep(it)
+	return true, nil
+}
+
+func (store) InsertItemReturningID(_ context.Context, it squirrel.Item) (int64, error) {
+	return keep(it), nil
+}
+
+// keep is what makes the screen answer a press. The real store writes a row;
+// this holds it for the life of the process, so a note typed into a blank strip
+// is on the rack when the board is drawn again.
+func keep(it squirrel.Item) int64 {
+	nextI++
+	it.ID = nextI
+	if it.Kind == "" {
+		it.Kind = squirrel.ItemNote
+	}
+	it.State = squirrel.ItemOpen
+	it.ReceivedAt = now()
+	kept = append([]squirrel.Item{it}, kept...)
+	return it.ID
+}
+
+// standing is what has not been answered. A press on a strip marks it gone, and
+// the rack it was in stops drawing it.
+func standing(all []squirrel.Item) []squirrel.Item {
+	out := make([]squirrel.Item, 0, len(all))
+	for _, it := range all {
+		if !gone[it.ID] {
+			out = append(out, it)
+		}
+	}
+	return out
+}
 func (store) ArchivedTasks(_ context.Context, _ int64, _ int) ([]squirrel.Item, bool, error) {
 	return nil, false, nil
 }
@@ -198,14 +241,36 @@ func (store) RampDue(_ context.Context, _ int64, _ time.Time) (squirrel.Timer, b
 }
 func (store) RampSaid(_ context.Context, _ int64, _ time.Time) error { return nil }
 func (store) HushRamp(_ context.Context, _ int64, _ time.Time) error { return nil }
-func (store) ItemByID(_ context.Context, _, _ int64) (squirrel.Item, bool, error) {
+func (store) ItemByID(_ context.Context, _, id int64) (squirrel.Item, bool, error) {
+	for _, it := range everything() {
+		if it.ID == id {
+			return it, true, nil
+		}
+	}
 	return squirrel.Item{}, false, nil
 }
-func (store) SetItemState(_ context.Context, _ int64, _ squirrel.ItemState, _ time.Time) error {
+
+// everything is every row the screen invents plus everything it has been told,
+// which is what a press has to be able to find before it can answer it.
+func everything() []squirrel.Item {
+	out := append([]squirrel.Item{}, kept...)
+	out = append(out,
+		note(1, "the letter from the council about the bins", squirrel.ItemNote),
+		note(2, "ask about the boiler service", squirrel.ItemNote),
+		note(3, "that book Sam mentioned", squirrel.ItemNote),
+		note(4, "book the MOT", squirrel.ItemTask),
+		note(5, "ring the vet back", squirrel.ItemTask),
+	)
+	return out
+}
+func (store) SetItemState(_ context.Context, id int64, _ squirrel.ItemState, _ time.Time) error {
+	gone[id] = true
 	return nil
 }
-func (store) MoveItemState(_ context.Context, _ int64, _, _ squirrel.ItemState, _ time.Time) (bool, error) {
-	return false, nil
+
+func (store) MoveItemState(_ context.Context, id int64, _, _ squirrel.ItemState, _ time.Time) (bool, error) {
+	gone[id] = true
+	return true, nil
 }
 func (store) LandedBadlyLatest(_ context.Context, _ int64, _ time.Time) (bool, error) {
 	return false, nil

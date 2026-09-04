@@ -23,12 +23,13 @@ import (
 // makes the camera appear at all.
 func cameraScreen(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *httptest.Server {
 	t.Helper()
+	f.kept = sp
 
 	opts := Options{
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    sp, Photos: ph,
+		Photos:   ph,
 	}
 
 	m := &serveMux{mux: http.NewServeMux()}

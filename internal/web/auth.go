@@ -106,7 +106,7 @@ func personIn(ctx context.Context) (int64, bool) {
 }
 
 // subOf is the OIDC subject, which only the capture path needs: it writes the
-// sub as a sender string so the drain can resolve a spooled capture's owner.
+// sub as a sender string, which is what a capture carries as its sender.
 func subOf(r *http.Request) string {
 	w, _ := r.Context().Value(whoKey{}).(who)
 	return w.sub

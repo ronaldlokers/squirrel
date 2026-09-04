@@ -91,6 +91,7 @@ type fakeStore struct {
 	// inserted is every note's words in the order they were stored; states is
 	// where each id ended up.
 	inserted []string
+	kept     *fakeSpool
 	states   map[int64]squirrel.ItemState
 
 	// Fixed points created by a proposal that was pressed.
@@ -361,6 +362,16 @@ func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel
 // InsertItem is the slot. The fake keeps the store's own contract: a fresh row
 // answers true, and the payload marks it a note by construction.
 func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error) {
+	if f.kept != nil {
+		if f.kept.err != nil {
+			return false, f.kept.err
+		}
+		f.kept.written = append(f.kept.written, squirrel.Capture{
+			Transport: i.Transport, SenderID: i.SenderID, Text: i.RawText,
+			Payload: i.Payload, ReceivedAt: i.ReceivedAt,
+			PhotoName: i.PhotoName, PhotoType: i.PhotoType,
+		})
+	}
 	if f.err != nil {
 		return false, f.err
 	}
@@ -529,6 +540,16 @@ func (f *fakeStore) SetItemKind(_ context.Context, _ int64, id int64, k squirrel
 }
 
 func (f *fakeStore) InsertItemReturningID(_ context.Context, i squirrel.Item) (int64, error) {
+	if f.kept != nil {
+		if f.kept.err != nil {
+			return 0, f.kept.err
+		}
+		f.kept.written = append(f.kept.written, squirrel.Capture{
+			Transport: i.Transport, SenderID: i.SenderID, Text: i.RawText,
+			Payload: i.Payload, ReceivedAt: i.ReceivedAt,
+			PhotoName: i.PhotoName, PhotoType: i.PhotoType,
+		})
+	}
 	if f.err != nil {
 		return 0, f.err
 	}
@@ -537,6 +558,7 @@ func (f *fakeStore) InsertItemReturningID(_ context.Context, i squirrel.Item) (i
 		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt,
 		State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
 	}}, f.items...)
+	f.inserted = append(f.inserted, i.RawText)
 	return id, nil
 }
 
@@ -941,21 +963,15 @@ func (p *fakePhotos) Thumb(name string) (*os.File, error) {
 
 // fakeSpool stands in for the durable half of capture: the screen has to go
 // through one at all, and say something honest when it cannot.
+// What the store was told to keep, in the shape the spool used to record.
+//
+// The screen wrote through a spool and a drain until 4 September 2026; the
+// tests that watched the spool are watching the same act, one layer down.
 type fakeSpool struct {
 	written  []squirrel.Capture
 	err      error
 	readonly bool
 }
-
-func (s *fakeSpool) Write(c squirrel.Capture) (string, error) {
-	if s.err != nil {
-		return "", s.err
-	}
-	s.written = append(s.written, c)
-	return "spooled", nil
-}
-
-func (s *fakeSpool) Writable() bool { return !s.readonly }
 
 // mountedWithCamera is mounted plus somewhere to keep a photograph.
 func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos) *testMux {
@@ -965,8 +981,9 @@ func mountedWithCamera(t *testing.T, f *fakeStore, sp *fakeSpool, ph *fakePhotos
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    sp, Photos: ph,
+		Photos:   ph,
 	}))
+	f.kept = sp
 	return m
 }
 
@@ -978,8 +995,8 @@ func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    sp,
 	}))
+	f.kept = sp
 	return m
 }
 
@@ -990,7 +1007,6 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 	}))
 	return m
 }
@@ -1118,7 +1134,6 @@ func mountedWith(t *testing.T, f *fakeStore, c *fakeCoach) *testMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 	}
 	if c != nil {
 		opts = c.options(opts)
@@ -1431,7 +1446,6 @@ func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 		Reads: func(_ context.Context, _ int64, said string) (string, bool, string, error) {
 			f.readAsked = append(f.readAsked, said)
 			return f.reads(said)
@@ -1477,7 +1491,6 @@ func signedInOptions() Options {
 		Gate:     &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 	}
 }
 

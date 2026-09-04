@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -130,7 +129,7 @@ func TestPuttingBackWhatIsNotYoursWritesNothing(t *testing.T) {
 // Capture is sacred: the words reach fsynced disk before anybody answers, and
 // the drain resolves whose they are — the same path a capture from the
 // conversation takes.
-func TestWritingOnABlankStripSpoolsTheWords(t *testing.T) {
+func TestWritingOnABlankStripKeepsTheWords(t *testing.T) {
 	f := aBoardStore()
 	sp := &fakeSpool{}
 	m := mountedSpooling(t, f, sp)
@@ -139,19 +138,18 @@ func TestWritingOnABlankStripSpoolsTheWords(t *testing.T) {
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
 	require.Equal(t, "/?bay=notes", w.Header().Get("Location"))
-	require.Len(t, sp.written, 1, "the words did not reach the spool")
+	require.Len(t, sp.written, 1, "the words were not kept")
 	require.Equal(t, "meter reading 48213", sp.written[0].Text)
-	require.Len(t, f.items, 3, "a note typed on the board went straight to the database")
+	require.Contains(t, f.inserted, "meter reading 48213",
+		"the words were accepted and never written")
 }
 
 func TestWritingInTheTasksRackDecidesSomething(t *testing.T) {
 	f := aBoardStore()
-	sp := &fakeSpool{}
-	m := mountedSpooling(t, f, sp)
+	m := mounted(t, f)
 
 	m.call(t, "POST", "/board/new", strings.NewReader("bay=tasks&words=book+the+boiler+service"))
 
-	require.Empty(t, sp.written, "a task is a decision rather than a capture")
 	var found bool
 	for _, it := range f.items {
 		if it.RawText == "book the boiler service" && it.Kind == squirrel.ItemTask {
@@ -246,9 +244,17 @@ func TestTheChoresRackAsksForARhythmBesideTheField(t *testing.T) {
 
 	body := m.call(t, "GET", "/board", nil).Body.String()
 
-	for _, want := range []string{`value="chores"`, `name="every" value="1"`, `name="every" value="7"`, `name="every" value="14"`, `name="every" value="30"`} {
+	for _, want := range []string{
+		`value="chores"`,
+		`class="inline"`,
+		`name="every" type="number" min="1" max="365" value="7"`,
+		`name="unit"`,
+		`<option value="weeks">weeks</option>`,
+	} {
 		require.Contains(t, body, want)
 	}
+	require.NotContains(t, body, `name="every" value="14"`,
+		"the four stamps say what the field already says")
 }
 
 // The flip, pinned. The front door is the board; the conversation kept its own
@@ -543,24 +549,25 @@ func TestPromotingWhatIsNotYoursMakesNothing(t *testing.T) {
 // The ledge opens a shelf where the racks are, the way search does. Its links
 // pointed at rooms until now, which meant the two shelves were the one part of
 // the board that left the board.
-func TestTheLedgeOpensAShelfOnTheBoard(t *testing.T) {
+func TestTheNotesShowEverythingWithTheUndecidedFirst(t *testing.T) {
 	f := aBoardStore()
 	f.items = append(f.items, squirrel.Item{ID: 41, RawText: "the boiler serial plate", State: squirrel.ItemKept, Kind: squirrel.ItemNote})
 	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
 	m := mounted(t, f)
 
-	board := m.call(t, "GET", "/", nil).Body.String()
-	require.Contains(t, board, `href="/?shelf=held"`)
-	require.Contains(t, board, `href="/?shelf=kept"`)
+	rack := theRackIn(t, m.call(t, "GET", "/", nil).Body.String(), "bay=notes")
+	undecided := strings.Index(rack, "boiler service code is 4471")
+	aside := strings.Index(rack, "chase the landlord")
+	kept := strings.Index(rack, "the boiler serial plate")
 
-	kept := m.call(t, "GET", "/?shelf=kept", nil).Body.String()
-	require.Contains(t, kept, "the boiler serial plate")
-	require.Contains(t, kept, "back in the pile")
-	require.NotContains(t, kept, `data-bay="tasks"`, "the racks are still drawn behind the shelf")
+	require.Positive(t, undecided, "the notes needing a decision are not on the rack")
+	require.Greater(t, aside, undecided, "what you set aside is above what needs deciding")
+	require.Greater(t, kept, aside, "what you kept is above what you set aside")
+	require.Contains(t, rack, `class="seam"`, "the three groups run together")
+	require.NotContains(t, rack, `href="/?shelf=held"`, "the ledge is still there")
 
-	held := m.call(t, "GET", "/?shelf=held", nil).Body.String()
-	require.Contains(t, held, "chase the landlord")
-	require.Contains(t, held, "he replies", "the shelf does not say what would move it")
+	require.Contains(t, rack, "he replies", "the rack does not say what would move it")
+	require.Contains(t, rack, "back in the pile", "a settled strip carries no way back")
 }
 
 // A shelf never counts, and the sign is where that would show.
@@ -618,7 +625,7 @@ func TestThePickersMakeAMomentWithoutASentence(t *testing.T) {
 	m := mountedSpooling(t, f, sp)
 
 	m.call(t, "POST", "/board/new",
-		strings.NewReader("bay=agenda&words=dentist&day=2026-09-10&time=14%3A30"))
+		strings.NewReader("bay=agenda&words=dentist&day=2026-09-10&hour=14&minute=30"))
 
 	require.Len(t, f.moments, 1, "the day and the time beside the field made nothing")
 	require.Equal(t, "dentist", f.moments[0].Label)
@@ -666,32 +673,29 @@ func TestARackAsksNothingWhenNothingWasAsked(t *testing.T) {
 	require.NotContains(t, rack, "when is it?")
 }
 
-func TestACaptureIsSettledBeforeTheBoardIsDrawnAgain(t *testing.T) {
+// The board you are sent back to has the strip on it, because the row is
+// written before the redirect rather than spooled for a drain to find.
+func TestACaptureIsOnTheBoardYouAreSentBackTo(t *testing.T) {
 	f := aBoardStore()
-	sp := &fakeSpool{}
-	settled := 0
-	opts := signedInOptions()
-	opts.Spool = sp
-	opts.Settle = func(context.Context) { settled++ }
-	m := newTestMux()
-	require.NoError(t, Mount(m, f, opts))
+	m := mounted(t, f)
 
 	m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=the+boiler+code"))
 
-	require.Len(t, sp.written, 1, "the capture was not made durable")
-	require.Equal(t, 1, settled,
-		"the board is drawn again before the capture has been settled, so the strip is not on it")
+	require.Contains(t, f.inserted, "the boiler code", "the capture was not written")
+	require.Contains(t, theRackIn(t, m.call(t, "GET", "/", nil).Body.String(), "bay=notes"),
+		"the boiler code", "the strip is not on the board that was drawn next")
 }
 
-func TestACaptureIsDurableEvenWithNothingToSettleWith(t *testing.T) {
+// A write that fails says so rather than sending you back to a board that
+// does not have your words on it.
+func TestACaptureThatCannotBeKeptSaysSo(t *testing.T) {
 	f := aBoardStore()
-	sp := &fakeSpool{}
-	m := mountedSpooling(t, f, sp)
+	f.kept = &fakeSpool{err: errTest}
+	m := mounted(t, f)
 
 	res := m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=the+boiler+code"))
 
-	require.Len(t, sp.written, 1, "no settler meant no capture")
-	require.Equal(t, 303, res.Code)
+	require.Equal(t, 503, res.Code, "a lost capture was answered with a redirect")
 }
 
 func TestTheBoardAsksHowYouFeelAtTheTraysEnd(t *testing.T) {
@@ -745,4 +749,61 @@ func TestAWordThatIsNotOneOfTheFiveKeepsNothing(t *testing.T) {
 	// whether the write happened.
 	require.Nil(t, f.checkin, "something that is not one of the five was kept")
 	require.Empty(t, f.recorded)
+}
+
+func TestASettledStripSaysWhyBesideItsWordsRatherThanInTheMark(t *testing.T) {
+	f := aBoardStore()
+	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
+
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=notes")
+	settled := rack[strings.Index(rack, "chase the landlord"):]
+	settled = settled[:strings.Index(settled, "</article>")]
+
+	require.Contains(t, settled, `<p class="state">waiting on he replies`,
+		"the reason is not on the words, so it is forcing the mark column wide")
+	require.NotContains(t, settled, `class="mark`,
+		"a settled strip still carries a mark it cannot fit")
+	require.Contains(t, settled, `class="backtab"`)
+	require.Contains(t, settled, `aria-label="back in the pile"`,
+		"the way back is a picture with no name")
+}
+
+func TestTheAgendaStripCarriesItsDayAndTimeInsideIt(t *testing.T) {
+	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(), "bay=agenda")
+	strip := rack[strings.Index(rack, `class="strip blank`):]
+	strip = strip[:strings.Index(strip, "</p>")]
+
+	require.Contains(t, strip, "asit", "the agenda inlet is not shaped like what it makes")
+	require.Contains(t, strip, `class="holder"`, "it does not wear the agenda's holder")
+	for _, want := range []string{`name="day"`, `name="hour"`, `name="minute"`, `name="words"`} {
+		require.Contains(t, strip, want, "%s is outside the strip", want)
+	}
+	require.NotContains(t, rack, `class="under"`, "the row under the strip is still drawn")
+}
+
+func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {
+	board := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+
+	for _, bay := range []string{"notes", "chores", "tasks"} {
+		rack := theRackIn(t, board, "bay="+bay)
+		require.NotContains(t, rack, "asit", "the %s inlet took the agenda's shape", bay)
+		require.NotContains(t, rack, `name="day"`, "the %s inlet asks for a day", bay)
+	}
+	require.Contains(t, theRackIn(t, board, "bay=chores"), `class="inline"`,
+		"the chores lost their interval")
+}
+
+// The notes are the only bay with a camera, so in a deployment that keeps
+// photographs their blank strip posts here rather than to /board/new. Without
+// this the most ordinary act on the board — writing a note down — was the one
+// that did nothing until you reloaded.
+func TestAPhotographCaptureIsKeptToo(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+
+	m.call(t, "POST", "/board/capture", strings.NewReader("text=the+boiler+code"))
+
+	require.Len(t, sp.written, 1, "the capture was not written")
+	require.Equal(t, "the boiler code", sp.written[0].Text)
 }

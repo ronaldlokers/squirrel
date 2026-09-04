@@ -34,12 +34,12 @@ func routed(t *testing.T, f *fakeStore) *realMux {
 // does, so a test about the dock is a test about what reached the spool.
 func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
 	t.Helper()
+	f.kept = sp
 	m := &realMux{mux: http.NewServeMux()}
 	require.NoError(t, Mount(m, f, Options{
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    sp,
 	}))
 	return m
 }
@@ -383,7 +383,6 @@ func routedSplitting(t *testing.T, f *fakeStore, pieces ...string) *realMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 	})))
 	return m
 }

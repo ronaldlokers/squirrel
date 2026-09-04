@@ -58,7 +58,8 @@ func TestAQuestionIsAnsweredAndNotLeftInThePile(t *testing.T) {
 		strings.NewReader("text=what+should+I+do+about+the+tax+thing%3F"))
 
 	require.Equal(t, "Open the envelope and read the first line.", f.appended[1].Words)
-	require.Equal(t, squirrel.ItemDropped, f.states[7], "the question stayed in the pile")
+	require.Contains(t, f.states, int64(2), "the question stayed in the pile")
+	require.Equal(t, squirrel.ItemDropped, f.states[2])
 }
 
 // The one that matters. Every failure leaves the words in the pile, because
@@ -89,16 +90,16 @@ func TestAnUnreachableModelKeepsTheWords(t *testing.T) {
 
 // And the words are spooled before any of it, which is what makes all of the
 // above true rather than merely arranged.
-func TestTheWordsAreSpooledBeforeBuddyIsAsked(t *testing.T) {
+func TestTheWordsAreKeptBeforeBuddyIsAsked(t *testing.T) {
 	f := &fakeStore{}
 	sp := &fakeSpool{}
+	f.kept = sp
 	var spooledFirst bool
 	m := newTestMux()
 	require.NoError(t, Mount(m, f, Options{
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    sp,
 		Reads: func(_ context.Context, _ int64, said string) (string, bool, string, error) {
 			spooledFirst = len(sp.written) == 1
 			return "answered", false, "", nil
@@ -111,17 +112,18 @@ func TestTheWordsAreSpooledBeforeBuddyIsAsked(t *testing.T) {
 		"Buddy was asked before the words were durable, so a crash mid-call loses them")
 }
 
-// A note that does not match what was typed is not dropped. The drain may not
-// have caught up, and dropping the wrong note is the one thing worse than
-// leaving the right one.
-func TestOnlyTheNoteThatMatchesIsDropped(t *testing.T) {
+// Only the row this capture wrote is dropped. It matched on the words while
+// the capture went through the spool, and two notes saying the same thing
+// could drop the wrong one; the id makes that impossible rather than unlikely.
+func TestOnlyTheNoteItJustMadeIsDropped(t *testing.T) {
 	f := &fakeStore{}
 	f.items = []squirrel.Item{note(7, "something else entirely", squirrel.ItemOpen)}
 	m := mountedReading(t, f, aQuestion("Open the envelope."))
 
 	m.call(t, "POST", "/capture", strings.NewReader("text=what+now%3F"))
 
-	require.Empty(t, f.states, "it dropped a note it had not just made")
+	require.NotContains(t, f.states, int64(7), "it dropped a note it had not just made")
+	require.Len(t, f.states, 1, "the question it just wrote is still in the pile")
 	require.Equal(t, "Open the envelope.", f.appended[1].Words, "the answer was lost too")
 }
 
@@ -136,7 +138,7 @@ func TestAPhotographIsNeverJudged(t *testing.T) {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{}, Photos: ph,
+		Photos:   ph,
 		Reads: func(context.Context, int64, string) (string, bool, string, error) {
 			asked = true
 			return "", false, "", nil
@@ -197,7 +199,6 @@ func TestTheHouseOverrulesTheRule(t *testing.T) {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 		AskedAQuestion: func(_ context.Context, said string) (bool, bool) {
 			housed = append(housed, said)
 			return true, true
@@ -212,7 +213,7 @@ func TestTheHouseOverrulesTheRule(t *testing.T) {
 
 	require.Len(t, housed, 1, "the house was not asked")
 	require.Equal(t, "4471.", f.appended[1].Words, "the rule won over the house")
-	require.Equal(t, squirrel.ItemDropped, f.states[7])
+	require.Equal(t, squirrel.ItemDropped, f.states[2], "the question stayed in the pile")
 }
 
 func TestAHouseThatDoesNotAnswerFallsThroughToTheRule(t *testing.T) {
@@ -222,7 +223,6 @@ func TestAHouseThatDoesNotAnswerFallsThroughToTheRule(t *testing.T) {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 		// True and "did not answer". Believing the first return without
 		// checking the second would send a thought abroad — which is what the
 		// mutation that caught this test being weak actually did.

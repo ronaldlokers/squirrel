@@ -70,7 +70,6 @@ func screenWith(t *testing.T, f *fakeStore, c *fakeCoach) *httptest.Server {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{},
 	}
 	if c != nil {
 		opts = c.options(opts)
@@ -364,9 +363,8 @@ func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 // it is a real change rather than a tidy-up — the conversation can no longer
 // show you a result without leaving it.
 //
-// What replaced this is TestTheLedgeOpensAShelfOnTheBoard's neighbour,
-// TestBrowserTheFieldIsThereWithoutBeingAskedFor, and the board's own
-// what-matched tests.
+// What replaced this is TestBrowserTheFieldIsThereWithoutBeingAskedFor and the
+// board's own what-matched tests.
 
 // Triage left the conversation on 2 September 2026. The card at the live edge
 // came from the four rooms' lists, and those are the board's racks now: a strip
@@ -847,8 +845,7 @@ func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
 		"the lid's top band is not --purple-bar, which is what the strip beside it takes")
 }
 
-// A redirecting press went with the shelf chip on 2 September 2026. The shelf
-// was a press inside the notes room, and the notes are a rack now: the ledge is
-// a plain link, so there is no press that redirects and no page for the script
-// to paste a whole document into. TestTheLedgeOpensAShelfOnTheBoard is where
-// the shelves are proved.
+// A redirecting press went with the shelf chip on 2 September 2026, and the
+// shelves themselves went into the notes rack on 3 September: there is no press
+// that redirects and no page for the script to paste a whole document into.
+// TestTheNotesShowEverythingWithTheUndecidedFirst is where they are proved.

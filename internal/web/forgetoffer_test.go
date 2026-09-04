@@ -33,7 +33,6 @@ func forgetful(t *testing.T, f *fakeStore) (*testMux, *[]int64) {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions:    newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:       aTestLogin,
-		Spool:       &fakeSpool{},
 		ForgetOffer: func(personID int64) { forgot = append(forgot, personID) },
 	}
 	require.NoError(t, Mount(m, f, opts))

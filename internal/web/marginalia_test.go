@@ -35,13 +35,13 @@ func TestBrowserTheLineSitsInTheMarginOfItsOwnStrip(t *testing.T) {
 	}
 	below := num(`nb.top - wb.bottom`)
 	inside := num(`sb.bottom - nb.bottom`)
-	indent := num(`nt.left - wt.left`)
+	ruled := num(`parseFloat(getComputedStyle(n).borderTopWidth)`)
 	smaller := num(`parseFloat(getComputedStyle(w).fontSize) - parseFloat(getComputedStyle(n).fontSize)`)
 	past := num(`nb.right - sb.right`)
 
 	require.Positive(t, below, "the line is not under the words it is about")
 	require.Positive(t, inside, "the line hangs out of the bottom of its strip")
-	require.Positive(t, indent, "the line is not set in from the strip's own words")
+	require.Positive(t, ruled, "nothing divides the line from the words it is about")
 	require.Positive(t, smaller, "the line is set as large as the thing it is about")
 	require.Negative(t, past, "the line runs past the right edge of the strip")
 }

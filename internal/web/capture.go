@@ -21,16 +21,16 @@ const captureLimit = 4000
 
 // The slot in the lid of the box: you post a thought in without opening it.
 //
-// It writes through the same spool the room's captures do — fsynced and renamed
+// It writes the row itself — Campfire's captures still go through the spool
 // before anything says it was kept. One durability mechanism for both doors.
 //
 // The cost, stated: a note reaches the pile a drain tick later.
 func captureHandler(s Store, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Still checked, and still refuses: the owner not being known yet means
-		// the drain cannot resolve this capture to anybody either, so
-		// accepting it would spool a note nobody owns.
-		if _, ok := personOf(r); !ok {
+		// Still checked, and still refuses: a capture with nobody to own it is
+		// a row that belongs to no pile.
+		personID, ok := personOf(r)
+		if !ok {
 			// The same 503 the rest of the screen gives when nobody knows
 			// whose pile this is: a redirect here would look like the words
 			// went somewhere.
@@ -48,7 +48,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			"transport", "screen")
 
 		// The photograph goes to disk before the capture that references it, and is
-		// fsynced there, so a spool entry never points at a file that is not on the
+		// fsynced there, so a row never points at a file that is not on the
 		// volume. An entry that fails after the bytes landed leaves litter, not a lost
 		// thought.
 		text, photo, kind, err := readCapture(r, opts)
@@ -89,19 +89,20 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		slog.Info("a capture is being kept",
 			"photograph", photo != "", "kind", kind, "words", len(text) > 0)
 
-		if _, err := opts.Spool.Write(squirrel.Capture{
+		id, err := s.InsertItemReturningID(r.Context(), squirrel.Item{
 			Transport:  squirrel.ScreenTransport,
 			SenderID:   &sender,
-			Text:       text,
+			PersonID:   &personID,
+			RawText:    text,
 			Payload:    []byte(squirrel.ScreenCapture),
 			ReceivedAt: time.Now(),
 			PhotoName:  photo,
 			PhotoType:  kind,
-		}); err != nil {
+		})
+		if err != nil {
 			// The words go back to the page: a capture box that clears on failure is a
-			// capture box that eats thoughts. This means the disk is unwritable, which is
-			// louder than a database being briefly unreachable.
-			slog.Warn("a capture could not be spooled", "error", err)
+			// capture box that eats thoughts.
+			slog.Warn("a capture could not be kept", "error", err)
 			answerWith(w, r, saidInThread(r, s, opts, text, refusalOf(err), ""), backToTheRoom(r))
 			return
 		}
@@ -109,7 +110,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// turns alone cannot answer that: a failure is two turns as well, and
 		// clearing on one of them is a capture box that eats thoughts.
 		w.Header().Set("X-Kept", "1")
-		reply, open := whatBuddyMakesOfIt(r, s, opts, text, photo != "")
+		reply, open := whatBuddyMakesOfIt(r, s, opts, id, text, photo != "")
 		answerWith(w, r, saidInThread(r, s, opts, text, reply, open), backToTheRoom(r))
 	}
 }
@@ -283,7 +284,7 @@ func said(raw string) string {
 // whatBuddyMakesOfIt is the answer to what you typed.
 //
 // The order is the design, and it is what makes a model in this path safe. The
-// words are already spooled and already a note by the time this is called;
+// words are already written and already a note by the time this is called;
 // nothing here can stop that. All this can do is drop a note afterwards, which
 // the pile can reverse and which leaves the words in the database either way.
 //
@@ -293,7 +294,7 @@ func said(raw string) string {
 //
 // A photograph is always kept and never read: a model asked to judge a picture
 // it cannot see would be guessing about the capture hardest to make again.
-func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, photo bool) (string, string) {
+func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, id int64, text string, photo bool) (string, string) {
 	ctx := r.Context()
 	kept := squirrel.Say(squirrel.SayingKept, now())
 	if photo || strings.TrimSpace(text) == "" {
@@ -342,7 +343,7 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 	// A question, answered. The note is dropped rather than deleted — the
 	// words stay in the database, the pile can put it back, and "drop" is what
 	// this product already calls a note it does not want.
-	if err := dropWhatWasAQuestion(ctx, s, personID, text); err != nil {
+	if err := dropWhatWasAQuestion(ctx, s, id); err != nil {
 		// It could not be dropped, so it is still in the pile. Say the answer
 		// anyway: the answer is the useful half, and a note you did not want
 		// is a smaller problem than an answer you did not get.
@@ -351,18 +352,16 @@ func whatBuddyMakesOfIt(r *http.Request, s Store, opts Options, text string, pho
 	return say, open
 }
 
-// dropWhatWasAQuestion finds the note by its words rather than an id, because
-// there is no id: the capture went through the spool and the row is written by
-// the drain. If the drain has not caught up, nothing matches and nothing is
-// dropped, which leaves a question in the pile and loses nothing.
-func dropWhatWasAQuestion(ctx context.Context, s Store, personID int64, text string) error {
-	items, _, err := s.OpenItems(ctx, personID, 1)
-	if err != nil {
-		return err
-	}
-	if len(items) == 0 || strings.TrimSpace(items[0].RawText) != strings.TrimSpace(text) {
+// dropWhatWasAQuestion drops the row this capture just wrote.
+//
+// It matched on the words until 4 September 2026, because the capture went
+// through the spool and the row it became was written later by the drain — so
+// there was no id to hold, and two notes saying the same thing could drop the
+// wrong one. The row is written here now, so this drops exactly what was asked.
+func dropWhatWasAQuestion(ctx context.Context, s Store, id int64) error {
+	if id == 0 {
 		return nil
 	}
-	_, err = s.MoveItemState(ctx, items[0].ID, squirrel.ItemOpen, squirrel.ItemDropped, now())
+	_, err := s.MoveItemState(ctx, id, squirrel.ItemOpen, squirrel.ItemDropped, now())
 	return err
 }

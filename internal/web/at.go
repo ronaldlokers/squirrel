@@ -73,10 +73,8 @@ func atOneHandler(s Store, opts Options) http.HandlerFunc {
 
 // atNoteHandler is the slot on a fixed point.
 //
-// Two writes rather than one, the same way the new-task line does it: the spool
-// answers "was this kept" and not "which row is it", and this needs the row to
-// point it. What that costs is the spool's durability on this one path, and it
-// is the same cost the tasks screen already accepted for the same reason.
+// Two writes rather than one, the same way the new-task line does it: this
+// needs the row's id to point the note at the appointment.
 //
 // No picker anywhere. A picker would need a browsable list of appointments to
 // choose from, which is exactly the shape the record refuses — here the
