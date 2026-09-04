@@ -1977,3 +1977,21 @@
   }
   .youpage .youare { display: block; }
   .youpage .whoami { display: flex; align-items: center; gap: 11px; margin: 0 0 18px; }
+
+  /* The two readings, on the page about you. The grid keeps the width it has
+     everywhere else; what is new here is the list of observations, which is
+     one line per thing so that none of them reads as a paragraph of
+     assessment. */
+  .youpage .readings { width: 100%; margin-top: 8px; }
+  .youpage .moodkey { margin-top: 6px; }
+  .younought {
+    margin: 6px 0 0; color: var(--cream); font-size: 12.5px; line-height: 1.4;
+    font-variation-settings: var(--precise), "wght" 500;
+  }
+  .knows { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .knows li {
+    padding: 9px 11px; border: 2px solid var(--outline); border-radius: 3px;
+    background: var(--paper); color: var(--ink);
+    font-size: 13px; line-height: 1.35;
+    font-variation-settings: var(--casual), "wght" 520;
+  }

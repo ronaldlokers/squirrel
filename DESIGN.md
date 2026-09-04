@@ -960,6 +960,25 @@ the things, and it never instructs and never asks.
 of the line, quiet and lowercase. The words are kept, not deleted, and the next
 pass is shown them as something not to write again.
 
+### The page about you
+
+Who you are, what Squirrel has worked out about you, and how you have been —
+one screen, drawn on arrival.
+
+**Nothing on it is asked for.** Both readings were a press that answered in the
+conversation, which put the two things this product holds *about you* behind a
+door inside a room you had already opened. You go to this page when you wonder
+about yourself; wondering is the asking.
+
+**An opinion about you is readable and refusable.** What it has worked out is
+shown in its own words, one line per thing so that none of it reads as a
+paragraph of assessment, with no dates — when it worked something out is not a
+fact you can act on. *Forget all of it* is one press with no confirmation, and
+the empty state that follows says what forgetting cost.
+
+**A read that fails is a sentence where the thing would be.** Not an error
+page, and never a blank: the rest of the page does not depend on either read.
+
 ### Buddy, and the acorn
 
 **Opening the board never spends a model call.** The pulled strip carries the

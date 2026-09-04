@@ -85,15 +85,10 @@ func aFortnight() *fakeStore {
 // not flex.
 func TestBrowserEveryWeekOfReadingsStartsInTheSameColumn(t *testing.T) {
 	srv := screen(t, aFortnight())
+	// Drawn on the page about you, with nothing pressed for it: it was a page,
+	// then a press that answered in a room, and it is on arrival here since
+	// 3 September 2026.
 	c := browserAt(t, srv, "/me")
-	// Pressed where it lives, which is the settings page since 3 September
-	// 2026, and read where it answers, which is his room. That is a full
-	// navigation, and it is only testable because the fake store reads back
-	// what it was told — it did not until this test asked it to.
-	c.navigate(t, srv.URL+"/me")
-	c.until(t, "the settings", `!!document.querySelector('form[action="/me/moods"]')`)
-	c.eval(t, `const f = document.querySelector('form[action="/me/moods"]');
-		f.requestSubmit(f.querySelector("button")); return 1`)
 	c.until(t, "the readings", `document.querySelectorAll(".weekrow").length === 6`)
 
 	starts := numbers(t, c, "return ("+lefts+`)(".weekrow .dots")`)

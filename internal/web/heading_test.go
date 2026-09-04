@@ -32,6 +32,10 @@ var notATitle = map[string]string{
 	// controls the board and the conversation share, so that one bar cannot
 	// drift from the other.
 	"chips.html": "the chrome's controls, drawn into both bars",
+	// The readings grid. Not a screen either: it is drawn under a heading the
+	// page about you already wrote, and a second one inside it would put a
+	// title in the middle of a page.
+	"moodgrid.html": "one picture, drawn under the heading its page already has",
 }
 
 func templates(t *testing.T) map[string]string {

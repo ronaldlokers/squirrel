@@ -54,8 +54,8 @@ func page(files ...string) *template.Template {
 // re-parse from it. Parsed once at start and never again in a shipped binary:
 // the files cannot change under a running process.
 var pageFiles = map[string][]string{
-	"thread": {"templates/layout.html", "templates/turn.html", "templates/thread.html", "templates/chips.html"},
-	"me":     {"templates/layout.html", "templates/me.html", "templates/chips.html"},
+	"thread": {"templates/layout.html", "templates/turn.html", "templates/moodgrid.html", "templates/thread.html", "templates/chips.html"},
+	"me":     {"templates/layout.html", "templates/me.html", "templates/moodgrid.html", "templates/chips.html"},
 }
 
 var pages = map[string]*template.Template{
@@ -179,8 +179,17 @@ type view struct {
 	Example []exampleTurn
 
 	// Weeks is how you have been, as six weeks by seven days, and only the
-	// readings page fills it.
+	// page about you fills it.
 	Weeks []moodWeekView
+	// MoodsSays is what stands where the grid would be when there is no grid:
+	// nothing said yet, or nothing readable. Empty when the grid drew.
+	MoodsSays string
+	// Known is what Squirrel has worked out about you, in its own words, and
+	// KnownSays is the sentence over it. There is always a sentence — the
+	// empty state is the ordinary one for a first week and it says what would
+	// change it.
+	Known     []string
+	KnownSays string
 	// Camera is whether a photograph can be kept at all. False draws no
 	// camera: a control that cannot work is worse than one never drawn.
 	Camera bool

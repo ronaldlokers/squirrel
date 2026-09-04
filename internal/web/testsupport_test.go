@@ -59,18 +59,19 @@ type fakeStore struct {
 	rhythms []choreRhythm
 	// Where you got to. hasRun is what RunFor answers; marked and ended are
 	// what the screen did.
-	run       squirrel.Run
-	hasRun    bool
-	runErr    error
-	marked    []string
-	ended     int
-	reads     func(string) (string, bool, string, error)
-	readAsked []string
-	knowing   []string
-	forgot    bool
-	items     []squirrel.Item
-	chores    []squirrel.Chore
-	checkin   *squirrel.Checkin
+	run        squirrel.Run
+	hasRun     bool
+	runErr     error
+	marked     []string
+	ended      int
+	reads      func(string) (string, bool, string, error)
+	readAsked  []string
+	knowing    []string
+	knowingErr error
+	forgot     bool
+	items      []squirrel.Item
+	chores     []squirrel.Chore
+	checkin    *squirrel.Checkin
 	// readings is what the moods page reads, newest first.
 	readings []squirrel.Checkin
 	timer    *squirrel.Timer
@@ -1400,6 +1401,9 @@ func drewInWith(t *testing.T, f *fakeStore, opts Options, where string) []squirr
 // proved against a real database in internal/squirrel; what the screen has to
 // be tested for is that it shows them and can throw them away.
 func (f *fakeStore) Knowing(_ context.Context, _ int64) ([]string, error) {
+	if f.knowingErr != nil {
+		return nil, f.knowingErr
+	}
 	if f.err != nil {
 		return nil, f.err
 	}
