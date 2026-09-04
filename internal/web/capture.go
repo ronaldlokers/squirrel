@@ -19,6 +19,8 @@ import (
 // rule about how much you may say.
 const captureLimit = 4000
 
+const keepingTakesAtMost = 8 * time.Second
+
 // The slot in the lid of the box: you post a thought in without opening it.
 //
 // It writes the row itself — Campfire's captures still go through the spool
@@ -89,7 +91,10 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		slog.Info("a capture is being kept",
 			"photograph", photo != "", "kind", kind, "words", len(text) > 0)
 
-		id, err := s.InsertItemReturningID(r.Context(), squirrel.Item{
+		ctx, done := context.WithTimeout(r.Context(), keepingTakesAtMost)
+		defer done()
+
+		id, err := s.InsertItemReturningID(ctx, squirrel.Item{
 			Transport:  squirrel.ScreenTransport,
 			SenderID:   &sender,
 			PersonID:   &personID,

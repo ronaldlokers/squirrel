@@ -90,9 +90,10 @@ type fakeStore struct {
 
 	// inserted is every note's words in the order they were stored; states is
 	// where each id ended up.
-	inserted []string
-	kept     *fakeSpool
-	states   map[int64]squirrel.ItemState
+	inserted    []string
+	blockInsert chan struct{}
+	kept        *fakeSpool
+	states      map[int64]squirrel.ItemState
 
 	// Fixed points created by a proposal that was pressed.
 	moments []squirrel.Moment
@@ -539,7 +540,11 @@ func (f *fakeStore) SetItemKind(_ context.Context, _ int64, id int64, k squirrel
 	return false, nil
 }
 
-func (f *fakeStore) InsertItemReturningID(_ context.Context, i squirrel.Item) (int64, error) {
+func (f *fakeStore) InsertItemReturningID(ctx context.Context, i squirrel.Item) (int64, error) {
+	if f.blockInsert != nil {
+		<-ctx.Done()
+		return 0, ctx.Err()
+	}
 	if f.kept != nil {
 		if f.kept.err != nil {
 			return 0, f.kept.err

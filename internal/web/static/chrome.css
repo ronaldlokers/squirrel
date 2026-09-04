@@ -49,7 +49,7 @@
 .ops .chip svg, .lid .chip svg { width: 19px; height: 19px; display: block; }
 .ops .chip.face img, .lid .chip.face img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ops .chip.face, .lid .chip.face {
-  display: none; overflow: hidden;
+  display: grid; overflow: hidden;
   background: var(--orange); color: var(--outline); border-color: var(--outline);
   font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 900; font-size: 17px; font-variation-settings: normal;
@@ -97,7 +97,6 @@
     background: rgba(28, 17, 11, .32); border: 2px solid rgba(254, 214, 167, .3);
   }
   .ops .rail .find input { width: 100%; font-size: 16px; }
-  .ops .chip.face, .lid .chip.face { display: grid; }
   .ops .find, .lid .find {
     flex: 1; min-width: 0; height: 40px; gap: 9px; padding: 0 14px;
     border-radius: 999px;

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -75,8 +76,38 @@ func URLFor(c PostgresConfig) string {
 	return u.String()
 }
 
+const (
+	statementTimeout = 5 * time.Second
+	connectTimeout   = 5 * time.Second
+	maxConns         = 10
+)
+
+func poolConfigFor(dsn string) (*pgxpool.Config, error) {
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("reading the database address: %w", err)
+	}
+	if cfg.ConnConfig.RuntimeParams == nil {
+		cfg.ConnConfig.RuntimeParams = map[string]string{}
+	}
+	if _, ok := cfg.ConnConfig.RuntimeParams["statement_timeout"]; !ok {
+		cfg.ConnConfig.RuntimeParams["statement_timeout"] = strconv.Itoa(int(statementTimeout.Milliseconds()))
+	}
+	if cfg.ConnConfig.ConnectTimeout == 0 {
+		cfg.ConnConfig.ConnectTimeout = connectTimeout
+	}
+	if !strings.Contains(dsn, "pool_max_conns") {
+		cfg.MaxConns = maxConns
+	}
+	return cfg, nil
+}
+
 func OpenStore(ctx context.Context, dsn string) (*Store, error) {
-	pool, err := pgxpool.New(ctx, dsn)
+	cfg, err := poolConfigFor(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("opening store: %w", err)
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("opening store: %w", err)
 	}
