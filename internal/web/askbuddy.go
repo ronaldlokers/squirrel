@@ -153,7 +153,7 @@ func proposalCard(p *Proposal) cardView {
 func offerHint(s Store, opts Options, r *http.Request) string {
 	// Through offerFor, the path that goes via the coach's cache: it may consult a
 	// decision already paid for and may never cause one. Asking has to stay free.
-	o := offerFor(s, opts, r, true, false)
+	o := offerFor(s, r, true)
 	if o == nil {
 		return ""
 	}

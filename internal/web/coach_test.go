@@ -76,9 +76,9 @@ func TestAskingBuddyCallsNoModel(t *testing.T) {
 	require.Empty(t, c.asked, "asking called a model")
 }
 
-// The narrower half of the same rule, and the one that was missed once: it may
-// consult a decision that was already paid for, and may never cause one.
-func TestAskingBuddyNeverPaysForADecision(t *testing.T) {
+// Asking Buddy does not pay for a decision, and neither does drawing a screen:
+// the offer card carries what the picker chose on both surfaces.
+func TestAskingBuddyShowsWhatThePickerChose(t *testing.T) {
 	f := withOffer(&squirrel.Offer{
 		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
 	})
@@ -89,26 +89,9 @@ func TestAskingBuddyNeverPaysForADecision(t *testing.T) {
 	f.appended = nil
 	mountedWith(t, f, c).call(t, "POST", "/buddy/ask", nil)
 
-	require.Equal(t, 1, c.peeked, "asking did not go through the cache")
+	require.Zero(t, c.peeked, "asking spent a decision")
 	require.Contains(t, f.appended[1].Words, "ring the vet")
 	require.NotContains(t, f.appended[1].Words, "put the bins out")
-}
-
-// The conversation is the screen the decision is for, so it may pay. Stated as
-// its own test because the rule is asymmetric, and an asymmetry nobody pinned
-// is one that quietly becomes symmetric.
-func TestTheConversationMayPayForADecision(t *testing.T) {
-	f := withOffer(&squirrel.Offer{
-		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
-	})
-	c := &fakeCoach{decision: &fakeDecision{
-		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
-	}}
-
-	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
-
-	require.Zero(t, c.peeked, "the conversation went through the cache instead of asking")
-	require.Contains(t, body, "put the bins out")
 }
 
 // A low day does not empty it. Someone who has pressed *ask Buddy* has already

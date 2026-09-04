@@ -387,47 +387,28 @@ func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
 	require.Equal(t, []int64{7}, f.refused)
 }
 
-// It notices without being asked. Opening the board used to cost nothing and
-// say the picker's own clause until you pressed for better; the press went on
-// 3 September 2026, because a line you have to think of asking for is a line
-// this product has failed to give you. The cache keys on the thing that was
-// picked, so this is one call per thing offered rather than one per render.
-func TestTheBoardNoticesWithoutBeingAsked(t *testing.T) {
+// Opening the board spends nothing, and neither does pressing anything on it.
+//
+// A model wrote the pulled strip's clause between 3 and 4 September 2026, one
+// call per newly picked thing, made inside the render. NOT TODAY invalidates
+// that decision by design, so the next card could not be drawn until a tool
+// loop of up to three round trips had finished — seconds, on the press that
+// means "not this one". What the product notices is written in the margin
+// instead, once a day, where nothing waits for it.
+func TestTheBoardDrawsWithoutAskingAModel(t *testing.T) {
 	f := aBoardStore()
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
-	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 3, text: "start with the meter", because: "it is five minutes"}}
+	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 9, text: "start with the meter", because: "it is five minutes"}}
 	m := mountedWith(t, f, c)
 
 	body := m.call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "it is five minutes", "the board says nothing it noticed")
-	require.Contains(t, body, `class="why noticed"`, "the line is not marked as having been noticed")
-	require.Contains(t, body, `action="/board/badly"`, "there is no way to say it did not land")
-	require.NotContains(t, body, "ask Buddy", "the press that asked outlived the asking")
-}
-
-// A model that answers nothing leaves the picker's clause standing, and no
-// mark: the mark says where the sentence came from, so it may not appear when
-// the sentence came from the rules.
-func TestNoMarkWhenNoModelAnswered(t *testing.T) {
-	f := aBoardStore()
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
-	m := mountedWith(t, f, &fakeCoach{})
-
-	body := m.call(t, "GET", "/", nil).Body.String()
-
-	require.Contains(t, body, "the oldest thing you decided to do")
-	require.NotContains(t, body, `class="why noticed"`)
-}
-
-func TestSayingItLandedBadlyFromTheBoard(t *testing.T) {
-	f := aBoardStore()
-	m := mountedWith(t, f, &fakeCoach{})
-
-	w := m.call(t, "POST", "/board/badly", strings.NewReader(""))
-
-	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Len(t, f.landedBadly, 1, "nothing was marked as having landed badly")
+	require.Contains(t, body, "the oldest thing you decided to do", "the picker's own clause is gone")
+	require.Contains(t, body, "send the meter reading")
+	require.NotContains(t, body, "it is five minutes", "a model was asked while the board was drawn")
+	require.NotContains(t, body, "noticed", "the pulled strip still carries a mark")
+	require.NotContains(t, body, `action="/board/badly"`,
+		"there is a way to refuse a sentence no model wrote")
 }
 
 func aSearchableStore() *fakeStore {

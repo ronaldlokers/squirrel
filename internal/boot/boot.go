@@ -301,7 +301,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 
 			Remember:    webRemember,
 			Forget:      webForget,
-			Decide:      decide,
 			ForgetOffer: forgetOffer,
 			Smaller:     makeSmaller,
 

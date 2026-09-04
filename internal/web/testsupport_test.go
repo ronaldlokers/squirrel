@@ -1106,7 +1106,6 @@ func (c *fakeCoach) smaller(_ context.Context, _ int64, task, blocker string) ([
 
 func (c *fakeCoach) options(o Options) Options {
 	o.Ask = c.ask
-	o.Decide = c.decide
 	o.Smaller = c.smaller
 	o.Split = func(_ context.Context, _ int64, _ string) ([]string, bool) {
 		return c.pieces, len(c.pieces) > 0
