@@ -365,6 +365,49 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.69.0 — 4 September 2026
+
+**Pressing a button on the board costs nothing.**
+
+The report: *"When I click 'not today' it takes a few seconds before something
+happens on screen."* The press was never the cost — it writes a refusal and
+redirects. The redraw was.
+
+Since v0.65.0 the pulled strip's clause was written by a model for whatever the
+picker had just chosen. Answering an offer invalidates that cached decision *by
+design* — that invalidation was itself a fix, for a card that redrew itself
+unchanged — so the very next draw was a guaranteed miss, and deciding is a tool
+loop of up to three round trips run inside the render. Press, wait for a model,
+then see the next card.
+
+**The picker chooses and the picker says why**, on the board and in the
+conversation both. `judged`, the `Decide` option, the acorn mark and *that did
+not land* went with it: the mark said where a sentence came from, and with every
+sentence coming from the rules there is nothing to attribute and nothing to
+refuse there.
+
+**What stays.** `ForgetOffer` — the core still caches a decision for Campfire's
+own *what should I do now*, and answering on the board has to invalidate it or
+the chat goes on offering something already dealt with. And marginalia, which is
+where the product speaks unbidden: in the margin, once a day, where nothing
+waits for it.
+
+**This was written down before it happened.** v0.65.0 recorded the risk while
+taking it: *"A surface that has to cost nothing to open may not spend a call...
+If that turns out to be the wrong trade, the fix is a cadence — notice once a
+day rather than once per pick, and it is a small change."* It was the wrong
+trade, the owner found it by pressing a button, and the fix was the small change
+it was predicted to be. The value of writing the risk down was that nobody had
+to work out what had gone wrong.
+
+**Two intermediate answers were rejected on the way**, and both are worth
+naming. Filling the decision in the background would have removed the wait while
+still spending a call per newly picked thing — three presses, three calls.
+Asking only about a thing offered more than once would have kept a model on the
+board for the case where the picker's clause has already failed. Neither
+survived the question the owner actually asked: why is a model involved when I
+press a button?
+
 ### v0.68.0 — 4 September 2026
 
 **A press does the thing. And the board is worked rather than navigated.**
