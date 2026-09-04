@@ -17,7 +17,6 @@ func withPush(t *testing.T, f *fakeStore) *testMux {
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		PushKey:  "BKtestkey",
-		Spool:    &fakeSpool{},
 	}))
 	return m
 }

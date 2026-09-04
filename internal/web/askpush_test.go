@@ -39,7 +39,6 @@ func pushScreen(t *testing.T, f *fakeStore) *httptest.Server {
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
 		PushKey:  "BKtestkey",
-		Spool:    &fakeSpool{},
 	}))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})

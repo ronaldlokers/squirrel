@@ -58,15 +58,6 @@ type Options struct {
 	// never offered — a control that cannot work is worse than one that was
 	// never drawn.
 	Photos Photos
-	// Spool is where a capture is made durable before anything says it was
-	// kept. Nil is refused at mount: a screen that captures without one is the
-	// gap this exists to close.
-	Spool Spool
-	// Settle makes what was just spooled visible, if it can. Nil is a working
-	// state: the drain picks a capture up on its own interval either way, and
-	// this only decides whether the strip is on the page you are sent back to
-	// or on the one after it.
-	Settle func(context.Context)
 
 	// The coach's three seams. Funcs of primitives rather than an interface, because
 	// this package must not know internal/coach exists. internal/boot supplies them.
@@ -123,17 +114,6 @@ type Options struct {
 	// card must know whether to draw the press before anything is asked.
 	Split      func(ctx context.Context, personID int64, text string) ([]string, bool)
 	Splittable func(text string) bool
-}
-
-// Spool is the durable half of capture, and the same one the room's captures go
-// through. Declared here and satisfied structurally, like Store.
-type Spool interface {
-	// Write is durable when it returns: written, fsynced, renamed, and the
-	// directory fsynced too.
-	Write(c squirrel.Capture) (string, error)
-	// Writable reports whether the directory can be written to at all, so the
-	// slot can refuse loudly rather than accept a thought it cannot keep.
-	Writable() bool
 }
 
 // Store is the narrow surface the screen consumes. Declared here rather than

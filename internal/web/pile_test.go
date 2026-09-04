@@ -156,15 +156,13 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 // reason nobody chose.
 //
 // Refused at mount rather than at first use, because first use is the worst
-// moment to find out — a capture with nowhere durable to go is the whole gap
-// this product exists to close.
+// moment to find out.
 func TestMountRefusesWithoutWhatItNeeds(t *testing.T) {
 	whole := func() Options {
 		return Options{
 			RequiredGroup: "squirrel-users", Gate: &Gate{},
 			Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 			Login:    aTestLogin,
-			Spool:    &fakeSpool{},
 		}
 	}
 	require.NoError(t, Mount(newTestMux(), &fakeStore{}, whole()),
@@ -179,7 +177,6 @@ func TestMountRefusesWithoutWhatItNeeds(t *testing.T) {
 		{"the way in", func(o *Options) { o.Gate = nil }, "no way in"},
 		{"the sessions", func(o *Options) { o.Sessions = nil }, "no sessions"},
 		{"the login", func(o *Options) { o.Login = nil }, "turns a login into a person"},
-		{"the spool", func(o *Options) { o.Spool = nil }, "no spool"},
 	} {
 		opts := whole()
 		missing.drop(&opts)

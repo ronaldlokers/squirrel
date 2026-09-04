@@ -31,7 +31,7 @@ func TestTheSlotKeepsAThought(t *testing.T) {
 	// Whose it is, in the transport's own vocabulary — the drain resolves the
 	// owner from this, and a capture that resolves to nobody is a note that
 	// belongs to no one. It is the session's sub;
-	// TestACaptureIsSpooledUnderTheSubThatTypedIt is the one that proves it
+	// TestACaptureIsKeptUnderTheSubThatTypedIt is the one that proves it
 	// comes from there rather than from anywhere else that says "ronald".
 	require.NotNil(t, sp.written[0].SenderID)
 	require.Equal(t, "ronald", *sp.written[0].SenderID)
@@ -159,13 +159,13 @@ func (signedInAs) EndSession(context.Context, []byte) error { return nil }
 // the sub, and a second person's notes land belonging to nobody if it is
 // anything else.
 //
-// The sub rather than the person id because the spool is a transport queue and
-// speaks in transport vocabulary, the same as the room's captures do.
-func TestACaptureIsSpooledUnderTheSubThatTypedIt(t *testing.T) {
+// The sub travels with the row as well as the person, because a capture keeps
+// transport vocabulary the same way the room's do.
+func TestACaptureIsKeptUnderTheSubThatTypedIt(t *testing.T) {
 	f, sp := &fakeStore{}, &fakeSpool{}
+	f.kept = sp
 	m := newTestMux()
 	opts := signedInOptions()
-	opts.Spool = sp
 	opts.Sessions = newSessions(signedInAs{personID: 7, sub: "sub-seven"}, cacheFor, cacheMost)
 	require.NoError(t, Mount(m, f, opts))
 
@@ -174,5 +174,5 @@ func TestACaptureIsSpooledUnderTheSubThatTypedIt(t *testing.T) {
 	require.Len(t, sp.written, 1)
 	require.NotNil(t, sp.written[0].SenderID)
 	require.Equal(t, "sub-seven", *sp.written[0].SenderID,
-		"the capture was spooled under somebody else's name")
+		"the capture was kept under somebody else's name")
 }

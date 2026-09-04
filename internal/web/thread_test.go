@@ -124,7 +124,7 @@ func TestSayingSomethingWritesBothTurns(t *testing.T) {
 // not a replacement for capture — the spool is what survives the database being
 // unreachable, and losing a thought is the one failure this product exists to
 // prevent.
-func TestSayingSomethingSpoolsTheWords(t *testing.T) {
+func TestSayingSomethingKeepsTheWords(t *testing.T) {
 	sp := &fakeSpool{}
 	routedSpooling(t, &fakeStore{}, sp).call(t, "POST", "/capture", strings.NewReader("text=milk"))
 

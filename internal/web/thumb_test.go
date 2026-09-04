@@ -46,7 +46,7 @@ func askForThumb(t *testing.T, f *fakeStore, ph *fakePhotos, id string) *httptes
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
-		Spool:    &fakeSpool{}, Photos: ph,
+		Photos:   ph,
 	}
 	r := httptest.NewRequest("GET", "/photo/"+id+"/thumb", nil)
 	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
