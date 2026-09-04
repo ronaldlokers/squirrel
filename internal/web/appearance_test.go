@@ -59,10 +59,11 @@ var appearanceScreens = map[string][]string{
 	// recording it and its parts records most of the world.
 	"/": {
 		".ops", ".ops .wordmark", ".ops .clock .t", ".ops .clock .d", ".ops .chip",
+		".ops .rail", ".ops .rail .find", ".ops .chip.face",
 		".baysign", ".baysign .n", ".channel",
 		".strip", ".strip .holder", ".strip .words", ".strip .what", ".strip .mark",
 		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
-		".rhythms .stamp", ".ledge .tab", ".pulled", ".pulled .why b", ".pulled .said",
+		".blankstrip .inline", ".blankstrip .count", ".seam", ".strip.resting", ".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
 

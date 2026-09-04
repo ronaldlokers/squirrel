@@ -27,6 +27,17 @@
   font-variation-settings: var(--precise), "wght" 750;
 }
 .ops .spacer, .lid .spacer { flex: 1; }
+.ops .brand { display: flex; align-items: center; gap: 11px; }
+.ops .rail {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 8px 5px 10px; border-radius: 999px;
+  background: rgba(28, 17, 11, .26);
+  border: var(--line) solid rgba(254, 214, 167, .22);
+}
+.ops .rail .sep {
+  width: 2px; align-self: stretch; margin: 2px;
+  background: rgba(254, 214, 167, .22);
+}
 .ops .chip, .lid .chip {
   box-sizing: border-box;
   position: relative; display: grid; place-items: center; flex: 0 0 auto;
@@ -50,6 +61,10 @@
 }
 .ops .chip:focus-visible, .lid .chip:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
 
+.ops .rail .find {
+  background: none; border: 0; padding: 0 4px;
+}
+.ops .rail .find input { width: 190px; }
 .ops .find, .lid .find {
   box-sizing: border-box;
   display: flex; align-items: center; gap: 8px; min-width: 0;
@@ -74,8 +89,14 @@
     gap: 9px; padding: env(safe-area-inset-top) 12px 5px;
     background: none; border-bottom: 0;
   }
-  .ops .markart, .ops .wordmark, .ops .clock, .ops .spacer,
+  .ops .brand, .ops .clock, .ops .spacer, .ops .rail .sep,
   .lid .markart, .lid .wordmark, .lid .clock { display: none; }
+  .ops .rail { flex: 1; gap: 9px; padding: 0; background: none; border: 0; }
+  .ops .rail .find {
+    flex: 1; height: 40px; gap: 9px; padding: 0 14px; border-radius: 999px;
+    background: rgba(28, 17, 11, .32); border: 2px solid rgba(254, 214, 167, .3);
+  }
+  .ops .rail .find input { width: 100%; font-size: 16px; }
   .ops .chip.face, .lid .chip.face { display: grid; }
   .ops .find, .lid .find {
     flex: 1; min-width: 0; height: 40px; gap: 9px; padding: 0 14px;

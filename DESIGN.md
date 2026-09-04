@@ -430,6 +430,9 @@ not a terminal, and the ASCII direction was declined over exactly this.
 | `stamp` | Recursive precise, 12.5px caps | A stamp's face. |
 | `mark` | Recursive precise, 11px caps | A strip's right-edge mark. |
 | `written` | Recursive casual, 14.5px | What you type. |
+| `glyph` | Recursive precise, 17px | The `+` that keeps a strip, and the notification count. A single character sized to a control, never a word. |
+| `label` | Recursive precise, 9.5px caps | A word under a picture: the five faces in the tray. |
+| `label-tight` | Recursive precise, 9px caps | The same word below 620px, where the five faces sit across a phone. |
 
 ### Named Rules
 
@@ -649,8 +652,8 @@ two lifted depths; a hard shadow alone at those sizes is a sticker.
 
 ## Shapes
 
-**Square, because it is printed.** Radii here are 3px and 2px, and the previous
-world's 14px card corner is retired with the card. A flight strip is guillotined
+**Square, because it is printed.** Radii here are 3px, 2px and 999px, and the
+previous world's 14px card corner is retired with the card. A flight strip is guillotined
 from a sheet; the corner is the smallest radius that keeps a 2px outline from
 looking chipped on a low-density screen.
 
@@ -658,6 +661,12 @@ looking chipped on a low-density screen.
 centred vertically, which is where a thumb takes the strip out. On the pulled
 strip it is 8×26. It is the only ornament in the system and it is functional —
 without it the holder is a colour bar.
+
+**The pill, and only where the frame is.** 999px belongs to the chrome and never
+to the board's own furniture: the bay bar on a phone, the tool cluster in the
+top bar, and the chips inside them. Everything that holds content — strips,
+signs, stamps, racks — keeps the 3px corner. A pill on a strip would be a
+capsule, and this world is guillotined paper.
 
 **The 2px line.** Every border in the product, including the ones that used to
 be 3px. Thinner than the sticker world by exactly one pixel, and that pixel is
@@ -959,6 +968,24 @@ the things, and it never instructs and never asks.
 **Refusing is the only control, and it is real.** *not useful* sits at the end
 of the line, quiet and lowercase. The words are kept, not deleted, and the next
 pass is shown them as something not to write again.
+
+### Capture writes the row
+
+**The screen writes what you typed, before it answers.** A capture from the
+board or the dock is one row, written in the request, so the board you are sent
+back to has the strip on it. It went through a spool and a background drain
+until 4 September 2026, and the delay was the whole of what made the product
+feel broken: a press did nothing, a reload showed it had worked.
+
+**Campfire still spools.** That path has nobody in front of it and nowhere to
+say a write failed, so durability there is worth an extra hop. The screen has
+both — it can refuse out loud, and a refusal is better than a promise it cannot
+keep.
+
+**What that trades.** With Postgres unreachable the screen now says so instead
+of accepting the words and settling them later. That is the honest report: a
+capture box that clears on failure is a capture box that eats thoughts, and the
+words stay in the box.
 
 ### The page about you
 

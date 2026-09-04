@@ -15,8 +15,8 @@ func TestAShelfIsAPressInsideTheNotes(t *testing.T) {
 	// not a door of its own.
 	body := opened(t, aShelf(), "notes")
 
-	require.Contains(t, body, `href="/?shelf=kept"`, "the notes do not offer what you kept")
-	require.Contains(t, body, `href="/?shelf=held"`, "the notes do not offer what you set aside")
+	require.Contains(t, body, "the things you kept", "the notes do not show what you kept")
+	require.Contains(t, body, "what you set aside", "the notes do not show what you set aside")
 	require.NotContains(t, body, `href="/r/kept"`, "a shelf is still a door on the rail")
 	require.NotContains(t, body, `href="/r/held"`, "a shelf is still a door on the rail")
 }

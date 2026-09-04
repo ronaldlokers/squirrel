@@ -162,8 +162,7 @@ func TestWhatYouSetAsideIsNotOnTheConversation(t *testing.T) {
 	body := opened(t, f, "notes")
 
 	require.Contains(t, body, "what you set aside", "there is no way to it at all")
-	require.NotContains(t, body, "ring the vet",
-		"what you set aside is on the conversation rather than a press away")
+	require.Contains(t, body, "ring the vet", "what you set aside is not in the rack it belongs to")
 }
 
 // Reached from the tasks, which is where you look when you wonder what
@@ -175,7 +174,7 @@ func TestTheTasksReachIt(t *testing.T) {
 	body := opened(t, f, "notes")
 
 	require.Contains(t, body, "what you set aside")
-	require.Contains(t, body, `href="/?shelf=held"`, "the ledge cannot reach it")
+	require.Contains(t, body, `class="seam"`, "the rack does not divide what is settled from what is not")
 }
 
 // And the page itself is gone.

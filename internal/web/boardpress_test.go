@@ -241,12 +241,12 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 
 	c.until(t, "the easing", `document.documentElement.classList.contains("eased")`)
 	require.NotEqual(t, "0s", c.eval(t, `return getComputedStyle(
-		document.querySelector(".strip.answerable .stamps")).transitionDuration`),
+		document.querySelector(".strip.answerable .words")).transitionDuration`),
 		"a press opens the strip with no motion at all")
 
 	c.eval(t, `document.documentElement.classList.remove("eased"); return 1`)
 	require.Equal(t, "0s", c.eval(t, `return getComputedStyle(
-		document.querySelector(".strip.answerable .stamps")).transitionDuration`),
+		document.querySelector(".strip.answerable .words")).transitionDuration`),
 		"the collapse carries its own motion, so the strips animate shut on the way in")
 }
 
