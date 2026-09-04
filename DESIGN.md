@@ -913,36 +913,22 @@ answer to read.
 
 ### It notices
 
-The pulled strip's reason is where the product says what it noticed. It is not
-a reply and nobody said it: there is no name on it, no face, and no press that
-asked for it. A line appears because something was worth saying about the thing
-you were handed, or the picker's own clause stands and nothing marks it.
+What the product noticed is written in the margin of the board, once a day.
+Nothing else on the board says anything a model wrote, and nothing waits for
+one.
 
-**The mark says where the sentence came from, not who said it.** The squirrel
-stays; the person goes. A model wrote it or the rules did, and the reader is
-entitled to know which.
+**The pulled strip's clause is the picker's.** The rules choose the thing and
+the rules say why. A model wrote that clause between 3 and 4 September 2026 —
+one call per newly picked thing, made inside the render — and it was removed for
+the reason it was flagged as risky when it shipped: *not today* invalidates that
+decision by design, so the press that means "not this one" waited seconds for
+the next card, and a board that costs a model call to press is a board you stop
+pressing.
 
-**The refusal has to be real.** *That did not land* is not a way to hide a line:
-it is written into the record the next prompt reads, so a line you refused
-shapes the ones that follow. Unbidden text without that is something that
-happens to you.
-
-**It is rare by construction.** One line, about the one thing the product
-already chose to put in front of you, cached against that thing — so the cost
-is one call per thing offered rather than one per render, and the budget is what
-says no.
-
-**The clause may point at the rest of the board.** The detail this thing needs
-is written down in a note; this is the same errand as another. That is the one
-thing a clause can say that a person cannot get by reading the list, and it is
-the same test marginalia is held to. Only when it is true, never a count, and
-never about the person.
-
-**What it may point at, it may not hand you.** The notes go in as text and
-carry no ids, so nothing on that list can come back as the thing to do. A note
-is a thought nobody has decided about, and offering one would be the product
-deciding for you — which is the line the read tools have refused to cross since
-they existed.
+**No mark on the pulled strip, and nothing to refuse there.** The mark said
+where a sentence came from; with every sentence coming from the rules there is
+nothing to attribute. *That did not land* went with it — marginalia carries its
+own refusal, and that is the only place the product speaks unbidden.
 
 ### Marginalia
 

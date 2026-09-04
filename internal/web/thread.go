@@ -536,11 +536,11 @@ func offerTurn(s Store, opts Options, r *http.Request) (squirrel.Turn, bool) {
 	// address bar rather than the database: storing it would make somebody re-decide
 	// tomorrow that they meant it.
 	anyway := r.URL.Query().Get("anyway") != ""
-	o := offerFor(s, opts, r, anyway, true)
+	o := offerFor(s, r, anyway)
 	if o == nil {
 		// Nothing, or something withheld because of how you said you were. Only the
 		// second has anything to say.
-		if !anyway && offerFor(s, opts, r, true, false) != nil {
+		if !anyway && offerFor(s, r, true) != nil {
 			return wayThrough()
 		}
 		return squirrel.Turn{}, false

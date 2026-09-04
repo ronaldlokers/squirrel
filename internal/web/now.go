@@ -16,34 +16,27 @@ import (
 // offerFor answers nil for every failure. A picker that cannot answer must not
 // take down a page that rendered without one for the product's whole life.
 //
-// mayAsk says whether this render may spend a model call. Home may; a surface
-// that has to cost nothing to open may not.
-func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offerView {
+// The picker chooses and the picker says why. A model wrote these words on the
+// board between 3 and 4 September 2026 — one call per newly picked thing, made
+// inside the render — and pressing NOT TODAY meant waiting seconds for the next
+// card, because the press invalidates that decision by design. What it said was
+// worth having; what it cost to press a button was not. What the product
+// noticed is written in the margin now, once a day, where nothing waits for it.
+func offerFor(s Store, r *http.Request, anyway bool) *offerView {
 	personID, ok := personOf(r)
 	if !ok {
 		return nil
 	}
 	o, found, err := s.PickNow(r.Context(), personID, now(), anyway)
 	if err != nil || !found {
-		// Nothing to hand over, and the coach is not asked: a model invited to find
-		// something when the rules found nothing would be answering a different
-		// question.
 		return nil
 	}
-	picked := o
-	o = judged(opts, r, personID, o, mayAsk)
 	v := &offerView{
 		Kind:    string(o.Kind),
 		RefID:   o.RefID,
 		Text:    o.Text,
 		Because: o.Because,
 	}
-	// Whether a model wrote these words, which is the only thing the mark is
-	// allowed to say. Compared against what the rules answered rather than
-	// asked of the coach: a model that declined leaves the picker's clause
-	// standing, and a mark on it would be the product claiming a source it
-	// does not have.
-	v.Noticed = o.Text != picked.Text || o.Because != picked.Because
 	// A running timer is a thing you are doing rather than a row that was
 	// picked, so it carries no buttons of its own: the lid already has the one
 	// control it needs, which is the way to stop.
@@ -51,18 +44,14 @@ func offerFor(s Store, opts Options, r *http.Request, anyway, mayAsk bool) *offe
 	return v
 }
 
-// judged is the offer after a model has looked at it, or the same offer. Same
-// type in and out, so nothing downstream can tell which produced it.
-// JudgementHelps is the core's rule about which kinds a model may touch.
-func judged(opts Options, r *http.Request, personID int64, o squirrel.Offer, mayAsk bool) squirrel.Offer {
-	if opts.Decide == nil || !squirrel.JudgementHelps(o.Kind) {
-		return o
+// forgetOffer drops the decision the core cached, so Campfire stops offering
+// something this screen has just answered. Called after the error check: an
+// answer that did not land is not an answer.
+func forgetOffer(opts Options, personID int64) {
+	if opts.ForgetOffer == nil {
+		return
 	}
-	kind, refID, text, because, ok := opts.Decide(r.Context(), personID, string(o.Kind), o.RefID, mayAsk)
-	if !ok || text == "" || because == "" {
-		return o
-	}
-	return squirrel.Offer{Kind: squirrel.OfferKind(kind), RefID: refID, Text: text, Because: because}
+	opts.ForgetOffer(personID)
 }
 
 // nowActHandler is the offer's three answers, each a form POST answered with a
@@ -111,16 +100,6 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 		answerWith(w, r, keepSaid(r.Context(), s, personID,
 			saidAboutTheOffer(r.FormValue("act"), r.FormValue("label"))), backToTheRoom(r))
 	}
-}
-
-// forgetOffer drops the decision a model made. Called after the error check: an
-// answer that did not land is not an answer, and throwing the decision away would
-// swap the card underneath a press that failed.
-func forgetOffer(opts Options, personID int64) {
-	if opts.ForgetOffer == nil {
-		return
-	}
-	opts.ForgetOffer(personID)
 }
 
 // nowStuckHandler is "I can't start", the one branch that can end without

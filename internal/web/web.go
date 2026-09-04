@@ -91,15 +91,11 @@ type Options struct {
 	// Forget drops it. Ending a conversation has to mean it is over, and has to
 	// mean nothing else.
 	Forget func(personID int64, room string)
-	// Decide lets a model choose among what the picker found, or is nil. The
-	// screen never calls it when the picker found nothing: absent rather than
-	// empty is a rule about this region, not about who chose.
-	Decide squirrel.Decider
-	// ForgetOffer drops the decision Decide made, or is nil where there is no coach.
-	//
-	// Decide may answer with a different row than the picker chose, so answering the
-	// card writes against a row the picker never pointed at, the picker's answer does
-	// not move, and the cache behind Decide serves the same decision back.
+	// ForgetOffer drops the decision the core cached for Campfire's own "what
+	// should I do now", or is nil where there is no coach. The screen no longer
+	// asks for a decision, but answering an offer here still has to invalidate
+	// the one the chat may be holding: otherwise it goes on offering a thing
+	// that was done or turned down, for up to half an hour.
 	ForgetOffer func(personID int64)
 	// Smaller breaks the thing being offered into steps, or is nil. Nil means
 	// the ladder's own fixed line is the whole answer, which is what it was

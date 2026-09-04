@@ -157,7 +157,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			// to remove the thinking-of. The cache keys on the thing that was
 			// picked, so the cost is one call per thing offered rather than
 			// one per render, and the budget is what says no.
-			Pulled:  offerFor(s, opts, r, false, true),
+			Pulled:  offerFor(s, r, false),
 			Timer:   runningTimer(s, opts, r),
 			Tray:    trayStrips(r, s, opts, personID, at),
 			Faces:   facesIfItIsTime(r, s, personID, at),
@@ -867,23 +867,6 @@ func stuckView(asked string) (blockers []blockerView, said string) {
 type blockerView struct {
 	Why   string
 	Words string
-}
-
-// boardBadlyHandler is the one press that says the last thing Buddy said did
-// not land. It marks the answer rather than arguing with it, and the marked
-// ones are what the next prompt is shown as examples of what does not work.
-func boardBadlyHandler(s Store, opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		personID, ok := personOf(r)
-		if !ok {
-			fail(w, errNoOwner)
-			return
-		}
-		if _, err := s.LandedBadlyLatest(r.Context(), personID, now()); err != nil {
-			slog.Error("marking what did not land", "error", err)
-		}
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	}
 }
 
 // boardCaptureHandler is the notes rack's own slot when it carries a
