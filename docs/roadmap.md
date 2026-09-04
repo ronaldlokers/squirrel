@@ -365,6 +365,67 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.68.0 — 4 September 2026
+
+**A press does the thing. And the board is worked rather than navigated.**
+
+The owner's report was that clicking did nothing and a refresh showed the new
+state. The cause was not the spool's durability but its asynchrony: a capture
+from the screen went to a spool, a background drain wrote the row, and the board
+you were redirected to was drawn before the row existed. One of the two capture
+paths did not even ask for the settling pass that hid this — and it is the one
+the notes bay uses whenever photographs are configured, which is the most
+ordinary act on the board.
+
+**The screen writes the row itself now.** Inside the request, before it answers.
+The spool and the drain stay where they earn their keep: Campfire has nobody in
+front of it and nowhere to report a failed write, so the extra hop is worth it
+there. The screen has both.
+
+**What was traded, stated rather than hidden.** With Postgres unreachable the
+box says it could not keep the words instead of accepting them and settling them
+later. The words stay in the box, and the turn that says so is unchanged. It was
+argued against first, reaffirmed, and then done: the owner's call, not a quiet
+one.
+
+**It removed a class of bug rather than an irritation.** A question typed in the
+dock was dropped from the pile by matching its *words*, because the row it
+wanted did not exist yet when the answer came back. Two notes saying the same
+thing could drop the wrong one, and a slow drain dropped nothing. It takes the
+id of the row it just wrote.
+
+**Six design changes, each picked from three variants at the screen.** The top
+bar became two objects instead of seven siblings — identity leading, everything
+you operate in one cluster, the clock outside it as information. The chores
+strip asks for its interval on the strip, because four preset stamps and a
+second row said the same thing twice. The agenda strip is shaped like what it
+makes, and its clock is 24 hours *by construction*: a native time input renders
+in the browser's locale and no attribute changes that, so the hour and the
+minute are two fields. The notes are one list — what needs deciding first, then
+what was set aside and what was kept under their own seams — and the ledge with
+its two shelf trips is gone. Bay colour rides the sign's holder rather than a
+tint-by-category wash.
+
+**Two anti-patterns found mechanically and fixed, both mine.** The marginalia
+line shipped in v0.66.0 with a 3px orange left border, which is the single most
+recognisable tell of generated UI and is banned outright by the craft floor. And
+the touch path animated `max-height` with a 320px guess in it. A hairline rule
+and `grid-template-rows` respectively.
+
+**The design loop itself was the week's real blocker**, and three things fixed
+it: `?only=<bay>` draws one rack in development, so a picked element is one
+element; `/dev/redraw` reloads the page when a template changes, which is what
+hot reload looks like on a Go server; and the dev fixture keeps what it is told
+instead of answering false to every write, which is why pressing things there
+had felt dead. A test now refuses to let a live-overlay script tag reach a
+committed template.
+
+**A TypeScript rewrite was costed rather than argued about** —
+`docs/proposals/2026-09-03-typescript-rewrite.md`. 27,178 lines of source,
+41,215 lines of proved tests, four direct dependencies, and a blocker the
+rewrite would not have fixed: one component rendered per bay is four instances
+in React too.
+
 ### v0.67.0 — 3 September 2026
 
 **The reason line may point at the rest of the board.**
