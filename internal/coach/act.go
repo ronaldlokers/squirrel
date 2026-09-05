@@ -10,9 +10,9 @@ import (
 
 // A conversational turn that can act.
 //
-// The read tools are the ones Decide uses, without choose. The write tools are
-// the ones that pass the policy's test — already a button, undone by one press
-// — plus the four kinds that do not, which the model may only propose.
+// The write tools are the ones that pass the policy's test — already a
+// button, undone by one press — plus the four kinds that do not, which the
+// model may only propose.
 //
 // Nothing here can reword a note, touch a check-in, or delete a row. Those are
 // not omissions to be filled in later: rewriting your own words is what `!fix`
@@ -335,8 +335,6 @@ var writes = map[string]bool{
 	"refuse": true, "snooze_chore": true, "create_task": true,
 }
 
-// readTools is what Decide reads with, without choose: a conversational turn
-// has nothing to choose, it has been handed what is on screen.
 func readTools() []map[string]any {
 	out := make([]map[string]any, 0, len(toolSpecs)-1)
 	for _, spec := range toolSpecs {

@@ -28,37 +28,30 @@ func withOffer(o *squirrel.Offer) *fakeStore {
 // for the next card.
 //
 // What the product notices is written in the margin now, once a day, where
-// nothing waits for it. These pin that no screen spends a call to draw itself.
+// nothing waits for it. No surface can spend a call to draw itself: Decide is
+// gone from the Coach interface, so there is nothing left to ask.
 
 func TestTheBoardShowsWhatThePickerChose(t *testing.T) {
 	f := withOffer(&squirrel.Offer{
 		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
 	})
-	c := &fakeCoach{decision: &fakeDecision{
-		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
-	}}
+	c := &fakeCoach{}
 
 	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "ring the vet")
 	require.Contains(t, body, "you decided this one")
-	require.NotContains(t, body, "put the bins out", "a model was asked to draw the board")
-	require.Empty(t, c.picked, "the model was asked about the pick")
 }
 
 func TestTheConversationShowsWhatThePickerChose(t *testing.T) {
 	f := withOffer(&squirrel.Offer{
 		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
 	})
-	c := &fakeCoach{decision: &fakeDecision{
-		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
-	}}
+	c := &fakeCoach{}
 
 	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
 
 	require.Contains(t, body, "ring the vet")
-	require.NotContains(t, body, "put the bins out")
-	require.Empty(t, c.picked)
 }
 
 // And the buttons act on it, which is the half that would silently rot: an
@@ -73,16 +66,4 @@ func TestTheButtonsActOnWhatWasChosen(t *testing.T) {
 
 	require.Contains(t, body, `name="kind" value="task"`)
 	require.Contains(t, body, `name="id" value="7"`)
-}
-
-func TestNothingPickedDrawsNoOffer(t *testing.T) {
-	f := &fakeStore{}
-	c := &fakeCoach{decision: &fakeDecision{
-		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
-	}}
-
-	body := mountedWith(t, f, c).call(t, "GET", "/", nil).Body.String()
-
-	require.NotContains(t, body, "put the bins out",
-		"a model was invited to find something when the rules found nothing")
 }

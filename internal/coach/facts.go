@@ -45,17 +45,6 @@ type Happened struct {
 	What string `json:"what"`
 }
 
-// Written is one thing on the board that was written down and not decided
-// about.
-//
-// It carries no id, and that is the whole of its design. OpenWork hands back
-// ids because the model is meant to choose one of those; a note is a thought
-// nobody has decided about yet, and an id is the thing that would let it be
-// chosen. Without one it can only ever be mentioned.
-type Written struct {
-	Text string `json:"text"`
-}
-
 // Facts is the read surface. Every method may fail, and every failure is
 // handed to the model as an empty result rather than an error: a tool that
 // cannot answer is a fact the model does not have, and the deterministic floor
@@ -74,10 +63,6 @@ type Facts interface {
 	// there is no failure rate in the table and the median is a fact about the
 	// bins rather than about you.
 	Typically(ctx context.Context, personID int64, label string) (int, bool, error)
-	// Written is what is on the board and not decided about. It is never a
-	// tool: it goes in as text, so nothing it names can come back from
-	// choose().
-	Written(ctx context.Context, personID int64, limit int) ([]Written, error)
 }
 
 // The caps. Ten is the number the pile screen already uses for a page of

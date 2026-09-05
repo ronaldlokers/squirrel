@@ -44,16 +44,6 @@ func offerFor(s Store, r *http.Request, anyway bool) *offerView {
 	return v
 }
 
-// forgetOffer drops the decision the core cached, so Campfire stops offering
-// something this screen has just answered. Called after the error check: an
-// answer that did not land is not an answer.
-func forgetOffer(opts Options, personID int64) {
-	if opts.ForgetOffer == nil {
-		return
-	}
-	opts.ForgetOffer(personID)
-}
-
 // nowActHandler is the offer's three answers, each a form POST answered with a
 // 303 — so the region works with no script and a reload re-reads.
 func nowActHandler(s Store, opts Options) http.HandlerFunc {
@@ -94,7 +84,6 @@ func nowActHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		forgetOffer(opts, personID)
 		// What the two of you said about it. After the write, because a
 		// conversation must not claim something happened that did not.
 		answerWith(w, r, keepSaid(r.Context(), s, personID,
@@ -137,11 +126,6 @@ func nowStuckHandler(s Store, opts Options) http.HandlerFunc {
 					return
 				}
 			}
-			// The same no as "not now", so the same decision has to go. The
-			// three blockers below are not refusals and leave it alone: the
-			// ladder answers underneath the card, and swapping the card there
-			// would replace the thing you have just said you cannot start.
-			forgetOffer(opts, personID)
 			answerWith(w, r, keepSaid(r.Context(), s, personID,
 				saidAboutTheOffer("later", r.FormValue("label"))), backToTheRoom(r))
 			return

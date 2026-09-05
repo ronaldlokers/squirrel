@@ -82,14 +82,11 @@ func TestAskingBuddyShowsWhatThePickerChose(t *testing.T) {
 	f := withOffer(&squirrel.Offer{
 		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
 	})
-	c := &fakeCoach{decision: &fakeDecision{
-		kind: "chore", refID: 3, text: "put the bins out", because: "they go out tonight",
-	}}
+	c := &fakeCoach{}
 
 	f.appended = nil
 	mountedWith(t, f, c).call(t, "POST", "/buddy/ask", nil)
 
-	require.Zero(t, c.peeked, "asking spent a decision")
 	require.Contains(t, f.appended[1].Words, "ring the vet")
 	require.NotContains(t, f.appended[1].Words, "put the bins out")
 }

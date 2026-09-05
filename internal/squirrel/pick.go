@@ -262,27 +262,6 @@ func startOfDay(t time.Time) time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
 
-// Decider is the seam a model reaches this decision through, or nil. A func of
-// primitives, because this package must not import internal/coach.
-//
-// mayAsk is whether this caller may spend a call: false means "use an answer you
-// already have, or say you have nothing".
-//
-// Every caller must treat nil, false, and a model that never answers as ordinary.
-type Decider func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
-	mayAsk bool) (kind string, refID int64, text, because string, ok bool)
-
-// JudgementHelps reports whether a model is allowed near this offer. Only three
-// of the five kinds: a running timer is something you are already doing, and a
-// fixed point is imposed by the world rather than suggested.
-func JudgementHelps(kind OfferKind) bool {
-	switch kind {
-	case OfferChore, OfferTask, OfferAgain:
-		return true
-	}
-	return false
-}
-
 // StartOfDay is the same, for internal/boot: the coach's read tools use the
 // picker's own window for today's refusals, and two definitions of "today"
 // would put them out of step across a DST boundary.

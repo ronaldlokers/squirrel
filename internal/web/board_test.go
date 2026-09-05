@@ -398,7 +398,7 @@ func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
 func TestTheBoardDrawsWithoutAskingAModel(t *testing.T) {
 	f := aBoardStore()
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
-	c := &fakeCoach{decision: &fakeDecision{kind: "task", refID: 9, text: "start with the meter", because: "it is five minutes"}}
+	c := &fakeCoach{}
 	m := mountedWith(t, f, c)
 
 	body := m.call(t, "GET", "/", nil).Body.String()
