@@ -155,6 +155,7 @@ type Store interface {
 	PickNow(ctx context.Context, personID int64, now time.Time, showAnyway bool) (squirrel.Offer, bool, error)
 	Did(ctx context.Context, personID int64, o squirrel.Offer, at time.Time) error
 	Refuse(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, at time.Time) error
+	NotThisOne(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, at time.Time) error
 	RecordAnswer(ctx context.Context, personID int64, kind squirrel.OfferKind, refID int64, answer squirrel.OfferAnswer, at time.Time) error
 
 	// Where to reach you when you are not looking at the room. Only the

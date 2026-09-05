@@ -233,6 +233,9 @@ func (store) Did(_ context.Context, _ int64, _ squirrel.Offer, _ time.Time) erro
 func (store) Refuse(_ context.Context, _ int64, _ squirrel.OfferKind, _ int64, _ time.Time) error {
 	return nil
 }
+func (store) NotThisOne(_ context.Context, _ int64, _ squirrel.OfferKind, _ int64, _ time.Time) error {
+	return nil
+}
 func (store) RecordAnswer(_ context.Context, _ int64, _ squirrel.OfferKind, _ int64, _ squirrel.OfferAnswer, _ time.Time) error {
 	return nil
 }

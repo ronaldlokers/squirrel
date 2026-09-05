@@ -76,9 +76,9 @@ const DOCKS = new Set(Object.keys(FIELDS));
 // so a chore typed on a train came back a pile note. That is the failure
 // nobody would diagnose, because the words are there and only the room is
 // wrong.
-function hold(text, room, action, field) {
+function hold(text, room, action, field, captureKey) {
   return heldStore("readwrite").then(store => new Promise((resolve, reject) => {
-    const put = store.add({ text, room, action, field, at: Date.now() });
+    const put = store.add({ text, room, action, field, captureKey, at: Date.now() });
     put.onsuccess = () => resolve();
     put.onerror = () => reject(put.error);
   }));
@@ -107,6 +107,7 @@ async function flush() {
     const body = new URLSearchParams({
       [note.field || "text"]: note.text,
       room: note.room || "everything",
+      key: note.captureKey || self.crypto.randomUUID(),
     });
     let res;
     try {
@@ -164,19 +165,24 @@ self.addEventListener("fetch", event => {
   // TestTheWorkerHoldsEveryRoomsDock.
   if (request.method === "POST" && DOCKS.has(new URL(request.url).pathname) &&
       !(request.headers.get("Content-Type") || "").startsWith("multipart/")) {
+    const pathname = new URL(request.url).pathname;
     event.respondWith((async () => {
-      const copy = request.clone();
+      const form = await request.formData();
+      const captureKey = form.get("key") || self.crypto.randomUUID();
+      form.set("key", captureKey);
+      const body = new URLSearchParams([...form].filter(([, v]) => typeof v === "string"));
+      const headers = new Headers(request.headers);
+      headers.set("Content-Type", "application/x-www-form-urlencoded");
       try {
-        return await fetch(request);
+        return await fetch(pathname, { method: "POST", headers, body, credentials: "same-origin" });
       } catch {
-        const form = await copy.formData();
         const room = String(form.get("room") || "everything");
         // The field name is the room's, not always `text`: a chore posts
         // `name` and an appointment posts `label`.
-        const field = FIELDS[new URL(request.url).pathname] || "text";
+        const field = FIELDS[pathname] || "text";
         const text = form.get(field);
         if (!text || !String(text).trim()) return Response.redirect("/", 303);
-        await hold(String(text), room, new URL(request.url).pathname, field);
+        await hold(String(text), room, pathname, field, captureKey);
         return Response.redirect("/r/" + room + "?held=1", 303);
       }
     })());
