@@ -1107,6 +1107,19 @@ the empty state that follows says what forgetting cost.
 **A read that fails is a sentence where the thing would be.** Not an error
 page, and never a blank: the rest of the page does not depend on either read.
 
+**Each thing it has worked out is a card, and it is dark ink on paper.** The
+same stock and the same ink as every other raised thing in the product — a
+stamp, a strip. It was cream on cream for eleven days: the rule asked for a
+colour nothing defined, so the declaration was invalid and the text fell back to
+what the purple page inherits, which is cream. The rows were there and the words
+were rendering; only the colour was missing.
+
+Nothing found it because the page only draws these cards when there is something
+to show, and the dev screen answered that question with nothing — so the empty
+state was what everyone looked at, including an accessibility audit of this
+page. **The dev screen knows three things now.** A surface that cannot be seen
+in development is a surface nobody reviews.
+
 ### Buddy, and the acorn — did not land
 
 This section described a board mechanism that shipped between 3 and 4

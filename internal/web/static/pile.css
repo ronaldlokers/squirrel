@@ -2000,7 +2000,7 @@
   .knows { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
   .knows li {
     padding: 9px 11px; border: 2px solid var(--outline); border-radius: 3px;
-    background: var(--paper); color: var(--ink);
+    background: var(--paper); color: var(--outline);
     font-size: 13px; line-height: 1.35;
     font-variation-settings: var(--casual), "wght" 520;
   }
