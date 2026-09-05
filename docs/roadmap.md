@@ -23,7 +23,7 @@ plan.
 
 Full release history moved to `docs/releases/`, split by month
 (`2026-08.md`, `2026-09.md`) — this file tracks state, not history. As of
-5 September 2026 the current release is **v0.72.0**, live in both clusters.
+5 September 2026 the current release is **v0.73.0**, live in both clusters.
 
 ---
 
