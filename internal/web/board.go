@@ -96,6 +96,7 @@ type stripView struct {
 	Mark    string
 	Big     bool
 	Answers []answerView
+	Room    string
 }
 
 type rhythmView struct {
@@ -317,12 +318,21 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
 	seen := whatWasNoticed(r, s, personID)
+	askOn := coachAvailable(opts)
 	notes, notesOK, moreNotes := noteStrips(r, s, personID, at)
 	notes = marked(notes, "note", seen)
+	notes = askable(notes, "notes", askOn)
+	notes = marked(notes, "ask:note", seen)
 	settled := whatIsSettled(r, s, personID, at)
 	chores, choresOK := choreStrips(r, s, personID)
+	chores = askable(chores, "chores", askOn)
+	chores = marked(chores, "ask:chore", seen)
 	tasks, tasksOK, moreTasks := taskStrips(r, s, personID, at)
+	tasks = askable(tasks, "tasks", askOn)
+	tasks = marked(tasks, "ask:task", seen)
 	agenda, agendaOK := agendaStrips(r, s, personID, at)
+	agenda = askable(agenda, "at", askOn)
+	agenda = marked(agenda, "ask:moment", seen)
 	return []bayView{
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
 			Camera: opts.Photos != nil, Trouble: !notesOK, More: moreNotes,
@@ -1143,6 +1153,16 @@ func marked(strips []stripView, kind string, seen map[string]squirrel.Noticed) [
 	return strips
 }
 
+func askable(strips []stripView, room string, on bool) []stripView {
+	if !on {
+		return strips
+	}
+	for i := range strips {
+		strips[i].Room = room
+	}
+	return strips
+}
+
 // boardNotUsefulHandler is how a line is refused.
 //
 // It does not hide the line so much as answer it: the words stay, and the next
@@ -1165,6 +1185,40 @@ func boardNotUsefulHandler(s Store) http.HandlerFunc {
 			return
 		}
 		if _, err := s.NotUseful(r.Context(), personID, id, now()); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+	}
+}
+
+func boardAskHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil || !coachAvailable(opts) {
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		what := r.FormValue("what")
+		words := r.FormValue("words")
+		room := r.FormValue("room")
+		if _, ok := theBays[room]; !ok || id <= 0 || what == "" {
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		answer, err := opts.Ask(r.Context(), personID, "strip", room, "What is going on with this?", words)
+		if err != nil {
+			slog.Error("asking about a strip", "error", err)
+			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+			return
+		}
+		remember(opts, personID, room, "What is going on with this?", withDid(answer))
+		if err := s.Notice(r.Context(), personID, "ask:"+what, id, withDid(answer), now()); err != nil {
 			fail(w, err)
 			return
 		}

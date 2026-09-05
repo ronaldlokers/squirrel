@@ -84,6 +84,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/board/chore", posting(opts, boardChoreHandler(s, opts)))
 	m.Post("/board/mood", posting(opts, boardMoodHandler(s)))
 	m.Post("/board/notuseful", posting(opts, boardNotUsefulHandler(s)))
+	m.Post("/board/ask", posting(opts, boardAskHandler(s, opts)))
 	m.Get("/me", guard(opts, meHandler(s, opts)))
 	m.Get("/me/face", guard(opts, faceHandler(s)))
 	// Throwing away what is known, from the page that shows it. A setting

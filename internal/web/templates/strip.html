@@ -32,6 +32,11 @@
       {{if eq .What "note"}}
       <button class="stamp" type="submit" formmethod="get" formaction="/" name="chore" value="{{.ID}}">make a chore<span class="k">C</span></button>
       {{end}}
+      {{if .Room}}
+      <input type="hidden" name="room" value="{{.Room}}">
+      <input type="hidden" name="words" value="{{.Words}}">
+      <button class="stamp" type="submit" formmethod="post" formaction="/board/ask">ask about this</button>
+      {{end}}
     </form>
     {{end}}
   </div>

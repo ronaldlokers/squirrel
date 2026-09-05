@@ -190,7 +190,12 @@ func devOptions() Options {
 		Gate:          &Gate{},
 		Sessions:      NewSessions(devSessions{}),
 		Login:         func(context.Context, string, string) (int64, error) { return 1, nil },
+		Ask:           devAsk,
 	}
+}
+
+func devAsk(_ context.Context, _ int64, _, _, _, _ string) (Answer, error) {
+	return Answer{Text: "This has waited three days already. A short call would close it."}, nil
 }
 
 type devSessions struct{}

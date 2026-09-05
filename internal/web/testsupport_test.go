@@ -1218,6 +1218,22 @@ func (f *fakeStore) NotUseful(_ context.Context, _, id int64, _ time.Time) (bool
 	return true, nil
 }
 
+func (f *fakeStore) Notice(_ context.Context, _ int64, kind string, refID int64, words string, at time.Time) error {
+	if f.noticeErr != nil {
+		return f.noticeErr
+	}
+	for i, one := range f.noticed {
+		if one.Kind == kind && one.RefID == refID {
+			f.noticed[i].Words, f.noticed[i].At = words, at
+			return nil
+		}
+	}
+	f.noticed = append(f.noticed, squirrel.Noticed{
+		ID: int64(len(f.noticed)) + 1, Kind: kind, RefID: refID, Words: words, At: at,
+	})
+	return nil
+}
+
 func (f *fakeStore) EverythingSaid(_ context.Context, _ int64, limit int) ([]squirrel.Turn, bool, error) {
 	if f.err != nil {
 		return nil, false, f.err
