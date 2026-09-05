@@ -119,6 +119,16 @@ body {
   font-weight: 900; font-size: 26px; letter-spacing: -.02em;
   color: var(--cream); font-variant-numeric: tabular-nums;
 }
+.ticking form { margin: 0; }
+.ticking .stopTimer {
+  width: 100%; padding: 7px 10px; border: none; border-radius: var(--r);
+  background: rgba(254, 214, 167, .16); color: var(--cream); cursor: pointer;
+  font: 400 11.5px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: .1em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.ticking .stopTimer:hover { background: rgba(254, 214, 167, .28); }
+.ticking .stopTimer:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
 
 .racks {
   display: grid; grid-template-columns: 1.18fr 1fr 1fr 1fr; gap: 14px;
@@ -678,6 +688,17 @@ a.stamp { text-decoration: none; }
   background: var(--card-deep);
   border: var(--line) solid var(--outline); border-radius: var(--r);
 }
+
+.corrections { margin: 0; }
+.strip.opened .reword { display: flex; gap: 6px; margin: 0; padding-top: 8px; }
+.strip.opened .wordfix {
+  flex: 1 1 auto; min-width: 0; padding: 8px 10px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  font: 400 14.5px/1.3 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.strip.opened .wordfix:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
 
 .trouble {
   flex: 0 0 auto; margin: 0 0 7px; padding: 8px 10px;

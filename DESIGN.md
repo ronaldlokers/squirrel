@@ -757,7 +757,40 @@ leaves the same mark.
 
 That sentence carries **no acorn**: the ladder's lines are fixed and are
 Squirrel's own, and the acorn is what marks a sentence a model wrote. Principle
-8 decides which mark a line gets, not who is speaking on that strip. The rule is printed on the strip rather than hidden behind a why,
+8 decides which mark a line gets, not who is speaking on that strip.
+
+**And the ladder's one control is drawn.** Two of the four answers end in a
+timer — *too big* and *boring* both offer a short one — and until now the
+sentence appeared on the board with nothing under it, so the only way to take
+the offer was the room. A single `5 MIN` or `10 MIN` stamp sits under the line,
+in the fill that does nothing to the world. One control, as the ladder's own
+rule requires: at most one, and only when the answer has one to give.
+
+**A strip you are already on has nothing to decide.** A running timer's offer
+draws no answers at all — *I'll do it* under a thing you are doing is a question
+already answered — and the breadcrumb, the hour in which a finished timer's row
+survives itself, draws *pick it up* and *not now* rather than the ordinary
+three. The room had both rules; the board did not, and drew the generic answers
+on both. The ticking aside carries `stop` at its end.
+
+### The opened strip corrects itself
+
+A strip opened by name — from search, a notification, or a press — carries two
+things the rack strips never do.
+
+**Saying it another way.** *say it another way* is a link, quiet and lowercase,
+and pressing it puts a field under the words holding what is there now. Only
+the sentence changes: the time it arrived, the state it is in and its place in
+the pile all stay, because those are facts about the note and only the wording
+was wrong. It is not versioned — keeping the old text would make a note a
+document with a history to read, which is a second place a thought can hide.
+**No model may ever do this.** Rewriting your own words is a refused tool and
+stays refused; this is the person's own press or it does not happen.
+
+**The three states you cannot act on.** *waiting on* · *blocked on* · *someday*
+sit under the ordinary answers, and only here — a rack strip must stay one line
+and four stamps. They are drawn only while the strip is still in the pile;
+something already done or dropped has nothing to be waiting on. The rule is printed on the strip rather than hidden behind a why,
 because an offer nobody can account for is a demand.
 
 ### The holder
