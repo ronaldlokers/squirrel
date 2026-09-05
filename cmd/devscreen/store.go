@@ -203,8 +203,14 @@ func standing(all []squirrel.Item) []squirrel.Item {
 func (store) ArchivedTasks(_ context.Context, _ int64, _ int) ([]squirrel.Item, bool, error) {
 	return nil, false, nil
 }
-func (store) Knowing(_ context.Context, _ int64) ([]string, error) { return nil, nil }
-func (store) ForgetKnowing(_ context.Context, _ int64) error       { return nil }
+func (store) Knowing(_ context.Context, _ int64) ([]string, error) {
+	return []string{
+		"They use brief labels to retrieve task, chore and agenda items later.",
+		"They return to home-care chores and report watering the plants.",
+		"They ask for a direct prompt when they want to look something up.",
+	}, nil
+}
+func (store) ForgetKnowing(_ context.Context, _ int64) error { return nil }
 func (store) SetItemKind(_ context.Context, _, _ int64, _ squirrel.ItemKind) (bool, error) {
 	return false, nil
 }
