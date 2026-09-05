@@ -132,14 +132,6 @@ func (s *Store) DeleteLatestCoachAnswer(ctx context.Context, personID int64) (bo
 	return tag.RowsAffected() > 0, nil
 }
 
-func (s *Store) PurgeCoachAnswersBefore(ctx context.Context, before time.Time) (int64, error) {
-	tag, err := s.pool.Exec(ctx, `delete from coach_answers where said_at < $1`, before)
-	if err != nil {
-		return 0, fmt.Errorf("purging old coach answers: %w", err)
-	}
-	return tag.RowsAffected(), nil
-}
-
 // CoachSpentSince is the sum of what the coach has cost since an instant, in
 // micro-euros.
 //

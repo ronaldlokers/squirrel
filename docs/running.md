@@ -118,14 +118,20 @@ Run against a scratch namespace, not production.
 That row is not a placeholder to be tidied away. Until it has a date in it,
 "capture is sacred" is a promise about photographs that nothing has tested.
 
-**What the first run did not prove.** The restored file was not compared
-byte-for-byte against the live volume, because there is no way to read that
+**Closing the byte-for-byte gap.** The first run could not compare the
+restored file against the live volume, because there was no way to read that
 volume without either a shell in a distroless pod or a second pod mounting an
-RWO claim that the running one holds. What the drill has instead is a
-block-level restore of a snapshot taken off the live volume, and a JPEG that
-still has both its markers. That is strong but it is not the same claim. If the
-next run wants to close it, the cheap way is a scratch pod in `campfire` that
-mounts the claim read-only, authorised in advance.
+RWO claim the running one holds. `GET /photo/{id}/checksum` closes it: it is
+an authenticated route, guarded the same as `/photo/{id}`, that reports a
+photograph's size in bytes and its SHA-256 rather than the bytes themselves —
+so the running app answers for its own volume over HTTP, and nothing needs a
+shell or a second claim.
+
+To use it: for one of the notes step 3 found, hit `/photo/{id}/checksum`
+against the **live** Squirrel and again against the **restored** one in the
+scratch namespace, and compare the two JSON bodies. A match is the
+byte-for-byte proof; anything else is the drill failing, the same as a `404`
+in step 3.
 
 **The drill took about eleven minutes**, dump to teardown, and the database is
 10 MB. It is a cheap thing to do and there is no reason for the next gap to be

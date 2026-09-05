@@ -391,10 +391,12 @@ page rather than an outage, which is worse in its way, because the runbook is
 read at two in the morning.
 
 **The quiet.** A chore's own name was being written to the log on the ordinary
-*decided not to interrupt* path, not on a failure. `coach_answers` has a stated
-horizon in the schema now and `!unsay` drops the last exchange. Photographs keep
-their metadata, location included, and `PRODUCT.md` says so rather than leaving
-it to be discovered.
+*decided not to interrupt* path, not on a failure. `coach_answers` had a stated
+horizon in the schema — **dropped on 5 September**, because nothing ever
+enforced it and a promise the product did not keep was worse than the honest
+"this is kept" — and `!unsay` drops the last exchange. Photographs keep their
+metadata, location included, and `PRODUCT.md` says so rather than leaving it to
+be discovered.
 
 **The board.** With nothing focused, a letter acted on the first card — so a
 second press finished a note nobody had read, and a blind user could not reach
