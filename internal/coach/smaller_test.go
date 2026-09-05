@@ -56,6 +56,17 @@ func TestSmallerRefusesASingleStep(t *testing.T) {
 	require.ErrorIs(t, err, coach.ErrUnavailable)
 }
 
+func TestSmallerFailingDoesNotLogTheTaskWords(t *testing.T) {
+	logs := captureLogs(t)
+	api := newToolAPI(t, stepsTurn("do the whole tax return in one sitting"))
+	_, err := deciderFor(api, &fakeFacts{}, &fakeLog{}).
+		Smaller(context.Background(), 1, "the confidential tax thing", "too big")
+	require.ErrorIs(t, err, coach.ErrUnavailable)
+
+	require.NotContains(t, logs.String(), "confidential tax thing")
+	require.Contains(t, logs.String(), "task_len")
+}
+
 // It numbered them after being told not to. Everything else it was told is now
 // in doubt too, so the whole sequence goes.
 func TestSmallerRefusesANumberedPlan(t *testing.T) {

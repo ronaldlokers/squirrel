@@ -141,7 +141,7 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 		// Logged once, at the only moment anyone could act on it: otherwise the
 		// guard is a silent filter and "shaped wrong" reads as "never called".
 		slog.Warn("the coach said something the wrong shape; using the fixed answer",
-			"kind", t.Kind, "model", model, "said", text)
+			"kind", t.Kind, "model", model, "said_len", len(text))
 		return Reply{}, ErrUnavailable
 	}
 

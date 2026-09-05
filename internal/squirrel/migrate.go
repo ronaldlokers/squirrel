@@ -23,6 +23,8 @@ var ErrMigration = errors.New("a migration will not apply")
 // own doing. Boot uses it to say which of the two things has happened.
 func IsMigrationFailure(err error) bool { return errors.Is(err, ErrMigration) }
 
+const migrationLockKey = 727_002_611
+
 // Migrate applies every embedded migration not yet recorded, each inside a
 // transaction that also records it. Migrations ship in the binary, so there is
 // no directory to copy into the image and no generator to be surprised by.
@@ -36,12 +38,28 @@ func (s *Store) Migrate(ctx context.Context) error {
 // path here provable only by writing the error out by hand and asserting on
 // the thing the test had just written — which proves nothing.
 func (s *Store) migrateFrom(ctx context.Context, files fs.FS) error {
+	conn, err := s.pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquiring a connection to migrate: %w", err)
+	}
+	defer conn.Release()
+
+	if _, err := conn.Exec(ctx, `select pg_advisory_lock($1)`, migrationLockKey); err != nil {
+		return fmt.Errorf("locking to migrate: %w", err)
+	}
+	defer func() {
+		if _, err := conn.Exec(context.WithoutCancel(ctx),
+			`select pg_advisory_unlock($1)`, migrationLockKey); err != nil {
+			slog.Error("releasing the migration lock", "error", err)
+		}
+	}()
+
 	const createTable = `
 		create table if not exists schema_migrations (
 			version    text primary key,
 			applied_at timestamptz not null default now()
 		)`
-	if _, err := s.pool.Exec(ctx, createTable); err != nil {
+	if _, err := conn.Exec(ctx, createTable); err != nil {
 		return fmt.Errorf("creating schema_migrations: %w", err)
 	}
 
@@ -53,7 +71,7 @@ func (s *Store) migrateFrom(ctx context.Context, files fs.FS) error {
 
 	for _, name := range entries {
 		var exists bool
-		if err := s.pool.QueryRow(ctx,
+		if err := conn.QueryRow(ctx,
 			`select exists (select 1 from schema_migrations where version = $1)`, name,
 		).Scan(&exists); err != nil {
 			return fmt.Errorf("checking migration %s: %w", name, err)
@@ -67,7 +85,7 @@ func (s *Store) migrateFrom(ctx context.Context, files fs.FS) error {
 			return fmt.Errorf("reading migration %s: %w", name, err)
 		}
 
-		tx, err := s.pool.Begin(ctx)
+		tx, err := conn.Begin(ctx)
 		if err != nil {
 			return fmt.Errorf("beginning migration %s: %w", name, err)
 		}

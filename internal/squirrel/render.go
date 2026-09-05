@@ -96,6 +96,7 @@ func HelpMessage() Message {
 		"done — the one thing outstanding",
 		"!fix <n> <words> — say line n differently",
 		"!undo — put the last note I cleared back in the pile",
+		"!unsay — delete the last thing Buddy said, for good",
 		"nvm — undo a chore I just made from a note",
 		"",
 		"Start with a dot to store something I would otherwise read as a command.",

@@ -519,9 +519,15 @@ func fireBoost(cfg squirrel.CampfireConfig, client *http.Client, body []byte, ca
 func NewCampfire(cfg squirrel.CampfireConfig) Transport {
 	t := Transport{Name: CampfireName}
 	boostClient := &http.Client{Timeout: 5 * time.Second}
+	limiter := newRateLimiter(campfireRateBurst, campfireRateRefillPerSecond)
 
 	t.Start = func(_ context.Context, sink Sink, mount Mount) (func(context.Context) error, error) {
 		mount.Post(cfg.Path, func(w http.ResponseWriter, r *http.Request) {
+			if !limiter.allow() {
+				slog.Warn("campfire: rate limited")
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
 			body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
 			if err != nil {
 				slog.Error("campfire: reading body", "error", err)

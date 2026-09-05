@@ -164,6 +164,20 @@ func TestServerWrongMethodOnARegisteredRouteSendsNoContentType(t *testing.T) {
 	require.Empty(t, res.Header.Get("Content-Type"))
 }
 
+func TestServerExposesMetricsOverDebugVars(t *testing.T) {
+	base := listen(t, squirrel.NewServer(writable(true)))
+
+	res, err := http.Get(base + "/debug/vars")
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(body), "spool_depth")
+	require.Contains(t, string(body), "push_failures_total")
+}
+
 func TestServerReportsTheBoundPort(t *testing.T) {
 	s := squirrel.NewServer(writable(true))
 	port, err := s.Listen("127.0.0.1:0")

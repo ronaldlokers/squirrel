@@ -124,7 +124,7 @@ func aGate(t *testing.T, idp *fakeIdP, group string) *Gate {
 func TestAGoodLoginGivesBackWhoItWas(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
-	who, err := d.Back(context.Background(), "a-code", "a-verifier")
+	who, err := d.Back(context.Background(), "a-code", "a-verifier", "")
 	require.NoError(t, err)
 	require.Equal(t, "sub-123", who.Sub)
 	require.Equal(t, "ronald", who.Handle)
@@ -137,7 +137,7 @@ func TestAnAccountWithoutTheGroupIsRefused(t *testing.T) {
 	idp.claims["groups"] = []any{"somebody-elses-app"}
 	d := aGate(t, idp, "squirrel-users")
 
-	_, err := d.Back(context.Background(), "a-code", "a-verifier")
+	_, err := d.Back(context.Background(), "a-code", "a-verifier", "")
 	require.ErrorIs(t, err, ErrNotAllowed)
 }
 
@@ -149,7 +149,7 @@ func TestAnAccountWithNoGroupsIsRefused(t *testing.T) {
 	delete(idp.claims, "groups")
 	d := aGate(t, idp, "squirrel-users")
 
-	_, err := d.Back(context.Background(), "a-code", "a-verifier")
+	_, err := d.Back(context.Background(), "a-code", "a-verifier", "")
 	require.ErrorIs(t, err, ErrNotAllowed)
 }
 
@@ -164,7 +164,7 @@ func TestATokenSignedByTheWrongKeyIsRefused(t *testing.T) {
 	require.NoError(t, err)
 	idp.signWith = other // the JWKS still publishes the real public key
 
-	_, err = d.Back(context.Background(), "a-code", "a-verifier")
+	_, err = d.Back(context.Background(), "a-code", "a-verifier", "")
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrNotAllowed, "a forged token was refused as a group problem")
 }
@@ -174,7 +174,7 @@ func TestAnExpiredTokenIsRefused(t *testing.T) {
 	idp.claims["exp"] = time.Now().Add(-time.Hour).Unix()
 	d := aGate(t, idp, "squirrel-users")
 
-	_, err := d.Back(context.Background(), "a-code", "a-verifier")
+	_, err := d.Back(context.Background(), "a-code", "a-verifier", "")
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrNotAllowed)
 }
@@ -185,9 +185,39 @@ func TestATokenForAnotherAudienceIsRefused(t *testing.T) {
 	idp.claims["aud"] = "somebody-elses-app"
 	d := aGate(t, idp, "squirrel-users")
 
-	_, err := d.Back(context.Background(), "a-code", "a-verifier")
+	_, err := d.Back(context.Background(), "a-code", "a-verifier", "")
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrNotAllowed)
+}
+
+func TestTheWayOutCarriesANonce(t *testing.T) {
+	d := aGate(t, anIdP(t), "squirrel-users")
+
+	raw, err := d.Away("the-state", "the-nonce", "the-verifier")
+	require.NoError(t, err)
+	away, err := url.Parse(raw)
+	require.NoError(t, err)
+	require.Equal(t, "the-nonce", away.Query().Get("nonce"))
+}
+
+func TestATokenWithTheWrongNonceIsRefused(t *testing.T) {
+	idp := anIdP(t)
+	idp.claims["nonce"] = "the-real-nonce"
+	d := aGate(t, idp, "squirrel-users")
+
+	_, err := d.Back(context.Background(), "a-code", "a-verifier", "somebody-elses-nonce")
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrNotAllowed, "a nonce mismatch was refused as a group problem")
+}
+
+func TestATokenWithTheMatchingNonceSignsIn(t *testing.T) {
+	idp := anIdP(t)
+	idp.claims["nonce"] = "the-real-nonce"
+	d := aGate(t, idp, "squirrel-users")
+
+	who, err := d.Back(context.Background(), "a-code", "a-verifier", "the-real-nonce")
+	require.NoError(t, err)
+	require.Equal(t, "sub-123", who.Sub)
 }
 
 // The way out carries state and a PKCE challenge, or the callback cannot tell
@@ -195,7 +225,7 @@ func TestATokenForAnotherAudienceIsRefused(t *testing.T) {
 func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
-	raw, err := d.Away("the-state", "the-verifier")
+	raw, err := d.Away("the-state", "", "the-verifier")
 	require.NoError(t, err)
 	away, err := url.Parse(raw)
 	require.NoError(t, err)
@@ -208,7 +238,7 @@ func TestTheWayOutCarriesStateAndAChallenge(t *testing.T) {
 func TestTheChallengeIsTheHashOfTheVerifier(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
-	raw, err := d.Away("s", "the-verifier")
+	raw, err := d.Away("s", "", "the-verifier")
 	require.NoError(t, err)
 	away, err := url.Parse(raw)
 	require.NoError(t, err)
@@ -251,10 +281,10 @@ func TestAGateBuildsWithoutReachingAuthentik(t *testing.T) {
 func TestAGateThatHasNotFoundAuthentikRefuses(t *testing.T) {
 	g := unreachableGate(t)
 
-	_, err := g.Away("the-state", "the-verifier")
+	_, err := g.Away("the-state", "", "the-verifier")
 	require.Error(t, err)
 
-	_, err = g.Back(context.Background(), "a-code", "a-verifier")
+	_, err = g.Back(context.Background(), "a-code", "a-verifier", "")
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrNotAllowed, "a gate that is not ready blamed the account")
 }
@@ -268,7 +298,7 @@ func TestAGateFindsAuthentikLater(t *testing.T) {
 	// prove the lookup is not once-and-for-all.
 	g.forget()
 
-	who, err := g.Back(context.Background(), "a-code", "a-verifier")
+	who, err := g.Back(context.Background(), "a-code", "a-verifier", "")
 	require.NoError(t, err, "a gate could not find authentik a second time")
 	require.Equal(t, "sub-123", who.Sub)
 }
@@ -281,7 +311,7 @@ func TestAuthentikIsFoundOnceAndRemembered(t *testing.T) {
 	require.Zero(t, idp.discoveries, "building the gate went to the network")
 
 	for range 3 {
-		_, err := g.Away("s", "v")
+		_, err := g.Away("s", "n", "v")
 		require.NoError(t, err)
 	}
 	require.Equal(t, 1, idp.discoveries, "it asked authentik who it was on every press")
@@ -302,7 +332,7 @@ func TestAFailedLookupIsNotRetriedOnEveryPress(t *testing.T) {
 	g := aGate(t, idp, "squirrel-users")
 
 	for range 3 {
-		_, err := g.Away("s", "v")
+		_, err := g.Away("s", "n", "v")
 		require.Error(t, err)
 	}
 	require.Equal(t, 1, idp.discoveries, "a down authentik cost a round trip per press")
@@ -310,7 +340,7 @@ func TestAFailedLookupIsNotRetriedOnEveryPress(t *testing.T) {
 	// Past the backoff it tries again, and by then authentik is up.
 	at = at.Add(retryEvery + time.Second)
 	idp.refuse = false
-	_, err := g.Away("s", "v")
+	_, err := g.Away("s", "n", "v")
 	require.NoError(t, err, "it never tried again")
 	require.Equal(t, 2, idp.discoveries)
 }

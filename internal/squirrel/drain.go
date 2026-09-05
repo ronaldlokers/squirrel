@@ -117,6 +117,7 @@ func (d *Drain) Once(ctx context.Context) DrainResult {
 		d.report(err)
 		return DrainResult{Deferred: 1}
 	}
+	metricSpoolDepth.Set(int64(len(names)))
 
 	for _, name := range names {
 		if ctx.Err() != nil {
@@ -131,6 +132,7 @@ func (d *Drain) Once(ctx context.Context) DrainResult {
 			result.Quarantined++
 		}
 	}
+	metricDrainDeferred.Add(int64(result.Deferred))
 	return result
 }
 
@@ -229,6 +231,7 @@ func (d *Drain) Run(ctx context.Context) {
 		} else {
 			backoff = d.opts.Interval
 		}
+		metricDrainBackoffMS.Set(backoff.Milliseconds())
 
 		if d.opts.OnWait != nil {
 			d.opts.OnWait(backoff)

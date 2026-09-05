@@ -142,7 +142,7 @@ func TestACallbackWithTheWrongStateIsRefused(t *testing.T) {
 	m, _ := mountedWithAGate(t, &fakeStore{}, sess)
 
 	r := httptest.NewRequest("GET", "/auth/callback?code=a-code&state=somebody-elses", nil)
-	r.AddCookie(&http.Cookie{Name: stateCookie, Value: started("the-state", "the-verifier", "/")})
+	r.AddCookie(&http.Cookie{Name: stateCookie, Value: started("the-state", "", "the-verifier", "/")})
 	w := httptest.NewRecorder()
 	m.routes["GET /auth/callback"](w, r)
 
@@ -300,7 +300,7 @@ func mountedWithAGate(t *testing.T, f *fakeStore, sess *fakeSessions) (*testMux,
 func (m *testMux) callback(t *testing.T, next string) *httptest.ResponseRecorder {
 	t.Helper()
 	r := httptest.NewRequest("GET", "/auth/callback?code=a-code&state=the-state", nil)
-	r.AddCookie(&http.Cookie{Name: stateCookie, Value: started("the-state", "the-verifier", next)})
+	r.AddCookie(&http.Cookie{Name: stateCookie, Value: started("the-state", "", "the-verifier", next)})
 	w := httptest.NewRecorder()
 	m.routes["GET /auth/callback"](w, r)
 	return w

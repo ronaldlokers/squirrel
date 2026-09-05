@@ -476,6 +476,9 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 		}
 		return Message{Text: "Stopped."}, nil
 
+	case "unsay":
+		return a.unsay(ctx, personID)
+
 	case "help":
 		return HelpMessage(), nil
 	}
@@ -1220,6 +1223,17 @@ func (a *Applier) undoLast(ctx context.Context, personID int64) (Message, error)
 		return Message{}, err
 	}
 	return Message{Text: "Back in the pile — " + shorten(it.RawText)}, nil
+}
+
+func (a *Applier) unsay(ctx context.Context, personID int64) (Message, error) {
+	deleted, err := a.store.DeleteLatestCoachAnswer(ctx, personID)
+	if err != nil {
+		return Message{}, err
+	}
+	if !deleted {
+		return Message{Text: "There is nothing to unsay."}, nil
+	}
+	return Message{Text: "Unsaid — that exchange is gone for good."}, nil
 }
 
 // retire stops a chore coming back: `!retire bins out`, or `!retire 1`.

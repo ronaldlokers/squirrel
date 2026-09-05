@@ -180,7 +180,7 @@ func (p *Provider) answerActing(ctx context.Context, t Turn) (Reply, error) {
 			guarded, ok := Guard(text)
 			if !ok {
 				slog.Warn("the coach said something the wrong shape; using the fixed answer",
-					"kind", t.Kind, "model", model, "said", text)
+					"kind", t.Kind, "model", model, "said_len", len(text))
 				return Reply{}, ErrUnavailable
 			}
 			reply = Reply{

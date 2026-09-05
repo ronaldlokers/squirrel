@@ -143,6 +143,42 @@ func TestCampfireStoresACapture(t *testing.T) {
 	require.NoError(t, stop(context.Background()))
 }
 
+func TestCampfireLetsABurstOfRapidTypingThrough(t *testing.T) {
+	mount := &oneMount{}
+	sink := &recordingSink{outcome: squirrel.Stored}
+
+	_, err := transport.NewCampfire(config()).Start(context.Background(), sink, mount)
+	require.NoError(t, err)
+
+	for i := range 5 {
+		rec := httptest.NewRecorder()
+		mount.h(rec, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(payload)))
+		require.NotEqual(t, http.StatusTooManyRequests, rec.Code, "request %d of an ordinary burst was throttled", i)
+	}
+}
+
+func TestCampfireRateLimitsASustainedFlood(t *testing.T) {
+	mount := &oneMount{}
+	sink := &recordingSink{outcome: squirrel.Stored}
+
+	_, err := transport.NewCampfire(config()).Start(context.Background(), sink, mount)
+	require.NoError(t, err)
+
+	var throttled *httptest.ResponseRecorder
+	for range 200 {
+		rec := httptest.NewRecorder()
+		mount.h(rec, httptest.NewRequest(http.MethodPost, "/transports/campfire", strings.NewReader(payload)))
+		if rec.Code == http.StatusTooManyRequests {
+			throttled = rec
+			break
+		}
+	}
+	require.NotNil(t, throttled, "200 requests with no pause were all accepted")
+	require.Empty(t, throttled.Header().Get("Content-Type"),
+		"a throttled response carried a Content-Type, which Campfire uploads as a file")
+	require.Empty(t, throttled.Body.String())
+}
+
 type panickingSink struct{}
 
 func (panickingSink) Accept(context.Context, squirrel.Capture) squirrel.Outcome {

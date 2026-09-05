@@ -200,6 +200,12 @@ photographs join the pod's lifecycle, and **the restore drill has to cover the
 volume**. Nowhere to put them is a supported state: with no volume the camera
 is never offered.
 
+**Photographs are kept exactly as they arrive, metadata included.** Nothing
+strips EXIF or GPS on the way in. This was decided rather than overlooked: if
+the camera that took a photograph recorded where it stood, that location is in
+the file, and it travels wherever the file does — onto the volume beside the
+pod, and into every backup of it.
+
 **The shelf may speak, once in a while.** A kept note can ride along with the
 evening message — never its own message, never more than one, and never when
 there was nothing else to say. A shelf that taps you on the shoulder is a

@@ -125,6 +125,18 @@ func TestProviderRecordsARejectedReplyAndStillRefusesIt(t *testing.T) {
 
 // The brief's worked example, end to end through the real wire format: five
 // things and a low day, answered with one bodily thing and the rest kept.
+func TestARejectedReplyDoesNotLogTheModelsWords(t *testing.T) {
+	logs := captureLogs(t)
+	api := newFakeAPI(t, "Here's the plan:\n- open the letter\n- ring the tax office\n- pay it")
+	p := providerFor(api, &fakeLog{})
+
+	_, err := p.Answer(context.Background(), coach.Turn{PersonID: 1, Kind: "chat", Said: "help"})
+	require.ErrorIs(t, err, coach.ErrUnavailable)
+
+	require.NotContains(t, logs.String(), "tax office")
+	require.Contains(t, logs.String(), "said_len")
+}
+
 func TestTheOverwhelmTurnGetsTheOrderingRuleAndTheDeepModel(t *testing.T) {
 	api := newFakeAPI(t, "Get in the shower. I have the other four written down.")
 	log := &fakeLog{}

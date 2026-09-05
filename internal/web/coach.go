@@ -253,7 +253,10 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 // a form field, and a form field is a place a stranger can type. An open
 // redirect from a page behind a session is still an open redirect.
 func backTolerant(from string) string {
-	if !strings.HasPrefix(from, "/") || strings.HasPrefix(from, "//") {
+	if !strings.HasPrefix(from, "/") {
+		return "/r/everything"
+	}
+	if strings.HasPrefix(strings.ReplaceAll(from, `\`, "/"), "//") {
 		return "/r/everything"
 	}
 	return from
