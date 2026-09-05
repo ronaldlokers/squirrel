@@ -366,11 +366,14 @@ type draining struct {
 	over        func(context.Context, int64) bool
 }
 
+const migrationMaxBackoff = 30 * time.Second
+
 // connectAndDrain retries until Postgres answers, then drains until the
 // context is cancelled. Nothing here blocks a capture being accepted.
 func connectAndDrain(ctx context.Context, w draining) {
 	config, store, spool := w.config, w.store, w.spool
 	var personID int64
+	backoff := config.DrainInterval
 	for {
 		var err error
 		if err = store.Migrate(ctx); err != nil {
@@ -382,23 +385,27 @@ func connectAndDrain(ctx context.Context, w draining) {
 			}
 			if squirrel.IsMigrationFailure(err) {
 				slog.Error("a migration will not apply; the schema is at the last one that did and the drain is not running",
-					"error", err, "retry_in", config.DrainInterval,
+					"error", err, "retry_in", backoff,
 					"what_to_do", "docs/running.md — a migration that will not apply")
 			} else {
-				slog.Warn("database unavailable", "error", err, "retry_in", config.DrainInterval)
+				slog.Warn("database unavailable", "error", err, "retry_in", backoff)
 			}
 		} else if personID, err = store.SeedOwner(ctx, config.OwnerHandle, seedsFrom(config)); err != nil {
-			slog.Warn("seeding owner failed", "error", err, "retry_in", config.DrainInterval)
+			slog.Warn("seeding owner failed", "error", err, "retry_in", backoff)
 		} else {
 			break
 		}
 
-		timer := time.NewTimer(config.DrainInterval)
+		timer := time.NewTimer(backoff)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
 			return
 		case <-timer.C:
+		}
+		backoff *= 2
+		if backoff > migrationMaxBackoff {
+			backoff = migrationMaxBackoff
 		}
 	}
 
