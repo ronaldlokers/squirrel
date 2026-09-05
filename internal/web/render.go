@@ -54,13 +54,11 @@ func page(files ...string) *template.Template {
 // re-parse from it. Parsed once at start and never again in a shipped binary:
 // the files cannot change under a running process.
 var pageFiles = map[string][]string{
-	"thread": {"templates/layout.html", "templates/turn.html", "templates/moodgrid.html", "templates/thread.html", "templates/chips.html"},
-	"me":     {"templates/layout.html", "templates/me.html", "templates/moodgrid.html", "templates/chips.html"},
+	"me": {"templates/layout.html", "templates/me.html", "templates/moodgrid.html", "templates/chips.html"},
 }
 
 var pages = map[string]*template.Template{
-	"thread": page(pageFiles["thread"]...),
-	"me":     page(pageFiles["me"]...),
+	"me": page(pageFiles["me"]...),
 }
 
 // pageFor is the template to render with.
@@ -149,34 +147,6 @@ type view struct {
 	Light int
 	// AnyTold marks the bell: there is a record to look at.
 	AnyTold bool
-	// Home is the front door, where the mark is not a link because it would be
-	// a link to here.
-	Home bool
-	// Thread is a conversation with a dock, which every room is and the front
-	// door also is.
-	//
-	// Split from Home on 28 August 2026, when rooms arrived. Home carried both
-	// meanings, so every room rendered without thread.js: the fragment posting,
-	// the live edge and the chore keys are all in that file, and a room got
-	// none of them. Nothing looked broken — the forms fell back to full
-	// navigations — which is why it took a browser test to find.
-	Thread bool
-	// Said carries words back to the slot when the write failed. A capture box
-	// that clears on failure is a capture box that eats thoughts.
-	Said string
-	// Held is the worker having taken the words because there was no network.
-	// A third state and not a flavour of the other two: the words are safe,
-	// which failure is not, and they are not in the pile yet, which kept is.
-	Held bool
-	// Mood is the latest reading when it still describes now, and empty
-	// otherwise. Never more than one, and never a date beside it.
-	Mood string
-	// Faces are the five, in the one order both surfaces use.
-	Faces []faceView
-	// Example is the worked example, on a conversation nobody has ever said
-	// anything in, and empty every other time. It is drawn and never stored —
-	// see internal/web/firstrun.go.
-	Example []exampleTurn
 
 	// Weeks is how you have been, as six weeks by seven days, and only the
 	// page about you fills it.
@@ -203,58 +173,9 @@ type view struct {
 	PushKey string
 	// Timer is what is running, on every screen, or nil.
 	Timer *timerView
-	// Rooms is the rail, on every screen. It replaced the lid's menu on
-	// 28 August 2026: a room list you navigate to is a screen, and a room list
-	// that is always there is furniture. See internal/web/rooms.go.
-	Rooms []railView
-	// Room is the one you are in, and it is what the dock reads its
-	// placeholder, its button and its action from. Filled by the handler
-	// rather than by renderWith, because renderWith cannot know.
-	Room room
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
-	// Turns is the conversation, oldest first. The screen is one page now;
-	// see internal/web/thread.go.
-	Turns []turnView
-	// Edge is what is true now rather than what was said: a room's list, and the
-	// check-in when it is time to ask. Drawn on every arrival and written to the
-	// record never.
-	//
-	// It was a turn until 31 August 2026, and that is why the chores went stale.
-	// A room appended its list to the conversation and then refused to append it
-	// again while the last turn had anything on it to act on — which a list
-	// always does — so what you came back to was a photograph of the first time
-	// you opened the room, with a chore you had already done still asking.
-	//
-	// The category error underneath: a list is not something somebody said. The
-	// record is the conversation; this is the state, and state kept as history
-	// is stale by definition.
-	Edge []turnView
-	// MoreAbove and Oldest are the page above this one. Oldest is the id the
-	// "earlier" control walks back from.
-	MoreAbove bool
-	Oldest    int64
-	// Clash says a decision arrived for a note that had already moved
-	// somewhere else — from the room, while the card was still on the screen.
-	// It is not an error and there is nothing to undo: what it says is that
-	// the pile is not what this screen was showing.
-	Clash bool
-}
-
-// choreView is a chore as the screen says it: what it is, how often it comes
-// back, and when it was last done. No "due", no "late", no position in a queue.
-type choreView struct {
-	ID   int64
-	Name string
-	// Every is the rhythm as a person says it; Chip is which of the four
-	// offered intervals that corresponds to, if any. Last is empty for a chore
-	// that has never been done, and When for one with no preference about
-	// being raised.
-	Every string
-	Chip  string
-	Last  string
-	When  string
 }
 
 // moodWeekView is one row of the readings grid: a label and seven days.
@@ -358,7 +279,6 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 	// the counts, so it is filled here rather than in render() — which takes
 	// neither a store nor a person and never could.
 	if personID, ok := personOf(r); ok {
-		v.Rooms = roomsFor(r.Context(), s, personID, roomOf(r.Context()))
 		v.You = youFor(r.Context(), s, personID)
 		// One row is all the bell's mark needs, and this runs on every screen.
 		if told, err := s.WhatWasSaid(r.Context(), personID, 1); err == nil {

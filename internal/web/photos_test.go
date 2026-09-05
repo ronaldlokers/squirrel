@@ -53,7 +53,7 @@ func TestAPhotographIsKeptAndReferenced(t *testing.T) {
 	w := postPhoto(t, m, kind, body)
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/r/everything", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 
 	// The bytes went to the volume, and the capture references them rather
 	// than carrying them.
@@ -73,7 +73,7 @@ func TestAPhotographWithNoWordsIsStillACapture(t *testing.T) {
 	kind, body := photographed(t, "", "image/jpeg", []byte("jpegbytes"))
 	w := postPhoto(t, m, kind, body)
 
-	require.Equal(t, "/r/everything", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 	require.Len(t, sp.written, 1)
 	require.Empty(t, sp.written[0].Text)
 	require.Equal(t, "photo-1.jpg", sp.written[0].PhotoName)
@@ -94,7 +94,7 @@ func TestNothingAtAllIsStillNothing(t *testing.T) {
 
 // What the browser claimed is checked against the handful this keeps, and the
 // words come back rather than the capture quietly losing the picture.
-func TestAKindThisDoesNotKeepIsRefusedAndTheWordsComeBack(t *testing.T) {
+func TestAKindThisDoesNotKeepIsRefused(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{}
 	f := &fakeStore{}
 	m := mountedWithCamera(t, f, sp, ph)
@@ -102,29 +102,20 @@ func TestAKindThisDoesNotKeepIsRefusedAndTheWordsComeBack(t *testing.T) {
 	kind, body := photographed(t, "the tax letter", "application/pdf", []byte("%PDF"))
 	w := postPhoto(t, m, kind, body)
 
-	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Len(t, f.appended, 2)
-	require.Contains(t, f.appended[1].Words, "That photograph was not kept")
-	require.NotContains(t, f.appended[1].Words, "cannot reach its memory",
-		"a refused photograph was reported as a machine that had failed")
-	require.Equal(t, "the tax letter", f.appended[0].Words)
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
 	require.Empty(t, ph.kept, "it kept something it does not keep")
 	require.Empty(t, sp.written, "it captured a note referencing nothing")
 }
 
-// A volume that will not take it is the same shape of failure: loud, and the
-// words survive.
-func TestAVolumeThatRefusesKeepsTheWords(t *testing.T) {
+func TestAVolumeThatRefusesFailsVisibly(t *testing.T) {
 	sp, ph := &fakeSpool{}, &fakePhotos{err: errTest}
 	f := &fakeStore{}
 	m := mountedWithCamera(t, f, sp, ph)
 
 	kind, body := photographed(t, "the tax letter", "image/jpeg", []byte("jpegbytes"))
-	postPhoto(t, m, kind, body)
+	w := postPhoto(t, m, kind, body)
 
-	require.Len(t, f.appended, 2)
-	require.Contains(t, f.appended[1].Words, "not kept")
-	require.Equal(t, "the tax letter", f.appended[0].Words)
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
 	require.Empty(t, sp.written)
 }
 
@@ -134,7 +125,7 @@ func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 
 	w := post(t, m, "/capture", map[string][]string{"text": {"a thought"}})
 
-	require.Equal(t, "/r/everything", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 	require.Len(t, sp.written, 1)
 	require.Equal(t, "a thought", sp.written[0].Text)
 	require.Empty(t, sp.written[0].PhotoName)
@@ -143,14 +134,14 @@ func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 
 // Nowhere to put one is a supported state, and the camera is simply not drawn.
 func TestNoVolumeMeansNoCamera(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 	require.NotContains(t, body, `name="photo"`)
 	require.NotContains(t, body, "Add a photograph")
 }
 
 func TestAVolumeMeansACamera(t *testing.T) {
 	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
-	body := m.call(t, "GET", "/r/everything", nil).Body.String()
+	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, `name="photo"`)
 	require.Contains(t, body, `accept="image/*"`)
@@ -163,7 +154,7 @@ func TestAVolumeMeansACamera(t *testing.T) {
 // release and that is exactly what it did.
 func TestTheCameraDoesNotForbidTheGallery(t *testing.T) {
 	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
-	body := m.call(t, "GET", "/r/everything", nil).Body.String()
+	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.NotContains(t, body, "capture=")
 }
@@ -214,7 +205,7 @@ func TestAPhotographTooBigForMemoryNeedsNoTemporaryFile(t *testing.T) {
 	w := postPhoto(t, m, kind, body)
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/r/everything", w.Header().Get("Location"),
+	require.Equal(t, "/", w.Header().Get("Location"),
 		"a photograph too big to hold in memory was refused")
 	require.Len(t, ph.kept, 1)
 	require.Len(t, ph.kept[0], len(big), "the photograph arrived truncated")
@@ -259,7 +250,7 @@ func TestTheCameraCanComeBeforeTheWords(t *testing.T) {
 
 	res := postPhoto(t, m, w.FormDataContentType(), &body)
 
-	require.Equal(t, "/r/everything", res.Header().Get("Location"))
+	require.Equal(t, "/", res.Header().Get("Location"))
 	require.Len(t, sp.written, 1)
 	require.Equal(t, "the tax letter", sp.written[0].Text)
 	require.NotEmpty(t, sp.written[0].PhotoName)
@@ -280,7 +271,7 @@ func TestAnEmptyFilePartIsJustWords(t *testing.T) {
 
 	res := postPhoto(t, m, w.FormDataContentType(), &body)
 
-	require.Equal(t, "/r/everything", res.Header().Get("Location"))
+	require.Equal(t, "/", res.Header().Get("Location"))
 	require.Empty(t, ph.kept, "an empty file part was kept as a photograph")
 	require.Len(t, sp.written, 1)
 	require.Empty(t, sp.written[0].PhotoName)

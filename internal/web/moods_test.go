@@ -1,7 +1,6 @@
 package web
 
 import (
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -88,36 +87,11 @@ func TestNoReadingsReadsAsNothing(t *testing.T) {
 	require.Contains(t, shownMoods(t, &fakeStore{}), "not said how you are lately")
 }
 
-// Home shows today's answer and the way to the series, and the series is not
-// on the screen until you ask.
-//
-// The way to it travels with Buddy's acknowledgement, because the answer is
-// about to be scrollback and scrollback carries no controls. It is a press
-// rather than a link since 31 August 2026, and the settings panel carries a
-// second one — asking for it from either draws it where you are standing.
-func TestTheThreadOffersIt(t *testing.T) {
-	now := time.Now()
-	f := &fakeStore{
-		checkin:  &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now},
-		readings: []squirrel.Checkin{reading(squirrel.MoodWiped, now.AddDate(0, 0, -1))},
-	}
-	m := mounted(t, f)
-	post(t, m, "/mood", url.Values{"mood": {"good"}})
-	f.turns, f.appended = f.appended, nil
-
-	body := m.call(t, "GET", "/r/everything", nil).Body.String()
-	require.Contains(t, body, `href="/me">how you felt before`)
-	require.NotContains(t, body, "mood-wiped.png", "no series")
-	require.NotContains(t, body, `class="weekrow"`, "the series is on the screen unasked")
-}
-
 // It is not in the lid and not a door. You go looking, or you do not see it.
 func TestTheMoodsPageIsNotInTheLid(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	for _, path := range []string{"/", "/r/everything"} {
-		body := mounted(t, f).call(t, "GET", path, nil).Body.String()
-		require.NotContains(t, body, `href="/moods"`, "reachable from %s", path)
-	}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	require.NotContains(t, body, `href="/moods"`)
 }
 
 // The gaps are the honest part, and the reason this is a grid. A day you said

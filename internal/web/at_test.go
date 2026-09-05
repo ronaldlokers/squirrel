@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -14,11 +13,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// These routes carry a wildcard, so they need a real ServeMux.
-//
-// The shared testMux matches by prefix and does not know what `{id}` is: it
-// answered `/at/99` with the handler for `/at`, and `r.PathValue` through it is
-// always empty. A test that cannot tell those apart cannot test either.
 type realMux struct{ mux *http.ServeMux }
 
 func (m *realMux) Get(pattern string, h http.HandlerFunc)  { m.mux.HandleFunc("GET "+pattern, h) }
@@ -29,9 +23,6 @@ func routed(t *testing.T, f *fakeStore) *realMux {
 	return routedSpooling(t, f, &fakeSpool{})
 }
 
-// routedSpooling is the same mount with a spool the test can look inside. The
-// dock writes there rather than straight to the pile, exactly as /capture
-// does, so a test about the dock is a test about what reached the spool.
 func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
 	t.Helper()
 	f.kept = sp
@@ -57,20 +48,6 @@ func (m *realMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	return w
 }
 
-// callFragment is a press made by the script rather than by the browser's own
-// form machinery: same URL, same body, one header.
-func (m *realMux) callFragment(t *testing.T, target, body string) *httptest.ResponseRecorder {
-	t.Helper()
-	r := httptest.NewRequest("POST", target, strings.NewReader(body))
-	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	r.Header.Set("Origin", "http://"+r.Host)
-	r.Header.Set("X-Thread", "fragment")
-	w := httptest.NewRecorder()
-	m.mux.ServeHTTP(w, r)
-	return w
-}
-
 func aMoment(in time.Duration, bring string) *squirrel.Moment {
 	return &squirrel.Moment{
 		ID: 4, Label: "dentist", Starts: now().Add(in),
@@ -78,100 +55,16 @@ func aMoment(in time.Duration, bring string) *squirrel.Moment {
 	}
 }
 
-func TestAFixedPointShowsWhenToLeaveAndWhatToTake(t *testing.T) {
-	body := landsInTheThread(t, withMoment(aMoment(3*time.Hour, "keys, wallet")))
-
-	require.Contains(t, body, "dentist")
-	require.Contains(t, body, "keys, wallet")
-	require.NotContains(t, body, "LEAVING", "hours out, there is nothing to press")
-}
-
-func TestLeavingIsOfferedInsideTheWindow(t *testing.T) {
-	body := landsInTheThread(t, withMoment(aMoment(10*time.Minute, "")))
-
-	require.Contains(t, body, "LEAVING")
-}
-
-func TestTheNotesPointingAtItAreShown(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, ""))
-	f.attached = []squirrel.Item{{ID: 9, RawText: "the referral letter", ReceivedAt: now()}}
-
-	body := landsInTheThread(t, f)
-	require.Contains(t, body, "the referral letter")
-}
-
-// Anything typed here is an ordinary note that happens to point at this
-// appointment. No picker, because a picker needs a browsable list of
-// appointments to pick from — here the appointment is the page you are on.
-func TestTypingIntoAFixedPointKeepsANotePointingAtIt(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, ""))
-	m := routed(t, f)
-
-	form := url.Values{"words": {"the referral letter"}}
-	res := m.call(t, "POST", "/at/4/note", strings.NewReader(form.Encode()))
-
-	require.Equal(t, 303, res.Code)
-	require.Len(t, f.items, 1)
-	require.Equal(t, "the referral letter", f.items[0].RawText)
-	require.Equal(t, squirrel.ItemNote, f.items[0].Kind, "it is an ordinary note")
-	require.Equal(t, []int64{4}, f.attachedTo, "it points at the appointment it was typed on")
-	require.Equal(t, []int64{f.items[0].ID}, f.attachedItems, "and it is that note that was pointed")
-}
-
-// Every transition here reverses, and this is the reversal.
-func TestANotePutBackLeavesTheFixedPoint(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, ""))
-	f.attached = []squirrel.Item{{ID: 9, RawText: "the referral letter", ReceivedAt: now()}}
-
-	form := url.Values{"id": {"9"}}
-	res := routed(t, f).call(t, "POST", "/at/4/detach", strings.NewReader(form.Encode()))
-
-	require.Equal(t, 303, res.Code)
-	require.Equal(t, []int64{9}, f.detached)
-}
-
-// The hardest rule in the product, on its newest surface.
-func TestAFixedPointNeverCountsAnything(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, ""))
-	f.attached = []squirrel.Item{
-		{ID: 9, RawText: "one", ReceivedAt: now()},
-		{ID: 10, RawText: "two", ReceivedAt: now()},
-		{ID: 11, RawText: "three", ReceivedAt: now()},
-	}
-	body := landsInTheThread(t, f)
-
-	require.NotContains(t, body, "3 notes")
-	require.NotContains(t, body, "three notes")
-}
-
-func TestSomebodyElsesFixedPointIsNotFound(t *testing.T) {
-	res := routed(t, withMoment(aMoment(3*time.Hour, ""))).call(t, "GET", "/at/99", nil)
-	require.Equal(t, 404, res.Code)
-}
-
-// The one route the agenda still has: the list is a turn, and this is what a
-// notification opens.
-func TestTappingTheWarningOpensTheAppointment(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
-	one := landsInTheThread(t, f)
-	require.Contains(t, one, "dentist")
-	require.Contains(t, one, "keys, wallet")
-}
-
 func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
 	f := &fakeStore{upcoming: []squirrel.Moment{
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	// Soonest first, in the agenda rack — the door that used to draw this is a
-	// bay on the board since 1 September 2026.
 	body := mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String()
 
 	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
 }
 
-// Never a count, and never a word about being behind. Everything here is still
-// ahead of you, which is the only reason this list is allowed to exist.
 func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 	f := &fakeStore{upcoming: []squirrel.Moment{
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
@@ -179,17 +72,12 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 	}}
 	drawn := strings.ToLower(mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String())
 
-	// Counting what is ahead is permitted, and the bay sign is where it is
-	// said. The words that would make it a reproach are not on the board at
-	// all.
 	require.Contains(t, drawn, `the agenda <span class="n">2</span>`)
 	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
 		require.NotContains(t, drawn, banned)
 	}
 }
 
-// An empty rack is room rather than absence, and it says nothing at all: no
-// encouragement, no plan, and no number where there is nothing to count.
 func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
 	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/?bay=agenda", nil).Body.String())
 
@@ -200,8 +88,6 @@ func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
 	}
 }
 
-// The agenda arrives as cards, and each says when to leave in the core's own
-// words — so the card, chat and the notification cannot drift apart about it.
 func TestTheAgendaRackDrawsWhatIsComing(t *testing.T) {
 	m := aMoment(3*time.Hour, "keys, wallet")
 	f := withUpcoming(*m)
@@ -213,9 +99,6 @@ func TestTheAgendaRackDrawsWhatIsComing(t *testing.T) {
 	require.Contains(t, shown, markOfMoment(*m, now()), "the strip does not say when")
 }
 
-// LEAVING only inside the window. Outside it there is nothing to press: the
-// appointment is not yet something you can act on, and a button that closes a
-// thing three hours early is one that gets pressed by accident.
 func TestLeavingIsAbsentOutsideTheWindow(t *testing.T) {
 	far := withUpcoming(*aMoment(3*time.Hour, ""))
 	farShown := mounted(t, far).call(t, "GET", "/?bay=agenda", nil).Body.String()
@@ -227,9 +110,6 @@ func TestLeavingIsAbsentOutsideTheWindow(t *testing.T) {
 	require.Contains(t, nearShown, "leave "+near.upcoming[0].LeaveAt().Format("15:04"))
 }
 
-// An absence, not an encouragement. An empty rack is room rather than a place
-// with an opinion: nothing says you ought to be making plans, and no sign
-// counts what is not there.
 func TestAnEmptyAgendaSaysSoWithoutEncouraging(t *testing.T) {
 	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/?bay=agenda", nil).Body.String())
 
@@ -244,186 +124,16 @@ func withUpcoming(ms ...squirrel.Moment) *fakeStore {
 	return &fakeStore{upcoming: ms}
 }
 
-func TestOpeningAFixedPointDrawsItsNotes(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, "keys, wallet"))
-	f.attached = []squirrel.Item{
-		{ID: 7, RawText: "the referral letter", State: squirrel.ItemOpen},
-	}
-	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=4"))
-
-	require.Len(t, f.appended, 2)
-	shown := string(f.appended[1].Shown)
-	require.Contains(t, shown, "dentist")
-	require.Contains(t, shown, "take keys, wallet")
-	require.Contains(t, shown, "the referral letter")
-}
-
-func TestAFixedPointThatIsNotYoursDrawsNothing(t *testing.T) {
-	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/at/open", strings.NewReader("id=99"))
-
-	require.Empty(t, f.appended)
-}
-
-// A note goes back to the pile, and the going back is said.
-func TestDetachingANoteIsSaid(t *testing.T) {
-	f := withMoment(aMoment(3*time.Hour, ""))
-	f.attached = []squirrel.Item{{ID: 7, RawText: "the referral letter", State: squirrel.ItemOpen}}
-	routed(t, f).call(t, "POST", "/at/4/detach", strings.NewReader("id=7"))
-
-	require.Equal(t, []int64{7}, f.detached)
-	require.Len(t, f.appended, 2)
-	require.Contains(t, f.appended[1].Words, "pile")
-}
-
-func TestAskingForADayOffersAMonthAndTimes(t *testing.T) {
-	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/at/new", strings.NewReader("label=dentist"))
-
-	require.Len(t, f.appended, 2)
-	shown := string(f.appended[1].Shown)
-	require.Contains(t, shown, `"month"`)
-	require.Contains(t, shown, `"times"`)
-	require.Contains(t, shown, "14:30")
-}
-
-// Answering makes the appointment on the day that was chosen, through the same
-// parser a typed sentence goes through.
-func TestAnsweringMakesItOnThatDay(t *testing.T) {
-	f := &fakeStore{}
-	day := now().AddDate(0, 0, 3)
-	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
-		"label=dentist&day="+day.Format("2006-01-02")+"&at=14:30"))
-
-	require.Len(t, f.moments, 1)
-	require.Equal(t, "dentist", f.moments[0].Label)
-	require.Equal(t, day.Day(), f.moments[0].Starts.Day())
-	require.Equal(t, 14, f.moments[0].Starts.Hour())
-	require.Equal(t, 30, f.moments[0].Starts.Minute())
-}
-
-func TestThePickerAndTheSentenceAgreeAboutTheTime(t *testing.T) {
-	typed, ok := squirrel.ParseMoment("at 14:30 dentist", now())
-	require.True(t, ok)
-
-	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
-		"label=dentist&day="+typed.Starts.Format("2006-01-02")+"&at=14:30"))
-
-	require.Len(t, f.moments, 1)
-	require.Equal(t, typed.Starts, f.moments[0].Starts)
-}
-
-// A time this picker does not draw is still a time. 03:00 was refused here
-// until 31 August 2026, when the three chips stopped being the vocabulary and
-// became a shortcut into a field that takes any of them.
-func TestATimeThePickerDoesNotDrawIsStillATime(t *testing.T) {
-	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
-		"label=dentist&day="+now().AddDate(0, 0, 1).Format("2006-01-02")+"&at=03:00"))
-
-	require.Len(t, f.moments, 1)
-	require.Equal(t, 3, f.moments[0].Starts.Hour())
-}
-
-// What is refused is what is not a time at all. A form is the only thing that
-// can post one, and it must not reach the parser as a sentence.
-func TestSomethingThatIsNotATimeDoesNothing(t *testing.T) {
-	for _, at := range []string{"teatime", "1130", "25:99", "", "11:15 dentist"} {
-		f := &fakeStore{}
-		routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
-			"label=dentist&day="+now().AddDate(0, 0, 1).Format("2006-01-02")+"&at="+url.QueryEscape(at)))
-
-		require.Empty(t, f.moments, at)
-		require.Empty(t, f.appended, at)
-	}
-}
-
-// And a day in the past does nothing either: the picker offers none, and an
-// appointment you are already late for is the one thing this list may not hold.
-func TestADayInThePastDoesNothing(t *testing.T) {
-	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/at/make", strings.NewReader(
-		"label=dentist&day="+now().AddDate(0, 0, -2).Format("2006-01-02")+"&at=14:30"))
-
-	require.Empty(t, f.moments)
-}
-
-// Turning to another month asks again rather than writing an appointment: it
-// is not an answer, it is turning a page.
-func TestTurningTheMonthAsksAgainAndMakesNothing(t *testing.T) {
-	f := &fakeStore{}
-	routed(t, f).call(t, "POST", "/at/new", strings.NewReader(
-		"label=dentist&month="+now().AddDate(0, 1, 0).Format("2006-01")))
-
-	require.Empty(t, f.moments)
-	require.Len(t, f.appended, 1, "turning a page is not something you said")
-	require.Contains(t, string(f.appended[0].Shown), `"month"`)
-}
-
-// The same press made by the script, which can put the new month where the old
-// one is. Then it is not said at all — see insteadOf.
-func TestTurningTheMonthForTheScriptSaysNothing(t *testing.T) {
-	f := &fakeStore{}
-	res := routed(t, f).callFragment(t, "/at/new",
-		"turn=7&label=dentist&month="+now().AddDate(0, 1, 0).Format("2006-01"))
-
-	require.Empty(t, f.moments)
-	require.Empty(t, f.appended, "paging a calendar was written into the conversation")
-	require.Equal(t, "turn-7", res.Header().Get("X-Replaces"))
-}
-
-// routedSplitting is a real mux with a coach that will split, for the routes
-// that carry a wildcard or a form the shared testMux cannot post.
-func routedSplitting(t *testing.T, f *fakeStore, pieces ...string) *realMux {
-	t.Helper()
-	c := &fakeCoach{pieces: pieces, splittable: true}
-	m := &realMux{mux: http.NewServeMux()}
-	require.NoError(t, Mount(m, f, c.options(Options{
-		RequiredGroup: "squirrel-users", Gate: &Gate{},
-		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
-		Login:    aTestLogin,
-	})))
-	return m
-}
-
-// The notification's own URL keeps working, and lands in the conversation.
-//
-// One sent last week is still on a lock screen, so the link may never 404 — and
-// what it opens is the appointment at the live edge rather than a page of its
-// own.
-func TestTheNotificationsURLLandsInTheConversation(t *testing.T) {
-	f := withMoment(aMoment(20*time.Minute, "keys, wallet"))
-	w := routed(t, f).call(t, "GET", "/at/4", nil)
+func TestTheNotificationsURLLandsOnTheAgenda(t *testing.T) {
+	w := routed(t, withMoment(aMoment(20*time.Minute, "keys, wallet"))).call(t, "GET", "/at/4", nil)
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/r/everything", w.Header().Get("Location"))
-	require.Len(t, f.appended, 2)
-	require.Contains(t, string(f.appended[1].Shown), "take keys, wallet")
-	require.Contains(t, string(f.appended[1].Shown), "LEAVING")
+	require.Equal(t, "/?bay=agenda", w.Header().Get("Location"))
 }
 
-// A fixed point that is not yours is not written into anyone's conversation.
-func TestANotificationForSomethingThatIsNotYoursWritesNothing(t *testing.T) {
-	f := &fakeStore{}
-	w := routed(t, f).call(t, "GET", "/at/99", nil)
+func TestANotificationForAnythingLandsOnTheAgenda(t *testing.T) {
+	w := routed(t, &fakeStore{}).call(t, "GET", "/at/99", nil)
 
-	require.Equal(t, 404, w.Code)
-	require.Empty(t, f.appended)
-}
-
-// landsInTheThread taps the notification's URL and renders the conversation it
-// wrote — which is what a person tapping a leave-by warning actually gets.
-func landsInTheThread(t *testing.T, f *fakeStore) string {
-	t.Helper()
-	// A fresh reading, so Buddy does not ask how you are on arrival and become
-	// the live edge himself — which would take LEAVING off the appointment you
-	// just tapped a warning about.
-	if f.checkin == nil {
-		f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
-	}
-	m := routed(t, f)
-	m.call(t, "GET", "/at/4", nil)
-	f.turns, f.appended = append(f.turns, f.appended...), nil
-	return m.call(t, "GET", "/r/everything", nil).Body.String()
+	require.Equal(t, 303, w.Code)
+	require.Equal(t, "/?bay=agenda", w.Header().Get("Location"))
 }

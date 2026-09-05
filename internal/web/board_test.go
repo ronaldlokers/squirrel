@@ -239,22 +239,12 @@ func TestAgendaWordsWithNoTimeInThemAreAskedAbout(t *testing.T) {
 	require.Equal(t, "/?bay=agenda&when=ring+the+dentist", w.Header().Get("Location"))
 }
 
-// The flip, pinned. The front door is the board; the conversation kept its own
-// address and every press made inside it comes back there rather than landing
-// somebody on a board they did not ask for.
-func TestTheFrontDoorIsTheBoardAndTheConversationHasItsOwnAddress(t *testing.T) {
+func TestTheFrontDoorIsTheBoard(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
 	front := m.call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, front, `class="racks"`, "the front door is not the board")
 	require.NotContains(t, front, `id="thread"`)
-
-	room := m.call(t, "GET", "/r/everything", nil).Body.String()
-	require.Contains(t, room, `id="thread"`, "the conversation lost its own address")
-
-	w := m.call(t, "POST", "/pile/act", strings.NewReader("id=1&act=keep"))
-	require.Equal(t, "/r/everything", w.Header().Get("Location"),
-		"a press in the conversation landed on the board")
 }
 
 // On a phone the four racks become one and the bay signs become the tabs above

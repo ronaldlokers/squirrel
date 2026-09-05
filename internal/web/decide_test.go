@@ -43,17 +43,6 @@ func TestTheBoardShowsWhatThePickerChose(t *testing.T) {
 	require.Contains(t, body, "you decided this one")
 }
 
-func TestTheConversationShowsWhatThePickerChose(t *testing.T) {
-	f := withOffer(&squirrel.Offer{
-		Kind: squirrel.OfferTask, RefID: 7, Text: "ring the vet", Because: "you decided this one",
-	})
-	c := &fakeCoach{}
-
-	body := mountedWith(t, f, c).call(t, "GET", "/r/everything", nil).Body.String()
-
-	require.Contains(t, body, "ring the vet")
-}
-
 // And the buttons act on it, which is the half that would silently rot: an
 // offer whose words came from one row and whose id came from another is a
 // press that answers something you were not shown.

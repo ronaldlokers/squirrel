@@ -561,6 +561,22 @@ func dayOpened(at time.Time, loc *time.Location) time.Time {
 	return time.Date(there.Year(), there.Month(), there.Day(), 0, 0, 0, 0, loc)
 }
 
+func sameDay(a, b time.Time) bool {
+	ay, am, ad := a.Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
+}
+
+const choreNameLimit = 200
+
+func theFaces() []faceView {
+	out := make([]faceView, 0, len(squirrel.Moods))
+	for _, m := range squirrel.Moods {
+		out = append(out, faceView{Mood: string(m), Word: squirrel.Words[m]})
+	}
+	return out
+}
+
 func markOfDay(said, today time.Time) string {
 	switch {
 	case sameDay(said, today):

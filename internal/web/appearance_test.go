@@ -67,52 +67,9 @@ var appearanceScreens = map[string][]string{
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
 
-	// The thread, which is the whole app. Only the newest Buddy turn carries
-	// controls, so one load can record one interactive shape and no more: the
-	// card is the one worth having, and the picker, the word box and the split
-	// are covered by the contrast walk, which renders them one at a time.
-	//
-	// Buddy's words are `.said` and yours are `.bub`, so there is no
-	// `.frombuddy .bub` to record.
-	"/r/everything": {
-		// The mark, the wordmark and the rail's two controls went with the
-		// lid's contents on 3 September 2026: his room carries the board's bar,
-		// and the chips are what is in it.
-		".lid", ".lid .chip", ".lid .find input",
-		// The rail, which is furniture on every screen and the largest thing
-		// this snapshot could miss.
-		//
-		// `:not(.in)` and not the bare `.rail .room`: the first room on this
-		// page is Buddy's, which is the room you are in, so the bare selector
-		// recorded the current shape twice and the resting one never. The
-		// difference between them is the whole of how this rail says where you
-		// are — a recessed well against a solid one.
-		// One link where five rooms were, and the two controls that always sat
-		// below the rule.
-		// The control that names the room you are in is deliberately NOT here.
-		// This snapshot visits one viewport and it is a desktop one, where the
-		// control is inside a display:none parent — getComputedStyle still
-		// returns its own styles, so it would record a full set of values for
-		// something nobody can see and pass whatever happened to the phone.
-		// Its markup is held by TestNothingNeedsAScriptToBeReached; its appearance on a
-		// phone is held by nothing, and saying so is better than a line that
-		// looks like cover.
-		".thread", ".turn", ".frombuddy .said", ".fromyou .bub",
-		// When it was said and which day it was. Both are quiet text on the
-		// field, which is exactly the kind of thing a colour change elsewhere
-		// takes with it without anybody noticing.
-		".whensaid", ".whenday",
-		".turncard", ".turnname", ".turnmeta", ".abtn", ".abtn.later", ".abtn.why",
-		".dock", ".slot", ".slot textarea", ".slot .post",
-	},
-	// The check-in as a question. It is a turn like any other, and the faces
-	// are worth their own visit: they are the control the capacity gate
-	// depends on.
-	"/r/everything?ask=1": {".faces", ".face", ".face img", ".face span"},
-	// `.empty img` is here and nowhere else because /enough is the one screen
-	// that overrides it. The size is the difference between a different drawing
-	// and the same one shrunk, and the HTML attribute cannot hold it — the
-	// shared rule would win.
+	// The page about you, the other screen this app has. What Buddy knew and
+	// the check-in's own history both live here now.
+	"/me": {".youface", ".youhead", ".weekrow"},
 }
 
 const appearanceFile = "testdata/appearance.json"
@@ -179,7 +136,7 @@ func TestTheScreensLookLikeThemselves(t *testing.T) {
 	t.Cleanup(func() { now = was })
 
 	srv := screenWith(t, f, &fakeCoach{reply: "one thing at a time."})
-	c := browserAt(t, srv, "/r/everything")
+	c := browserAt(t, srv, "/")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false,
 	})

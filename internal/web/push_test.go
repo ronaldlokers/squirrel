@@ -59,15 +59,13 @@ func TestASubscriptionThatCouldNeverBeSentToIsRefused(t *testing.T) {
 // it: the key is on every screen because the script that uses it is, and the
 // control is where the setting lives.
 func TestTheKeyIsOnThePageOnlyWhenThereIsOne(t *testing.T) {
-	with := withPush(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
+	with := withPush(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String()
 	require.Contains(t, with, `data-push-key="BKtestkey"`)
-	require.Contains(t, withPush(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String(),
-		`id="pushbit"`, "no key on the page means no setting to use it")
+	require.Contains(t, with, `id="pushbit"`, "no key on the page means no setting to use it")
 
-	without := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
+	without := mounted(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String()
 	require.NotContains(t, without, "data-push-key")
-	require.NotContains(t, mounted(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String(),
-		`id="pushbit"`)
+	require.NotContains(t, without, `id="pushbit"`)
 }
 
 func postJSON(t *testing.T, m *testMux, path, body string) *httptest.ResponseRecorder {

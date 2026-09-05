@@ -12,9 +12,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// crossSite posts a form the way another site would: the identity header is
-// there, because the browser sends it on every request to this host, and the
-// origin is somewhere else.
 func crossSite(t *testing.T, m *testMux, path string, form url.Values, headers map[string]string) int {
 	t.Helper()
 	r := httptest.NewRequest("POST", path, strings.NewReader(form.Encode()))
@@ -32,11 +29,11 @@ func TestAWriteFromAnotherSiteIsRefused(t *testing.T) {
 	for _, headers := range []map[string]string{
 		{"Origin": "https://evil.example"},
 		{"Referer": "https://evil.example/page"},
-		{}, // a request that says nothing about where it came from
+		{},
 	} {
 		f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-		code := crossSite(t, mounted(t, f), "/pile/act",
-			url.Values{"id": {"1"}, "act": {"done"}}, headers)
+		code := crossSite(t, mounted(t, f), "/board/act",
+			url.Values{"what": {"note"}, "id": {"1"}, "answer": {"done"}}, headers)
 
 		require.Equal(t, 403, code, "headers %v", headers)
 		require.Equal(t, squirrel.ItemOpen, f.items[0].State,
@@ -46,20 +43,19 @@ func TestAWriteFromAnotherSiteIsRefused(t *testing.T) {
 
 func TestPromotionFromAnotherSiteIsRefused(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "bins out", squirrel.ItemOpen)}}
-	code := crossSite(t, mounted(t, f), "/pile/chore",
-		url.Values{"id": {"1"}, "every": {"every week"}},
+	code := crossSite(t, mounted(t, f), "/board/chore",
+		url.Values{"id": {"1"}, "every": {"7"}},
 		map[string]string{"Origin": "https://evil.example"})
 
 	require.Equal(t, 403, code)
 	require.Equal(t, squirrel.ItemOpen, f.items[0].State)
 }
 
-// Referer is the fallback for a browser that omits Origin on its own form.
 func TestARefererFromThisScreenIsAccepted(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	code := crossSite(t, mounted(t, f), "/pile/act",
-		url.Values{"id": {"1"}, "act": {"done"}},
-		map[string]string{"Referer": "http://example.com/pile"})
+	code := crossSite(t, mounted(t, f), "/board/act",
+		url.Values{"what": {"note"}, "id": {"1"}, "answer": {"done"}},
+		map[string]string{"Referer": "http://example.com/"})
 
 	require.Equal(t, 303, code)
 	require.Equal(t, squirrel.ItemDone, f.items[0].State)

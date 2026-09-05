@@ -20,6 +20,11 @@ func aBoardStoreWithATaskOffer() *fakeStore {
 	return f
 }
 
+func breaksInto(c *fakeCoach, steps ...string) *fakeCoach {
+	c.steps = steps
+	return c
+}
+
 func TestPressingTooBigOnTheBoardOpensTheTaskItWasAbout(t *testing.T) {
 	f := aBoardStoreWithATaskOffer()
 	c := breaksInto(&fakeCoach{}, "find the vet phone number", "book the appointment")
@@ -123,4 +128,18 @@ func TestAStepOnTheStripNeverSaysHowManyAreLeft(t *testing.T) {
 	for _, count := range []string{"of 3", "1/3", "step 1", "1 of"} {
 		require.NotContains(t, body, count)
 	}
+}
+
+func TestAnUnreadableStepIsNoStepOnTheStrip(t *testing.T) {
+	f := aBoardStoreWithATaskOffer()
+	c := breaksInto(&fakeCoach{}, "find the vet phone number")
+	m := mountedWith(t, f, c)
+
+	post(t, m, "/board/now", url.Values{"act": {"stuck"}, "why": {"big"}, "kind": {"task"}, "id": {"3"}})
+	f.err = errTest
+
+	require.NotPanics(t, func() {
+		body := m.call(t, "GET", "/?open=3", nil).Body.String()
+		require.NotContains(t, body, "find the vet phone number")
+	})
 }

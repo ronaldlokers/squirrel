@@ -40,7 +40,7 @@ func TestEverythingYouOperateIsInOneCluster(t *testing.T) {
 	bar := theBarIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String())
 
 	rail := insideTheRail(t, bar)
-	for _, want := range []string{`class="find`, `class="chip buddy"`, `class="chip bell`, `class="chip face"`} {
+	for _, want := range []string{`class="find`, `class="chip bell`, `class="chip face"`} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("%s is outside the cluster it belongs to", want)
 		}

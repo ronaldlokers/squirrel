@@ -4,9 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
+<link rel="manifest" href="/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
 <meta name="theme-color" content="#472e70">
 <link rel="icon" href="/static/logo.png?v={{.V}}">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
 <link rel="stylesheet" href="/static/board.css?v={{.V}}">
 <link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
 <script src="/static/board.js?v={{.V}}" defer></script>
@@ -22,7 +26,6 @@
   <span class="rail">
     {{template "findchip" .Find}}
     <span class="sep" aria-hidden="true"></span>
-    {{template "buddychip"}}
     {{template "bellchip" .AnyTold}}
     {{template "youchip" .You}}
   </span>
@@ -357,7 +360,7 @@
     </span>
     {{if .Camera}}
     <label class="camera">
-      <input type="file" name="photo" accept="image/*" capture="environment">
+      <input type="file" name="photo" accept="image/*">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg>
       <span class="offscreen">take a photograph</span>
     </label>

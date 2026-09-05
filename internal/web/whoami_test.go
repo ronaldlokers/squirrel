@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 // The rail went with the rooms on 3 September 2026 and what it held is a page.
@@ -43,23 +41,6 @@ func TestWithAPictureTheFaceIsServedFromHere(t *testing.T) {
 
 	require.Contains(t, body, `src="/me/face"`, "the picture is not shown")
 	require.NotContains(t, body, "https://", "a face is fetched from somewhere that is not this origin")
-}
-
-// Your turns carry a face the way Buddy's do, and only where a run starts.
-func TestYourTurnsCarryYourFace(t *testing.T) {
-	f := &fakeStore{whoName: "Ronald Lokers"}
-	f.turns = []squirrel.Turn{
-		{ID: 1, Who: squirrel.SpeakerYou, Words: "the tasks"},
-		{ID: 2, Who: squirrel.SpeakerBuddy, Words: "Two come back round."},
-	}
-	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
-
-	// Inside the turn, not merely somewhere on the page: the rail draws a
-	// youface too, so a bare substring passes with the turn's face deleted.
-	yours := body[strings.Index(body, `class="turn fromyou`):]
-	yours = yours[:strings.Index(yours, `class="turn frombuddy`)]
-	require.Contains(t, yours, `class="youface`, "your own turns have no face")
-	require.Contains(t, body, `class="buddyface"`, "his did not survive yours arriving")
 }
 
 func TestYourFaceIsNotServedToNobody(t *testing.T) {
@@ -205,13 +186,7 @@ func TestAPictureIsNotFollowedOffHttps(t *testing.T) {
 // round, and each of the three has been that at least once.
 func TestYourFaceIsTheSameShapeEverywhere(t *testing.T) {
 	f := &fakeStore{whoName: "Ronald Lokers", whoFace: []byte("not really a png")}
-	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerYou, Words: "the tasks"}}
 	m := mounted(t, f)
-
-	said := m.call(t, "GET", "/r/everything", nil).Body.String()
-	require.NotContains(t, said, `<img class="youface"`,
-		"a turn draws a bare image, which .youface img cannot round")
-	require.Equal(t, 1, strings.Count(said, `<span class="youface"`))
 
 	page := m.call(t, "GET", "/me", nil).Body.String()
 	require.Equal(t, 1, strings.Count(page, `<span class="youface"`),

@@ -8,13 +8,13 @@ func TestBackTolerantRejectsEveryWayOutOfTheHost(t *testing.T) {
 		from string
 		want string
 	}{
-		{"a leading double slash", "//evil.com", "/r/everything"},
-		{"an absolute URL to another host", "https://evil.com", "/r/everything"},
-		{"a leading backslash", `/\evil.com`, "/r/everything"},
-		{"a slash then a backslash", `/\/evil.com`, "/r/everything"},
-		{"a plain path", "/r/everything", "/r/everything"},
+		{"a leading double slash", "//evil.com", "/"},
+		{"an absolute URL to another host", "https://evil.com", "/"},
+		{"a leading backslash", `/\evil.com`, "/"},
+		{"a slash then a backslash", `/\/evil.com`, "/"},
+		{"a plain path", "/?open=1", "/?open=1"},
 		{"a path with a query", "/board?said=ok", "/board?said=ok"},
-		{"empty", "", "/r/everything"},
+		{"empty", "", "/"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
