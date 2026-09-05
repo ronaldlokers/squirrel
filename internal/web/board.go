@@ -102,6 +102,7 @@ type stripView struct {
 	Room    string
 	Held    []answerView
 	Reword  bool
+	Step    *stepView
 }
 
 type rhythmView struct {
@@ -902,6 +903,12 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				}
 				break
 			}
+			if o, found, err := s.PickNow(r.Context(), personID, now(), true); err == nil && found {
+				if smallerFor(s, opts, r, b, o) != nil && o.Kind == squirrel.OfferTask && o.RefID != 0 {
+					http.Redirect(w, r, "/?open="+strconv.FormatInt(o.RefID, 10), http.StatusSeeOther)
+					return
+				}
+			}
 			http.Redirect(w, r, "/?stuck="+url.QueryEscape(why), http.StatusSeeOther)
 			return
 		}
@@ -1025,6 +1032,9 @@ func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripV
 		v.Answers, v.Held = noteAnswers, heldAnswers
 	}
 	v.Reword = r.URL.Query().Get("reword") == "1"
+	if !v.Back {
+		v.Step = stepForItem(s, r, it.ID)
+	}
 	return v
 }
 

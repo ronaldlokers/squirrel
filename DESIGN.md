@@ -830,10 +830,37 @@ and four stamps. They are drawn only while the strip is still in the pile;
 something already done or dropped has nothing to be waiting on. The rule is printed on the strip rather than hidden behind a why,
 because an offer nobody can account for is a demand.
 
-### The holder
+### The opened strip breaks into steps
 
-11px of room colour, ruled off from the stock with the 2px outline, carrying the
-grip. See The Holder Rule.
+**Too big**, pressed on the pulled strip, no longer ends in a fixed sentence
+alone. When the offer names a task, the sentence is broken into steps and the
+board sends you to that task's own strip, opened — the sequence lives there
+rather than under the pulled strip's own line.
+
+**One step, never the list.** The opened strip draws the step's words, `done`
+and `forget the steps` — the same shape *not now* already has, one press, no
+consequence — and, on the last one, the words `the last one` beside it.
+Nowhere is a position out of a total drawn: no `1 of 3`, no bar, no count.
+That is not a drawing choice made here; the store this reads from has no
+function that returns the sequence, so this strip could not draw one even if
+asked to.
+
+**A sequence belongs to the strip it is about, and to no other.** Opening a
+different note or task while a breakdown is under way shows that strip as it
+always was — no step, because the step is not about it. There is exactly one
+sequence in flight for a person at a time, the same rule the timer keeps, and
+it surfaces only under the one strip it was made for.
+
+**When there is nothing to open onto, the fixed line is still the floor.** A
+blocker that cannot be broken down, or a model that is slow, absent or wrong,
+leaves the pulled strip's own sentence exactly as phase B drew it. Principle
+10 costs nothing here: with no coach configured, `too big` has always meant
+the fixed line, and still does.
+
+### The opened strip corrects itself
+
+A strip opened by name — from search, a notification, or a press — carries two
+things the rack strips never do.
 
 ### The bay sign
 

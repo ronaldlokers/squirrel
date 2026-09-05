@@ -24,7 +24,8 @@ type Step struct {
 	Body  string
 	// Last says there is nothing after this one, so the surface can say so
 	// rather than leaving you waiting for a step that never comes.
-	Last bool
+	Last   bool
+	ItemID *int64
 }
 
 // SaveSteps replaces whatever sequence there was.
@@ -67,14 +68,14 @@ func (s *Store) NextStep(ctx context.Context, personID int64) (Step, bool, error
 	var st Step
 	var more int
 	err := s.pool.QueryRow(ctx, `
-		select id, label, body,
+		select id, item_id, label, body,
 		       (select count(*) from steps later
 		         where later.person_id = $1 and later.done_at is null
 		           and later.position > steps.position)
 		  from steps
 		 where person_id = $1 and done_at is null
 		 order by position
-		 limit 1`, personID).Scan(&st.ID, &st.Label, &st.Body, &more)
+		 limit 1`, personID).Scan(&st.ID, &st.ItemID, &st.Label, &st.Body, &more)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Step{}, false, nil
