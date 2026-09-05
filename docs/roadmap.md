@@ -149,7 +149,12 @@ retirement, decided 3 September, and Devices, settled 22 August.
 ### The conversation retires into the board
 
 Decided 3 September 2026, and it governs everything built after it rather than
-being one more item on a list.
+being one more item on a list. **Spec written 5 September:**
+`docs/superpowers/specs/2026-09-05-the-conversation-retires-design.md` — the
+twelve capabilities still reachable only from the room, where each one lands,
+six phases, and the shape question answered: Buddy on the board answers through
+the strip you are looking at, never through a box, because a box on the board is
+the refused general AI chat companion relocated rather than retired.
 
 The conversation goes. What it does that the board does not yet — Buddy
 answering, the readings, whatever is left of triage — moves into the board, and
