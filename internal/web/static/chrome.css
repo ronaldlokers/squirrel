@@ -91,15 +91,17 @@
   }
   .ops .brand, .ops .clock, .ops .spacer, .ops .rail .sep,
   .lid .markart, .lid .wordmark, .lid .clock { display: none; }
+  .ops .chip, .lid .chip { width: 44px; height: 44px; min-height: 44px; }
   .ops .rail { flex: 1; gap: 9px; padding: 0; background: none; border: 0; }
   .ops .rail .find {
-    flex: 1; height: 40px; gap: 9px; padding: 0 14px; border-radius: 999px;
+    flex: 1; height: 44px; gap: 9px; padding: 0 14px; border-radius: 999px;
     background: rgba(28, 17, 11, .32); border: 2px solid rgba(254, 214, 167, .3);
   }
   .ops .rail .find input { width: 100%; font-size: 16px; }
+  .ops .rail .findpress { min-width: 44px; min-height: 44px; justify-content: center; }
   .ops .find, .lid .find {
-    flex: 1; min-width: 0; height: 40px; gap: 9px; padding: 0 14px;
+    flex: 1; min-width: 0; height: 44px; gap: 9px; padding: 0 14px;
     border-radius: 999px;
   }
-  .ops .find input, .lid .find input { width: 100%; font-size: 16px; }
+  .ops .find input, .lid .find input { width: 100%; font-size: 16px; min-height: 44px; }
 }

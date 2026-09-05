@@ -239,7 +239,8 @@ body {
 .strip.blank .words::placeholder { color: var(--placeholder); font-variation-settings: var(--casual), "wght" 470; }
 .strip.blank .words:focus { outline: none; }
 .strip.blank .newmark {
-  display: flex; align-items: center; padding: 0 11px; color: var(--outline);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 11px; color: var(--outline);
   background: none; border: 0; cursor: pointer;
   font-size: 17px; font-variation-settings: var(--precise), "wght" 800;
 }
@@ -453,7 +454,7 @@ a.stamp { text-decoration: none; }
   min-height: 44px; cursor: pointer;
 }
 .presses .strip.answerable .opener {
-  display: grid; place-items: center; width: 40px; height: 40px; align-self: start;
+  display: grid; place-items: center; width: 44px; height: 44px; align-self: start;
   padding: 0; margin: 0; background: none; border: 0; cursor: pointer;
   color: var(--brown);
 }
@@ -547,13 +548,15 @@ a.stamp { text-decoration: none; }
 
 @media (max-width: 620px) {
   .blankstrip .count, .blankstrip .unit { min-height: 40px; font-size: 16px; }
+  .blankstrip .strip.blank .words { min-height: 44px; }
+  .strip.blank .newmark { min-width: 44px; min-height: 44px; }
 }
 
 @media (pointer: coarse) {
 }
 
 @media (pointer: coarse) {
-  .strip .backtab .stamp { min-height: 44px; padding: 10px; }
+  .strip .backtab .stamp { min-width: 44px; min-height: 44px; padding: 10px; }
 }
 
 .wentto {
@@ -651,7 +654,8 @@ a.stamp { text-decoration: none; }
 }
 
 .strip.back {
-  grid-template-columns: minmax(0, 1fr); flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr); flex: 0 0 auto; align-items: center;
+  min-height: 44px; box-sizing: border-box;
   background: transparent; border: var(--line) solid rgba(254, 214, 167, .3);
   box-shadow: none; color: rgba(254, 214, 167, .85); text-decoration: none;
 }

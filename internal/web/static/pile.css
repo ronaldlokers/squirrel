@@ -661,7 +661,7 @@
   }
 
   @media (max-width: 620px) {
-    :root { --o: 5px; --lid-pad-top: 0px; --lid-pad-bottom: 5px; --lid-mark-h: 40px; }
+    :root { --o: 5px; --lid-pad-top: 0px; --lid-pad-bottom: 5px; --lid-mark-h: 44px; }
     /* Wrapping is still what lets the lid be two rows, but nothing about the
        search field needs it any more: the mark and the three icons fit one
        row at every width this product is used at. It is the running timer that
