@@ -59,7 +59,7 @@ func hashOf(token string) []byte {
 
 // started is the login in progress, packed into one cookie.
 //
-// Three values in one cookie rather than three cookies, because they are one
+// Four values in one cookie rather than four cookies, because they are one
 // fact and expire together: a login half-abandoned should not leave a verifier
 // behind for a state that is gone.
 //
@@ -67,21 +67,21 @@ func hashOf(token string) []byte {
 // illegal bytes out of a cookie value rather than refusing it, so an unencoded
 // separator does not fail here — it arrives silently truncated, and every
 // login turns into "that was not our redirect".
-func started(state, verifier, next string) string {
+func started(state, nonce, verifier, next string) string {
 	return base64.RawURLEncoding.EncodeToString(
-		[]byte(strings.Join([]string{state, verifier, next}, "\x1f")))
+		[]byte(strings.Join([]string{state, nonce, verifier, next}, "\x1f")))
 }
 
-func unpack(v string) (state, verifier, next string, ok bool) {
+func unpack(v string) (state, nonce, verifier, next string, ok bool) {
 	raw, err := base64.RawURLEncoding.DecodeString(v)
 	if err != nil {
-		return "", "", "", false
+		return "", "", "", "", false
 	}
 	parts := strings.Split(string(raw), "\x1f")
-	if len(parts) != 3 {
-		return "", "", "", false
+	if len(parts) != 4 {
+		return "", "", "", "", false
 	}
-	return parts[0], parts[1], parts[2], true
+	return parts[0], parts[1], parts[2], parts[3], true
 }
 
 // beginHandler starts a login.
@@ -92,18 +92,21 @@ func beginHandler(opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state, err := secret(32)
 		if err == nil {
-			var verifier string
-			if verifier, err = secret(32); err == nil {
-				var away string
-				// The gate may not have found authentik yet — it is looked up
-				// lazily and retried rather than at boot, so that an authentik
-				// that is down costs the way in and not the whole product. The
-				// screen already has a sentence for this.
-				if away, err = opts.Gate.Away(state, verifier); err == nil {
-					http.SetCookie(w, cookie(stateCookie,
-						started(state, verifier, backTolerant(r.FormValue("next"))), stateLife))
-					http.Redirect(w, r, away, http.StatusSeeOther)
-					return
+			var nonce string
+			if nonce, err = secret(32); err == nil {
+				var verifier string
+				if verifier, err = secret(32); err == nil {
+					var away string
+					// The gate may not have found authentik yet — it is looked up
+					// lazily and retried rather than at boot, so that an authentik
+					// that is down costs the way in and not the whole product. The
+					// screen already has a sentence for this.
+					if away, err = opts.Gate.Away(state, nonce, verifier); err == nil {
+						http.SetCookie(w, cookie(stateCookie,
+							started(state, nonce, verifier, backTolerant(r.FormValue("next"))), stateLife))
+						http.Redirect(w, r, away, http.StatusSeeOther)
+						return
+					}
 				}
 			}
 		}
@@ -134,7 +137,7 @@ func backHandler(opts Options) http.HandlerFunc {
 			down("nothing was started", err)
 			return
 		}
-		state, verifier, next, ok := unpack(carried.Value)
+		state, nonce, verifier, next, ok := unpack(carried.Value)
 		// Constant time because it is a secret comparison, even though what it
 		// protects against is a forged redirect rather than a stolen token.
 		if !ok || !sameSecret(state, r.URL.Query().Get("state")) {
@@ -142,7 +145,7 @@ func backHandler(opts Options) http.HandlerFunc {
 			return
 		}
 
-		who, err := opts.Gate.Back(r.Context(), r.URL.Query().Get("code"), verifier)
+		who, err := opts.Gate.Back(r.Context(), r.URL.Query().Get("code"), verifier, nonce)
 		if errors.Is(err, ErrNotAllowed) {
 			// Not a failure. Authentik did its job for an account that is
 			// simply not for this product, and the gate says so in its own

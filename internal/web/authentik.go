@@ -141,8 +141,10 @@ func (d *Gate) forget() {
 
 // Away is where to send somebody who is signing in. The verifier never leaves
 // this machine — only its hash does, as the PKCE challenge — so an intercepted
-// code cannot be spent.
-func (d *Gate) Away(state, verifier string) (string, error) {
+// code cannot be spent. The nonce travels the other way round: it goes out in
+// the URL and comes back inside the id token, so Back can tell a token minted
+// for this trip from one replayed from another.
+func (d *Gate) Away(state, nonce, verifier string) (string, error) {
 	if err := d.find(context.Background()); err != nil {
 		return "", err
 	}
@@ -152,6 +154,7 @@ func (d *Gate) Away(state, verifier string) (string, error) {
 
 	sum := sha256.Sum256([]byte(verifier))
 	return oauth.AuthCodeURL(state,
+		oidc.Nonce(nonce),
 		oauth2.SetAuthURLParam("code_challenge", base64.RawURLEncoding.EncodeToString(sum[:])),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256")), nil
 }
@@ -159,7 +162,7 @@ func (d *Gate) Away(state, verifier string) (string, error) {
 // Back turns a code into a person, or refuses. The two refusals are deliberately
 // different errors: a token that does not verify is something wrong, and
 // ErrNotAllowed is Authentik doing its job for an account not for this product.
-func (d *Gate) Back(ctx context.Context, code, verifier string) (Person, error) {
+func (d *Gate) Back(ctx context.Context, code, verifier, nonce string) (Person, error) {
 	if err := d.find(ctx); err != nil {
 		return Person{}, err
 	}
@@ -181,6 +184,9 @@ func (d *Gate) Back(ctx context.Context, code, verifier string) (Person, error) 
 	id, err := verify.Verify(ctx, raw)
 	if err != nil {
 		return Person{}, fmt.Errorf("checking the id token: %w", err)
+	}
+	if id.Nonce != nonce {
+		return Person{}, errors.New("the id token's nonce did not match")
 	}
 
 	// Both `name` and `picture` are in the `profile` scope this already asks
