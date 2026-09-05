@@ -30,7 +30,7 @@
       <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
       {{end}}
       {{if eq .What "note"}}
-      <a class="stamp go" href="/?chore={{.ID}}">make a chore<span class="k">C</span></a>
+      <button class="stamp" type="submit" formmethod="get" formaction="/" name="chore" value="{{.ID}}">make a chore<span class="k">C</span></button>
       {{end}}
     </form>
     {{end}}

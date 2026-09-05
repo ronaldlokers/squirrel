@@ -259,7 +259,7 @@ every press made inside it coming back there. The board is also still at
 `/board`, and drawing the four bays, the pulled strip, the running timer and the
 ledge from the store; a strip can be answered on it, with the strike, the
 1150ms hold, the travel and the tray; and every rack can be written into,
-the notes through the spool, a chore with one of four rhythm stamps, an
+the notes through the spool, a chore with the interval beside its field, an
 appointment as the sentence chat already parses.
 
 The board also searches, keeps a photograph and opens the strip that carries
@@ -792,12 +792,14 @@ is nothing beside it to compare against.
 A chore typed with no rhythm, and an appointment with no time in it, used to be
 filed as notes — in another rack, found on the next refresh. The board asks
 instead: the words come back into the field they were typed in, with the
-question under them, and the rhythm chips or the day and time beside it are the
+question under them, and the interval or the day and time beside it are the
 answer.
 
-**A rhythm is any number of days, weeks or months.** The four chips are a
-shortcut and not the vocabulary: the fourth chore you have comes back every
-three days, and a screen that can only offer four intervals is a screen that
+**A rhythm is any number of days, weeks or months.** It is asked for on the
+strip, as a number and a unit. Four preset chips stood under the field until
+v0.68.0 and were removed there: with the interval already on the strip they said
+the same thing twice, and a screen that can only offer four intervals is a
+screen that
 makes you round.
 
 **A capture is settled before the board is drawn again.** The spool is what
@@ -841,11 +843,15 @@ register rather than the board's: the squirrel in the ops bar is drawn the same
 way, and four line glyphs at 28px would have been four grey rectangles at a
 glance. They are the only raster art in the interface apart from the mark.
 
-**The count is an orange badge on the icon**, `orange` under a 2px outline with
-Inter's tabular figures, at the icon's top-right — and only when the bay holds
-something. No bay ever wears a nought. This is the strongest form a count has
-taken in this product, and it is a deliberate choice rather than drift: the old
-rule against counts was retired for doors, and the bar is the door.
+**The count sits beside the label, not on the icon.** An orange disc at an
+icon's top-right is the platform's own grammar for a notification demanding
+attention — pixel-identical to the bell's dot above it — and a bay's count is a
+different claim, the same one the desktop bay signs already make. So it is
+drawn the way they draw it: `&middot;` and the number, in the tab's own ink,
+beside its name — *Notes · 3* — and only when the bay holds something. No bay
+ever wears a nought. The count itself is still the strongest form a count has
+taken in this product, and retiring the old rule against counts for doors is
+unchanged; only the badge's shape moved.
 
 ### The channel
 
@@ -874,10 +880,14 @@ of having a camera.
 rhythm and an appointment needs a day, and the obvious build was to take the
 words and then ask — which would hold a thought in a form field, the one thing
 this product may never do. So the question moved into the strip instead of after
-it. The chores rack carries four rhythm stamps under its field — *a day*, *a
-week*, *2 weeks*, *a month* — and pressing one is the whole act. The agenda's
-field teaches its own grammar in the placeholder, `at 14:30 dentist`, which is
-the sentence chat has always parsed.
+it. The chores rack asks for its interval beside its field, a number and a unit,
+and answering it is the whole act. It carried four preset stamps under the field
+as well until v0.68.0, which removed them: the interval was already on the strip
+and the stamps were a second row saying the same thing. The agenda's field
+teaches its own grammar in the placeholder, `at 14:30 dentist`, which is the
+sentence chat has always parsed, and its day and clock are both hand-built
+fields — a native date or time input renders in the browser's locale and no
+attribute changes that.
 
 **And the floor under all four: words that are not what the rack asked for are
 still a thought.** A chore typed with no rhythm and an appointment typed with no
@@ -893,12 +903,19 @@ in a 2px-radius box at 70% opacity. Four fills:
 | Fill | Meaning |
 |---|---|
 | `paper` | The neutral answer. |
-| `orange` | This makes something happen: I'll do it, make a chore. |
+| `orange` | This makes something happen: I'll do it. |
 | `state-done-lifted` | Done, did it. |
 | `card-deep` | This does nothing to the world: not today, later, stop. |
 
 A stamp is always in the same place on the object it acts on, and always carries
 its key. There are no pill buttons in this product any more.
+
+**One fill per strip.** Orange is the accent — the bell's dot, the chores
+holder — and a strip that lights it twice makes the loudest thing on the row
+whichever action happens least. A note carries `did` on *done* and paper on
+everything else, including *make a chore*: asking a question about the note is
+not the thing the note is for, and only *I'll do it* on the pulled strip earns
+the accent, because that strip has nothing else competing for it.
 
 **What each bay answers.** A note takes *done*, *keep*, *drop*, and *make a
 chore*; a chore takes *did it* and *later*; a task takes *done* and *drop*; an

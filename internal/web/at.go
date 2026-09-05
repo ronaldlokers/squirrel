@@ -284,7 +284,10 @@ func atMakeHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		label := strings.TrimSpace(r.FormValue("label"))
-		at := r.FormValue("at")
+		at := strings.TrimSpace(r.FormValue("at"))
+		if at == "" {
+			at = clockFrom(r)
+		}
 		if label == "" || !aTimeOfDay(at) {
 			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
 			return

@@ -353,8 +353,13 @@
 document.addEventListener("click", event => {
   const chip = event.target.closest?.("[data-at]");
   if (!chip) return;
-  const field = chip.closest(".pickrow")?.querySelector(".attime");
-  if (!field) return;
-  field.value = chip.dataset.at;
-  field.dispatchEvent(new Event("input", { bubbles: true }));
+  const row = chip.closest(".pickrow");
+  const hour = row?.querySelector(".attime .ah");
+  const minute = row?.querySelector(".attime .am");
+  if (!hour || !minute) return;
+  const [h, m] = chip.dataset.at.split(":");
+  hour.value = h;
+  minute.value = m;
+  hour.dispatchEvent(new Event("input", { bubbles: true }));
+  minute.dispatchEvent(new Event("input", { bubbles: true }));
 });

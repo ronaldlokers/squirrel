@@ -143,15 +143,15 @@ func TestTheCountIsABadgeOnTheIconAndOnlyWhenThereIsOne(t *testing.T) {
 
 	require.Equal(t, 3, strings.Count(bar, `<span class="n">`),
 		"the three bays that hold something do not each wear one badge")
-	for _, tab := range strings.Split(bar, `<span class="pic">`)[1:] {
-		badge := strings.Index(tab, `<span class="n">`)
-		if badge < 0 {
-			continue
-		}
-		require.Less(t, badge, strings.Index(tab, `<span class="says">`),
-			"the count is beside the name rather than on the icon")
+	for _, pic := range strings.Split(bar, `<span class="pic">`)[1:] {
+		require.NotContains(t, pic[:strings.Index(pic, `</span>`)], `<span class="n">`,
+			"the count sits on the icon rather than beside the label, which is pixel-identical to the bell's dot")
 	}
-	require.NotContains(t, bar, `<span class="n">0</span>`, "an empty bay wears a badge saying nought")
+	require.Contains(t, bar, `<span class="says">notes <span class="n">&middot; 2</span></span>`)
+	require.Contains(t, bar, `<span class="says">chores <span class="n">&middot; 1</span></span>`)
+	require.Contains(t, bar, `<span class="says">tasks <span class="n">&middot; 1</span></span>`)
+	require.Contains(t, bar, `<span class="says">agenda</span>`, "the agenda wears a badge with nothing in it")
+	require.NotContains(t, bar, `&middot; 0</span>`, "an empty bay wears a badge saying nought")
 
 	empty := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
 	require.NotContains(t, empty[strings.Index(empty, `<nav class="baytabs">`):], `<span class="n">`,
@@ -195,7 +195,7 @@ func TestTheBarNamesABayWithoutItsArticle(t *testing.T) {
 	bar := body[strings.Index(body, `<nav class="baytabs">`):]
 
 	for _, bay := range []string{"notes", "chores", "tasks", "agenda"} {
-		require.Contains(t, bar, `<span class="says">`+bay+`</span>`,
+		require.Contains(t, bar, `<span class="says">`+bay,
 			"the bar does not name the %s", bay)
 	}
 	require.NotContains(t, bar, `<span class="says">the `,
