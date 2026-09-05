@@ -119,7 +119,7 @@ func (p *Provider) Smaller(ctx context.Context, personID int64, task, blocker st
 
 	steps := stepsIn(calls)
 	if len(steps) < fewestSteps {
-		slog.Warn("the coach did not break it down; the ladder answers", "task", task)
+		slog.Warn("the coach did not break it down; the ladder answers", "task_len", len(task))
 		return nil, ErrUnavailable
 	}
 	return steps, nil

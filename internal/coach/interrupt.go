@@ -97,7 +97,7 @@ func (p *Provider) ShouldInterrupt(ctx context.Context, personID int64, about st
 
 	go2, say, why := interruptIn(calls)
 	if !go2 {
-		slog.Info("the coach decided not to interrupt", "about", about, "why", why)
+		slog.Info("the coach decided not to interrupt", "about_len", len(about), "why", why)
 		return "", false
 	}
 	return say, true

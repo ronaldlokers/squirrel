@@ -32,6 +32,18 @@ func TestDecliningToInterruptStaysQuiet(t *testing.T) {
 	require.Equal(t, "gpt-5.6-terra", log.recorded[0].Model)
 }
 
+func TestDecliningToInterruptDoesNotLogTheChoreName(t *testing.T) {
+	logs := captureLogs(t)
+	api := newToolAPI(t, verdict(false, "", "they started something ten minutes ago"))
+
+	_, ok := deciderFor(api, &fakeFacts{}, &fakeLog{}).
+		ShouldInterrupt(context.Background(), 1, "call about the biopsy results", afternoon)
+	require.False(t, ok)
+
+	require.NotContains(t, logs.String(), "biopsy")
+	require.Contains(t, logs.String(), "about_len")
+}
+
 func TestAgreeingCanSupplyTheWording(t *testing.T) {
 	api := newToolAPI(t, verdict(true, "The bins go out tonight.", "collection is tomorrow"))
 

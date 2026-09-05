@@ -250,6 +250,18 @@ func TestSayingAPlanIsRefused(t *testing.T) {
 	require.ErrorIs(t, err, coach.ErrUnavailable)
 }
 
+func TestAPlanShapedProseReplyDoesNotLogTheModelsWords(t *testing.T) {
+	logs := captureLogs(t)
+	api := newToolAPI(t, said("Here's the plan:\n- open the letter\n- ring the tax office\n- pay it"))
+
+	_, err := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{}).
+		Answer(context.Background(), aTurn())
+	require.ErrorIs(t, err, coach.ErrUnavailable)
+
+	require.NotContains(t, logs.String(), "tax office")
+	require.Contains(t, logs.String(), "said_len")
+}
+
 // Without hands the turn can only talk, which is what every turn did before
 // the phase that changed it.
 func TestWithoutHandsATurnOffersNoTools(t *testing.T) {
