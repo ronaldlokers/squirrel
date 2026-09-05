@@ -236,6 +236,7 @@ type Store interface {
 	// was not worth having.
 	WhatWasNoticed(ctx context.Context, personID int64) ([]squirrel.Noticed, error)
 	NotUseful(ctx context.Context, personID, id int64, at time.Time) (bool, error)
+	Notice(ctx context.Context, personID int64, kind string, refID int64, words string, at time.Time) error
 	// Who the screen is talking to: a name to show, and whether there is a
 	// picture to show beside it.
 	WhoIs(ctx context.Context, personID int64) (squirrel.Whom, error)

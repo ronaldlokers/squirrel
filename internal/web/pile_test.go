@@ -64,6 +64,7 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /board/chore",
 		"POST /board/mood",
 		"POST /board/notuseful",
+		"POST /board/ask",
 		"GET /me",
 		"GET /me/face",
 		"POST /held/act",
@@ -100,7 +101,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 74, "a route was added without being pinned here")
+	require.Len(t, m.routes, 75, "a route was added without being pinned here")
 }
 
 // And the count above is the whole table rather than a number somebody bumped.

@@ -359,10 +359,36 @@ func (store) WhatWasSaid(_ context.Context, _ int64, _ int) ([]squirrel.Said, er
 	}, nil
 }
 
+var (
+	asked       []squirrel.Noticed
+	nextAskedID int64 = 800
+)
+
 func (store) WhatWasNoticed(_ context.Context, _ int64) ([]squirrel.Noticed, error) {
-	return []squirrel.Noticed{
+	out := []squirrel.Noticed{
 		{ID: 1, Kind: "note", RefID: 1, Words: "The code you need for this is in the note about the boiler."},
-	}, nil
+	}
+	return append(out, asked...), nil
 }
 
-func (store) NotUseful(_ context.Context, _, _ int64, _ time.Time) (bool, error) { return true, nil }
+func (store) NotUseful(_ context.Context, _, id int64, _ time.Time) (bool, error) {
+	for i, one := range asked {
+		if one.ID == id {
+			asked = append(asked[:i], asked[i+1:]...)
+			return true, nil
+		}
+	}
+	return true, nil
+}
+
+func (store) Notice(_ context.Context, _ int64, kind string, refID int64, words string, at time.Time) error {
+	for i, one := range asked {
+		if one.Kind == kind && one.RefID == refID {
+			asked[i].Words, asked[i].At = words, at
+			return nil
+		}
+	}
+	nextAskedID++
+	asked = append(asked, squirrel.Noticed{ID: nextAskedID, Kind: kind, RefID: refID, Words: words, At: at})
+	return nil
+}
