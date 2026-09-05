@@ -76,11 +76,25 @@ at nothing or files nothing points at.
 
 Run against a scratch namespace, not production.
 
-1. **Take the pair.** Snapshot the volume and dump the database as close
-   together as you can. The database is the one that moves faster, so take the
-   volume snapshot first and the dump second: a photograph on disk with no row
-   yet is invisible and harmless, while a row pointing at a file that was never
-   snapshotted is the broken direction.
+1. **Take the pair.** Dump the database and snapshot the volume as close
+   together as you can, and **in that order — the dump first, the volume
+   second.** A photograph is written to disk before its row is inserted, so
+   whichever half is taken last decides which way a restored pair can be wrong:
+
+   | order | what a restore gives you |
+   | --- | --- |
+   | volume, then dump | a row pointing at a file no backup holds |
+   | dump, then volume | a file nothing points at |
+
+   The second is invisible and harmless. The first is a note rendering a broken
+   picture, and it is the direction this drill exists to catch.
+
+   This step said the opposite until 5 September 2026, and gave the right
+   reason for it. The nightly jobs followed the same wrong order — the volume
+   at 00:00 UTC, the database dump at 03:00 — leaving three hours every night
+   in which a photograph had its row in the dump and its file in no backup at
+   all. That is fixed in `homelab`: the photographs volume has its own backup
+   job that runs an hour after the dump.
 2. **Restore both** into the scratch namespace and point a Squirrel at them.
 3. **Check the join, which is the whole point of the drill:**
 
