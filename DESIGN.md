@@ -591,6 +591,27 @@ shuts whatever was open. Five notes are in view where three were. The gate is
 `(hover: none) and (pointer: coarse)`, not the width: a tablet has no hover
 either, and the desktop's open-on-hover is no use to it.
 
+**44 is the floor, and it is walked rather than believed.** Every control a
+thumb can reach clears 44×44 on a phone — the number the devices spec chose,
+stricter than the 24×24 the standard asks for. It is now a test that walks the
+real screens at 390×844 with touch emulation on and fails naming the element and
+its measured size, because seven controls sat four pixels under it for a
+fortnight and nobody had measured. The chips in the bar, the strip's chevron and
+its way back, the blank strip's field and its `+`, and the search pill were all
+40px.
+
+Three are knowingly below it and say so rather than being bent to fit: the chore
+rhythm and the appointment's day and clock are words in a sentence rather than
+buttons, and boxing them is a redesign of that row; the lid's search icon cannot
+grow without shrinking the field beside it under the same floor; and the
+compose field's rest height is what the dock's one-line reserve is computed
+from.
+
+**And nothing scrolls sideways at 320px**, walked the same way. The assertion is
+on `body` rather than on the document: `html, body` carry `overflow-x: clip`,
+under which the document's own scroll width can never exceed its client width,
+so the obvious test is one that cannot fail.
+
 This is a script, and the base layer under it is the one that already shipped:
 with `board.js` gone every strip is open, exactly as in v0.56.1, so nothing is
 unreachable and nothing needs a fallback drawn for it. The script adds the
