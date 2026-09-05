@@ -64,10 +64,7 @@ type Squirrel struct {
 	budget coach.Budget
 	// talk is the rolling window, shared by every surface so that two of them
 	// cannot disagree about how long a conversation lasts.
-	talk *coach.Conversations
-	// offers holds the last decision per person, so an idle reopen costs
-	// nothing and does not read as the product changing its mind.
-	offers  *coach.Offers
+	talk    *coach.Conversations
 	cancel  context.CancelFunc
 	drained chan struct{}
 	// wg tracks background goroutines that touch the store outside the drain's own —
@@ -195,7 +192,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 		slog.Info("there is a model in the house",
 			"url", config.Coach.HouseURL, "model", config.Coach.HouseModel)
 	}
-	s.offers = coach.NewOffers()
 	s.talk = coach.NewConversations()
 
 	// Nowhere to keep a photograph is a supported state and the default.
@@ -222,10 +218,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 	// four chips still answer and the ladder behind them is what shipped before
 	// any of this existed.
 	webAsk, webRecent, webRemember, webForget := coachWeb(s.coach, store, s.talk)
-	// The decision and the way to drop it, from one call because they are only
-	// correct against the same cache. Shared by the screen and the chat, so both
-	// see the same cached answer and asking twice costs once — see deciding.
-	decide, forgetOffer := deciding(s.coach, s.offers)
 	makeSmaller := breaker(s.coach)
 	split, splittable := splitter(s.coach)
 	hold := interrupter(s.coach, store)
@@ -299,10 +291,9 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			AskedAQuestion: read.AskedAQuestion,
 			Recent:         webRecent,
 
-			Remember:    webRemember,
-			Forget:      webForget,
-			ForgetOffer: forgetOffer,
-			Smaller:     makeSmaller,
+			Remember: webRemember,
+			Forget:   webForget,
+			Smaller:  makeSmaller,
 
 			Split:      split,
 			Splittable: splittable,
@@ -337,7 +328,6 @@ func Boot(ctx context.Context, env map[string]string) (*Squirrel, error) {
 			wg: &s.wg, nudge: nudge, webOwner: &webOwner,
 			// false: chat has no cards to draw a place with. See Turn.CanOpen.
 			ask:         coachChat(asker(s.coach, store, s.talk, false)),
-			decide:      decide,
 			makeSmaller: makeSmaller,
 			hold:        hold,
 			learnBack:   learnBack,
@@ -369,7 +359,6 @@ type draining struct {
 
 	// The coach's seams, every one of them nil when there is no coach.
 	ask         Asker
-	decide      squirrel.Decider
 	makeSmaller squirrel.Breaker
 	hold        squirrel.Interrupter
 	learnBack   squirrel.Learner
@@ -446,7 +435,6 @@ func connectAndDrain(ctx context.Context, w draining) {
 		// command that only ever answers "there is no coach" is worse than one
 		// that was never offered.
 		applier.SetCoach(w.ask)
-		applier.SetDecider(w.decide)
 		applier.SetBreaker(w.makeSmaller)
 		applier.SetSpent(w.over)
 		squirrel.SetCoachHere(w.ask != nil)

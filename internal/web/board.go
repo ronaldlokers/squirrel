@@ -805,9 +805,8 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
-			forgetOffer(opts, personID)
 		case "later":
-			if err := refuseTheOffer(r, s, opts, personID, kind, refID); err != nil {
+			if err := refuseTheOffer(r, s, personID, kind, refID); err != nil {
 				fail(w, err)
 				return
 			}
@@ -825,7 +824,7 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 			// "Not today" is not an obstacle, it is a no, and it is the same no
 			// that turning the offer down writes.
 			if squirrel.UnstuckFor(b).Refuse {
-				if err := refuseTheOffer(r, s, opts, personID, kind, refID); err != nil {
+				if err := refuseTheOffer(r, s, personID, kind, refID); err != nil {
 					fail(w, err)
 					return
 				}
@@ -838,15 +837,11 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-func refuseTheOffer(r *http.Request, s Store, opts Options, personID int64, kind squirrel.OfferKind, refID int64) error {
+func refuseTheOffer(r *http.Request, s Store, personID int64, kind squirrel.OfferKind, refID int64) error {
 	if !offerKinds[kind] {
 		return nil
 	}
-	if err := s.Refuse(r.Context(), personID, kind, refID, now()); err != nil {
-		return err
-	}
-	forgetOffer(opts, personID)
-	return nil
+	return s.Refuse(r.Context(), personID, kind, refID, now())
 }
 
 // stuckView is what the pulled strip says while you are stuck: the four answers

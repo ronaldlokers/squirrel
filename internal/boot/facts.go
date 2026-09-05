@@ -80,26 +80,6 @@ func (f *facts) OpenWork(ctx context.Context, personID int64, limit int) ([]coac
 	return work, nil
 }
 
-// Written is what is on the board and not decided about, for the clause to
-// point at.
-//
-// This is the exception OpenWork's comment predicted and refused: notes stay
-// out of what may be chosen, because a note is a thought nobody has decided
-// about. They come in here instead, without ids, on the path that cannot reach
-// choose() — the model may say the number for this is written down in another
-// note, and it may not hand you that note.
-func (f *facts) Written(ctx context.Context, personID int64, limit int) ([]coach.Written, error) {
-	notes, _, err := f.store.OpenItems(ctx, personID, limit)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]coach.Written, 0, len(notes))
-	for _, one := range notes {
-		out = append(out, coach.Written{Text: one.RawText})
-	}
-	return out, nil
-}
-
 // NextFixed is the next thing the world imposed, with the leave-by arithmetic
 // already done. Handing the model the parts and letting it subtract would be
 // two answers to one question, and the wrong one makes you late.

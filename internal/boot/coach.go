@@ -88,59 +88,6 @@ func coachFor(cfg squirrel.CoachConfig, budget coach.Budget, store *squirrel.Sto
 	return p
 }
 
-// deciding is the seam both surfaces choose through, or nil, and the way to drop
-// a decision. Both halves come back together because they are only correct
-// against the same cache: two lines naming different ones compile, run, and
-// reproduce the exact bug this pair exists to fix.
-//
-// The cache is what makes it worth having: opening home is the most repeated
-// action in the product and most opens change nothing.
-//
-// Keyed on the picker's own answer, which already reflects every invalidator the
-// design listed — a check-in changes capacity, a timer changes rules 2 and 3, a
-// completion removes the row. Hooks are the version of this that gets forgotten
-// when a seventh write path is added.
-func deciding(c coach.Coach, offers *coach.Offers) (squirrel.Decider, func(personID int64)) {
-	if _, none := c.(coach.NoCoach); none {
-		// No coach, no decision, and nothing to forget. Both nil, so the
-		// screen's own nil checks take the path that shipped before either
-		// existed.
-		return nil, nil
-	}
-
-	decide := func(ctx context.Context, personID int64, pickedKind string, pickedRef int64,
-		mayAsk bool) (kind string, refID int64, text, because string, ok bool) {
-
-		now := time.Now()
-		basis := squirrel.SuppressionKey(squirrel.OfferKind(pickedKind), pickedRef)
-
-		if d, ok := offers.Get(personID, basis, now); ok {
-			return d.Kind, d.RefID, d.Text, d.Because, true
-		}
-		if !mayAsk {
-			// A surface that must be free to open. It shows a decision that
-			// was already paid for and otherwise shows the picker's — which
-			// means the two surfaces agree whenever there is anything to agree
-			// about, and nothing here is ever a reason to spend.
-			return "", 0, "", "", false
-		}
-
-		d, err := c.Decide(ctx, personID)
-		if err != nil {
-			// Not cached. A failure is usually the network or the budget, and
-			// holding "the coach could not answer" for half an hour would turn
-			// a blip into an outage — the picker answers this open, and the
-			// next one asks again.
-			return "", 0, "", "", false
-		}
-
-		offers.Put(personID, basis, d, now)
-		return d.Kind, d.RefID, d.Text, d.Because, true
-	}
-
-	return decide, offers.Forget
-}
-
 // asker is the seam the core reaches a model through: a closure over primitives,
 // because internal/squirrel must not import internal/coach. Everything the model
 // is told about the day is assembled here, which keeps the core from knowing that

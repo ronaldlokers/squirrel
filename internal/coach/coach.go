@@ -169,11 +169,6 @@ type Coach interface {
 	// Answer is a conversational turn: the screen, `!coach`, and the overwhelm
 	// turn.
 	Answer(ctx context.Context, t Turn) (Reply, error)
-	// Decide is what to do now. It reads through tools and hands back one
-	// thing it was actually shown; ErrUnavailable means the picker chooses,
-	// which is what happened before this method existed and what happens
-	// whenever it does not work.
-	Decide(ctx context.Context, personID int64) (Decision, error)
 	// Smaller breaks one thing into steps. It is the one method that returns
 	// a list, and it is safe because nothing renders one: the sequence is
 	// stored and handed back a step at a time.
@@ -214,10 +209,6 @@ type NoCoach struct{}
 
 func (NoCoach) Answer(context.Context, Turn) (Reply, error) {
 	return Reply{}, ErrUnavailable
-}
-
-func (NoCoach) Decide(context.Context, int64) (Decision, error) {
-	return Decision{}, ErrUnavailable
 }
 
 func (NoCoach) Notice(context.Context, int64, []Thing, []string) ([]Note, error) {

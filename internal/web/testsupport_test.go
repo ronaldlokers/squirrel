@@ -1037,12 +1037,7 @@ type fakeCoach struct {
 	forgot int
 
 	// decision is what the model chooses instead of the picker's answer, or
-	// nil for "the picker was right". picked records what it was shown.
-	decision *fakeDecision
-	picked   []string
-	// peeked counts the asks that were not allowed to pay, so a test can show
-	// a surface consulted the cache rather than the model.
-	peeked int
+	picked []string
 
 	// steps is what a breakdown returns, and empty means it could not do one.
 	// broke counts the asks, so a test can show the three blockers that are
@@ -1068,39 +1063,12 @@ type fakeCoach struct {
 	ceiling string
 }
 
-type fakeDecision struct {
-	kind    string
-	refID   int64
-	text    string
-	because string
-}
-
 func (c *fakeCoach) ask(_ context.Context, _ int64, kind, room, said, subject string) (Answer, error) {
 	c.asked = append(c.asked, struct{ kind, room, said, subject string }{kind, room, said, subject})
 	if c.err != nil {
 		return Answer{}, c.err
 	}
 	return Answer{Text: c.reply, Did: c.did, Propose: c.propose, Open: c.opens}, nil
-}
-
-// decide is what the model chooses instead, when a test says it chooses
-// anything. The zero value chooses nothing, which is the shipping state
-// whenever the picker's answer is good enough or nothing is configured.
-func (c *fakeCoach) decide(_ context.Context, _ int64, pickedKind string, pickedRef int64,
-	mayAsk bool) (kind string, refID int64, text, because string, ok bool) {
-
-	c.picked = append(c.picked, pickedKind)
-	if !mayAsk {
-		// Stands in for a cold cache, which is the case that matters: a
-		// surface that may not pay has nothing to show and must fall back.
-		c.peeked++
-		return "", 0, "", "", false
-	}
-	if c.decision == nil {
-		return "", 0, "", "", false
-	}
-	d := *c.decision
-	return d.kind, d.refID, d.text, d.because, true
 }
 
 func (c *fakeCoach) smaller(_ context.Context, _ int64, task, blocker string) ([]string, bool) {
