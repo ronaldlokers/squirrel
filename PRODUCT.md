@@ -109,14 +109,19 @@ was allowed; a streak can, and streaks stay refused.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.
 - Keyboard-first: move between notes, one key per action.
-- **Buddy**, behind the acorn on every screen: a conversation about what is
-  on that screen. Chrome rather than a fourth door — home still has three. It
-  is a real page (`/coach`), so it works with scripting off and survives a
-  reload; the sheet is an upgrade over that, not a requirement. Opening it
-  costs nothing and calls no model. Four one-press chips mean typing is never
-  required, which is what makes it usable at the moment of least capacity —
-  the moment it exists for. Closing it means the conversation is over and
-  means nothing else: nothing is counted and the acorn never dims.
+- **Buddy**, reached from a chip on the board: a conversation about what is
+  waiting. Chrome rather than a fourth door — home still has three. It is a
+  real room (`/r/everything`), so it works with scripting off and survives a
+  reload; there is no sheet over it any more, because there is no page it
+  would be sitting on top of. Opening it costs nothing and calls no model.
+  Four one-press chips mean typing is never required, which is what makes it
+  usable at the moment of least capacity — the moment it exists for. Closing
+  it means the conversation is over and means nothing else: nothing is
+  counted. **The acorn is gone**, and with it "never dims" — a mark that
+  named which sentences a model wrote did not survive past 4 September 2026
+  (`/coach` now 301s; see DESIGN.md, *It notices*). This file's rule is that
+  every line here is enforced by a test; a claim with no mechanism left to
+  test it is worse than one that was simply never written.
 
 **Constraints that are not negotiable:**
 

@@ -24,8 +24,8 @@ cannot verify it.
 
 Tests: see [`docs/testing.md`](docs/testing.md).
 
-The screen for reading and triaging the pile, and the forward-auth it sits
-behind: see [`docs/pile-screen.md`](docs/pile-screen.md).
+The board, and how signing in works — Squirrel's own OIDC client now, not
+forward-auth: see [`docs/pile-screen.md`](docs/pile-screen.md).
 
 ## History
 

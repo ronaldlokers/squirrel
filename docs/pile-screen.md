@@ -1,70 +1,71 @@
-# Deploying the pile screen
+# Deploying the board
 
-The screen at `squirrel.ronaldlokers.nl` reads and triages the pile: one note at
-a time, the four transitions, undo, and search across every state. It never
-creates an item, and it never shows a count.
+The app at `squirrel.ronaldlokers.nl` is one board: every bay — notes, chores,
+tasks, the agenda — as strips on one page, plus the conversation at
+`/r/everything`, the page about you at `/me`, and Buddy, reached from a chip
+rather than a screen of his own. There is no card-by-card pile screen any
+more; that deck, and the separate `/kept`, `/tasks`, `/moods` and `/held`
+pages beside it, retired between 20 August and 31 August 2026. Their
+addresses still work — they redirect rather than 404 — and so do `/coach` and
+`/buddy`, which is what this file used to be about.
 
-Squirrel's half of this is two environment variables. The other half —
-Authentik and Traefik — is infrastructure, lives in
-[ronaldlokers/homelab](https://github.com/ronaldlokers/homelab), and is written
-down here because no test covers it.
+Squirrel's half of reaching the board is the configuration below and, since
+25 August 2026, its own OIDC client rather than a header Traefik set. The
+other half — Authentik and Traefik — is infrastructure, lives in
+[ronaldlokers/homelab](https://github.com/ronaldlokers/homelab), and is
+written down here because no test covers it.
 
 ## The route table
 
 | URL | What it is | Who may reach it from outside |
 | --- | --- | --- |
-| `/` | home: three doors, the slot and the check-in | LAN or tailnet, then Authentik |
-| `/capture` | the slot's write | LAN or tailnet, then Authentik |
-| `/mood` | the check-in's write | LAN or tailnet, then Authentik |
-| `/now/act` | the offer's answers: did it, ten minutes, not now | LAN or tailnet, then Authentik |
-| `/now/stuck` | I can't start, and its four answers | LAN or tailnet, then Authentik |
-| `/push/subscribe` | where to reach this browser — **only mounted when a VAPID pair is configured** | LAN or tailnet, then Authentik |
-| `/pile` | the deck | LAN or tailnet, then Authentik |
-| `/pile/act`, `/pile/chore`, `/pile/fix` | the deck's writes | LAN or tailnet, then Authentik |
-| `/kept` | the shelf: notes you kept | LAN or tailnet, then Authentik |
-| `/tasks` | what you decided | LAN or tailnet, then Authentik |
-| `/tasks/done` | what you have done | LAN or tailnet, then Authentik |
-| `/tasks/act`, `/tasks/new` | a task's writes | LAN or tailnet, then Authentik |
-| `/buddy` | Buddy, as a page — a real route so the sheet is an upgrade rather than a requirement | LAN or tailnet, then Authentik |
-| `/buddy/say` | one turn: a sentence, or one of the four chips | LAN or tailnet, then Authentik |
-| `/buddy/close` | forgets the conversation and returns to the page the acorn was pressed on | LAN or tailnet, then Authentik |
-| `/buddy/badly` | says the last thing Buddy said did not land; never counted | LAN or tailnet, then Authentik |
-| `/buddy/do` | applies a proposal, and only one that was pressed — four kinds, in a switch | LAN or tailnet, then Authentik |
-| `/steps` | a step finished, or a breakdown thrown away | LAN or tailnet, then Authentik |
-| `/pile/split` | asks for a note's separate things, and keeps them when pressed | LAN or tailnet, then Authentik |
-| `/photo/{id}` | the photograph on a note, by the note's id — **only mounted when a volume is configured** | LAN or tailnet, then Authentik |
-| `/moods` | how you felt before — a fortnight of readings, grouped by day, with nothing concluded from them | LAN or tailnet, then Authentik |
-| `/held` | what you cannot act on: waiting, blocked, someday — grouped, never counted | LAN or tailnet, then Authentik |
-| `/held/act` | setting one aside, and picking it back up | LAN or tailnet, then Authentik |
-| `/at` | what is coming: fixed points still ahead, soonest first, never counted | LAN or tailnet, then Authentik |
-| `/at/{id}` | one fixed point — when to leave, what to take, and the notes pointing at it | LAN or tailnet, then Authentik |
-| `/at/{id}/note` | keeping a note that points at this one | LAN or tailnet, then Authentik |
-| `/at/{id}/detach` | putting one back in the pile | LAN or tailnet, then Authentik |
-| `/chores` | what comes back | LAN or tailnet, then Authentik |
-| `/chores/act`, `/chores/new` | a chore's writes | LAN or tailnet, then Authentik |
-| `/timer` | starting and stopping the body double | LAN or tailnet, then Authentik |
-| `/pile/chores` | **301 to `/chores`** | LAN or tailnet, then Authentik |
-| `/enough` | stopping, as a place rather than as closing the tab | LAN or tailnet, then Authentik |
-| `/coach`, `/coach/…` | **301 to `/buddy`** — it was called the coach in v0.14 | LAN or tailnet, then Authentik |
+| `/`, `/board` | the board: every bay, drawn fresh on every load | LAN or tailnet, then signed in |
+| `/r/everything` | Buddy's room: the conversation, reading the whole record | LAN or tailnet, then signed in |
+| `/r/{room}` | any other room by name | LAN or tailnet, then signed in |
+| `/capture`, `/open` | the dock's write, and the door, in whichever room | LAN or tailnet, then signed in |
+| `/board/act`, `/board/undo`, `/board/new`, `/board/now`, `/board/capture`, `/board/chore`, `/board/mood`, `/board/notuseful` | the board's writes | LAN or tailnet, then signed in |
+| `/me`, `/me/face` | the page about you, and your photo | LAN or tailnet, then signed in |
+| `/me/forget` | forgetting what Squirrel has worked out | LAN or tailnet, then signed in |
+| `/photo/{id}`, `/photo/{id}/thumb` | a photograph on a note, by the note's id — **only mounted when a volume is configured** | LAN or tailnet, then signed in |
+| `/mood` | the check-in's write | LAN or tailnet, then signed in |
+| `/now/act` | the offer's answers: did it, ten minutes, not now | LAN or tailnet, then signed in |
+| `/now/stuck` | I can't start, and its four answers | LAN or tailnet, then signed in |
+| `/push/subscribe`, `/push/forget` | where to reach this browser, and forgetting it — **only mounted when a VAPID pair is configured** | LAN or tailnet, then signed in |
+| `/pile/act`, `/pile/later`, `/pile/undo`, `/pile/often`, `/pile/reword`, `/pile/why`, `/pile/chore`, `/pile/fix`, `/pile/split`, `/pile/more`, `/pile/ask` | a note's writes, and the questions asked about one | LAN or tailnet, then signed in |
+| `/place/fresh` | starting fresh rather than carrying on a run Buddy offered back | LAN or tailnet, then signed in |
+| `/find`, `/find/open`, `/find/ask` | search, and turning a hit into a card | LAN or tailnet, then signed in |
+| `/buddy/ask`, `/buddy/say`, `/buddy/badly`, `/buddy/do` | talking to Buddy, as turns in the conversation | LAN or tailnet, then signed in |
+| `/chores/ask`, `/chores/name`, `/chores/act`, `/chores/often`, `/chores/new` | a chore's writes | LAN or tailnet, then signed in |
+| `/at/ask`, `/at/new`, `/at/make`, `/at/open`, `/at/{id}`, `/at/{id}/note`, `/at/{id}/detach` | a fixed point: making one, reading one, attaching or detaching a note | LAN or tailnet, then signed in |
+| `/tasks/ask`, `/tasks/act`, `/tasks/new` | a task's writes | LAN or tailnet, then signed in |
+| `/notes/shelf` | the two shelves, held and kept, as a press inside the notes | LAN or tailnet, then signed in |
+| `/held/act` | setting something aside, and picking it back up | LAN or tailnet, then signed in |
+| `/steps` | a step finished, or a breakdown thrown away | LAN or tailnet, then signed in |
+| `/timer` | starting and stopping the body double | LAN or tailnet, then signed in |
+| `/coach`, `/buddy`, `/r/buddy`, `/r/pile`, `/r/held`, `/r/kept`, `/moods`, `/knowing`, `/pile/chores` | **301, to wherever what they held lives now** | LAN or tailnet, then signed in |
+| `/auth` | the way in — see `internal/web/templates/gate.html` | outside the guard: there is no session yet |
+| `/auth/in` | sets `state` and a PKCE verifier, 303 to Authentik | outside the guard: there is no session yet |
+| `/auth/callback` | takes the code, opens a session, 303 to where you were going | outside the guard: there is no session yet |
+| `/auth/out` | ends the session, 303 to `/auth?said=out` | outside the guard: there is no session yet |
 | `/static/…` | stylesheet, script, fonts, mark, icons, door art | LAN or tailnet, no identity |
 | `/manifest.webmanifest` | the manifest | LAN or tailnet, no identity |
 | `/sw.js` | the service worker | LAN or tailnet, no identity |
-| `/hooks/home` | presence webhook | LAN or tailnet, its own token |
-| `/transports/campfire` | Campfire's webhook | in-cluster; from outside, Authentik |
-| `/healthz` | liveness and readiness | in-cluster; from outside, Authentik |
+| `/hooks/home` | presence webhook | in-cluster; homelab decides what reaches it from outside |
+| `/transports/campfire` | Campfire's webhook | in-cluster; homelab decides what reaches it from outside |
+| `/healthz` | liveness and readiness | in-cluster; homelab decides what reaches it from outside |
 
 The assets, the manifest and the worker answer without an identity because a
 browser fetches all three without cookies — the manifest from the page, the
 icons and the worker from the browser process. Anything that can read a note
 still requires one.
 
-`/` is registered as Go's `GET /{$}`, which matches that path and nothing under
-it. A bare `/` would be the catch-all, and every typo would arrive looking like
-a working page.
+`/` is registered as Go's `GET /{$}`, which matches that path and nothing
+under it. A bare `/` would be the catch-all, and every typo would arrive
+looking like a working page.
 
-`/pile/chores` redirects rather than 404s: it is the URL the chores screen had
-for its whole life, and a bookmark that dies quietly is worse than a redirect
-nobody notices.
+The redirect row is four product generations' worth of bookmark: the deck,
+the four object rooms, and `/coach` before it was `/buddy`. A bookmark that
+dies quietly is worse than a redirect nobody notices, so none of these 404.
 
 There is no configurable mount path. `WEB_PATH` existed through v0.9.x, was
 never set to anything but its default, and cost a prefix on every URL in every
@@ -74,7 +75,7 @@ template plus a header to widen the worker's scope by one character.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `WEB_IDENTITY` | *(empty)* | **No longer an identity anybody authenticates with.** It is seeded as a `screen` identity so captures already sitting in the spool at deploy time still resolve to their person. **Empty leaves the screen unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
+| `WEB_IDENTITY` | *(empty)* | **No longer an identity anybody authenticates with.** It is seeded as a `screen` identity so captures already sitting in the spool at deploy time still resolve to their person. **Empty leaves the board unmounted** — the routes do not exist, and `GET /` is an ordinary 404. |
 | `WEB_REQUIRED_GROUP` | *(empty)* | The Authentik group an account must be in. **Empty refuses the mount**, and it is the only setting here that is dangerous to default: every other missing value costs a feature, this one would cost the pile. |
 | `WEB_OIDC_ISSUER` | *(empty)* | Authentik's issuer URL for this application. |
 | `WEB_OIDC_CLIENT_ID` | *(empty)* | The OIDC client id. |
@@ -82,23 +83,23 @@ template plus a header to widen the worker's scope by one character.
 | `WEB_OIDC_REDIRECT_URL` | *(empty)* | Where Authentik sends you back — `https://<host>/auth/callback`. |
 | `WEB_OIDC_SUB` | *(empty)* | The owner's OIDC subject, seeded so the first login lands on the person who already owns the pile rather than making a second one beside it. |
 | `COACH_BUDGET_GUEST_EUR` | `1` | The monthly ceiling for anybody who is not the owner. A demo account can try Buddy without spending a month's allowance, and two of them are not two allowances. |
+| `WEB_URL` | *(empty)* | Where the board is reachable from outside, so chat can link to it. **Empty means chat says nothing about the board** — a link built from a guess is a link that 404s, and a bot that confidently sends you nowhere is worse than one that stays quiet. |
+| `VAPID_PUBLIC_KEY` | *(empty)* | The application server key the browser subscribes with. **Empty leaves `/push/subscribe` unmounted** and the board never offers — a subscribe button with no key behind it fails silently, which is worse than one that was never drawn. |
+| `VAPID_PRIVATE_KEY` | *(empty)* | The raw 32-byte P-256 scalar, base64url. **A credential: it comes from a Kubernetes Secret, never from this repository.** |
+| `PUSH_CONTACT` | *(empty)* | A `mailto:` the push service can complain to. Part of RFC 8292 rather than a courtesy: services reject a token without one. |
 
 The four `WEB_OIDC_*` values are all-or-nothing: a partially configured way in
 is a boot that half-works, and the half that works is the half that lets people
 in. With `WEB_IDENTITY` set and no way in configured, **boot fails** rather than
-mounting a screen nobody can sign into — a deploy that looked healthy and locked
+mounting a board nobody can sign into — a deploy that looked healthy and locked
 you out of your own pile is the failure this exists to prevent.
-| `WEB_URL` | *(empty)* | Where the screen is reachable from outside, so chat can link to it. **Empty means chat says nothing about the screen** — a link built from a guess is a link that 404s, and a bot that confidently sends you nowhere is worse than one that stays quiet. |
-| `VAPID_PUBLIC_KEY` | *(empty)* | The application server key the browser subscribes with. **Empty leaves `/push/subscribe` unmounted** and the screen never offers — a subscribe button with no key behind it fails silently, which is worse than one that was never drawn. |
-| `VAPID_PRIVATE_KEY` | *(empty)* | The raw 32-byte P-256 scalar, base64url. **A credential: it comes from a Kubernetes Secret, never from this repository.** |
-| `PUSH_CONTACT` | *(empty)* | A `mailto:` the push service can complain to. Part of RFC 8292 rather than a courtesy: services reject a token without one. |
 
-All three must be set for pushing to happen at all, and the screen checks all
-three before it offers to subscribe: a public key on its own would draw a
-button, spend a permission prompt, and store a subscription nothing can send
-to. None of them being set is a supported state rather than a degraded one —
-the leave-by warning still reaches the Campfire room, which is the channel that
-always works.
+All three VAPID variables must be set for pushing to happen at all, and the
+board checks all three before it offers to subscribe: a public key on its own
+would draw a button, spend a permission prompt, and store a subscription
+nothing can send to. None of them being set is a supported state rather than a
+degraded one — the leave-by warning still reaches the Campfire room, which is
+the channel that always works.
 
 ### Where the pair lives
 
@@ -118,10 +119,12 @@ Rotating the pair costs only the subscriptions, which every browser re-creates
 on its next visit. See `docs/runbooks/squirrel.md` in homelab for the
 procedure.
 
-An unset `WEB_IDENTITY` logs `no web identity configured; the pile screen is not
-mounted` at boot. A screen that is missing looks exactly like one that is
-working until you go looking for it, so the log line is the only way a
-mis-wired secret announces itself.
+An unset `WEB_IDENTITY` logs `no web identity configured; the pile screen is
+not mounted` at boot — the log line still says "pile screen" because that is
+the literal string in `internal/boot/boot.go`, not because the screen it names
+still exists. A board that is missing looks exactly like one that is working
+until you go looking for it, so the log line is the only way a mis-wired
+secret announces itself.
 
 ## Authentik
 
@@ -136,7 +139,7 @@ outside the guard besides the manifest, the worker and the static files:
 
 | Route | What it does |
 | --- | --- |
-| `GET /auth` | the way in — one screen, four states, see DESIGN.md's The Gate |
+| `GET /auth` | the way in |
 | `POST /auth/in` | sets `state` and a PKCE verifier, 303 to Authentik |
 | `GET /auth/callback` | takes the code, opens a session, 303 to where you were going |
 | `POST /auth/out` | ends the session, 303 to `/auth?said=out` |
@@ -166,13 +169,15 @@ The forward-auth middleware must not be removed before the OIDC client exists
 and Squirrel is serving `/auth`, or the deploy locks you out of your own pile.
 The order is: add the client and the configuration with the outpost still in
 front, verify signing in from behind it, then remove the middleware and verify
-again from a browser with no Authentik session at all.
+again from a browser with no Authentik session at all. That sequence has
+already run once, in homelab, for the cutover on 25 August 2026; it is
+recorded here for the next time the client or the group binding has to move.
 
 The `ipAllowList` is unaffected and stays the outer layer.
 
 ## Cross-site writes
 
-A form on someone else's site posting to `/pile/act` would travel with the
+A form on someone else's site posting to `/board/act` would travel with the
 session cookie like any other same-site-lax navigation. Every write route
 therefore checks `Origin` (falling back to `Referer`) against the request's own
 `Host`, and refuses anything that does not match or that says nothing at all.
@@ -182,137 +187,8 @@ out of your own notes from a page you were only reading.
 
 This requires the proxy to pass the original `Host` through. Traefik does by
 default; if a middleware is ever added that rewrites it, every write on this
-screen turns into a 403 and the log line is
+board turns into a 403 and the log line is
 `refused a cross-site write`.
-
-## Home
-
-`/` is two doors — *the pile* and *the chores* — and nothing else. It reads
-nothing: the handler takes no store, so a full pile and an empty one render the
-same bytes, and the page answers even when Postgres does not.
-
-That is the mechanism rather than a policy. A home screen that shows what is
-waiting greets you with what is waiting, however carefully it is dressed, and a
-handler with no way to ask cannot start showing it by accident. It also settles
-whether home may triage: there is nothing on it to triage, so the screen and the
-chat can never disagree about a note.
-
-The lid keeps the mark, the wordmark and the search field, and drops its
-cross-link — both doors are already on the page. Everywhere else the mark is a
-link back here.
-
-## Chores
-
-`/chores` is the other half of what Squirrel holds. A chore used to be
-invisible: it appeared only when it nudged you, which is the one moment you are
-least able to decide you never want it again.
-
-Each one says what it is, how often it comes back, and *roughly* when it was
-last done — `today`, `this week`, `a while back` — with `DID IT`, `HOW OFTEN`
-and `STOP ASKING`.
-
-Roughly, and never a day count. An exact number attached to something undone
-goes up while you are not looking, which is the accumulating shape this product
-exists without, and it is one short step from "3 days late". The buckets stop at
-"a while back": there is no bucket for a long time, because that sentence is
-about the person rather than the chore.
-
-It never says how many chores there are, how many are due, or how late anything
-is.
-
-`STOP ASKING` is the screen's half of `!retire`: `active` goes false, the
-history stays, and defining the chore again brings the same row back. Changing
-how often is an upsert by name, the same write the chat command makes, so the
-two surfaces cannot drift into meaning different things by "every 2 weeks".
-
-## The keyboard
-
-Everything below is progressive enhancement — every one of these has a control
-or a URL that works without it.
-
-| Key | What it does |
-| --- | --- |
-| `d` `k` `x` | done, keep, drop |
-| `c` then `1`-`4` | make a chore, then how often; `ESC` withdraws the question |
-| `space`, `→`, `↓` | skip: move past this note to the next-oldest one |
-| `←`, `↑` | back, which is the browser's own history |
-| `/` | the search field |
-| `ESC` in search | clear it |
-
-**Skipping has a control, not just a key.** `LATER →` sits in the card's
-titlebar and is a plain link, so it works on a phone, which has no space bar,
-and with scripting off, which has no key handler. The key presses that link
-rather than knowing where it points, so there is one answer to where skipping
-goes.
-
-**Skipping does nothing to a note.** It puts `?after=<id>` in the address bar
-and the deck reads from there, so a skipped note is untouched — still open,
-still first the next time the pile is opened from the top. Reloading `/pile`
-is how you get back to the top, and running out of notes below the cursor is
-its own page rather than an empty pile: what you skipped is still there.
-
-**Search answers as you type**, by fetching the same URL the form submits to
-and swapping in what comes back. It is one renderer and one code path, so with
-JavaScript off the identical page arrives by pressing Enter. The address bar
-tracks the query with `replaceState`, so leaving a search goes back where you
-came from rather than through every letter you typed.
-
-## Installing it
-
-The screen is a web manifest and a service worker away from being a thing on
-the home screen, so it is one. `Add to Home Screen` on a phone gives it its own
-icon and no browser chrome; nothing else about it changes.
-
-**The worker caches assets and never the pile.** A cached pile would show notes
-that have already been triaged — the two views disagreeing with each other, in
-the one place you could not tell. So the stylesheet, the script, the fonts and
-the mark come from the cache, and everything else goes to the network. With no
-network it answers with a page that says so and points out that nothing has
-been lost, since capture was never the screen's job.
-
-**The worker is served from `/sw.js`, not from `/static/sw.js`.** A worker's
-scope is the directory it came from, so one served out of `/static/` could only
-ever answer for the assets — the one thing it does not need to intercept. From
-the root it scopes to `/` and controls every screen, and it takes no
-`Service-Worker-Allowed` header to be allowed to: the header exists to widen a
-scope, and this one is already as wide as it goes. `pile.js` registers it with
-no `scope` option for the same reason — naming one is how a previous version
-ended up claiming whichever page happened to register it.
-
-**It is not behind squirrel's own identity check**, and at the edge it sits with
-the assets rather than with the screens. A browser registering a worker does
-send the session cookie, so an authenticated visit would fetch it either way;
-the file itself contains no notes — only which files to keep and what to say
-when the network is gone.
-
-**The installed app survived the move to the root.** Its `start_url` was `/pile`
-before v0.10.0, which still serves the deck; the manifest names `/` from its
-next fetch onward, so the app opens at home after that. Nobody had to reinstall.
-
-## Reading it without seeing it
-
-The screen is keyboard-first, and the parts that change without a navigation
-say so out loud: a live region outside the stage announces a search result set,
-an action taken, the interval question being asked or withdrawn, and a skip. It
-lives outside the stage because live search replaces everything inside it, and
-a region that is itself replaced announces nothing.
-
-The key badges (`D`, `K`, `X`) are `aria-hidden` — a poster on the wall, not
-part of a button's name — and so is the stack of cards behind the top one,
-which already says "there is more underneath" in words on the deck.
-
-`prefers-reduced-motion` is honoured in both places it lives: the stylesheet
-shortens the animations, and the script shortens the pause before a card
-leaves. Someone who asked for less motion should not have to sit through a card
-sliding away before the write happens.
-
-## What the screen will not do
-
-- **It will not create an item.** There is no capture box and no route that
-  writes one. Two capture surfaces means two places to look for a thought, which
-  is the problem this bot exists to solve. This is permanent, not a limitation.
-- **It will not show a count.** No badge, no total, no "N to review", no page
-  count. A capped list may say *that* there is more; it will never say how much.
 
 ## Assets after a change
 
@@ -334,3 +210,11 @@ bug in the feature rather than in its delivery.
 The fonts are the one gap: they are named from inside `pile.css` rather than
 from a template, so their URLs carry no stamp. Replacing a font means renaming
 the file, which is why the stamp hashes names as well as contents.
+
+**The worker caches assets and never the board.** A cached board would show
+strips that have already been triaged — the two views disagreeing with each
+other, in the one place you could not tell. So the stylesheet, the script, the
+fonts and the mark come from the cache, and everything else goes to the
+network. With no network it answers with a page that says so and points out
+that nothing has been lost, since capture was never the worker's job. See
+`internal/web/static/sw.js`.

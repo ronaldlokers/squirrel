@@ -145,5 +145,8 @@ the logs tell them apart:
 | `the coach said something the wrong shape` | The guard rejected a reply. The fixed answer went instead. | Nothing, unless it is every reply. |
 | nothing at all | No key is configured, so no coach was ever built. | Nothing, if that is deliberate. |
 
-The spend against the ceiling is on `/buddy`, in the sheet's lid, and nowhere
-else.
+`/buddy` redirects now; there is no lid to check spend in. The spend against
+the ceiling rides on Buddy's own reply, in the conversation — `costLine` in
+`internal/web/coach.go`, rendered as the `.cost` line under that turn — and
+nowhere else. It only appears on a reply that actually asked the model
+something; nothing shows a running total on its own.

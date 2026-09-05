@@ -992,21 +992,24 @@ the empty state that follows says what forgetting cost.
 **A read that fails is a sentence where the thing would be.** Not an error
 page, and never a blank: the rest of the page does not depend on either read.
 
-### Buddy, and the acorn
+### Buddy, and the acorn — did not land
 
-**Opening the board never spends a model call.** The pulled strip carries the
-picker's own clause, and under it one quiet press: *ask Buddy about this*. That
-press is what pays, and it is the only thing on the board that does.
+This section described a board mechanism that shipped between 3 and 4
+September 2026 and was then pulled: the pulled strip carrying a model's
+sentence in place of the picker's clause, an acorn beside it naming who wrote
+the sentence, and a press under it — *that did not land* — to refuse one.
+None of it survived. **It notices**, above, is the accurate record: the
+clause is the picker's again, there is no mark on the pulled strip, and
+nothing there to refuse.
 
-When a model answered, its sentence **replaces** the rule's clause rather than
-sitting beside it — there is one clause on a strip and the acorn beside it says
-who wrote this one. The mark appears only when the words actually changed: a
-model that declined leaves the rules' clause standing and no acorn, because a
-mark on it would be the product claiming an author it does not have.
-
-Beside his line, one more quiet press: *that did not land*. It marks the answer
-rather than arguing with it, and the marked ones are what the next prompt is
-shown as examples of what does not work here.
+**A different press with the same name is still live, and it is not this
+one.** Buddy's own replies, in the conversation rather than on the board,
+carry their own refusal — *that went badly* — one press, on any reply a model
+wrote (`/buddy/badly`, `coachBadlyHandler` in `internal/web/coach.go`, tested
+in `internal/coach/badlylanded_test.go`). It marks the answer rather than
+arguing with it, and the marked ones are what the next prompt is shown as
+examples of what does not work here. It has nothing to do with the acorn: it
+was never attached to the pulled strip, and it was never removed.
 
 ### The pencil line
 

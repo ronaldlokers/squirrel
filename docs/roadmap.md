@@ -1,6 +1,6 @@
 # Roadmap
 
-What is built, what is decided, what is refused. Last reconciled **20 August
+What is built, what is decided, what is refused. Last reconciled **4 September
 2026**.
 
 This is an index of *state*, not of reasoning. Every decision here was argued
@@ -130,10 +130,12 @@ told bound the model do not exist.
 
 ---
 
-## Next, in order
+## Next, in order — 20 August, and shipped
 
-Chosen on 20 August once Buddy shipped, and argued in
-`docs/proposals/2026-08-20-after-the-coach.md`.
+Chosen once Buddy shipped, and argued in
+`docs/proposals/2026-08-20-after-the-coach.md`. All four landed by 24 August.
+What is next lives in **Decided, not yet built**, directly below: the board
+retirement, decided 3 September, and Devices, settled 22 August.
 
 | | | Why here |
 | --- | --- | --- |
