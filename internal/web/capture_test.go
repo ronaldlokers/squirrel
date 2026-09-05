@@ -2,6 +2,8 @@ package web
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -60,9 +62,6 @@ func TestTheSlotSaysKeptAndNothingElse(t *testing.T) {
 	}
 }
 
-// A capture goes through the spool, so the only way it can fail is an unwritable
-// disk — a much louder problem than a database being briefly unreachable. The
-// words still come back rather than disappearing.
 func TestAFailedCaptureKeepsTheWords(t *testing.T) {
 	f := &fakeStore{}
 	m := mountedSpooling(t, f, &fakeSpool{err: errTest})
@@ -175,4 +174,52 @@ func TestACaptureIsKeptUnderTheSubThatTypedIt(t *testing.T) {
 	require.NotNil(t, sp.written[0].SenderID)
 	require.Equal(t, "sub-seven", *sp.written[0].SenderID,
 		"the capture was kept under somebody else's name")
+}
+
+func postFragment(t *testing.T, m *testMux, path string, form url.Values) *httptest.ResponseRecorder {
+	t.Helper()
+	best := m.route(t, "POST", path)
+	r := httptest.NewRequest("POST", path, strings.NewReader(form.Encode()))
+	setPathValues(r, best, path)
+	r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "a-token"})
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Origin", "http://"+r.Host)
+	r.Header.Set("X-Thread", "fragment")
+	w := httptest.NewRecorder()
+	m.routes[best](w, r)
+	return w
+}
+
+func TestACaptureNobodyCanRecordStillSaysSo(t *testing.T) {
+	f := &fakeStore{err: errTest}
+	m := mountedSpooling(t, f, &fakeSpool{err: errTest})
+
+	w := postFragment(t, m, "/capture", url.Values{"text": {"the boiler makes a noise"}})
+
+	require.Equal(t, 200, w.Code)
+	require.NotEmpty(t, w.Body.String(),
+		"an empty answer is how the script is told there was nothing to keep")
+	require.Contains(t, w.Body.String(), "cannot reach its memory",
+		"the refusal has to reach the person even when it cannot be recorded")
+	require.Contains(t, w.Body.String(), "the boiler makes a noise",
+		"and the words come back with it")
+	require.Empty(t, w.Header().Get("X-Kept"),
+		"nothing was kept, so the box does not clear")
+}
+
+func TestAWriteThatNeverAnswersStillAnswersThePerson(t *testing.T) {
+	f := &fakeStore{blockInsert: make(chan struct{})}
+	m := mountedSpooling(t, f, &fakeSpool{})
+
+	done := make(chan *httptest.ResponseRecorder, 1)
+	go func() { done <- postFragment(t, m, "/capture", url.Values{"text": {"the boiler makes a noise"}}) }()
+
+	select {
+	case w := <-done:
+		require.Equal(t, 200, w.Code)
+		require.Contains(t, w.Body.String(), "cannot reach its memory")
+		require.Empty(t, w.Header().Get("X-Kept"))
+	case <-time.After(keepingTakesAtMost + 5*time.Second):
+		t.Fatal("the write never gave up, so neither did the person")
+	}
 }

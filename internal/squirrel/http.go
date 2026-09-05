@@ -100,6 +100,8 @@ func (s *Server) Listen(addr string) (int, error) {
 	s.http = &http.Server{
 		Handler:           s.handler(),
 		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {

@@ -96,7 +96,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    var typing = e.target.matches("input, textarea");
+    var typing = e.target.matches("input, textarea, select");
     if (typing) return;
 
     var all = strips();

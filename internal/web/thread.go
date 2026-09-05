@@ -659,6 +659,7 @@ func keepSaid(ctx context.Context, s Store, personID int64, said []squirrel.Turn
 		saved, err := s.AppendTurn(ctx, personID, roomOf(ctx), t)
 		if err != nil {
 			slog.Error("keeping what was said", "error", err)
+			out = append(out, t)
 			continue
 		}
 		out = append(out, saved)
