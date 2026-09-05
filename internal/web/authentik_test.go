@@ -190,8 +190,6 @@ func TestATokenForAnotherAudienceIsRefused(t *testing.T) {
 	require.NotErrorIs(t, err, ErrNotAllowed)
 }
 
-// The way out carries the nonce too, so the callback can check the token it
-// gets back was minted for this trip and not replayed from another.
 func TestTheWayOutCarriesANonce(t *testing.T) {
 	d := aGate(t, anIdP(t), "squirrel-users")
 
@@ -202,8 +200,6 @@ func TestTheWayOutCarriesANonce(t *testing.T) {
 	require.Equal(t, "the-nonce", away.Query().Get("nonce"))
 }
 
-// A token whose nonce does not match the one this trip sent is not a login —
-// it was minted for a different round trip, replayed or forged.
 func TestATokenWithTheWrongNonceIsRefused(t *testing.T) {
 	idp := anIdP(t)
 	idp.claims["nonce"] = "the-real-nonce"
@@ -214,8 +210,6 @@ func TestATokenWithTheWrongNonceIsRefused(t *testing.T) {
 	require.NotErrorIs(t, err, ErrNotAllowed, "a nonce mismatch was refused as a group problem")
 }
 
-// And the matching nonce is a good login, same as no nonce ever was before
-// this existed.
 func TestATokenWithTheMatchingNonceSignsIn(t *testing.T) {
 	idp := anIdP(t)
 	idp.claims["nonce"] = "the-real-nonce"

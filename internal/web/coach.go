@@ -252,11 +252,6 @@ func coachBadlyHandler(s Store, opts Options) http.HandlerFunc {
 // Only a path this screen serves, and only ever a path: the value arrives from
 // a form field, and a form field is a place a stranger can type. An open
 // redirect from a page behind a session is still an open redirect.
-//
-// Checked after swapping every backslash for a forward slash, because a
-// browser does that too for an http(s) URL: "/\evil.com" and "/\/evil.com"
-// both resolve to another host exactly as "//evil.com" does, so a check for
-// "//" alone lets both through.
 func backTolerant(from string) string {
 	if !strings.HasPrefix(from, "/") {
 		return "/r/everything"

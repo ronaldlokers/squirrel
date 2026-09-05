@@ -141,9 +141,7 @@ func (d *Gate) forget() {
 
 // Away is where to send somebody who is signing in. The verifier never leaves
 // this machine — only its hash does, as the PKCE challenge — so an intercepted
-// code cannot be spent. The nonce travels the other way round: it goes out in
-// the URL and comes back inside the id token, so Back can tell a token minted
-// for this trip from one replayed from another.
+// code cannot be spent.
 func (d *Gate) Away(state, nonce, verifier string) (string, error) {
 	if err := d.find(context.Background()); err != nil {
 		return "", err

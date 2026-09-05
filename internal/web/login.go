@@ -59,7 +59,7 @@ func hashOf(token string) []byte {
 
 // started is the login in progress, packed into one cookie.
 //
-// Four values in one cookie rather than four cookies, because they are one
+// Three values in one cookie rather than three cookies, because they are one
 // fact and expire together: a login half-abandoned should not leave a verifier
 // behind for a state that is gone.
 //
