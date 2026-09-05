@@ -1,6 +1,6 @@
 # Roadmap
 
-What is built, what is decided, what is refused. Last reconciled **4 September
+What is built, what is decided, what is refused. Last reconciled **5 September
 2026**.
 
 This is an index of *state*, not of reasoning. Every decision here was argued
@@ -366,6 +366,72 @@ as long as the page it was on.
 **Everything the deck can do, the conversation can do.** What is left is the
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
+
+### v0.70.0 — 5 September 2026
+
+**A capture fails fast and says so, and the picker chooses everywhere.**
+
+A cross-functional review read the whole product at v0.69.0 — twelve lenses,
+then six verifiers whose job was to refute what the first twelve found. Three
+findings did not survive that second pass and are not in this release; what is
+here is what held.
+
+**Two ways capture could leave you with nothing to read**, both opened by
+v0.68.0's move of the write into the request.
+
+The first was silence. With the database wholly unreachable the refusal was
+built correctly and then handed to `keepSaid`, which tried to record it on the
+same broken store, dropped it, and returned nothing — so the fragment path
+answered 200 with an empty body, and the script reads an empty answer as *there
+was nothing to keep*. A total failure of the store was indistinguishable from a
+keystroke that did nothing. A turn that cannot be written down is now kept in
+the answer and dropped only from the record; it carries no id, which the
+template already reads as "not a row", so it is shown once and gone on the next
+draw. That reaches every one of the thirty-odd handlers that call `keepSaid`,
+not only capture.
+
+The second was hanging. Nothing bounded the write: no deadline on the request's
+context, no `WriteTimeout` on the server, a bare DSN handed to `pgxpool`. A
+database that is *down* was always handled — the dial fails and the box says
+so. A database that is merely *degraded* had nothing to stop it, and the person
+got a spinner instead of the sentence v0.68.0 promised. Three bounds now, one
+per leg, and a bound written into the address still wins.
+
+**The picker chooses in the conversation too.** v0.69.0's entry said it already
+did, "on the board and in the conversation both". That was true of the board and
+false of chat, where `judged` still handed the picker's answer to a model that
+could return a different row and a different reason. Made true rather than
+corrected — the model is off the offer path entirely, and about 1,400 lines went
+with it: the `Offers` cache, `ForgetOffer`, `Decide`, the `choose` tool.
+
+That deletion closed a second finding on its own. Chat cached its decision and
+the board only invalidated that cache from the pulled strip, never from a bay,
+so finishing a chore where it lives could leave chat offering it for another
+half hour. With nothing cached there is nothing to disagree about.
+
+**Three tests were deleted for passing.** With `Decide` gone from the interface
+nothing can consult the fake coach, so every *a model was asked* assertion had
+become vacuously true — including the one whose whole point was that no model is
+invited when the rules find nothing. That guarantee is the type system's now:
+there is no method left to call, which is stronger than the assertion was. The
+review had already found one of these hollow by mutation, a counter wired to
+nothing that passed whether its guard existed or not.
+
+**Four smaller things, each one line.** The letter shortcuts did not count a
+`<select>` as typing, so pressing *d* for "days" in the chore rhythm jumped to
+the first note's DONE. The agenda's own capture field was crushed to nothing by
+the date and clock beside it, so `at 14:30 dentist` — the placeholder that
+teaches the grammar — had never been visible at a desk. The face chip was
+hidden above 620px and is the only route to `/me`, so the page holding the
+readings could be reached on a phone and not on a desktop. And the record was
+corrected in six places where it still described the screen the board replaced.
+
+**What the review found that this release does not fix**, so it is not lost: the
+restore drill has still never been run, and the nightly backups take the
+photographs volume three hours *before* the database dump. A photograph is
+written to disk before its row, so that order is the one that produces a row
+pointing at a file no backup holds — the exact direction `docs/running.md` warns
+about and then prescribes. Both live in `homelab`.
 
 ### v0.69.0 — 4 September 2026
 
