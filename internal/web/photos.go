@@ -1,6 +1,9 @@
 package web
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -120,5 +123,58 @@ func photoOrThumb(s Store, opts Options, small bool) http.HandlerFunc {
 		w.Header().Set("Content-Disposition", "inline")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		http.ServeContent(w, r, it.PhotoName, squirrel.PhotoModTime(f), f)
+	}
+}
+
+type photoChecksum struct {
+	Bytes  int64  `json:"bytes"`
+	SHA256 string `json:"sha256"`
+}
+
+func photoChecksumHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		it, found, err := s.ItemByID(r.Context(), personID, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		if !found || it.PhotoName == "" || opts.Photos == nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		f, err := opts.Photos.Open(it.PhotoName)
+		if err != nil {
+			slog.Warn("a photograph the row expects is not on disk",
+				"item", it.ID, "name", it.PhotoName, "error", err)
+			http.NotFound(w, r)
+			return
+		}
+		defer f.Close()
+
+		h := sha256.New()
+		n, err := io.Copy(h, f)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "private, no-store")
+		_ = json.NewEncoder(w).Encode(photoChecksum{
+			Bytes:  n,
+			SHA256: hex.EncodeToString(h.Sum(nil)),
+		})
 	}
 }

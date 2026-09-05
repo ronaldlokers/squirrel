@@ -87,8 +87,8 @@ func aWholePile(t *testing.T, store *squirrel.Store, handle, sub, mark string) i
 	item(mark+" a task to do", squirrel.ItemOpen, squirrel.ItemTask)
 	item(mark+" a task already done", squirrel.ItemDone, squirrel.ItemTask)
 
-	// A photograph, so /photo/{id} and /photo/{id}/thumb have something of
-	// somebody else's to refuse.
+	// A photograph, so /photo/{id}, /photo/{id}/thumb and /photo/{id}/checksum
+	// have something of somebody else's to refuse.
 	_, err = store.InsertItemReturningID(ctx, squirrel.Item{
 		Transport: squirrel.ScreenTransport, SenderID: &sub, PersonID: &personID,
 		RawText: mark + " a photograph", ReceivedAt: now, Payload: []byte(`{}`),
@@ -281,6 +281,7 @@ func TestSomebodyElsesPhotographIsNotFound(t *testing.T) {
 	}{
 		{"/photo/{id}", photoHandler(store, opts)},
 		{"/photo/{id}/thumb", thumbHandler(store, opts)},
+		{"/photo/{id}/checksum", photoChecksumHandler(store, opts)},
 	} {
 		r := httptest.NewRequest("GET", "/photo/"+id, nil)
 		r.SetPathValue("id", id)

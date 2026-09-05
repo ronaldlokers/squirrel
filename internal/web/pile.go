@@ -94,6 +94,7 @@ func Mount(m Mux, s Store, opts Options) error {
 		m.Get("/photo/{id}", guard(opts, photoHandler(s, opts)))
 		// The card asks for this one. See thumbHandler.
 		m.Get("/photo/{id}/thumb", guard(opts, thumbHandler(s, opts)))
+		m.Get("/photo/{id}/checksum", guard(opts, photoChecksumHandler(s, opts)))
 	}
 	m.Post("/mood", posting(opts, threadMoodHandler(s, opts)))
 	// The one thing's three answers.

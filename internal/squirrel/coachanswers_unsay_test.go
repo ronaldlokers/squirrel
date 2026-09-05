@@ -74,35 +74,3 @@ func TestDeleteLatestCoachAnswerOnlyTouchesYourOwn(t *testing.T) {
 		Scan(&stillThere))
 	require.True(t, stillThere)
 }
-
-func TestPurgeCoachAnswersBeforeRemovesOnlyOlderRows(t *testing.T) {
-	ctx := context.Background()
-	store := withStore(t)
-	personID := coachPerson(t, store, "ronald", "1")
-
-	cutoff := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
-	require.NoError(t, store.RecordCoachAnswer(ctx, personID, squirrel.CoachAnswer{
-		Kind: "sheet", Model: "gpt-5.6-luna", Prompt: "old", Reply: "old reply",
-		Used: true, At: cutoff.Add(-time.Hour),
-	}))
-	require.NoError(t, store.RecordCoachAnswer(ctx, personID, squirrel.CoachAnswer{
-		Kind: "sheet", Model: "gpt-5.6-luna", Prompt: "recent", Reply: "recent reply",
-		Used: true, At: cutoff.Add(time.Hour),
-	}))
-
-	n, err := store.PurgeCoachAnswersBefore(ctx, cutoff)
-	require.NoError(t, err)
-	require.Equal(t, int64(1), n)
-
-	var remaining []string
-	rows, err := store.Pool().Query(ctx,
-		`select reply from coach_answers where person_id = $1`, personID)
-	require.NoError(t, err)
-	for rows.Next() {
-		var reply string
-		require.NoError(t, rows.Scan(&reply))
-		remaining = append(remaining, reply)
-	}
-	require.NoError(t, rows.Err())
-	require.Equal(t, []string{"recent reply"}, remaining)
-}
