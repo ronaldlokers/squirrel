@@ -33,6 +33,23 @@ func stepFor(s Store, opts Options, r *http.Request) *stepView {
 	return &stepView{ID: st.ID, Label: st.Label, Body: st.Body, Last: st.Last}
 }
 
+// stepForItem is the step to show under one opened strip, or nil.
+//
+// A sequence is one thing at a time for the whole person, not per strip — so
+// this only answers for the strip the step is actually about. Opening some
+// other note must never show a step that belongs to a different one.
+func stepForItem(s Store, r *http.Request, itemID int64) *stepView {
+	personID, ok := personOf(r)
+	if !ok {
+		return nil
+	}
+	st, found, err := s.NextStep(r.Context(), personID)
+	if err != nil || !found || st.ItemID == nil || *st.ItemID != itemID {
+		return nil
+	}
+	return &stepView{ID: st.ID, Label: st.Label, Body: st.Body, Last: st.Last}
+}
+
 // smallerFor breaks the thing being offered into steps and hands back the
 // first one, or nil.
 //

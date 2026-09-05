@@ -119,6 +119,17 @@
           <a class="stamp" href="/?open={{.ID}}&reword=1">say it another way<span class="k">R</span></a>
         </p>
         {{end}}
+        {{if .Step}}
+        <div class="step">
+          <p class="body">{{.Step.Body}}{{if .Step.Last}} <span class="pencil">the last one</span>{{end}}</p>
+          <form class="stamps" method="post" action="/steps">
+            <input type="hidden" name="id" value="{{.Step.ID}}">
+            <input type="hidden" name="from" value="/?open={{.ID}}">
+            <button class="stamp go" name="act" value="done">done<span class="k">D</span></button>
+            <button class="stamp no" name="act" value="clear">forget the steps<span class="k">X</span></button>
+          </form>
+        </div>
+        {{end}}
         {{if .Held}}
         <form class="stamps" method="post" action="/board/act">
           <input type="hidden" name="what" value="{{.What}}">

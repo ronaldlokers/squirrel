@@ -951,7 +951,7 @@ func (f *fakeStore) SaveSteps(_ context.Context, _ int64, itemID *int64, label s
 	f.steps = nil
 	for i, body := range steps {
 		f.steps = append(f.steps, squirrel.Step{
-			ID: int64(i + 1), Label: label, Body: body, Last: i == len(steps)-1,
+			ID: int64(i + 1), Label: label, Body: body, Last: i == len(steps)-1, ItemID: itemID,
 		})
 	}
 	f.stepItem = itemID
