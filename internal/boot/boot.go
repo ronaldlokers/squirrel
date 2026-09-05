@@ -657,6 +657,7 @@ func pusher(cfg squirrel.PushConfig, store subscriptions) squirrel.Pusher {
 			gone, err := squirrel.SendPush(ctx, client, cfg, sub, p)
 			if err != nil {
 				slog.Error("push", "endpoint", host(sub.Endpoint), "error", err)
+				squirrel.RecordPushFailure()
 				continue
 			}
 			if gone {

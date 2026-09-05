@@ -3,6 +3,7 @@ package squirrel
 import (
 	"context"
 	"errors"
+	"expvar"
 	"fmt"
 	"log/slog"
 	"net"
@@ -40,6 +41,8 @@ func NewServer(w WritableChecker) *Server {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		fmt.Fprint(w, "ok")
 	})
+
+	s.mux.Handle("GET /debug/vars", expvar.Handler())
 
 	return s
 }

@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"expvar"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,15 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+func expvarInt(t *testing.T, name string) int64 {
+	t.Helper()
+	v := expvar.Get(name)
+	require.NotNil(t, v, "no expvar published under %q", name)
+	i, ok := v.(*expvar.Int)
+	require.True(t, ok, "%q is not an *expvar.Int", name)
+	return i.Value()
+}
 
 // What the push path says about itself.
 //
@@ -92,6 +102,17 @@ func TestPushingSomebodySaysHowManyAndThatItLanded(t *testing.T) {
 
 	require.NotNil(t, findMsg(records, "pushed"),
 		"a delivery nobody records is a delivery nobody can confirm; said: %v", records)
+}
+
+func TestAFailedPushCountsAgainstTheMetric(t *testing.T) {
+	service := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer service.Close()
+
+	before := expvarInt(t, "push_failures_total")
+	sendTo(t, []squirrel.Subscription{testSub(t, service.URL)})
+	require.Equal(t, before+1, expvarInt(t, "push_failures_total"))
 }
 
 // A store that holds whatever the test wants it to hold, so this can exercise
