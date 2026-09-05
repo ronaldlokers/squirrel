@@ -972,6 +972,34 @@ the things, and it never instructs and never asks.
 of the line, quiet and lowercase. The words are kept, not deleted, and the next
 pass is shown them as something not to write again.
 
+### Asking about a strip, and the answer in the same margin
+
+A strip carries one more stamp, *ask about this*, drawn as paper stock beside
+the answers rather than as anything louder — it is not a disposition, and it
+must not read like one. It is only there when a coach is configured: with no
+key the stamp does not exist, and the board is what it was.
+
+**The answer comes back in marginalia's own line.** Same rule above it, same
+muted ink, same *not useful* at its end. That is the whole of the decision: the
+board speaks in the margin, and it speaks there once. A second register — a
+panel, a sheet, a bubble — would be a conversation growing back on the surface
+that is replacing the conversation.
+
+**A press, where marginalia is a cadence.** These are the two ways a line
+arrives and they differ in exactly one way: this one was asked for. Nothing
+about the drawing distinguishes them, because nothing should — Principle 8 is
+about whose voice a sentence is in, not about labelling it.
+
+**Never a box.** Free text on the board goes into the capture fields and
+nowhere else, and no capture field has ever reached a model. A field that asked
+a question would be the general AI chat companion the product refused, moved
+onto the board and given a different name.
+
+**What an answer may not do is name a thing you could then act on.** A note is
+a thought nobody has decided about yet. An answer that handed one back with a
+control on it would be the product deciding for you, so only its words are
+kept.
+
 ### Capture writes the row
 
 **The screen writes what you typed, before it answers.** A capture from the
