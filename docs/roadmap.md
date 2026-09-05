@@ -372,6 +372,67 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.71.0 — 5 September 2026
+
+**The edges are bounded and quiet, and the board answers the press you made.**
+
+The rest of the review, and the first release in which more findings were
+*refused* than any single lens raised.
+
+**The edges.** An open redirect fired straight after a successful login: the
+guard rejected a leading `//` but not a backslash, and a browser reads `\` as
+`/`, so `next=/\evil.com` left the host. The webhook had no rate limit, which
+is what made brute-forcing the unsigned integers behind `!action` realistic.
+The OIDC flow asked for no nonce. A failing migration retried once a second
+forever, where the drain loop twelve files away had doubled its backoff for
+months. The migration pass took no advisory lock, so a rolling deploy could
+fire the one log line the runbook says means *roll the image back* — a false
+page rather than an outage, which is worse in its way, because the runbook is
+read at two in the morning.
+
+**The quiet.** A chore's own name was being written to the log on the ordinary
+*decided not to interrupt* path, not on a failure. `coach_answers` has a stated
+horizon in the schema now and `!unsay` drops the last exchange. Photographs keep
+their metadata, location included, and `PRODUCT.md` says so rather than leaving
+it to be discovered.
+
+**The board.** With nothing focused, a letter acted on the first card — so a
+second press finished a note nobody had read, and a blind user could not reach
+the second note by the letter the screen was showing them. The 1150ms hold
+removed the stamps from the accessibility tree and said nothing for a second.
+The find field's focus ring had *no border to colour*, so there was no focus
+indicator at all, at any width, and had never been one. The phone's tab badges
+stopped borrowing the bell's unread grammar. A thought typed on the chores tab
+stopped becoming a weekly chore.
+
+**Three findings were refused on contact with the running product**, and that is
+the part worth keeping.
+
+The health endpoint the review said was missing has existed all along, and
+deliberately does not check the database: a readiness probe failing on a
+Postgres outage would take the pod out of its Service, and Campfire does not
+retry a webhook. Adding the check would have traded a survivable outage for
+permanent loss.
+
+The twelve buttons standing in the notes bay were an artefact of the review's
+own screenshots. `hover: hover` collapses them on a desktop and the accordion
+collapses them on a coarse pointer; a headless browser is neither, so it alone
+draws them all. The finding shipped with a mockup of something that does not
+happen.
+
+And the four rhythm stamps were not missing — v0.68.0 deleted them the day
+before, because they and the interval field said the same thing twice. They were
+rebuilt from `DESIGN.md`, which still described them, and caught before merge.
+The record was what was wrong, and it is corrected.
+
+**What the drill found.** It was run for the first time, into a scratch
+namespace, and passed: 66 rows, the join returning its one photograph, the file
+intact with both its markers. It also found that the nightly pair was taken in
+the wrong order — the volume three hours *before* the dump, when a photograph is
+written to disk before its row — so a restore could hold a row pointing at a
+file no backup had. Fixed in `homelab`, and the runbook's step 1, which
+prescribed that order while giving the right reason against it, is corrected.
+
 ### v0.70.0 — 5 September 2026
 
 **A capture fails fast and says so, and the picker chooses everywhere.**
