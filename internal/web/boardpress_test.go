@@ -119,6 +119,10 @@ func TestBrowserTheKeysOpenTheStripTheyReach(t *testing.T) {
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	c.key(t, "d")
+	require.False(t, c.eval(t, `return !!document.querySelector(".strip.answerable.open")`).(bool),
+		"a letter opened a strip before any strip had focus")
+
+	c.key(t, "ArrowDown")
 	c.until(t, "the first chore to open", `document.querySelector(".strip.answerable.open")
 		?.querySelector(".what").textContent.trim().startsWith("bins out")`)
 

@@ -250,7 +250,11 @@
         {{range .Cal.Times}}
         <button class="chip" type="button" data-at="{{.}}">{{.}}</button>
         {{end}}
-        <input class="attime" type="time" name="at" required aria-label="the time">
+        <span class="attime">
+          <input class="atfield ah" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23" required>
+          <span class="atcolon">:</span>
+          <input class="atfield am" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes" required>
+        </span>
       </div>
       <button class="make" type="submit">{{.Cal.Do}}</button>
     </form>

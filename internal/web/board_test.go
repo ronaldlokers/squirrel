@@ -239,24 +239,6 @@ func TestAgendaWordsWithNoTimeInThemAreAskedAbout(t *testing.T) {
 	require.Equal(t, "/?bay=agenda&when=ring+the+dentist", w.Header().Get("Location"))
 }
 
-func TestTheChoresRackAsksForARhythmBesideTheField(t *testing.T) {
-	m := mounted(t, aBoardStore())
-
-	body := m.call(t, "GET", "/board", nil).Body.String()
-
-	for _, want := range []string{
-		`value="chores"`,
-		`class="inline"`,
-		`name="every" type="number" min="1" max="365" value="7"`,
-		`name="unit"`,
-		`<option value="weeks">weeks</option>`,
-	} {
-		require.Contains(t, body, want)
-	}
-	require.NotContains(t, body, `name="every" value="14"`,
-		"the four stamps say what the field already says")
-}
-
 // The flip, pinned. The front door is the board; the conversation kept its own
 // address and every press made inside it comes back there rather than landing
 // somebody on a board they did not ask for.
@@ -285,7 +267,7 @@ func TestTheBayYouAreInIsTheOneThatIsLit(t *testing.T) {
 
 	require.Contains(t, body, `class="rack in" data-bay="chores"`)
 	require.Contains(t, body, `class="rack" data-bay="notes"`)
-	require.Contains(t, body, `<a class="baytab in" href="/?bay=chores">`)
+	require.Contains(t, body, `<a class="baytab in" href="/?bay=chores" aria-current="page">`)
 	require.Contains(t, body, `<a class="baytab" href="/?bay=notes">`)
 }
 
@@ -295,6 +277,25 @@ func TestTheNotesAreTheBayYouLandIn(t *testing.T) {
 	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, `class="rack in" data-bay="notes"`)
+}
+
+func TestEveryBayButTheNotesCarriesAQuickNote(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores", nil).Body.String()
+	start := strings.Index(body, `class="quicknote"`)
+	require.GreaterOrEqual(t, start, 0, "the chores tab carries no quick note")
+	end := strings.Index(body, `<section class="rack`)
+	require.Greater(t, end, start, "the quick note is not ahead of the racks")
+	quick := body[start:end]
+
+	require.Contains(t, quick, `value="notes"`, "the quick note does not land in the notes")
+	require.Contains(t, quick, `placeholder="what is it"`, "the quick note asks a different question than the notes do")
+}
+
+func TestTheNotesCarryNoSecondQuickNote(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=notes", nil).Body.String()
+
+	require.NotContains(t, body, `class="quicknote"`,
+		"the notes offer their own box twice, once for no reason")
 }
 
 // A press in a bay comes back to that bay. Answering a chore on a phone and
@@ -509,7 +510,7 @@ func TestANoteOffersToBecomeAChore(t *testing.T) {
 
 	body := m.call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, `href="/?chore=1`)
+	require.Contains(t, body, `formaction="/" name="chore" value="1"`)
 }
 
 // The same guard every press has: a note that is not yours is not yours to
@@ -611,6 +612,26 @@ func TestThePickersMakeAMomentWithoutASentence(t *testing.T) {
 	require.Len(t, f.moments, 1, "the day and the time beside the field made nothing")
 	require.Equal(t, "dentist", f.moments[0].Label)
 	require.Equal(t, 2026, f.moments[0].Starts.Year())
+	require.Equal(t, 14, f.moments[0].Starts.Hour())
+	require.Equal(t, 30, f.moments[0].Starts.Minute())
+	require.Empty(t, sp.written)
+}
+
+func TestThePickersMakeAMomentFromTheDayAndMonthFieldsRatherThanANativeDate(t *testing.T) {
+	f := aBoardStore()
+	sp := &fakeSpool{}
+	m := mountedSpooling(t, f, sp)
+	t.Cleanup(func() { now = time.Now })
+	now = func() time.Time { return time.Date(2026, time.June, 1, 9, 0, 0, 0, time.UTC) }
+
+	m.call(t, "POST", "/board/new",
+		strings.NewReader("bay=agenda&words=dentist&dd=05&mo=09&hour=14&minute=30"))
+
+	require.Len(t, f.moments, 1, "the day and month fields made nothing")
+	require.Equal(t, "dentist", f.moments[0].Label)
+	require.Equal(t, 2026, f.moments[0].Starts.Year(), "the year was not inferred as this year")
+	require.Equal(t, time.September, f.moments[0].Starts.Month())
+	require.Equal(t, 5, f.moments[0].Starts.Day())
 	require.Equal(t, 14, f.moments[0].Starts.Hour())
 	require.Equal(t, 30, f.moments[0].Starts.Minute())
 	require.Empty(t, sp.written)
@@ -756,7 +777,7 @@ func TestTheAgendaStripCarriesItsDayAndTimeInsideIt(t *testing.T) {
 
 	require.Contains(t, strip, "asit", "the agenda inlet is not shaped like what it makes")
 	require.Contains(t, strip, `class="holder"`, "it does not wear the agenda's holder")
-	for _, want := range []string{`name="day"`, `name="hour"`, `name="minute"`, `name="words"`} {
+	for _, want := range []string{`name="dd"`, `name="mo"`, `name="hour"`, `name="minute"`, `name="words"`} {
 		require.Contains(t, strip, want, "%s is outside the strip", want)
 	}
 	require.NotContains(t, rack, `class="under"`, "the row under the strip is still drawn")
@@ -768,7 +789,7 @@ func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {
 	for _, bay := range []string{"notes", "chores", "tasks"} {
 		rack := theRackIn(t, board, "bay="+bay)
 		require.NotContains(t, rack, "asit", "the %s inlet took the agenda's shape", bay)
-		require.NotContains(t, rack, `name="day"`, "the %s inlet asks for a day", bay)
+		require.NotContains(t, rack, `name="dd"`, "the %s inlet asks for a day", bay)
 	}
 	require.Contains(t, theRackIn(t, board, "bay=chores"), `class="inline"`,
 		"the chores lost their interval")

@@ -15,7 +15,7 @@
       <div class="youset">
         {{if .Notifying}}
         <div class="youbit" id="pushbit" data-state="{{.Notifying}}">
-          <p class="youname">Notifications</p>
+          <h2 class="youname">Notifications</h2>
           <p class="yousays" id="pushsays">
             {{if eq .Notifying "on"}}On. Squirrel can tell you when to leave for something.
             {{else if eq .Notifying "off"}}Off. Squirrel will not interrupt you.
@@ -30,14 +30,14 @@
              holds about you behind a door inside the room you had already
              opened. This is the page about you; they are on it. */}}
         <div class="youbit">
-          <p class="youname">How you felt before</p>
+          <h2 class="youname">How you felt before</h2>
           <p class="yousays">The last six weeks, as you said them. Nothing is counted.</p>
           {{if .Weeks}}{{template "moodgrid" .Weeks}}{{end}}
           {{if .MoodsSays}}<p class="younought">{{.MoodsSays}}</p>{{end}}
         </div>
 
         <div class="youbit">
-          <p class="youname">What Squirrel knows about you</p>
+          <h2 class="youname">What Squirrel knows about you</h2>
           <p class="yousays">{{.KnownSays}}</p>
           {{/* One card per observation, so none of them reads as a paragraph
                of assessment. No dates: when it worked something out is not a

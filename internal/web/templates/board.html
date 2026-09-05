@@ -2,7 +2,7 @@
 <html lang="en" style="--light: {{.Light}}%">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
 <meta name="theme-color" content="#472e70">
 <link rel="icon" href="/static/logo.png?v={{.V}}">
@@ -12,6 +12,7 @@
 <script src="/static/board.js?v={{.V}}" defer></script>
 </head>
 <body>
+<p id="announce" class="offscreen" role="status" aria-live="polite"></p>
 <header class="ops">
   <span class="brand">
     <img class="markart" src="/static/logo.png" alt="">
@@ -74,7 +75,7 @@
 {{if .Opened}}{{with .Opened}}
 <main class="racks found">
   <section class="rack in">
-    <p class="baysign">what you opened</p>
+    <h2 class="baysign">what you opened</h2>
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     <article class="strip h-notes opened">
       <span class="holder"></span>
@@ -105,7 +106,7 @@
 {{else if .Telling}}
 <main class="racks found">
   <section class="rack in">
-    <p class="baysign">what Squirrel told you</p>
+    <h2 class="baysign">what Squirrel told you</h2>
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     <div class="channel">
       {{if not .Told}}<p class="nothing">nothing has been sent to you</p>{{end}}
@@ -127,7 +128,7 @@
 {{else if .Shelf}}
 <main class="racks found">
   <section class="rack in">
-    <p class="baysign shelf">{{.Shelf}}</p>
+    <h2 class="baysign shelf">{{.Shelf}}</h2>
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     <div class="channel">
       {{if not .Shelved}}<p class="nothing">nothing on this shelf</p>{{end}}
@@ -152,7 +153,7 @@
 {{else if .Find}}
 <main class="racks found">
   <section class="rack in">
-    <p class="baysign">what matched &ldquo;{{.Find}}&rdquo;{{if .Found}} <span class="n">{{len .Found}}</span>{{end}}</p>
+    <h2 class="baysign">what matched &ldquo;{{.Find}}&rdquo;{{if .Found}} <span class="n">{{len .Found}}</span>{{end}}</h2>
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     <div class="channel">
       {{if not .Found}}<p class="nothing">nothing matched &ldquo;{{.Find}}&rdquo;</p>{{end}}
@@ -187,60 +188,25 @@
 </main>
 {{else}}
 <main class="racks">
+  {{if and (eq (index .Bays 0).Key "notes") (not (index .Bays 0).In)}}
+  <div class="quicknote">
+    <p class="quicklead">always a note, wherever you are</p>
+    {{template "blankstrip" (index .Bays 0)}}
+  </div>
+  {{end}}
   {{range $bay := .Bays}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
-    {{if .Writes}}
-    <form class="blankstrip" method="post" action="{{if .Camera}}/board/capture{{else}}/board/new{{end}}"{{if .Camera}} enctype="multipart/form-data"{{end}}>
-      <input type="hidden" name="bay" value="{{.Key}}">
-      <p class="strip blank{{if eq .Key "agenda"}} asit{{end}}">
-        {{if eq .Key "agenda"}}<span class="holder"></span>{{end}}
-        <span class="said">
-          <input class="words" name="{{if .Camera}}text{{else}}words{{end}}" value="{{.Asking}}" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done"{{if .Asking}} autofocus{{end}}>
-          {{if .Rhythms}}
-          <span class="inline">
-            <span class="lead">every</span>
-            <input class="count" name="every" type="number" min="1" max="365" value="7" inputmode="numeric" aria-label="how many">
-            <select class="unit" name="unit" aria-label="days, weeks or months">
-              <option value="days">days</option>
-              <option value="weeks">weeks</option>
-              <option value="months">months</option>
-            </select>
-          </span>
-          {{end}}
-          {{if eq .Key "agenda"}}
-          <span class="when">
-            <input class="count when" name="day" type="date" aria-label="the day">
-            <span class="hm">
-              <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
-              <span class="colon">:</span>
-              <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
-            </span>
-          </span>
-          {{end}}
-        </span>
-        {{if .Camera}}
-        <label class="camera">
-          <input type="file" name="photo" accept="image/*" capture="environment">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg>
-          <span class="offscreen">take a photograph</span>
-        </label>
-        {{end}}
-        <button class="newmark" aria-label="keep it">+</button>
-      </p>
-      {{if and .Rhythms .Asking}}<p class="asked">how often does it come back?</p>{{end}}
-      {{if and (eq .Key "agenda") .Asking}}<p class="asked">when is it?</p>{{end}}
-    </form>
-    {{end}}
+    {{template "blankstrip" .}}
     <div class="channel">
-      {{if .Trouble}}<p class="trouble">cannot reach {{.Name}} — nothing is lost, and nothing here is what you have</p>{{end}}
+      {{if .Trouble}}<p class="trouble">cannot reach {{.Name}} — nothing is lost. Your words are still here; try again in a moment.</p>{{end}}
       {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
       <div class="strips">
         {{range .Strips}}
         {{template "strip" dict "Strip" . "Bay" $bay.Key}}
         {{end}}
         {{range .Settled}}
-        <p class="seam"><span class="what">{{.Name}}</span><span class="n">{{len .Strips}}</span></p>
+        <p class="seam"><span class="what">{{.Name}}</span>{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</p>
         {{if .Strips}}
         {{range .Strips}}
         {{template "strip" dict "Strip" . "Bay" $bay.Key}}
@@ -293,16 +259,64 @@
 {{if .Bays}}
 <nav class="baytabs">
   {{range .Bays}}
-  <a class="baytab{{if and .In (not (or $.Opened $.Find $.Shelf))}} in{{end}}" href="/?bay={{.Key}}">
+  <a class="baytab{{if and .In (not (or $.Opened $.Find $.Shelf))}} in{{end}}" href="/?bay={{.Key}}"{{if and .In (not (or $.Opened $.Find $.Shelf))}} aria-current="page"{{end}}>
     <span class="pic">
       <img src="/static/bay-{{.Key}}.png?v={{$.V}}" alt="" width="38" height="38">
-      {{if .Strips}}<span class="n">{{len .Strips}}</span>{{end}}
     </span>
-    <span class="says">{{.Key}}</span>
+    <span class="says">{{.Key}}{{if .Strips}} <span class="n">&middot; {{len .Strips}}</span>{{end}}</span>
   </a>
   {{end}}
 </nav>
 {{end}}
 </body>
 </html>
+{{end}}
+
+{{define "blankstrip"}}
+{{if .Writes}}
+<form class="blankstrip" method="post" action="{{if .Camera}}/board/capture{{else}}/board/new{{end}}"{{if .Camera}} enctype="multipart/form-data"{{end}}>
+  <input type="hidden" name="bay" value="{{.Key}}">
+  <p class="strip blank{{if eq .Key "agenda"}} asit{{end}}">
+    {{if eq .Key "agenda"}}<span class="holder"></span>{{end}}
+    <span class="said">
+      <input class="words" name="{{if .Camera}}text{{else}}words{{end}}" value="{{.Asking}}" placeholder="{{.Question}}" autocomplete="off" enterkeyhint="done"{{if .Asking}} autofocus{{end}}>
+      {{if .Rhythms}}
+      <span class="inline">
+        <span class="lead">every</span>
+        <input class="count" name="every" type="number" min="1" max="365" value="7" inputmode="numeric" aria-label="how many">
+        <select class="unit" name="unit" aria-label="days, weeks or months">
+          <option value="days">days</option>
+          <option value="weeks">weeks</option>
+          <option value="months">months</option>
+        </select>
+      </span>
+      {{end}}
+      {{if eq .Key "agenda"}}
+      <span class="when">
+        <span class="dm">
+          <input class="count dd" name="dd" type="text" inputmode="numeric" maxlength="2" pattern="[0-3][0-9]" placeholder="05" aria-label="the day of the month">
+          <span class="slash">/</span>
+          <input class="count mo" name="mo" type="text" inputmode="numeric" maxlength="2" pattern="[0-1][0-9]" placeholder="09" aria-label="the month">
+        </span>
+        <span class="hm">
+          <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
+          <span class="colon">:</span>
+          <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
+        </span>
+      </span>
+      {{end}}
+    </span>
+    {{if .Camera}}
+    <label class="camera">
+      <input type="file" name="photo" accept="image/*" capture="environment">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg>
+      <span class="offscreen">take a photograph</span>
+    </label>
+    {{end}}
+    <button class="newmark" aria-label="keep it">+</button>
+  </p>
+  {{if and .Rhythms .Asking}}<p class="asked">how often does it come back?</p>{{end}}
+  {{if and (eq .Key "agenda") .Asking}}<p class="asked">when is it?</p>{{end}}
+</form>
+{{end}}
 {{end}}

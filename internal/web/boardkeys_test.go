@@ -24,19 +24,18 @@ func TestBrowserTheBoardsKeysFollowFocus(t *testing.T) {
 	c.navigate(t, srv.URL+"/?bay=chores")
 	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
 
-	// Nothing focused: the first press says where you are rather than acting on
-	// something you did not choose.
 	c.key(t, "d")
+	require.Equal(t, "BODY", c.eval(t, `return document.activeElement.tagName`),
+		"a letter acted before any strip was focused")
+
+	c.key(t, "ArrowDown")
 	c.until(t, "the first chore to take focus",
 		`document.activeElement.closest(".strip")?.querySelector(".words").textContent.trim().startsWith("bins out")`)
 
-	// And the arrows move between strips rather than acting on one.
 	c.key(t, "ArrowDown")
 	c.until(t, "the second chore to take focus",
 		`document.activeElement.closest(".strip")?.querySelector(".words").textContent.trim().startsWith("water the ferns")`)
 
-	// The second press of the same letter acts on the strip it is in, which is
-	// the whole of what a key is for.
 	c.key(t, "d")
 	c.until(t, "the strike", `!!document.querySelector(".strip.struck")`)
 	require.Eventually(t, func() bool { return len(f.completed) == 1 },

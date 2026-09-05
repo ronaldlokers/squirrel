@@ -52,6 +52,7 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 	form := regexp.MustCompile(`<form[^>]*>`)
 	action := regexp.MustCompile(`\baction="(/[^"]*)"`)
 	formaction := regexp.MustCompile(`formaction="(/[^"]*)"`)
+	overriding := regexp.MustCompile(`<[a-zA-Z]+[^>]*\bformaction="(?:/[^"]*)"[^>]*>`)
 
 	for name, url := range pages {
 		body := m.call(t, "GET", url, nil).Body.String()
@@ -72,9 +73,13 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 			requireRouted(t, m, method, pathOf(found[1]), name)
 		}
 		// A button may override its form's action, which is how the deck asks
-		// a different question with the same fields.
-		for _, found := range formaction.FindAllStringSubmatch(body, -1) {
-			requireRouted(t, m, "POST", pathOf(found[1]), name)
+		for _, tag := range overriding.FindAllString(body, -1) {
+			found := formaction.FindStringSubmatch(tag)
+			method := "POST"
+			if strings.Contains(tag, `formmethod="get"`) {
+				method = "GET"
+			}
+			requireRouted(t, m, method, pathOf(found[1]), name)
 		}
 	}
 }

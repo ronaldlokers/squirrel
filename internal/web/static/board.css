@@ -272,7 +272,10 @@ body {
 }
 .strip.resting { background: var(--card-deep); box-shadow: none; }
 .strip.resting .what { color: var(--brown); }
-.nothing.quiet { margin: 2px; font-size: 12.5px; }
+.nothing.quiet {
+  flex: 0 0 auto; display: block; margin: 2px; padding: 6px 4px; text-align: left;
+  font-size: 12.5px;
+}
 
 
 @media (prefers-reduced-motion: reduce) {
@@ -295,6 +298,7 @@ body {
   .channel { flex: 1 0 auto; overflow: visible; }
   .strips { flex: 0 0 auto; overflow: visible; }
   .strip .words { font-size: 15.5px; }
+  .strip.blank .words { font-size: 16px; }
   .pulled .said {
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
     overflow: hidden;
@@ -345,7 +349,7 @@ a.stamp { text-decoration: none; }
 
 .strip.struck { background: var(--card-deep); }
 .strip.struck .words { color: var(--ink-soft); text-decoration: line-through; text-decoration-thickness: 1.5px; }
-.strip.struck .stamps { visibility: hidden; }
+.strip.struck .stamps { opacity: .4; pointer-events: none; }
 .strip.leaving {
   transform: translateX(24px);
   transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
@@ -375,10 +379,10 @@ a.stamp { text-decoration: none; }
 .tray .strip.out .holder { background: rgba(254, 214, 167, .45); opacity: .6; }
 .tray .strip.out .holder::after { display: none; }
 .tray .strip.out .words {
-  padding: 5px 9px; font-size: 13px; color: rgba(254, 214, 167, .82);
+  padding: 5px 9px; font-size: 13px; color: var(--cream);
   text-decoration: line-through; text-decoration-thickness: 1.5px; white-space: nowrap;
 }
-.tray .strip.out .mark { padding: 5px 9px 5px 0; color: rgba(254, 214, 167, .6); }
+.tray .strip.out .mark { padding: 5px 9px 5px 0; color: rgba(254, 214, 167, .97); }
 .tray .strip.out form { display: flex; padding-right: 6px; }
 .tray .stamp.small { min-height: 26px; padding: 5px 8px; font-size: 10.5px; }
 
@@ -506,13 +510,14 @@ a.stamp { text-decoration: none; }
   display: flex; align-items: center; gap: 10px; padding: 4px 9px; min-width: 0;
 }
 .strip.blank.asit .words { flex: 1 1 100%; min-width: 11ch; padding: 0; font-size: 14px; }
-.strip.blank.asit .when { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
-.strip.blank.asit .hm {
+.strip.blank.asit .when { flex: 1 1 auto; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; row-gap: 3px; }
+.strip.blank.asit .dm, .strip.blank.asit .hm {
   display: inline-flex; align-items: baseline; gap: 1px;
   font-variant-numeric: tabular-nums;
 }
+.strip.blank.asit .dd, .strip.blank.asit .mo,
 .strip.blank.asit .hh, .strip.blank.asit .mm { width: 22px; text-align: center; }
-.strip.blank.asit .colon { color: var(--ink-soft); font-size: 12px; }
+.strip.blank.asit .slash, .strip.blank.asit .colon { color: var(--ink-soft); font-size: 12px; }
 .strip.blank.asit .count::placeholder { color: var(--placeholder); }
 .strip.blank.asit .count {
   width: auto; min-height: 22px; padding: 1px 3px; text-align: left; font-size: 12px;
@@ -535,6 +540,9 @@ a.stamp { text-decoration: none; }
 }
 
 @media (pointer: coarse) {
+}
+
+@media (pointer: coarse) {
   .strip .backtab .stamp { min-height: 44px; padding: 10px; }
 }
 
@@ -549,9 +557,21 @@ a.stamp { text-decoration: none; }
 }
 
 .baytabs { display: none; }
+.quicknote { display: none; }
 
 @media (max-width: 620px) {
   :root { --foot: max(10px, calc(env(safe-area-inset-bottom) - 8px)); }
+  .quicknote {
+    display: block; flex: 0 0 auto;
+    padding: 8px; background: rgba(28, 17, 11, .2);
+    border: var(--line) solid rgba(254, 214, 167, .26); border-radius: var(--r);
+  }
+  .quicklead {
+    margin: 0 2px 6px; color: rgba(254, 214, 167, .8); font-size: 10.5px;
+    letter-spacing: .08em; text-transform: uppercase;
+    font-variation-settings: var(--precise), "wght" 750;
+  }
+  .quicknote .blankstrip { margin: 0; }
   .deck { padding-bottom: calc(var(--foot) + 80px); }
   .tray { margin-bottom: calc(var(--foot) + 82px); }
   .baytabs {
@@ -582,15 +602,9 @@ a.stamp { text-decoration: none; }
   .baytab .pic { position: relative; display: block; }
   .baytab img { display: block; opacity: .55; }
   .baytab .n {
-    position: absolute; top: -4px; right: -8px;
-    min-width: 19px; height: 19px; padding: 0 4px;
-    display: grid; place-items: center;
-    background: var(--orange); color: var(--outline);
-    border: var(--line) solid var(--outline); border-radius: 999px;
     font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 900; font-variation-settings: normal;
-    font-size: 11px; line-height: 1; letter-spacing: -.02em;
-    font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em; font-variant-numeric: tabular-nums;
   }
   .baytab .says {
     font-size: 11px; letter-spacing: .03em; white-space: nowrap;

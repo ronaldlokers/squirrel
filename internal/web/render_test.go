@@ -22,6 +22,6 @@ func TestEveryActionIsAFormSubmissionNotAScriptHook(t *testing.T) {
 	// doing — and every one of them names the thing it acts on.
 	require.Equal(t,
 		strings.Count(body, `name="answer" value=`),
-		strings.Count(body, `<button class="stamp`)-strings.Count(body, `name="every" value=`),
+		strings.Count(body, `<button class="stamp`)-strings.Count(body, `name="every" value=`)-strings.Count(body, `name="chore" value=`),
 		"an answer that is not a submit button is an answer only a script can make")
 }

@@ -708,7 +708,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				return
 			}
 		case "agenda":
-			m, ok := momentFromPickers(opts.Location, words, r.FormValue("day"), clockFrom(r))
+			m, ok := momentFromPickers(opts.Location, words, dayFrom(r), clockFrom(r))
 			if !ok {
 				m, ok = squirrel.ParseMomentIn(opts.Location, words, now())
 			}
@@ -1018,6 +1018,30 @@ func clockFrom(r *http.Request) string {
 		minute = "0" + minute
 	}
 	return hour + ":" + minute
+}
+
+func dayFrom(r *http.Request) string {
+	if day := strings.TrimSpace(r.FormValue("day")); day != "" {
+		return day
+	}
+	dd, mo := strings.TrimSpace(r.FormValue("dd")), strings.TrimSpace(r.FormValue("mo"))
+	if dd == "" || mo == "" {
+		return ""
+	}
+	day, err := strconv.Atoi(dd)
+	if err != nil || day < 1 || day > 31 {
+		return ""
+	}
+	month, err := strconv.Atoi(mo)
+	if err != nil || month < 1 || month > 12 {
+		return ""
+	}
+	today := now()
+	at := time.Date(today.Year(), time.Month(month), day, 0, 0, 0, 0, today.Location())
+	if at.Before(time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())) {
+		at = at.AddDate(1, 0, 0)
+	}
+	return at.Format("2006-01-02")
 }
 
 // momentFromPickers builds one out of the day and time beside the field, which

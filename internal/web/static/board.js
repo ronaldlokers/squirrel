@@ -114,21 +114,8 @@
     }
 
     if (e.key.length !== 1) return;
+    if (!here) return;
     var letter = e.key.toUpperCase();
-    // Nothing focused: the first press says where you are rather than acting
-    // on something you did not choose.
-    if (!here) {
-      var carries = all.filter(function (strip) {
-        return [].some.call(strip.querySelectorAll(".stamp .k"), function (k) {
-          return k.textContent.trim().toUpperCase() === letter;
-        });
-      });
-      if (carries.length) {
-        e.preventDefault();
-        focus(carries[0]);
-      }
-      return;
-    }
     if (byPress) show(here);
     var stamps = [].slice.call(here.querySelectorAll(".stamp"));
     for (var i = 0; i < stamps.length; i++) {
@@ -141,17 +128,48 @@
     }
   });
 
+  var announce = function (text) {
+    var region = document.getElementById("announce");
+    if (region) region.textContent = text;
+  };
+
+  var pending = null;
+
   document.addEventListener("submit", function (e) {
     var form = e.target;
     if (!form.classList.contains("stamps")) return;
+    if (e.submitter && e.submitter.getAttribute("formmethod") === "get") return;
     var strip = form.closest(".strip");
     if (!strip) return;
 
     e.preventDefault();
+
+    if (pending && pending.strip === strip) {
+      pending.timers.forEach(window.clearTimeout);
+      pending = null;
+    }
+
     var pressed = e.submitter;
     strip.classList.add("struck");
 
+    var label = pressed
+      ? [].filter
+          .call(pressed.childNodes, function (n) {
+            return n.nodeType === 3;
+          })
+          .map(function (n) {
+            return n.textContent;
+          })
+          .join("")
+          .trim()
+      : "";
+    announce(label ? label + " — noted, sending" : "noted, sending");
+
+    var timers = [];
+    pending = { strip: strip, timers: timers, label: label };
+
     var go = function () {
+      pending = null;
       if (pressed && pressed.name) {
         var carried = document.createElement("input");
         carried.type = "hidden";
@@ -163,12 +181,23 @@
     };
 
     if (still) {
-      window.setTimeout(go, HOLD);
+      timers.push(window.setTimeout(go, HOLD));
       return;
     }
-    window.setTimeout(function () {
-      strip.classList.add("leaving");
-      window.setTimeout(go, TRAVEL);
-    }, HOLD);
+    timers.push(
+      window.setTimeout(function () {
+        strip.classList.add("leaving");
+        timers.push(window.setTimeout(go, TRAVEL));
+      }, HOLD)
+    );
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || !pending) return;
+    e.preventDefault();
+    pending.timers.forEach(window.clearTimeout);
+    pending.strip.classList.remove("struck", "leaving");
+    announce(pending.label ? pending.label + " — cancelled" : "cancelled");
+    pending = null;
   });
 })();

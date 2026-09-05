@@ -22,9 +22,7 @@ func TestTheCardCarriesFourVerbsAndNoQuestions(t *testing.T) {
 	for _, verb := range []string{"done", "keep", "drop", "make a chore"} {
 		require.Contains(t, deck, verb)
 	}
-	// Four answers, three of them submit buttons and one a link — make a chore
-	// asks for a rhythm on the strip, so it is a way in rather than a press.
-	require.Equal(t, 4, strings.Count(deck, `name="answer" value=`)+strings.Count(deck, `href="/?chore=`),
+	require.Equal(t, 4, strings.Count(deck, `name="answer" value=`)+strings.Count(deck, `name="chore" value=`),
 		"the strip carries something other than the four verbs")
 	for _, question := range []string{"make it a chore", "say it another way", "i can't act on this"} {
 		require.NotContains(t, deck, question, "%q is still on the card", question)

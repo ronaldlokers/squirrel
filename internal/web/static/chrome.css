@@ -82,7 +82,7 @@
 }
 .ops .find input::placeholder, .lid .find input::placeholder { color: rgba(254, 214, 167, .8); }
 .ops .find input:focus, .lid .find input:focus { outline: none; }
-.ops .find:focus-within, .lid .find:focus-within { border-color: var(--orange-lit); }
+.ops .rail .find:focus-within, .lid .find:focus-within { border: 2px solid var(--orange-lit); }
 
 @media (max-width: 620px) {
   .ops {

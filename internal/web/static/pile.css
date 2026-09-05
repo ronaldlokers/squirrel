@@ -1450,15 +1450,24 @@
      vocabulary rather than the chip's, because it is a thing you type in and
      it must not read as a fourth shortcut. */
   .attime {
+    display: inline-flex; align-items: baseline; gap: 2px;
     padding: 9px 12px;
     background: var(--paper); color: var(--outline);
     border: var(--line) solid var(--outline); border-radius: var(--r);
     box-shadow: 0 3px 0 0 var(--outline);
+    min-height: 44px; box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+  }
+  .atfield {
+    width: 26px; padding: 0; text-align: center;
+    background: none; color: var(--outline); border: 0;
     font: 400 17px/1.2 "Recursive", sans-serif;
     font-variation-settings: var(--casual), "wght" 500;
-    min-height: 44px;
+    font-variant-numeric: tabular-nums;
   }
-  .attime:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
+  .atfield:focus { outline: none; }
+  .atcolon { color: var(--ink-soft); font-size: 15px; }
+  .attime:focus-within { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
   .pick .make { align-self: flex-start; margin-top: 4px; }
   .cal .make { align-self: flex-start; margin-top: 2px; }
   /* A turn holding a control strip takes the full column. The faces are five
