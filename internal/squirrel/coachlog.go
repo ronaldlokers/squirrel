@@ -118,6 +118,28 @@ func (s *Store) BadlyLanded(ctx context.Context, personID int64, limit int) ([]s
 	return said, rows.Err()
 }
 
+func (s *Store) DeleteLatestCoachAnswer(ctx context.Context, personID int64) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		delete from coach_answers
+		where id = (
+			select id from coach_answers
+			where person_id = $1
+			order by said_at desc limit 1
+		)`, personID)
+	if err != nil {
+		return false, fmt.Errorf("deleting the last thing the coach said: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+func (s *Store) PurgeCoachAnswersBefore(ctx context.Context, before time.Time) (int64, error) {
+	tag, err := s.pool.Exec(ctx, `delete from coach_answers where said_at < $1`, before)
+	if err != nil {
+		return 0, fmt.Errorf("purging old coach answers: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
 // CoachSpentSince is the sum of what the coach has cost since an instant, in
 // micro-euros.
 //
