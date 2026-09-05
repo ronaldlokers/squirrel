@@ -13,28 +13,29 @@ import (
 )
 
 type boardView struct {
-	V        string
-	Shelf    string
-	Shelved  []stripView
-	Opened   *stripView
-	Find     string
-	Found    []stripView
-	Blockers []blockerView
-	Unstuck  string
-	In       string
-	Light    int
-	Tray     []trayView
-	Kept     bool
-	Now      string
-	Day      string
-	Pulled   *offerView
-	Timer    *timerView
-	Bays     []bayView
-	Faces    []faceView
-	Told     []toldView
-	Telling  bool
-	AnyTold  bool
-	You      whom
+	V              string
+	Shelf          string
+	Shelved        []stripView
+	Opened         *stripView
+	Find           string
+	Found          []stripView
+	Blockers       []blockerView
+	Unstuck        string
+	UnstuckMinutes int
+	In             string
+	Light          int
+	Tray           []trayView
+	Kept           bool
+	Now            string
+	Day            string
+	Pulled         *offerView
+	Timer          *timerView
+	Bays           []bayView
+	Faces          []faceView
+	Told           []toldView
+	Telling        bool
+	AnyTold        bool
+	You            whom
 }
 
 type toldView struct {
@@ -97,6 +98,8 @@ type stripView struct {
 	Big     bool
 	Answers []answerView
 	Room    string
+	Held    []answerView
+	Reword  bool
 }
 
 type rhythmView struct {
@@ -139,19 +142,20 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
 		shelf := r.URL.Query().Get("shelf")
 		shelved := whatIsOnTheShelf(r, s, personID, shelf, at)
-		blockers, unstuck := stuckView(r.URL.Query().Get("stuck"))
+		blockers, unstuck, unstuckMinutes := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
-			In:       in,
-			Find:     find,
-			Shelf:    shelfNames[shelf],
-			Shelved:  shelved,
-			Opened:   openedStrip(r, s, personID, at),
-			Found:    whatMatched(r, s, personID, find, at),
-			Blockers: blockers,
-			Unstuck:  unstuck,
-			Kept:     r.URL.Query().Get("kept") == "1",
-			Now:      at.Format("15:04"),
-			Day:      at.Format("Monday 2 January"),
+			In:             in,
+			Find:           find,
+			Shelf:          shelfNames[shelf],
+			Shelved:        shelved,
+			Opened:         openedStrip(r, s, personID, at),
+			Found:          whatMatched(r, s, personID, find, at),
+			Blockers:       blockers,
+			Unstuck:        unstuck,
+			UnstuckMinutes: unstuckMinutes,
+			Kept:           r.URL.Query().Get("kept") == "1",
+			Now:            at.Format("15:04"),
+			Day:            at.Format("Monday 2 January"),
 			// It notices without being asked. The press that spent this call
 			// went on 3 September 2026: a line that only appears when you ask
 			// for it is a thing you have to think of, and this product exists
@@ -484,6 +488,12 @@ var choreAnswers = []answerView{
 	{Act: "later", Words: "later", Key: "L", Look: "no"},
 }
 
+var heldAnswers = []answerView{
+	{Act: "waiting", Words: squirrel.HeldWords[squirrel.ItemWaiting], Key: "W"},
+	{Act: "blocked", Words: squirrel.HeldWords[squirrel.ItemBlocked], Key: "B"},
+	{Act: "someday", Words: squirrel.HeldWords[squirrel.ItemSomeday], Key: "Y"},
+}
+
 var leftWords = map[squirrel.ItemState]string{
 	squirrel.ItemDone:    "done",
 	squirrel.ItemKept:    "kept",
@@ -631,9 +641,12 @@ func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer str
 }
 
 var boardStates = map[string]squirrel.ItemState{
-	"done": squirrel.ItemDone,
-	"keep": squirrel.ItemKept,
-	"drop": squirrel.ItemDropped,
+	"done":    squirrel.ItemDone,
+	"keep":    squirrel.ItemKept,
+	"drop":    squirrel.ItemDropped,
+	"waiting": squirrel.ItemWaiting,
+	"blocked": squirrel.ItemBlocked,
+	"someday": squirrel.ItemSomeday,
 }
 
 // boardUndoHandler puts a strip back in the rack it left. The state it goes
@@ -820,6 +833,21 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
+		case "start":
+			if err := startFromOffer(s, r, personID); err != nil {
+				fail(w, err)
+				return
+			}
+		case "stop":
+			if err := s.StopTimer(r.Context(), personID); err != nil {
+				fail(w, err)
+				return
+			}
+		case "timer":
+			if err := startTimerFromTheLadder(r, s, personID); err != nil {
+				fail(w, err)
+				return
+			}
 		case "stuck":
 			why := r.FormValue("why")
 			if why == "" {
@@ -847,6 +875,22 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
+func startTimerFromTheLadder(r *http.Request, s Store, personID int64) error {
+	mins, err := strconv.Atoi(r.FormValue("minutes"))
+	if err != nil || mins < shortestTimer || mins > longestTimer {
+		return nil
+	}
+	label := strings.TrimSpace(r.FormValue("label"))
+	if label == "" {
+		label = "it"
+	}
+	if len(label) > choreNameLimit {
+		label = label[:choreNameLimit]
+	}
+	_, err = s.StartTimer(r.Context(), personID, label, time.Duration(mins)*time.Minute, now())
+	return err
+}
+
 func refuseTheOffer(r *http.Request, s Store, personID int64, kind squirrel.OfferKind, refID int64) error {
 	if !offerKinds[kind] {
 		return nil
@@ -855,18 +899,18 @@ func refuseTheOffer(r *http.Request, s Store, personID int64, kind squirrel.Offe
 }
 
 // stuckView is what the pulled strip says while you are stuck: the four answers
-// when nothing has been pressed, and one sentence when something has.
-func stuckView(asked string) (blockers []blockerView, said string) {
+func stuckView(asked string) (blockers []blockerView, said string, minutes int) {
 	if asked == "" {
-		return nil, ""
+		return nil, "", 0
 	}
 	if b, ok := squirrel.ParseBlocker(asked); ok {
-		return nil, squirrel.UnstuckFor(b).Line
+		u := squirrel.UnstuckFor(b)
+		return nil, u.Line, u.Minutes
 	}
 	for _, b := range squirrel.Blockers {
 		blockers = append(blockers, blockerView{Why: squirrel.BlockerWords[b], Words: squirrel.BlockerWords[b]})
 	}
-	return blockers, ""
+	return blockers, "", 0
 }
 
 type blockerView struct {
@@ -935,11 +979,40 @@ func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripV
 		v.Back = true
 		v.Mark = string(it.State)
 	case it.Kind == squirrel.ItemTask:
-		v.What, v.Answers = "task", taskAnswers
+		v.What, v.Answers, v.Held = "task", taskAnswers, heldAnswers
 	default:
-		v.Answers = noteAnswers
+		v.Answers, v.Held = noteAnswers, heldAnswers
 	}
+	v.Reword = r.URL.Query().Get("reword") == "1"
 	return v
+}
+
+func boardFixHandler(s Store, opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		personID, ok := personOf(r)
+		if !ok {
+			fail(w, errNoOwner)
+			return
+		}
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		text := strings.TrimSpace(r.FormValue("text"))
+		if err != nil || id < 1 || text == "" {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		if len(text) > captureLimit {
+			text = text[:captureLimit]
+		}
+		if _, err := s.Reword(r.Context(), personID, id, text); err != nil {
+			fail(w, err)
+			return
+		}
+		http.Redirect(w, r, "/?open="+strconv.FormatInt(id, 10), http.StatusSeeOther)
+	}
 }
 
 // boardChoreHandler makes a chore out of a note that already exists. The note is

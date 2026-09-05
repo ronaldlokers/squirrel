@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
@@ -155,8 +156,14 @@ func (store) TurnsBefore(_ context.Context, _ int64, room string, before int64, 
 func (store) OpenItemsAfter(_ context.Context, _, _ int64, _ int) ([]squirrel.Item, bool, error) {
 	return nil, false, nil
 }
-func (store) SearchItems(_ context.Context, _ int64, _ string, _ int) ([]squirrel.Item, bool, error) {
-	return nil, false, nil
+func (store) SearchItems(_ context.Context, _ int64, q string, _ int) ([]squirrel.Item, bool, error) {
+	out := []squirrel.Item{}
+	for _, it := range everything() {
+		if strings.Contains(strings.ToLower(it.RawText), strings.ToLower(q)) {
+			out = append(out, it)
+		}
+	}
+	return out, false, nil
 }
 func (store) InsertItem(_ context.Context, it squirrel.Item) (bool, error) {
 	keep(it)
@@ -218,7 +225,9 @@ func (store) StillHolding(_ context.Context, _, _ int64, _ time.Time) (bool, err
 	return false, nil
 }
 func (store) PickNow(_ context.Context, _ int64, _ time.Time, _ bool) (squirrel.Offer, bool, error) {
-	return squirrel.Offer{}, false, nil
+	return squirrel.Offer{
+		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
+	}, true, nil
 }
 func (store) Did(_ context.Context, _ int64, _ squirrel.Offer, _ time.Time) error { return nil }
 func (store) Refuse(_ context.Context, _ int64, _ squirrel.OfferKind, _ int64, _ time.Time) error {
@@ -232,7 +241,7 @@ func (store) StartTimer(_ context.Context, _ int64, _ string, _ time.Duration, _
 	return squirrel.Timer{}, nil
 }
 func (store) CurrentTimer(_ context.Context, _ int64) (squirrel.Timer, bool, error) {
-	return squirrel.Timer{}, false, nil
+	return squirrel.Timer{Label: "the kitchen", Started: now(), Ends: now().Add(6*time.Minute + 12*time.Second)}, true, nil
 }
 func (store) StopTimer(_ context.Context, _ int64) error       { return nil }
 func (store) ArmRamp(_ context.Context, _ int64, _ bool) error { return nil }

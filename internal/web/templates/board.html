@@ -51,9 +51,20 @@
         {{end}}
         <input type="hidden" name="act" value="stuck">
         {{else if not $.Unstuck}}
+        {{if eq .Kind "again"}}
+        <input type="hidden" name="minutes" value="10">
+        <input type="hidden" name="label" value="{{.Text}}">
+        <button class="stamp go" name="act" value="start">pick it up<span class="k">D</span></button>
+        <button class="stamp no" name="act" value="later">not now<span class="k">N</span></button>
+        {{else if not .Running}}
         <button class="stamp go" name="act" value="did">I'll do it<span class="k">D</span></button>
         <button class="stamp no" name="act" value="later">not today<span class="k">N</span></button>
         <button class="stamp no" name="act" value="stuck">I'm stuck<span class="k">S</span></button>
+        {{end}}
+        {{else if $.UnstuckMinutes}}
+        <input type="hidden" name="minutes" value="{{$.UnstuckMinutes}}">
+        <input type="hidden" name="label" value="{{.Text}}">
+        <button class="stamp go" name="act" value="timer">{{$.UnstuckMinutes}} MIN<span class="k">T</span></button>
         {{end}}
       </form>
     </div>
@@ -63,6 +74,10 @@
   <aside class="ticking">
     <span class="lbl">running</span>
     <span class="row"><span class="what">{{.Label}}</span><span class="left">{{.Left}}</span></span>
+    <form method="post" action="/board/now">
+      <input type="hidden" name="act" value="stop">
+      <button class="stopTimer" type="submit">stop</button>
+    </form>
   </aside>
   {{end}}
 </section>
@@ -90,6 +105,26 @@
           <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
           {{end}}
         </form>
+        {{if .Reword}}
+        <form class="reword" method="post" action="/board/fix">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <input class="wordfix" name="text" value="{{.Words}}" autocomplete="off" enterkeyhint="done">
+          <button class="stamp go" type="submit">say it this way<span class="k">R</span></button>
+        </form>
+        {{else}}
+        <p class="corrections">
+          <a class="stamp" href="/?open={{.ID}}&reword=1">say it another way<span class="k">R</span></a>
+        </p>
+        {{end}}
+        {{if .Held}}
+        <form class="stamps" method="post" action="/board/act">
+          <input type="hidden" name="what" value="{{.What}}">
+          <input type="hidden" name="id" value="{{.ID}}">
+          {{range .Held}}
+          <button class="stamp no" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
+          {{end}}
+        </form>
+        {{end}}
         {{end}}
         {{if .Back}}
         <form class="stamps" method="post" action="/board/undo">
