@@ -279,11 +279,12 @@ func StartOfDayIn(loc *time.Location, t time.Time) time.Time {
 	return startOfDay(t.In(loc))
 }
 
-// Refuse records a "not now" and is the only thing that suppresses an offer. It
-// does not touch the chore's clock: the picker's memory and the nudge's are two
-// budgets, and merging them would let one press silence the other surface.
 func (s *Store) Refuse(ctx context.Context, personID int64, kind OfferKind, refID int64, at time.Time) error {
 	return s.RecordAnswer(ctx, personID, kind, refID, AnswerLater, at)
+}
+
+func (s *Store) NotThisOne(ctx context.Context, personID int64, kind OfferKind, refID int64, at time.Time) error {
+	return s.RecordAnswer(ctx, personID, kind, refID, AnswerWrong, at)
 }
 
 // Did records the completion an offer produced, through whichever store call

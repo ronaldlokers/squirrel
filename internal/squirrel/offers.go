@@ -14,9 +14,10 @@ import (
 type OfferAnswer string
 
 const (
-	// AnswerLater is the only one that suppresses. It costs one press, it has
-	// no consequence, and it is never followed by a question.
+	// AnswerLater suppresses for the rest of the day. It costs one press, it
+	// has no consequence, and it is never followed by a question.
 	AnswerLater OfferAnswer = "later"
+	AnswerWrong OfferAnswer = "wrong"
 	// AnswerDid and AnswerStarted are recorded because they are free and
 	// because "did the picker actually cause anything" is worth being able to
 	// ask. Neither suppresses: a chore done is suppressed by its own clock, and
@@ -79,14 +80,15 @@ func (s *Store) RefusedSince(ctx context.Context, personID int64, kind OfferKind
 // could answer "how often has this been turned down", which is a sentence
 // about the person.
 //
-// Only 'later' suppresses. A completion is already invisible to the picker for
-// its own reasons — a chore's clock resets, a task's state changes — and
-// treating "did it" as a suppression would hide a daily chore the day after
-// you did it for a second, wrong reason.
+// Only 'later' and 'wrong' suppress. A completion is already invisible to the
+// picker for its own reasons — a chore's clock resets, a task's state changes
+// — and treating "did it" as a suppression would hide a daily chore the day
+// after you did it for a second, wrong reason.
 func (s *Store) Suppressed(ctx context.Context, personID int64, since time.Time) (map[string]bool, error) {
 	rows, err := s.pool.Query(ctx, `
 		select kind, coalesce(ref_id, 0) from offers
-		 where person_id = $1 and answered_at >= $2 and answer = 'later'`,
+		 where person_id = $1
+		   and answered_at >= $2 and answer in ('later', 'wrong')`,
 		personID, since)
 	if err != nil {
 		return nil, fmt.Errorf("reading refusals: %w", err)

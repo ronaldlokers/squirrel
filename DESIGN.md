@@ -764,9 +764,25 @@ product brighter than stock — with a 3px `orange-lit` ring, a 14px holder in t
 colour of the bay it came from, and its stamps down the right edge in a column.
 
 Above the words: the tag `PULLED` and, beside it in sentence case, the rule that
-chose it. Below them, its three answers — `I'll do it` in the orange every
+chose it. Below them, its answers — `I'll do it` in the orange every
 make-something stamp takes, `not today` and `I'm stuck` in the fill that does
-nothing to the world.
+nothing to the world, and — a chore or a task only — `not this one` beside them
+in the same fill.
+
+**`not today` and `not this one` are two different no's.** `not today` concedes
+the pick and asks again tomorrow: right thing, wrong moment. `not this one`
+does not concede it — the pick itself was wrong — and does not expire at
+midnight the way `not today` does; the picker's own memory of it has no time
+floor. Neither costs a model call: both are the picker's rules recording what
+they were told, the same write `not today` already made. Nowhere does either
+answer surface as a number — not on the strip, not in the margin, not
+anywhere — because a tally of wrong picks is exactly the report card Principle
+2 forbids.
+
+**`not this one` is a chore or a task only.** A fixed point is the world's
+business and cannot be the wrong pick; a running timer is what you are doing
+and has nothing to decide; the breadcrumb has its own two answers already. The
+fourth stamp exists only where the picker chose among rows of its own.
 
 **Being stuck asks, and then says one sentence.** Pressing `I'm stuck` replaces
 the three answers with the product's own four — *too big*, *don't know how*,
@@ -959,7 +975,7 @@ in a 2px-radius box at 70% opacity. Four fills:
 | `paper` | The neutral answer. |
 | `orange` | This makes something happen: I'll do it. |
 | `state-done-lifted` | Done, did it. |
-| `card-deep` | This does nothing to the world: not today, later, stop. |
+| `card-deep` | This does nothing to the world: not today, not this one, later, stop. |
 
 A stamp is always in the same place on the object it acts on, and always carries
 its key. There are no pill buttons in this product any more.

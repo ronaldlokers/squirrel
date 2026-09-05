@@ -59,6 +59,9 @@
         {{else if not .Running}}
         <button class="stamp go" name="act" value="did">I'll do it<span class="k">D</span></button>
         <button class="stamp no" name="act" value="later">not today<span class="k">N</span></button>
+        {{if or (eq .Kind "chore") (eq .Kind "task")}}
+        <button class="stamp no" name="act" value="wrong">not this one<span class="k">W</span></button>
+        {{end}}
         <button class="stamp no" name="act" value="stuck">I'm stuck<span class="k">S</span></button>
         {{end}}
         {{else if $.UnstuckMinutes}}

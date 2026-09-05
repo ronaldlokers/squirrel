@@ -53,7 +53,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		// fsynced there, so a row never points at a file that is not on the
 		// volume. An entry that fails after the bytes landed leaves litter, not a lost
 		// thought.
-		text, photo, kind, err := readCapture(r, opts)
+		text, photo, kind, key, err := readCapture(r, opts)
 		if err != nil {
 			// Said out loud: every way a capture could be refused used to be silent, so the
 			// only account of what went wrong was a sentence the reader could not act on.
@@ -103,6 +103,7 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 			ReceivedAt: time.Now(),
 			PhotoName:  photo,
 			PhotoType:  kind,
+			CaptureKey: key,
 		})
 		if err != nil {
 			// The words go back to the page: a capture box that clears on failure is a
@@ -211,18 +212,18 @@ func isKeptWording(reply string) bool {
 //
 // Invisible to every test, because the way to test an upload is with a small
 // file and a small file never touches the disk.
-func readCapture(r *http.Request, opts Options) (text, photo, kind string, err error) {
+func readCapture(r *http.Request, opts Options) (text, photo, kind, key string, err error) {
 	parts, err := r.MultipartReader()
 	if errors.Is(err, http.ErrNotMultipart) {
 		// Words alone, which is what the service worker's flush sends and what
 		// a browser sends from a form with no file on it.
 		if err := r.ParseForm(); err != nil {
-			return "", "", "", fmt.Errorf("reading what you said: %w", err)
+			return "", "", "", "", fmt.Errorf("reading what you said: %w", err)
 		}
-		return said(r.FormValue("text")), "", "", nil
+		return said(r.FormValue("text")), "", "", strings.TrimSpace(r.FormValue("key")), nil
 	}
 	if err != nil {
-		return "", "", "", fmt.Errorf("reading what you sent: %w", err)
+		return "", "", "", "", fmt.Errorf("reading what you sent: %w", err)
 	}
 
 	// By name rather than by position: the order of the parts is the order of
@@ -234,7 +235,7 @@ func readCapture(r *http.Request, opts Options) (text, photo, kind string, err e
 			break
 		}
 		if err != nil {
-			return text, photo, kind, fmt.Errorf("reading what you sent: %w", err)
+			return text, photo, kind, key, fmt.Errorf("reading what you sent: %w", err)
 		}
 
 		switch part.FormName() {
@@ -244,9 +245,16 @@ func readCapture(r *http.Request, opts Options) (text, photo, kind string, err e
 			raw, err := io.ReadAll(io.LimitReader(part, captureLimit+1))
 			_ = part.Close()
 			if err != nil {
-				return text, photo, kind, fmt.Errorf("reading what you said: %w", err)
+				return text, photo, kind, key, fmt.Errorf("reading what you said: %w", err)
 			}
 			text = said(string(raw))
+		case "key":
+			raw, err := io.ReadAll(io.LimitReader(part, 128))
+			_ = part.Close()
+			if err != nil {
+				return text, photo, kind, key, fmt.Errorf("reading the capture's key: %w", err)
+			}
+			key = strings.TrimSpace(string(raw))
 		case "photo":
 			// An empty file part is what a form with nothing chosen sends, and
 			// it is the ordinary case rather than a failure.
@@ -261,19 +269,19 @@ func readCapture(r *http.Request, opts Options) (text, photo, kind string, err e
 			declared := part.Header.Get("Content-Type")
 			if _, ok := squirrel.KnownKind(declared); !ok {
 				_ = part.Close()
-				return text, "", "", fmt.Errorf("%w: %q", errNotAPhotograph, declared)
+				return text, "", "", key, fmt.Errorf("%w: %q", errNotAPhotograph, declared)
 			}
 			photo, err = opts.Photos.Keep(part, declared)
 			_ = part.Close()
 			if err != nil {
-				return text, "", "", fmt.Errorf("%w: %w", errNotAPhotograph, err)
+				return text, "", "", key, fmt.Errorf("%w: %w", errNotAPhotograph, err)
 			}
 			kind = squirrel.PhotoKind(declared)
 		default:
 			_ = part.Close()
 		}
 	}
-	return text, photo, kind, nil
+	return text, photo, kind, key, nil
 }
 
 // said is the one thing done to what you typed: the whitespace a keyboard adds

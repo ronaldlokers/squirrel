@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,6 +19,29 @@ import (
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+type concurrencyProbe struct {
+	mu      sync.Mutex
+	current int
+	peak    int
+	sleep   time.Duration
+}
+
+func (p *concurrencyProbe) hit() {
+	if p == nil {
+		return
+	}
+	p.mu.Lock()
+	p.current++
+	if p.current > p.peak {
+		p.peak = p.current
+	}
+	p.mu.Unlock()
+	time.Sleep(p.sleep)
+	p.mu.Lock()
+	p.current--
+	p.mu.Unlock()
+}
 
 // choreRhythm is one call to SetChoreRhythm.
 type choreRhythm struct {
@@ -84,9 +109,10 @@ type fakeStore struct {
 	offer *squirrel.Offer
 	gated bool
 	// What the offer's buttons did.
-	answers    []string
-	refused    []int64
-	subscribed []string
+	answers     []string
+	refused     []int64
+	markedWrong []int64
+	subscribed  []string
 
 	// inserted is every note's words in the order they were stored; states is
 	// where each id ended up.
@@ -174,11 +200,16 @@ type fakeStore struct {
 		name  string
 		every time.Duration
 	}
+
+	probe        *concurrencyProbe
+	shelfReads   int32
+	byCaptureKey map[string]int64
 }
 
 var errTest = errors.New("connection refused")
 
 func (f *fakeStore) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, error) {
+	f.probe.hit()
 	if f.choresErr != nil {
 		return nil, f.choresErr
 	}
@@ -252,6 +283,7 @@ func (f *fakeStore) StartTimer(_ context.Context, _ int64, label string, d time.
 }
 
 func (f *fakeStore) CurrentTimer(_ context.Context, _ int64) (squirrel.Timer, bool, error) {
+	f.probe.hit()
 	if f.err != nil || f.timer == nil {
 		return squirrel.Timer{}, false, f.err
 	}
@@ -267,6 +299,7 @@ func (f *fakeStore) StopTimer(_ context.Context, _ int64) error {
 }
 
 func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	f.probe.hit()
 	if f.itemsErr != nil {
 		return nil, false, f.itemsErr
 	}
@@ -337,6 +370,7 @@ func (f *fakeStore) SearchItems(_ context.Context, _ int64, q string, limit int)
 }
 
 func (f *fakeStore) TriagedSince(_ context.Context, _ int64, _ time.Time) ([]squirrel.Item, error) {
+	f.probe.hit()
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -344,6 +378,8 @@ func (f *fakeStore) TriagedSince(_ context.Context, _ int64, _ time.Time) ([]squ
 }
 
 func (f *fakeStore) KeptItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
+	f.probe.hit()
+	atomic.AddInt32(&f.shelfReads, 1)
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -388,6 +424,7 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 // answers, because what the screen has to be tested for is what it does with an
 // offer and with the absence of one.
 func (f *fakeStore) PickNow(_ context.Context, _ int64, _ time.Time, showAnyway bool) (squirrel.Offer, bool, error) {
+	f.probe.hit()
 	if f.err != nil {
 		return squirrel.Offer{}, false, f.err
 	}
@@ -411,6 +448,15 @@ func (f *fakeStore) Refuse(_ context.Context, _ int64, kind squirrel.OfferKind, 
 	}
 	f.refused = append(f.refused, refID)
 	f.answers = append(f.answers, string(squirrel.AnswerLater)+":"+string(kind))
+	return nil
+}
+
+func (f *fakeStore) NotThisOne(_ context.Context, _ int64, kind squirrel.OfferKind, refID int64, _ time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	f.markedWrong = append(f.markedWrong, refID)
+	f.answers = append(f.answers, string(squirrel.AnswerWrong)+":"+string(kind))
 	return nil
 }
 
@@ -480,6 +526,7 @@ func (f *fakeStore) CheckinsSince(_ context.Context, _ int64, since time.Time) (
 }
 
 func (f *fakeStore) LatestCheckin(_ context.Context, _ int64) (squirrel.Checkin, bool, error) {
+	f.probe.hit()
 	if f.err != nil {
 		return squirrel.Checkin{}, false, f.err
 	}
@@ -511,6 +558,7 @@ func (f *fakeStore) ArchivedTasks(_ context.Context, _ int64, limit int) ([]squi
 }
 
 func (f *fakeStore) ofKind(k squirrel.ItemKind, st squirrel.ItemState, limit int) ([]squirrel.Item, bool, error) {
+	f.probe.hit()
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -545,6 +593,11 @@ func (f *fakeStore) InsertItemReturningID(ctx context.Context, i squirrel.Item) 
 		<-ctx.Done()
 		return 0, ctx.Err()
 	}
+	if i.CaptureKey != "" {
+		if id, ok := f.byCaptureKey[i.CaptureKey]; ok {
+			return id, nil
+		}
+	}
 	if f.kept != nil {
 		if f.kept.err != nil {
 			return 0, f.kept.err
@@ -564,10 +617,17 @@ func (f *fakeStore) InsertItemReturningID(ctx context.Context, i squirrel.Item) 
 		State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
 	}}, f.items...)
 	f.inserted = append(f.inserted, i.RawText)
+	if i.CaptureKey != "" {
+		if f.byCaptureKey == nil {
+			f.byCaptureKey = map[string]int64{}
+		}
+		f.byCaptureKey[i.CaptureKey] = id
+	}
 	return id, nil
 }
 
 func (f *fakeStore) ItemByID(_ context.Context, _ int64, id int64) (squirrel.Item, bool, error) {
+	f.probe.hit()
 	if f.err != nil {
 		return squirrel.Item{}, false, f.err
 	}
@@ -838,6 +898,8 @@ func (f *fakeStore) HoldItem(_ context.Context, _, itemID int64, state squirrel.
 }
 
 func (f *fakeStore) HeldItems(_ context.Context, _ int64, limit int) ([]squirrel.HeldItem, bool, error) {
+	f.probe.hit()
+	atomic.AddInt32(&f.shelfReads, 1)
 	if f.err != nil {
 		return nil, false, f.err
 	}
@@ -1130,6 +1192,7 @@ func (f *fakeStore) MomentByID(_ context.Context, _, id int64) (squirrel.Moment,
 }
 
 func (f *fakeStore) Upcoming(_ context.Context, _ int64, _ time.Time, _ int) ([]squirrel.Moment, error) {
+	f.probe.hit()
 	return f.upcoming, f.err
 }
 
@@ -1172,6 +1235,7 @@ func (f *fakeStore) AppendTurn(_ context.Context, _ int64, room string, t squirr
 }
 
 func (f *fakeStore) WhatWasSaid(_ context.Context, _ int64, limit int) ([]squirrel.Said, error) {
+	f.probe.hit()
 	if f.saidErr != nil {
 		return nil, f.saidErr
 	}
@@ -1204,6 +1268,7 @@ func (f *fakeStore) heardIn(room string) []squirrel.Turn {
 }
 
 func (f *fakeStore) WhatWasNoticed(_ context.Context, _ int64) ([]squirrel.Noticed, error) {
+	f.probe.hit()
 	if f.noticeErr != nil {
 		return nil, f.noticeErr
 	}
@@ -1574,6 +1639,7 @@ func (f *fakeStore) HushRamp(_ context.Context, _ int64, _ time.Time) error {
 // never learned a name for, which is what every screen looked like before
 // 30 August 2026 and what a person who signed in before it still looks like.
 func (f *fakeStore) WhoIs(_ context.Context, _ int64) (squirrel.Whom, error) {
+	f.probe.hit()
 	if f.err != nil {
 		return squirrel.Whom{}, f.err
 	}

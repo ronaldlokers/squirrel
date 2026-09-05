@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
@@ -141,42 +143,40 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		asking, _ := strconv.ParseInt(r.URL.Query().Get("chore"), 10, 64)
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
 		shelf := r.URL.Query().Get("shelf")
-		shelved := whatIsOnTheShelf(r, s, personID, shelf, at)
 		blockers, unstuck, unstuckMinutes := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
 			In:             in,
 			Find:           find,
 			Shelf:          shelfNames[shelf],
-			Shelved:        shelved,
-			Opened:         openedStrip(r, s, personID, at),
-			Found:          whatMatched(r, s, personID, find, at),
 			Blockers:       blockers,
 			Unstuck:        unstuck,
 			UnstuckMinutes: unstuckMinutes,
 			Kept:           r.URL.Query().Get("kept") == "1",
 			Now:            at.Format("15:04"),
 			Day:            at.Format("Monday 2 January"),
-			// It notices without being asked. The press that spent this call
-			// went on 3 September 2026: a line that only appears when you ask
-			// for it is a thing you have to think of, and this product exists
-			// to remove the thinking-of. The cache keys on the thing that was
-			// picked, so the cost is one call per thing offered rather than
-			// one per render, and the budget is what says no.
-			Pulled:  offerFor(s, r, false),
-			Timer:   runningTimer(s, opts, r),
-			Tray:    trayStrips(r, s, opts, personID, at),
-			Faces:   facesIfItIsTime(r, s, personID, at),
-			Bays:    baysIn(in, oneBayOnly(r, theBaysOf(r, s, opts, personID, at, asking))),
-			Telling: r.URL.Query().Get("told") == "1",
-			You:     youFor(r.Context(), s, personID),
+			Telling:        r.URL.Query().Get("told") == "1",
 		}
-		// One row is enough to mark the bell, and the whole list is only read
-		// when you are looking at it: this runs on every board render.
 		deep := 1
 		if v.Telling {
 			deep = boardDeep
 		}
-		v.Told = whatWasSaid(r, s, personID, at, deep)
+
+		var g errgroup.Group
+		g.Go(func() error { v.Shelved = whatIsOnTheShelf(r, s, personID, shelf, at); return nil })
+		g.Go(func() error { v.Opened = openedStrip(r, s, personID, at); return nil })
+		g.Go(func() error { v.Found = whatMatched(r, s, personID, find, at); return nil })
+		g.Go(func() error { v.Pulled = offerFor(s, r, false); return nil })
+		g.Go(func() error { v.Timer = runningTimer(s, opts, r); return nil })
+		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
+		g.Go(func() error { v.Faces = facesIfItIsTime(r, s, personID, at); return nil })
+		g.Go(func() error {
+			v.Bays = baysIn(in, oneBayOnly(r, theBaysOf(r, s, opts, personID, at, asking)))
+			return nil
+		})
+		g.Go(func() error { v.You = youFor(r.Context(), s, personID); return nil })
+		g.Go(func() error { v.Told = whatWasSaid(r, s, personID, at, deep); return nil })
+		_ = g.Wait()
+
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
@@ -321,20 +321,36 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.Time, asking int64) []bayView {
 	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
-	seen := whatWasNoticed(r, s, personID)
+
+	var (
+		seen                 map[string]squirrel.Noticed
+		settled              []settledView
+		notes, chores, tasks []stripView
+		agenda               []stripView
+		notesOK, moreNotes   bool
+		choresOK             bool
+		tasksOK, moreTasks   bool
+		agendaOK             bool
+	)
+	var g errgroup.Group
+	g.Go(func() error { seen = whatWasNoticed(r, s, personID); return nil })
+	if wantsBay(r, "notes") {
+		g.Go(func() error { settled = whatIsSettled(r, s, personID, at); return nil })
+	}
+	g.Go(func() error { notes, notesOK, moreNotes = noteStrips(r, s, personID, at); return nil })
+	g.Go(func() error { chores, choresOK = choreStrips(r, s, personID); return nil })
+	g.Go(func() error { tasks, tasksOK, moreTasks = taskStrips(r, s, personID, at); return nil })
+	g.Go(func() error { agenda, agendaOK = agendaStrips(r, s, personID, at); return nil })
+	_ = g.Wait()
+
 	askOn := coachAvailable(opts)
-	notes, notesOK, moreNotes := noteStrips(r, s, personID, at)
 	notes = marked(notes, "note", seen)
 	notes = askable(notes, "notes", askOn)
 	notes = marked(notes, "ask:note", seen)
-	settled := whatIsSettled(r, s, personID, at)
-	chores, choresOK := choreStrips(r, s, personID)
 	chores = askable(chores, "chores", askOn)
 	chores = marked(chores, "ask:chore", seen)
-	tasks, tasksOK, moreTasks := taskStrips(r, s, personID, at)
 	tasks = askable(tasks, "tasks", askOn)
 	tasks = marked(tasks, "ask:task", seen)
-	agenda, agendaOK := agendaStrips(r, s, personID, at)
 	agenda = askable(agenda, "at", askOn)
 	agenda = marked(agenda, "ask:moment", seen)
 	return []bayView{
@@ -368,6 +384,19 @@ func oneBayOnly(r *http.Request, bays []bayView) []bayView {
 		}
 	}
 	return bays
+}
+
+var boardBayKeys = map[string]bool{"notes": true, "chores": true, "tasks": true, "agenda": true}
+
+func wantsBay(r *http.Request, key string) bool {
+	if devDir == "" {
+		return true
+	}
+	only := strings.TrimSpace(r.URL.Query().Get("only"))
+	if only == "" || !boardBayKeys[only] {
+		return true
+	}
+	return only == key
 }
 
 // baysIn lights the rack you are standing in, which is only ever one and is the
@@ -833,6 +862,11 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
+		case "wrong":
+			if err := notThisOne(r, s, personID, kind, refID); err != nil {
+				fail(w, err)
+				return
+			}
 		case "start":
 			if err := startFromOffer(s, r, personID); err != nil {
 				fail(w, err)
@@ -898,6 +932,13 @@ func refuseTheOffer(r *http.Request, s Store, personID int64, kind squirrel.Offe
 	return s.Refuse(r.Context(), personID, kind, refID, now())
 }
 
+func notThisOne(r *http.Request, s Store, personID int64, kind squirrel.OfferKind, refID int64) error {
+	if !offerKinds[kind] {
+		return nil
+	}
+	return s.NotThisOne(r.Context(), personID, kind, refID, now())
+}
+
 // stuckView is what the pulled strip says while you are stuck: the four answers
 func stuckView(asked string) (blockers []blockerView, said string, minutes int) {
 	if asked == "" {
@@ -930,7 +971,7 @@ func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, errNoOwner)
 			return
 		}
-		text, photo, kind, err := readCapture(r, opts)
+		text, photo, kind, _, err := readCapture(r, opts)
 		if err != nil {
 			slog.Warn("a capture from the board was refused", "error", err)
 			fail(w, err)

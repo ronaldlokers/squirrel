@@ -148,30 +148,30 @@ type Item struct {
 	// PhotoName and PhotoType are the photograph this note carries, or empty.
 	// A note has at most one: a note that can carry five is an album, and an
 	// album is a thing you organise rather than glance at.
-	PhotoName string
-	PhotoType string
+	PhotoName  string
+	PhotoType  string
+	CaptureKey string
 }
 
 // InsertItemReturningID is InsertItem for the one caller that has to point at
 // the row afterwards: something decided outright is a task the moment it
 // exists, and marking it needs its id.
-//
-// No ON CONFLICT clause, because there is no external id to conflict on — this
-// row did not arrive from a transport, it was typed here.
 func (s *Store) InsertItemReturningID(ctx context.Context, i Item) (int64, error) {
 	const q = `
 		insert into items (
 			transport, external_id, conversation_id, sender_id,
 			person_id, raw_text, payload, received_at,
-			attachment_path, attachment_type
-		) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			attachment_path, attachment_type, capture_key
+		) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		on conflict (capture_key) where capture_key is not null
+		do update set capture_key = items.capture_key
 		returning id`
 
 	var id int64
 	if err := s.pool.QueryRow(ctx, q,
 		i.Transport, i.ExternalID, i.ConversationID, i.SenderID,
 		i.PersonID, i.RawText, []byte(i.Payload), i.ReceivedAt,
-		nilIfEmpty(i.PhotoName), nilIfEmpty(i.PhotoType),
+		nilIfEmpty(i.PhotoName), nilIfEmpty(i.PhotoType), nilIfEmpty(i.CaptureKey),
 	).Scan(&id); err != nil {
 		return 0, fmt.Errorf("inserting item: %w", err)
 	}
