@@ -22,8 +22,9 @@ plan.
 ## Shipped
 
 Full release history moved to `docs/releases/`, split by month
-(`2026-08.md`, `2026-09.md`) — this file tracks state, not history. As of
-5 September 2026 the current release is **v0.72.0**, live in both clusters.
+(`2026-08.md`, `2026-09.md`) — this file tracks state, not history. The newest
+entry in `docs/releases/` is the release that has been cut; what is running is
+whatever tag `homelab` has pinned, which is the only place that knows.
 
 ---
 
