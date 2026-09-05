@@ -372,6 +372,63 @@ as long as the page it was on.
 deletion itself: 137 references to `/pile` across 39 test files plus 54 to its
 sub-screens.
 
+### v0.72.0 — 5 September 2026
+
+**The board takes the room, and the record keeps what it keeps.**
+
+Phases A to D of the conversation retiring into the board — the decision made on
+3 September, specced on 5 September, and now four fifths built.
+
+**A strip can be asked about.** A press, never a box: the ask is a stamp on the
+strip and the answer is a line under it, in marginalia's own slot with the same
+rule above it and the same *not useful* at its end. The board speaks in the
+margin and it speaks there once. A field that asked a question would be the
+general AI chat companion this product refused, moved onto the board and given a
+different name.
+
+That was phase A's whole purpose — to find out cheaply whether an answer reads
+well under a strip before four more phases were built on the assumption. It
+does. It is indistinguishable from an ambient line on the strip above it, which
+is the point.
+
+**The ladder's one control is drawn**, and the timer can be started and stopped
+without leaving the board. Two of the four answers to *I can't start* offer a
+short timer and the sentence had been appearing with nothing under it, so the
+only way to take the offer was the room.
+
+**Two states the room got right and the board did not.** A running timer's offer
+drew *I'll do it* — a question already answered — and the breadcrumb drew the
+same generic three instead of *pick it up* and *not now*. Both were live and
+both are fixed.
+
+**The opened strip corrects itself.** *Say it another way* changes the sentence
+and nothing else: not the hour it arrived, not its state, not its place. Still
+unversioned, and still something no model may do — rewriting your own words is a
+refused tool, and nothing in `internal/coach` implements one. The three states
+you cannot act on sit under the ordinary answers, on the opened strip only.
+
+**Search was already there**, from #240, and was verified rather than rebuilt.
+
+**The retention horizon is dropped.** It shipped in v0.71.0 stated in the schema
+and nothing ever applied it, which made it a promise the product did not keep.
+The record is kept forever on purpose — it is what lets *it was tactless* be
+told apart from *I remember it as tactless*. `!unsay` stays, because dropping
+one exchange you regret was never the same question.
+
+**A photograph can be checked without a shell.** The restore drill could not
+compare a restored file against the live one: the image is distroless and the
+claim is held by the running pod. `/photo/{id}/checksum` lets the app answer for
+its own volume, behind the same guard and scoped to the same person, and never
+the bytes.
+
+**And in `homelab`:** the generic restore drill that had been failing since
+30 August was fixed — its point-in-time target raced the backup window and lost,
+because 05:00 local is 03:00 UTC in summer and the backups run on UTC cron. Its
+teardown had also been turning claims into `Released` volumes for three months,
+because the storage class is `Retain` by design; 29 of them were cleaned up. The
+labels this repository used to select backup jobs turned out to select nothing
+at all, and are gone.
+
 ### v0.71.0 — 5 September 2026
 
 **The edges are bounded and quiet, and the board answers the press you made.**
