@@ -32,12 +32,17 @@
       {{if eq .What "note"}}
       <button class="stamp" type="submit" formmethod="get" formaction="/" name="chore" value="{{.ID}}">make a chore<span class="k">C</span></button>
       {{end}}
-      {{if .Room}}
+    </form>
+    {{if .Room}}
+    <form class="asking" method="post" action="/board/ask">
+      <input type="hidden" name="what" value="{{.What}}">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <input type="hidden" name="bay" value="{{$.Bay}}">
       <input type="hidden" name="room" value="{{.Room}}">
       <input type="hidden" name="words" value="{{.Words}}">
-      <button class="stamp" type="submit" formmethod="post" formaction="/board/ask">ask about this</button>
-      {{end}}
+      <button class="quiet">ask Buddy</button>
     </form>
+    {{end}}
     {{end}}
   </div>
   {{if .Back}}
