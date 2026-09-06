@@ -570,21 +570,9 @@ a.stamp { text-decoration: none; }
 }
 
 .baytabs { display: none; }
-.quicknote { display: none; }
 
 @media (max-width: 620px) {
   :root { --foot: max(10px, calc(env(safe-area-inset-bottom) - 8px)); }
-  .quicknote {
-    display: block; flex: 0 0 auto;
-    padding: 8px; background: rgba(28, 17, 11, .2);
-    border: var(--line) solid rgba(254, 214, 167, .26); border-radius: var(--r);
-  }
-  .quicklead {
-    margin: 0 2px 6px; color: rgba(254, 214, 167, .8); font-size: 10.5px;
-    letter-spacing: .08em; text-transform: uppercase;
-    font-variation-settings: var(--precise), "wght" 750;
-  }
-  .quicknote .blankstrip { margin: 0; }
   .deck { padding-bottom: calc(var(--foot) + 80px); }
   .tray { margin-bottom: calc(var(--foot) + 82px); }
   .baytabs {

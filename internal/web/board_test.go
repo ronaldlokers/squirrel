@@ -269,25 +269,6 @@ func TestTheNotesAreTheBayYouLandIn(t *testing.T) {
 	require.Contains(t, body, `class="rack in" data-bay="notes"`)
 }
 
-func TestEveryBayButTheNotesCarriesAQuickNote(t *testing.T) {
-	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores", nil).Body.String()
-	start := strings.Index(body, `class="quicknote"`)
-	require.GreaterOrEqual(t, start, 0, "the chores tab carries no quick note")
-	end := strings.Index(body, `<section class="rack`)
-	require.Greater(t, end, start, "the quick note is not ahead of the racks")
-	quick := body[start:end]
-
-	require.Contains(t, quick, `value="notes"`, "the quick note does not land in the notes")
-	require.Contains(t, quick, `placeholder="what is it"`, "the quick note asks a different question than the notes do")
-}
-
-func TestTheNotesCarryNoSecondQuickNote(t *testing.T) {
-	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=notes", nil).Body.String()
-
-	require.NotContains(t, body, `class="quicknote"`,
-		"the notes offer their own box twice, once for no reason")
-}
-
 // A press in a bay comes back to that bay. Answering a chore on a phone and
 // being returned to the notes is the board losing your place, which on this
 // surface is the whole complaint the redesign started from.

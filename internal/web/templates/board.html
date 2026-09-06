@@ -241,12 +241,6 @@
 </main>
 {{else}}
 <main class="racks">
-  {{if and (eq (index .Bays 0).Key "notes") (not (index .Bays 0).In)}}
-  <div class="quicknote">
-    <p class="quicklead">always a note, wherever you are</p>
-    {{template "blankstrip" (index .Bays 0)}}
-  </div>
-  {{end}}
   {{range $bay := .Bays}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>

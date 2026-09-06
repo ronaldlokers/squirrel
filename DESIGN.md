@@ -892,6 +892,17 @@ instead: the words come back into the field they were typed in, with the
 question under them, and the interval or the day and time beside it are the
 answer.
 
+**One box per rack, and never a second.** A note box was pinned above every
+phone tab but the notes for four days in September 2026, so a thought typed on
+the chores tab could not become a weekly chore by accident. It is gone. Two
+boxes on one screen, asking different questions, is the same decision it was
+meant to spare you — made twice instead of once, and with a label explaining
+which is which.
+
+The problem it was aimed at is real and is not solved by this removal: the
+chores field defaults to every seven days, so words it was not expecting still
+become a rhythm. That is a thing for the field to fix, not the screen.
+
 **A rhythm is any number of days, weeks or months.** It is asked for on the
 strip, as a number and a unit. Four preset chips stood under the field until
 v0.68.0 and were removed there: with the interval already on the strip they said
