@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -26,7 +27,11 @@ func stepFor(s Store, opts Options, r *http.Request) *stepView {
 		return nil
 	}
 	st, found, err := s.NextStep(r.Context(), personID)
-	if err != nil || !found {
+	if err != nil {
+		slog.Error("reading the step in progress", "error", err)
+		return nil
+	}
+	if !found {
 		return nil
 	}
 	return &stepView{ID: st.ID, Label: st.Label, Body: st.Body, Last: st.Last}
@@ -38,7 +43,11 @@ func stepForItem(s Store, r *http.Request, itemID int64) *stepView {
 		return nil
 	}
 	st, found, err := s.NextStep(r.Context(), personID)
-	if err != nil || !found || st.ItemID == nil || *st.ItemID != itemID {
+	if err != nil {
+		slog.Error("reading the step in progress", "error", err)
+		return nil
+	}
+	if !found || st.ItemID == nil || *st.ItemID != itemID {
 		return nil
 	}
 	return &stepView{ID: st.ID, Label: st.Label, Body: st.Body, Last: st.Last}
