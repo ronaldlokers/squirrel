@@ -125,6 +125,21 @@
       });
   }
 
+  (() => {
+    const out = document.querySelector('form[action="/auth/out"]');
+    if (!out || !("indexedDB" in window)) return;
+
+    let going = false;
+    out.addEventListener("submit", event => {
+      if (going) return;
+      event.preventDefault();
+      const done = () => { going = true; out.submit(); };
+      const gone = indexedDB.deleteDatabase("squirrel-photo");
+      gone.onsuccess = gone.onerror = gone.onblocked = done;
+      setTimeout(done, 2000);
+    });
+  })();
+
   // Where to reach you when you are not looking at the screen.
   //
   // Only asked for after you press the button, and the button only exists when
