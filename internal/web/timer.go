@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -37,7 +38,11 @@ func runningTimer(s Store, opts Options, r *http.Request) *timerView {
 		return nil
 	}
 	t, found, err := s.CurrentTimer(r.Context(), personID)
-	if err != nil || !found {
+	if err != nil {
+		slog.Error("reading the timer", "error", err)
+		return nil
+	}
+	if !found {
 		return nil
 	}
 	left := t.Left(now())
