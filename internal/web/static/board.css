@@ -529,7 +529,7 @@ a.stamp { text-decoration: none; }
 .strip.blank.asit .dd, .strip.blank.asit .mo,
 .strip.blank.asit .hh, .strip.blank.asit .mm { width: 22px; text-align: center; }
 .strip.blank.asit .slash, .strip.blank.asit .colon { color: var(--ink-soft); font-size: 12px; }
-.strip.blank.asit .count::placeholder { color: var(--placeholder); }
+.strip.blank .count::placeholder { color: var(--placeholder); }
 .strip.blank.asit .count {
   width: auto; min-height: 22px; padding: 1px 3px; text-align: left; font-size: 12px;
   background: none; color: var(--ink-soft);
