@@ -1152,6 +1152,27 @@ who replies. Principle 8 draws the line between what the rules produced and what
 a model wrote, and a press that is about to spend a model call is the moment to
 say which side of that line the sentence will come from.
 
+**The letters belong to the strip you are focused in, whatever kind it is.**
+Every strip that draws a key letter answers to it: the rack's rows, the opened
+strip, the pulled strip, the shelf. Until 7 September 2026 only the rack's rows
+did — the dispatch asked for `.strip.answerable`, which the other three are not
+— so D, K, X, R, W, B, Y on the opened strip, D, N, W, S, T on the pulled strip
+and Z on the shelf were drawn and did nothing. A key hint that lies is worse
+than no hint: it teaches you a way of working that stops working when you move.
+
+**An answer you asked for is something you are sent to.** Asking is a whole page
+load, so nothing on the client can announce what happened before it. The answer
+carries `tabindex="-1"` on the one strip you just asked about and focus is moved
+there — a screen reader reads it out, and a keyboard is left standing where the
+new thing is rather than at the top of the board. Only on the draw that follows
+the press: every later draw leaves focus alone, because being sent back to
+yesterday's answer on every page load is the same noise from the other side.
+
+**Every field says what it is.** A field with no label, no `aria-label` and no
+placeholder is an unnamed edit field to a screen reader, and the visible context
+that would have explained it is a page load ago. `.wordfix` — the only way left
+to correct a strip's wording — had none.
+
 **The answer comes back in marginalia's own line.** Same rule above it, same
 muted ink, same *not useful* at its end. That is the whole of the decision: the
 board speaks in the margin, and it speaks there once. A second register — a

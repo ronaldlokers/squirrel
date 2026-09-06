@@ -94,17 +94,18 @@ type stripView struct {
 	Photo bool
 	// Rhythms is the four intervals, on the one note that was asked how often
 	// it comes back.
-	Rhythms []rhythmView
-	ID      int64
-	What    string
-	Words   string
-	Mark    string
-	Big     bool
-	Answers []answerView
-	Room    string
-	Held    []answerView
-	Reword  bool
-	Step    *stepView
+	Rhythms  []rhythmView
+	ID       int64
+	What     string
+	Words    string
+	Mark     string
+	Big      bool
+	Answers  []answerView
+	Room     string
+	Held     []answerView
+	Reword   bool
+	Answered bool
+	Step     *stepView
 }
 
 type rhythmView struct {
@@ -327,6 +328,7 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	refused := r.URL.Query().Has("nophoto")
 	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
 	offline := r.URL.Query().Get("offline") == "1"
+	justAsked, _ := strconv.ParseInt(r.URL.Query().Get("answered"), 10, 64)
 
 	var (
 		seen                 map[string]squirrel.Noticed
@@ -352,13 +354,13 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	askOn := coachAvailable(opts)
 	notes = marked(notes, "note", seen)
 	notes = askable(notes, "notes", askOn)
-	notes = marked(notes, "ask:note", seen)
+	notes = answered(marked(notes, "ask:note", seen), justAsked)
 	chores = askable(chores, "chores", askOn)
-	chores = marked(chores, "ask:chore", seen)
+	chores = answered(marked(chores, "ask:chore", seen), justAsked)
 	tasks = askable(tasks, "tasks", askOn)
-	tasks = marked(tasks, "ask:task", seen)
+	tasks = answered(marked(tasks, "ask:task", seen), justAsked)
 	agenda = askable(agenda, "at", askOn)
-	agenda = marked(agenda, "ask:moment", seen)
+	agenda = answered(marked(agenda, "ask:moment", seen), justAsked)
 	return []bayView{
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
 			Camera: opts.Photos != nil, Trouble: !notesOK, More: moreNotes,
@@ -1302,6 +1304,18 @@ func marked(strips []stripView, kind string, seen map[string]squirrel.Noticed) [
 	return strips
 }
 
+func answered(strips []stripView, id int64) []stripView {
+	if id == 0 {
+		return strips
+	}
+	for i := range strips {
+		if strips[i].ID == id && strips[i].Seen != "" {
+			strips[i].Answered = true
+		}
+	}
+	return strips
+}
+
 func askable(strips []stripView, room string, on bool) []stripView {
 	if !on {
 		return strips
@@ -1371,6 +1385,11 @@ func boardAskHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
+		back := backToTheBay(r)
+		sep := "&"
+		if !strings.Contains(back, "?") {
+			sep = "?"
+		}
+		http.Redirect(w, r, back+sep+"answered="+strconv.FormatInt(id, 10), http.StatusSeeOther)
 	}
 }

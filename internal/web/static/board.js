@@ -23,6 +23,10 @@
     return document.activeElement && document.activeElement.closest(".strip.answerable");
   };
 
+  var keyable = function () {
+    return document.activeElement && document.activeElement.closest(".strip, .pulled");
+  };
+
   var openerIn = function (strip) {
     return strip.querySelector(".opener");
   };
@@ -99,12 +103,11 @@
     var typing = e.target.matches("input, textarea, select");
     if (typing) return;
 
-    var all = strips();
-    if (!all.length) return;
-    var here = focused();
-
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      var all = strips();
+      if (!all.length) return;
       e.preventDefault();
+      var here = focused();
       var at = here ? all.indexOf(here) : -1;
       var next = e.key === "ArrowDown" ? at + 1 : at - 1;
       if (next < 0) next = 0;
@@ -114,10 +117,11 @@
     }
 
     if (e.key.length !== 1) return;
-    if (!here) return;
+    var where = keyable();
+    if (!where) return;
     var letter = e.key.toUpperCase();
-    if (byPress) show(here);
-    var stamps = [].slice.call(here.querySelectorAll(".stamp"));
+    if (byPress && where.classList.contains("answerable")) show(where);
+    var stamps = [].slice.call(where.querySelectorAll(".stamp"));
     for (var i = 0; i < stamps.length; i++) {
       var key = stamps[i].querySelector(".k");
       if (key && key.textContent.trim().toUpperCase() === letter) {
@@ -127,6 +131,9 @@
       }
     }
   });
+
+  var landed = document.getElementById("justanswered");
+  if (landed) landed.focus();
 
   var announce = function (text) {
     var region = document.getElementById("announce");
