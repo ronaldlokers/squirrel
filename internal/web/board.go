@@ -65,6 +65,7 @@ type bayView struct {
 	Writes   bool
 	Rhythms  []rhythmView
 	Asking   string
+	Refused  bool
 	Settled  []settledView
 	Strips   []stripView
 }
@@ -322,6 +323,8 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.Time, asking int64) []bayView {
 	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
+	refused := r.URL.Query().Has("nophoto")
+	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
 
 	var (
 		seen                 map[string]squirrel.Noticed
@@ -358,7 +361,7 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
 			Camera: opts.Photos != nil, Trouble: !notesOK, More: moreNotes,
 			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
-			Settled: settled},
+			Asking: saidAnyway, Refused: refused, Settled: settled},
 		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
 			Rhythms: theRhythms, Trouble: !choresOK, Asking: rhythmFor,
 			Empty: "nothing comes back today", Strips: chores},
@@ -997,6 +1000,9 @@ func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 		text, photo, kind, _, err := readCapture(r, opts)
 		if err != nil {
 			slog.Warn("a capture from the board was refused", "error", err)
+			if refusedPhotograph(w, r, err, text) {
+				return
+			}
 			fail(w, err)
 			return
 		}
