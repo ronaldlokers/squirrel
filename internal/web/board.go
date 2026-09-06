@@ -142,7 +142,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			http.Error(w, "who are you", http.StatusForbidden)
 			return
 		}
-		at := now()
+		at := now().In(zoneOf(r.Context()))
 		in := r.URL.Query().Get("bay")
 		asking, _ := strconv.ParseInt(r.URL.Query().Get("chore"), 10, 64)
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
