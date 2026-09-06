@@ -115,7 +115,7 @@
         {{if .Reword}}
         <form class="reword" method="post" action="/board/fix">
           <input type="hidden" name="id" value="{{.ID}}">
-          <input class="wordfix" name="text" value="{{.Words}}" autocomplete="off" enterkeyhint="done">
+          <input class="wordfix" name="text" value="{{.Words}}" autocomplete="off" enterkeyhint="done" aria-label="say it another way">
           <button class="stamp go" type="submit">say it this way<span class="k">R</span></button>
         </form>
         {{else}}

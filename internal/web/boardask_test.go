@@ -58,7 +58,7 @@ func TestPressingAskQuestionsTheModelAboutThatStripAndNarrowsTheRoom(t *testing.
 	})
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/?bay=notes", w.Header().Get("Location"))
+	require.Equal(t, "/?bay=notes&answered=1", w.Header().Get("Location"))
 	require.Len(t, c.asked, 1, "the press should have asked exactly once")
 	got := c.asked[0]
 	require.Equal(t, "strip", got.kind)
@@ -263,4 +263,42 @@ func TestRefusingANoticeIsQuietAndLowercase(t *testing.T) {
 
 	require.NotContains(t, block, "text-transform: uppercase",
 		"not useful is drawn in caps, and the law says quiet and lowercase")
+}
+
+func TestTheAnswerIsSomethingAScreenReaderIsSentTo(t *testing.T) {
+	c := &fakeCoach{reply: "This is the third note about that boiler."}
+	f := aRackWithoutAgenda()
+	m := mountedWith(t, f, c)
+
+	w := post(t, m, "/board/ask", url.Values{
+		"id": {"1"}, "what": {"note"}, "bay": {"notes"}, "room": {"notes"},
+		"words": {"boiler service code is 4471"},
+	})
+	require.Equal(t, "/?bay=notes&answered=1", w.Header().Get("Location"))
+
+	body := m.call(t, "GET", w.Header().Get("Location"), nil).Body.String()
+	require.Contains(t, body, `<div class="seen" id="justanswered" tabindex="-1">This is the third note about that boiler.`,
+		"nothing on the page can be moved to, so the answer arrives in silence")
+
+	quiet := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	require.NotContains(t, quiet, "justanswered",
+		"every later draw of the board sends you back to the same answer")
+}
+
+func TestTheAnswerOfAStripYouDidNotAskAboutIsNotTheOneSentTo(t *testing.T) {
+	c := &fakeCoach{reply: "one thing at a time"}
+	f := aRackWithoutAgenda()
+	m := mountedWith(t, f, c)
+
+	post(t, m, "/board/ask", url.Values{
+		"id": {"1"}, "what": {"note"}, "bay": {"notes"}, "room": {"notes"},
+		"words": {"boiler service code is 4471"},
+	})
+	post(t, m, "/board/ask", url.Values{
+		"id": {"3"}, "what": {"task"}, "bay": {"tasks"}, "room": {"tasks"},
+		"words": {"vet about the booster"},
+	})
+
+	body := m.call(t, "GET", "/?bay=notes&answered=1", nil).Body.String()
+	require.Equal(t, 1, strings.Count(body, "justanswered"))
 }
