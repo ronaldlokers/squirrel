@@ -906,6 +906,12 @@ weekly chore rather than a question. Seven is a placeholder now — it shows the
 shape of the answer and sends nothing — so a chore typed with no rhythm is
 asked about, like every other thing the board will not guess at.
 
+The hint takes `--placeholder`, the colour every other blank strip already uses.
+The rule for it was written `.strip.blank.asit .count::placeholder`, narrowed to
+the agenda because the agenda's day and clock were the only counts with a hint;
+it is `.strip.blank .count::placeholder` now. Left alone the browser draws its
+own grey, which is 3.98:1 on this field and fails the contrast sweep.
+
 **A rhythm is any number of days, weeks or months.** It is asked for on the
 strip, as a number and a unit. Four preset chips stood under the field until
 v0.68.0 and were removed there: with the interval already on the strip they said
