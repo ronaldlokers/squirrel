@@ -193,6 +193,22 @@ it is kept, and it is held on the device the moment it is picked — choosing on
 hands the screen to another app, and an app handed away can be reclaimed before
 it comes back. Capture is sacred one layer further out than it used to be.
 
+**What the browser holds, and for how long.** Two stores, and they expire on
+opposite rules because one is a copy and one is the original.
+
+The photograph you picked but never kept is a copy of a file you still have. It
+is dropped when you sign out, and nothing else on the device would ever have
+cleared it.
+
+Words held because there was no network are the only copy there is. Each one is
+deleted the moment its own write lands, and every page load tries; one that
+cannot be delivered stays, through sign-out and for as long as it takes. There
+is no expiry and there must not be one — a capture deleted to keep a browser
+profile tidy is exactly the loss the queue exists to prevent, and principle 1
+has no exception for housekeeping. The cost is stated rather than discovered:
+until it lands, a thought captured offline is plaintext in that browser's
+profile.
+
 They live on a volume beside the pod rather than in object storage: this
 cluster has none, and adding some would mean a service to patch, back up and
 keep alive for one feature. What that costs is stated rather than discovered —
