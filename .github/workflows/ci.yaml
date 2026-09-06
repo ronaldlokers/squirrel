@@ -107,12 +107,37 @@ jobs:
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - name: Build for this architecture
+      # Both architectures, every run, and each one is started.
+      #
+      # Only the runner architecture was built here until 7 September 2026, and
+      # the only multi-arch step is the push below, gated on a tag. Production
+      # is arm64 only, so an arm64 break was first discovered during the
+      # release, after the tag existed and the image was being pushed.
+      #
+      # Cheap now that the Dockerfile cross-compiles: the toolchain stays
+      # native and only the target changes. Starting each image is the second
+      # half — a build proves it compiles, `docker run` proves it executes.
+      - name: Build for amd64
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
+          platforms: linux/amd64
           load: true
-          tags: squirrel:ci
+          tags: squirrel:ci-amd64
+
+      - name: It starts on amd64
+        run: .github/scripts/it-starts.sh squirrel:ci-amd64 linux/amd64
+
+      - name: Build for arm64
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+          tags: squirrel:ci-arm64
+
+      - name: It starts on arm64
+        run: .github/scripts/it-starts.sh squirrel:ci-arm64 linux/arm64
 
       - name: Log in to ghcr
         if: startsWith(github.ref, 'refs/tags/v')
