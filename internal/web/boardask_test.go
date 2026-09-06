@@ -29,7 +29,7 @@ func aRackWithoutAgenda() *fakeStore {
 func TestWithNoCoachTheBoardOffersNoWayToAsk(t *testing.T) {
 	body := mounted(t, aRackWithoutAgenda()).call(t, "GET", "/board", nil).Body.String()
 
-	require.NotContains(t, body, "ask about this",
+	require.NotContains(t, body, "ask Buddy",
 		"a board with no coach must draw exactly as it did before this feature")
 	require.NotContains(t, body, `action="/board/ask"`)
 }
@@ -37,7 +37,7 @@ func TestWithNoCoachTheBoardOffersNoWayToAsk(t *testing.T) {
 func TestWithACoachEveryLiveStripCanBeAsked(t *testing.T) {
 	body := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{}).call(t, "GET", "/board", nil).Body.String()
 
-	require.Equal(t, 3, strings.Count(body, "ask about this"),
+	require.Equal(t, 3, strings.Count(body, "ask Buddy"),
 		"one press per live strip: two notes worth (a note and a task) and a chore")
 }
 
@@ -234,4 +234,33 @@ func TestPressingAskWithNoWordsCallsNoModel(t *testing.T) {
 
 	require.Equal(t, 303, w.Code)
 	require.Empty(t, c.asked)
+}
+
+func TestTheAskPressIsNotDrawnAsADisposition(t *testing.T) {
+	body := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{}).call(t, "GET", "/board", nil).Body.String()
+
+	require.NotContains(t, body, `formaction="/board/ask"`,
+		"the press rides the dispositions' own form, so it is struck like one")
+	require.Contains(t, body, `<form class="asking" method="post" action="/board/ask">`)
+	require.Contains(t, body, `<button class="quiet">ask Buddy</button>`)
+	require.NotContains(t, body, `class="stamp" type="submit" formmethod="post" formaction="/board/ask"`)
+
+	for _, line := range strings.Split(body, "\n") {
+		if strings.Contains(line, "ask Buddy") {
+			require.NotContains(t, line, "stamp",
+				"the ask press is drawn in the dispositions' register")
+			require.NotContains(t, line, `class="k"`,
+				"the ask press advertises a key letter")
+		}
+	}
+}
+
+func TestRefusingANoticeIsQuietAndLowercase(t *testing.T) {
+	css := mounted(t, aBoardStore()).call(t, "GET", "/static/board.css", nil).Body.String()
+	at := strings.Index(css, ".strip .seen .off {")
+	require.GreaterOrEqual(t, at, 0)
+	block := css[at : at+strings.Index(css[at:], "}")]
+
+	require.NotContains(t, block, "text-transform: uppercase",
+		"not useful is drawn in caps, and the law says quiet and lowercase")
 }

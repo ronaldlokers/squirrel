@@ -1128,12 +1128,29 @@ the things, and it never instructs and never asks.
 of the line, quiet and lowercase. The words are kept, not deleted, and the next
 pass is shown them as something not to write again.
 
+The markup said it and the stylesheet did not: `.strip .seen .off` carried
+`text-transform: uppercase` with tracking and 750 weight until 7 September 2026,
+so the one control the person has over what the board says about them was drawn
+louder than the sentence it refuses.
+
 ### Asking about a strip, and the answer in the same margin
 
-A strip carries one more stamp, *ask about this*, drawn as paper stock beside
-the answers rather than as anything louder — it is not a disposition, and it
-must not read like one. It is only there when a coach is configured: with no
-key the stamp does not exist, and the board is what it was.
+A strip carries one more press, *ask Buddy*, drawn as paper stock beside the
+answers rather than as anything louder — it is not a disposition, and it must
+not read like one. It is only there when a coach is configured: with no key the
+press does not exist, and the board is what it was.
+
+It shipped as a fifth stamp on 5 September 2026: same caps, same outline, same
+cast as *done* and *drop*, riding the dispositions' own form — so it was struck
+like one when pressed, and the row read as five things you could do to the
+strip. It is its own form now, in the quiet register: underlined ink, no
+outline, no cast, no key letter. The keyboard letters belong to the answers,
+and this is not an answer.
+
+**It says who answers.** *ask about this* named the strip; *ask Buddy* names
+who replies. Principle 8 draws the line between what the rules produced and what
+a model wrote, and a press that is about to spend a model call is the moment to
+say which side of that line the sentence will come from.
 
 **The answer comes back in marginalia's own line.** Same rule above it, same
 muted ink, same *not useful* at its end. That is the whole of the decision: the

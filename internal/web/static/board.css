@@ -203,9 +203,9 @@ body {
 .strip .seen form { display: inline; margin-left: 7px; }
 .strip .seen .off {
   padding: 0; background: none; border: 0; cursor: pointer;
-  color: rgba(88, 65, 61, .7); font: inherit;
-  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-  font-variation-settings: var(--precise), "wght" 750;
+  color: rgba(88, 65, 61, .82); font: inherit;
+  font-size: 12px;
+  font-variation-settings: var(--precise), "wght" 640;
 }
 .strip .seen .off:hover { color: var(--outline); }
 .strip .seen .off:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
