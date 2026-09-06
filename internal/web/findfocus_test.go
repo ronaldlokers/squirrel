@@ -27,12 +27,3 @@ func TestBrowserTheFindFieldShowsItIsFocused(t *testing.T) {
 	require.Equal(t, "rgb(255, 138, 43)", c.eval(t, `return getComputedStyle(document.querySelector('.ops .find')).borderColor`),
 		"the phone's find field keeps its resting colour while focused")
 }
-
-func TestBrowserTheRoomsFindFieldShowsItIsFocused(t *testing.T) {
-	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/r/everything")
-	c.until(t, "the find field", `!!document.querySelector('.lid .find input')`)
-	c.eval(t, `document.querySelector('.lid .find input').focus(); return 1`)
-	require.Equal(t, "rgb(255, 138, 43)", c.eval(t, `return getComputedStyle(document.querySelector('.lid .find')).borderColor`),
-		"the room's find field does not take the focus colour")
-}

@@ -82,6 +82,36 @@ func TestASecondBreakdownReplacesTheFirst(t *testing.T) {
 	require.Equal(t, "find the number", st.Body)
 }
 
+func TestTheStepCarriesTheItemItIsAbout(t *testing.T) {
+	ctx := context.Background()
+	store := withStore(t)
+	p := owner(t, store)
+	id := insertItem(t, store, p, "the tax thing")
+
+	require.NoError(t, store.SaveSteps(ctx, p, &id, "the tax thing",
+		[]string{"open the letter"}))
+
+	st, found, err := store.NextStep(ctx, p)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.NotNil(t, st.ItemID)
+	require.Equal(t, id, *st.ItemID)
+}
+
+func TestAStepWithNoItemCarriesNone(t *testing.T) {
+	ctx := context.Background()
+	store := withStore(t)
+	p := owner(t, store)
+
+	require.NoError(t, store.SaveSteps(ctx, p, nil, "the tax thing",
+		[]string{"open the letter"}))
+
+	st, found, err := store.NextStep(ctx, p)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Nil(t, st.ItemID)
+}
+
 // One press, no consequence, nothing asked back — the same shape "not now"
 // already has.
 func TestClearingThrowsTheWholeSequenceAway(t *testing.T) {

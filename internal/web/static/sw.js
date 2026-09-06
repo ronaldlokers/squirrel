@@ -59,26 +59,14 @@ function heldStore(mode) {
   });
 }
 
-// The four routes a room's dock can post to, and the field each expects.
-// One route per destination rather than one per room, so the room travels in
-// the form — see internal/web/rooms.go.
 const FIELDS = {
   "/capture": "text",
-  "/chores/name": "name",
-  "/at/new": "label",
-  "/tasks/new": "text",
 };
 const DOCKS = new Set(Object.keys(FIELDS));
 
-// A held note carries where it was going as well as what it said.
-//
-// Without the room and the route, everything replayed to /capture as `text`,
-// so a chore typed on a train came back a pile note. That is the failure
-// nobody would diagnose, because the words are there and only the room is
-// wrong.
-function hold(text, room, action, field, captureKey) {
+function hold(text, action, field, captureKey) {
   return heldStore("readwrite").then(store => new Promise((resolve, reject) => {
-    const put = store.add({ text, room, action, field, captureKey, at: Date.now() });
+    const put = store.add({ text, action, field, captureKey, at: Date.now() });
     put.onsuccess = () => resolve();
     put.onerror = () => reject(put.error);
   }));
@@ -102,11 +90,8 @@ async function flush() {
   });
 
   for (const note of all) {
-    // Back to the room it was typed in, by the route that room's dock posts
-    // to. The defaults are what a note held by an older worker looks like.
     const body = new URLSearchParams({
       [note.field || "text"]: note.text,
-      room: note.room || "everything",
       key: note.captureKey || self.crypto.randomUUID(),
     });
     let res;
@@ -137,32 +122,6 @@ self.addEventListener("message", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
 
-  // A capture with no network is held rather than lost. The page is told by
-  // the redirect it gets back, which is the same shape the server's own
-  // answers take — one path through the page's code, whoever answered.
-  //
-  // Words only. A capture carrying a photograph goes straight past this and
-  // out to the network like any other request, and that is a correctness rule
-  // rather than an optimisation: everything below can hold is `text`, so the
-  // one thing this could do with a photograph is drop it. It did exactly that.
-  // A photograph on its own has no text at all, so the branch that decides
-  // there was nothing to keep fired and answered a 303 to "/" — which is a
-  // page that jumps to the top and shows no note, from a capture that never
-  // reached the server.
-  //
-  // The photograph's durability is not lost by staying out of here. pile.js
-  // holds a chosen photograph in IndexedDB from the moment it is picked and
-  // puts it back on the input when the page comes back, so a failed post
-  // leaves both the words and the picture on the screen to try again.
-  //
-  // Multipart is the test rather than "has a file part", because reading the
-  // body to find out would consume the very request being forwarded.
-  // Every room's dock, not just the pile's. A dock route missing from this
-  // set posts straight to the network and loses the words when there is none,
-  // which is the whole of what this branch exists to prevent.
-  //
-  // Kept in step with `rooms` in internal/web/rooms.go by
-  // TestTheWorkerHoldsEveryRoomsDock.
   if (request.method === "POST" && DOCKS.has(new URL(request.url).pathname) &&
       !(request.headers.get("Content-Type") || "").startsWith("multipart/")) {
     const pathname = new URL(request.url).pathname;
@@ -176,14 +135,11 @@ self.addEventListener("fetch", event => {
       try {
         return await fetch(pathname, { method: "POST", headers, body, credentials: "same-origin" });
       } catch {
-        const room = String(form.get("room") || "everything");
-        // The field name is the room's, not always `text`: a chore posts
-        // `name` and an appointment posts `label`.
         const field = FIELDS[pathname] || "text";
         const text = form.get(field);
         if (!text || !String(text).trim()) return Response.redirect("/", 303);
-        await hold(String(text), room, pathname, field, captureKey);
-        return Response.redirect("/r/" + room + "?held=1", 303);
+        await hold(String(text), pathname, field, captureKey);
+        return Response.redirect("/?held=1", 303);
       }
     })());
     return;

@@ -22,12 +22,6 @@ import (
 // nothing today and exempts it silently the day somebody writes it.
 var notATitle = map[string]string{
 	"layout.html": "the frame, not a screen",
-	"turn.html":   "one turn, drawn into the thread; its <h2> is the place it opens",
-	// The front door, and the one screen without a title. Every other screen
-	// is a place you navigated to, and its title answers "where am I"; you do
-	// not arrive at the front door wondering. A turn that opens a place carries
-	// that place's name as an <h2>, which is what heading navigation walks.
-	"thread.html": "the front door — you do not arrive there wondering",
 	// The chips both bars are made of. Not a screen at all: it defines the
 	// controls the board and the conversation share, so that one bar cannot
 	// drift from the other.

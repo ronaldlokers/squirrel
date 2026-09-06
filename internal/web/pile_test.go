@@ -17,44 +17,8 @@ func TestTheRouteTable(t *testing.T) {
 
 	for _, route := range []string{
 		"GET /{$}",
-		"GET /r/everything",
 		"GET /r/{room}",
 		"POST /capture",
-		"POST /find",
-		"POST /find/open",
-		"POST /open",
-		"POST /mood",
-		"POST /now/act",
-		"POST /now/stuck",
-		"POST /pile/act",
-		"POST /place/fresh",
-		"POST /pile/later",
-		"POST /pile/often",
-		"POST /pile/reword",
-		"POST /pile/why",
-		"POST /pile/more",
-		"POST /pile/undo",
-		"POST /timer",
-		"POST /pile/chore",
-		"POST /pile/fix",
-		"POST /pile/split",
-		"POST /buddy/say",
-		"POST /buddy/ask",
-		"POST /find/ask",
-		"GET /knowing",
-		"POST /chores/ask",
-		"POST /chores/name",
-		"POST /tasks/ask",
-		"POST /pile/ask",
-		"POST /buddy/badly",
-		"POST /buddy/do",
-		"GET /coach",
-		"GET /buddy",
-		"POST /steps",
-		"GET /moods",
-		"POST /me/forget",
-		// Your own face, mounted whether or not photographs are: it arrives
-		// with the identity rather than with a note.
 		"GET /board",
 		"POST /board/act",
 		"POST /board/undo",
@@ -68,29 +32,15 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /board/fix",
 		"GET /me",
 		"GET /me/face",
-		"POST /held/act",
-		"POST /tasks/act",
-		"POST /tasks/new",
-		"POST /chores/act",
-		"POST /chores/often",
-		"POST /chores/new",
-		"GET /pile/chores",
-		"GET /r/buddy",
-		"GET /r/pile",
-		"GET /r/held",
-		"GET /r/kept",
-		"POST /notes/shelf",
-		"GET /manifest.webmanifest",
-		"GET /sw.js",
-		"GET /static/",
-		// What is coming, one of them, and the two things you can do to one.
+		"POST /me/forget",
+		"GET /coach",
+		"GET /buddy",
+		"POST /steps",
 		"GET /at/{id}",
-		"POST /at/make",
-		"POST /at/ask",
-		"POST /at/new",
-		"POST /at/open",
-		"POST /at/{id}/note",
-		"POST /at/{id}/detach",
+		"GET /moods",
+		"GET /knowing",
+		"GET /pile/chores",
+		"POST /timer",
 		// The way in, and the three routes that work it. The only routes
 		// outside the guard besides the manifest, the worker and the static
 		// files — necessarily, since a person with no session has to be able
@@ -99,10 +49,13 @@ func TestTheRouteTable(t *testing.T) {
 		"POST /auth/in",
 		"GET /auth/callback",
 		"POST /auth/out",
+		"GET /manifest.webmanifest",
+		"GET /sw.js",
+		"GET /static/",
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 76, "a route was added without being pinned here")
+	require.Len(t, m.routes, 32, "a route was added without being pinned here")
 }
 
 // And the count above is the whole table rather than a number somebody bumped.
@@ -143,9 +96,7 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/chores", nil)
 
 	require.Equal(t, http.StatusMovedPermanently, w.Code)
-	// Home, since the chores are a message rather than a page. The redirect
-	// stays because the URL is in somebody's history.
-	require.Equal(t, "/r/everything", w.Header().Get("Location"))
+	require.Equal(t, "/?bay=chores", w.Header().Get("Location"))
 }
 
 // Everything Mount refuses to start without, and the refusal each one gives.
@@ -195,7 +146,10 @@ func TestMountRefusesWithoutWhatItNeeds(t *testing.T) {
 // while the server reached his own. A helper that answers a different question
 // from the product is worse than no helper.
 func TestTheTestMuxPrefersTheSpecificRoute(t *testing.T) {
-	m := mounted(t, &fakeStore{})
+	m := newTestMux()
+	m.Get("/r/everything", func(http.ResponseWriter, *http.Request) {})
+	m.Get("/r/{room}", func(http.ResponseWriter, *http.Request) {})
+	m.Get("/{$}", func(http.ResponseWriter, *http.Request) {})
 
 	require.Equal(t, "GET /r/everything", m.route(t, "GET", "/r/everything"))
 	require.Equal(t, "GET /r/{room}", m.route(t, "GET", "/r/chores"))

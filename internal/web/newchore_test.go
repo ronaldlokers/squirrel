@@ -1,7 +1,6 @@
 package web
 
 import (
-	"net/url"
 	"testing"
 	"time"
 
@@ -10,63 +9,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// A chore usually starts as a note, and that path is unchanged. This is the
-// other case: you are standing in the kitchen having just descaled the kettle,
-// and the thing you want is for that to come back — not a note about wanting
-// it to.
-func TestMakingAChoreFromNothing(t *testing.T) {
-	f := &fakeStore{}
-
-	w := post(t, mounted(t, f), "/chores/new", url.Values{
-		"name": {"descale the kettle"}, "every": {"every month"}, "part": {"morning"},
-	})
-
-	require.Equal(t, 303, w.Code)
-	require.Len(t, f.chores, 1)
-	require.Equal(t, "descale the kettle", f.chores[0].Name)
-	require.Equal(t, 30*24*time.Hour, f.chores[0].Every)
-	require.Equal(t, squirrel.Morning, f.chores[0].Ask.Part)
-}
-
-// Any time is the default, and it is a real answer rather than the absence of
-// one — a chore with no preference is the common case.
-func TestAChoreMadeWithNoPreferenceHasNone(t *testing.T) {
-	f := &fakeStore{}
-
-	post(t, mounted(t, f), "/chores/new", url.Values{
-		"name": {"water the ferns"}, "every": {"every week"}, "part": {""},
-	})
-
-	require.Len(t, f.chores, 1)
-	require.Equal(t, squirrel.AnyPart, f.chores[0].Ask.Part)
-	require.Equal(t, "", f.chores[0].Ask.Words(), "nothing to say about when")
-}
-
-// An empty form submitted by accident is not a mistake worth a sentence.
-func TestAnEmptyNewChoreSaysNothing(t *testing.T) {
-	f := &fakeStore{}
-
-	w := post(t, mounted(t, f), "/chores/new", url.Values{"name": {"  "}, "every": {"every week"}})
-
-	require.Equal(t, 303, w.Code)
-	require.Empty(t, f.chores)
-}
-
-// The interval comes from the chips, so it is one of four phrases the core
-// already parses. Anything else is not an interval this screen offers.
-func TestANewChoreNeedsAnIntervalItWasOffered(t *testing.T) {
-	f := &fakeStore{}
-
-	post(t, mounted(t, f), "/chores/new", url.Values{
-		"name": {"something"}, "every": {"every fortnight or so"},
-	})
-
-	require.Empty(t, f.chores)
-}
-
-// How to make one is said by the slot rather than by a sentence over an empty
-// list: the rack asks what comes back and offers the four rhythms beside the
-// field, whether or not there is anything in it.
 func TestTheChoresRackTeachesHowToMakeOne(t *testing.T) {
 	full := opened(t, &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "bins out", Active: true, Every: 14 * 24 * time.Hour, EveryDays: 14},

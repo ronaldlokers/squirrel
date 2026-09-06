@@ -67,10 +67,10 @@ func TestEveryChipInTheBarCarriesAName(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 	bar := body[strings.Index(body, `<header class="ops">`):strings.Index(body, "</header>")]
 
-	for _, name := range []string{"talk to Buddy", "what Squirrel told you", "who you are, and what this can be told to do"} {
+	for _, name := range []string{"what Squirrel told you", "who you are, and what this can be told to do"} {
 		require.Contains(t, bar, `aria-label="`+name+`"`, "no chip is named %q", name)
 	}
-	require.Equal(t, 3, strings.Count(bar, `class="chip`),
+	require.Equal(t, 2, strings.Count(bar, `class="chip`),
 		"the bar carries a different number of chips than it is named for")
 }
 
@@ -243,10 +243,8 @@ func TestARecordThatCannotBeReadDrawsNoList(t *testing.T) {
 func TestTheFaceOpensAPageOfItsOwn(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	for _, from := range []string{"/", "/r/everything"} {
-		require.Contains(t, m.call(t, "GET", from, nil).Body.String(), `class="chip face" href="/me"`,
-			"on %s the face opens somewhere other than who you are", from)
-	}
+	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), `class="chip face" href="/me"`,
+		"the face opens somewhere other than who you are")
 
 	page := m.call(t, "GET", "/me", nil).Body.String()
 	require.Contains(t, page, "Who you are")

@@ -12,9 +12,7 @@ package web
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
-	"image/png"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +20,6 @@ import (
 	"os/exec"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -165,49 +162,6 @@ func aPile() *fakeStore {
 	}}
 }
 
-func TestBrowserTheWorkerTakesTheScreen(t *testing.T) {
-	c, srv := open(t, aPile())
-
-	// Served from /sw.js, so it scopes to the root and controls every screen —
-	// including home, which is the URL an installed app opens. This needed a
-	// Service-Worker-Allowed header when the screen was mounted under a path,
-	// and needs none now.
-	require.Equal(t, "/", c.eval(t, `
-		const reg = await navigator.serviceWorker.ready;
-		return new URL(reg.scope).pathname;`),
-		"a worker that does not scope to / controls everything except the screens")
-
-	// The second visit is the one that matters. On the first, the page's assets
-	// are already on their way before the worker takes control, so nothing goes
-	// through it and its cache is legitimately empty — asserting on that load
-	// was testing how quickly a worker installs rather than what it does.
-	c.navigate(t, srv.URL+"/r/everything")
-	waitForTheWorker(t, c, srv.URL+"/r/everything")
-	// Wait for the asset itself, not merely for a cache to exist.
-	//
-	// A cache appears the moment the worker opens one, which is before any
-	// response has been put in it — so waiting on `caches.keys()` and then
-	// asserting on the contents was a race the fast machine always won and a
-	// loaded CI runner sometimes lost. It failed once on a green branch, which
-	// is the worst way for a test to be wrong: it says the change broke
-	// something it never touched.
-	// `until` wraps what it is given in `await (...)`, so this is an expression
-	// rather than a body.
-	c.until(t, "an asset to be cached", `(async () => {
-		for (const name of await caches.keys()) {
-			const held = await (await caches.open(name)).keys();
-			if (held.some(r => r.url.includes("/static/"))) return true;
-		}
-		return false;
-	})()`)
-
-	require.Equal(t, true, c.eval(t, `
-		const cache = await caches.open((await caches.keys())[0]);
-		const held = await cache.keys();
-		return held.some(r => r.url.includes("/static/"));`),
-		"what it keeps is assets")
-}
-
 // The chores rack's keys are the board's keys, and they are proved in
 // TestBrowserTheBoardsKeysFollowFocus: letters act on the strip you are focused
 // in, arrows move between strips, and a letter nothing answers to does nothing.
@@ -253,54 +207,6 @@ func TestBrowserTheFaceLabelsFitAPhone(t *testing.T) {
 		})`), "every label fits its own cell")
 }
 
-// The worker holding a capture is the nearest honest substitute for a spool, and
-// this is the test that it actually holds.
-//
-// The server is closed rather than the network emulated: CDP's offline emulation
-// applies to the page's network stack and not the worker's, so the first version
-// passed while the POST reached the server and came back "kept".
-func waitForTheWorker(t *testing.T, c *cdp, url string) {
-	t.Helper()
-	c.until(t, "the worker to be ready", `
-		(async () => { await navigator.serviceWorker.ready; return true })()`)
-	if c.eval(t, `return !!navigator.serviceWorker.controller`) == true {
-		return
-	}
-	c.navigate(t, url)
-	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
-}
-
-func TestBrowserACaptureSurvivesNoNetwork(t *testing.T) {
-	c, srv := open(t, aPile())
-	c.navigate(t, srv.URL+"/r/everything")
-	waitForTheWorker(t, c, srv.URL+"/r/everything")
-
-	srv.Close()
-
-	require.Equal(t, true, c.eval(t, `
-		const res = await fetch("/capture", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: new URLSearchParams({ text: "ask the garage about the rattle" }),
-		});
-		return new URL(res.url).search.includes("held");`),
-		"the worker answered, and said so")
-
-	// On disk, not merely in a promise somewhere.
-	require.Equal(t, true, c.eval(t, `
-		return await new Promise(resolve => {
-			const open = indexedDB.open("squirrel-held", 1);
-			open.onerror = () => resolve(false);
-			open.onsuccess = () => {
-				const db = open.result;
-				if (!db.objectStoreNames.contains("notes")) return resolve(false);
-				const req = db.transaction("notes").objectStore("notes").getAll();
-				req.onsuccess = () => resolve(req.result.some(n => n.text.includes("the rattle")));
-				req.onerror = () => resolve(false);
-			};
-		});`), "the words are held")
-}
-
 // degreesOf resolves an angle the way the browser will, so the test compares
 // degrees rather than the strings they were written as.
 func degreesOf(t *testing.T, c *cdp, angle any) any {
@@ -313,44 +219,6 @@ func degreesOf(t *testing.T, c *cdp, angle any) any {
 		el.remove();
 		return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI);
 	`, angle))
-}
-
-// And the field is lit from where the day says.
-//
-// Same reason, other property. This one is behind every screen, so a var()
-// that silently fell back would be the whole product missing the change.
-func TestBrowserTheFieldIsLitFromTheDaysPlace(t *testing.T) {
-	c, _ := open(t, aPile())
-
-	light := c.eval(t, `return getComputedStyle(document.body).getPropertyValue("--light").trim()`)
-	require.NotEmpty(t, light, "the body carries no light")
-
-	image := c.eval(t, `return getComputedStyle(document.body, "::before").backgroundImage`)
-	require.Contains(t, image, fmt.Sprintf("at %v", light),
-		"the field's highlight is not where the day put it")
-}
-
-// atChores opens the thread and presses the chores door.
-//
-// The chores are a where, so a browser test that wants them goes there and waits
-// for the cards — which is what a person does, and what makes these tests
-// exercise the where's own draw as well as the cards.
-//
-// It pressed a menu form until 28 August 2026. A where is a link now, and going
-// somewhere writes nothing.
-func atChores(t *testing.T, srv *httptest.Server) *cdp {
-	t.Helper()
-	c := browserAt(t, srv, "/?bay=chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
-	return c
-}
-
-// openChores goes to the chores, which are a rack on the board since
-// 2 September 2026 rather than a where you press a door for.
-func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
-	t.Helper()
-	c.navigate(t, srv.URL+"/?bay=chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
 }
 
 // The lid's field, on the thread. It posts and the answer arrives as a turn —
@@ -382,196 +250,6 @@ const visible = `(sel) => {
 	});
 }`
 
-// A conversation long enough to scroll, which is what the tests below need to
-// be able to reproduce anything: the first version of them had no turns at all,
-// so the page did not scroll, nothing could overlap, and they passed with the
-// defect deliberately put back.
-func aScrollingThread() *fakeStore {
-	f := aPile()
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
-	for i := int64(1); i <= 24; i++ {
-		who := squirrel.SpeakerBuddy
-		if i%2 == 0 {
-			who = squirrel.SpeakerYou
-		}
-		f.turns = append(f.turns, squirrel.Turn{
-			ID: i, Who: who,
-			Words: "a line of the conversation that is long enough to wrap on a phone",
-		})
-	}
-	return f
-}
-
-func atTheBottomOfAPhone(t *testing.T) *cdp {
-	t.Helper()
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	// The page itself does not scroll any more — the body is one viewport-high
-	// grid and the transcript is the only thing with an overflow. Measuring
-	// document.body here reported zero and the fixture looked broken when it
-	// was the measurement that had moved.
-	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-	require.Greater(t, c.eval(t, `
-		const s = document.querySelector(".scroll");
-		return s.scrollHeight - s.clientHeight`),
-		float64(0), "the fixture does not scroll, so nothing can be hidden")
-	return c
-}
-
-// The last thing on the screen must not be underneath the box you type into.
-// Reported from a phone.
-//
-// It cannot be, now: they are two rows of one grid rather than a column with a
-// fixed box over it. The test stays because that is a claim about the layout,
-// and a claim is worth a check that would notice it being untrue.
-func TestBrowserTheEndOfThePageClearsTheDock(t *testing.T) {
-	c := atTheBottomOfAPhone(t)
-
-	gap := c.eval(t, `
-		const it = document.querySelector("#thread .turn:last-child").getBoundingClientRect();
-		const dock = document.querySelector(".dock").getBoundingClientRect();
-		return Math.round(dock.top - it.bottom);`)
-	require.GreaterOrEqual(t, gap, float64(0),
-		"the last turn sits %v pixels under the dock", gap)
-}
-
-// And the conversation gives way as the slot grows. A slot at four lines
-// shortens the scroll region by its own growth; this used to be a measured
-// reserve maintained by a ResizeObserver, and is now what a grid row does.
-func TestBrowserTheReserveFollowsTheSlot(t *testing.T) {
-	c := atTheBottomOfAPhone(t)
-
-	before := c.eval(t, `
-		const box = document.querySelector(".dock textarea");
-		box.value = "one line";
-		return Math.round(document.querySelector(".dock").getBoundingClientRect().height);`)
-
-	c.eval(t, `
-		const box = document.querySelector(".dock textarea");
-		const nl = String.fromCharCode(10);
-		box.value = ["a much longer thing to say", "that runs", "to four", "lines"].join(nl);
-		box.style.height = "auto";
-		box.style.height = box.scrollHeight + "px";
-		return 1;`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 250))`)
-
-	after := c.eval(t, `return Math.round(document.querySelector(".dock").getBoundingClientRect().height)`)
-	require.Greater(t, after, before, "the slot did not grow, so this proves nothing")
-
-	// Scrolled to the end after the growth, because that is the claim: the end
-	// of the conversation stays reachable when the slot takes more where.
-	//
-	// Not measured before scrolling. A turn inside a scrolling box that is
-	// currently out of view legitimately has a rect below the fold — clipping
-	// is not layout — so measuring without scrolling asks whether the end
-	// happens to be on screen, which is a different and uninteresting question.
-	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 250))`)
-
-	gap := c.eval(t, `
-		const it = document.querySelector("#thread .turn:last-child").getBoundingClientRect();
-		const dock = document.querySelector(".dock").getBoundingClientRect();
-		return Math.round(dock.top - it.bottom);`)
-	require.GreaterOrEqual(t, gap, float64(0),
-		"the end of the conversation cannot be scrolled clear of the grown slot: %v pixels", gap)
-}
-
-// Buddy's face is the gutter wide, and nothing is drawn around it.
-//
-// `.face` is the check-in's mood button and carries a 44px tap target, so a
-// face that took that class came out the wrong size — the stylesheet reads
-// correctly either way, and only the rendered box says which class won.
-//
-// The second half is the design: the artwork brings its own outline, so a
-// border or a fill here would stack two.
-func TestBrowserBuddysFaceIsTheGutterAndNothingElse(t *testing.T) {
-	f := aPile()
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
-	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
-	c := browserAt(t, screen(t, f), "/r/everything")
-
-	require.Equal(t, float64(40), c.eval(t, `
-		return Math.round(document.querySelector(".buddyface").getBoundingClientRect().width);`),
-		"the face is not the gutter wide: something else owns this class")
-
-	// Each read on its own. The first version of this joined them and asked
-	// for substrings, which passed with a 3px purple disc put back: the
-	// computed border width is "3px" rather than "px solid", and a background
-	// *colour* leaves background-image reading "none".
-	face := `getComputedStyle(document.querySelector(".buddyface"))`
-	require.Equal(t, "0px", c.eval(t, `return `+face+`.borderTopWidth`),
-		"there is a border around artwork that has its own outline")
-	require.Equal(t, "none", c.eval(t, `return `+face+`.boxShadow`),
-		"there is a shadow behind the artwork")
-	require.Contains(t, []any{"rgba(0, 0, 0, 0)", "transparent"},
-		c.eval(t, `return `+face+`.backgroundColor`),
-		"there is a fill behind the artwork")
-}
-
-// And the image fills it rather than sitting in it.
-func TestBrowserTheArtworkFillsTheGutter(t *testing.T) {
-	f := aPile()
-	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: time.Now()}
-	f.turns = []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "Kept."}}
-	c := browserAt(t, screen(t, f), "/r/everything")
-
-	require.Equal(t, float64(40), c.eval(t, `
-		return Math.round(document.querySelector(".buddyface img").getBoundingClientRect().width);`))
-}
-
-// A full-width control spans the gutter. The check-in's five labels stopped
-// fitting a 390px phone the moment the gutter took 44px off them.
-func TestBrowserAControlStripSpansTheGutter(t *testing.T) {
-	f := aPile()
-	f.turns = []squirrel.Turn{
-		{ID: 1, Who: squirrel.SpeakerBuddy, Words: "how do you feel?", Shown: []byte(`{"faces":true}`)},
-	}
-	c := browserAt(t, screen(t, f), "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.eval(t, `return new Promise(r => setTimeout(r, 200))`)
-
-	inset := c.eval(t, `
-		const turn = document.querySelector(".turn.frombuddy").getBoundingClientRect();
-		const faces = document.querySelector(".faces").getBoundingClientRect();
-		return Math.round(faces.left - turn.left);`)
-
-	require.Equal(t, float64(0), inset,
-		"the mood row is indented past the gutter by %v pixels", inset)
-}
-
-// Nothing is painted over the way out.
-//
-// The room sheet it was written for went with the rooms on 3 September 2026,
-// and the way out went with it onto a page of its own. The failure is the same
-// one either way: a control that is on the screen and cannot be pressed,
-// because something else is over it. Asserted by hit-testing rather than by
-// comparing z-indexes — the dock is in flow and carries no z-index at all, so
-// the numbers do not answer the question and what can be pressed does.
-func TestBrowserNothingPaintsOverTheWayOut(t *testing.T) {
-	c, srv := open(t, &fakeStore{})
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 844, "height": 390, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.navigate(t, srv.URL+"/me")
-	c.until(t, "the way out", `!!document.querySelector(".signout")`)
-
-	hit := c.eval(t, `
-		const out = document.querySelector(".signout");
-		out.scrollIntoView({block: "center"});
-		const b = out.getBoundingClientRect();
-		const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
-		return top === out || out.contains(top) ? "the way out" : (top ? top.className || top.tagName : "nothing");`)
-
-	require.Equal(t, "the way out", hit,
-		"something is painted over the way out on the settings page")
-}
-
 func layer(t *testing.T, v any) int {
 	t.Helper()
 	s, ok := v.(string)
@@ -581,271 +259,47 @@ func layer(t *testing.T, v any) int {
 	return n
 }
 
-// On a phone the dock's button sits on its own row, under the field.
-//
-// Reported from a phone, in the agenda: "put it in the agenda" is twenty
-// characters and took over half the width, so the placeholder wrapped to two
-// lines inside a field too narrow to type in. The button naming the
-// consequence and the one-row dock cannot both hold at 390px, and the field is
-// the control that has to work.
-//
-// Nothing else here can see it. The appearance snapshot visits one desktop
-// viewport, where they legitimately share a row, and it samples no property
-// that would change — min-width is not in its list.
-func TestBrowserTheDockGivesTheFieldItsOwnRowOnAPhone(t *testing.T) {
-	c, srv := open(t, &fakeStore{})
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-
-	// The dock is his room's. The board has no dock — it has a blank strip at
-	// the head of every rack — so this is one screen now rather than five.
-	for _, where := range []string{"/r/everything"} {
-		c.navigate(t, srv.URL+where)
-		gap := c.eval(t, `
-			const box = document.querySelector(".dock textarea").getBoundingClientRect();
-			const post = document.querySelector(".dock .post").getBoundingClientRect();
-			return Math.round(post.top - box.bottom);`)
-		require.GreaterOrEqual(t, gap, float64(0),
-			"in %s the button shares the field's row on a phone, by %v pixels", where, gap)
-
-		lines := c.eval(t, `
-			const t = document.querySelector(".dock textarea");
-			const cs = getComputedStyle(t);
-			return Math.round(t.getBoundingClientRect().height / parseFloat(cs.lineHeight));`)
-		require.LessOrEqual(t, lines, float64(1),
-			"in %s the placeholder wraps to %v lines in an empty field", where, lines)
-	}
-}
-
-// The worked example is laid out like the conversation it is a picture of.
-//
-// It carries its own card and act classes on purpose — a picture of a card is
-// not a card — but it sat outside .thread with no width, no padding and no gap
-// and inherited none of them. On a phone that ran its label off the left edge
-// of the screen and let every card overlap the bubble beneath it.
-//
-// It shipped that way on 26 August and nobody saw it for two weeks, because it
-// draws only when the record is empty and this record has never been empty
-// since. The appearance snapshot cannot see it either: its fixture has turns,
-// so the example is not on the page it samples.
-func TestBrowserTheWorkedExampleIsInsideTheScreen(t *testing.T) {
-	c, srv := open(t, &fakeStore{})
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-	c.until(t, "the worked example", `!!document.querySelector(".worked")`)
-
-	left := c.eval(t, `return Math.round(document.querySelector(".workedsays").getBoundingClientRect().left)`)
-	require.Greater(t, left, float64(0),
-		"the example's first line starts at or past the left edge of the screen")
-
-	// And its turns do not sit on top of one another, which is what having no
-	// gap looked like: a card over the bubble under it.
-	overlap := c.eval(t, `
-		const turns = [...document.querySelectorAll(".worked .turn")];
-		let worst = 0;
-		for (let i = 1; i < turns.length; i++) {
-			const above = turns[i - 1].getBoundingClientRect();
-			const below = turns[i].getBoundingClientRect();
-			worst = Math.min(worst, Math.round(below.top - above.bottom));
-		}
-		return worst;`)
-	require.GreaterOrEqual(t, overlap, float64(0),
-		"two turns of the worked example overlap by %v pixels", overlap)
-}
-
-func TestBrowserTheTranscriptClearsTheLidAndNoMore(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-
-	for _, size := range []struct {
-		what          string
-		width, height int
-		mobile        bool
-	}{
-		{"a phone", 390, 844, true},
-		{"a desktop", 1280, 900, false},
-	} {
-		c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-			"width": size.width, "height": size.height,
-			"deviceScaleFactor": 0, "mobile": size.mobile,
-		})
-		c.navigate(t, srv.URL+"/r/everything")
-
-		require.Equal(t, float64(8), c.eval(t, `
-			const lid = document.querySelector(".lid").getBoundingClientRect();
-			const s = document.querySelector(".scroll");
-			const pad = parseFloat(getComputedStyle(s).paddingTop);
-			return Math.round(s.getBoundingClientRect().top + pad - lid.bottom)`),
-			"on %s the transcript does not start 8px under the lid", size.what)
-	}
-}
-
-// The rail cleared the lid on a desktop until 3 September 2026. It went with
-// the rooms, and what it held is the settings page — which clears the bar the
-// same way every screen does, proved by TestBrowserTheTranscriptClearsTheLidAndNoMore
-// and by the page's own test that nothing paints over the way out.
-
-func TestBrowserThePhoneLidReservesAnyTopInset(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
-		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 0},
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	require.Greater(t, c.eval(t, `
-		return Math.round(document.querySelector(".lid").getBoundingClientRect().height)`).(float64),
-		float64(59), "the lid does not reserve a top inset when there is one")
-	require.GreaterOrEqual(t, c.eval(t, `
-		return Math.round(document.querySelector(".lid .chip").getBoundingClientRect().top)`).(float64),
-		float64(59), "a chip in his room sits under the status bar")
-
-	require.Equal(t, float64(8), c.eval(t, `
-		const lid = document.querySelector(".lid").getBoundingClientRect();
-		const s = document.querySelector(".scroll");
-		const pad = parseFloat(getComputedStyle(s).paddingTop);
-		return Math.round(s.getBoundingClientRect().top + pad - lid.bottom)`),
-		"the transcript does not clear the taller lid by 8")
-
-}
-
-func TestBrowserTheDockDoesNotStackItsOwnPaddingOnTheInset(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
-		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	require.Equal(t, "34px", c.eval(t, `
-		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
-		"the dock adds its own padding on top of the home indicator's band")
-
-	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
-		"insets": map[string]any{"top": 0, "left": 0, "right": 0, "bottom": 0},
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	require.Equal(t, "10px", c.eval(t, `
-		return getComputedStyle(document.querySelector(".dock")).paddingBottom`),
-		"with no inset the dock keeps no floor of its own")
-}
-
-func TestBrowserTheShellFillsTheViewport(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
-		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	require.Equal(t, float64(0), c.eval(t, `
-		return Math.round(window.innerHeight - document.body.getBoundingClientRect().bottom)`),
-		"the shell stops short of the bottom of the screen")
-
-	require.Equal(t, float64(0), c.eval(t, `
-		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
-		"the dock stops short of the bottom of the screen")
-}
-
-func TestBrowserTheTranscriptPassesUnderTheDock(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 0, "mobile": true,
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-
-	require.Equal(t, float64(14), c.eval(t, `
-		const dock = document.querySelector(".dock").getBoundingClientRect();
-		const turns = [...document.querySelectorAll(".thread .turn")];
-		return Math.round(dock.top - turns[turns.length - 1].getBoundingClientRect().bottom)`),
-		"at the foot of the conversation the last thing said is not clear of the dock")
-
-	require.Equal(t, float64(0), c.eval(t, `
-		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
-		"the dock is not at the bottom of the screen")
-
-	c.eval(t, `document.querySelector(".scroll").scrollTop = 0; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-
-	require.Equal(t, true, c.eval(t, `
-		const dock = document.querySelector(".dock").getBoundingClientRect();
-		return [...document.querySelectorAll(".thread .turn")].some(el => {
-			const r = el.getBoundingClientRect();
-			return r.top < dock.bottom && r.bottom > dock.top });`),
-		"nothing passes behind the dock, so its blur has no backdrop")
-
-	require.Equal(t, float64(0), c.eval(t, `
-		return Math.round(window.innerHeight - document.querySelector(".dock").getBoundingClientRect().bottom)`),
-		"the dock scrolled away from the bottom")
-}
-
-func lidTopBand(t *testing.T, c *cdp) []string {
-	t.Helper()
-	shot := c.send(t, "Page.captureScreenshot", map[string]any{"format": "png"})
-	raw, err := base64.StdEncoding.DecodeString(shot["data"].(string))
-	require.NoError(t, err)
-	img, err := png.Decode(bytes.NewReader(raw))
-	require.NoError(t, err)
-
-	var out []string
-	for _, x := range []int{5, 100, 195, 300, 385} {
-		r, g, b, _ := img.At(x, 1).RGBA()
-		out = append(out, fmt.Sprintf("%d,%d,%d", r>>8, g>>8, b>>8))
-	}
-	return out
-}
-
-func TestBrowserTheLidsTopBandHoldsStill(t *testing.T) {
-	srv := screen(t, aScrollingThread())
-	c := browserAt(t, srv, "/r/everything")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": true,
-	})
-	// With a top inset, which is the only condition this is about: the band
-	// being sampled is the one beside the status bar, and there is no such band
-	// on a screen that has no inset to reserve. The chips sit under it.
-	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
-		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 0},
-	})
-	c.navigate(t, srv.URL+"/r/everything")
-
-	c.eval(t, `document.querySelector(".scroll").scrollTop = 0; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-	atTheTop := lidTopBand(t, c)
-
-	c.eval(t, `const s = document.querySelector(".scroll"); s.scrollTop = s.scrollHeight; return 1`)
-	c.eval(t, `return new Promise(r => setTimeout(r, 300))`)
-	atTheBottom := lidTopBand(t, c)
-
-	for _, got := range [][]string{atTheTop, atTheBottom} {
-		for _, c := range got {
-			require.Equal(t, got[0], c, "the lid's top band is not one colour across the screen: %v", got)
-		}
-	}
-	require.Equal(t, atTheTop, atTheBottom,
-		"the lid's top band changes with what is under it, so the status bar strip beside it cannot match")
-	require.Equal(t, "71,46,112", atTheTop[0],
-		"the lid's top band is not --purple-bar, which is what the strip beside it takes")
-}
-
 // A redirecting press went with the shelf chip on 2 September 2026, and the
 // shelves themselves went into the notes rack on 3 September: there is no press
 // that redirects and no page for the script to paste a whole document into.
 // TestTheNotesShowEverythingWithTheUndecidedFirst is where they are proved.
+
+// The worker holding a capture is the nearest honest substitute for a spool, and
+// this is the test that it actually holds.
+//
+// The server is closed rather than the network emulated: CDP's offline emulation
+// applies to the page's network stack and not the worker's, so the first version
+// passed while the POST reached the server and came back "kept".
+func waitForTheWorker(t *testing.T, c *cdp, url string) {
+	t.Helper()
+	c.until(t, "the worker to be ready", `
+		(async () => { await navigator.serviceWorker.ready; return true })()`)
+	if c.eval(t, `return !!navigator.serviceWorker.controller`) == true {
+		return
+	}
+	c.navigate(t, url)
+	c.until(t, "the worker to be controlling the page", `!!navigator.serviceWorker.controller`)
+}
+
+// atChores opens the thread and presses the chores door.
+//
+// The chores are a where, so a browser test that wants them goes there and waits
+// for the cards — which is what a person does, and what makes these tests
+// exercise the where's own draw as well as the cards.
+//
+// It pressed a menu form until 28 August 2026. A where is a link now, and going
+// somewhere writes nothing.
+func atChores(t *testing.T, srv *httptest.Server) *cdp {
+	t.Helper()
+	c := browserAt(t, srv, "/?bay=chores")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
+	return c
+}
+
+// openChores goes to the chores, which are a rack on the board since
+// 2 September 2026 rather than a where you press a door for.
+func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
+	t.Helper()
+	c.navigate(t, srv.URL+"/?bay=chores")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
+}

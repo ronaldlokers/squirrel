@@ -47,6 +47,7 @@
 <title>Squirrel</title>
 <link rel="stylesheet" href="/static/pile.css?v={{.V}}">
 <link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
+<script src="/static/app.js?v={{.V}}" defer></script>
 {{/* crossorigin="use-credentials" looks like noise and is kept deliberately.
      A browser fetches a manifest with credentials *omitted* by default, even
      same-origin — so any guard in front of this route answers with a redirect
@@ -97,25 +98,8 @@
      somewhere writes nothing — so back steps through rooms and a room opens
      in a new tab. */}}
 
-<main id="stage" class="{{if .Thread}}threadpage {{end}}{{if .Scrolling}}scrolling{{end}}">
-{{/* The pile moved while this card was on the screen. Not an error and not a
-     failure: the note is where the room put it, and this says so rather than
-     letting the two views disagree in silence. There is nothing to undo —
-     undoing would be deciding again, and the screen no longer knows what it
-     would be deciding about. */}}
-{{if .Clash}}
-<div class="landed clash" role="status">
-  <span class="said">that note had already moved &mdash; it is where you left it in the room</span>
-</div>
-{{end}}
+<main id="stage" class="{{if .Scrolling}}scrolling{{end}}">
 {{template "content" .}}
 </main>
-<script src="/static/pile.js?v={{.V}}" defer></script>
-{{/* The thread's own script, and only on a conversation. Required rather than
-     an enhancement: see static/thread.js.
-
-     `.Thread` and not `.Home`: every room is a conversation, and only the
-     front door is home. */}}
-{{if .Thread}}<script src="/static/thread.js?v={{.V}}" defer></script>{{end}}
 </body>
 </html>{{end}}

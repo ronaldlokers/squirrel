@@ -62,7 +62,7 @@ func TestEveryEmbeddedAssetIsAskedForSomewhere(t *testing.T) {
 	for _, page := range templates(t) {
 		asks += page
 	}
-	for _, f := range []string{"static/pile.css", "static/pile.js", "static/sw.js", "static/thread.js"} {
+	for _, f := range []string{"static/pile.css", "static/board.js", "static/board.css", "static/chrome.css", "static/sw.js"} {
 		b, err := staticFS.ReadFile(f)
 		require.NoError(t, err)
 		asks += string(b)
@@ -98,10 +98,10 @@ func TestAMissingAssetIsNotCachedForAYear(t *testing.T) {
 // thinks to hard-reload — which is exactly what happened to v0.7.0.
 func TestAssetURLsCarryAVersion(t *testing.T) {
 	f := &fakeStore{items: []squirrel.Item{note(1, "buy milk", squirrel.ItemOpen)}}
-	body := mounted(t, f).call(t, "GET", "/r/everything", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "pile.css?v="+assetVersion)
-	require.Contains(t, body, "pile.js?v="+assetVersion)
+	require.Contains(t, body, "board.css?v="+assetVersion)
+	require.Contains(t, body, "board.js?v="+assetVersion)
 	require.Contains(t, body, "logo.png?v="+assetVersion)
 	require.NotEmpty(t, assetVersion)
 }
@@ -135,8 +135,8 @@ func TestTheWorkerHoldsACaptureWithNoNetwork(t *testing.T) {
 	require.Contains(t, body, "DOCKS.has(new URL(request.url).pathname)",
 		"it intercepts the docks")
 	require.Contains(t, body, "indexedDB", "and keeps the words somewhere real")
-	require.Contains(t, body, `"/r/" + room + "?held=1"`,
-		"and the page is told, in the room the words were typed in")
+	require.Contains(t, body, `"/?held=1"`,
+		"and the page is told")
 	// Deleted only once its own write has landed — a queue that keeps what it
 	// has delivered is a second pile.
 	require.Contains(t, body, "del.delete(note.key)")

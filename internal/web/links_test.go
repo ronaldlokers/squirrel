@@ -5,8 +5,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+func TestTheOldCoachURLsRedirect(t *testing.T) {
+	m := mounted(t, &fakeStore{})
+
+	for _, gone := range []string{"/coach", "/buddy"} {
+		w := m.call(t, "GET", gone, nil)
+		require.Equal(t, 301, w.Code, "%s died quietly", gone)
+		require.Equal(t, "/", w.Header().Get("Location"))
+	}
+}
 
 // Every URL the templates write, matched against the routes that exist.
 //
@@ -32,17 +44,11 @@ func TestEveryLinkOnEveryPageGoesSomewhere(t *testing.T) {
 			note(2, "buy milk", squirrel.ItemOpen),
 		},
 		chores: []squirrel.Chore{{ID: 1, PersonID: 1, Name: "bins out", Active: true}},
-		// A card carrying a photograph, so the two routes that take a note's
-		// id in the path are among the URLs this walks. Without one the only
-		// links on the page are fixed, and a wildcard route could be written
-		// wrong without anything here noticing.
-		turns: []squirrel.Turn{{ID: 1, Who: squirrel.SpeakerBuddy, Words: "This one.",
-			Shown: []byte(`{"cards":[{"title":"the tax letter","photo":"/photo/9"}]}`)}},
 	}, &fakeSpool{}, &fakePhotos{})
 
 	pages := map[string]string{
-		"the conversation": "/",
-		"the chores":       "/r/chores",
+		"the board":          "/",
+		"the page about you": "/me",
 	}
 
 	href := regexp.MustCompile(`href="(/[^"]*)"`)

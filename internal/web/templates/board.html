@@ -4,12 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
+<link rel="manifest" href="/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
 <meta name="theme-color" content="#472e70">
 <link rel="icon" href="/static/logo.png?v={{.V}}">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
 <link rel="stylesheet" href="/static/board.css?v={{.V}}">
 <link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
 <script src="/static/board.js?v={{.V}}" defer></script>
+<script src="/static/app.js?v={{.V}}" defer></script>
 </head>
 <body>
 <p id="announce" class="offscreen" role="status" aria-live="polite"></p>
@@ -22,7 +27,6 @@
   <span class="rail">
     {{template "findchip" .Find}}
     <span class="sep" aria-hidden="true"></span>
-    {{template "buddychip"}}
     {{template "bellchip" .AnyTold}}
     {{template "youchip" .You}}
   </span>
@@ -118,6 +122,17 @@
         <p class="corrections">
           <a class="stamp" href="/?open={{.ID}}&reword=1">say it another way<span class="k">R</span></a>
         </p>
+        {{end}}
+        {{if .Step}}
+        <div class="step">
+          <p class="body">{{.Step.Body}}{{if .Step.Last}} <span class="pencil">the last one</span>{{end}}</p>
+          <form class="stamps" method="post" action="/steps">
+            <input type="hidden" name="id" value="{{.Step.ID}}">
+            <input type="hidden" name="from" value="/?open={{.ID}}">
+            <button class="stamp go" name="act" value="done">done<span class="k">D</span></button>
+            <button class="stamp no" name="act" value="clear">forget the steps<span class="k">X</span></button>
+          </form>
+        </div>
         {{end}}
         {{if .Held}}
         <form class="stamps" method="post" action="/board/act">
@@ -226,12 +241,6 @@
 </main>
 {{else}}
 <main class="racks">
-  {{if and (eq (index .Bays 0).Key "notes") (not (index .Bays 0).In)}}
-  <div class="quicknote">
-    <p class="quicklead">always a note, wherever you are</p>
-    {{template "blankstrip" (index .Bays 0)}}
-  </div>
-  {{end}}
   {{range $bay := .Bays}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
@@ -346,7 +355,7 @@
     </span>
     {{if .Camera}}
     <label class="camera">
-      <input type="file" name="photo" accept="image/*" capture="environment">
+      <input type="file" name="photo" accept="image/*">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v11H3z"/><circle cx="12" cy="14" r="3.4"/></svg>
       <span class="offscreen">take a photograph</span>
     </label>

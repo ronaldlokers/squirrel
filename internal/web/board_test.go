@@ -239,22 +239,12 @@ func TestAgendaWordsWithNoTimeInThemAreAskedAbout(t *testing.T) {
 	require.Equal(t, "/?bay=agenda&when=ring+the+dentist", w.Header().Get("Location"))
 }
 
-// The flip, pinned. The front door is the board; the conversation kept its own
-// address and every press made inside it comes back there rather than landing
-// somebody on a board they did not ask for.
-func TestTheFrontDoorIsTheBoardAndTheConversationHasItsOwnAddress(t *testing.T) {
+func TestTheFrontDoorIsTheBoard(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
 	front := m.call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, front, `class="racks"`, "the front door is not the board")
 	require.NotContains(t, front, `id="thread"`)
-
-	room := m.call(t, "GET", "/r/everything", nil).Body.String()
-	require.Contains(t, room, `id="thread"`, "the conversation lost its own address")
-
-	w := m.call(t, "POST", "/pile/act", strings.NewReader("id=1&act=keep"))
-	require.Equal(t, "/r/everything", w.Header().Get("Location"),
-		"a press in the conversation landed on the board")
 }
 
 // On a phone the four racks become one and the bay signs become the tabs above
@@ -277,25 +267,6 @@ func TestTheNotesAreTheBayYouLandIn(t *testing.T) {
 	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, `class="rack in" data-bay="notes"`)
-}
-
-func TestEveryBayButTheNotesCarriesAQuickNote(t *testing.T) {
-	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores", nil).Body.String()
-	start := strings.Index(body, `class="quicknote"`)
-	require.GreaterOrEqual(t, start, 0, "the chores tab carries no quick note")
-	end := strings.Index(body, `<section class="rack`)
-	require.Greater(t, end, start, "the quick note is not ahead of the racks")
-	quick := body[start:end]
-
-	require.Contains(t, quick, `value="notes"`, "the quick note does not land in the notes")
-	require.Contains(t, quick, `placeholder="what is it"`, "the quick note asks a different question than the notes do")
-}
-
-func TestTheNotesCarryNoSecondQuickNote(t *testing.T) {
-	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=notes", nil).Body.String()
-
-	require.NotContains(t, body, `class="quicknote"`,
-		"the notes offer their own box twice, once for no reason")
 }
 
 // A press in a bay comes back to that bay. Answering a chore on a phone and

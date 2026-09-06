@@ -256,6 +256,24 @@ is a chore).
 · voice capture (the phone keyboard already dictates into Campfire) · a general
 AI chat companion · morning planning · weekly reflection.
 
+**Tried and removed, 6 September 2026: a note box on every phone tab.** A
+cross-functional review found a real problem — the phone shows one bay at a
+time, each bay's box asks a different question, and a thought typed while the
+chores tab happened to be open became a weekly chore, because that field
+defaults to every seven days. So which box you are in became a decision made
+*before* capture, which is the moment the product exists to protect.
+
+The fix shipped was a second box, pinned above the rack on every tab but the
+notes, always landing in the notes. It was removed the same week. Two boxes on
+one screen asking different questions is the same decision it was meant to
+remove, wearing a label — and it is the third capture surface this list already
+refuses.
+
+**The problem it was aimed at is still real and is still open.** The answer is
+not another box; it is that a bay should not turn a thought into something it
+is not. Whatever comes next is a change to what the chores field does with words
+it was not expecting, not an addition to the screen.
+
 **Because they import a shape the product does not have:** calendar import ·
 two-way calendar sync · a browsable list of appointments · deadlines on tasks ·
 "someday" as a note state rather than a task state.

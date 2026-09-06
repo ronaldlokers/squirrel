@@ -260,9 +260,6 @@ func Trim(recent []Exchange, now time.Time) []Exchange {
 //
 // Everything is deliberately absent. It is not a room he is confined to — it is
 // where he is, and every other room is the narrowing.
-//
-// TestTheRoomNamesAgreeWithTheCoach fails when the two lists drift, because
-// two lists of the same four names is one list that goes stale.
 var roomNames = map[string]string{
 	"notes":  "the notes",
 	"chores": "the chores",

@@ -20,6 +20,11 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
+func post(t *testing.T, m *testMux, path string, form url.Values) *httptest.ResponseRecorder {
+	t.Helper()
+	return m.call(t, "POST", path, strings.NewReader(form.Encode()))
+}
+
 type concurrencyProbe struct {
 	mu      sync.Mutex
 	current int
@@ -951,7 +956,7 @@ func (f *fakeStore) SaveSteps(_ context.Context, _ int64, itemID *int64, label s
 	f.steps = nil
 	for i, body := range steps {
 		f.steps = append(f.steps, squirrel.Step{
-			ID: int64(i + 1), Label: label, Body: body, Last: i == len(steps)-1,
+			ID: int64(i + 1), Label: label, Body: body, Last: i == len(steps)-1, ItemID: itemID,
 		})
 	}
 	f.stepItem = itemID
@@ -1370,34 +1375,17 @@ func (f *fakeStore) Waiting(_ context.Context, _ int64, _ time.Time) (squirrel.W
 	return f.waiting, nil
 }
 
-// opened goes into a room and returns what it drew.
-//
-// One step, where the door was two. A door was a POST that wrote the turns and
-// a render that drew them; a room is a GET that does both, because entering a
-// place is navigation and the place draws itself on arrival.
 func opened(t *testing.T, f *fakeStore, where string) string {
 	t.Helper()
-	// A fresh reading, so Buddy does not ask how you are on the way past and
-	// become the live edge himself — which would take the controls off the
-	// cards the room just drew. Incidental to what these tests are about, and
-	// TestOnlyTheNewestBuddyTurnHasControls is where that rule is proved.
 	if f.checkin == nil {
 		f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: now()}
 	}
-	if shelfByKey(where) {
-		return pressedShelf(t, f, where).Body.String()
+	bay, ok := theBays[where]
+	if !ok {
+		t.Fatalf("%s is not a bay on the board", where)
 	}
-	// The four object rooms are the board's bays since 2 September 2026, so a
-	// test that opened one is asking about a bay. The shelves are a press on
-	// the ledge, which is what pressedShelf above is.
-	if bay, retired := theBays[where]; retired {
-		// The rack rather than the page. A room was a screen showing one set;
-		// a bay is one rack on a screen showing four, so a test asking what
-		// this place holds has to be handed the place rather than the board.
-		page := routed(t, f).call(t, "GET", bay, nil).Body.String()
-		return theRackIn(t, page, bay)
-	}
-	return routed(t, f).call(t, "GET", "/r/"+where, nil).Body.String()
+	page := routed(t, f).call(t, "GET", bay, nil).Body.String()
+	return theRackIn(t, page, bay)
 }
 
 // theRackIn is one rack's markup, plus the head and the bay signs above it so a
@@ -1426,45 +1414,6 @@ func theRackIn(t *testing.T, page, bay string) string {
 	return tabs + rest[:end+len("</section>")]
 }
 
-// pressedShelf is how the two shelves are reached since 31 August 2026: a chip
-// inside the notes rather than a door on the rail. The helpers take a shelf
-// where they took a room, so a test about what a shelf draws stays a test about
-// what a shelf draws.
-func pressedShelf(t *testing.T, f *fakeStore, which string) *httptest.ResponseRecorder {
-	t.Helper()
-	return routed(t, f).callFragment(t, "/notes/shelf",
-		url.Values{"room": {"notes"}, "shelf": {which}}.Encode())
-}
-
-// drewIn goes into a room and hands back the turns it wrote, for the tests
-// that assert on the write rather than on a rendering of it.
-func drewIn(t *testing.T, f *fakeStore, where string) []squirrel.Turn {
-	t.Helper()
-	// A shelf is a press and a press is kept, so what it drew is in the record.
-	if shelfByKey(where) {
-		pressedShelf(t, f, where)
-		return f.appended
-	}
-	if _, retired := theBays[where]; retired {
-		t.Fatalf("%s is a bay on the board and draws no turns; read the board instead", where)
-	}
-	// A room's list is drawn and not kept since 31 August 2026 — see
-	// view.Edge — so the record is the wrong place to look for it. This asks
-	// the room the same question the handler asks; that the handler asks it is
-	// covered by the tests that read the rendered page.
-	return drewInWith(t, f, signedInOptions(), where)
-}
-
-// drewInWith is the same for a room whose list depends on something in the
-// options — a coach that says what it noticed about a set, which is the only
-// one there is.
-func drewInWith(t *testing.T, f *fakeStore, opts Options, where string) []squirrel.Turn {
-	t.Helper()
-	routed(t, f).call(t, "GET", "/r/"+where, nil)
-	ctx := context.WithValue(context.Background(), whoKey{}, who{personID: 1})
-	return roomEdge(ctx, f, opts, 1, where)
-}
-
 // What Squirrel thinks it knows, faked. The weekly pass that writes these is
 // proved against a real database in internal/squirrel; what the screen has to
 // be tested for is that it shows them and can throw them away.
@@ -1491,22 +1440,6 @@ func (f *fakeStore) ForgetKnowing(_ context.Context, _ int64) error {
 // The seam rather than a whole coach: what the screen has to be tested for is
 // what it does with the two answers, and the answers themselves are the
 // coach's business.
-func mountedReading(t *testing.T, f *fakeStore, reads func(string) (string, bool, string, error)) *testMux {
-	t.Helper()
-	f.reads = reads
-	m := newTestMux()
-	require.NoError(t, Mount(m, f, Options{
-		RequiredGroup: "squirrel-users", Gate: &Gate{},
-		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
-		Login:    aTestLogin,
-		Reads: func(_ context.Context, _ int64, said string) (string, bool, string, error) {
-			f.readAsked = append(f.readAsked, said)
-			return f.reads(said)
-		},
-	}))
-	return m
-}
-
 // asking is a request with a person on it.
 //
 // guard does this in production — it decides who is asking and puts them on

@@ -8,7 +8,6 @@ import (
 )
 
 // A thing broken into steps, on the screen.
-//
 // One step is shown. Never the sequence, never a position out of a total,
 // never a progress bar — a bar is a count in a costume, and a count of what
 // you have left to do is the accruing number this product refuses.
@@ -28,6 +27,18 @@ func stepFor(s Store, opts Options, r *http.Request) *stepView {
 	}
 	st, found, err := s.NextStep(r.Context(), personID)
 	if err != nil || !found {
+		return nil
+	}
+	return &stepView{ID: st.ID, Label: st.Label, Body: st.Body, Last: st.Last}
+}
+
+func stepForItem(s Store, r *http.Request, itemID int64) *stepView {
+	personID, ok := personOf(r)
+	if !ok {
+		return nil
+	}
+	st, found, err := s.NextStep(r.Context(), personID)
+	if err != nil || !found || st.ItemID == nil || *st.ItemID != itemID {
 		return nil
 	}
 	return &stepView{ID: st.ID, Label: st.Label, Body: st.Body, Last: st.Last}
@@ -74,7 +85,7 @@ func stepsHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, backToTheRoom(r), http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 		back := backTolerant(r.FormValue("from"))

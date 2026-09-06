@@ -9,19 +9,6 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// Something set aside is recessed rather than raised. It is the one body that
-// bends "cream card stock, never white", and it bends it on purpose.
-func TestSomethingSetAsideIsNotStock(t *testing.T) {
-	f := &fakeStore{aside: []squirrel.HeldItem{{
-		ID: 5, Text: "the referral", State: squirrel.ItemWaiting, Kind: squirrel.ItemNote,
-	}}}
-	drew := drewIn(t, f, "held")
-	require.NotEmpty(t, drew)
-
-	require.Contains(t, string(drew[len(drew)-1].Shown), `"kind":"held"`)
-	require.Contains(t, drawnAs(t, "held"), "kheld")
-}
-
 // Every kind that has a body is a different word in the markup. A test that
 // only checked one would pass with the other five collapsed back into one.
 // Each kind is still told apart at a glance, and on the board that job belongs
@@ -49,14 +36,4 @@ func TestTheKindsAreDistinguishable(t *testing.T) {
 		require.False(t, seen[holder], "%s is drawn twice", holder)
 		seen[holder] = true
 	}
-}
-
-// drawnAs renders one turn carrying a card of that kind, so a test can look at
-// the markup a kind produces rather than at the JSON that asks for it.
-func drawnAs(t *testing.T, kind string) string {
-	t.Helper()
-	return thread(t, &fakeStore{turns: []squirrel.Turn{{
-		ID: 1, Who: squirrel.SpeakerBuddy, Words: "here",
-		Shown: []byte(`{"cards":[{"kind":"` + kind + `","title":"a thing","meta":"a line","take":"the letter"}]}`),
-	}}})
 }

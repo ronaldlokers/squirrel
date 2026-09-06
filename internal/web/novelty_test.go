@@ -22,7 +22,7 @@ func TestTheDayReachesTheStylesheet(t *testing.T) {
 	now = func() time.Time { return day }
 	t.Cleanup(func() { now = was })
 
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/r/everything", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/me", nil).Body.String()
 
 	require.Contains(t, body,
 		fmt.Sprintf("--tilt: %ddeg", squirrel.Tilt(day)),
@@ -42,7 +42,7 @@ func TestEveryScreenGetsTheSameDay(t *testing.T) {
 	t.Cleanup(func() { now = was })
 
 	want := fmt.Sprintf("--light: %d%%", squirrel.Light(day))
-	for _, path := range []string{"/", "/?bay=chores", "/r/everything"} {
+	for _, path := range []string{"/", "/?bay=chores", "/me"} {
 		body := mounted(t, &fakeStore{}).call(t, "GET", path, nil).Body.String()
 		require.Contains(t, body, want, "%s is lit from somewhere else", path)
 	}
