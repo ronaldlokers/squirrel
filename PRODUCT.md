@@ -477,6 +477,14 @@ which pull toward a precision tool — the design has to be both, not average th
    exchange for exactly that reason — so "it was tactless" can be told apart
    from "I remember it as tactless".
 
+   **What it keeps is the person's half, whole.** What was typed and what was
+   on screen, composed the one way, so the row holds the content that left the
+   machine. Not the preamble, which is identical every time, and not the line
+   of state — the clock, the capacity, what is coming — which is derived and
+   would put a copy of the day in every row. It kept only what was typed until
+   7 September 2026, which on the board's ask meant a stock phrase and none of
+   the note.
+
    **And as of 22 August the record is read back.** One press on the sheet says
    the last thing Buddy said did not land, and the last few of those are shown
    to the model as examples of what does not work here. Examples rather than an
