@@ -1,4 +1,103 @@
 (function () {
+  (() => {
+    const form = document.querySelector("form.blankstrip");
+    if (!form) return;
+    const input = typeof DataTransfer === "undefined"
+      ? null : form.querySelector('input[name="photo"]');
+    if (!input) return;
+
+    const DB = "squirrel-photo", STORE = "photo", ONE = "pending";
+
+    function open() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+
+    function inStore(mode, run) {
+      return open().then(db => new Promise((resolve, reject) => {
+        const req = run(db.transaction(STORE, mode).objectStore(STORE));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    const stash = file => inStore("readwrite", s => s.put(file, ONE));
+    const forget = () => inStore("readwrite", s => s.delete(ONE));
+    const stashed = () => inStore("readonly", s => s.get(ONE));
+
+    const shown = document.createElement("div");
+    shown.className = "gotphoto";
+    shown.hidden = true;
+    const thumb = document.createElement("img");
+    thumb.alt = "the photograph you are about to keep";
+    const off = document.createElement("button");
+    off.type = "button";
+    off.className = "unphoto";
+    off.textContent = "take it off";
+    shown.append(thumb, off);
+    form.append(shown);
+
+    let drawn = "";
+
+    function show(file) {
+      if (drawn) URL.revokeObjectURL(drawn);
+      drawn = URL.createObjectURL(file);
+      thumb.src = drawn;
+      shown.hidden = false;
+    }
+
+    function hide() {
+      if (drawn) URL.revokeObjectURL(drawn);
+      drawn = "";
+      thumb.removeAttribute("src");
+      shown.hidden = true;
+    }
+
+    function enctypeFor() {
+      form.enctype = input.files?.length
+        ? "multipart/form-data"
+        : "application/x-www-form-urlencoded";
+    }
+
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      enctypeFor();
+      if (!file) { hide(); forget().catch(() => {}); return; }
+      show(file);
+      stash(file).catch(() => {});
+    });
+
+    off.addEventListener("click", () => {
+      input.value = "";
+      enctypeFor();
+      hide();
+      forget().catch(() => {});
+    });
+
+    (async () => {
+      try {
+        if (new URLSearchParams(location.search).has("kept")) {
+          await forget();
+          return;
+        }
+        const file = await stashed();
+        if (!file) return;
+        const carrier = new DataTransfer();
+        carrier.items.add(file);
+        input.files = carrier.files;
+        enctypeFor();
+        if (input.files.length) show(file);
+      } catch {
+      }
+    })();
+
+    enctypeFor();
+  })();
+
   // The worker is what makes this installable and what answers when the
   // network is gone. Registered from here rather than inline in the page so
   // there is one script to read, and resolved relative to this file so it does
