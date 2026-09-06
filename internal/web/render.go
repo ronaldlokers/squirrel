@@ -154,6 +154,8 @@ type view struct {
 	// MoodsSays is what stands where the grid would be when there is no grid:
 	// nothing said yet, or nothing readable. Empty when the grid drew.
 	MoodsSays string
+	Spent     string
+	Ceiling   string
 	// Known is what Squirrel has worked out about you, in its own words, and
 	// KnownSays is the sentence over it. There is always a sentence — the
 	// empty state is the ordinary one for a first week and it says what would

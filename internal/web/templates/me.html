@@ -29,6 +29,14 @@
              answered somewhere else, which put the two things this product
              holds about you behind a door inside the room you had already
              opened. This is the page about you; they are on it. */}}
+        {{if .Spent}}
+        <div class="youbit">
+          <h2 class="youname">What Buddy has cost this month</h2>
+          <p class="yousays">{{.Spent}}{{if .Ceiling}} of {{.Ceiling}}{{end}}. When it is
+            spent, the deterministic answers take over and nothing else changes.</p>
+        </div>
+        {{end}}
+
         <div class="youbit">
           <h2 class="youname">How you felt before</h2>
           <p class="yousays">The last six weeks, as you said them. Nothing is counted.</p>
