@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
 func testOptions() Options {
@@ -13,6 +14,7 @@ func testOptions() Options {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}
 }
 

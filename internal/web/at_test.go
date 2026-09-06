@@ -31,6 +31,7 @@ func routedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *realMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}))
 	return m
 }

@@ -1067,6 +1067,7 @@ func mountedSpooling(t *testing.T, f *fakeStore, sp *fakeSpool) *testMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}))
 	f.kept = sp
 	return m
@@ -1079,6 +1080,7 @@ func mounted(t *testing.T, f *fakeStore) *testMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}))
 	return m
 }
@@ -1173,6 +1175,7 @@ func mountedWith(t *testing.T, f *fakeStore, c *fakeCoach) *testMux {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}
 	if c != nil {
 		opts = c.options(opts)
@@ -1477,6 +1480,7 @@ func signedInOptions() Options {
 		Gate:     &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}
 }
 

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
+	"time"
 )
 
 // browserBinary finds something to drive. GitHub's runners ship Chrome; this
@@ -67,6 +68,7 @@ func screenWith(t *testing.T, f *fakeStore, c *fakeCoach) *httptest.Server {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}
 	if c != nil {
 		opts = c.options(opts)
