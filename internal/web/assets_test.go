@@ -135,8 +135,11 @@ func TestTheWorkerHoldsACaptureWithNoNetwork(t *testing.T) {
 	require.Contains(t, body, "DOCKS.has(new URL(request.url).pathname)",
 		"it intercepts the docks")
 	require.Contains(t, body, "indexedDB", "and keeps the words somewhere real")
-	require.Contains(t, body, `"/?held=1"`,
+	require.Contains(t, body, `"offline=1"`,
 		"and the page is told")
+	require.Contains(t, body, `"/board/new": "words"`,
+		"a capture typed on the board is one it can hold")
+	require.Contains(t, body, `"/board/capture": "text"`)
 	// Deleted only once its own write has landed — a queue that keeps what it
 	// has delivered is a second pile.
 	require.Contains(t, body, "del.delete(note.key)")

@@ -1023,6 +1023,34 @@ picture was a picture; the memory is unreachable, and a screen saying "too big,
 or a kind Squirrel does not take" about a working camera would send you looking
 for a fault that is not there.
 
+**Words typed with no network say so on the strip they were typed in.** The
+worker takes them, and the board you come back to is the rack you were in, with
+one line under the blank strip: *no network — I have it. It goes in when you are
+back.* It is the same quiet line the two questions use, because it is the same
+kind of thing — the screen telling you where your words are.
+
+The worker knew only the room's route until 7 September 2026. Every board
+capture went to `/board/new` or `/board/capture`, which nothing intercepted, so
+with no network the browser's own error page replaced the board and the words
+went with it. It holds the whole form now rather than one field: a note typed on
+the chores tab has to go back to the chores when it lands, and a hold that kept
+only the words filed it somewhere else.
+
+**A photograph you have chosen is drawn under the box, and held.** Choosing one
+hands the screen to another app, and an app handed away can be reclaimed and
+comes back reloaded — with an empty input, looking exactly as it did before,
+because it never looked any different. So it goes into the browser's own storage
+the moment it is picked and comes back onto the input when the board is drawn
+again, with the picture under the words and *take it off* beside it. The
+photograph is a 84px square in the board's own 3px corner, not the room's 10px
+one.
+
+The blank strip is multipart only while it is carrying a photograph. A form that
+always claimed multipart would give up the offline hold on every words-only
+capture, which is the case the hold exists for. Without the script it stays
+multipart and posts a photograph correctly, showing nothing and holding nothing
+— the floor this was built on.
+
 ### The stamp
 
 Rectangular, 2px outline, 3px radius, `0 3px 0` cast, caps, with the key letter

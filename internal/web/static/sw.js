@@ -61,12 +61,14 @@ function heldStore(mode) {
 
 const FIELDS = {
   "/capture": "text",
+  "/board/new": "words",
+  "/board/capture": "text",
 };
 const DOCKS = new Set(Object.keys(FIELDS));
 
-function hold(text, action, field, captureKey) {
+function hold(fields, action, captureKey) {
   return heldStore("readwrite").then(store => new Promise((resolve, reject) => {
-    const put = store.add({ text, action, field, captureKey, at: Date.now() });
+    const put = store.add({ fields, action, captureKey, at: Date.now() });
     put.onsuccess = () => resolve();
     put.onerror = () => reject(put.error);
   }));
@@ -90,10 +92,10 @@ async function flush() {
   });
 
   for (const note of all) {
-    const body = new URLSearchParams({
-      [note.field || "text"]: note.text,
-      key: note.captureKey || self.crypto.randomUUID(),
-    });
+    const body = new URLSearchParams(
+      note.fields || [[note.field || "text", note.text]]
+    );
+    body.set("key", note.captureKey || self.crypto.randomUUID());
     let res;
     try {
       res = await fetch(note.action || "/capture", {
@@ -137,9 +139,11 @@ self.addEventListener("fetch", event => {
       } catch {
         const field = FIELDS[pathname] || "text";
         const text = form.get(field);
-        if (!text || !String(text).trim()) return Response.redirect("/", 303);
-        await hold(String(text), pathname, field, captureKey);
-        return Response.redirect("/?held=1", 303);
+        const bay = form.get("bay");
+        const back = bay ? "/?bay=" + encodeURIComponent(String(bay)) : "/";
+        if (!text || !String(text).trim()) return Response.redirect(back, 303);
+        await hold([...form].filter(([, v]) => typeof v === "string"), pathname, captureKey);
+        return Response.redirect(back + (bay ? "&" : "?") + "offline=1", 303);
       }
     })());
     return;

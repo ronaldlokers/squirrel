@@ -66,6 +66,7 @@ type bayView struct {
 	Rhythms  []rhythmView
 	Asking   string
 	Refused  bool
+	Offline  bool
 	Settled  []settledView
 	Strips   []stripView
 }
@@ -325,6 +326,7 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
 	refused := r.URL.Query().Has("nophoto")
 	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
+	offline := r.URL.Query().Get("offline") == "1"
 
 	var (
 		seen                 map[string]squirrel.Noticed
@@ -361,15 +363,16 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
 			Camera: opts.Photos != nil, Trouble: !notesOK, More: moreNotes,
 			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
-			Asking: saidAnyway, Refused: refused, Settled: settled},
+			Asking: saidAnyway, Refused: refused, Offline: offline, Settled: settled},
 		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
 			Rhythms: theRhythms, Trouble: !choresOK, Asking: rhythmFor,
-			Empty: "nothing comes back today", Strips: chores},
+			Offline: offline,
+			Empty:   "nothing comes back today", Strips: chores},
 		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
-			Trouble: !tasksOK, More: moreTasks,
+			Trouble: !tasksOK, More: moreTasks, Offline: offline,
 			Empty: "nothing in the tasks", Strips: tasks},
 		{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
-			Trouble: !agendaOK, Asking: whenFor,
+			Trouble: !agendaOK, Asking: whenFor, Offline: offline,
 			Empty: "nothing left today", Strips: agenda},
 	}
 }
@@ -1017,7 +1020,7 @@ func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/?bay=notes", http.StatusSeeOther)
+		http.Redirect(w, r, "/?bay=notes&kept=1", http.StatusSeeOther)
 	}
 }
 
