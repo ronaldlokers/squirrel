@@ -1,7 +1,7 @@
 # The conversation retires into the board
 
 **Date:** 5 September 2026
-**Status:** drafted from the decision of 3 September; shape approved, phases not yet built
+**Status:** shipped. All six phases built between 5 and 6 September 2026 and live on both clusters in v0.75.0; the room's routes are gone and `/r/{room}` redirects. Kept as the reasoning behind a change of 16,274 deleted lines, not as a plan.
 
 The decision was made on 3 September and written into the roadmap: the
 conversation goes, what it does moves to the board, and chat ends up

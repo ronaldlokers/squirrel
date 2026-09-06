@@ -241,43 +241,26 @@ highlight or a badge, it is a strip pulled out of its rack — a physical act yo
 can read from across the room. Answering something strikes it and drops it into
 the day's tray, and the tray is empty again tomorrow.
 
-**The ending, decided 1 September 2026: the conversation is not retired. It
-becomes Buddy's room.** The plan of record was that it would go once the board
-could do everything; the board can, and what that made obvious is that the last
-thing it cannot do is the one thing a conversation is actually for. So the
-thread stays, at `/r/everything`, reached by the last link in the ops bar —
-*talk to Buddy* — and it stops being where the pile is worked.
+**The ending, decided 3 September 2026: the conversation retires.** It is gone —
+see *Buddy's room — retired* at the end of this document, which is the current
+description.
 
-That decision is what closes this document's own gap. Two worlds live here now,
-and both are described: the board, which is everything above, and **Buddy's
-room**, which keeps the shapes the conversation was drawn in.
+This paragraph said the opposite for two days. The decision of 1 September was
+that the thread would stay at `/r/everything` as Buddy's room, reached by a link
+in the ops bar, and that two worlds would live in this document. That was
+reversed on 3 September and the reversal shipped in v0.75.0: there is one
+surface inside the app, and Campfire beside it. The earlier reasoning is in git
+history and is not repeated here, because a document that argues both sides in
+two places is a document you cannot act on.
 
-**Status.** This document is ahead of the running code
-and is landing behind it. **As of 1 September 2026 the board is the front door**:
-`/` draws it, and the conversation kept its own address at `/r/everything`, with
-every press made inside it coming back there. The board is also still at
-`/board`, and drawing the four bays, the pulled strip, the running timer and the
-ledge from the store; a strip can be answered on it, with the strike, the
-1150ms hold, the travel and the tray; and every rack can be written into,
-the notes through the spool, a chore with the interval beside its field, an
-appointment as the sentence chat already parses.
+**Status.** This describes the running code. There is one world here now — the
+board — and the section at the end records what the room was and what became of
+each thing it did. The board is the front door at `/`, and `/r/{room}` is a
+redirect.
 
-The board also searches, keeps a photograph and opens the strip that carries
-one, asks Buddy on a press and marks what he wrote, makes a chore out of a note,
-and closes an appointment. What is left in the conversation, and left there on
-purpose, is Buddy's longer conversation: that is what the link in the ops bar is
-for, and a conversation belongs where conversations are. Nothing here is described from intention: what the route renders
-is what this document says, and the parts it does not render yet are named in
-the surface brief.
-
-The radius vocabulary is checked against both stylesheets again: the board's
-values are in the frontmatter above, and the conversation's are the table under
-*Buddy's room*. The exemption this document carried while the board was being
-built is gone. Everything shipped through v0.55.1 is the previous
-world — the conversation, where every object was a turn in a thread, drawn on
-cream card stock with a 3px outline and a 14px corner. That world's document is
-in git history (`git show HEAD~1:DESIGN.md`) and it stays the accurate
-description of production until this one is built.
+Everything shipped through v0.55.1 is the previous world — the conversation,
+where every object was a turn in a thread, drawn on cream card stock with a 3px
+outline and a 14px corner. That world's document is in git history.
 
 **What survived the redesign, because the owner pinned it:** the two faces,
 Recursive and Inter, and the whole palette. Purple and orange are the product's
@@ -1254,14 +1237,18 @@ None of it survived. **It notices**, above, is the accurate record: the
 clause is the picker's again, there is no mark on the pulled strip, and
 nothing there to refuse.
 
-**A different press with the same name is still live, and it is not this
-one.** Buddy's own replies, in the conversation rather than on the board,
-carry their own refusal — *that went badly* — one press, on any reply a model
-wrote (`/buddy/badly`, `coachBadlyHandler` in `internal/web/coach.go`, tested
-in `internal/coach/badlylanded_test.go`). It marks the answer rather than
-arguing with it, and the marked ones are what the next prompt is shown as
-examples of what does not work here. It has nothing to do with the acorn: it
-was never attached to the pulled strip, and it was never removed.
+**The refusal that is live is *not useful*, and it is on the board.** One
+press at the end of a marginalia line or an answer Buddy wrote
+(`/board/notuseful`). It marks the line rather than arguing with it, the words
+are kept, and `WhatWasRefused` shows the next pass what not to write again.
+
+*That went badly* — the press that did this in the conversation, at
+`/buddy/badly` — went with the room on 6 September 2026. Its table did not.
+`nowFor` still reads `BadlyLanded` into every prompt and `LandedBadlyLatest` is
+still declared on the screen's `Store`, with nothing left anywhere that writes
+to either: the two refusals were separate mechanisms, and only one of them was
+carried across. Recorded here rather than quietly fixed, because giving it a
+press on the board is a product decision and not a documentation one.
 
 ### The pencil line
 
