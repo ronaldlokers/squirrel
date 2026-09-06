@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
 var aRouteInProse = regexp.MustCompile("`(/[a-z0-9{}/_.-]*)`")
@@ -25,6 +26,7 @@ func theRoutesMounted(t *testing.T) map[string]bool {
 		RequiredGroup: "squirrel-users", Gate: &Gate{},
 		Sessions: newSessions(alwaysSignedIn{}, cacheFor, cacheMost),
 		Login:    aTestLogin,
+		Location: time.Local,
 	}))
 	out := map[string]bool{"/": true}
 	for pattern := range m.routes {

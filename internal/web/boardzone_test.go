@@ -42,7 +42,7 @@ func TestTheBoardFallsBackToUTCRatherThanToWhateverTheProcessHas(t *testing.T) {
 	t.Cleanup(func() { now = was })
 	now = func() time.Time { return time.Date(2026, time.June, 30, 23, 30, 0, 0, time.UTC) }
 
-	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+	body := mountedWhere(t, aBoardStore(), nil).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "23:30",
 		"with nowhere named the screen must say UTC, which is a clock you can recognise as wrong")
