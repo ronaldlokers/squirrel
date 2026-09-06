@@ -1,6 +1,9 @@
 package web
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
 type Exchange struct {
 	Said    string
@@ -39,11 +42,10 @@ func withDid(a Answer) string {
 }
 
 func backTolerant(from string) string {
-	if !strings.HasPrefix(from, "/") {
+	u, err := url.Parse(from)
+	if err != nil || u.Scheme != "" || u.Opaque != "" || u.Host != "" ||
+		!strings.HasPrefix(u.Path, "/") || strings.Contains(from, `\`) {
 		return "/"
 	}
-	if strings.HasPrefix(strings.ReplaceAll(from, `\`, "/"), "//") {
-		return "/"
-	}
-	return from
+	return u.String()
 }
