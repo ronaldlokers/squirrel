@@ -1275,65 +1275,31 @@ its four answers, and something that already left carries `back in the pile` and
 nothing else — offering the exits to a note that has taken one is asking a
 question that has been answered. Its mark is the state it went to.
 
-## Buddy's room
+## Buddy's room — retired
 
-One room, and the only place the conversation's own shapes survive. It is not a
-lesser board and it is not a second pile: it holds what was said, which is a
-different kind of thing from what is waiting.
+The room is gone. It was the second conversation inside the app, and the
+decision of 3 September was that there is only one: the board, with Campfire
+beside it. Its shapes went with it — the pill, the 14px card, the gutter, the
+dock, the transcript — and nothing on the board inherits them, because a strip
+is printed and a conversation was not.
 
-**Its shapes, documented rather than tolerated.** The board is square because a
-strip is printed; a conversation is not, and its radii stay what they were:
+What it did lives on the board now. A strip can be asked about and the answer
+hangs in the margin; the ladder and the timer are on the pulled strip; search
+takes the racks' place; the opened strip corrects its own words. What it held —
+the turns — is untouched: the record is kept, and what went is the thing that
+drew it.
 
-| Value | What it is |
-|---|---|
-| `999px` | A chip, and the scrollbar's thumb. A pill is the shape of a thing you say back. |
-| `14px` (`--r`) | A card in the conversation, and the boxes that hold one. |
-| `10px` | The stamp, and a photograph inside a card. |
-| `3em` | Buddy's speech, which is Campfire's own message radius and deliberately far from any card corner: at a glance the two can never be the same object. |
-| `7px`, `6px`, `4px` | The small marks — a page tab, a keycap, a notch. Deliberately not tokens, because each is a drawing rather than a size. |
+**The two ways to talk to Squirrel are now the board and Campfire.** Campfire is
+where a thought can be thrown from a phone with the room already open, and where
+Squirrel can say something without the app in front of you. It is not where the
+product lives, and no capability exists only there.
 
-**What the room keeps:** the bubble, the face in the gutter, the day divider,
-the dock, and the rail. **What it gives up:** being where a note is triaged.
-Those presses have a board now, and two places to answer the same thing is the
-problem this product exists to solve rather than one it may create.
+**What went with it, and is worth knowing.** The rail that cleared the lid on a
+desktop; the dock's own reserve arithmetic; the slot; the faces line and the day
+divider. The browser tests that measured those shapes went too — they asserted
+on markup that no longer exists, and repointing them at the board would have
+been a test that passes without testing.
 
-**One piece of it landed on 2 September 2026:** Buddy's room reads the whole
-record rather than one room's share of it. Nothing was rewritten — every turn
-keeps the room it was said in — and what changed is that the reading stopped
-asking. That is the piece the retirement needs and the piece that is true
-whatever happens to the rooms: a record with four rooms' worth of holes in it
-would be the thing that made retiring them lossy.
-
-**Done on 2 September 2026.** The four object rooms are retired. Their URLs
-answer 301 to the bay that holds what they held, and the decisions the sweep
-was waiting on are these:
-
-- **The record keeps its rooms.** Nothing was rewritten. Every turn still
-  carries the room it was said in, and Buddy's room reads the whole record
-  rather than one room's share, so nothing said is out of reach.
-- **The four are sets, not places.** He can still be asked to show you the
-  chores, and he draws them; what they stopped being is somewhere you can
-  stand. New turns are still filed by subject, so the record keeps saying what
-  a turn was about even though no room draws it.
-- **A rack says that there is more, never how much.** *there is more further
-  back*, under the last strip it can hold.
-- **There is no rail.** Buddy's room has one link where it was, back to the
-  board, and the board's four bay signs are the navigation.
-- **The notice a door could carry about its set is gone**, and this is the
-  record of it: the coach could say one thing about a set of rows — "these are
-  all about the car" — and no surface asks for that now. It was a door's
-  feature, and the doors went.
-- **The live edge is gone with them.** It was a room's current state under the
-  conversation; a rack is that by construction, and re-reads on every load.
-- **Triage left the conversation.** His room draws no card to answer, because
-  answering happens on the board. That is what "it stops being where the pile
-  is worked" means in the code rather than in a sentence.
-
-**And the keys are wired.** The board drew a letter on every stamp from the day
-it was mounted and read none of them, which the room's own keyboard tests
-caught the moment those rooms went. Letters act on the strip you are focused in,
-arrows move between strips, and a letter nothing answers to does nothing at
-all.
 
 ## Do's and Don'ts
 

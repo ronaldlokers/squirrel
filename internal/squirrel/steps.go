@@ -24,10 +24,7 @@ type Step struct {
 	Body  string
 	// Last says there is nothing after this one, so the surface can say so
 	// rather than leaving you waiting for a step that never comes.
-	Last bool
-	// ItemID is the row this breakdown is about, or nil for a sequence about
-	// something that is not one. It is how a strip that has been opened knows
-	// whether this step belongs to it.
+	Last   bool
 	ItemID *int64
 }
 

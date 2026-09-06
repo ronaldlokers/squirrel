@@ -82,8 +82,6 @@ func TestASecondBreakdownReplacesTheFirst(t *testing.T) {
 	require.Equal(t, "find the number", st.Body)
 }
 
-// The item a breakdown is about rides along with the step, so a strip that
-// has been opened can tell whether this sequence belongs to it.
 func TestTheStepCarriesTheItemItIsAbout(t *testing.T) {
 	ctx := context.Background()
 	store := withStore(t)

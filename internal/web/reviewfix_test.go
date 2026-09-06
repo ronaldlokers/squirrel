@@ -91,13 +91,13 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	require.GreaterOrEqual(t, onStrip, 3.0,
 		"the ring on a strip measures %.2f:1 against the stock it sits on", onStrip)
 
-	// And in the dock, where the ground under a button is the slot rather than
-	// a card. The sheet was the third cream surface a key could reach and it
-	// went on 25 August 2026; these two are what is left, and they are the two
-	// that were wrong when this was written.
-	c.navigate(t, srv.URL+"/r/everything")
-	tabTo(t, c, ".dock .post")
-	onSlot := contrast(t, c, ".dock .post", "outline-color", ".dock .slot")
-	require.GreaterOrEqual(t, onSlot, 3.0,
-		"the ring in the dock measures %.2f:1 against the slot it sits in", onSlot)
+	// And on the blank strip, where the ground under a button is the field it
+	// captures into rather than a card. The sheet was the third cream surface a
+	// key could reach and it went on 25 August 2026; the dock was the second
+	// and it went with the room.
+	c.navigate(t, srv.URL+"/")
+	tabTo(t, c, ".strip.blank .newmark")
+	onBlank := contrast(t, c, ".strip.blank .newmark", "outline-color", ".strip.blank")
+	require.GreaterOrEqual(t, onBlank, 3.0,
+		"the ring on the blank strip measures %.2f:1 against the stock it sits on", onBlank)
 }

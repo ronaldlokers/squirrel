@@ -10,8 +10,8 @@ import (
 
 func TestBrowserAHeldCaptureCarriesAKey(t *testing.T) {
 	c, srv := open(t, aPile())
-	c.navigate(t, srv.URL+"/r/everything")
-	waitForTheWorker(t, c, srv.URL+"/r/everything")
+	c.navigate(t, srv.URL+"/")
+	waitForTheWorker(t, c, srv.URL+"/")
 
 	srv.Close()
 

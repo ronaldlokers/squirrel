@@ -67,8 +67,6 @@ var appearanceScreens = map[string][]string{
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
 
-	// The page about you, the other screen this app has. What Buddy knew and
-	// the check-in's own history both live here now.
 	"/me": {".youface", ".youhead", ".weekrow"},
 }
 

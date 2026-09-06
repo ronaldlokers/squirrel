@@ -102,11 +102,7 @@ type stripView struct {
 	Room    string
 	Held    []answerView
 	Reword  bool
-	// Step is the one thing to do next, when this strip is the thing a
-	// breakdown was about. Nil on every other strip, including every rack
-	// strip: a sequence is a property of the opened strip, never of a row in a
-	// rack.
-	Step *stepView
+	Step    *stepView
 }
 
 type rhythmView struct {
@@ -923,9 +919,6 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				}
 				break
 			}
-			// Broken into steps, when that is what this blocker wants and the
-			// offer names a strip: the sequence then lives on the strip it is
-			// about, opened, rather than behind the fixed line here.
 			if o, found, err := s.PickNow(r.Context(), personID, now(), true); err == nil && found {
 				if smallerFor(s, opts, r, b, o) != nil && o.Kind == squirrel.OfferTask && o.RefID != 0 {
 					http.Redirect(w, r, "/?open="+strconv.FormatInt(o.RefID, 10), http.StatusSeeOther)
