@@ -207,11 +207,6 @@ func TestAskingAgainAboutTheSameStripReplacesTheAnswerRatherThanStackingIt(t *te
 	require.Equal(t, "second answer", f.noticed[0].Words)
 }
 
-// The escalation to the deep model is decided by Overwhelmed(said), and what
-// this press says is the strip. It used to say a fixed stock phrase and put the
-// strip in subject, which Overwhelmed never sees — so a strip holding five
-// things could not escalate, and the one turn the expensive model exists for
-// was reachable only from Campfire.
 func TestPressingAskSaysTheStripSoAPileCanBeSeenAsOne(t *testing.T) {
 	pile := "the tax thing, the vet, the bins and ring the school"
 	c := &fakeCoach{reply: "start with the school"}
@@ -229,8 +224,6 @@ func TestPressingAskSaysTheStripSoAPileCanBeSeenAsOne(t *testing.T) {
 		"a pile handed to the coach as this turn's words is not recognised as one")
 }
 
-// Nothing to ask about is not a turn. Without this an empty hidden field would
-// spend a model call on a blank prompt.
 func TestPressingAskWithNoWordsCallsNoModel(t *testing.T) {
 	c := &fakeCoach{reply: "should never be seen"}
 	m := mountedWith(t, aRackWithoutAgenda(), c)
