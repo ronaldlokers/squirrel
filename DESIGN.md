@@ -1003,6 +1003,17 @@ time go to the notes, through the spool like any other capture, and the board
 says where they went. A bay may refuse to make what you asked for. No bay may
 drop what you typed.
 
+**A photograph Squirrel will not take is refused the same way.** Choosing a PDF
+or a kind this does not keep used to end at the failure page, which says nothing
+has been lost while the words that came with it had been. It is a refusal, not a
+breakdown: the words come back into the notes box and the line under the strip
+says what happened and what to do — the wording the retired room used, kept.
+
+A volume that will not write is a different thing and still fails visibly. The
+picture was a picture; the memory is unreachable, and a screen saying "too big,
+or a kind Squirrel does not take" about a working camera would send you looking
+for a fault that is not there.
+
 ### The stamp
 
 Rectangular, 2px outline, 3px radius, `0 3px 0` cast, caps, with the key letter

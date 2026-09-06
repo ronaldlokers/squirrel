@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -32,6 +33,9 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 		text, photo, kind, key, err := readCapture(r, opts)
 		if err != nil {
 			slog.Warn("a capture was refused", "error", err)
+			if refusedPhotograph(w, r, err, text) {
+				return
+			}
 			fail(w, err)
 			return
 		}
@@ -70,6 +74,16 @@ func captureHandler(s Store, opts Options) http.HandlerFunc {
 }
 
 var errNotAPhotograph = errors.New("not a photograph this keeps")
+
+var errPhotographNotKept = errors.New("the photograph could not be kept")
+
+func refusedPhotograph(w http.ResponseWriter, r *http.Request, err error, text string) bool {
+	if !errors.Is(err, errNotAPhotograph) {
+		return false
+	}
+	http.Redirect(w, r, "/?bay=notes&nophoto="+url.QueryEscape(text), http.StatusSeeOther)
+	return true
+}
 
 func readCapture(r *http.Request, opts Options) (text, photo, kind, key string, err error) {
 	parts, err := r.MultipartReader()
@@ -120,7 +134,7 @@ func readCapture(r *http.Request, opts Options) (text, photo, kind, key string, 
 			photo, err = opts.Photos.Keep(part, declared)
 			_ = part.Close()
 			if err != nil {
-				return text, "", "", key, fmt.Errorf("%w: %w", errNotAPhotograph, err)
+				return text, "", "", key, fmt.Errorf("%w: %w", errPhotographNotKept, err)
 			}
 			kind = squirrel.PhotoKind(declared)
 		default:

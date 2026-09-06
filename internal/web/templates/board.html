@@ -362,6 +362,7 @@
     {{end}}
     <button class="newmark" aria-label="keep it">+</button>
   </p>
+  {{if .Refused}}<p class="asked">that photograph was not kept &mdash; too big, or a kind Squirrel does not take. Your words are here; keep them without it, or try another picture.</p>{{end}}
   {{if and .Rhythms .Asking}}<p class="asked">how often does it come back?</p>{{end}}
   {{if and (eq .Key "agenda") .Asking}}<p class="asked">when is it?</p>{{end}}
 </form>

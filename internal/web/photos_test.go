@@ -102,7 +102,9 @@ func TestAKindThisDoesNotKeepIsRefused(t *testing.T) {
 	kind, body := photographed(t, "the tax letter", "application/pdf", []byte("%PDF"))
 	w := postPhoto(t, m, kind, body)
 
-	require.Equal(t, http.StatusServiceUnavailable, w.Code)
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/?bay=notes&nophoto=the+tax+letter", w.Header().Get("Location"),
+		"the words went down with the photograph")
 	require.Empty(t, ph.kept, "it kept something it does not keep")
 	require.Empty(t, sp.written, "it captured a note referencing nothing")
 }
