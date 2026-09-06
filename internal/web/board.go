@@ -1345,19 +1345,19 @@ func boardAskHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		what := r.FormValue("what")
-		words := r.FormValue("words")
+		words := strings.TrimSpace(r.FormValue("words"))
 		room := r.FormValue("room")
-		if _, ok := theBays[room]; !ok || id <= 0 || what == "" {
+		if _, ok := theBays[room]; !ok || id <= 0 || what == "" || words == "" {
 			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 			return
 		}
-		answer, err := opts.Ask(r.Context(), personID, "strip", room, "What is going on with this?", words)
+		answer, err := opts.Ask(r.Context(), personID, "strip", room, words, "")
 		if err != nil {
 			slog.Error("asking about a strip", "error", err)
 			http.Redirect(w, r, backToTheBay(r), http.StatusSeeOther)
 			return
 		}
-		remember(opts, personID, room, "What is going on with this?", withDid(answer))
+		remember(opts, personID, room, words, withDid(answer))
 		if err := s.Notice(r.Context(), personID, "ask:"+what, id, withDid(answer), now()); err != nil {
 			fail(w, err)
 			return
