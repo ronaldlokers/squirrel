@@ -1,0 +1,1 @@
+		if _, ok := theBays[room]; !ok || id <= 0 || || words == "" {

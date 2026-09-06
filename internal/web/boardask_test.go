@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
+
+	"github.com/ronaldlokers/squirrel/internal/coach"
 )
 
 func aRackWithoutAgenda() *fakeStore {
@@ -61,8 +63,9 @@ func TestPressingAskQuestionsTheModelAboutThatStripAndNarrowsTheRoom(t *testing.
 	got := c.asked[0]
 	require.Equal(t, "strip", got.kind)
 	require.Equal(t, "notes", got.room, "asking about a note must not open the tasks or chores toolset")
-	require.Equal(t, "What is going on with this?", got.said)
-	require.Equal(t, "boiler service code is 4471", got.subject, "the model was not told what strip it was about")
+	require.Equal(t, "boiler service code is 4471", got.said,
+		"the model was not told what strip it was about")
+	require.Empty(t, got.subject, "the strip is what was said; naming it again on screen says it twice")
 }
 
 func roomFieldNear(t *testing.T, body, marker string) string {
@@ -202,4 +205,33 @@ func TestAskingAgainAboutTheSameStripReplacesTheAnswerRatherThanStackingIt(t *te
 
 	require.Len(t, f.noticed, 1, "a strip carries one line, not a conversation")
 	require.Equal(t, "second answer", f.noticed[0].Words)
+}
+
+func TestPressingAskSaysTheStripSoAPileCanBeSeenAsOne(t *testing.T) {
+	pile := "the tax thing, the vet, the bins and ring the school"
+	c := &fakeCoach{reply: "start with the school"}
+	m := mountedWith(t, aRackWithoutAgenda(), c)
+
+	post(t, m, "/board/ask", url.Values{
+		"id": {"1"}, "what": {"note"}, "bay": {"notes"}, "room": {"notes"},
+		"words": {pile},
+	})
+
+	require.Len(t, c.asked, 1)
+	require.Equal(t, pile, c.asked[0].said,
+		"the words the escalation is decided on never reached the model as what was said")
+	require.True(t, coach.Overwhelmed(c.asked[0].said),
+		"a pile handed to the coach as this turn's words is not recognised as one")
+}
+
+func TestPressingAskWithNoWordsCallsNoModel(t *testing.T) {
+	c := &fakeCoach{reply: "should never be seen"}
+	m := mountedWith(t, aRackWithoutAgenda(), c)
+
+	w := post(t, m, "/board/ask", url.Values{
+		"id": {"1"}, "what": {"note"}, "bay": {"notes"}, "room": {"notes"}, "words": {"   "},
+	})
+
+	require.Equal(t, 303, w.Code)
+	require.Empty(t, c.asked)
 }
