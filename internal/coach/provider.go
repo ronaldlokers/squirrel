@@ -117,13 +117,14 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 	guarded, usable := Guard(text)
 
 	// Recorded before the guard's verdict is acted on, and either way. The
-	// prompt kept is what the person said rather than the rendered
-	// conversation: the preamble is identical every time and the window is
-	// already several rows of this table.
+	// prompt kept is the person's half rather than the rendered conversation:
+	// the preamble is identical every time and the window is already several
+	// rows of this table. What is on screen is neither — it is content, and it
+	// left the machine.
 	if err := p.Budget.Record(ctx, t.PersonID, Answer{
 		Kind:      t.Kind,
 		Model:     model,
-		Prompt:    t.Said,
+		Prompt:    turnSaid(t, ""),
 		Reply:     text,
 		InTokens:  in,
 		OutTokens: out,
@@ -154,6 +155,23 @@ func (p *Provider) Answer(ctx context.Context, t Turn) (Reply, error) {
 // now, then what was actually said. Now goes immediately before the question
 // rather than in the system message on purpose — the system message is the
 // part worth caching, and the clock changes every minute.
+// turnSaid is the person's half of a turn, composed the one way so that what is
+// sent and what is recorded cannot drift apart. The context line is passed in
+// rather than read here: the model gets it, the record does not.
+//
+// What is on screen is named as such. Without the framing the model reads it as
+// another thing the person said, and answers about the wrong one.
+func turnSaid(t Turn, context string) string {
+	out := t.Said
+	if context != "" {
+		out = context + "\n\n" + out
+	}
+	if t.Subject != "" {
+		out = "On screen: " + t.Subject + "\n" + out
+	}
+	return out
+}
+
 func (p *Provider) messages(t Turn) []chatMessage {
 	msgs := make([]chatMessage, 0, 2*len(t.Recent)+3)
 	msgs = append(msgs, chatMessage{Role: "system", Content: System(t.Now, t.Kind)})
@@ -163,17 +181,7 @@ func (p *Provider) messages(t Turn) []chatMessage {
 		msgs = append(msgs, chatMessage{Role: "assistant", Content: e.Replied})
 	}
 
-	said := t.Said
-	if line := Context(t.Now); line != "" {
-		said = line + "\n\n" + said
-	}
-	if t.Subject != "" {
-		// What is on screen, named as such. Without the framing the model
-		// reads it as another thing the person said, and answers about the
-		// wrong one.
-		said = "On screen: " + t.Subject + "\n" + said
-	}
-	msgs = append(msgs, chatMessage{Role: "user", Content: said})
+	msgs = append(msgs, chatMessage{Role: "user", Content: turnSaid(t, Context(t.Now))})
 
 	return msgs
 }
