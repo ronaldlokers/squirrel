@@ -15,9 +15,6 @@ var (
 	anOption = regexp.MustCompile(`<option value="([^"]*)"`)
 )
 
-// whatTheBrowserWouldSend is the body a browser builds from a form nobody has
-// touched: every named field, carrying whatever the markup already put in it.
-// A select with no selected option sends its first one.
 func whatTheBrowserWouldSend(form string) url.Values {
 	sent := url.Values{}
 	for _, tag := range aTag.FindAllString(form, -1) {
@@ -51,13 +48,6 @@ func blankStripIn(t *testing.T, page, bay string) string {
 	return rack[from : from+to]
 }
 
-// The blank strip has to be able to send an empty rhythm, or the branch that
-// asks for one cannot run. It could not: the count carried value="7", so a
-// thought typed on the chores tab was submitted as a weekly chore and kept as
-// one — the guess the board is not allowed to make, made by an attribute.
-//
-// Driven through the markup rather than through a hand-written body, because a
-// body written by the test can send an empty count whatever the screen does.
 func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 	f := aBoardStore()
 	sp := &fakeSpool{}
@@ -77,8 +67,6 @@ func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 		"the words were not carried back to the question")
 }
 
-// The count still says what shape the answer has. A hint sends nothing; a
-// value sends seven.
 func TestTheRhythmCountShowsSevenWithoutSendingIt(t *testing.T) {
 	form := blankStripIn(t, mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores", nil).Body.String(), "bay=chores")
 
