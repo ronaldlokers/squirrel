@@ -1,6 +1,6 @@
 # Roadmap
 
-What is built, what is decided, what is refused. Last reconciled **5 September
+What is built, what is decided, what is refused. Last reconciled **7 September
 2026**.
 
 This is an index of *state*, not of reasoning. Every decision here was argued
@@ -117,32 +117,28 @@ retirement, decided 3 September, and Devices, settled 22 August.
 | ~~**3**~~ | ~~Mood readable, and resurfacing~~ — **shipped** | Both shown only on request, never as their own stream. |
 | ~~**4**~~ | ~~Attachments, on a PVC~~ — **shipped** | The only one that added infrastructure. |
 
-## Decided, not yet built
+## The conversation retired — done, and still governing
 
-### The conversation retires into the board
+Decided 3 September 2026, specified 5 September, all six phases built and live
+on both clusters in **v0.75.0**. `/r/{room}` is 32 lines of redirect; 16,274
+lines went. The spec is
+`docs/superpowers/specs/2026-09-05-the-conversation-retires-design.md` and is
+kept as the reasoning, not as a plan.
 
-Decided 3 September 2026, and it governs everything built after it rather than
-being one more item on a list. **Spec written 5 September:**
-`docs/superpowers/specs/2026-09-05-the-conversation-retires-design.md` — the
-twelve capabilities still reachable only from the room, where each one lands,
-six phases, and the shape question answered: Buddy on the board answers through
-the strip you are looking at, never through a box, because a box on the board is
-the refused general AI chat companion relocated rather than retired.
+It stays in this file because two of its rules outlive the work and bind
+everything built after it.
 
-The conversation goes. What it does that the board does not yet — Buddy
-answering, the readings, whatever is left of triage — moves into the board, and
-the board becomes the whole of the app. **Chat, in the end, works only through
-Campfire.**
+**The board is the whole of the app.** There is no second surface inside it.
+Buddy answers through the strip you are looking at, never through a box — a box
+on the board is the refused general AI chat companion relocated rather than
+retired.
 
 **Campfire is always secondary to the app.** It is where a thought can be
-thrown from a phone that has the room open, and where Squirrel can say
-something without the app being in front of you. It is not where the product
-lives, and no capability may exist only there.
+thrown from a phone, and where Squirrel can say something without the app being
+in front of you. It is not where the product lives, and **no capability may
+exist only there**.
 
-What that means for anything built between now and then: a thing added to the
-conversation is a thing that will have to move, so it is added to the board
-unless there is a reason it cannot be. This release is the pattern — the
-check-in was asked in the conversation, and it is asked on the board now.
+## Decided, not yet built
 
 ### Product
 
