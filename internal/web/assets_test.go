@@ -16,7 +16,7 @@ import (
 
 func TestStaticServesTheStylesheetWithALongCache(t *testing.T) {
 	h := staticHandler()
-	r := httptest.NewRequest("GET", "/static/pile.css", nil)
+	r := httptest.NewRequest("GET", "/static/board.css", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 
@@ -62,7 +62,7 @@ func TestEveryEmbeddedAssetIsAskedForSomewhere(t *testing.T) {
 	for _, page := range templates(t) {
 		asks += page
 	}
-	for _, f := range []string{"static/pile.css", "static/board.js", "static/board.css", "static/chrome.css", "static/sw.js"} {
+	for _, f := range []string{"static/board.js", "static/board.css", "static/chrome.css", "static/sw.js"} {
 		b, err := staticFS.ReadFile(f)
 		require.NoError(t, err)
 		asks += string(b)
@@ -117,7 +117,7 @@ func TestTheVersionIsTheContent(t *testing.T) {
 // of a query string the file server never asked about.
 func TestAStampedAssetStillServes(t *testing.T) {
 	h := staticHandler()
-	r := httptest.NewRequest("GET", "/static/pile.css?v="+assetVersion, nil)
+	r := httptest.NewRequest("GET", "/static/board.css?v="+assetVersion, nil)
 	w := httptest.NewRecorder()
 	h(w, r)
 

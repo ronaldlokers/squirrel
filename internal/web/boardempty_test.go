@@ -97,6 +97,8 @@ func TestOnlyTheBlankAndTheNoticesAreDrawnDashed(t *testing.T) {
 		".baysign.shelf":            true,
 		".strip.blank:focus-within": true,
 		".blankstrip .strip.blank":  true,
+		".dots i.nought":            true,
+		".moodkey b.nought":         true,
 	}
 
 	selector := ""

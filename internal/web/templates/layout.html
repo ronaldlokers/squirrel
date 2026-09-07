@@ -31,7 +31,7 @@
      exactly where the block holds — so in the scenario this product is built
      for, deliberately enlarging the text to read it is gone along with the
      accidental magnification this exists to prevent. Nothing substitutes for
-     it: every size in pile.css is a fixed pixel value, so the OS text-size
+     it: every size in board.css is a fixed pixel value, so the OS text-size
      setting does not reach them either.
 
      Accepted, with the eyes open, on one ground: the only user has no vision
@@ -45,7 +45,7 @@
      that would first have to stop being fixed pixels. */}}
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Squirrel</title>
-<link rel="stylesheet" href="/static/pile.css?v={{.V}}">
+<link rel="stylesheet" href="/static/board.css?v={{.V}}">
 <link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
 <script src="/static/app.js?v={{.V}}" defer></script>
 {{/* crossorigin="use-credentials" looks like noise and is kept deliberately.
@@ -67,10 +67,10 @@
 </head>
 {{/* Today's two moving parts, handed to the stylesheet.
      
-     On the body rather than in pile.css because pile.css is a static file
+     On the body rather than in board.css because board.css is a static file
      served with a long cache and cannot know what day it is, and rather than
      in a <style> block because two custom properties are not a stylesheet.
-     Both have defaults in pile.css, so a page rendered without them is the
+     Both have defaults in board.css, so a page rendered without them is the
      product exactly as it shipped. See squirrel.Tilt and squirrel.Light. */}}
 <body style="--tilt: {{.Tilt}}deg; --light: {{.Light}}%"{{if .PushKey}} data-push-key="{{.PushKey}}"{{end}}>
 <div class="lid">

@@ -31,7 +31,7 @@ var assetVersion = stampOf(assetsFS())
 // devDir is empty in every build that ships.
 //
 // Templates and static files are compiled in, which is right for a binary with
-// no build step and wrong for looking at a change: editing pile.css does
+// no build step and wrong for looking at a change: editing board.css does
 // nothing to a running process, so impeccable's live mode, the detector's
 // overlay and any by-hand test of the service worker all had nowhere to run.
 // When this is set, both are read from disk instead and nothing is cached.

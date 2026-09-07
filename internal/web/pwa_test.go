@@ -128,11 +128,14 @@ func TestTheManifestIsFetchedWithTheSession(t *testing.T) {
 }
 
 func TestTheStatusBandTakesTheBarColour(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
+	css, err := staticFS.ReadFile("static/board.css")
 	require.NoError(t, err)
 	sheet := string(css)
 
-	require.Contains(t, ruleFor(t, sheet, ".lid"),
+	bars, err := staticFS.ReadFile("static/chrome.css")
+	require.NoError(t, err)
+
+	require.Contains(t, ruleFor(t, string(bars), ".lid"),
 		"padding: calc(env(safe-area-inset-top)",
 		"the lid does not reach into the status bar, so something else paints it")
 	require.Contains(t, sheet, "--lid-h: calc(env(safe-area-inset-top)",
@@ -145,8 +148,11 @@ func TestTheStatusBandTakesTheBarColour(t *testing.T) {
 		`<meta name="apple-mobile-web-app-status-bar-style" content="default">`,
 		"the status bar style is not stated, so the strip is whatever iOS decides")
 
-	require.Contains(t, ruleFor(t, sheet, "body"), "background-color: var(--purple-bar)",
-		"the strip beside the lid samples body, and body is not the bar colour")
-	require.Contains(t, ruleFor(t, sheet, "body::before"), "background-color: var(--purple-deep)",
-		"the field lost its own ground when body took the bar colour")
+	require.Contains(t, string(bars), "background: var(--purple-dark);")
+	for _, page := range []string{"board.html", "layout.html"} {
+		require.Contains(t, templates(t)[page], `<meta name="theme-color" content="#3b2560">`,
+			"%s declares a band colour that is not the bar it draws, so they meet in a seam", page)
+	}
+	require.Contains(t, sheet, "background-color: var(--purple-deep);",
+		"nothing paints the ground, so the page shows through to whatever is behind it")
 }
