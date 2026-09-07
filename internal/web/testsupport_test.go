@@ -420,6 +420,7 @@ func (f *fakeStore) InsertItem(_ context.Context, i squirrel.Item) (bool, error)
 	id := int64(len(f.items) + 1)
 	f.items = append([]squirrel.Item{{
 		ID: id, RawText: i.RawText, ReceivedAt: i.ReceivedAt, State: squirrel.ItemOpen,
+		PhotoName: i.PhotoName, PhotoType: i.PhotoType,
 	}}, f.items...)
 	f.inserted = append(f.inserted, i.RawText)
 	return true, nil
