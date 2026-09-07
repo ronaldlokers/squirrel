@@ -290,9 +290,6 @@ func (store) MoveItemState(_ context.Context, id int64, _, _ squirrel.ItemState,
 	gone[id] = true
 	return true, nil
 }
-func (store) LandedBadlyLatest(_ context.Context, _ int64, _ time.Time) (bool, error) {
-	return false, nil
-}
 func (store) Reword(_ context.Context, _, _ int64, _ string) (bool, error) { return false, nil }
 func (store) PromoteItem(_ context.Context, _, _ int64, _ time.Duration) (squirrel.Chore, bool, error) {
 	return squirrel.Chore{}, false, nil

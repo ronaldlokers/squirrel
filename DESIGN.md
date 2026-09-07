@@ -1279,12 +1279,16 @@ press at the end of a marginalia line or an answer Buddy wrote
 are kept, and `WhatWasRefused` shows the next pass what not to write again.
 
 *That went badly* — the press that did this in the conversation, at
-`/buddy/badly` — went with the room on 6 September 2026. Its table did not.
-`nowFor` still reads `BadlyLanded` into every prompt and `LandedBadlyLatest` is
-still declared on the screen's `Store`, with nothing left anywhere that writes
-to either: the two refusals were separate mechanisms, and only one of them was
-carried across. Recorded here rather than quietly fixed, because giving it a
-press on the board is a product decision and not a documentation one.
+`/buddy/badly` — went with the room on 6 September 2026. **The owner's
+decision, taken afterward: reuse *not useful* rather than give the retired
+signal a new control or drop it.** `nowFor` now reads `WhatWasRefused` into
+every prompt in `BadlyLanded`'s old place; `BadlyLanded`, `LandedBadly` and
+`LandedBadlyLatest` are gone along with the screen's `Store` entry for the
+latter, since nothing called any of them once the room and its press left.
+The two refusals are not quite one signal — *not useful* refuses a noticed
+line about something on the board, *that went badly* refused an answer Buddy
+gave directly — but both are Buddy's own words, rejected by the person who
+read them, which is what the prompt slot has always needed.
 
 ### What Buddy has cost
 
