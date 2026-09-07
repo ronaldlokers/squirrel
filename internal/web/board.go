@@ -166,6 +166,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 
 		var g errgroup.Group
+		g.SetLimit(squirrel.MaxConns)
 		g.Go(func() error { v.Shelved = whatIsOnTheShelf(r, s, personID, shelf, at); return nil })
 		g.Go(func() error { v.Opened = openedStrip(r, s, personID, at); return nil })
 		g.Go(func() error { v.Found = whatMatched(r, s, personID, find, at); return nil })
@@ -173,14 +174,12 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Timer = runningTimer(s, opts, r); return nil })
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
 		g.Go(func() error { v.Faces = facesIfItIsTime(r, s, personID, at); return nil })
-		g.Go(func() error {
-			v.Bays = baysIn(in, oneBayOnly(r, theBaysOf(r, s, opts, personID, at, asking)))
-			return nil
-		})
+		bays := fetchBays(&g, r, s, personID, at)
 		g.Go(func() error { v.You = youFor(r.Context(), s, personID); return nil })
 		g.Go(func() error { v.Told = whatWasSaid(r, s, personID, at, deep); return nil })
 		_ = g.Wait()
 
+		v.Bays = baysIn(in, oneBayOnly(r, bays.assemble(r, opts, asking)))
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
@@ -321,8 +320,31 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 	return strips
 }
 
-// theBaysOf reads all four racks, each saying whether it could be read at all.
-func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.Time, asking int64) []bayView {
+type bayFetch struct {
+	seen                 map[string]squirrel.Noticed
+	settled              []settledView
+	notes, chores, tasks []stripView
+	agenda               []stripView
+	notesOK, moreNotes   bool
+	choresOK             bool
+	tasksOK, moreTasks   bool
+	agendaOK             bool
+}
+
+func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at time.Time) *bayFetch {
+	f := &bayFetch{}
+	g.Go(func() error { f.seen = whatWasNoticed(r, s, personID); return nil })
+	if wantsBay(r, "notes") {
+		g.Go(func() error { f.settled = whatIsSettled(r, s, personID, at); return nil })
+	}
+	g.Go(func() error { f.notes, f.notesOK, f.moreNotes = noteStrips(r, s, personID, at); return nil })
+	g.Go(func() error { f.chores, f.choresOK = choreStrips(r, s, personID); return nil })
+	g.Go(func() error { f.tasks, f.tasksOK, f.moreTasks = taskStrips(r, s, personID, at); return nil })
+	g.Go(func() error { f.agenda, f.agendaOK = agendaStrips(r, s, personID, at); return nil })
+	return f
+}
+
+func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayView {
 	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
 	refused := r.URL.Query().Has("nophoto")
@@ -330,51 +352,30 @@ func theBaysOf(r *http.Request, s Store, opts Options, personID int64, at time.T
 	offline := r.URL.Query().Get("offline") == "1"
 	justAsked, _ := strconv.ParseInt(r.URL.Query().Get("answered"), 10, 64)
 
-	var (
-		seen                 map[string]squirrel.Noticed
-		settled              []settledView
-		notes, chores, tasks []stripView
-		agenda               []stripView
-		notesOK, moreNotes   bool
-		choresOK             bool
-		tasksOK, moreTasks   bool
-		agendaOK             bool
-	)
-	var g errgroup.Group
-	g.Go(func() error { seen = whatWasNoticed(r, s, personID); return nil })
-	if wantsBay(r, "notes") {
-		g.Go(func() error { settled = whatIsSettled(r, s, personID, at); return nil })
-	}
-	g.Go(func() error { notes, notesOK, moreNotes = noteStrips(r, s, personID, at); return nil })
-	g.Go(func() error { chores, choresOK = choreStrips(r, s, personID); return nil })
-	g.Go(func() error { tasks, tasksOK, moreTasks = taskStrips(r, s, personID, at); return nil })
-	g.Go(func() error { agenda, agendaOK = agendaStrips(r, s, personID, at); return nil })
-	_ = g.Wait()
-
 	askOn := coachAvailable(opts)
-	notes = marked(notes, "note", seen)
+	notes := marked(f.notes, "note", f.seen)
 	notes = askable(notes, "notes", askOn)
-	notes = answered(marked(notes, "ask:note", seen), justAsked)
-	chores = askable(chores, "chores", askOn)
-	chores = answered(marked(chores, "ask:chore", seen), justAsked)
-	tasks = askable(tasks, "tasks", askOn)
-	tasks = answered(marked(tasks, "ask:task", seen), justAsked)
-	agenda = askable(agenda, "at", askOn)
-	agenda = answered(marked(agenda, "ask:moment", seen), justAsked)
+	notes = answered(marked(notes, "ask:note", f.seen), justAsked)
+	chores := askable(f.chores, "chores", askOn)
+	chores = answered(marked(chores, "ask:chore", f.seen), justAsked)
+	tasks := askable(f.tasks, "tasks", askOn)
+	tasks = answered(marked(tasks, "ask:task", f.seen), justAsked)
+	agenda := askable(f.agenda, "at", askOn)
+	agenda = answered(marked(agenda, "ask:moment", f.seen), justAsked)
 	return []bayView{
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
-			Camera: opts.Photos != nil, Trouble: !notesOK, More: moreNotes,
+			Camera: opts.Photos != nil, Trouble: !f.notesOK, More: f.moreNotes,
 			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
-			Asking: saidAnyway, Refused: refused, Offline: offline, Settled: settled},
+			Asking: saidAnyway, Refused: refused, Offline: offline, Settled: f.settled},
 		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
-			Rhythms: theRhythms, Trouble: !choresOK, Asking: rhythmFor,
+			Rhythms: theRhythms, Trouble: !f.choresOK, Asking: rhythmFor,
 			Offline: offline,
 			Empty:   "nothing comes back today", Strips: chores},
 		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
-			Trouble: !tasksOK, More: moreTasks, Offline: offline,
+			Trouble: !f.tasksOK, More: f.moreTasks, Offline: offline,
 			Empty: "nothing in the tasks", Strips: tasks},
 		{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
-			Trouble: !agendaOK, Asking: whenFor, Offline: offline,
+			Trouble: !f.agendaOK, Asking: whenFor, Offline: offline,
 			Empty: "nothing left today", Strips: agenda},
 	}
 }
