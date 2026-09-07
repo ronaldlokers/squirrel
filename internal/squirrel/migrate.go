@@ -69,14 +69,26 @@ func (s *Store) migrateFrom(ctx context.Context, files fs.FS) error {
 	}
 	sort.Strings(entries)
 
-	for _, name := range entries {
-		var exists bool
-		if err := conn.QueryRow(ctx,
-			`select exists (select 1 from schema_migrations where version = $1)`, name,
-		).Scan(&exists); err != nil {
-			return fmt.Errorf("checking migration %s: %w", name, err)
+	rows, err := conn.Query(ctx, `select version from schema_migrations`)
+	if err != nil {
+		return fmt.Errorf("listing applied migrations: %w", err)
+	}
+	applied := make(map[string]struct{})
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			rows.Close()
+			return fmt.Errorf("listing applied migrations: %w", err)
 		}
-		if exists {
+		applied[version] = struct{}{}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("listing applied migrations: %w", err)
+	}
+
+	for _, name := range entries {
+		if _, ok := applied[name]; ok {
 			continue
 		}
 
