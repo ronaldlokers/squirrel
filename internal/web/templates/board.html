@@ -23,14 +23,13 @@
     <img class="markart" src="/static/logo.png" alt="">
     <h1 class="wordmark">Squirrel</h1>
   </span>
-  <span class="spacer"></span>
+  <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
   <span class="rail">
     {{template "findchip" .Find}}
     <span class="sep" aria-hidden="true"></span>
     {{template "bellchip" .AnyTold}}
     {{template "youchip" .You}}
   </span>
-  <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
 </header>
 
 <div class="deck">

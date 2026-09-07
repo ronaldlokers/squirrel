@@ -26,10 +26,10 @@
   color: rgba(254, 214, 167, .66);
   font-variation-settings: var(--precise), "wght" 750;
 }
-.ops .spacer, .lid .spacer { flex: 1; }
+.lid .spacer { flex: 1; }
 .ops .brand { display: flex; align-items: center; gap: 11px; }
 .ops .rail {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
   padding: 5px 8px 5px 10px; border-radius: 999px;
   background: rgba(28, 17, 11, .26);
   border: var(--line) solid rgba(254, 214, 167, .22);
@@ -62,9 +62,9 @@
 .ops .chip:focus-visible, .lid .chip:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
 
 .ops .rail .find {
-  background: none; border: 0; padding: 0 4px;
+  background: none; border: 0; padding: 0 4px; flex: 1;
 }
-.ops .rail .find input { width: 190px; }
+.ops .rail .find input { width: 100%; }
 .ops .find, .lid .find {
   box-sizing: border-box;
   display: flex; align-items: center; gap: 8px; min-width: 0;
@@ -89,7 +89,7 @@
     gap: 9px; padding: env(safe-area-inset-top) 12px 5px;
     background: none; border-bottom: 0;
   }
-  .ops .brand, .ops .clock, .ops .spacer, .ops .rail .sep,
+  .ops .brand, .ops .clock, .ops .rail .sep,
   .lid .markart, .lid .wordmark, .lid .clock { display: none; }
   .ops .chip, .lid .chip { width: 44px; height: 44px; min-height: 44px; }
   .ops .rail { flex: 1; gap: 9px; padding: 0; background: none; border: 0; }

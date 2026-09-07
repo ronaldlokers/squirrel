@@ -447,8 +447,15 @@ Four bands, top to bottom, and their order never changes:
 
 **The ops bar.** Fixed height, `purple-dark`, ruled off with the 2px outline.
 The mark and wordmark at 42×32, then the clock and the day, then the find field
-and settings at the right. It is furniture: nothing in it belongs to any one
-thing on the board.
+across the middle to the bell and your face at the right. It is furniture:
+nothing in it belongs to any one thing on the board.
+
+**The find field is the middle of the bar** at every width, not only on the
+phone. The middle used to be Buddy's chip, and when the room retired the bar's
+right half kept its place while the middle went with the chip — half a bar of
+bare purple. Search is the only navigation in this product besides the four
+bays, and the navigation holds the middle rather than a corner; the phone bar
+already said so, and the desktop is the same bar, not a second one.
 
 **The working row.** A grid of the pulled strip and, at its right, a 292px panel
 for a running timer when one is running. When nothing is pulled and nothing is
