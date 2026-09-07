@@ -115,7 +115,7 @@ func (s *Store) ClaimFinishedTimer(ctx context.Context, personID int64, now time
 	var t Timer
 	err := s.pool.QueryRow(ctx, `
 		update timers set ended_at = $2
-		 where person_id = $1 and ends_at <= $2 and ended_at is null
+		 where person_id = $1 and ends_at <= $2 and ended_at is null and not ramp
 		returning label, started_at, ends_at`, personID, now).
 		Scan(&t.Label, &t.Started, &t.Ends)
 	if err != nil {

@@ -259,6 +259,9 @@ func (store) RampDue(_ context.Context, _ int64, _ time.Time) (squirrel.Timer, b
 }
 func (store) RampSaid(_ context.Context, _ int64, _ time.Time) error { return nil }
 func (store) HushRamp(_ context.Context, _ int64, _ time.Time) error { return nil }
+func (store) Capacity(_ context.Context, _ int64, _ time.Time) squirrel.Capacity {
+	return squirrel.CapacityOK
+}
 func (store) ItemByID(_ context.Context, _, id int64) (squirrel.Item, bool, error) {
 	for _, it := range everything() {
 		if it.ID == id {

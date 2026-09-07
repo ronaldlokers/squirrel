@@ -179,6 +179,7 @@ type Store interface {
 	RampDue(ctx context.Context, personID int64, at time.Time) (squirrel.Timer, bool, error)
 	RampSaid(ctx context.Context, personID int64, at time.Time) error
 	HushRamp(ctx context.Context, personID int64, at time.Time) error
+	Capacity(ctx context.Context, personID int64, at time.Time) squirrel.Capacity
 	ItemByID(ctx context.Context, personID, itemID int64) (squirrel.Item, bool, error)
 	SetItemState(ctx context.Context, itemID int64, state squirrel.ItemState, at time.Time) error
 	// MoveItemState is the same write for a caller that knows what the note was

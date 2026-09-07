@@ -154,3 +154,19 @@ func TestARampBelongsToOnePerson(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, found, "somebody else's timer interrupted me")
 }
+
+func TestATimerTheTickWouldOtherwiseHaveClaimedStaysUnclaimedWhenRamped(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	started(t, store, p, 30*time.Minute, 25*time.Minute, true)
+
+	_, found, err := store.ClaimFinishedTimer(ctx, p, time.Now())
+	require.NoError(t, err)
+	require.False(t, found, "the tick claimed a ramp-armed timer the moment it ended")
+
+	got, found, err := store.RampDue(ctx, p, time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.True(t, found, "the tick's claim left nothing for the ramp to find later")
+	require.Equal(t, "the tax return", got.Label)
+}

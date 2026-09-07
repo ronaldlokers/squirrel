@@ -188,9 +188,12 @@ use before they have anything to say:
 
 ### Experiments, kept on the list
 
-Hyperfocus exit ramp (opt-in at timer start) · body-double follow-along
-micro-steps for two or three chores · ~~novelty in **art and phrasing
-only**~~ **— phrasing shipped 22 August.**
+Body-double follow-along micro-steps for two or three chores · ~~novelty in
+**art and phrasing only**~~ **— phrasing shipped 22 August.** ~~Hyperfocus exit
+ramp (opt-in at timer start)~~ **— shipped 7 September:** ticking the box when
+you start a timer from the screen puts up a quiet on-screen check-in half an
+hour after it ends, if you have not already stopped it and it is not night or
+a low day; "leave me alone" silences it for the rest of today.
 
 The four sentences met most often — the empty slot, the offer's label, the way
 out of the deck, and the stopping screen's own line — have several wordings

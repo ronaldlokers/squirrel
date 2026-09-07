@@ -52,6 +52,9 @@ func startFromOffer(s Store, r *http.Request, personID int64) error {
 		time.Duration(mins)*time.Minute, now()); err != nil {
 		return err
 	}
+	if err := armRampIfTicked(r, s, personID); err != nil {
+		return err
+	}
 
 	kind := squirrel.OfferKind(r.FormValue("kind"))
 	refID, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
