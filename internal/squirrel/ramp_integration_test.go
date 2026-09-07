@@ -155,7 +155,7 @@ func TestARampBelongsToOnePerson(t *testing.T) {
 	require.False(t, found, "somebody else's timer interrupted me")
 }
 
-func TestATimerTheTickWouldOtherwiseHaveClaimedStaysUnclaimedWhenRamped(t *testing.T) {
+func TestArmingTheRampCostsTheTimerNothingItAlreadyHad(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -163,10 +163,27 @@ func TestATimerTheTickWouldOtherwiseHaveClaimedStaysUnclaimedWhenRamped(t *testi
 
 	_, found, err := store.ClaimFinishedTimer(ctx, p, time.Now())
 	require.NoError(t, err)
-	require.False(t, found, "the tick claimed a ramp-armed timer the moment it ended")
+	require.True(t, found, "the timer never finishes, so nothing says the time is up")
+
+	_, running, err := store.CurrentTimer(ctx, p)
+	require.NoError(t, err)
+	require.False(t, running, "the board goes on showing a timer that ended")
 
 	got, found, err := store.RampDue(ctx, p, time.Now().Add(time.Hour))
 	require.NoError(t, err)
 	require.True(t, found, "the tick's claim left nothing for the ramp to find later")
 	require.Equal(t, "the tax return", got.Label)
+}
+
+func TestStoppingTheTimerYourselfTakesTheRampWithIt(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	started(t, store, p, 30*time.Minute, 25*time.Minute, true)
+
+	require.NoError(t, store.StopTimer(ctx, p))
+
+	_, found, err := store.RampDue(ctx, p, time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.False(t, found, "you pressed stop, which is the noticing the ramp exists to supply")
 }

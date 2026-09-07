@@ -99,7 +99,8 @@ func (s *Store) CurrentTimer(ctx context.Context, personID int64) (Timer, bool, 
 // have stopped to answer the door.
 func (s *Store) StopTimer(ctx context.Context, personID int64) error {
 	if _, err := s.pool.Exec(ctx,
-		`update timers set ended_at = now() where person_id = $1 and ended_at is null`,
+		`update timers set ended_at = now(), ramp = false
+		  where person_id = $1 and ended_at is null`,
 		personID); err != nil {
 		return fmt.Errorf("stopping timer: %w", err)
 	}
@@ -115,7 +116,7 @@ func (s *Store) ClaimFinishedTimer(ctx context.Context, personID int64, now time
 	var t Timer
 	err := s.pool.QueryRow(ctx, `
 		update timers set ended_at = $2
-		 where person_id = $1 and ends_at <= $2 and ended_at is null and not ramp
+		 where person_id = $1 and ends_at <= $2 and ended_at is null
 		returning label, started_at, ends_at`, personID, now).
 		Scan(&t.Label, &t.Started, &t.Ends)
 	if err != nil {
@@ -223,7 +224,6 @@ func (s *Store) RampDue(ctx context.Context, personID int64, at time.Time) (Time
 		select label, started_at, ends_at from timers
 		 where person_id = $1
 		   and ramp
-		   and ended_at is null
 		   and ramp_said_at is null
 		   and (ramp_hushed_until is null or $2::timestamptz >= ramp_hushed_until)
 		   and $2::timestamptz >= ends_at + make_interval(secs => $3::double precision)`,
