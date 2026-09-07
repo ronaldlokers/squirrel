@@ -926,3 +926,18 @@ main.gate h1 + form { margin-top: 26px; }
   .strip.opened .wordfix { font-size: 16px; }
   .youpage { padding-left: 14px; padding-right: 14px; }
 }
+
+.strip.opened .before {
+  margin: 10px 0 0; padding-top: 8px;
+  border-top: var(--line) solid rgba(28, 17, 11, .16);
+}
+.strip.opened .before .what {
+  margin: 0 0 5px; color: var(--ink-soft); font-size: 11px;
+  letter-spacing: .07em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 700;
+}
+.strip.opened .before ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+.strip.opened .before li {
+  color: var(--ink-soft); font-size: 12.5px; line-height: 1.35;
+  font-variation-settings: var(--casual), "wght" 470;
+}

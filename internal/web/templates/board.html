@@ -122,6 +122,20 @@
           <a class="stamp" href="/?open={{.ID}}&reword=1">say it another way<span class="k">R</span></a>
         </p>
         {{end}}
+        {{if .Seen}}
+        <div class="seen">{{.Seen}}
+          <form method="post" action="/board/notuseful">
+            <input type="hidden" name="id" value="{{.SeenID}}">
+            <button class="off">not useful</button>
+          </form>
+        </div>
+        {{end}}
+        {{if .Before}}
+        <div class="before">
+          <p class="what">what Squirrel said about this before</p>
+          <ul>{{range .Before}}<li>{{.}}</li>{{end}}</ul>
+        </div>
+        {{end}}
         {{if .Step}}
         <div class="step">
           <p class="body">{{.Step.Body}}{{if .Step.Last}} <span class="pencil">the last one</span>{{end}}</p>

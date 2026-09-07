@@ -1213,6 +1213,24 @@ board speaks in the margin, and it speaks there once. A second register — a
 panel, a sheet, a bubble — would be a conversation growing back on the surface
 that is replacing the conversation.
 
+**One line in the rack; what came before it on the strip you opened.** The rack
+draws exactly one noticed line per thing and always has — two lines under one
+strip is a conversation, and a rack is not one. The lines before it are kept
+now rather than overwritten, and they are read back on the opened strip under
+*what Squirrel said about this before*. That is not the rack loosening its rule:
+an opened strip is one thing, looked at on purpose, which is the same reason the
+words can be corrected there and nowhere else. Until 7 September the row was
+replaced, so "what did it tell me about the boiler last week" had no answer
+anywhere.
+
+The opened strip also draws the newest line, in marginalia's own register with
+its *not useful* at the end. It did not before, so opening a strip lost the one
+thing the rack had been showing about it.
+
+A line you refused is not read back as history — refusing it said do not say
+this again, and a record that reads it back to you every time you open the strip
+is the opposite of that. It stays in the table, where the next pass is shown it.
+
 **A press, where marginalia is a cadence.** These are the two ways a line
 arrives and they differ in exactly one way: this one was asked for. Nothing
 about the drawing distinguishes them, because nothing should — Principle 8 is

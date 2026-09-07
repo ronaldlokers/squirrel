@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestASecondLineAboutOneThingReplacesTheFirst(t *testing.T) {
+func TestTheRackDrawsTheNewestLineAboutOneThingAndNoOther(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -50,7 +50,7 @@ func TestARefusedLineIsKeptAndNotDrawn(t *testing.T) {
 		"the refusal was forgotten, so the next pass may write it again")
 }
 
-func TestNoticingAgainClearsTheRefusal(t *testing.T) {
+func TestANewLineDoesNotInheritTheRefusalOfTheOneBeforeIt(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -99,4 +99,46 @@ func TestWhenItLastNoticedComesFromTheRows(t *testing.T) {
 	at, err = store.NoticedAt(ctx, p)
 	require.NoError(t, err)
 	require.WithinDuration(t, made, at, time.Second)
+}
+
+func TestTheLinesBeforeTheNewestAreKeptAndReadableForOneThing(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	at := time.Now()
+
+	require.NoError(t, store.Notice(ctx, p, "ask:note", 4, "the first thing said", at))
+	require.NoError(t, store.Notice(ctx, p, "ask:note", 4, "the second thing said", at.Add(time.Hour)))
+	require.NoError(t, store.Notice(ctx, p, "ask:note", 5, "about another thing", at.Add(time.Hour)))
+
+	about, err := store.NoticedAbout(ctx, p, "ask:note", 4, 6)
+	require.NoError(t, err)
+	require.Len(t, about, 2, "what was said before was thrown away when the next line arrived")
+	require.Equal(t, "the second thing said", about[0].Words, "newest first")
+	require.Equal(t, "the first thing said", about[1].Words)
+
+	other, err := store.NoticedAbout(ctx, p, "ask:note", 5, 6)
+	require.NoError(t, err)
+	require.Len(t, other, 1, "one thing's history reaches another thing")
+}
+
+func TestARefusedLineIsNotReadBackAsHistory(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	at := time.Now()
+
+	require.NoError(t, store.Notice(ctx, p, "ask:note", 4, "not worth saying", at))
+	first, err := store.NoticedAbout(ctx, p, "ask:note", 4, 6)
+	require.NoError(t, err)
+	require.Len(t, first, 1)
+
+	_, err = store.NotUseful(ctx, p, first[0].ID, at)
+	require.NoError(t, err)
+	require.NoError(t, store.Notice(ctx, p, "ask:note", 4, "something else entirely", at.Add(time.Hour)))
+
+	about, err := store.NoticedAbout(ctx, p, "ask:note", 4, 6)
+	require.NoError(t, err)
+	require.Len(t, about, 1, "a line you refused is read back to you as history")
+	require.Equal(t, "something else entirely", about[0].Words)
 }

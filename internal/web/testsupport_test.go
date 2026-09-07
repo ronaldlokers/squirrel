@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
+	"sort"
 )
 
 func post(t *testing.T, m *testMux, path string, form url.Values) *httptest.ResponseRecorder {
@@ -1260,6 +1261,23 @@ func (f *fakeStore) WhatWasNoticed(_ context.Context, _ int64) ([]squirrel.Notic
 		return nil, f.noticeErr
 	}
 	return f.noticed, nil
+}
+
+func (f *fakeStore) NoticedAbout(_ context.Context, _ int64, kind string, refID int64, limit int) ([]squirrel.Noticed, error) {
+	if f.noticeErr != nil {
+		return nil, f.noticeErr
+	}
+	var out []squirrel.Noticed
+	for _, one := range f.noticed {
+		if one.Kind == kind && one.RefID == refID {
+			out = append(out, one)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].At.After(out[j].At) })
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
 }
 
 func (f *fakeStore) NotUseful(_ context.Context, _, id int64, _ time.Time) (bool, error) {

@@ -105,6 +105,7 @@ type stripView struct {
 	Held     []answerView
 	Reword   bool
 	Answered bool
+	Before   []string
 	Step     *stepView
 }
 
@@ -112,6 +113,8 @@ type rhythmView struct {
 	Days  int
 	Words string
 }
+
+const noticedKept = 6
 
 var theRhythms = []rhythmView{
 	{Days: 1, Words: "a day"},
@@ -1063,6 +1066,9 @@ func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripV
 	if !v.Back {
 		v.Step = stepForItem(s, r, it.ID)
 	}
+	if newest, before := whatWasNoticedAbout(r, s, personID, "ask:"+v.What, it.ID); newest.ID != 0 {
+		v.Seen, v.SeenID, v.Before = newest.Words, newest.ID, before
+	}
 	return v
 }
 
@@ -1303,6 +1309,22 @@ func marked(strips []stripView, kind string, seen map[string]squirrel.Noticed) [
 		}
 	}
 	return strips
+}
+
+func whatWasNoticedAbout(r *http.Request, s Store, personID int64, kind string, refID int64) (squirrel.Noticed, []string) {
+	lines, err := s.NoticedAbout(r.Context(), personID, kind, refID, noticedKept)
+	if err != nil {
+		slog.Error("reading what was noticed about this", "error", err)
+		return squirrel.Noticed{}, nil
+	}
+	if len(lines) == 0 {
+		return squirrel.Noticed{}, nil
+	}
+	before := make([]string, 0, len(lines)-1)
+	for _, one := range lines[1:] {
+		before = append(before, one.Words)
+	}
+	return lines[0], before
 }
 
 func answered(strips []stripView, id int64) []stripView {
