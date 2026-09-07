@@ -157,7 +157,7 @@ func nowFor(ctx context.Context, store *squirrel.Store, personID int64, now time
 	}
 
 	// What has not landed here, in the model's own words.
-	if said, err := store.BadlyLanded(ctx, personID, badlyLandedShown); err == nil {
+	if said, err := store.WhatWasRefused(ctx, personID, badlyLandedShown); err == nil {
 		n.LandedBadly = said
 	}
 

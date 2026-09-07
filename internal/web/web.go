@@ -186,10 +186,6 @@ type Store interface {
 	// the room can move the row in between — so this is the one write here that
 	// can arrive stale, and the only one that says so.
 	MoveItemState(ctx context.Context, itemID int64, from, to squirrel.ItemState, at time.Time) (bool, error)
-	// LandedBadlyLatest is one press saying the last thing Buddy said did not
-	// land. Principle 5 was opened knowing this could happen; this is the half
-	// that makes it matter afterwards rather than only being recorded.
-	LandedBadlyLatest(ctx context.Context, personID int64, at time.Time) (bool, error)
 	Reword(ctx context.Context, personID, itemID int64, text string) (bool, error)
 	PromoteItem(ctx context.Context, personID, itemID int64, every time.Duration) (squirrel.Chore, bool, error)
 

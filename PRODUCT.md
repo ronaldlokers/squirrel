@@ -490,13 +490,17 @@ which pull toward a precision tool — the design has to be both, not average th
    7 September 2026, which on the board's ask meant a stock phrase and none of
    the note.
 
-   **And as of 22 August the record is read back.** One press on the sheet says
-   the last thing Buddy said did not land, and the last few of those are shown
-   to the model as examples of what does not work here. Examples rather than an
-   instruction, because an instruction nobody can check is a wish. Never a
-   count: how often something lands badly is a fact about the person, and rule
-   2 forbids one on every surface — including the prompt, which is a surface
-   the person never reads.
+   **And as of 22 August the record is read back**, though not from where it
+   was first read. The press this leaned on — *that went badly*, on the sheet
+   — retired with the conversation room on 6 September, and nothing can
+   produce that signal any more. What feeds the same slot in the prompt now
+   is the board's own refusal: pressing **not useful** on a line Buddy wrote
+   about something on the board. Both are "this did not land" in Buddy's own
+   words, and the last few of those are shown to the model as examples of
+   what does not work here. Examples rather than an instruction, because an
+   instruction nobody can check is a wish. Never a count: how often something
+   lands badly is a fact about the person, and rule 2 forbids one on every
+   surface — including the prompt, which is a surface the person never reads.
 6. **Squirrel chooses, and can say why.** One thing at a time, by rules that
    are fixed, readable and the same every time. An offer nobody can account for
    is a demand.

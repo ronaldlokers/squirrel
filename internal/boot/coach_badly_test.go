@@ -13,15 +13,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// The wiring, which nothing else notices going missing.
-//
-// The store can record what did not land, and the prompt can show it to the
-// model. Between them is one line in `nowFor`, and removing it compiles
-// cleanly and fails no unit test — the store keeps its rows, the prompt keeps
-// its formatting, and the model simply stops being told. That is exactly the
-// shape of defect this project has learnt to test for: a fix that no test
-// would notice being reverted is an unpinned fix.
-func TestWhatDidNotLandReachesTheModel(t *testing.T) {
+func TestWhatWasRefusedOnTheBoardReachesTheModel(t *testing.T) {
 	url := os.Getenv("TEST_DATABASE_URL")
 	require.NotEmpty(t, url, "TEST_DATABASE_URL is required — see docs/testing.md")
 
@@ -31,22 +23,26 @@ func TestWhatDidNotLandReachesTheModel(t *testing.T) {
 	t.Cleanup(store.Close)
 	require.NoError(t, store.Migrate(ctx))
 
-	personID, err := store.SeedOwner(ctx, "wiring-badly", nil)
+	personID, err := store.SeedOwner(ctx, "wiring-refused", nil)
+	require.NoError(t, err)
+	_, err = store.Pool().Exec(ctx, `delete from noticed where person_id = $1`, personID)
 	require.NoError(t, err)
 
-	// Nothing said yet: the model is told nothing rather than "nothing".
 	require.Empty(t, nowFor(ctx, store, personID, time.Now()).LandedBadly)
 
-	require.NoError(t, store.RecordCoachAnswer(ctx, personID, squirrel.CoachAnswer{
-		Kind: "sheet", Model: "test", Prompt: "what now",
-		Reply: "you have done this three times this week", Used: true,
-	}))
-	marked, err := store.LandedBadlyLatest(ctx, personID, time.Now())
+	at := time.Now()
+	require.NoError(t, store.Notice(ctx, personID, "note", 1,
+		"you have written this down three times", at))
+	lines, err := store.WhatWasNoticed(ctx, personID)
 	require.NoError(t, err)
-	require.True(t, marked)
+	require.Len(t, lines, 1)
+
+	refused, err := store.NotUseful(ctx, personID, lines[0].ID, at)
+	require.NoError(t, err)
+	require.True(t, refused)
 
 	got := nowFor(ctx, store, personID, time.Now()).LandedBadly
 
-	require.Equal(t, []string{"you have done this three times this week"}, got,
-		"the model is not shown what did not land here")
+	require.Equal(t, []string{"you have written this down three times"}, got,
+		"the model is not shown what the board refused")
 }
