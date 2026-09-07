@@ -147,7 +147,12 @@ was allowed; a streak can, and streaks stay refused.
   not a thing you can act on.
 
   **One exception, added 20 August 2026: what the coach has cost this month.**
-  It sits in the coach sheet's own lid and on no other screen. The rule bans
+  It sits on the page about you and on no other screen. It was the coach
+  sheet's own lid until that sheet retired with the room on 6 September, and
+  for a day it was rendered nowhere at all — `Options.Spent` was still wired
+  and populated at boot with nothing calling it, which put the ceiling back to
+  being invisible until the month it is reached. The page about you is where
+  the other two things this product holds about you already are. The rule bans
   the number that accrues against your work and implies a target of zero; this
   is money, it is a fact about a machine rather than about you, and it is
   bounded by a ceiling that was set on purpose rather than open-ended. What it

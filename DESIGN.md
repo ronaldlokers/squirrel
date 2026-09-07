@@ -1250,6 +1250,19 @@ to either: the two refusals were separate mechanisms, and only one of them was
 carried across. Recorded here rather than quietly fixed, because giving it a
 press on the board is a product decision and not a documentation one.
 
+### What Buddy has cost
+
+One line on the page about you, in the same quiet register as everything else
+there: what this month has cost and what it is allowed. It is the only accruing
+number anywhere in the product, and the exception is argued in `PRODUCT.md`
+rather than here — money, a fact about a machine, bounded by a ceiling set on
+purpose.
+
+Drawn only when there is a coach and only when the figure could actually be
+read. A build with no key reporting `€0.00 of €10` would be reporting on a
+thing that is not there, and an unreadable figure drawn as zero is a screen
+that lies about a number whose whole job is to be true.
+
 ### The pencil line
 
 A pencil glyph, `ink-soft`, sentence case, at most

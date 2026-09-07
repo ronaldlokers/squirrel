@@ -17,8 +17,20 @@ func meHandler(s Store, opts Options) http.HandlerFunc {
 		v := view{Here: "you"}
 		v.Weeks, v.MoodsSays = howYouHaveBeen(r, s, personID)
 		v.Known, v.KnownSays = whatIsKnown(r, s, personID)
+		v.Spent, v.Ceiling = whatTheCoachHasCost(r, opts, personID)
 		renderWith(w, r, s, opts, "me", v)
 	}
+}
+
+func whatTheCoachHasCost(r *http.Request, opts Options, personID int64) (string, string) {
+	if opts.Spent == nil {
+		return "", ""
+	}
+	spent, ceiling, ok := opts.Spent(r.Context(), personID)
+	if !ok {
+		return "", ""
+	}
+	return spent, ceiling
 }
 
 func howYouHaveBeen(r *http.Request, s Store, personID int64) ([]moodWeekView, string) {
