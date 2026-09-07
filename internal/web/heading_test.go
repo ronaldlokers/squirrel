@@ -76,7 +76,7 @@ func TestNoScreenTitlesItselfWithAParagraph(t *testing.T) {
 // And the stylesheet does not still carry them, which is how a class comes
 // back: the rule outlives the markup and the next screen finds it.
 func TestTheStylesheetHasNoRuleForTheOldHeadings(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
+	css, err := staticFS.ReadFile("static/board.css")
 	require.NoError(t, err)
 	for _, dead := range []string{".chorehead", ".resultsHead"} {
 		require.NotContains(t, string(css), dead,

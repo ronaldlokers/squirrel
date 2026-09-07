@@ -10,7 +10,7 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-// pile.css is a static file behind a long cache and cannot know what day it
+// board.css is a static file behind a long cache and cannot know what day it
 // is, so the two things that move without being read — the stamp's lean and
 // where the room's light falls — arrive as custom properties on the body.
 // Between the picker and the stylesheet there is nothing but this attribute,

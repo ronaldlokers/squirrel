@@ -19,7 +19,7 @@ import (
 // The screen on a port, with made-up contents.
 //
 // It exists because everything this product looks like is compiled in:
-// templates and static files are both go:embed, so editing pile.css does
+// templates and static files are both go:embed, so editing board.css does
 // nothing to a running process. That left three things with nowhere to run —
 // impeccable's live mode, the design detector's overlay, and any test of the
 // service worker by hand, which needs a real origin and a real network to cut.

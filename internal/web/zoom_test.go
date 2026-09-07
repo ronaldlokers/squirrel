@@ -37,7 +37,7 @@ func TestTheViewportRefusesToScale(t *testing.T) {
 
 // A double tap that lands slightly fast is the normal gesture, not a mistake.
 func TestDoubleTapDoesNotMagnify(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
+	css, err := staticFS.ReadFile("static/board.css")
 	require.NoError(t, err)
 
 	require.Contains(t, string(css), "touch-action: manipulation",
@@ -54,14 +54,18 @@ func TestDoubleTapDoesNotMagnify(t *testing.T) {
 // Every field in this product has to clear 16px on a phone whatever the
 // viewport says.
 func TestEveryFieldStillClearsTheZoomFloorOnAPhone(t *testing.T) {
-	css, err := staticFS.ReadFile("static/pile.css")
+	board, err := staticFS.ReadFile("static/board.css")
 	require.NoError(t, err)
+	bars, err := staticFS.ReadFile("static/chrome.css")
+	require.NoError(t, err)
+	css := string(board) + string(bars)
 
-	// The two fields a thumb can put a caret in: the dock's slot, and the box
-	// Buddy draws when he asks for words. There are no others — a list here
-	// that names a field no screen has is a floor holding nothing up.
-	for _, sel := range []string{".slot textarea", ".wordbox textarea"} {
-		size := phoneSizeOf(t, string(css), sel)
+	for _, sel := range []string{
+		".strip.blank .words",
+		".strip.opened .wordfix",
+		".ops .find input, .lid .find input",
+	} {
+		size := phoneSizeOf(t, css, sel)
 		require.GreaterOrEqual(t, size, 16.0,
 			"%s is %gpx on a phone; under 16px, focusing it zooms the page", sel, size)
 	}

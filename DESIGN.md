@@ -271,6 +271,35 @@ Squirrel. That is unchanged and non-negotiable.
 its brim, the sheet, and the 3px sticker outline that drew all of them. The
 outline language stays; the sticker does not.
 
+### One stylesheet, and the two small pages are in it
+
+`pile.css` is gone. It was the room's stylesheet — 2,006 lines against the
+board's 748 — and `/me` and the way in went on loading it for a day after the
+room did not exist, so both pages shipped a design this document had already
+declared dead: a 3px sticker outline, 14px corners, a 999px smoked-pill timer
+and a pill to sign in with.
+
+They are drawn from the board's own tokens now. The corners are `--r`, the
+outline is `--line`, the stock is `--card` on the outline's 3px cast, and the
+one register that survives the move unchanged is the underlined quiet action.
+Two shapes were deliberately not carried over: the running timer is a strip
+rather than a pill, and *let me in* is a stamp — the same rectangle, cast and
+caps every press on the board is drawn with.
+
+**A face stays round.** The board's own `.chip.face` is a circle and always has
+been, and a picture of a person is the one place this product draws one. The
+settings page agrees with the board rather than with the rectangle rule;
+`TestBrowserYourFaceIsRoundEverywhere` holds both screens to it.
+
+**The lid is the ops bar.** Same solid `--purple-dark`, same 2px rule beneath
+it, no blur and no brim. It was translucent with a backdrop filter so the
+conversation could be seen passing under it; there is no conversation to pass
+under it.
+
+**The band beside the bar.** `board.html` declared `theme-color` `#472e70`
+while drawing a `#3b2560` bar, so an installed app met its own status band in a
+seam. Both pages declare the bar they draw.
+
 **Key characteristics**
 
 - One unit. A strip is the only content object in the product, at every size.
