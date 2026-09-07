@@ -5,7 +5,6 @@ package web
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -54,34 +53,10 @@ func openTheFirstAnswerableStrip(t *testing.T, c *cdp) {
 	c.until(t, "the strip to open", `!!document.querySelector(".strip.answerable.open")`)
 }
 
-func aKnownFloorGap(f undersizedControl) (string, bool) {
-	switch {
-	case strings.Contains(f.Name, ".count") || strings.Contains(f.Name, ".unit"):
-		return "the chore's rhythm blank and the appointment's compact date/time entry are words inside a sentence, not boxed fields; giving them the floor is a redesign of that row (docs/superpowers/specs/2026-08-22-devices-design.md), not a padding tweak", true
-	case strings.HasPrefix(f.Name, "label.findpress"):
-		return "the room and /me lid splits the space beside its search icon with a flex spacer that balances the wordmark's absence; widening the icon to 44 takes the width straight from the input beside it (the board's own bar has room to spare and does this; the lid does not) — a decision about the lid's layout, not a padding tweak", true
-	case strings.HasPrefix(f.Name, "textarea"):
-		return "the compose box's rest height is calibrated against the dock's reserve math that TestBrowserTheDockGivesTheFieldItsOwnRowOnAPhone pins at one line; raising it to 44 needs that reserve recomputed rather than a taller box bolted on", true
-	}
-	return "", false
-}
-
 func checkTheFloor(t *testing.T, c *cdp, where string) {
 	t.Helper()
-	var unknown []undersizedControl
-	var known []string
 	for _, f := range controlsUnderTheFloor(t, c) {
-		if reason, ok := aKnownFloorGap(f); ok {
-			known = append(known, fmt.Sprintf("%s %q is %vx%v — %s", f.Name, f.Text, f.Width, f.Height, reason))
-			continue
-		}
-		unknown = append(unknown, f)
-	}
-	for _, f := range unknown {
 		t.Errorf("%s: %s %q is %vx%v, under the 44x44 floor", where, f.Name, f.Text, f.Width, f.Height)
-	}
-	if len(unknown) == 0 && len(known) > 0 {
-		t.Skip(strings.Join(known, "\n"))
 	}
 }
 

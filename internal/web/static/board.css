@@ -574,9 +574,24 @@ a.stamp { text-decoration: none; }
 }
 
 @media (max-width: 620px) {
-  .blankstrip .count, .blankstrip .unit { min-height: 40px; font-size: 16px; }
+  .blankstrip .count, .blankstrip .unit {
+    min-height: 44px; padding: 6px 8px; font-size: 16px; color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    background: var(--paper);
+  }
+  .blankstrip .count { width: 56px; text-align: center; }
   .blankstrip .strip.blank .words { min-height: 44px; }
   .strip.blank .newmark { min-width: 44px; min-height: 44px; }
+  .strip.blank.asit .when { gap: 10px 14px; }
+  .strip.blank.asit .dm, .strip.blank.asit .hm { gap: 6px; }
+  .strip.blank.asit .count.dd, .strip.blank.asit .count.mo,
+  .strip.blank.asit .count.hh, .strip.blank.asit .count.mm {
+    width: 46px; min-height: 44px; padding: 6px 4px; font-size: 16px;
+    text-align: center; color: var(--outline);
+    border: var(--line) solid var(--outline); border-radius: var(--r);
+    background: var(--paper);
+  }
+  .strip.blank.asit .slash, .strip.blank.asit .colon { font-size: 14px; }
 }
 
 @media (pointer: coarse) {
