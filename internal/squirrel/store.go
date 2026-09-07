@@ -79,7 +79,7 @@ func URLFor(c PostgresConfig) string {
 const (
 	statementTimeout = 5 * time.Second
 	connectTimeout   = 5 * time.Second
-	maxConns         = 10
+	MaxConns         = 10
 )
 
 func poolConfigFor(dsn string) (*pgxpool.Config, error) {
@@ -97,7 +97,7 @@ func poolConfigFor(dsn string) (*pgxpool.Config, error) {
 		cfg.ConnConfig.ConnectTimeout = connectTimeout
 	}
 	if !strings.Contains(dsn, "pool_max_conns") {
-		cfg.MaxConns = maxConns
+		cfg.MaxConns = MaxConns
 	}
 	return cfg, nil
 }
