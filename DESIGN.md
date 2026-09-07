@@ -619,12 +619,27 @@ fortnight and nobody had measured. The chips in the bar, the strip's chevron and
 its way back, the blank strip's field and its `+`, and the search pill were all
 40px.
 
-Three are knowingly below it and say so rather than being bent to fit: the chore
-rhythm and the appointment's day and clock are words in a sentence rather than
-buttons, and boxing them is a redesign of that row; the lid's search icon cannot
-grow without shrinking the field beside it under the same floor; and the
-compose field's rest height is what the dock's one-line reserve is computed
-from.
+Three were once knowingly below it and said so rather than being bent to fit.
+One was never real: the compose field's exemption named a `textarea` that left
+with the room it belonged to, and nothing on any screen matches that selector
+any more. The other two are fixed, on the phone breakpoint only, and the test
+that used to name and forgive all three carries no exemption of any kind now —
+a control under the floor fails outright, naming itself.
+
+**The chore's rhythm and the appointment's day and clock stay a sentence above
+620px** — `every 7 days`, `05/09 14:30`, unboxed and underlined, exactly as
+before. Below it the same fields become boxed: a 2px outline, the stock's own
+corner radius, `--paper` behind the ink, 56px wide for the rhythm's count and
+46px for each of the day, month, hour and minute, all 44px tall. Two sentences
+either side of the one breakpoint that already redraws everything else, not
+one field wearing two disguises.
+
+**The lid takes the fix the ops bar's rail already had.** The flex spacer
+beside the search icon that balances the missing wordmark stops growing on a
+phone, so the find field takes the room the spacer used to hold instead of
+splitting it, and the icon inside the field grows to 44px into the room the
+field just gained — the same move that already gives the board's own bar a
+search icon with nothing to take width from.
 
 **And nothing scrolls sideways at 320px**, walked the same way. The assertion is
 on `body` rather than on the document: `html, body` carry `overflow-x: clip`,
