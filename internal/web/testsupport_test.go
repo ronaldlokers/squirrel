@@ -79,6 +79,7 @@ type fakeStore struct {
 	rampSaid    int
 	hushed      int
 	armed       []bool
+	capacity    squirrel.Capacity
 	// Something set aside that has gone quiet, and what the screen did about
 	// it.
 	quiet    squirrel.HeldItem
@@ -1567,6 +1568,13 @@ func (f *fakeStore) RampSaid(_ context.Context, _ int64, _ time.Time) error {
 func (f *fakeStore) HushRamp(_ context.Context, _ int64, _ time.Time) error {
 	f.hushed++
 	return nil
+}
+
+func (f *fakeStore) Capacity(_ context.Context, _ int64, _ time.Time) squirrel.Capacity {
+	if f.capacity == "" {
+		return squirrel.CapacityOK
+	}
+	return f.capacity
 }
 
 // Who the fake screen is talking to. `whoName` empty is a person the gate

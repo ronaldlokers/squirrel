@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
+
+	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
 func timerHandler(s Store, opts Options) http.HandlerFunc {
@@ -58,4 +61,46 @@ func runningTimer(s Store, opts Options, r *http.Request) *timerView {
 type timerView struct {
 	Label string
 	Left  string
+}
+
+type rampView struct {
+	Label string
+}
+
+const (
+	quietFrom  = 22
+	quietUntil = 6
+)
+
+func quietHours(at time.Time) bool {
+	h := at.Hour()
+	return h >= quietFrom || h < quietUntil
+}
+
+func armRampIfTicked(r *http.Request, s Store, personID int64) error {
+	if r.FormValue("ramp") != "1" {
+		return nil
+	}
+	return s.ArmRamp(r.Context(), personID, true)
+}
+
+func rampFor(s Store, r *http.Request, personID int64, at time.Time) *rampView {
+	if quietHours(at) {
+		return nil
+	}
+	if s.Capacity(r.Context(), personID, at) == squirrel.CapacityLow {
+		return nil
+	}
+	t, found, err := s.RampDue(r.Context(), personID, at)
+	if err != nil {
+		slog.Error("reading the exit ramp", "error", err)
+		return nil
+	}
+	if !found {
+		return nil
+	}
+	if err := s.RampSaid(r.Context(), personID, at); err != nil {
+		slog.Error("marking the exit ramp said", "error", err)
+	}
+	return &rampView{Label: t.Label}
 }

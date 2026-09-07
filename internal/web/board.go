@@ -32,6 +32,7 @@ type boardView struct {
 	Day            string
 	Pulled         *offerView
 	Timer          *timerView
+	Ramp           *rampView
 	Bays           []bayView
 	Faces          []faceView
 	Told           []toldView
@@ -175,6 +176,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Found = whatMatched(r, s, personID, find, at); return nil })
 		g.Go(func() error { v.Pulled = offerFor(s, r, false); return nil })
 		g.Go(func() error { v.Timer = runningTimer(s, opts, r); return nil })
+		g.Go(func() error { v.Ramp = rampFor(s, r, personID, at); return nil })
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
 		g.Go(func() error { v.Faces = facesIfItIsTime(r, s, personID, at); return nil })
 		bays := fetchBays(&g, r, s, personID, at)
@@ -906,6 +908,11 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
+		case "hush":
+			if err := s.HushRamp(r.Context(), personID, now()); err != nil {
+				fail(w, err)
+				return
+			}
 		case "timer":
 			if err := startTimerFromTheLadder(r, s, personID); err != nil {
 				fail(w, err)
@@ -956,8 +963,10 @@ func startTimerFromTheLadder(r *http.Request, s Store, personID int64) error {
 	if len(label) > choreNameLimit {
 		label = label[:choreNameLimit]
 	}
-	_, err = s.StartTimer(r.Context(), personID, label, time.Duration(mins)*time.Minute, now())
-	return err
+	if _, err := s.StartTimer(r.Context(), personID, label, time.Duration(mins)*time.Minute, now()); err != nil {
+		return err
+	}
+	return armRampIfTicked(r, s, personID)
 }
 
 func refuseTheOffer(r *http.Request, s Store, personID int64, kind squirrel.OfferKind, refID int64) error {

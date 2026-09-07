@@ -33,7 +33,7 @@
 </header>
 
 <div class="deck">
-{{if or .Pulled .Timer}}
+{{if or .Pulled .Timer .Ramp}}
 <section class="working">
   {{with .Pulled}}
   <article class="pulled">
@@ -57,6 +57,7 @@
         {{if eq .Kind "again"}}
         <input type="hidden" name="minutes" value="10">
         <input type="hidden" name="label" value="{{.Text}}">
+        <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
         <button class="stamp go" name="act" value="start">pick it up<span class="k">D</span></button>
         <button class="stamp no" name="act" value="later">not now<span class="k">N</span></button>
         {{else if not .Running}}
@@ -70,6 +71,7 @@
         {{else if $.UnstuckMinutes}}
         <input type="hidden" name="minutes" value="{{$.UnstuckMinutes}}">
         <input type="hidden" name="label" value="{{.Text}}">
+        <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
         <button class="stamp go" name="act" value="timer">{{$.UnstuckMinutes}} MIN<span class="k">T</span></button>
         {{end}}
       </form>
@@ -84,6 +86,23 @@
       <input type="hidden" name="act" value="stop">
       <button class="stopTimer" type="submit">stop</button>
     </form>
+  </aside>
+  {{end}}
+  {{with .Ramp}}
+  <aside class="ramping">
+    <span class="lbl">still on this?</span>
+    <span class="row"><span class="what">{{.Label}}</span></span>
+    <span class="stamps">
+      <form method="post" action="/board/now">
+        <input type="hidden" name="act" value="stop">
+        <button class="stamp go" type="submit">stop</button>
+      </form>
+      <a class="stamp no" href="/">keep going</a>
+      <form method="post" action="/board/now">
+        <input type="hidden" name="act" value="hush">
+        <button class="stamp no" type="submit">leave me alone</button>
+      </form>
+    </span>
   </aside>
   {{end}}
 </section>
