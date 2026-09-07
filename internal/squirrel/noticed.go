@@ -15,18 +15,19 @@ type Noticed struct {
 	At    time.Time
 }
 
-// Notice keeps a line about one thing, replacing whatever was there.
+// Notice keeps a line about one thing.
 //
-// Replacing rather than stacking: two lines under one strip is a conversation,
-// and a strip is not somewhere a conversation happens. A refusal is cleared
-// with the words it was about, because the new line is not the one that was
-// refused.
+// The rack still draws one line per thing — WhatWasNoticed returns the newest
+// and nothing else — because two lines under one strip is a conversation,
+// and a strip is not somewhere a conversation happens. The lines before it are
+// kept: the strip you have opened is one thing looked at on purpose, not a
+// rack, and that is where they are read. A refused line stays refused — it is
+// the signal that stops the next one being like it — and a new line arrives
+// unrefused beside it rather than clearing it.
 func (s *Store) Notice(ctx context.Context, personID int64, kind string, refID int64, words string, at time.Time) error {
 	if _, err := s.pool.Exec(ctx, `
 		insert into noticed (person_id, kind, ref_id, words, made_at)
-		values ($1, $2, $3, $4, $5)
-		on conflict (person_id, kind, ref_id)
-		do update set words = excluded.words, made_at = excluded.made_at, refused_at = null`,
+		values ($1, $2, $3, $4, $5)`,
 		personID, kind, refID, words, at); err != nil {
 		return fmt.Errorf("keeping what was noticed: %w", err)
 	}
@@ -36,8 +37,12 @@ func (s *Store) Notice(ctx context.Context, personID int64, kind string, refID i
 // WhatWasNoticed is every line this person has not refused.
 func (s *Store) WhatWasNoticed(ctx context.Context, personID int64) ([]Noticed, error) {
 	rows, err := s.pool.Query(ctx, `
-		select id, kind, ref_id, words, made_at from noticed
-		 where person_id = $1 and refused_at is null
+		select id, kind, ref_id, words, made_at from (
+		    select distinct on (kind, ref_id) id, kind, ref_id, words, made_at
+		      from noticed
+		     where person_id = $1 and refused_at is null
+		     order by kind, ref_id, made_at desc
+		  ) latest
 		 order by made_at desc`, personID)
 	if err != nil {
 		return nil, fmt.Errorf("reading what was noticed: %w", err)
@@ -56,6 +61,27 @@ func (s *Store) WhatWasNoticed(ctx context.Context, personID int64) ([]Noticed, 
 }
 
 // NoticedAt is when it last noticed anything, which is what paces it.
+func (s *Store) NoticedAbout(ctx context.Context, personID int64, kind string, refID int64, limit int) ([]Noticed, error) {
+	rows, err := s.pool.Query(ctx, `
+		select id, kind, ref_id, words, made_at from noticed
+		 where person_id = $1 and kind = $2 and ref_id = $3 and refused_at is null
+		 order by made_at desc limit $4`, personID, kind, refID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("reading what was noticed about one thing: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Noticed
+	for rows.Next() {
+		var one Noticed
+		if err := rows.Scan(&one.ID, &one.Kind, &one.RefID, &one.Words, &one.At); err != nil {
+			return nil, fmt.Errorf("reading what was noticed about one thing: %w", err)
+		}
+		out = append(out, one)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) NoticedAt(ctx context.Context, personID int64) (time.Time, error) {
 	var at *time.Time
 	if err := s.pool.QueryRow(ctx,
