@@ -1,6 +1,6 @@
 # Roadmap
 
-What is built, what is decided, what is refused. Last reconciled **7 September
+What is built, what is decided, what is refused. Last reconciled **8 September
 2026**.
 
 This is an index of *state*, not of reasoning. Every decision here was argued
