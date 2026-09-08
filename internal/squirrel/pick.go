@@ -58,9 +58,13 @@ func (o Offer) Key() string { return suppressionKey(o.Kind, o.RefID) }
 
 // PickNow is the rules in order, with the capacity gate in front.
 //
-// A fresh wiped or frazzled reading drops rules 4 and 5 — everything Squirrel
-// would raise on its own initiative — and keeps 1 through 3, which are the
-// world's business and yours.
+// A fresh wiped or frazzled reading drops rule 4 — the one thing Squirrel would
+// raise on its own initiative — and keeps 1 through 3, which are the world's
+// business and yours.
+//
+// Chores are not among the rules. They have their own three racks on the board,
+// ordered and explained there, and an offer that named one could only repeat
+// the top of a rack the same screen was already showing.
 //
 // showAnyway lifts the gate once, without persisting anything.
 func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, showAnyway bool) (Offer, bool, error) {
@@ -101,39 +105,12 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 		return o, found, err
 	}
 
-	// Rules 4 and 5 are Squirrel's own initiative, and the gate stops here.
+	// Rule 4 is Squirrel's own initiative, and the gate stops here.
 	if capacity == CapacityLow && !showAnyway {
 		return Offer{}, false, nil
 	}
 
-	// Rule 4 — a chore that is due and inside the window where raising it is worth
-	// doing. Asking.Open is where due and worth-interrupting-for part company, and
-	// the nudge makes the same distinction.
-	//
-	// Not PickChore's weighted draw: randomness is right for a message that arrives
-	// unasked and wrong for a screen you opened, where a different answer per reload
-	// reads as the product changing its mind.
-	due, err := s.DueChores(ctx, personID, now)
-	if err != nil {
-		return Offer{}, false, err
-	}
-	for i, c := range due {
-		if !c.Ask.Open(now) {
-			continue
-		}
-		if skip[suppressionKey(OfferChore, c.ID)] {
-			continue
-		}
-		return Offer{
-			Kind:    OfferChore,
-			RefID:   c.ID,
-			Text:    c.Name,
-			Because: choreBecause(c),
-			Chore:   &due[i],
-		}, true, nil
-	}
-
-	// Rule 5 — the oldest thing you decided to do. Oldest, where every list here is
+	// Rule 4 — the oldest thing you decided to do. Oldest, where every list here is
 	// newest-first: a list is read and the newest is what you remember writing; an
 	// offer is acted on, and the oldest open task is the one quietly avoided.
 	tasks, _, err := s.Tasks(ctx, personID, taskPickDepth)
@@ -153,7 +130,7 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 		}, true, nil
 	}
 
-	// Rule 6 — nothing, which is a normal answer and not an empty state. The
+	// Rule 5 — nothing, which is a normal answer and not an empty state. The
 	// caller renders no region at all rather than an encouraging sentence:
 	// there is nothing here to be behind on.
 	return Offer{}, false, nil

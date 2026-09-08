@@ -104,7 +104,7 @@ func partHasCome(part DayPart, at time.Time) bool {
 
 func rankOf(c Chore, u Usually, at time.Time) (int, string) {
 	if !c.EverDone {
-		return 6, ""
+		return 6, choreBecause(c)
 	}
 	today := u.Known && u.Weekday == at.Weekday()
 
@@ -118,7 +118,7 @@ func rankOf(c Chore, u Usually, at time.Time) (int, string) {
 	case today:
 		return 4, "not yet, but this is the day you usually do it"
 	default:
-		return 5, ""
+		return 5, choreBecause(c)
 	}
 }
 

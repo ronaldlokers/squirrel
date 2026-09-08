@@ -15,20 +15,24 @@ import (
 // The moment straight after a completion is the cheapest moment to start the
 // next thing, and the product used to walk away from it.
 
+// A chore reaches Campfire through the nudge now rather than through `!now`,
+// and finishing one still hands you the next thing.
 func TestFinishingAChoreHandsYouOneMoreThing(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
 
 	taskOf(t, store, p, "ring the vet")
-	_, err := store.UpsertChore(ctx, p, "bins out", oneDay, oneDay)
-	require.NoError(t, err)
-	backdate(t, store, "bins out", 3)
+	aDueChore(t, store, p, "vacuum")
 
-	triage(t, store, p, "!now")
+	chat, sent := chatRecorder("77")
+	require.NoError(t, schedulerWithChat(t, store, p, chat).
+		Nudge(ctx, today(t, 10, 0, 0), squirrel.NudgeFromArrival))
+	require.Len(t, *sent, 1, "no nudge went out, so there is nothing to finish")
+
 	reply := triage(t, store, p, "done 1")
 
-	require.Contains(t, reply, "bins out", "what you just did")
+	require.Contains(t, reply, "vacuum", "what you just did")
 	require.Contains(t, reply, "ring the vet", "and one more thing")
 }
 
