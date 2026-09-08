@@ -26,22 +26,78 @@ func TestARhythmIsDailyWeeklyOrSeldomAndNothingElse(t *testing.T) {
 
 func TestSquirrelWillNotClaimAUsualTimeFromTooLittleEvidence(t *testing.T) {
 	two := []time.Time{sundayMorning, sundayMorning.AddDate(0, 0, -7)}
-	require.False(t, squirrel.UsuallyFrom(two).Known,
+	require.False(t, squirrel.UsuallyFrom(two).Known(),
 		"it told you when you usually do a thing you have done twice")
 
 	three := append(two, sundayMorning.AddDate(0, 0, -14))
 	got := squirrel.UsuallyFrom(three)
-	require.True(t, got.Known)
+	require.True(t, got.Known())
 	require.Equal(t, time.Sunday, got.Weekday)
 	require.Equal(t, squirrel.Morning, got.Part)
 	require.Equal(t, "you usually do this Sunday morning", got.Words())
 }
 
+func TestAThingYouDoEveryDayHasNoUsualDay(t *testing.T) {
+	every := []time.Time{}
+	for back := 0; back < 12; back++ {
+		every = append(every, sundayMorning.AddDate(0, 0, -back))
+	}
+
+	got := squirrel.UsuallyFrom(every)
+	require.False(t, got.OnADay,
+		"it named a weekday for a thing you do on all of them, which is the loudest way to be wrong")
+	require.Equal(t, squirrel.Morning, got.Part, "the hour is still yours, even when the day is not")
+	require.Equal(t, "you usually do this in the morning", got.Words())
+}
+
+func TestNoUsualDayWhenTwoDaysShareIt(t *testing.T) {
+	split := []time.Time{}
+	for week := 0; week < 3; week++ {
+		split = append(split,
+			sundayMorning.AddDate(0, 0, -7*week),
+			sundayMorning.AddDate(0, 0, -7*week-1))
+	}
+
+	got := squirrel.UsuallyFrom(split)
+	require.False(t, got.OnADay,
+		"Saturday and Sunday held three each and it picked one, which is a tie-break wearing a claim's clothes")
+}
+
+func TestAUsualDayIsClaimedOnAMajorityAndNotAPlurality(t *testing.T) {
+	// Four Sundays, three Tuesdays, two Fridays. Sunday leads and is nowhere
+	// near half, so there is no day you usually do this.
+	var when []time.Time
+	for i := 0; i < 4; i++ {
+		when = append(when, sundayMorning.AddDate(0, 0, -7*i))
+	}
+	for i := 0; i < 3; i++ {
+		when = append(when, sundayMorning.AddDate(0, 0, -7*i+2))
+	}
+	for i := 0; i < 2; i++ {
+		when = append(when, sundayMorning.AddDate(0, 0, -7*i+5))
+	}
+
+	require.False(t, squirrel.UsuallyFrom(when).OnADay,
+		"four out of nine is the commonest day, and it is not a day you usually do this")
+}
+
+func TestAThingWithNoUsualDayIsNeverRankedAsIfTodayWereIt(t *testing.T) {
+	daily := squirrel.Usually{Part: squirrel.Morning}
+	racks := squirrel.RacksOf(
+		[]squirrel.Chore{chore(1, "water the plants", 1, 0, true)},
+		map[int64]squirrel.Usually{1: daily}, sundayMorning, false)
+
+	rack := rackFor(t, racks, squirrel.Daily)
+	require.Len(t, rack.Waiting, 1)
+	require.NotContains(t, rack.Waiting[0].Because, "the day you usually do it",
+		"it has no usual day, so today cannot be it")
+}
+
 func TestTheOrderIsDueAndNowFirstThenDueThenTheDayYouUsuallyDoIt(t *testing.T) {
 	usually := map[int64]squirrel.Usually{
-		1: {Weekday: time.Sunday, Part: squirrel.Morning, Known: true},
-		2: {Weekday: time.Sunday, Part: squirrel.Evening, Known: true},
-		4: {Weekday: time.Sunday, Part: squirrel.Morning, Known: true},
+		1: {Weekday: time.Sunday, Part: squirrel.Morning, OnADay: true},
+		2: {Weekday: time.Sunday, Part: squirrel.Evening, OnADay: true},
+		4: {Weekday: time.Sunday, Part: squirrel.Morning, OnADay: true},
 	}
 	chores := []squirrel.Chore{
 		chore(3, "due, no usual time", 7, 9, true),
@@ -68,7 +124,7 @@ func TestTheOrderIsDueAndNowFirstThenDueThenTheDayYouUsuallyDoIt(t *testing.T) {
 }
 
 func TestSquirrelSaysWhyAThingIsWhereItIs(t *testing.T) {
-	usually := map[int64]squirrel.Usually{1: {Weekday: time.Sunday, Part: squirrel.Morning, Known: true}}
+	usually := map[int64]squirrel.Usually{1: {Weekday: time.Sunday, Part: squirrel.Morning, OnADay: true}}
 	racks := squirrel.RacksOf([]squirrel.Chore{chore(1, "bins out", 7, 7, true)}, usually, sundayMorning, false)
 
 	weekly := rackFor(t, racks, squirrel.Weekly)
