@@ -66,7 +66,7 @@ func TestAStripWithAPhotographSaysSoAndOpens(t *testing.T) {
 	}}
 	m := mounted(t, f)
 
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, `href="/?open=5"`)
 	require.NotContains(t, body, `/photo/5/thumb`, "the strip is carrying the photograph itself")

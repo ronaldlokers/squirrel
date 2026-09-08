@@ -10,10 +10,10 @@ import (
 )
 
 func TestTheChoresRackTeachesHowToMakeOne(t *testing.T) {
-	full := opened(t, &fakeStore{chores: []squirrel.Chore{
+	full := theChores(t, &fakeStore{chores: []squirrel.Chore{
 		{ID: 1, Name: "bins out", Active: true, Every: 14 * 24 * time.Hour, EveryDays: 14},
-	}}, "chores")
-	empty := opened(t, &fakeStore{}, "chores")
+	}})
+	empty := theChores(t, &fakeStore{})
 
 	for _, body := range []string{full, empty} {
 		require.Contains(t, body, "what comes back?")

@@ -69,7 +69,7 @@ func Mount(m Mux, s Store, opts Options) error {
 		}))
 	}
 	m.Get("/pile/chores", guard(opts, func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/?bay=chores", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/?bay=daily", http.StatusMovedPermanently)
 	}))
 	m.Post("/timer", posting(opts, timerHandler(s, opts)))
 	m.Get("/auth", gateHandler())

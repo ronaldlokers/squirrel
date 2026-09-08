@@ -187,13 +187,15 @@ type fakeStore struct {
 	waitingErr   error
 	// Failures that belong to one read alone, so a test can break the chores or
 	// the notes while the conversation itself still renders.
-	choresErr error
-	said      []squirrel.Said
-	saidErr   error
-	noticed   []squirrel.Noticed
-	noticeErr error
-	unuseful  []int64
-	itemsErr  error
+	choresErr  error
+	usually    map[int64]squirrel.Usually
+	usuallyErr error
+	said       []squirrel.Said
+	saidErr    error
+	noticed    []squirrel.Noticed
+	noticeErr  error
+	unuseful   []int64
+	itemsErr   error
 
 	// What the chore handlers did.
 	completed  []int64
@@ -219,6 +221,14 @@ func (f *fakeStore) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, 
 		return nil, f.err
 	}
 	return f.chores, nil
+}
+
+func (f *fakeStore) WhenYouUsuallyDo(_ context.Context, _ int64) (map[int64]squirrel.Usually, error) {
+	f.probe.hit()
+	if f.usuallyErr != nil {
+		return nil, f.usuallyErr
+	}
+	return f.usually, nil
 }
 
 func (f *fakeStore) SearchChores(_ context.Context, _ int64, q string, limit int) ([]squirrel.Chore, error) {

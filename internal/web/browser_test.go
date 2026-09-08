@@ -293,8 +293,8 @@ func waitForTheWorker(t *testing.T, c *cdp, url string) {
 // somewhere writes nothing.
 func atChores(t *testing.T, srv *httptest.Server) *cdp {
 	t.Helper()
-	c := browserAt(t, srv, "/?bay=chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
+	c := browserAt(t, srv, "/?bay=weekly")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-weekly")`)
 	return c
 }
 
@@ -302,6 +302,6 @@ func atChores(t *testing.T, srv *httptest.Server) *cdp {
 // 2 September 2026 rather than a where you press a door for.
 func openChores(t *testing.T, c *cdp, srv *httptest.Server) {
 	t.Helper()
-	c.navigate(t, srv.URL+"/?bay=chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
+	c.navigate(t, srv.URL+"/?bay=weekly")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-weekly")`)
 }

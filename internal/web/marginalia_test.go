@@ -20,7 +20,7 @@ func TestBrowserTheLineSitsInTheMarginOfItsOwnStrip(t *testing.T) {
 			{ID: 9, Kind: "note", RefID: 1, Words: "The code you need for this is in the other note."},
 		},
 	}
-	c := browserAt(t, screen(t, f), "/board")
+	c := browserAt(t, screen(t, f), "/?bay=notes")
 	c.until(t, "the line", `!!document.querySelector('.strip .seen')`)
 
 	num := func(expr string) float64 {
@@ -55,7 +55,7 @@ func TestBrowserRefusingALineTakesItOffTheStrip(t *testing.T) {
 			{ID: 9, Kind: "note", RefID: 1, Words: "The code you need for this is in the other note."},
 		},
 	}
-	c := browserAt(t, screen(t, f), "/board")
+	c := browserAt(t, screen(t, f), "/?bay=notes")
 	c.until(t, "the line", `!!document.querySelector('.strip .seen')`)
 
 	f.noticed = nil

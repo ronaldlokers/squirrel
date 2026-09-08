@@ -12,13 +12,15 @@ import (
 
 // How you are right now, and what Squirrel is allowed to do with it.
 //
-// A record of how someone felt is data about the person. The owner's decision:
-// keep the history, never show it — a nudge that knows you have been flat can be
-// gentler, and that is the entire reason for asking.
+// A record of how someone felt is data about the person. The owner's decision
+// was: keep the history, never show it — a nudge that knows you have been flat
+// can be gentler, and that was the entire reason for asking.
 //
-// Nothing may render more than the latest one. That is enforced by what this file
-// exports: LatestCheckin returns one, and there is no function here returning
-// many.
+// That is no longer the rule. CheckinsSince exists, and since 8 September 2026
+// the board draws the week behind today beside the racks. What survives is the
+// narrower half: nothing here totals, averages, compares or trends them, and
+// the only readers are the two screens that draw them and the one command that
+// prints them. PRODUCT.md principle 7 carries the trade.
 
 // Mood is one of the five drawn answers. They are not a scale and must never be
 // numbered: "low" and "frazzled" are different states wanting different

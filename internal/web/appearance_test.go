@@ -59,13 +59,22 @@ var appearanceScreens = map[string][]string{
 	// recording it and its parts records most of the world.
 	"/": {
 		".ops", ".ops .wordmark", ".ops .clock .t", ".ops .clock .d", ".ops .chip",
-		".ops .rail", ".ops .rail .find", ".ops .chip.face",
+		".ops .rail", ".ops .rail .find", ".ops .chip.face", ".ops .chip.mood",
 		".baysign", ".baysign .n", ".channel",
 		".strip", ".strip .holder", ".strip .words", ".strip .what", ".strip .mark",
+		".strip .why", ".strip .usual",
 		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
-		".blankstrip .inline", ".blankstrip .count", ".seam", ".strip.resting", ".pulled", ".pulled .why b", ".pulled .said",
+		".blankstrip .inline", ".blankstrip .count", ".newchore",
+		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
+		".dial .record", ".doors", ".door", ".door .through",
+		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
+
+	// What a door opens onto. The notes are the only place the seam and the
+	// settled strip are drawn, and they left the board when the doors did — a
+	// selector recorded against a screen that no longer draws it pins nothing.
+	"/?bay=notes": {".seam", ".strip.resting", ".strip.back", ".blankstrip"},
 
 	"/me": {".youface", ".youhead", ".weekrow"},
 }
@@ -87,10 +96,19 @@ const appearanceFile = "testdata/appearance.json"
 // is missing, which pins nothing.
 func appearanceFixture() *fakeStore {
 	f := aPile()
+	// Two, so both of a rack row's shapes are drawn: one whose rhythm came
+	// round and says so, and one whose turn is not today and says instead when
+	// you usually do it.
 	f.chores = []squirrel.Chore{{
 		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
-		EveryDays: 7, SinceDays: 6, Active: true, EverDone: true,
+		EveryDays: 7, SinceDays: 7, Active: true, EverDone: true,
+	}, {
+		ID: 2, Name: "water the plants", Every: 7 * 24 * time.Hour,
+		EveryDays: 7, SinceDays: 2, Active: true, EverDone: true,
 	}}
+	f.usually = map[int64]squirrel.Usually{
+		2: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+	}
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
 	// A timer and a tray, so the board's two bands that only exist when
 	// something is happening are recorded rather than silently absent.

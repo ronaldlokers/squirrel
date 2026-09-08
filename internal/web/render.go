@@ -192,7 +192,10 @@ type moodWeekView struct {
 // most of what is there. Ahead is a day that has not happened, drawn as nothing —
 // an empty Saturday next week is not a gap.
 type moodCellView struct {
-	Day    string
+	Day string
+	// Short is the weekday in three letters, for the dial, where each day is
+	// an arc rather than a cell in a labelled week and has to name itself.
+	Short  string
 	Mood   string
 	Word   string
 	Nought bool

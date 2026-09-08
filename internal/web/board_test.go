@@ -24,16 +24,36 @@ func aBoardStore() *fakeStore {
 	}
 }
 
-func TestTheBoardDrawsEveryBayFromTheStore(t *testing.T) {
+// The board is the chores. What is on it is three racks and the doors to the
+// other three places, and the chores themselves are the only strips.
+func TestTheBoardIsTheChoresAndThreeDoors(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
 	body := m.call(t, "GET", "/board", nil).Body.String()
 
-	for _, want := range []string{
-		"the notes", "the chores", "the tasks", "the agenda",
-		"boiler service code is 4471", "kaas", "bins out", "vet about the booster",
-	} {
+	for _, want := range []string{"daily", "weekly", "seldom", "bins out"} {
 		require.Contains(t, body, want)
+	}
+	for _, door := range []string{"the notes", "the tasks", "the agenda"} {
+		require.Contains(t, body, door, "the %s cannot be reached from the board", door)
+	}
+	for _, behind := range []string{"boiler service code is 4471", "kaas", "vet about the booster"} {
+		require.NotContains(t, body, behind,
+			"%q is on the board, so the doors did not demote anything", behind)
+	}
+}
+
+// And what is behind a door is behind it, whole.
+func TestADoorOpensOntoWhatItHolds(t *testing.T) {
+	m := mounted(t, aBoardStore())
+
+	for door, want := range map[string]string{
+		"notes": "boiler service code is 4471",
+		"tasks": "vet about the booster",
+	} {
+		body := m.call(t, "GET", "/?bay="+door, nil).Body.String()
+		require.Contains(t, body, want, "the %s door opens onto nothing", door)
+		require.Contains(t, body, "back to the board", "there is no way out of the %s", door)
 	}
 }
 
@@ -50,7 +70,7 @@ func TestTheBoardIsNotAConversation(t *testing.T) {
 func TestTheShelvesAreReachedFromTheNotesRackAndCountNothing(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/board", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, "what you set aside")
 	require.Contains(t, body, "the things you kept")
@@ -60,10 +80,14 @@ func TestTheShelvesAreReachedFromTheNotesRackAndCountNothing(t *testing.T) {
 func TestAStripCarriesTheAnswersItsBayAllows(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/board", nil).Body.String()
+	board := m.call(t, "GET", "/board", nil).Body.String()
+	for _, want := range []string{">did it<", ">later<"} {
+		require.Contains(t, board, want)
+	}
 
-	for _, want := range []string{">done<", ">keep<", ">drop<", ">did it<", ">later<"} {
-		require.Contains(t, body, want)
+	notes := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	for _, want := range []string{">done<", ">keep<", ">drop<"} {
+		require.Contains(t, notes, want)
 	}
 }
 
@@ -173,7 +197,7 @@ func TestABlankStripWithNothingOnItKeepsNothing(t *testing.T) {
 func TestTheBlankStripIsAFieldYouCanType(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/board", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, `action="/board/new"`)
 	require.Contains(t, body, `name="words"`)
@@ -188,7 +212,7 @@ func TestTypingAChoreWithItsRhythmMakesOne(t *testing.T) {
 	sp := &fakeSpool{}
 	m := mountedSpooling(t, f, sp)
 
-	m.call(t, "POST", "/board/new", strings.NewReader("bay=chores&words=defrost+the+freezer&every=14"))
+	m.call(t, "POST", "/board/new", strings.NewReader("bay=weekly&words=defrost+the+freezer&every=14"))
 
 	require.Equal(t, "defrost the freezer", f.reinterval.name)
 	require.Equal(t, 14*24*time.Hour, f.reinterval.every)
@@ -203,12 +227,12 @@ func TestChoreWordsWithNoRhythmAreAskedAboutRatherThanFiled(t *testing.T) {
 	sp := &fakeSpool{}
 	m := mountedSpooling(t, f, sp)
 
-	res := m.call(t, "POST", "/board/new", strings.NewReader("bay=chores&words=defrost+the+freezer"))
+	res := m.call(t, "POST", "/board/new", strings.NewReader("bay=weekly&words=defrost+the+freezer"))
 
 	require.Empty(t, f.reinterval.name, "a chore was made without a rhythm")
 	require.Empty(t, sp.written, "the words were filed as a note instead of being asked about")
 	require.Equal(t, 303, res.Code)
-	require.Equal(t, "/?bay=chores&rhythm=defrost+the+freezer", res.Header().Get("Location"),
+	require.Equal(t, "/?bay=daily&rhythm=defrost+the+freezer", res.Header().Get("Location"),
 		"the words were dropped rather than carried back to the question")
 }
 
@@ -250,23 +274,25 @@ func TestTheFrontDoorIsTheBoard(t *testing.T) {
 // On a phone the four racks become one and the bay signs become the tabs above
 // it. The server draws all four either way — which rack you are in is a class,
 // so the desktop board is untouched and the phone needs no script.
-func TestTheBayYouAreInIsTheOneThatIsLit(t *testing.T) {
+func TestTheRackYouAreInIsTheOneThatIsLit(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/?bay=chores", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=weekly", nil).Body.String()
 
-	require.Contains(t, body, `class="rack in" data-bay="chores"`)
-	require.Contains(t, body, `class="rack" data-bay="notes"`)
-	require.Contains(t, body, `<a class="baytab in" href="/?bay=chores" aria-current="page">`)
-	require.Contains(t, body, `<a class="baytab" href="/?bay=notes">`)
+	require.Contains(t, body, `class="rack in" data-bay="weekly"`)
+	require.Contains(t, body, `class="rack" data-bay="daily"`)
+	require.Contains(t, body, `<a class="baytab in" href="/?bay=weekly" aria-current="page">`)
+	require.Contains(t, body, `<a class="baytab" href="/?bay=daily">`)
 }
 
-func TestTheNotesAreTheBayYouLandIn(t *testing.T) {
+// Nothing named lands you in "now", which is the cut across all three rather
+// than any one of them. A phone that lands nowhere shows nothing at all.
+func TestNowIsTheRackYouLandIn(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
 	body := m.call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, `class="rack in" data-bay="notes"`)
+	require.Contains(t, body, `class="rack in" data-bay="now"`)
 }
 
 // A press in a bay comes back to that bay. Answering a chore on a phone and
@@ -276,8 +302,8 @@ func TestAPressComesBackToTheBayItWasMadeIn(t *testing.T) {
 	f := aBoardStore()
 	m := mountedSpooling(t, f, &fakeSpool{})
 
-	act := m.call(t, "POST", "/board/act", strings.NewReader("what=chore&id=7&answer=did&bay=chores"))
-	require.Equal(t, "/?bay=chores", act.Header().Get("Location"))
+	act := m.call(t, "POST", "/board/act", strings.NewReader("what=chore&id=7&answer=did&bay=weekly"))
+	require.Equal(t, "/?bay=weekly", act.Header().Get("Location"))
 
 	made := m.call(t, "POST", "/board/new", strings.NewReader("bay=tasks&words=book+it"))
 	require.Equal(t, "/?bay=tasks", made.Header().Get("Location"))
@@ -458,7 +484,7 @@ func TestMakingAChoreAsksForTheRhythmOnThatStripOnly(t *testing.T) {
 	f := aBoardStore()
 	m := mounted(t, f)
 
-	body := m.call(t, "GET", "/?chore=1", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes&chore=1", nil).Body.String()
 
 	require.Contains(t, body, `name="every" value="7"`)
 	require.Equal(t, 1, strings.Count(body, `action="/board/chore"`),
@@ -479,7 +505,7 @@ func TestPressingARhythmMakesTheChore(t *testing.T) {
 func TestANoteOffersToBecomeAChore(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, `formaction="/" name="chore" value="1"`)
 }
@@ -508,7 +534,7 @@ func TestTheNotesShowEverythingWithTheUndecidedFirst(t *testing.T) {
 	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
 	m := mounted(t, f)
 
-	rack := theRackIn(t, m.call(t, "GET", "/", nil).Body.String(), "bay=notes")
+	rack := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
 	undecided := strings.Index(rack, "boiler service code is 4471")
 	aside := strings.Index(rack, "chase the landlord")
 	kept := strings.Index(rack, "the boiler serial plate")
@@ -540,11 +566,24 @@ func TestAShelfCountsNothing(t *testing.T) {
 // them is a lie: if the database is down the board says so rather than showing
 // a quiet morning.
 func TestARackThatCannotBeReadSaysSo(t *testing.T) {
-	body := mounted(t, &fakeStore{err: errTest}).call(t, "GET", "/", nil).Body.String()
+	m := mounted(t, &fakeStore{err: errTest})
 
-	require.Contains(t, body, "cannot reach the notes")
-	require.Contains(t, body, "cannot reach the chores")
-	require.Contains(t, body, "nothing is lost")
+	board := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, board, "cannot reach the chores")
+	require.Contains(t, board, "nothing is lost")
+
+	require.Contains(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(),
+		"cannot reach the notes", "an unreachable door looks exactly like an empty one")
+}
+
+// Every rack says it, not only the first. Three racks are one read of the
+// chores, so a failure that reached one of them reached all three, and a
+// quiet Sunday drawn in the other two would be the lie this guards against.
+func TestEveryRackSaysSoWhenTheChoresCannotBeRead(t *testing.T) {
+	body := mounted(t, &fakeStore{choresErr: errTest}).call(t, "GET", "/", nil).Body.String()
+
+	require.Equal(t, 4, strings.Count(body, "cannot reach the chores"),
+		"a rack drew itself empty on a read that failed")
 }
 
 // A rack says that there is more and never how much. What is further back is
@@ -558,7 +597,7 @@ func TestARackSaysThereIsMoreWithoutSayingHowMuch(t *testing.T) {
 			State: squirrel.ItemOpen, Kind: squirrel.ItemNote, ReceivedAt: time.Now(),
 		})
 	}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, "there is more further back")
 	for _, count := range []string{"60 more", "more (", "of 63"} {
@@ -621,7 +660,7 @@ func TestAnIntervalCanBeAnyNumberOfDaysWeeksOrMonths(t *testing.T) {
 		f := aBoardStore()
 		m := mountedSpooling(t, f, &fakeSpool{})
 		m.call(t, "POST", "/board/new", strings.NewReader(
-			"bay=chores&words=descale+the+kettle&every="+one.every+"&unit="+one.unit))
+			"bay=weekly&words=descale+the+kettle&every="+one.every+"&unit="+one.unit))
 
 		require.Equal(t, one.want, f.reinterval.every,
 			"every %s %s came out as %v", one.every, one.unit, f.reinterval.every)
@@ -629,18 +668,18 @@ func TestAnIntervalCanBeAnyNumberOfDaysWeeksOrMonths(t *testing.T) {
 }
 
 func TestTheRackCarriesTheQuestionAndTheWordsBack(t *testing.T) {
-	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores&rhythm=defrost+the+freezer", nil).Body.String()
-	rack := theRackIn(t, body, "bay=chores")
+	body := mounted(t, aBoardStore()).call(t, "GET", "/?bay=daily&rhythm=defrost+the+freezer", nil).Body.String()
+	writer := theChoreWriter(t, body)
 
-	require.Contains(t, rack, `value="defrost the freezer"`, "the words were not carried back")
-	require.Contains(t, rack, "how often does it come back?")
+	require.Contains(t, writer, `value="defrost the freezer"`, "the words were not carried back")
+	require.Contains(t, body, "how often does it come back?")
 
 	when := mounted(t, aBoardStore()).call(t, "GET", "/?bay=agenda&when=ring+the+dentist", nil).Body.String()
 	require.Contains(t, theRackIn(t, when, "bay=agenda"), "when is it?")
 }
 
 func TestARackAsksNothingWhenNothingWasAsked(t *testing.T) {
-	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(), "bay=chores")
+	rack := theChoreWriter(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String())
 
 	require.NotContains(t, rack, "how often does it come back?")
 	require.NotContains(t, rack, "when is it?")
@@ -655,8 +694,8 @@ func TestACaptureIsOnTheBoardYouAreSentBackTo(t *testing.T) {
 	m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=the+boiler+code"))
 
 	require.Contains(t, f.inserted, "the boiler code", "the capture was not written")
-	require.Contains(t, theRackIn(t, m.call(t, "GET", "/", nil).Body.String(), "bay=notes"),
-		"the boiler code", "the strip is not on the board that was drawn next")
+	require.Contains(t, theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes"),
+		"the boiler code", "the strip is not behind the door that was drawn next")
 }
 
 // A write that fails says so rather than sending you back to a board that
@@ -671,41 +710,61 @@ func TestACaptureThatCannotBeKeptSaysSo(t *testing.T) {
 	require.Equal(t, 503, res.Code, "a lost capture was answered with a redirect")
 }
 
-func TestTheBoardAsksHowYouFeelAtTheTraysEnd(t *testing.T) {
+func TestTheFacesAreOnTheDialAndAlwaysPressable(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, `action="/board/mood"`, "the board never asks")
+	require.Contains(t, body, `action="/board/mood"`, "the board cannot be told how you are")
+	require.Equal(t, 5, strings.Count(body, `class="face" name="mood"`), "the five are not all there")
 	for _, m := range []string{"good", "calm", "low", "frazzled", "wiped"} {
 		require.Contains(t, body, `value="`+m+`"`, "the %s face is missing", m)
 	}
-	require.Contains(t, body, `<footer class="tray">`,
-		"the faces are drawn somewhere other than the tray's end")
+	require.Contains(t, body, `<aside class="dial">`,
+		"the faces are drawn somewhere other than the dial")
 }
 
-func TestTheBoardStopsAskingWhileTheAnswerStillDescribesNow(t *testing.T) {
+// The change: saying how you are stopped being something you wait to be asked
+// for. The five are there whatever the last answer was; what stops is the ask.
+func TestTheFacesStayWhenTheAskHasGone(t *testing.T) {
+	f := aBoardStore()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.Equal(t, 5, strings.Count(body, `class="face" name="mood"`),
+		"you cannot change your mind about how you are until Squirrel asks again")
+	require.NotContains(t, body, "how do you feel?",
+		"it asks again while the last answer is still true")
+}
+
+func TestTheAskComesBackWhenTheAnswerHasGoneStale(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, "how do you feel?",
+		"a quiet day is a day the board never asks how you are")
+}
+
+// Today's face rides in the ops bar, which is what a phone presses to reach
+// the dial at a width the dial does not fit.
+func TestTodaysFaceIsInTheOpsBar(t *testing.T) {
 	f := aBoardStore()
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
 
-	require.NotContains(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(),
-		`action="/board/mood"`, "it asks again while the last answer is still true")
-}
-
-func TestTheBoardStillAsksWhenTheTrayIsEmpty(t *testing.T) {
-	f := &fakeStore{}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, body, `class="chip mood" href="/?bay=mood"`)
+	require.Contains(t, body, `src="/static/mood-calm.png"`, "the chip does not wear today's face")
 
-	require.Contains(t, body, `action="/board/mood"`,
-		"a quiet day is a day the board never asks how you are")
+	dial := mounted(t, f).call(t, "GET", "/?bay=mood", nil).Body.String()
+	require.Contains(t, dial, `<aside class="dial">`, "the chip leads nowhere")
+	require.Contains(t, dial, "back to the board")
 }
 
 func TestAnsweringOnTheBoardKeepsAReadingAndSaysNothing(t *testing.T) {
 	f := aBoardStore()
 	m := mounted(t, f)
 
-	res := m.call(t, "POST", "/board/mood", strings.NewReader("mood=calm&bay=chores"))
+	res := m.call(t, "POST", "/board/mood", strings.NewReader("mood=calm&bay=weekly"))
 
 	require.Equal(t, 303, res.Code)
-	require.Equal(t, "/?bay=chores", res.Header().Get("Location"))
+	require.Equal(t, "/?bay=weekly", res.Header().Get("Location"))
 	require.Equal(t, squirrel.MoodCalm, f.recorded, "the reading was not kept")
 	require.Empty(t, f.appended, "answering on the board wrote into the conversation")
 }
@@ -728,7 +787,7 @@ func TestASettledStripSaysWhyBesideItsWordsRatherThanInTheMark(t *testing.T) {
 	f := aBoardStore()
 	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
 
-	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=notes")
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
 	settled := rack[strings.Index(rack, "chase the landlord"):]
 	settled = settled[:strings.Index(settled, "</article>")]
 
@@ -742,7 +801,7 @@ func TestASettledStripSaysWhyBesideItsWordsRatherThanInTheMark(t *testing.T) {
 }
 
 func TestTheAgendaStripCarriesItsDayAndTimeInsideIt(t *testing.T) {
-	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(), "bay=agenda")
+	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/?bay=agenda", nil).Body.String(), "bay=agenda")
 	strip := rack[strings.Index(rack, `class="strip blank`):]
 	strip = strip[:strings.Index(strip, "</p>")]
 
@@ -755,14 +814,17 @@ func TestTheAgendaStripCarriesItsDayAndTimeInsideIt(t *testing.T) {
 }
 
 func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {
-	board := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+	m := mounted(t, aBoardStore())
+	board := m.call(t, "GET", "/", nil).Body.String()
 
-	for _, bay := range []string{"notes", "chores", "tasks"} {
-		rack := theRackIn(t, board, "bay="+bay)
-		require.NotContains(t, rack, "asit", "the %s inlet took the agenda's shape", bay)
-		require.NotContains(t, rack, `name="dd"`, "the %s inlet asks for a day", bay)
+	require.NotContains(t, theChoreWriter(t, board), "asit", "the chore writer took the agenda's shape")
+	require.NotContains(t, theChoreWriter(t, board), `name="dd"`, "the chore writer asks for a day")
+	for _, door := range []string{"notes", "tasks"} {
+		rack := theRackIn(t, m.call(t, "GET", "/?bay="+door, nil).Body.String(), "bay="+door)
+		require.NotContains(t, rack, "asit", "the %s inlet took the agenda's shape", door)
+		require.NotContains(t, rack, `name="dd"`, "the %s inlet asks for a day", door)
 	}
-	require.Contains(t, theRackIn(t, board, "bay=chores"), `class="inline"`,
+	require.Contains(t, theChoreWriter(t, board), `class="inline"`,
 		"the chores lost their interval")
 }
 
@@ -779,4 +841,44 @@ func TestAPhotographCaptureIsKeptToo(t *testing.T) {
 
 	require.Len(t, sp.written, 1, "the capture was not written")
 	require.Equal(t, "the boiler code", sp.written[0].Text)
+}
+
+// The week behind today, on the board. Found by mutation: cutting the ring out
+// of the dial left every other test green, which is the shape this project
+// keeps shipping — built, drawn, documented and pinned by nothing.
+func TestTheDialDrawsTheWeekBehindToday(t *testing.T) {
+	at := time.Now()
+	f := aBoardStore()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodGood, SaidAt: at}
+	f.readings = []squirrel.Checkin{
+		{Mood: squirrel.MoodGood, SaidAt: at},
+		{Mood: squirrel.MoodWiped, SaidAt: at.AddDate(0, 0, -2)},
+	}
+
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	dial := body[strings.Index(body, `<aside class="dial">`):]
+	dial = dial[:strings.Index(dial, "</aside>")]
+
+	require.Equal(t, 7, strings.Count(dial, "<circle"), "the ring is not a week")
+	require.Contains(t, dial, `class="mgood"`, "today's reading is not on the ring")
+	require.Contains(t, dial, `class="mwiped"`, "a reading from earlier in the week is not on the ring")
+	require.Equal(t, 5, strings.Count(dial, `class="nought"`),
+		"a day you said nothing is drawn as something, or not drawn at all")
+	require.Contains(t, dial, strings.ToUpper(at.Format("Mon")), "an arc does not name its day")
+	require.Contains(t, dial, "<title>"+strings.ToLower(at.Format("Monday 2 January"))+", good</title>",
+		"an arc is a colour with no words, which is a picture you have to already know how to read")
+}
+
+// And it stops at the week. Six weeks is the page you go to by name.
+func TestTheDialNeverDrawsMoreThanTheWeek(t *testing.T) {
+	at := time.Now()
+	f := aBoardStore()
+	f.readings = []squirrel.Checkin{{Mood: squirrel.MoodLow, SaidAt: at.AddDate(0, 0, -20)}}
+
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	dial := body[strings.Index(body, `<aside class="dial">`):]
+	dial = dial[:strings.Index(dial, "</aside>")]
+
+	require.Equal(t, 7, strings.Count(dial, "<circle"))
+	require.NotContains(t, dial, `class="mlow"`, "the dial reached back past the week it draws")
 }

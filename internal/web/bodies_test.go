@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -28,12 +29,18 @@ func TestTheKindsAreDistinguishable(t *testing.T) {
 		chores:   []squirrel.Chore{{ID: 3, Name: "the bins", EveryDays: 7, Active: true}},
 		upcoming: []squirrel.Moment{{ID: 4, Label: "dentist", Starts: now().Add(3 * time.Hour)}},
 	}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	m := mounted(t, f)
 
 	seen := map[string]bool{}
-	for _, holder := range []string{"h-notes", "h-chores", "h-tasks", "h-agenda"} {
+	for _, holder := range []string{"h-notes", "h-tasks", "h-agenda"} {
+		body := m.call(t, "GET", "/?bay="+strings.TrimPrefix(holder, "h-"), nil).Body.String()
 		require.Contains(t, body, `class="strip `+holder, "%s draws no strip", holder)
 		require.False(t, seen[holder], "%s is drawn twice", holder)
 		seen[holder] = true
 	}
+	// A chore wears the colour of the rack it is in rather than one colour for
+	// all chores: which rack a thing is in is the thing the eye is meant to
+	// pick up, and three racks in one hue would not be three racks.
+	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(),
+		`class="strip h-weekly`, "a chore draws in no rack's colour")
 }

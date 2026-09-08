@@ -133,10 +133,9 @@ func TestSquirrelSaysWhyAThingIsWhereItIs(t *testing.T) {
 		"the order cannot be read, so it is a ranking rather than a reason")
 }
 
-func TestEveryRowInARackCanSayWhyItIsThere(t *testing.T) {
+func TestEveryRowThatIsDueOrNeverStartedCanSayWhyItIsThere(t *testing.T) {
 	chores := []squirrel.Chore{
 		chore(1, "bins out", 7, 7, true),
-		chore(2, "water the plants", 7, 2, true),
 		chore(3, "descale the kettle", 90, 0, false),
 		chore(4, "wipe the sills", 30, 40, true),
 	}
@@ -151,6 +150,20 @@ func TestEveryRowInARackCanSayWhyItIsThere(t *testing.T) {
 		}
 	}
 	require.Equal(t, len(chores), rows, "a chore went missing between the store and the racks")
+}
+
+// A thing whose turn is simply not today says nothing at all, and above all
+// does not say how long it has been waiting. The rack has refused to print
+// that since it was built.
+func TestAThingWhoseTurnHasNotComeSaysNothingAboutHowLongItHasWaited(t *testing.T) {
+	racks := squirrel.RacksOf(
+		[]squirrel.Chore{chore(2, "water the plants", 7, 2, true)},
+		map[int64]squirrel.Usually{}, sundayMorning, false)
+
+	weekly := rackFor(t, racks, squirrel.Weekly)
+	require.Len(t, weekly.Waiting, 1)
+	require.Empty(t, weekly.Waiting[0].Because,
+		"it told you how long a thing has been sitting there, which is a sentence about you")
 }
 
 func TestAChoreNeverDoneIsNotTreatedAsOverdue(t *testing.T) {
@@ -204,4 +217,43 @@ func rackFor(t *testing.T, racks []squirrel.Rack, want squirrel.Rhythm) squirrel
 	}
 	t.Fatalf("no %s rack", want)
 	return squirrel.Rack{}
+}
+
+func TestNowHoldsOnlyWhatHasSomethingToSayForItselfToday(t *testing.T) {
+	usually := map[int64]squirrel.Usually{
+		1: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+		4: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+	}
+	chores := []squirrel.Chore{
+		chore(1, "bins out", 7, 7, true),
+		chore(2, "water the plants", 1, 1, true),
+		chore(3, "wipe the sills", 30, 4, true),
+		chore(4, "change the bed", 7, 2, true),
+		chore(5, "descale the kettle", 90, 0, false),
+	}
+
+	now := squirrel.Now(squirrel.RacksOf(chores, usually, sundayMorning, false))
+
+	names := []string{}
+	for _, s := range now {
+		names = append(names, s.Chore.Name)
+	}
+	require.Equal(t, []string{"bins out", "water the plants", "change the bed"}, names,
+		"the phone is showing you your whole life again, which is the thing that makes it invisible")
+}
+
+func TestNowCrossesTheRacksRatherThanReadingThemInTurn(t *testing.T) {
+	usually := map[int64]squirrel.Usually{
+		1: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+	}
+	chores := []squirrel.Chore{
+		chore(2, "water the plants", 1, 3, true),
+		chore(1, "service the boiler", 90, 90, true),
+	}
+
+	now := squirrel.Now(squirrel.RacksOf(chores, usually, sundayMorning, false))
+
+	require.Len(t, now, 2)
+	require.Equal(t, "service the boiler", now[0].Chore.Name,
+		"a seldom thing whose day this is came second to a daily one, so the order is the rack rather than the rank")
 }

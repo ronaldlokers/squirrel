@@ -20,9 +20,9 @@ func TestBrowserTheBoardsKeysFollowFocus(t *testing.T) {
 		{ID: 2, PersonID: 1, Name: "water the ferns", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7},
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=chores")
-	c.navigate(t, srv.URL+"/?bay=chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
+	c := browserAt(t, srv, "/?bay=weekly")
+	c.navigate(t, srv.URL+"/?bay=weekly")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-weekly")`)
 
 	c.key(t, "d")
 	require.Equal(t, "BODY", c.eval(t, `return document.activeElement.tagName`),
@@ -49,9 +49,9 @@ func TestBrowserALetterNoBayAnswersDoesNothing(t *testing.T) {
 		{ID: 1, PersonID: 1, Name: "bins out", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7},
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=chores")
-	c.navigate(t, srv.URL+"/?bay=chores")
-	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-chores")`)
+	c := browserAt(t, srv, "/?bay=weekly")
+	c.navigate(t, srv.URL+"/?bay=weekly")
+	c.until(t, "the chores to arrive", `!!document.querySelector(".strip.h-weekly")`)
 
 	c.key(t, "q")
 	require.Equal(t, "BODY", c.eval(t, `return document.activeElement.tagName`),

@@ -46,7 +46,7 @@ func TestDroppingANoteSurvivesLeavingTheBay(t *testing.T) {
 	require.Equal(t, squirrel.ItemDropped, after.State,
 		"the press said it was handled and the note is still %s", after.State)
 
-	m.call(t, "GET", "/?bay=chores", nil)
+	m.call(t, "GET", "/?bay=weekly", nil)
 	back := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
 	require.NotContains(t, back, `name="id" value="`+strconv.FormatInt(note.ID, 10)+`"`,
 		"the rack offers the dropped note again after leaving and coming back")

@@ -136,14 +136,14 @@ func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 
 // Nowhere to put one is a supported state, and the camera is simply not drawn.
 func TestNoVolumeMeansNoCamera(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/?bay=notes", nil).Body.String()
 	require.NotContains(t, body, `name="photo"`)
 	require.NotContains(t, body, "Add a photograph")
 }
 
 func TestAVolumeMeansACamera(t *testing.T) {
 	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, `name="photo"`)
 	require.Contains(t, body, `accept="image/*"`)
@@ -156,7 +156,7 @@ func TestAVolumeMeansACamera(t *testing.T) {
 // release and that is exactly what it did.
 func TestTheCameraDoesNotForbidTheGallery(t *testing.T) {
 	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
-	body := m.call(t, "GET", "/", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.NotContains(t, body, "capture=")
 }

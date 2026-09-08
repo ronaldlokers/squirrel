@@ -19,39 +19,39 @@ func developing(t *testing.T) {
 	t.Cleanup(func() { devDir = was })
 }
 
-func aBoardOfFourBays() *fakeStore {
+func aBoardOfSevenPlaces() *fakeStore {
 	return &fakeStore{items: []squirrel.Item{note(1, "the boiler makes a noise", squirrel.ItemOpen)}}
 }
 
 func TestAShippedBinaryDrawsEveryBayWhateverIsAsked(t *testing.T) {
-	if got := racksIn(t, aBoardOfFourBays(), "/?only=chores"); got != 4 {
-		t.Fatalf("a shipped board drew %d racks for ?only=chores, and the query is not its business", got)
+	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=weekly"); got != 7 {
+		t.Fatalf("a shipped board drew %d places for ?only=weekly, and the query is not its business", got)
 	}
 }
 
 func TestTheDevelopmentBoardDrawsTheOneBayItWasAskedFor(t *testing.T) {
 	developing(t)
-	f := aBoardOfFourBays()
+	f := aBoardOfSevenPlaces()
 
-	body := mounted(t, f).call(t, "GET", "/?only=chores", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/?only=weekly", nil).Body.String()
 
 	if got := strings.Count(body, `data-bay="`); got != 1 {
 		t.Fatalf("drew %d racks, so a picked element is still %d things on screen", got, got)
 	}
-	if !strings.Contains(body, `data-bay="chores"`) {
+	if !strings.Contains(body, `data-bay="weekly"`) {
 		t.Fatal("it drew a rack, and not the one that was asked for")
 	}
-	if got := strings.Count(body, `class="blankstrip"`); got != 1 {
-		t.Fatalf("drew %d blank strips", got)
+	if got := strings.Count(body, `class="blankstrip"`); got != 0 {
+		t.Fatalf("drew %d blank strips beside a rack, which has no writer of its own", got)
 	}
 }
 
 func TestTheOneBayIsTheOneYouAreStandingIn(t *testing.T) {
 	developing(t)
 
-	body := mounted(t, aBoardOfFourBays()).call(t, "GET", "/?only=agenda", nil).Body.String()
+	body := mounted(t, aBoardOfSevenPlaces()).call(t, "GET", "/?only=seldom", nil).Body.String()
 
-	if !strings.Contains(body, `class="rack in" data-bay="agenda"`) {
+	if !strings.Contains(body, `class="rack in" data-bay="seldom"`) {
 		t.Fatal("the only rack on the page is not lit, so a phone width shows nothing")
 	}
 }
@@ -59,15 +59,15 @@ func TestTheOneBayIsTheOneYouAreStandingIn(t *testing.T) {
 func TestABayNobodyHasDrawsThemAll(t *testing.T) {
 	developing(t)
 
-	if got := racksIn(t, aBoardOfFourBays(), "/?only=nonsense"); got != 4 {
-		t.Fatalf("asking for a bay that does not exist drew %d racks", got)
+	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=nonsense"); got != 7 {
+		t.Fatalf("asking for a place that does not exist drew %d of them", got)
 	}
 }
 
 func TestTheDevelopmentBoardIsStillTheWholeBoardWhenNothingIsAsked(t *testing.T) {
 	developing(t)
 
-	if got := racksIn(t, aBoardOfFourBays(), "/"); got != 4 {
-		t.Fatalf("development mode drew %d racks on its own", got)
+	if got := racksIn(t, aBoardOfSevenPlaces(), "/"); got != 7 {
+		t.Fatalf("development mode drew %d places on its own", got)
 	}
 }

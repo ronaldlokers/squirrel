@@ -444,7 +444,8 @@ not a terminal, and the ASCII direction was declined over exactly this.
 | `written` | Recursive casual, 14.5px | What you type. |
 | `glyph` | Recursive precise, 17px | The `+` that keeps a strip, and the notification count. A single character sized to a control, never a word. |
 | `label` | Recursive precise, 9.5px caps | A word under a picture: the five faces in the tray. |
-| `label-tight` | Recursive precise, 9px caps | The same word below 620px, where the five faces sit across a phone. |
+| `label-tight` | Recursive precise, 9px caps | The same word below 620px, where the five faces sit across a phone; and in the dial's own column, which is that narrow at every width. |
+| `sign-tight` | Recursive precise, 10px caps | A door's sign below 620px, where three of them share a phone's width. Added 8 September 2026 with the doors; nothing else uses it. |
 
 ### Named Rules
 
@@ -490,22 +491,40 @@ already said so, and the desktop is the same bar, not a second one.
 for a running timer when one is running. When nothing is pulled and nothing is
 running, this band closes to nothing rather than showing an empty frame.
 
-**The racks.** Four bays across, `1.18fr 1fr 1fr 1fr` — the notes bay is wider
-because its strips carry the longest sentences and four answers. Each bay is a
-sign, then a blank strip, then a channel of strips. The channel is a recessed
-well that runs to the bottom of the board, so an unfilled bay reads as *room in
-the rack* rather than as dead space.
+**The racks.** Three across and the dial at the right, `1fr 1fr 1fr
+minmax(0, 264px)` — *daily*, *weekly*, *seldom*, cut by how often a chore comes
+back. Equal, because none of the three is the important one; which rack a thing
+is in is the fact the eye is meant to pick up, and a wider column would say one
+of them mattered more. Each rack is a sign and then a channel of strips. The
+channel is a recessed well that runs to the bottom of the board, so an unfilled
+rack reads as *room in the rack* rather than as dead space.
+
+**One writer under all three**, full width to the dial's left edge, wearing the
+blank strip's own shape and asking *what comes back?* with an interval beside
+it. One rather than three, because the rack a chore lands in is what its
+interval says: asking which rack to write into would be asking how often it
+comes back twice.
+
+**The doors.** Three across under the writer — *the notes*, *the tasks*, *the
+agenda* — a sign over the question that place asks. A door is a link, not a
+rack: pressing one puts what it holds in the racks' place, whole, with a way
+back, the same as search and the shelves. What is behind a door is behind it;
+the board is the chores.
 
 **The tray.** Fixed to the foot, `rgba(28,17,11,.34)` over the ground, ruled off
 at the top. What left the board today, struck through, oldest first, with the
-newest carrying `PUT IT BACK`. The check-in's five faces sit at its right end.
+newest carrying `PUT IT BACK`. Nothing else lives here now — the check-in left
+it for the dial.
 
 ### Breakpoint: 620px
 
-One breakpoint, as before. Below it the four racks become one, and the bay signs
-become four sign-shaped tabs with one lit. The pulled strip stays above the tabs
-because it belongs to no bay. The tray keeps its place at the foot and wraps to
-two rows: what left the board, then the faces.
+One breakpoint, as before. Below it the three racks become one of four tabs —
+*now · daily · weekly · seldom* — and *now* is the cut the desk has no use for:
+everything with something to say for itself today, across all three, in the
+same order. The pulled strip stays above the tabs because it belongs to no
+rack. The doors sit in a row of three above the bar, sign and count only. The
+dial folds away behind today's face in the ops bar. The tray keeps its place at
+the foot.
 
 There is no second layout. The phone shows one rack of the same board, and a
 strip is a strip at both sizes.
@@ -983,26 +1002,75 @@ nothing on it can be answered.
 
 ### The bay bar
 
-The phone's navigation, and the only place a bay is named there. A drawn icon at
-28px over the bay's own name — *the notes*, not *notes* — in 10.5px precise
-type. The cell you are in takes `paper` ink over a `rgba(254,214,167,.13)` well;
-the other three sit at 78% cream with their icons at 55%.
+The phone's navigation. Four tabs — *now · daily · weekly · seldom* — in the
+tab's own name and its count, no picture. The cell you are in takes
+`orange-lit`; the other three sit at cream.
 
-**The icons are illustrated and full-colour**, which is a deliberate exception
-to a world drawn in flat shapes and 2px outlines. They belong to the mark's
-register rather than the board's: the squirrel in the ops bar is drawn the same
-way, and four line glyphs at 28px would have been four grey rectangles at a
-glance. They are the only raster art in the interface apart from the mark.
+**The pictures went with the bays, 8 September 2026.** Each of the four bays had
+a drawn icon, and they were the only raster art in the interface apart from the
+mark. The four tabs that replaced them are not four things: they are one list of
+chores cut four ways, and three of the cuts differ only in how often a thing
+comes back. There is no drawing of *seldom*. Four illustrations invented for
+four cuts of one list would have been four decorations, and a decoration that
+claims to be a distinction is worse than a word. The files are deleted rather
+than left unreferenced.
 
-**The count sits beside the label, not on the icon.** An orange disc at an
-icon's top-right is the platform's own grammar for a notification demanding
-attention — pixel-identical to the bell's dot above it — and a bay's count is a
-different claim, the same one the desktop bay signs already make. So it is
-drawn the way they draw it: `&middot;` and the number, in the tab's own ink,
-beside its name — *Notes · 3* — and only when the bay holds something. No bay
-ever wears a nought. The count itself is still the strongest form a count has
-taken in this product, and retiring the old rule against counts for doors is
-unchanged; only the badge's shape moved.
+**The count sits beside the label.** `&middot;` and the number, in the tab's own
+ink, beside its name — *weekly · 3* — and only when the rack holds something. No
+rack ever wears a nought. An orange disc at a tab's corner is the platform's own
+grammar for a notification demanding attention, which a rack's count is not.
+
+### The rack row
+
+A chore's strip, and the one thing it says about itself under its name. Either
+**why it is where it is** — *it comes back today, and this is when you usually
+do it* — or, where the ordering had nothing to say, **when you usually do it**.
+One line and never two: a row carrying both said the same thing twice under the
+same name, which is how a line stops being read.
+
+A row whose turn is simply not today says **nothing at all**, and above all not
+how long it has been waiting. That refusal is older than the racks and survived
+them intact.
+
+### The dial
+
+How you have been, in its own column beside the racks. A ring of seven arcs —
+the week behind you, today closing the circle at the top left — around today's
+face, then the five faces, then *the whole record*.
+
+**A ring rather than the grid on the page about you.** Six weeks by seven days
+is a stretch of past you look back over; seven days is a cycle you are inside.
+Each arc is named by its weekday so no counting backwards is needed to find a
+day, and each carries the day and the word as its title. A day you said nothing
+is drawn in `rgba(28,17,11,.13)`, because the gaps are the honest part here
+exactly as they are there.
+
+**The five faces are always pressable.** This is the change of 8 September 2026:
+they used to appear only when Squirrel wanted an answer, so saying how you were
+was something you waited to be asked for. Being asked is still separate — the
+*how do you feel?* line above them appears only when the last answer has stopped
+describing now — but the answer is always available.
+
+**Below 620px the dial is not drawn.** Today's face rides in the ops bar as a
+chip, and pressing it puts the dial in the racks' place with a way back, the
+same as a door. A ring, five faces and a link do not fit a phone's column
+without taking a screen from the thing the phone is for.
+
+### What a rack is not showing
+
+On a wiped or frazzled reading the racks hold what comes back today and count
+the rest: *2 more further into the week*. Drawn at the channel's foot, above a
+2px rule, at 12px in `rgba(255,251,243,.62)` — quieter than any row above it,
+because it is not a thing you can act on.
+
+**The words are load-bearing.** Never *outstanding*, *left*, *still*, *waiting*,
+*behind*. It is the size of the part of your life the board has decided not to
+put in front of you today, not a number of things you have failed to do. A
+browser test reads the sentence and fails on any of those words.
+
+Not on a *low* reading. Low is how you feel; wiped and frazzled are how much you
+have, and an emptied board handed to someone flat but functional reads as the
+product agreeing they are finished.
 
 ### The channel
 

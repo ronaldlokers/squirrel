@@ -138,17 +138,22 @@ body {
 .ticking .stopTimer:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
 
 .racks {
-  display: grid; grid-template-columns: 1.18fr 1fr 1fr 1fr; gap: 14px;
-  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: 1fr 1fr 1fr minmax(0, 264px); gap: 14px;
+  padding: 18px 18px 0;
   flex: 1 1 auto; min-height: 0; overflow: hidden;
 }
 .rack {
   display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden;
 }
 .rack[data-bay="notes"] { --hue: var(--holder-notes); }
-.rack[data-bay="chores"] { --hue: var(--holder-chores); }
-.rack[data-bay="tasks"] { --hue: var(--holder-tasks); }
+.rack[data-bay="tasks"] { --hue: var(--holder-chores); }
 .rack[data-bay="agenda"] { --hue: var(--holder-agenda); }
+.rack[data-bay="daily"] { --hue: var(--holder-notes); }
+.rack[data-bay="weekly"] { --hue: var(--holder-chores); }
+.rack[data-bay="seldom"] { --hue: var(--holder-tasks); }
+/* The phone's first tab, and a cut across the other three rather than a fourth
+   thing. The desk shows all three and has no use for it. */
+.rack[data-bay="now"] { display: none; }
 .baysign {
   display: flex; align-items: center; gap: 9px; margin: 0; flex: 0 0 auto;
   padding: 6px 11px 6px 0; background: var(--purple-dark);
@@ -193,9 +198,11 @@ body {
   width: 6px; height: 14px; border-radius: var(--r); background: rgba(28, 17, 11, .28);
 }
 .h-notes .holder { background: var(--holder-notes); }
-.h-chores .holder { background: var(--holder-chores); }
-.h-tasks .holder { background: var(--holder-tasks); }
+.h-tasks .holder { background: var(--holder-chores); }
 .h-agenda .holder { background: var(--holder-agenda); }
+.h-now .holder, .h-daily .holder { background: var(--holder-notes); }
+.h-weekly .holder { background: var(--holder-chores); }
+.h-seldom .holder { background: var(--holder-tasks); }
 .strip .words {
   padding: 8px 10px; overflow: hidden; font-size: 14.5px; line-height: 1.3;
   font-variation-settings: var(--casual), "wght" 500;
@@ -329,11 +336,11 @@ body {
     min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   }
   .racks {
-    display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto;
+    display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto;
     padding: 14px 12px 14px;
     overflow: visible;
   }
-  .channel { flex: 1 0 auto; overflow: visible; }
+  .channel { flex: 0 0 auto; overflow: visible; }
   .strips { flex: 0 0 auto; overflow: visible; }
   .strip .words { font-size: 15.5px; }
   .strip.blank .words { font-size: 16px; }
@@ -424,39 +431,20 @@ a.stamp { text-decoration: none; }
 .tray .strip.out form { display: flex; padding-right: 6px; }
 .tray .stamp.small { min-height: 26px; padding: 5px 8px; font-size: 10.5px; }
 
-.checkin { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: 0 0 auto; }
-.checkin .ask {
-  margin-right: 3px; white-space: nowrap;
-  color: rgba(254, 214, 167, .8); font-size: 12.5px;
-  font-variation-settings: var(--casual), "wght" 500;
-}
+/* The five faces. They live on the dial now, which is a cream card, so they
+   are ink on paper rather than cream on purple. */
 .checkin .face {
-  display: grid; justify-items: center; gap: 2px; padding: 3px 5px 4px;
+  display: grid; justify-items: center; gap: 1px; padding: 3px 4px 4px;
   background: none; border: var(--line) solid transparent; border-radius: var(--r);
-  color: rgba(254, 214, 167, .8); cursor: pointer;
+  color: var(--ink-soft); cursor: pointer;
 }
 .checkin .face img { width: 30px; height: 24px; object-fit: contain; display: block; }
 .checkin .face span {
-  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
   font-variation-settings: var(--precise), "wght" 750;
 }
-.checkin .face:hover { border-color: rgba(254, 214, 167, .45); color: var(--paper); }
-.checkin .face:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 2px; }
-
-@media (max-width: 620px) {
-  /* Its own row above the day's departures, because the tray scrolls sideways
-     and a question sharing that row is a question you can push off the screen. */
-  .tray { flex-wrap: wrap; row-gap: 8px; }
-  .tray .sign, .tray .gone { order: 2; }
-  .checkin {
-    order: 1; flex: 1 0 100%; margin-left: 0;
-    justify-content: space-between; gap: 2px;
-  }
-  .checkin .ask { display: none; }
-  .checkin .face { padding: 2px 3px 3px; }
-  .checkin .face img { width: 36px; height: 29px; }
-  .checkin .face span { font-size: 9px; }
-}
+.checkin .face:hover { border-color: rgba(28, 17, 11, .35); color: var(--outline); }
+.checkin .face:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   .strip.leaving { transition: none; transform: none; }
@@ -615,8 +603,8 @@ a.stamp { text-decoration: none; }
 
 @media (max-width: 620px) {
   :root { --foot: max(10px, calc(env(safe-area-inset-bottom) - 8px)); }
-  .deck { padding-bottom: calc(var(--foot) + 80px); }
-  .tray { margin-bottom: calc(var(--foot) + 82px); }
+  .doors { margin-bottom: calc(var(--foot) + 72px); }
+  .tray { margin-bottom: calc(var(--foot) + 74px); }
   .baytabs {
     position: fixed; left: 12px; right: 12px; bottom: var(--foot); z-index: 5;
     display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 3px;
@@ -638,12 +626,10 @@ a.stamp { text-decoration: none; }
     }
   }
   .baytab {
-    display: grid; justify-items: center; gap: 2px; min-height: 62px;
+    display: grid; justify-items: center; align-content: center; min-height: 52px;
     padding: 8px 2px 9px; text-decoration: none;
     color: var(--cream); border-radius: 999px;
   }
-  .baytab .pic { position: relative; display: block; }
-  .baytab img { display: block; opacity: .55; }
   .baytab .n {
     font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 900; font-variation-settings: normal;
@@ -655,10 +641,9 @@ a.stamp { text-decoration: none; }
     font-variation-settings: var(--precise), "wght" 750;
   }
   .baytab.in { color: var(--orange-lit); }
-  .baytab.in img { opacity: 1; }
   .baytab:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: -3px; }
   .rack { display: none; }
-  .rack.in { display: flex; flex: 1 0 auto; }
+  .rack.in { display: flex; flex: 0 0 auto; }
   .rack[data-bay] .baysign { display: none; }
   .racks { padding-top: 12px; }
 }
@@ -940,4 +925,133 @@ main.gate h1 + form { margin-top: 26px; }
 .strip.opened .before li {
   color: var(--ink-soft); font-size: 12.5px; line-height: 1.35;
   font-variation-settings: var(--casual), "wght" 470;
+}
+
+/* The chores are the board.
+   ------------------------------------------------------------------
+   Three racks cut by rhythm, the dial beside them, and the other three
+   places demoted to doors under the lot. */
+
+.strip .why, .strip .usual {
+  margin: 4px 0 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.35;
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.strip .usual { color: rgba(106, 79, 62, .88); }
+
+.resting {
+  flex: 0 0 auto; margin: 6px 2px 0; padding-top: 6px;
+  border-top: var(--line) solid rgba(254, 214, 167, .18);
+  color: rgba(255, 251, 243, .62); font-size: 12px;
+  font-variation-settings: var(--casual), "wght" 470;
+}
+
+/* One writer for a new chore, under all three racks: the rack a thing lands in
+   is what its interval says, so asking which rack to write into would be
+   asking the same question twice. */
+/* One writer for a new chore, under all three racks, wearing the same shape as
+   every other blank strip on the board. The dial's column is left clear of it:
+   what comes back is a thing about the racks. */
+.newchore { padding: 12px 18px 0; max-width: calc(100% - 264px - 14px); }
+
+.doors {
+  flex: 0 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr 1fr minmax(0, 264px); gap: 14px;
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+}
+.door {
+  display: flex; flex-direction: column; gap: 7px; text-decoration: none;
+  border-radius: var(--r);
+}
+.door[data-bay="notes"] { --hue: var(--holder-notes); }
+.door[data-bay="tasks"] { --hue: var(--holder-chores); }
+.door[data-bay="agenda"] { --hue: var(--holder-agenda); }
+.door .baysign { display: flex; }
+.door .through {
+  padding: 9px 12px; background: rgba(28, 17, 11, .2);
+  border: var(--line) solid rgba(254, 214, 167, .2); border-radius: var(--r);
+  color: rgba(255, 251, 243, .62); font-size: 14px;
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.door:hover .through, .door:focus-visible .through {
+  background: rgba(28, 17, 11, .34); color: var(--cream);
+}
+.door:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 3px; }
+
+/* How you have been, beside the racks. */
+.dial {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 14px 12px 12px; min-height: 0; overflow-y: auto;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 2px 0 0 rgba(28, 17, 11, .55);
+}
+.dial .ring { position: relative; width: 100%; max-width: 172px; flex: 0 0 auto; }
+.dial .ring svg { display: block; width: 100%; height: auto; overflow: visible; }
+.dial .ring circle { stroke: rgba(28, 17, 11, .13); stroke-linecap: butt; }
+.dial .ring circle.mgood { stroke: var(--mood-good); }
+.dial .ring circle.mcalm { stroke: var(--mood-calm); }
+.dial .ring circle.mlow { stroke: var(--mood-low); }
+.dial .ring circle.mfrazzled { stroke: var(--mood-frazzled); }
+.dial .ring circle.mwiped { stroke: var(--mood-wiped); }
+.dial .ring text {
+  fill: var(--brown); font-size: 9px; letter-spacing: .08em;
+  font-family: "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.dial .today {
+  position: absolute; inset: 22%;
+  display: flex; align-items: center; justify-content: center;
+}
+.dial .isface { width: 100%; height: auto; }
+.dial .today .isword {
+  margin: 0; text-align: center; color: var(--ink-soft); font-size: 11.5px; line-height: 1.25;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.dial > .isword {
+  margin: 0; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--outline); font-variation-settings: var(--precise), "wght" 800;
+}
+.dial .checkin {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+  width: 100%; padding-top: 9px;
+  border-top: var(--line) solid rgba(28, 17, 11, .16);
+}
+.dial .checkin .face { padding: 3px 1px 4px; }
+.dial .checkin .face img { width: 100%; max-width: 30px; height: 24px; }
+.dial .checkin .face span { font-size: 9px; letter-spacing: .02em; }
+.dial .checkin .ask {
+  grid-column: 1 / -1; text-align: center; margin-bottom: 3px;
+  color: var(--ink-soft); font-size: 12px;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.dial .record {
+  margin-top: auto; padding-top: 8px; color: var(--ink-soft); font-size: 12.5px;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.dial .record:hover { color: var(--outline); }
+.dial .record:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
+
+.ops .chip.mood { padding: 0; overflow: hidden; }
+.ops .chip.mood img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+@media (max-width: 620px) {
+  /* One rack at a time, the doors in a row above the bar, and the dial folded
+     away behind the face in the ops rail — where it is a thing you can press
+     rather than a panel taking a screen's worth of a phone. */
+  .rack[data-bay="now"].in { display: flex; }
+  .racks > .dial { display: none; }
+  .racks.found .dial { display: flex; }
+  .newchore { max-width: none; padding: 0 12px 12px; }
+  .doors {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+    padding: 0 12px 12px;
+  }
+  .door .through { display: none; }
+  .door { min-height: 48px; }
+  .door .baysign { flex: 1; padding: 6px 8px 6px 0; font-size: 10px; letter-spacing: .06em; }
+  .door .baysign::before { width: 8px; margin-right: 8px; }
+  .door .baysign .n { font-size: 12px; }
+  .baytab .says { font-size: 12px; }
+  .dial { padding: 12px; }
+  .dial .ring { max-width: 200px; }
 }

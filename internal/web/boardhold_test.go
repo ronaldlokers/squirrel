@@ -17,7 +17,7 @@ func TestBrowserAnAnsweredStripStaysWhileTheUndoCouldStillBeWanted(t *testing.T)
 		},
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/board")
+	c := browserAt(t, srv, "/?bay=notes")
 
 	c.until(t, "a strip with its answers", `!!document.querySelector('.strip.answerable form.stamps')`)
 	c.eval(t, `const f = document.querySelector('.strip.answerable form.stamps');

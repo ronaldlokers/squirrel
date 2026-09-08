@@ -42,9 +42,9 @@ func stampsTall(c *cdp, t *testing.T, nth int) float64 {
 
 func TestBrowserAStripOpensWhenYouPressIt(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	require.Equal(t, float64(0), stampsTall(c, t, 0), "a strip arrives with its answers already out")
@@ -64,9 +64,9 @@ func TestBrowserAStripOpensWhenYouPressIt(t *testing.T) {
 
 func TestBrowserPressingAStampDoesNotShutTheStrip(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
@@ -81,9 +81,9 @@ func TestBrowserPressingAStampDoesNotShutTheStrip(t *testing.T) {
 
 func TestBrowserEscapeShutsTheOpenStrip(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
@@ -95,10 +95,10 @@ func TestBrowserEscapeShutsTheOpenStrip(t *testing.T) {
 
 func TestBrowserWithNoScriptEveryStripStillCarriesItsAnswers(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
 	c.send(t, "Emulation.setScriptExecutionDisabled", map[string]any{"value": true})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 
 	require.False(t, c.eval(t, `return document.documentElement.classList.contains("presses")`).(bool),
 		"the script ran, so this measured nothing")
@@ -113,9 +113,9 @@ func TestBrowserTheKeysOpenTheStripTheyReach(t *testing.T) {
 		{ID: 2, PersonID: 1, Name: "water the ferns", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7},
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=chores")
+	c := browserAt(t, srv, "/?bay=weekly")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=chores")
+	c.navigate(t, srv.URL+"/?bay=weekly")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	c.key(t, "d")
@@ -147,9 +147,9 @@ func TestBrowserThePulledStripGivesWay(t *testing.T) {
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"}
 	f.chores = []squirrel.Chore{{ID: 4, Name: "water the plants", Active: true, EveryDays: 7, SinceDays: 7}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "the pulled strip", `!!document.querySelector(".pulled")`)
 
 	deckTop := c.eval(t, `return Math.round(document.querySelector(".deck").getBoundingClientRect().top)`)
@@ -190,11 +190,11 @@ func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
 		c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
 		"the bar scrolled away with the rack")
 
-	require.Equal(t, "notes", c.eval(t, `return document.querySelector(".baytab.in").getAttribute("href").split("=")[1]`),
-		"the bar lights a bay you are not in")
-	require.Equal(t, `["notes","chores","tasks","agenda"]`, c.eval(t, `return JSON.stringify(
-		[...document.querySelectorAll(".baytab img")].map(i => i.getAttribute("src").split("bay-")[1].split(".png")[0]))`),
-		"a bay wears another bay's icon")
+	require.Nil(t, c.eval(t, `return document.querySelector(".baytab.in")`),
+		"the bar lights a rack while you are standing behind a door")
+	require.Equal(t, `["now","daily","weekly","seldom"]`, c.eval(t, `return JSON.stringify(
+		[...document.querySelectorAll(".baytab")].map(a => a.getAttribute("href").split("=")[1]))`),
+		"the bar names the racks in some other order")
 }
 
 func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
@@ -203,9 +203,9 @@ func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
 		ID: 91, RawText: "the washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote,
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "the tray", `!!document.querySelector(".tray")`)
 
 	require.LessOrEqual(t,
@@ -222,9 +222,9 @@ func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
 		{ID: 4, Name: "water the plants", Active: true, Every: 3 * 24 * time.Hour, EveryDays: 3, SinceDays: 3},
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=chores")
+	c := browserAt(t, srv, "/?bay=weekly")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=chores")
+	c.navigate(t, srv.URL+"/?bay=weekly")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	require.Greater(t, c.eval(t, `return new Set([...document.querySelectorAll(".rack.in .strip .mark")]
@@ -238,9 +238,9 @@ func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
 
 func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	c.until(t, "the easing", `document.documentElement.classList.contains("eased")`)
@@ -256,9 +256,9 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 
 func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
 
 	require.Equal(t, "capitalize", c.eval(t, `return getComputedStyle(document.querySelector(".baytab .says")).textTransform`),
@@ -271,7 +271,7 @@ func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
 	c.send(t, "Emulation.setEmulatedMedia", map[string]any{"features": []map[string]string{
 		{"name": "prefers-reduced-transparency", "value": "reduce"},
 	}})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
 		"asking for less transparency changes nothing")
@@ -285,7 +285,17 @@ func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
 // using it for the dock. Everything that was checked by rendering with a stub
 // and looking is checkable here.
 func TestBrowserThePillClearsTheHomeIndicator(t *testing.T) {
-	srv := screen(t, aRackOfNotes())
+	// Enough to run past the foot of the screen: what is under test is what
+	// the last thing on a full page reserves, and a page with ground to spare
+	// under it answers the question with the ground rather than the rule.
+	f := aRackOfNotes()
+	for i := int64(1); i <= 12; i++ {
+		f.chores = append(f.chores, squirrel.Chore{
+			ID: 200 + i, Name: "one more thing", Active: true,
+			EveryDays: 7, SinceDays: 7, EverDone: true,
+		})
+	}
+	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 	touching(t, c)
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
@@ -305,18 +315,18 @@ func TestBrowserThePillClearsTheHomeIndicator(t *testing.T) {
 	// band of ground between the two on 2 September.
 	require.LessOrEqual(t, c.eval(t,
 		`return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top -
-			document.querySelector(".rack.in .channel").getBoundingClientRect().bottom)`).(float64),
+			document.querySelector(".doors").getBoundingClientRect().bottom)`).(float64),
 		float64(24), "something above the pill is reserving the indicator's band as well")
 }
 
 func TestBrowserTheBarReservesTheTopInsetAndNoMore(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/")
+	c := browserAt(t, srv, "/?bay=notes")
 	touching(t, c)
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
 	})
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/?bay=notes")
 	c.until(t, "the bar", `!!document.querySelector(".ops .chip")`)
 
 	// The inset and nothing on top of it: the status bar's own band is the

@@ -96,7 +96,7 @@ func TestTheOldChoresURLRedirects(t *testing.T) {
 	w := mounted(t, &fakeStore{}).call(t, "GET", "/pile/chores", nil)
 
 	require.Equal(t, http.StatusMovedPermanently, w.Code)
-	require.Equal(t, "/?bay=chores", w.Header().Get("Location"))
+	require.Equal(t, "/?bay=daily", w.Header().Get("Location"))
 }
 
 // Everything Mount refuses to start without, and the refusal each one gives.

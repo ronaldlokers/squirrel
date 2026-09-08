@@ -28,6 +28,7 @@
     {{template "findchip" .Find}}
     <span class="sep" aria-hidden="true"></span>
     {{template "bellchip" .AnyTold}}
+    {{with .Dial}}{{template "moodchip" .}}{{end}}
     {{template "youchip" .You}}
   </span>
 </header>
@@ -271,24 +272,34 @@
     </div>
   </section>
 </main>
-{{else}}
-<main class="racks">
-  {{range $bay := .Bays}}
-  <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
+{{else if .Moodful}}
+<main class="racks found">
+  <section class="rack in">
+    <h2 class="baysign">how you are</h2>
+    <a class="strip back" href="/"><span class="words">back to the board</span></a>
+    {{template "moodside" .}}
+  </section>
+</main>
+{{else if .Door}}
+<main class="racks found">
+  {{with .Door}}
+  <section class="rack in" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
+    <a class="strip back" href="/"><span class="words">back to the board</span></a>
     {{template "blankstrip" .}}
     <div class="channel">
       {{if .Trouble}}<p class="trouble">cannot reach {{.Name}} — nothing is lost. Your words are still here; try again in a moment.</p>{{end}}
       {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
       <div class="strips">
+        {{$bay := .Key}}
         {{range .Strips}}
-        {{template "strip" dict "Strip" . "Bay" $bay.Key}}
+        {{template "strip" dict "Strip" . "Bay" $bay}}
         {{end}}
         {{range .Settled}}
         <p class="seam"><span class="what">{{.Name}}</span>{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</p>
         {{if .Strips}}
         {{range .Strips}}
-        {{template "strip" dict "Strip" . "Bay" $bay.Key}}
+        {{template "strip" dict "Strip" . "Bay" $bay}}
         {{end}}
         {{else}}
         <p class="nothing quiet">{{.Empty}}</p>
@@ -300,10 +311,62 @@
   </section>
   {{end}}
 </main>
+{{else}}
+<main class="racks">
+  {{range $rack := .Racks}}
+  <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
+    <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
+    <div class="channel">
+      {{if .Trouble}}<p class="trouble">cannot reach the chores — nothing is lost. Try again in a moment.</p>{{end}}
+      {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
+      <div class="strips">
+        {{range .Strips}}
+        {{template "strip" dict "Strip" . "Bay" $rack.Key}}
+        {{end}}
+      </div>
+      {{if .Resting}}<p class="resting">{{.Resting}} more further into the week</p>{{end}}
+    </div>
+  </section>
+  {{end}}
+  {{template "moodside" .}}
+</main>
+
+{{if .Racks}}
+<form class="newchore blankstrip" method="post" action="/board/new">
+  <input type="hidden" name="bay" value="daily">
+  <p class="strip blank">
+    <span class="said">
+      <input class="words" name="words" value="{{.Rhythm}}" placeholder="what comes back?" autocomplete="off" enterkeyhint="done"{{if .Rhythm}} autofocus{{end}}>
+      <span class="inline">
+        <span class="lead">every</span>
+        <input class="count" name="every" type="number" min="1" max="365" placeholder="7" inputmode="numeric" aria-label="how many">
+        <select class="unit" name="unit" aria-label="days, weeks or months">
+          <option value="days">days</option>
+          <option value="weeks">weeks</option>
+          <option value="months">months</option>
+        </select>
+      </span>
+    </span>
+    <button class="newmark" aria-label="keep it">+</button>
+  </p>
+  {{if .Rhythm}}<p class="asked">how often does it come back?</p>{{end}}
+</form>
+{{end}}
+
+{{if .Bays}}
+<aside class="doors">
+  {{range .Bays}}
+  <a class="door" href="/?bay={{.Key}}" data-bay="{{.Key}}">
+    <span class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</span>
+    <span class="through">{{.Question}}</span>
+  </a>
+  {{end}}
+</aside>
+{{end}}
 {{end}}
 </div>
 
-{{if or .Tray .Faces}}
+{{if .Tray}}
 <footer class="tray">
   {{if .Tray}}<span class="sign">today's tray</span>{{end}}
   <div class="gone">
@@ -321,28 +384,15 @@
     </span>
     {{end}}
   </div>
-  {{if .Faces}}
-  <form class="checkin" method="post" action="/board/mood">
-    <span class="ask">how do you feel?</span>
-    {{range .Faces}}
-    <button class="face" name="mood" value="{{.Mood}}" aria-label="{{.Word}}">
-      <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
-      <span>{{.Word}}</span>
-    </button>
-    {{end}}
-  </form>
-  {{end}}
 </footer>
 {{end}}
 
-{{if .Bays}}
+{{if .Racks}}
+{{$whole := not (or .Opened .Find .Shelf .Door)}}
 <nav class="baytabs">
-  {{range .Bays}}
-  <a class="baytab{{if and .In (not (or $.Opened $.Find $.Shelf))}} in{{end}}" href="/?bay={{.Key}}"{{if and .In (not (or $.Opened $.Find $.Shelf))}} aria-current="page"{{end}}>
-    <span class="pic">
-      <img src="/static/bay-{{.Key}}.png?v={{$.V}}" alt="" width="38" height="38">
-    </span>
-    <span class="says">{{.Key}}{{if .Strips}} <span class="n">&middot; {{len .Strips}}</span>{{end}}</span>
+  {{range .Racks}}
+  <a class="baytab{{if and .In $whole}} in{{end}}" href="/?bay={{.Key}}"{{if and .In $whole}} aria-current="page"{{end}}>
+    <span class="says">{{.Name}}{{if .Strips}} <span class="n">&middot; {{len .Strips}}</span>{{end}}</span>
   </a>
   {{end}}
 </nav>
@@ -399,5 +449,45 @@
   {{if and .Rhythms .Asking}}<p class="asked">how often does it come back?</p>{{end}}
   {{if and (eq .Key "agenda") .Asking}}<p class="asked">when is it?</p>{{end}}
 </form>
+{{end}}
+{{end}}
+
+{{/* How you have been, beside the racks rather than at the edge of the tray.
+     The faces are always here to press: saying how you are stopped being
+     something you wait to be asked for. Being asked is still separate — that
+     is what the ask line is, and it appears only when the last answer has
+     stopped describing now. */}}
+{{define "moodside"}}
+{{with .Dial}}
+<aside class="dial">
+  <div class="ring">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      {{range .Ring}}
+      <circle class="{{.Class}}" cx="60" cy="60" r="44" fill="none" stroke-width="9"
+              stroke-dasharray="{{.Dash}}" stroke-dashoffset="{{.Offset}}"
+              transform="rotate(-90 60 60)"><title>{{.Label}}</title></circle>
+      <text x="{{.X}}" y="{{.Y}}" text-anchor="middle" dominant-baseline="central">{{.Letter}}</text>
+      {{end}}
+    </svg>
+    <div class="today">
+      {{if .Said}}
+      <img class="isface" alt="{{.Word}}" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+      {{else}}
+      <p class="isword">nothing<br>said today</p>
+      {{end}}
+    </div>
+  </div>
+  {{if .Said}}<p class="isword">{{.Word}}</p>{{end}}
+  <form class="checkin" method="post" action="/board/mood">
+    {{if .Asking}}<span class="ask">how do you feel?</span>{{end}}
+    {{range .Faces}}
+    <button class="face" name="mood" value="{{.Mood}}" aria-label="{{.Word}}">
+      <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+      <span>{{.Word}}</span>
+    </button>
+    {{end}}
+  </form>
+  <a class="record" href="/me">the whole record</a>
+</aside>
 {{end}}
 {{end}}

@@ -66,7 +66,7 @@ func TestBrowserEveryControlClearsFortyFourOnAPhone(t *testing.T) {
 	touching(t, c)
 
 	for _, path := range []string{
-		"/", "/?bay=chores", "/?bay=tasks", "/?bay=agenda",
+		"/", "/?bay=weekly", "/?bay=tasks", "/?bay=agenda",
 		"/?find=the", "/me", "/r/everything",
 	} {
 		t.Run(path, func(t *testing.T) {

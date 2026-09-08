@@ -36,7 +36,7 @@ func TestAnOpenedStripDoesNotRepeatTheLineTheRackAlreadyShows(t *testing.T) {
 }
 
 func TestOneLineOnlyIsWhatTheRackDraws(t *testing.T) {
-	body := mounted(t, aNoteAskedAboutTwice()).call(t, "GET", "/", nil).Body.String()
+	body := mounted(t, aNoteAskedAboutTwice()).call(t, "GET", "/?bay=notes", nil).Body.String()
 	rack := theRackIn(t, body, "bay=notes")
 
 	require.Contains(t, rack, "This is the third note about that boiler.")
