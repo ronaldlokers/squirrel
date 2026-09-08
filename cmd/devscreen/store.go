@@ -389,6 +389,17 @@ func (store) WhatWasNoticed(_ context.Context, _ int64) ([]squirrel.Noticed, err
 	return append(out, asked...), nil
 }
 
+func (store) NoticedAbout(_ context.Context, _ int64, kind string, refID int64, limit int) ([]squirrel.Noticed, error) {
+	out := []squirrel.Noticed{
+		{ID: 91, Kind: kind, RefID: refID, Words: "This is the third note about that boiler."},
+		{ID: 92, Kind: kind, RefID: refID, Words: "The code you wanted is on the note from August."},
+	}
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
 func (store) NotUseful(_ context.Context, _, id int64, _ time.Time) (bool, error) {
 	for i, one := range asked {
 		if one.ID == id {
