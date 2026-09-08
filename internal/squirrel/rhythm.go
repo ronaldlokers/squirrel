@@ -33,20 +33,28 @@ func RhythmOf(everyDays int) Rhythm {
 
 const fewestUsually = 3
 
+// Usually is when you tend to do a thing. The two halves are claimed
+// separately and either may be absent: a chore you do every day has no usual
+// weekday and a chore you do at any hour has no usual part of it.
 type Usually struct {
 	Weekday time.Weekday
+	OnADay  bool
 	Part    DayPart
-	Known   bool
 }
 
+func (u Usually) Known() bool { return u.OnADay || u.Part != AnyPart }
+
 func (u Usually) Words() string {
-	if !u.Known {
+	switch {
+	case u.OnADay && u.Part != AnyPart:
+		return "you usually do this " + u.Weekday.String() + " " + string(u.Part)
+	case u.OnADay:
+		return "you usually do this on a " + u.Weekday.String()
+	case u.Part != AnyPart:
+		return "you usually do this in the " + string(u.Part)
+	default:
 		return ""
 	}
-	if u.Part == AnyPart {
-		return "you usually do this on a " + u.Weekday.String()
-	}
-	return "you usually do this " + u.Weekday.String() + " " + string(u.Part)
 }
 
 func UsuallyFrom(when []time.Time) Usually {
@@ -59,27 +67,39 @@ func UsuallyFrom(when []time.Time) Usually {
 		days[at.Weekday()]++
 		parts[PartOfDay(at)]++
 	}
-	return Usually{Weekday: commonest(days), Part: commonestPart(parts), Known: true}
+	u := Usually{}
+	if day, most := commonest(days); mostly(most, len(when)) {
+		u.Weekday, u.OnADay = day, true
+	}
+	if part, most := commonestPart(parts); mostly(most, len(when)) {
+		u.Part = part
+	}
+	return u
 }
 
-func commonest(counted map[time.Weekday]int) time.Weekday {
+// mostly is what turns a tally into a claim. More than half, so a thing split
+// evenly between Saturday and Sunday has no usual day rather than whichever
+// one the tie-break reached for.
+func mostly(count, of int) bool { return count*2 > of }
+
+func commonest(counted map[time.Weekday]int) (time.Weekday, int) {
 	best, most := time.Sunday, -1
 	for day, n := range counted {
 		if n > most || (n == most && day < best) {
 			best, most = day, n
 		}
 	}
-	return best
+	return best, most
 }
 
-func commonestPart(counted map[DayPart]int) DayPart {
+func commonestPart(counted map[DayPart]int) (DayPart, int) {
 	best, most := AnyPart, -1
 	for part, n := range counted {
 		if n > most || (n == most && part < best) {
 			best, most = part, n
 		}
 	}
-	return best
+	return best, most
 }
 
 type Standing struct {
@@ -106,7 +126,7 @@ func rankOf(c Chore, u Usually, at time.Time) (int, string) {
 	if !c.EverDone {
 		return 6, choreBecause(c)
 	}
-	today := u.Known && u.Weekday == at.Weekday()
+	today := u.OnADay && u.Weekday == at.Weekday()
 
 	switch {
 	case due(c) && today && partHasCome(u.Part, at):
@@ -189,7 +209,7 @@ func (s *Store) WhenYouUsuallyDo(ctx context.Context, personID int64) (map[int64
 
 	out := make(map[int64]Usually, len(when))
 	for choreID, times := range when {
-		if u := UsuallyFrom(times); u.Known {
+		if u := UsuallyFrom(times); u.Known() {
 			out[choreID] = u
 		}
 	}
