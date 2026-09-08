@@ -68,6 +68,7 @@ jobs:
           cache: true
 
       - run: make check
+      - run: go build -tags=dev ./...
       - run: make test-integration
         env:
           TEST_DATABASE_URL: postgres://squirrel:squirrel@127.0.0.1:5432/squirrel_test
