@@ -315,8 +315,18 @@ asking window; the oldest thing you decided to do; nothing. When the picker is
 wrong you can read six rules and see why, which is not true of anything that
 scores, learns or generates.
 
+**Amended on 8 September 2026: the fourth rule left, and six became five.**
+Chores are the board now, in three racks cut by rhythm, each ordered and each
+row carrying the sentence that puts it there. An offer naming a chore could
+only repeat the top of a rack the same screen was already showing, and doing
+that spent the one thing on something the eye had already been given. What it
+cost: chores no longer answer `!now` in Campfire, where there are no racks to
+read instead. Judged acceptable because Campfire is the secondary surface and
+the nudge — Squirrel raising a chore unasked — is untouched. It reverses by
+putting the rule back where it was, between the breadcrumb and the task.
+
 **The check-in is an input now, not a record.** A fresh *wiped* or *frazzled*
-reading drops the two rules that are Squirrel's own initiative and keeps the
+reading drops the one rule that is Squirrel's own initiative and keeps the
 three that are the world's business and yours. *Low* is deliberately not one of
 them: low is how you feel and those two are how much you have, and an empty day
 handed to someone flat but functional reads as the product agreeing they are

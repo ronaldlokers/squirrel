@@ -24,8 +24,9 @@ func TestPickNowOffersNothingWhenThereIsNothing(t *testing.T) {
 	require.False(t, found, "nothing to hand you is a normal answer")
 }
 
-// Rule 4: a chore that is due and inside its asking window.
-func TestPickNowOffersADueChore(t *testing.T) {
+// Chores belong to the racks, which order and explain the whole of them. An
+// offer naming one could only repeat the top of a rack already on the screen.
+func TestThePickerLeavesChoresToTheRack(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -34,34 +35,30 @@ func TestPickNowOffersADueChore(t *testing.T) {
 	require.NoError(t, err)
 	backdate(t, store, "bins out", 3)
 
-	o, found, err := store.PickNow(ctx, p, time.Now(), false)
+	_, found, err := store.PickNow(ctx, p, time.Now(), false)
 	require.NoError(t, err)
-	require.True(t, found)
-	require.Equal(t, squirrel.OfferChore, o.Kind)
-	require.Equal(t, "bins out", o.Text)
-	require.NotEmpty(t, o.Because, "an offer that cannot say why it is the offer is a demand")
+	require.False(t, found, "the chore is no less due; the picker is no longer where it is answered")
 }
 
-// Rule 4 defers to the asking window, exactly as the nudge does. Being due and
-// being worth interrupting for are two questions.
-func TestPickNowSkipsAChoreOutsideItsAskingWindow(t *testing.T) {
+// The gate is not what is doing this. A chore is left to the rack on a day
+// with every bit of capacity in it, and when the gate is lifted outright.
+func TestNoChoreIsOfferedEvenWithTheGateLifted(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
 
-	_, err := store.UpsertChoreAsking(ctx, p, "bins out", oneDay, oneDay,
-		squirrel.Asking{Part: squirrel.Morning})
+	_, err := store.UpsertChore(ctx, p, "bins out", oneDay, oneDay)
 	require.NoError(t, err)
 	backdate(t, store, "bins out", 3)
 
-	evening := time.Date(2026, 8, 20, 20, 0, 0, 0, time.Local)
-	_, found, err := store.PickNow(ctx, p, evening, false)
+	_, found, err := store.PickNow(ctx, p, time.Now(), true)
 	require.NoError(t, err)
-	require.False(t, found, "the chore is no less due; the asking waits")
+	require.False(t, found)
 }
 
-// Rule 5, and the ordering between 4 and 5.
-func TestPickNowPrefersAChoreOverATask(t *testing.T) {
+// Rule 4, and what a due chore no longer does to it: the thing you decided on
+// is handed back whole rather than queued behind a rhythm.
+func TestADueChoreDoesNotStandInFrontOfWhatYouDecided(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -71,9 +68,11 @@ func TestPickNowPrefersAChoreOverATask(t *testing.T) {
 	require.NoError(t, err)
 	backdate(t, store, "bins out", 3)
 
-	o, _, err := store.PickNow(ctx, p, time.Now(), false)
+	o, found, err := store.PickNow(ctx, p, time.Now(), false)
 	require.NoError(t, err)
-	require.Equal(t, squirrel.OfferChore, o.Kind)
+	require.True(t, found)
+	require.Equal(t, squirrel.OfferTask, o.Kind)
+	require.Equal(t, "ring the vet", o.Text)
 }
 
 // The oldest decision, not the newest — every list here is newest-first
