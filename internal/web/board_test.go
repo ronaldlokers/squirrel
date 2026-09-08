@@ -34,9 +34,11 @@ func TestTheBoardIsTheChoresAndThreeDoors(t *testing.T) {
 	for _, want := range []string{"daily", "weekly", "seldom", "bins out"} {
 		require.Contains(t, body, want)
 	}
-	for _, door := range []string{"the notes", "the tasks", "the agenda"} {
+	for _, door := range []string{"the notes", "the tasks"} {
 		require.Contains(t, body, door, "the %s cannot be reached from the board", door)
 	}
+	require.Contains(t, body, "what is coming",
+		"the agenda stopped being a door and is not in the sidebar either")
 	for _, behind := range []string{"boiler service code is 4471", "kaas", "vet about the booster"} {
 		require.NotContains(t, body, behind,
 			"%q is on the board, so the doors did not demote anything", behind)
@@ -465,15 +467,21 @@ func TestTheFindFieldIsAField(t *testing.T) {
 
 // An appointment is not answered the way work is: it happened, or it stopped
 // mattering, and nothing anywhere records which of the two it was.
-func TestAnAppointmentCanBeClosed(t *testing.T) {
+// The diary is read, not worked. A fixed point that has started leaves the
+// list on its own — Upcoming only ever returns what is still ahead — so there
+// is nothing to close from the sidebar, and closing one is what the pulled
+// strip is for during the window where leaving matters.
+func TestTheDiaryIsReadRatherThanWorked(t *testing.T) {
 	f := aBoardStore()
 	f.upcoming = []squirrel.Moment{{ID: 21, Label: "dentist", Starts: time.Now().Add(2 * time.Hour)}}
 	m := mounted(t, f)
 
-	body := m.call(t, "GET", "/?bay=agenda", nil).Body.String()
-	require.Contains(t, body, `value="over"`)
+	body := m.call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, body, "dentist")
+	require.NotContains(t, body, `value="over"`, "the diary grew a control")
 
-	m.call(t, "POST", "/board/act", strings.NewReader("what=moment&id=21&answer=over&bay=agenda"))
+	// The way to close one is still open to anything that has an id for it.
+	m.call(t, "POST", "/board/act", strings.NewReader("what=moment&id=21&answer=over"))
 	require.Equal(t, []int64{21}, f.momentsDone)
 }
 
@@ -800,17 +808,23 @@ func TestASettledStripSaysWhyBesideItsWordsRatherThanInTheMark(t *testing.T) {
 		"the way back is a picture with no name")
 }
 
-func TestTheAgendaStripCarriesItsDayAndTimeInsideIt(t *testing.T) {
-	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/?bay=agenda", nil).Body.String(), "bay=agenda")
-	strip := rack[strings.Index(rack, `class="strip blank`):]
-	strip = strip[:strings.Index(strip, "</p>")]
+// The appointment writer left the agenda door with the agenda, and pairs with
+// the chore writer under the racks. The date pickers cannot be read at a
+// sidebar's width, so it did not follow the diary into the sidebar.
+func TestTheAppointmentWriterSitsBesideTheChoreWriter(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
+	writers := body[strings.Index(body, `class="writers"`):]
+	writers = writers[:strings.Index(writers, "</div>")]
 
-	require.Contains(t, strip, "asit", "the agenda inlet is not shaped like what it makes")
+	require.Contains(t, writers, `class="newchore`, "the chore writer is not in the row")
+	strip := body[strings.Index(body, `class="newmoment`):]
+	strip = strip[:strings.Index(strip, "</form>")]
+
+	require.Contains(t, strip, "asit", "the appointment inlet is not shaped like what it makes")
 	require.Contains(t, strip, `class="holder"`, "it does not wear the agenda's holder")
 	for _, want := range []string{`name="dd"`, `name="mo"`, `name="hour"`, `name="minute"`, `name="words"`} {
 		require.Contains(t, strip, want, "%s is outside the strip", want)
 	}
-	require.NotContains(t, rack, `class="under"`, "the row under the strip is still drawn")
 }
 
 func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {

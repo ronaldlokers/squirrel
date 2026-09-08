@@ -515,8 +515,8 @@ it. One rather than three, because the rack a chore lands in is what its
 interval says: asking which rack to write into would be asking how often it
 comes back twice.
 
-**The doors.** Three across under the writer — *the notes*, *the tasks*, *the
-agenda* — a sign over the question that place asks. A door is a link, not a
+**The doors.** Two across under the writers — *the notes*, *the tasks* — a sign
+over the question that place asks. A door is a link, not a
 rack: pressing one puts what it holds in the racks' place, whole, with a way
 back, the same as search and the shelves. What is behind a door is behind it;
 the board is the chores.
@@ -1067,6 +1067,38 @@ you today — the one line saying why it is where it is.
 A row whose turn is simply not today says **nothing at all**, and above all not
 how long it has been waiting. That refusal is older than the racks and survived
 them intact.
+
+### What is coming
+
+The sidebar's lower half, and the agenda's home since 9 September 2026. Every
+fixed point still ahead, soonest first — not only today, because that is what
+the door held and the rule the list is allowed under does not care how far
+ahead it reaches: only what is still in front of you, nothing past, nothing
+done, never a count of what you did not do.
+
+**The time is a deadline and is set as one.** Inter Black, tabular, the
+`figure` role — because an appointment is the one thing in this product with a
+time the world imposed, and `PRODUCT.md` settled that on 20 August. The first
+one today takes 24px; the rest take 19.
+
+**The leave-by under it is arithmetic** about a distance, in the quiet
+register, and it says so when the distance was a guess. It is never called a
+deadline; the time above it is the deadline.
+
+**Inside the window where leaving matters, it is hoisted** out of the list and
+above the dial, on paper with the orange outline. It *leaves the list* when it
+does — a fixed point drawn twice in one column is the duplication the picker
+was cured of. Nothing else reorders that column.
+
+**The diary is read, not worked.** There are no answers on it. A fixed point
+that has started leaves on its own, because `Upcoming` only ever returns what
+is still ahead, and closing one is what the pulled strip is for during the
+window. The agenda's four answers went with the door.
+
+**The writer did not follow it.** Day, month, hour and minute cannot be read at
+a sidebar's width — the comp proved it — so the appointment writer pairs with
+the chore writer under the racks: the thing that comes back, and the thing the
+world set, side by side.
 
 ### The dial
 

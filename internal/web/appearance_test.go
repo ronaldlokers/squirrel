@@ -67,6 +67,7 @@ var appearanceScreens = map[string][]string{
 		".blankstrip .inline", ".blankstrip .count", ".newchore",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
 		".dial .record", ".doors", ".door", ".door .through",
+		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby",
 		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
@@ -110,6 +111,13 @@ func appearanceFixture() *fakeStore {
 		2: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
 	}
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}
+	// Two fixed points, so the diary in the sidebar draws both a time today
+	// and a day further out. Neither is inside its leave-by window: the hoist
+	// is a state, and a record of one state cannot hold two.
+	f.upcoming = []squirrel.Moment{
+		{ID: 21, Label: "dentist", Starts: now().Add(3 * time.Hour), Travel: 15 * time.Minute},
+		{ID: 22, Label: "the school run", Starts: now().Add(30 * time.Hour)},
+	}
 	// A timer and a tray, so the board's two bands that only exist when
 	// something is happening are recorded rather than silently absent.
 	f.timer = &squirrel.Timer{Label: "the kitchen", Started: now(), Ends: now().Add(11 * time.Minute)}

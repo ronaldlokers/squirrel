@@ -10,7 +10,7 @@ func TestTheRoomsThatStoppedBeingRoomsStillLandSomewhere(t *testing.T) {
 	for from, to := range map[string]string{
 		"/r/buddy": "/", "/r/everything": "/", "/r/pile": "/?bay=notes",
 		"/r/held": "/?shelf=held", "/r/kept": "/?shelf=kept",
-		"/r/notes": "/?bay=notes", "/r/chores": "/?bay=daily", "/r/at": "/?bay=agenda", "/r/tasks": "/?bay=tasks",
+		"/r/notes": "/?bay=notes", "/r/chores": "/?bay=daily", "/r/at": "/", "/r/tasks": "/?bay=tasks",
 	} {
 		res := mounted(t, &fakeStore{}).call(t, "GET", from, nil)
 

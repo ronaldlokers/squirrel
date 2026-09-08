@@ -38,7 +38,9 @@ type boardView struct {
 	Moodful        bool
 	Racks          []rackView
 	Rhythm         string
+	When           string
 	Dial           *dialView
+	Coming         *comingView
 	Told           []toldView
 	Telling        bool
 	AnyTold        bool
@@ -71,6 +73,34 @@ type rackView struct {
 	Wants  []stripView
 	Rest   []stripView
 	Strips []stripView
+}
+
+// comingView is what is ahead of you, in the sidebar. Everything still to
+// come, not only today: this took the agenda door's place, and the door held
+// the same.
+//
+// Hoisted is the one inside its leave-by window, lifted above the dial. It is
+// the only thing that reorders that column, and it does so on the same rule
+// the picker's first rule already uses — so nothing new decides when the
+// world is calling.
+type comingView struct {
+	Hoisted *apptView
+	Appts   []apptView
+	Count   int
+	More    bool
+	Trouble bool
+}
+
+// apptView is one fixed point. The time is a deadline and is set as one; the
+// leave-by is arithmetic about a distance and stays quiet, and admits when the
+// distance was never given.
+type apptView struct {
+	ID      int64
+	Time    string
+	Day     string
+	Label   string
+	LeaveBy string
+	Big     bool
 }
 
 // dialView is how you have been, on the board rather than only on the page
@@ -216,6 +246,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Day:            at.Format("Monday 2 January"),
 			Telling:        r.URL.Query().Get("told") == "1",
 			Rhythm:         strings.TrimSpace(r.URL.Query().Get("rhythm")),
+			When:           strings.TrimSpace(r.URL.Query().Get("when")),
 		}
 		// The same gate the picker reads, and CapacityLow is wiped or
 		// frazzled rather than the mood called low — capacity.go says why.
@@ -237,6 +268,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Ramp = rampFor(s, r, personID, at); return nil })
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
 		g.Go(func() error { v.Dial = howYouAre(r, s, personID, at); return nil })
+		g.Go(func() error { v.Coming = whatIsComing(r, s, personID, at); return nil })
 		var racksOK bool
 		g.Go(func() error { v.Racks, racksOK = choreRacks(r, s, personID, at, quiet); return nil })
 		bays := fetchBays(&g, r, s, personID, at)
@@ -393,10 +425,8 @@ type bayFetch struct {
 	seen               map[string]squirrel.Noticed
 	settled            []settledView
 	notes, tasks       []stripView
-	agenda             []stripView
 	notesOK, moreNotes bool
 	tasksOK, moreTasks bool
-	agendaOK           bool
 }
 
 func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at time.Time) *bayFetch {
@@ -407,12 +437,10 @@ func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at t
 	}
 	g.Go(func() error { f.notes, f.notesOK, f.moreNotes = noteStrips(r, s, personID, at); return nil })
 	g.Go(func() error { f.tasks, f.tasksOK, f.moreTasks = taskStrips(r, s, personID, at); return nil })
-	g.Go(func() error { f.agenda, f.agendaOK = agendaStrips(r, s, personID, at); return nil })
 	return f
 }
 
 func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayView {
-	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
 	refused := r.URL.Query().Has("nophoto")
 	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
 	offline := r.URL.Query().Get("offline") == "1"
@@ -424,8 +452,6 @@ func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayVi
 	notes = answered(marked(notes, "ask:note", f.seen), justAsked)
 	tasks := askable(f.tasks, "tasks", askOn)
 	tasks = answered(marked(tasks, "ask:task", f.seen), justAsked)
-	agenda := askable(f.agenda, "at", askOn)
-	agenda = answered(marked(agenda, "ask:moment", f.seen), justAsked)
 	return []bayView{
 		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
 			Camera: opts.Photos != nil, Trouble: !f.notesOK, More: f.moreNotes,
@@ -434,9 +460,6 @@ func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayVi
 		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
 			Trouble: !f.tasksOK, More: f.moreTasks, Offline: offline,
 			Empty: "nothing in the tasks", Strips: tasks},
-		{Key: "agenda", Name: "the agenda", Question: "at 14:30 dentist", Writes: true,
-			Trouble: !f.agendaOK, Asking: whenFor, Offline: offline,
-			Empty: "nothing left today", Strips: agenda},
 	}
 }
 
@@ -454,7 +477,7 @@ func wantsBay(r *http.Request, key string) bool {
 }
 
 var boardKeys = map[string]bool{
-	"notes": true, "tasks": true, "agenda": true,
+	"notes": true, "tasks": true,
 	"now": true, "daily": true, "weekly": true, "seldom": true,
 }
 
@@ -651,32 +674,6 @@ func standingIn(in string, racks []rackView) []rackView {
 	return racks
 }
 
-func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool) {
-	soon, err := s.Upcoming(r.Context(), personID, at, boardDeep)
-	if err != nil {
-		slog.Error("reading what is coming for the board", "error", err)
-		return nil, false
-	}
-	out := make([]stripView, 0, len(soon))
-	for _, m := range soon {
-		strip := stripView{
-			ID: m.ID, What: "moment", Words: m.Label,
-			Mark: markOfMoment(m, at), Big: true, Answers: momentAnswers,
-		}
-		// Inside the window the strip stops being a time and becomes a thing
-		// you are about to leave for: the mark says when to go, and LEAVING is
-		// the answer. Outside it there is nothing to press — a button that
-		// closes a thing three hours early is one that gets pressed by
-		// accident.
-		if m.Open(at) {
-			strip.Mark = "leave " + m.LeaveAt().Format("15:04")
-			strip.Answers = leavingAnswers
-		}
-		out = append(out, strip)
-	}
-	return out, true
-}
-
 var noteAnswers = []answerView{
 	{Act: "done", Words: "done", Key: "D", Look: "did"},
 	{Act: "keep", Words: "keep", Key: "K"},
@@ -686,15 +683,6 @@ var noteAnswers = []answerView{
 var taskAnswers = []answerView{
 	{Act: "done", Words: "done", Key: "D", Look: "did"},
 	{Act: "drop", Words: "drop", Key: "X", Look: "no"},
-}
-
-var leavingAnswers = []answerView{
-	{Act: "leaving", Words: "leaving", Key: "D", Look: "did"},
-	{Act: "over", Words: "it is over", Key: "X", Look: "no"},
-}
-
-var momentAnswers = []answerView{
-	{Act: "over", Words: "it is over", Key: "D", Look: "did"},
 }
 
 var choreAnswers = []answerView{
@@ -827,7 +815,7 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 // at a time does not answer a chore by putting you back in the notes.
 func backToTheBay(r *http.Request) string {
 	switch bay := r.FormValue("bay"); bay {
-	case "notes", "tasks", "agenda", "now", "daily", "weekly", "seldom", "mood":
+	case "notes", "tasks", "now", "daily", "weekly", "seldom", "mood":
 		return "/?bay=" + bay
 	}
 	return "/"
@@ -1617,6 +1605,62 @@ func troubled(racks []rackView, ok bool) []rackView {
 		racks[i].Trouble = true
 	}
 	return racks
+}
+
+// whatIsComing is every fixed point still ahead, soonest first.
+//
+// Not only today. The rule the list was allowed under is that it holds only
+// what is still in front of you — nothing past, nothing done, never a count of
+// what you did not do — and that rule does not care how far ahead it reaches.
+func whatIsComing(r *http.Request, s Store, personID int64, at time.Time) *comingView {
+	soon, err := s.Upcoming(r.Context(), personID, at, comingDeep+1)
+	if err != nil {
+		slog.Error("reading what is coming for the board", "error", err)
+		return &comingView{Trouble: true}
+	}
+	c := &comingView{Count: len(soon)}
+	if len(soon) > comingDeep {
+		c.More, soon, c.Count = true, soon[:comingDeep], comingDeep
+	}
+	for i, m := range soon {
+		one := apptView{
+			ID: m.ID, Time: m.Starts.Format("15:04"), Label: m.Label,
+			Big: i == 0 && sameDay(m.Starts, at),
+		}
+		if !sameDay(m.Starts, at) {
+			one.Day = markOfMoment(m, at)
+		}
+		one.LeaveBy = leaveWords(m, at)
+		// Inside the window where leaving matters it comes out of the list and
+		// sits above the dial. One thing, in one place — a fixed point shown
+		// twice in one column is the duplication the picker was cured of.
+		if m.Open(at) && c.Hoisted == nil {
+			lifted := one
+			lifted.Big = true
+			c.Hoisted = &lifted
+			continue
+		}
+		c.Appts = append(c.Appts, one)
+	}
+	return c
+}
+
+// comingDeep is how far ahead the sidebar draws before it says there is more.
+// Four is what fits beside the dial; the number is the column's, not a rule.
+const comingDeep = 4
+
+// leaveWords is arithmetic about a distance, and says so when the distance was
+// a guess. Never called a deadline: the appointment's own time is the deadline
+// and is set as one.
+func leaveWords(m squirrel.Moment, at time.Time) string {
+	if m.Travel == 0 {
+		return ""
+	}
+	leave := "leave " + m.LeaveAt().Format("15:04")
+	if m.Guessed {
+		return leave + " — if it is a quarter of an hour away"
+	}
+	return leave
 }
 
 // howYouAre is the dial: today's face, the seven days behind it, and the way
