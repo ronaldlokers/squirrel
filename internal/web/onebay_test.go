@@ -24,7 +24,7 @@ func aBoardOfSevenPlaces() *fakeStore {
 }
 
 func TestAShippedBinaryDrawsEveryBayWhateverIsAsked(t *testing.T) {
-	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=weekly"); got != 7 {
+	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=weekly"); got != 6 {
 		t.Fatalf("a shipped board drew %d places for ?only=weekly, and the query is not its business", got)
 	}
 }
@@ -59,7 +59,7 @@ func TestTheOneBayIsTheOneYouAreStandingIn(t *testing.T) {
 func TestABayNobodyHasDrawsThemAll(t *testing.T) {
 	developing(t)
 
-	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=nonsense"); got != 7 {
+	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=nonsense"); got != 6 {
 		t.Fatalf("asking for a place that does not exist drew %d of them", got)
 	}
 }
@@ -67,7 +67,7 @@ func TestABayNobodyHasDrawsThemAll(t *testing.T) {
 func TestTheDevelopmentBoardIsStillTheWholeBoardWhenNothingIsAsked(t *testing.T) {
 	developing(t)
 
-	if got := racksIn(t, aBoardOfSevenPlaces(), "/"); got != 7 {
+	if got := racksIn(t, aBoardOfSevenPlaces(), "/"); got != 6 {
 		t.Fatalf("development mode drew %d places on its own", got)
 	}
 }

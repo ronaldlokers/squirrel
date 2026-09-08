@@ -337,6 +337,19 @@ question.** It lasts the day, it reverses, and it touches nothing about the
 thing itself — a chore turned down in the picker is exactly as due as it was,
 because the picker's memory and the nudge's budget are two different things.
 
+**Amended on 9 September 2026: the agenda stopped being a door.** What is
+coming moved into the sidebar, under how you have been, where it holds
+everything still ahead rather than a door's worth of it. The guard rails that
+made the list allowed are untouched and are what still make it allowed: only
+what is in front of you, nothing past, nothing marked late, and a fixed point
+that is over is simply over.
+
+What it cost: the four answers on an agenda strip. The diary is read now, not
+worked — a fixed point that has started leaves the list on its own, and closing
+one is what the pulled strip is for during the window where leaving matters. If
+that turns out to matter, the answer is a control on the hoisted block, not the
+door coming back.
+
 **Decided on 8 September 2026: the board is the chores, and mood is beside
 them.** Four bays of four different kinds of thing asked, every time it was
 opened, which of four boxes to look in — and the chores, the only things on it

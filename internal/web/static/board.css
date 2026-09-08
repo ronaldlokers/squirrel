@@ -1079,3 +1079,84 @@ main.gate h1 + form { margin-top: 26px; }
   font-size: 16.5px; font-variation-settings: var(--casual), "wght" 580;
 }
 .rack .seam { margin: 11px 0 6px; }
+
+/* ── What is coming ────────────────────────────────────────────────────
+   The sidebar's lower half. Everything still ahead, soonest first, under
+   the dial — the agenda stopped being a door on 9 September 2026 because
+   a door for four lines was a whole row of the board spent on a count. */
+.dial { padding: 0; background: none; border: 0; box-shadow: none; gap: 12px; }
+.dialbody {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 11px 12px 9px; flex: 0 0 auto;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 2px 0 0 rgba(28, 17, 11, .55);
+}
+.dialbody .ring { max-width: 118px; }
+.dialbody .record { padding-top: 5px; }
+
+.coming {
+  display: flex; flex-direction: column; gap: 7px; min-height: 0; flex: 1 1 auto;
+  padding: 10px 11px; overflow: hidden;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 2px 0 0 rgba(28, 17, 11, .55);
+}
+.comingsign {
+  display: flex; margin: 0 0 1px; padding-bottom: 7px;
+  border-bottom: var(--line) solid rgba(28, 17, 11, .18);
+  font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--outline);
+  font-variation-settings: var(--precise), "wght" 800;
+}
+.comingsign .n {
+  margin-left: auto; letter-spacing: 0; color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.comingroll {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.appt { display: grid; gap: 0; padding: 1px 0 6px; border-bottom: var(--line) dotted rgba(28, 17, 11, .18); }
+.appt:last-child { border-bottom: 0; }
+
+/* The one real deadline this product holds, set as one. */
+.attime {
+  margin: 0; color: var(--outline);
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-variation-settings: normal;
+  font-size: 19px; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.attime.big { font-size: 24px; }
+.atlabel {
+  margin: 0; font-size: 14.5px; line-height: 1.25; color: var(--outline);
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.atday {
+  margin: 1px 0 0; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--brown); font-variation-settings: var(--precise), "wght" 750;
+}
+/* Arithmetic about a distance. Never called a deadline; the time above is. */
+.leaveby {
+  margin: 1px 0 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.3;
+  font-variation-settings: var(--casual), "wght" 470;
+}
+.coming .further, .coming .nothing { margin: 4px 0 0; padding: 0; color: var(--ink-soft); }
+
+/* Inside the window where leaving matters, and above everything. */
+.hoist {
+  flex: 0 0 auto; padding: 10px 12px 12px;
+  background: var(--paper); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  outline: 3px solid var(--orange-lit); outline-offset: 3px;
+  box-shadow: 0 5px 0 0 rgba(28, 17, 11, .55), 0 18px 26px -18px rgba(0, 0, 0, .8);
+}
+
+/* Two writers, one row: the thing that comes back, and the thing the world
+   set. The date pickers cannot be read at a sidebar's width. */
+.writers {
+  flex: 0 0 auto; display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px;
+  padding: 12px 18px 0; max-width: calc(100% - 292px - 14px);
+}
+.writers .newchore, .writers .newmoment { max-width: none; }
+.doors { grid-template-columns: 1fr 1fr minmax(0, 292px); }
+.racks { grid-template-columns: 1fr 1fr 1fr minmax(0, 292px); }

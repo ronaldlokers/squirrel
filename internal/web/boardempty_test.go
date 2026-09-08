@@ -28,9 +28,8 @@ func TestARackWithNothingInItSaysSoInItsOwnWords(t *testing.T) {
 	}
 
 	for door, says := range map[string]string{
-		"notes":  "nothing in the notes",
-		"tasks":  "nothing in the tasks",
-		"agenda": "nothing left today",
+		"notes": "nothing in the notes",
+		"tasks": "nothing in the tasks",
 	} {
 		behind := m.call(t, "GET", "/?bay="+door, nil).Body.String()
 		require.Contains(t, theRackIn(t, behind, "bay="+door), says,

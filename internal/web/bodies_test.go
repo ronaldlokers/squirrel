@@ -32,7 +32,7 @@ func TestTheKindsAreDistinguishable(t *testing.T) {
 	m := mounted(t, f)
 
 	seen := map[string]bool{}
-	for _, holder := range []string{"h-notes", "h-tasks", "h-agenda"} {
+	for _, holder := range []string{"h-notes", "h-tasks"} {
 		body := m.call(t, "GET", "/?bay="+strings.TrimPrefix(holder, "h-"), nil).Body.String()
 		require.Contains(t, body, `class="strip `+holder, "%s draws no strip", holder)
 		require.False(t, seen[holder], "%s is drawn twice", holder)

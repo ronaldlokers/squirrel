@@ -5,8 +5,10 @@ import "net/http"
 var theBays = map[string]string{
 	"notes":  "/?bay=notes",
 	"chores": "/?bay=daily",
-	"at":     "/?bay=agenda",
-	"tasks":  "/?bay=tasks",
+	// The agenda stopped being a door on 9 September 2026 and became the
+	// sidebar's lower half, which is on the board itself.
+	"at":    "/",
+	"tasks": "/?bay=tasks",
 }
 
 var placesGone = map[string]string{

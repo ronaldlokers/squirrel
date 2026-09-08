@@ -49,11 +49,15 @@ func (m *realMux) call(t *testing.T, method, target string, body io.Reader) *htt
 	return w
 }
 
-func aMoment(in time.Duration, bring string) *squirrel.Moment {
-	return &squirrel.Moment{
+func aMoment(in time.Duration, bring ...string) *squirrel.Moment {
+	m := &squirrel.Moment{
 		ID: 4, Label: "dentist", Starts: now().Add(in),
-		Travel: 15 * time.Minute, Ready: 10 * time.Minute, Bring: bring,
+		Travel: 15 * time.Minute, Ready: 10 * time.Minute,
 	}
+	if len(bring) > 0 {
+		m.Bring = bring[0]
+	}
+	return m
 }
 
 func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
@@ -61,7 +65,7 @@ func TestWhatIsComingListsTheSoonestFirst(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	body := mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
 	require.Less(t, strings.Index(body, "dentist"), strings.Index(body, "school run"))
 }
@@ -71,51 +75,55 @@ func TestWhatIsComingCountsWhatIsAheadAndScoldsNobody(t *testing.T) {
 		{ID: 4, Label: "dentist", Starts: now().Add(2 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 		{ID: 5, Label: "school run", Starts: now().Add(30 * time.Hour), Travel: 15 * time.Minute, Ready: 10 * time.Minute},
 	}}
-	drawn := strings.ToLower(mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String())
+	drawn := strings.ToLower(mounted(t, f).call(t, "GET", "/", nil).Body.String())
 
-	require.Contains(t, drawn, `the agenda <span class="n">2</span>`)
+	require.Contains(t, drawn, `what is coming <span class="n">2</span>`)
 	for _, banned := range []string{"late", "overdue", "you have", "behind"} {
 		require.NotContains(t, drawn, banned)
 	}
 }
 
 func TestNothingComingIsAnAbsenceAndNotAnEncouragement(t *testing.T) {
-	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/?bay=agenda", nil).Body.String())
+	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String())
 
-	require.Contains(t, body, "the agenda")
-	require.NotContains(t, body, `the agenda <span class="n">`)
+	require.Contains(t, body, "nothing in the diary")
+	require.NotContains(t, body, `what is coming <span class="n">`)
 	for _, banned := range []string{"plan", "nothing coming", "all clear"} {
 		require.NotContains(t, body, banned)
 	}
 }
 
-func TestTheAgendaRackDrawsWhatIsComing(t *testing.T) {
+// A fixed point is the one real deadline this product holds, so its time is
+// set as a printed figure rather than as a mark in the corner of a strip.
+func TestTheSidebarDrawsWhatIsComing(t *testing.T) {
 	m := aMoment(3*time.Hour, "keys, wallet")
-	f := withUpcoming(*m)
-
-	shown := mounted(t, f).call(t, "GET", "/?bay=agenda", nil).Body.String()
+	shown := mounted(t, withUpcoming(*m)).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, shown, "dentist")
-	require.Contains(t, shown, `class="strip h-agenda`, "it is not drawn as an appointment")
-	require.Contains(t, shown, markOfMoment(*m, now()), "the strip does not say when")
+	require.Contains(t, shown, `class="attime`, "the time is not set as a figure")
+	require.Contains(t, shown, m.Starts.Format("15:04"), "it does not say when")
 }
 
-func TestLeavingIsAbsentOutsideTheWindow(t *testing.T) {
-	far := withUpcoming(*aMoment(3*time.Hour, ""))
-	farShown := mounted(t, far).call(t, "GET", "/?bay=agenda", nil).Body.String()
-	require.NotContains(t, farShown, "leaving")
+// Inside the window where leaving matters, and only then, it comes out of the
+// list and sits above the dial. It leaves the list when it does: a fixed point
+// drawn twice in one column is the duplication the picker was cured of.
+func TestOnlyWhatIsInsideItsWindowIsHoisted(t *testing.T) {
+	far := mounted(t, withUpcoming(*aMoment(3*time.Hour, ""))).call(t, "GET", "/", nil).Body.String()
+	require.NotContains(t, far, `class="hoist"`)
 
-	near := withUpcoming(*aMoment(20*time.Minute, ""))
-	nearShown := mounted(t, near).call(t, "GET", "/?bay=agenda", nil).Body.String()
-	require.Contains(t, nearShown, "leaving")
-	require.Contains(t, nearShown, "leave "+near.upcoming[0].LeaveAt().Format("15:04"))
+	near := withUpcoming(*aMoment(20 * time.Minute))
+	shown := mounted(t, near).call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, shown, `class="hoist"`, "the world is calling and the column did not move")
+	require.Contains(t, shown, "leave "+near.upcoming[0].LeaveAt().Format("15:04"))
+	require.Equal(t, 1, strings.Count(shown, `class="atlabel">dentist`),
+		"the same appointment is drawn twice in one column")
 }
 
-func TestAnEmptyAgendaSaysSoWithoutEncouraging(t *testing.T) {
-	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/?bay=agenda", nil).Body.String())
+func TestAnEmptyDiarySaysSoWithoutEncouraging(t *testing.T) {
+	body := strings.ToLower(mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String())
 
-	require.Contains(t, body, "the agenda")
-	require.NotContains(t, body, `the agenda <span class="n">`, "a sign counted what is not there")
+	require.Contains(t, body, "nothing in the diary")
+	require.NotContains(t, body, `what is coming <span class="n">`, "a sign counted what is not there")
 	for _, nag := range []string{"why not", "get started", "add your first"} {
 		require.NotContains(t, body, nag)
 	}
@@ -125,16 +133,16 @@ func withUpcoming(ms ...squirrel.Moment) *fakeStore {
 	return &fakeStore{upcoming: ms}
 }
 
-func TestTheNotificationsURLLandsOnTheAgenda(t *testing.T) {
+func TestTheNotificationsURLLandsOnTheBoard(t *testing.T) {
 	w := routed(t, withMoment(aMoment(20*time.Minute, "keys, wallet"))).call(t, "GET", "/at/4", nil)
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/?bay=agenda", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 }
 
-func TestANotificationForAnythingLandsOnTheAgenda(t *testing.T) {
+func TestANotificationForAnythingLandsOnTheBoard(t *testing.T) {
 	w := routed(t, &fakeStore{}).call(t, "GET", "/at/99", nil)
 
 	require.Equal(t, 303, w.Code)
-	require.Equal(t, "/?bay=agenda", w.Header().Get("Location"))
+	require.Equal(t, "/", w.Header().Get("Location"))
 }

@@ -336,6 +336,7 @@
 </main>
 
 {{if .Racks}}
+<div class="writers">
 <form class="newchore blankstrip" method="post" action="/board/new">
   <input type="hidden" name="bay" value="daily">
   <p class="strip blank">
@@ -355,6 +356,30 @@
   </p>
   {{if .Rhythm}}<p class="asked">how often does it come back?</p>{{end}}
 </form>
+<form class="newmoment blankstrip" method="post" action="/board/new">
+  <input type="hidden" name="bay" value="agenda">
+  <p class="strip blank asit">
+    <span class="holder"></span>
+    <span class="said">
+      <input class="words" name="words" value="{{.When}}" placeholder="at 14:30 dentist" autocomplete="off" enterkeyhint="done"{{if .When}} autofocus{{end}}>
+      <span class="when">
+        <span class="dm">
+          <input class="count dd" name="dd" type="text" inputmode="numeric" maxlength="2" pattern="[0-3][0-9]" placeholder="05" aria-label="the day of the month">
+          <span class="slash">/</span>
+          <input class="count mo" name="mo" type="text" inputmode="numeric" maxlength="2" pattern="[0-1][0-9]" placeholder="09" aria-label="the month">
+        </span>
+        <span class="hm">
+          <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
+          <span class="colon">:</span>
+          <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
+        </span>
+      </span>
+    </span>
+    <button class="newmark" aria-label="keep it">+</button>
+  </p>
+  {{if .When}}<p class="asked">when is it?</p>{{end}}
+</form>
+</div>
 {{end}}
 
 {{if .Bays}}
@@ -462,8 +487,10 @@
      is what the ask line is, and it appears only when the last answer has
      stopped describing now. */}}
 {{define "moodside"}}
-{{with .Dial}}
 <aside class="dial">
+{{template "hoisted" .}}
+{{with .Dial}}
+<div class="dialbody">
   <div class="ring">
     <svg viewBox="0 0 120 120" aria-hidden="true">
       {{range .Ring}}
@@ -492,6 +519,47 @@
     {{end}}
   </form>
   <a class="record" href="/me">the whole record</a>
+</div>
+{{end}}
+{{template "coming" .}}
 </aside>
 {{end}}
+
+{{/* What is coming: every fixed point still ahead, soonest first. The time is
+     the one real deadline this product holds and is set as a printed figure;
+     the leave-by under it is arithmetic about a distance and stays quiet.
+
+     One inside its leave-by window is lifted out of the list and above the
+     dial, on the same rule the picker's first rule uses. It leaves the list
+     when it does — a fixed point shown twice in one column is the duplication
+     the picker was cured of. */}}
+{{define "coming"}}
+{{with .Coming}}
+<div class="coming">
+  <p class="comingsign">what is coming{{if .Count}} <span class="n">{{.Count}}</span>{{end}}</p>
+  {{if .Trouble}}<p class="trouble">cannot reach what is coming &mdash; nothing is lost. Try again in a moment.</p>{{end}}
+  {{if and (not .Appts) (not .Hoisted) (not .Trouble)}}<p class="nothing">nothing in the diary</p>{{end}}
+  <div class="comingroll">
+    {{range .Appts}}
+    <div class="appt">
+      <p class="attime{{if .Big}} big{{end}}">{{.Time}}</p>
+      <p class="atlabel">{{.Label}}</p>
+      {{if .Day}}<p class="atday">{{.Day}}</p>{{end}}
+      {{if .LeaveBy}}<p class="leaveby">{{.LeaveBy}}</p>{{end}}
+    </div>
+    {{end}}
+  </div>
+  {{if .More}}<p class="further">there is more further back</p>{{end}}
+</div>
+{{end}}
+{{end}}
+
+{{define "hoisted"}}
+{{with .Coming}}{{with .Hoisted}}
+<div class="hoist">
+  <p class="attime big">{{.Time}}</p>
+  <p class="atlabel">{{.Label}}</p>
+  {{if .LeaveBy}}<p class="leaveby">{{.LeaveBy}}</p>{{end}}
+</div>
+{{end}}{{end}}
 {{end}}
