@@ -77,6 +77,26 @@ func TestSquirrelSaysWhyAThingIsWhereItIs(t *testing.T) {
 		"the order cannot be read, so it is a ranking rather than a reason")
 }
 
+func TestEveryRowInARackCanSayWhyItIsThere(t *testing.T) {
+	chores := []squirrel.Chore{
+		chore(1, "bins out", 7, 7, true),
+		chore(2, "water the plants", 7, 2, true),
+		chore(3, "descale the kettle", 90, 0, false),
+		chore(4, "wipe the sills", 30, 40, true),
+	}
+	racks := squirrel.RacksOf(chores, map[int64]squirrel.Usually{}, sundayMorning, false)
+
+	rows := 0
+	for _, rack := range racks {
+		for _, s := range rack.Waiting {
+			rows++
+			require.NotEmpty(t, s.Because,
+				"%q sits somewhere in the %s rack and cannot say why", s.Chore.Name, rack.Rhythm)
+		}
+	}
+	require.Equal(t, len(chores), rows, "a chore went missing between the store and the racks")
+}
+
 func TestAChoreNeverDoneIsNotTreatedAsOverdue(t *testing.T) {
 	chores := []squirrel.Chore{
 		chore(1, "never done, long past its interval", 7, 400, false),
