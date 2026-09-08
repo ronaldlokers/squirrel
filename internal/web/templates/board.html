@@ -315,12 +315,16 @@
 <main class="racks">
   {{range $rack := .Racks}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
-    <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
+    <h2 class="baysign">{{.Name}}{{if .Wants}} <span class="n">{{len .Wants}}</span>{{end}}</h2>
     <div class="channel">
       {{if .Trouble}}<p class="trouble">cannot reach the chores — nothing is lost. Try again in a moment.</p>{{end}}
       {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
       <div class="strips">
-        {{range .Strips}}
+        {{range .Wants}}
+        {{template "strip" dict "Strip" . "Bay" $rack.Key}}
+        {{end}}
+        {{if and .Wants .Rest}}<p class="seam"><span class="what">the rest of the rack</span></p>{{end}}
+        {{range .Rest}}
         {{template "strip" dict "Strip" . "Bay" $rack.Key}}
         {{end}}
       </div>

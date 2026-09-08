@@ -882,3 +882,60 @@ func TestTheDialNeverDrawsMoreThanTheWeek(t *testing.T) {
 	require.Equal(t, 7, strings.Count(dial, "<circle"))
 	require.NotContains(t, dial, `class="mlow"`, "the dial reached back past the week it draws")
 }
+
+// The seam, and what falls either side of it. Found by mutation: halving the
+// rack before marginalia ran left the template rendering rows nobody had
+// written the ask press onto, and every other test stayed green.
+func TestARackIsSplitAtWhatWantsYouToday(t *testing.T) {
+	f := aBoardStore()
+	f.chores = []squirrel.Chore{
+		{ID: 1, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7, EverDone: true},
+		{ID: 2, Name: "descale the kettle", Active: true, EveryDays: 7, SinceDays: 2, EverDone: true},
+	}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	rack := theRackIn(t, body, "bay=weekly")
+
+	asking := strings.Index(rack, "bins out")
+	seam := strings.Index(rack, `class="seam"`)
+	resting := strings.Index(rack, "descale the kettle")
+	require.Positive(t, asking)
+	require.Greater(t, seam, asking, "the seam is above the thing that is asking")
+	require.Greater(t, resting, seam, "a resting row is above the seam")
+
+	require.Contains(t, rack, `h-weekly answerable wants"`, "nothing in the rack is lifted")
+	require.NotContains(t, rack[resting:], "wants", "a resting row is dressed as one that is asking")
+}
+
+// A rack's sign counts what is asking, not what it holds. It is a count of
+// what wants you, which is the only kind this product allows.
+func TestARackSignCountsWhatIsAskingToday(t *testing.T) {
+	f := aBoardStore()
+	f.chores = []squirrel.Chore{
+		{ID: 1, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7, EverDone: true},
+		{ID: 2, Name: "descale the kettle", Active: true, EveryDays: 7, SinceDays: 2, EverDone: true},
+		{ID: 3, Name: "sort the recycling", Active: true, EveryDays: 7, SinceDays: 1, EverDone: true},
+	}
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=weekly")
+
+	require.Contains(t, rack, `weekly <span class="n">1</span>`,
+		"the sign is counting the rack rather than counting today")
+}
+
+// A resting row is its name and its rhythm. The reason and the usual time are
+// still true and still one press away; they are not on the row.
+func TestARestingRowCarriesItsNameAndItsRhythmAndNothingElse(t *testing.T) {
+	f := aBoardStore()
+	// Never done, so the ordering has a sentence for it — "you have not
+	// started this one yet" — and it is still ranked last, which is exactly
+	// the row that proves a resting row keeps its reason to itself.
+	f.chores = []squirrel.Chore{
+		{ID: 2, Name: "descale the kettle", Active: true, EveryDays: 14, SinceDays: 400},
+	}
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=weekly")
+
+	require.Contains(t, rack, "descale the kettle")
+	require.Contains(t, rack, "every 2 weeks")
+	require.NotContains(t, rack, "you have not started this one yet",
+		"a row nobody is being asked about is explaining itself anyway")
+	require.NotContains(t, rack, `class="why"`)
+}

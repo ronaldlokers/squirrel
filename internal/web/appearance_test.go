@@ -62,7 +62,7 @@ var appearanceScreens = map[string][]string{
 		".ops .rail", ".ops .rail .find", ".ops .chip.face", ".ops .chip.mood",
 		".baysign", ".baysign .n", ".channel",
 		".strip", ".strip .holder", ".strip .words", ".strip .what", ".strip .mark",
-		".strip .why", ".strip .usual",
+		".strip .why", ".strip.wants", ".rack .seam",
 		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
 		".blankstrip .inline", ".blankstrip .count", ".newchore",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",

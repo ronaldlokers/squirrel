@@ -257,3 +257,49 @@ func TestNowCrossesTheRacksRatherThanReadingThemInTurn(t *testing.T) {
 	require.Equal(t, "service the boiler", now[0].Chore.Name,
 		"a seldom thing whose day this is came second to a daily one, so the order is the rack rather than the rank")
 }
+
+func TestWhatWantsYouTodayIsTheSameCutTheNowTabUses(t *testing.T) {
+	usually := map[int64]squirrel.Usually{
+		1: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+		4: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+	}
+	chores := []squirrel.Chore{
+		chore(1, "bins out", 7, 7, true),
+		chore(2, "water the plants", 1, 1, true),
+		chore(3, "wipe the sills", 30, 4, true),
+		chore(4, "change the bed", 7, 2, true),
+		chore(5, "descale the kettle", 90, 0, false),
+	}
+	racks := squirrel.RacksOf(chores, usually, sundayMorning, false)
+
+	asking := []string{}
+	for _, rack := range racks {
+		for _, s := range rack.Waiting {
+			if s.WantsYouToday() {
+				asking = append(asking, s.Chore.Name)
+			}
+		}
+	}
+	wanted := []string{}
+	for _, s := range squirrel.Now(racks) {
+		wanted = append(wanted, s.Chore.Name)
+	}
+	require.ElementsMatch(t, wanted, asking,
+		"a thing is lifted on one screen and resting on the other, so the two disagree about today")
+	require.Len(t, asking, 3)
+}
+
+func TestNothingRestingIsAskingAndNothingAskingIsResting(t *testing.T) {
+	racks := squirrel.RacksOf(
+		[]squirrel.Chore{chore(1, "bins out", 7, 7, true), chore(2, "wipe the sills", 30, 4, true)},
+		map[int64]squirrel.Usually{}, sundayMorning, false)
+
+	for _, rack := range racks {
+		for _, s := range rack.Waiting {
+			if s.WantsYouToday() {
+				require.NotEmpty(t, s.Because,
+					"%q is lifted and cannot say why it is", s.Chore.Name)
+			}
+		}
+	}
+}

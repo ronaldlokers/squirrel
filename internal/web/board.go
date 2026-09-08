@@ -64,7 +64,13 @@ type rackView struct {
 	// you are behind on — it is the size of the part of your life the board
 	// has decided not to put in front of you today.
 	Resting int
-	Strips  []stripView
+	// Wants is what is asking for you today; Rest is the rest of the rack.
+	// Two lists rather than one list and a flag, because the seam between
+	// them is a thing the template draws, and a flag would make it guess
+	// where.
+	Wants  []stripView
+	Rest   []stripView
+	Strips []stripView
 }
 
 // dialView is how you have been, on the board rather than only on the page
@@ -132,10 +138,13 @@ type stripView struct {
 	// Rhythms is the four intervals, on the one note that was asked how often
 	// it comes back.
 	Rhythms []rhythmView
-	// Why is where this row is in its rack and what put it there. Usual is
-	// when you tend to do it, on the rows whose Why does not already say.
-	Why   string
-	Usual string
+	// Why is where this row is in its rack and what put it there, said on
+	// the rows that are asking and nowhere else.
+	Why string
+	// Wants says this row is asking for you today. What a resting row stops
+	// carrying is its reason and its usual time — both are still true, and
+	// both are one press away on the row itself.
+	Wants bool
 	// Due says its rhythm came round. A word on the row rather than a colour,
 	// because a colour is a thing you have to already know how to read.
 	Due      bool
@@ -553,10 +562,11 @@ func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bo
 	// The phone's first tab, built here rather than in the template: it is the
 	// same rows under the same rules, cut differently, and a cut the screen
 	// invented would be a fourth place the order could go wrong.
+	now := choreRows(squirrel.Now(racks))
 	out := []rackView{{
 		Key: "now", Name: "now",
-		Empty:  "nothing comes back today",
-		Strips: choreRows(squirrel.Now(racks)),
+		Empty: "nothing comes back today",
+		Wants: now, Strips: now,
 	}}
 	for _, rack := range racks {
 		out = append(out, rackView{
@@ -584,15 +594,13 @@ func choreRows(standing []squirrel.Standing) []stripView {
 		row := stripView{
 			ID: one.Chore.ID, What: "chore", Words: one.Chore.Name,
 			Mark: squirrel.Cadence(one.Chore.EveryDays), Answers: choreAnswers,
-			Why: one.Because, Due: one.Chore.EverDone && one.Chore.SinceDays >= one.Chore.EveryDays,
+			Why: one.Because, Wants: one.WantsYouToday(),
+			Due: one.Chore.EverDone && one.Chore.SinceDays >= one.Chore.EveryDays,
 		}
-		// One line under the name, never two. Where the ordering had something
-		// to say, it has said it; where it had nothing — a thing whose turn is
-		// simply not today — when you usually do it is what puts it in its
-		// place, and that is a fact about the thing rather than about you.
-		if row.Why == "" {
-			row.Usual = one.Usually.Words()
-		}
+		// No second line. Every rank that asks for you already carries a
+		// reason, and that reason names the usual time whenever the usual
+		// time is why the row is where it is. A separate line for it was
+		// saying the same thing twice under one name.
 		out = append(out, row)
 	}
 	return out
@@ -609,6 +617,18 @@ func doorOpened(in string, bays []bayView) *bayView {
 		}
 	}
 	return nil
+}
+
+// halved splits a rack in two. The order inside each half is the order
+// rhythm.go gave it, which is the whole reason that file exists.
+func halved(rows []stripView, want bool) []stripView {
+	out := []stripView{}
+	for _, row := range rows {
+		if row.Wants == want {
+			out = append(out, row)
+		}
+	}
+	return out
 }
 
 // standingIn lights the rack the phone is standing in. Same shape as baysIn
@@ -1573,6 +1593,11 @@ func marginalia(r *http.Request, opts Options, seen map[string]squirrel.Noticed,
 	for i := range racks {
 		rows := askable(racks[i].Strips, "chores", askOn)
 		racks[i].Strips = answered(marked(marked(rows, "chore", seen), "ask:chore", seen), justAsked)
+		// Split last. Marginalia writes onto the rows, and halving before it
+		// leaves the template rendering copies nobody wrote to — which is
+		// how the chores lost their ask press the first time.
+		racks[i].Wants = halved(racks[i].Strips, true)
+		racks[i].Rest = halved(racks[i].Strips, false)
 	}
 	return racks
 }
