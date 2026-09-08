@@ -5,6 +5,8 @@
   <div class="words">
     <p class="what">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}</p>
     {{if .State}}<p class="state">{{.State}}</p>{{end}}
+    {{if .Why}}<p class="why">{{.Why}}</p>{{end}}
+    {{if .Usual}}<p class="usual">{{.Usual}}</p>{{end}}
     {{if .Seen}}
     <div class="seen"{{if .Answered}} id="justanswered" tabindex="-1"{{end}}>{{.Seen}}
       <form method="post" action="/board/notuseful">

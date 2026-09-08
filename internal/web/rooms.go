@@ -4,7 +4,7 @@ import "net/http"
 
 var theBays = map[string]string{
 	"notes":  "/?bay=notes",
-	"chores": "/?bay=chores",
+	"chores": "/?bay=daily",
 	"at":     "/?bay=agenda",
 	"tasks":  "/?bay=tasks",
 }

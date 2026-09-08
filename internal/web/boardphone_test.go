@@ -31,11 +31,11 @@ func TestBrowserThePhoneShowsOneBayAtATime(t *testing.T) {
 	require.Equal(t, float64(1), c.eval(t, `return [...document.querySelectorAll(".rack")]
 		.filter(r => getComputedStyle(r).display !== "none").length`),
 		"more than one rack is on the phone at once")
-	require.Equal(t, "notes", c.eval(t, `return [...document.querySelectorAll(".rack")]
+	require.Equal(t, "now", c.eval(t, `return [...document.querySelectorAll(".rack")]
 		.find(r => getComputedStyle(r).display !== "none").dataset.bay`))
 
-	c.navigate(t, srv.URL+"/?bay=chores")
-	require.Equal(t, "chores", c.eval(t, `return [...document.querySelectorAll(".rack")]
+	c.navigate(t, srv.URL+"/?bay=weekly")
+	require.Equal(t, "weekly", c.eval(t, `return [...document.querySelectorAll(".rack")]
 		.find(r => getComputedStyle(r).display !== "none").dataset.bay`),
 		"the tab did not change which rack is on screen")
 }
@@ -50,8 +50,11 @@ func TestBrowserTheDeskShowsEveryBay(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	require.Equal(t, float64(4), c.eval(t, `return [...document.querySelectorAll(".rack")]
-		.filter(r => getComputedStyle(r).display !== "none").length`))
+	require.Equal(t, float64(3), c.eval(t, `return [...document.querySelectorAll(".rack")]
+		.filter(r => getComputedStyle(r).display !== "none").length`),
+		"the desk draws a rack it has no use for, or is missing one")
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector('.rack[data-bay="now"]')).display`),
+		"now is a cut across the three, and the desk is showing all three")
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).display`))
 }
 
@@ -98,14 +101,14 @@ func TestBrowserAKeycapIsNotDrawnWhereThereIsNoKeyboard(t *testing.T) {
 		{ID: 7, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7},
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=chores")
+	c := browserAt(t, srv, "/?bay=weekly")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
 		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
 	})
 
 	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": true, "maxTouchPoints": 1})
 	c.send(t, "Emulation.setEmitTouchEventsForMouse", map[string]any{"enabled": true, "configuration": "mobile"})
-	c.navigate(t, srv.URL+"/?bay=chores")
+	c.navigate(t, srv.URL+"/?bay=weekly")
 	require.True(t, c.eval(t, `return matchMedia("(hover: none) and (pointer: coarse)").matches`).(bool),
 		"the browser is not pretending to be a touch screen, so this measured nothing")
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".stamp .k")).display`),
@@ -113,7 +116,7 @@ func TestBrowserAKeycapIsNotDrawnWhereThereIsNoKeyboard(t *testing.T) {
 
 	c.send(t, "Emulation.setTouchEmulationEnabled", map[string]any{"enabled": false})
 	c.send(t, "Emulation.setEmitTouchEventsForMouse", map[string]any{"enabled": false})
-	c.navigate(t, srv.URL+"/?bay=chores")
+	c.navigate(t, srv.URL+"/?bay=weekly")
 	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".stamp .k")).display`),
 		"the key is gone where there is a keyboard to press it")
 }
@@ -134,4 +137,38 @@ func TestBrowserTheLitRackReachesTheFootOfTheScreen(t *testing.T) {
 	under := c.eval(t, `return document.querySelector(".racks").getBoundingClientRect().bottom`)
 	require.Greater(t, foot.(float64), under.(float64)-24,
 		"the rack stops short and the rest of the racks area is nothing")
+}
+
+// The resting count only draws on a wiped or frazzled day, which no other
+// screen in the appearance record is, so it is pinned here instead: it exists,
+// it is quieter than the rows above it, and it never reads as a backlog.
+func TestBrowserTheRestingCountIsDrawnAndIsQuiet(t *testing.T) {
+	f := &fakeStore{
+		checkin:  &squirrel.Checkin{Mood: squirrel.MoodWiped, SaidAt: time.Now()},
+		capacity: squirrel.CapacityLow,
+		chores: []squirrel.Chore{
+			{ID: 1, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7, EverDone: true},
+			{ID: 2, Name: "water the plants", Active: true, EveryDays: 7, SinceDays: 2, EverDone: true},
+			{ID: 3, Name: "wipe the sills", Active: true, EveryDays: 7, SinceDays: 1, EverDone: true},
+		},
+	}
+	srv := screen(t, f)
+	c := browserAt(t, srv, "/")
+	c.navigate(t, srv.URL+"/")
+
+	c.until(t, "the board", `!!document.querySelector(".rack")`)
+	require.NotNil(t, c.eval(t, `return document.querySelector(".resting")`),
+		"a wiped day asked as much of you as any other")
+	require.Equal(t, "2 more further into the week",
+		c.eval(t, `return document.querySelector(".resting").textContent.trim()`))
+	require.Equal(t, "12px", c.eval(t, `return getComputedStyle(document.querySelector(".resting")).fontSize`),
+		"the count is drawn at the rows' own weight, so it reads as one of them")
+	require.NotEqual(t, c.eval(t, `return getComputedStyle(document.querySelector(".strip .what")).color`),
+		c.eval(t, `return getComputedStyle(document.querySelector(".resting")).color`),
+		"the count is as loud as a thing you could act on")
+
+	for _, backlog := range []string{"outstanding", "left", "still", "waiting", "behind", "overdue"} {
+		require.NotContains(t, c.eval(t, `return document.querySelector(".resting").textContent`), backlog,
+			"the count reads as a backlog")
+	}
 }

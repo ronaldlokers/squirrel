@@ -48,14 +48,23 @@ func blankStripIn(t *testing.T, page, bay string) string {
 	return rack[from : from+to]
 }
 
+// The chores have one writer between the three racks, under all of them: the
+// rack a chore lands in is what its interval says.
+func theChoreWriter(t *testing.T, page string) string {
+	t.Helper()
+	from := strings.Index(page, `<form class="newchore`)
+	require.GreaterOrEqual(t, from, 0, "the board has nowhere to put a chore")
+	to := strings.Index(page[from:], "</form>")
+	require.GreaterOrEqual(t, to, 0, "the chore writer does not close")
+	return page[from : from+to]
+}
+
 func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 	f := aBoardStore()
 	sp := &fakeSpool{}
 	m := mountedSpooling(t, f, sp)
 
-	form := blankStripIn(t, m.call(t, "GET", "/?bay=chores", nil).Body.String(), "bay=chores")
-	sent := whatTheBrowserWouldSend(form)
-	require.Equal(t, "chores", sent.Get("bay"), "the blank strip does not say which rack it is")
+	sent := whatTheBrowserWouldSend(theChoreWriter(t, m.call(t, "GET", "/", nil).Body.String()))
 	sent.Set("words", "defrost the freezer")
 
 	res := m.call(t, "POST", "/board/new", strings.NewReader(sent.Encode()))
@@ -63,12 +72,12 @@ func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 	require.Empty(t, f.reinterval.name, "the screen guessed a rhythm nobody typed")
 	require.Empty(t, sp.written)
 	require.Equal(t, 303, res.Code)
-	require.Equal(t, "/?bay=chores&rhythm=defrost+the+freezer", res.Header().Get("Location"),
+	require.Equal(t, "/?bay=daily&rhythm=defrost+the+freezer", res.Header().Get("Location"),
 		"the words were not carried back to the question")
 }
 
 func TestTheRhythmCountShowsSevenWithoutSendingIt(t *testing.T) {
-	form := blankStripIn(t, mounted(t, aBoardStore()).call(t, "GET", "/?bay=chores", nil).Body.String(), "bay=chores")
+	form := theChoreWriter(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String())
 
 	require.Contains(t, form, `placeholder="7"`)
 	require.Empty(t, whatTheBrowserWouldSend(form).Get("every"), "the count sends a rhythm on its own")

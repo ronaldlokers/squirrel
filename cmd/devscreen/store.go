@@ -67,17 +67,33 @@ func (store) Tasks(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool
 
 func chores() []squirrel.Chore {
 	return []squirrel.Chore{
-		{ID: 1, Name: "water the plants", Every: 7 * 24 * time.Hour, EveryDays: 7,
+		{ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour, EveryDays: 7,
 			SinceDays: 8, Active: true, EverDone: true},
 		{ID: 2, Name: "sort the recycling", Every: 7 * 24 * time.Hour, EveryDays: 7,
-			SinceDays: 9, Active: true, EverDone: true},
-		{ID: 3, Name: "descale the kettle", Every: 14 * 24 * time.Hour, EveryDays: 14,
 			SinceDays: 3, Active: true, EverDone: true},
+		{ID: 3, Name: "water the plants", Every: 24 * time.Hour, EveryDays: 1,
+			SinceDays: 1, Active: true, EverDone: true},
+		{ID: 4, Name: "wipe the counters", Every: 2 * 24 * time.Hour, EveryDays: 2,
+			SinceDays: 0, Active: true, EverDone: true},
+		{ID: 5, Name: "descale the kettle", Every: 14 * 24 * time.Hour, EveryDays: 14,
+			SinceDays: 3, Active: true, EverDone: true},
+		{ID: 6, Name: "service the boiler", Every: 365 * 24 * time.Hour, EveryDays: 365,
+			SinceDays: 400, Active: true, EverDone: true},
+		{ID: 7, Name: "clear the gutters", Every: 90 * 24 * time.Hour, EveryDays: 90,
+			SinceDays: 0, Active: true, EverDone: false},
 	}
 }
 
 func (store) ActiveChores(_ context.Context, _ int64) ([]squirrel.Chore, error) {
 	return chores(), nil
+}
+
+func (store) WhenYouUsuallyDo(_ context.Context, _ int64) (map[int64]squirrel.Usually, error) {
+	return map[int64]squirrel.Usually{
+		1: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
+		3: {Part: squirrel.Morning},
+		4: {Weekday: time.Saturday, OnADay: true, Part: squirrel.Afternoon},
+	}, nil
 }
 
 func (store) DueChores(_ context.Context, _ int64, _ time.Time) ([]squirrel.Chore, error) {
@@ -217,8 +233,19 @@ func (store) SetItemKind(_ context.Context, _, _ int64, _ squirrel.ItemKind) (bo
 func (store) RecordCheckin(_ context.Context, _ int64, _ squirrel.Mood, _ string, _ time.Time) error {
 	return nil
 }
+
+// A week with gaps in it, because the gaps are what the dial has to draw
+// legibly and an unbroken run of readings is the easy case.
 func (store) CheckinsSince(_ context.Context, _ int64, _ time.Time) ([]squirrel.Checkin, error) {
-	return nil, nil
+	at := now()
+	return []squirrel.Checkin{
+		{Mood: squirrel.MoodGood, SaidAt: at},
+		{Mood: squirrel.MoodFrazzled, SaidAt: at.AddDate(0, 0, -1)},
+		{Mood: squirrel.MoodCalm, SaidAt: at.AddDate(0, 0, -2)},
+		{Mood: squirrel.MoodLow, SaidAt: at.AddDate(0, 0, -4)},
+		{Mood: squirrel.MoodWiped, SaidAt: at.AddDate(0, 0, -5)},
+		{Mood: squirrel.MoodCalm, SaidAt: at.AddDate(0, 0, -6)},
+	}, nil
 }
 func (store) HoldItem(_ context.Context, _, _ int64, _ squirrel.ItemState, _ string, _ time.Time) (bool, error) {
 	return false, nil
@@ -230,9 +257,14 @@ func (store) GoneQuiet(_ context.Context, _ int64, _ time.Time) (squirrel.HeldIt
 func (store) StillHolding(_ context.Context, _, _ int64, _ time.Time) (bool, error) {
 	return false, nil
 }
+
+// Not a chore. The picker stopped offering those when the racks took them,
+// and a dev screen showing the top of a rack twice would be showing a board
+// nobody will ever get.
 func (store) PickNow(_ context.Context, _ int64, _ time.Time, _ bool) (squirrel.Offer, bool, error) {
 	return squirrel.Offer{
-		Kind: squirrel.OfferChore, RefID: 1, Text: "bins out", Because: "it is bin day",
+		Kind: squirrel.OfferTask, RefID: 5, Text: "ring the vet about the booster",
+		Because: "you decided this on Friday",
 	}, true, nil
 }
 func (store) Did(_ context.Context, _ int64, _ squirrel.Offer, _ time.Time) error { return nil }

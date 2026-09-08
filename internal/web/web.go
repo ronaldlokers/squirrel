@@ -194,6 +194,7 @@ type Store interface {
 	// functions, but it is the other thing this pile holds and the screen was
 	// the only surface that could not see it.
 	ActiveChores(ctx context.Context, personID int64) ([]squirrel.Chore, error)
+	WhenYouUsuallyDo(ctx context.Context, personID int64) (map[int64]squirrel.Usually, error)
 	SearchChores(ctx context.Context, personID int64, query string, limit int) ([]squirrel.Chore, error)
 	UpsertChore(ctx context.Context, personID int64, name string, every, tolerance time.Duration) (squirrel.Chore, error)
 	UpsertChoreAsking(ctx context.Context, personID int64, name string, every, tolerance time.Duration, ask squirrel.Asking) (squirrel.Chore, error)

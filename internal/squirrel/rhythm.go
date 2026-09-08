@@ -138,7 +138,12 @@ func rankOf(c Chore, u Usually, at time.Time) (int, string) {
 	case today:
 		return 4, "not yet, but this is the day you usually do it"
 	default:
-		return 5, choreBecause(c)
+		// Nothing to say. Not "last done a week ago" — the rack has refused
+		// to print that since it was built, because how long a thing has been
+		// waiting is a fact about you and its rhythm is a fact about it. What
+		// a row here carries instead is when you usually do it, which the
+		// screen draws from Usually.
+		return 5, ""
 	}
 }
 
@@ -214,4 +219,30 @@ func (s *Store) WhenYouUsuallyDo(ctx context.Context, personID int64) (map[int64
 		}
 	}
 	return out, nil
+}
+
+// Whichever rack they sit in, these are the ones with something to say for
+// themselves today: it comes back today, or today is the day you usually do
+// it. Rank 5 and 6 are the rest of your life and are not that.
+const standingNow = 4
+
+// Now is the racks flattened back into one order, for a screen too small to
+// show three of them. Same ranks, same reasons, so the phone and the desk
+// cannot disagree about what is in front of you.
+func Now(racks []Rack) []Standing {
+	out := []Standing{}
+	for _, rack := range racks {
+		for _, s := range rack.Waiting {
+			if s.rank <= standingNow {
+				out = append(out, s)
+			}
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].rank != out[j].rank {
+			return out[i].rank < out[j].rank
+		}
+		return overdueBy(out[i].Chore) > overdueBy(out[j].Chore)
+	})
+	return out
 }

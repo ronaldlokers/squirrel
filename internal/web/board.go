@@ -34,7 +34,11 @@ type boardView struct {
 	Timer          *timerView
 	Ramp           *rampView
 	Bays           []bayView
-	Faces          []faceView
+	Door           *bayView
+	Moodful        bool
+	Racks          []rackView
+	Rhythm         string
+	Dial           *dialView
 	Told           []toldView
 	Telling        bool
 	AnyTold        bool
@@ -45,6 +49,38 @@ type toldView struct {
 	Title string
 	Body  string
 	Mark  string
+}
+
+// rackView is one of the three racks the chores are cut into. It is not a
+// bayView: a rack holds one kind of thing, is never written into, and carries
+// a count of what it is deliberately not showing.
+type rackView struct {
+	Key     string
+	Name    string
+	In      bool
+	Trouble bool
+	Empty   string
+	// Resting is what a quiet day is holding back. Never a number of things
+	// you are behind on — it is the size of the part of your life the board
+	// has decided not to put in front of you today.
+	Resting int
+	Strips  []stripView
+}
+
+// dialView is how you have been, on the board rather than only on the page
+// about you: today's face, and the seven days behind it.
+type dialView struct {
+	Mood string
+	Word string
+	Said bool
+	Days []moodCellView
+	Ring []ringSegView
+	// Faces is the five, always. Asking is whether Squirrel wants an answer,
+	// which is a separate thing from whether you may give one — the faces used
+	// to appear only when it did, so saying how you were was something you had
+	// to wait to be asked for.
+	Faces  []faceView
+	Asking bool
 }
 
 type bayView struct {
@@ -95,7 +131,14 @@ type stripView struct {
 	Photo bool
 	// Rhythms is the four intervals, on the one note that was asked how often
 	// it comes back.
-	Rhythms  []rhythmView
+	Rhythms []rhythmView
+	// Why is where this row is in its rack and what put it there. Usual is
+	// when you tend to do it, on the rows whose Why does not already say.
+	Why   string
+	Usual string
+	// Due says its rhythm came round. A word on the row rather than a colour,
+	// because a colour is a thing you have to already know how to read.
+	Due      bool
 	ID       int64
 	What     string
 	Words    string
@@ -163,7 +206,13 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Now:            at.Format("15:04"),
 			Day:            at.Format("Monday 2 January"),
 			Telling:        r.URL.Query().Get("told") == "1",
+			Rhythm:         strings.TrimSpace(r.URL.Query().Get("rhythm")),
 		}
+		// The same gate the picker reads, and CapacityLow is wiped or
+		// frazzled rather than the mood called low — capacity.go says why.
+		// On such a day the racks show what comes back today and count the
+		// rest.
+		quiet := s.Capacity(r.Context(), personID, at) == squirrel.CapacityLow
 		deep := 1
 		if v.Telling {
 			deep = boardDeep
@@ -178,13 +227,19 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Timer = runningTimer(s, opts, r); return nil })
 		g.Go(func() error { v.Ramp = rampFor(s, r, personID, at); return nil })
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
-		g.Go(func() error { v.Faces = facesIfItIsTime(r, s, personID, at); return nil })
+		g.Go(func() error { v.Dial = howYouAre(r, s, personID, at); return nil })
+		var racksOK bool
+		g.Go(func() error { v.Racks, racksOK = choreRacks(r, s, personID, at, quiet); return nil })
 		bays := fetchBays(&g, r, s, personID, at)
 		g.Go(func() error { v.You = youFor(r.Context(), s, personID); return nil })
 		g.Go(func() error { v.Told = whatWasSaid(r, s, personID, at, deep); return nil })
 		_ = g.Wait()
 
-		v.Bays = baysIn(in, oneBayOnly(r, bays.assemble(r, opts, asking)))
+		v.Racks = marginalia(r, opts, bays.seen, troubled(v.Racks, racksOK))
+		v.Bays, v.Racks = onlyOne(r, bays.assemble(r, opts, asking), v.Racks)
+		v.Door = doorOpened(in, v.Bays)
+		v.Moodful = in == "mood" && v.Dial != nil
+		v.Racks = standingIn(in, v.Racks)
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
@@ -326,14 +381,13 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 }
 
 type bayFetch struct {
-	seen                 map[string]squirrel.Noticed
-	settled              []settledView
-	notes, chores, tasks []stripView
-	agenda               []stripView
-	notesOK, moreNotes   bool
-	choresOK             bool
-	tasksOK, moreTasks   bool
-	agendaOK             bool
+	seen               map[string]squirrel.Noticed
+	settled            []settledView
+	notes, tasks       []stripView
+	agenda             []stripView
+	notesOK, moreNotes bool
+	tasksOK, moreTasks bool
+	agendaOK           bool
 }
 
 func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at time.Time) *bayFetch {
@@ -343,14 +397,12 @@ func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at t
 		g.Go(func() error { f.settled = whatIsSettled(r, s, personID, at); return nil })
 	}
 	g.Go(func() error { f.notes, f.notesOK, f.moreNotes = noteStrips(r, s, personID, at); return nil })
-	g.Go(func() error { f.chores, f.choresOK = choreStrips(r, s, personID); return nil })
 	g.Go(func() error { f.tasks, f.tasksOK, f.moreTasks = taskStrips(r, s, personID, at); return nil })
 	g.Go(func() error { f.agenda, f.agendaOK = agendaStrips(r, s, personID, at); return nil })
 	return f
 }
 
 func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayView {
-	rhythmFor := strings.TrimSpace(r.URL.Query().Get("rhythm"))
 	whenFor := strings.TrimSpace(r.URL.Query().Get("when"))
 	refused := r.URL.Query().Has("nophoto")
 	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
@@ -361,8 +413,6 @@ func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayVi
 	notes := marked(f.notes, "note", f.seen)
 	notes = askable(notes, "notes", askOn)
 	notes = answered(marked(notes, "ask:note", f.seen), justAsked)
-	chores := askable(f.chores, "chores", askOn)
-	chores = answered(marked(chores, "ask:chore", f.seen), justAsked)
 	tasks := askable(f.tasks, "tasks", askOn)
 	tasks = answered(marked(tasks, "ask:task", f.seen), justAsked)
 	agenda := askable(f.agenda, "at", askOn)
@@ -372,10 +422,6 @@ func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayVi
 			Camera: opts.Photos != nil, Trouble: !f.notesOK, More: f.moreNotes,
 			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
 			Asking: saidAnyway, Refused: refused, Offline: offline, Settled: f.settled},
-		{Key: "chores", Name: "the chores", Question: "what comes back?", Writes: true,
-			Rhythms: theRhythms, Trouble: !f.choresOK, Asking: rhythmFor,
-			Offline: offline,
-			Empty:   "nothing comes back today", Strips: chores},
 		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
 			Trouble: !f.tasksOK, More: f.moreTasks, Offline: offline,
 			Empty: "nothing in the tasks", Strips: tasks},
@@ -385,33 +431,49 @@ func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayVi
 	}
 }
 
-func oneBayOnly(r *http.Request, bays []bayView) []bayView {
-	if devDir == "" {
-		return bays
-	}
-	only := strings.TrimSpace(r.URL.Query().Get("only"))
-	if only == "" {
-		return bays
-	}
-	for _, bay := range bays {
-		if bay.Key == only {
-			return []bayView{bay}
-		}
-	}
-	return bays
-}
-
-var boardBayKeys = map[string]bool{"notes": true, "chores": true, "tasks": true, "agenda": true}
-
+// wantsBay is the same ?only= as onlyOne, asked early enough to skip a read
+// nothing is going to draw. Inert in a shipped binary.
 func wantsBay(r *http.Request, key string) bool {
 	if devDir == "" {
 		return true
 	}
 	only := strings.TrimSpace(r.URL.Query().Get("only"))
-	if only == "" || !boardBayKeys[only] {
+	if only == "" || !boardKeys[only] {
 		return true
 	}
 	return only == key
+}
+
+var boardKeys = map[string]bool{
+	"notes": true, "tasks": true, "agenda": true,
+	"now": true, "daily": true, "weekly": true, "seldom": true,
+}
+
+// onlyOne is the development board answering ?only= with a single region, so
+// an element can be picked without five others on the screen. It is inert in a
+// shipped binary, which is what the first test in onebay_test.go is for.
+//
+// Both lists at once, because a rack and a door are two shapes of the same
+// thing to whoever is pointing at one.
+func onlyOne(r *http.Request, bays []bayView, racks []rackView) ([]bayView, []rackView) {
+	if devDir == "" {
+		return bays, racks
+	}
+	only := strings.TrimSpace(r.URL.Query().Get("only"))
+	if only == "" {
+		return bays, racks
+	}
+	for _, bay := range bays {
+		if bay.Key == only {
+			return []bayView{bay}, nil
+		}
+	}
+	for _, rack := range racks {
+		if rack.Key == only {
+			return nil, []rackView{rack}
+		}
+	}
+	return bays, racks
 }
 
 // baysIn lights the rack you are standing in, which is only ever one and is the
@@ -465,20 +527,108 @@ func taskStrips(r *http.Request, s Store, personID int64, at time.Time) ([]strip
 	return out, true, more
 }
 
-func choreStrips(r *http.Request, s Store, personID int64) ([]stripView, bool) {
+// choreRacks is the whole of the chores, cut into three by how often they come
+// back and ordered inside each by the rules in rhythm.go.
+//
+// One read of the chores and one of when you usually do them, for all three
+// racks: a query per rack would be three times the work for the same rows, and
+// the racks are a cut of one list rather than three lists.
+func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bool) ([]rackView, bool) {
 	chores, err := s.ActiveChores(r.Context(), personID)
 	if err != nil {
 		slog.Error("reading the chores for the board", "error", err)
 		return nil, false
 	}
-	out := make([]stripView, 0, len(chores))
-	for _, c := range chores {
-		out = append(out, stripView{
-			ID: c.ID, What: "chore", Words: c.Name,
-			Mark: squirrel.Cadence(c.EveryDays), Answers: choreAnswers,
+	usually, err := s.WhenYouUsuallyDo(r.Context(), personID)
+	if err != nil {
+		// The racks are still the racks without it. What is lost is the line
+		// under each row saying when you tend to do the thing, and a rack that
+		// cannot say that is worth more than no rack at all.
+		slog.Error("reading when you usually do things", "error", err)
+		usually = nil
+	}
+
+	racks := squirrel.RacksOf(chores, usually, at, quiet)
+
+	// The phone's first tab, built here rather than in the template: it is the
+	// same rows under the same rules, cut differently, and a cut the screen
+	// invented would be a fourth place the order could go wrong.
+	out := []rackView{{
+		Key: "now", Name: "now",
+		Empty:  "nothing comes back today",
+		Strips: choreRows(squirrel.Now(racks)),
+	}}
+	for _, rack := range racks {
+		out = append(out, rackView{
+			Key: string(rack.Rhythm), Name: string(rack.Rhythm),
+			Empty: emptyRack[rack.Rhythm], Resting: rack.Resting,
+			Strips: choreRows(rack.Waiting),
 		})
 	}
 	return out, true
+}
+
+// emptyRack is what each rack says when it is holding nothing. Three sentences
+// rather than one, because "nothing here" three times down a screen reads as a
+// fault, and what is true of each is different: a rack with no daily chores in
+// it is a fact about your life rather than a gap in the day.
+var emptyRack = map[squirrel.Rhythm]string{
+	squirrel.Daily:  "nothing every day",
+	squirrel.Weekly: "nothing this often",
+	squirrel.Seldom: "nothing that comes back slowly",
+}
+
+func choreRows(standing []squirrel.Standing) []stripView {
+	out := make([]stripView, 0, len(standing))
+	for _, one := range standing {
+		row := stripView{
+			ID: one.Chore.ID, What: "chore", Words: one.Chore.Name,
+			Mark: squirrel.Cadence(one.Chore.EveryDays), Answers: choreAnswers,
+			Why: one.Because, Due: one.Chore.EverDone && one.Chore.SinceDays >= one.Chore.EveryDays,
+		}
+		// One line under the name, never two. Where the ordering had something
+		// to say, it has said it; where it had nothing — a thing whose turn is
+		// simply not today — when you usually do it is what puts it in its
+		// place, and that is a fact about the thing rather than about you.
+		if row.Why == "" {
+			row.Usual = one.Usually.Words()
+		}
+		out = append(out, row)
+	}
+	return out
+}
+
+// doorOpened is a door standing open, which takes the racks' place the way
+// search and the shelves do: the board has one place where things are, and
+// what is in a door is a list you came to read rather than something the
+// board is holding in front of you.
+func doorOpened(in string, bays []bayView) *bayView {
+	for i := range bays {
+		if bays[i].Key == in {
+			return &bays[i]
+		}
+	}
+	return nil
+}
+
+// standingIn lights the rack the phone is standing in. Same shape as baysIn
+// and for the same reason: one page, drawn whole on the desk and one rack at a
+// time on the phone, and no script deciding which.
+//
+// Nothing lit is the ordinary case and not a fallback: the phone's first tab
+// is "now", which is a cut across all three rather than any one of them.
+func standingIn(in string, racks []rackView) []rackView {
+	lit := false
+	for i := range racks {
+		racks[i].In = racks[i].Key == in
+		lit = lit || racks[i].In
+	}
+	// Nothing named, so the phone stands in "now". A tab bar with none of its
+	// tabs lit is a screen showing nothing at all at that width.
+	if !lit && len(racks) > 0 {
+		racks[0].In = true
+	}
+	return racks
 }
 
 func agendaStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool) {
@@ -657,7 +807,7 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 // at a time does not answer a chore by putting you back in the notes.
 func backToTheBay(r *http.Request) string {
 	switch bay := r.FormValue("bay"); bay {
-	case "notes", "chores", "tasks", "agenda":
+	case "notes", "tasks", "agenda", "now", "daily", "weekly", "seldom", "mood":
 		return "/?bay=" + bay
 	}
 	return "/"
@@ -775,14 +925,14 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 		}
 
 		switch r.FormValue("bay") {
-		case "chores":
+		case "daily", "weekly", "seldom":
 			days := everyInDays(r.FormValue("every"), r.FormValue("unit"))
 			if days <= 0 {
 				// Asked for, never guessed at. Filing this as a note was the
 				// old behaviour and it was the wrong kind of helpful: you typed
 				// a chore, and what you got was a note in another rack, found
 				// on the next refresh.
-				http.Redirect(w, r, "/?bay=chores&rhythm="+url.QueryEscape(words), http.StatusSeeOther)
+				http.Redirect(w, r, "/?bay=daily&rhythm="+url.QueryEscape(words), http.StatusSeeOther)
 				return
 			}
 			every := time.Duration(days) * 24 * time.Hour
@@ -1238,23 +1388,6 @@ func momentFromPickers(loc *time.Location, words, day, clock string) (squirrel.M
 	return squirrel.Moment{Label: words, Starts: starts, Guessed: true}, true
 }
 
-// facesIfItIsTime is the check-in on the board: the five faces at the tray's
-// right end, and nothing at all while the last answer still describes now.
-//
-// A reading rather than a question, which is why it is drawn at the edge and
-// never written into the record here — the record is the readings themselves.
-func facesIfItIsTime(r *http.Request, s Store, personID int64, at time.Time) []faceView {
-	c, found, err := s.LatestCheckin(r.Context(), personID)
-	if err != nil {
-		slog.Error("reading how you are", "error", err)
-		return nil
-	}
-	if found && c.JustAsked(at) {
-		return nil
-	}
-	return theFaces()
-}
-
 // boardMoodHandler keeps a reading and puts you back on the board.
 //
 // Nothing is said back. The conversation answers a check-in with a turn because
@@ -1424,4 +1557,71 @@ func boardAskHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, back+sep+"answered="+strconv.FormatInt(id, 10), http.StatusSeeOther)
 	}
+}
+
+// marginalia puts on a rack's rows the three things every other strip on the
+// board carries: what was noticed about it, the press that asks Buddy, and the
+// focus that lands on an answer just given.
+//
+// Separate from assemble because the racks are read separately, and the reason
+// it is not simply left out is that leaving it out is what happened first: the
+// chores lost their marginalia and their ask press the moment they stopped
+// being a bay, and nothing on the screen said so.
+func marginalia(r *http.Request, opts Options, seen map[string]squirrel.Noticed, racks []rackView) []rackView {
+	askOn := coachAvailable(opts)
+	justAsked, _ := strconv.ParseInt(r.URL.Query().Get("answered"), 10, 64)
+	for i := range racks {
+		rows := askable(racks[i].Strips, "chores", askOn)
+		racks[i].Strips = answered(marked(marked(rows, "chore", seen), "ask:chore", seen), justAsked)
+	}
+	return racks
+}
+
+// troubled says so on every rack when the chores could not be read. An empty
+// rack and a rack that failed look identical, and one of them is a lie.
+func troubled(racks []rackView, ok bool) []rackView {
+	if ok {
+		return racks
+	}
+	if len(racks) == 0 {
+		for _, key := range []string{"now", string(squirrel.Daily), string(squirrel.Weekly), string(squirrel.Seldom)} {
+			racks = append(racks, rackView{Key: key, Name: key})
+		}
+	}
+	for i := range racks {
+		racks[i].Trouble = true
+	}
+	return racks
+}
+
+// howYouAre is the dial: today's face, the seven days behind it, and the way
+// to the whole record.
+//
+// Always pressable, which is the change. The faces used to appear only when
+// Squirrel wanted an answer, so saying how you were was something you waited to
+// be asked for. Being asked is still a separate thing — Faces is what carries
+// that, and it is empty while the last answer still describes now.
+func howYouAre(r *http.Request, s Store, personID int64, at time.Time) *dialView {
+	d := &dialView{Faces: theFaces()}
+
+	latest, found, err := s.LatestCheckin(r.Context(), personID)
+	if err != nil {
+		slog.Error("reading how you are", "error", err)
+		return nil
+	}
+	if found && sameDay(latest.SaidAt, at) {
+		d.Mood, d.Word, d.Said = string(latest.Mood), squirrel.Words[latest.Mood], true
+	}
+	d.Asking = !found || !latest.JustAsked(at)
+
+	readings, err := s.CheckinsSince(r.Context(), personID, at.AddDate(0, 0, -dialDays))
+	if err != nil {
+		// The face is the dial's job; the week behind it is the extra. One
+		// without the other is worth drawing.
+		slog.Error("reading how you have been", "error", err)
+		return d
+	}
+	d.Days = moodDaysBefore(readings, at)
+	d.Ring = moodRing(d.Days)
+	return d
 }

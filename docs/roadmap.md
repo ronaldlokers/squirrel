@@ -244,8 +244,13 @@ Listed so they are not re-litigated. Each was considered and declined with a
 reason; the reasons live in the two proposals.
 
 **Because they accrue something that can be lost:** XP · points · streaks ·
-beat-the-timer challenges · mood charts and trends · showing
-estimate-versus-actual accuracy.
+beat-the-timer challenges · showing estimate-versus-actual accuracy.
+
+*Mood charts and trends* left this list on 8 September 2026. What shipped is not
+a chart: seven arcs, one per day, in the five colours, with the days you said
+nothing drawn as gaps. Nothing is totalled, averaged, compared or trended, and
+there is no line to read a direction off. PRODUCT.md principle 7 carries the
+trade and what it would take to reverse it.
 
 **Because they are administration, which is what the product exists to avoid:**
 projects · tags · folders · sub-tasks · priority levels · recurring tasks (that

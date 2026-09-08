@@ -35,10 +35,14 @@ func TestWithNoCoachTheBoardOffersNoWayToAsk(t *testing.T) {
 }
 
 func TestWithACoachEveryLiveStripCanBeAsked(t *testing.T) {
-	body := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{}).call(t, "GET", "/board", nil).Body.String()
+	m := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{})
 
-	require.Equal(t, 3, strings.Count(body, "ask Buddy"),
-		"one press per live strip: two notes worth (a note and a task) and a chore")
+	require.Equal(t, 1, strings.Count(m.call(t, "GET", "/board", nil).Body.String(), "ask Buddy"),
+		"the board is the chores, and there is one chore on it")
+	for _, door := range []string{"notes", "tasks"} {
+		require.Equal(t, 1, strings.Count(m.call(t, "GET", "/?bay="+door, nil).Body.String(), "ask Buddy"),
+			"the one strip behind the %s cannot be asked about", door)
+	}
 }
 
 func TestDrawingTheBoardCallsNoModel(t *testing.T) {
@@ -82,11 +86,15 @@ func roomFieldNear(t *testing.T, body, marker string) string {
 }
 
 func TestEachBaysDrawnAskButtonNarrowsToItsOwnRoom(t *testing.T) {
-	body := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{}).call(t, "GET", "/board", nil).Body.String()
+	m := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{})
 
-	require.Equal(t, "notes", roomFieldNear(t, body, "boiler service code is 4471"))
-	require.Equal(t, "tasks", roomFieldNear(t, body, "vet about the booster"))
-	require.Equal(t, "chores", roomFieldNear(t, body, "bins out"))
+	require.Equal(t, "notes", roomFieldNear(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(),
+		"boiler service code is 4471"))
+	require.Equal(t, "tasks", roomFieldNear(t, m.call(t, "GET", "/?bay=tasks", nil).Body.String(),
+		"vet about the booster"))
+	// The room is the model's toolset and not a place on the screen, so a
+	// chore in the weekly rack still opens the chores one.
+	require.Equal(t, "chores", roomFieldNear(t, m.call(t, "GET", "/", nil).Body.String(), "bins out"))
 }
 
 func TestPressingAskOnATaskNarrowsToTheTasksRoom(t *testing.T) {
@@ -112,7 +120,7 @@ func TestTheAnswerRendersAsALineUnderTheStripItWasAskedOf(t *testing.T) {
 		"words": {"boiler service code is 4471"},
 	})
 
-	body := m.call(t, "GET", "/board", nil).Body.String()
+	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.Contains(t, body, `<div class="seen">This is the third note about that boiler.`,
 		"the answer must render in the same register as marginalia")
@@ -237,7 +245,7 @@ func TestPressingAskWithNoWordsCallsNoModel(t *testing.T) {
 }
 
 func TestTheAskPressIsNotDrawnAsADisposition(t *testing.T) {
-	body := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{}).call(t, "GET", "/board", nil).Body.String()
+	body := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{}).call(t, "GET", "/?bay=notes", nil).Body.String()
 
 	require.NotContains(t, body, `formaction="/board/ask"`,
 		"the press rides the dispositions' own form, so it is struck like one")

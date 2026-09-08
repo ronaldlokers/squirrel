@@ -51,7 +51,7 @@ func TestACostThatCannotBeReadIsNotDrawnAsZero(t *testing.T) {
 func TestTheCountIsOnTheOneScreenAndNoOther(t *testing.T) {
 	m := mountedSpending(t, aBoardStore(), "€2.40", "€10", true)
 
-	for _, where := range []string{"/", "/?bay=chores", "/?bay=tasks", "/?bay=agenda"} {
+	for _, where := range []string{"/", "/?bay=weekly", "/?bay=tasks", "/?bay=agenda"} {
 		body := m.call(t, "GET", where, nil).Body.String()
 		require.NotContains(t, strings.ToLower(body), "cost this month",
 			"%s reports a running cost, and the exception is for one screen only", where)

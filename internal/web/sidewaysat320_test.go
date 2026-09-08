@@ -75,7 +75,7 @@ func TestBrowserNothingScrollsSidewaysAtThreeTwenty(t *testing.T) {
 	at320(t, c)
 
 	for _, path := range []string{
-		"/", "/?bay=chores", "/?bay=tasks", "/?bay=agenda",
+		"/", "/?bay=weekly", "/?bay=tasks", "/?bay=agenda",
 		"/?find=the", "/me", "/r/everything",
 	} {
 		c.navigate(t, srv.URL+path)

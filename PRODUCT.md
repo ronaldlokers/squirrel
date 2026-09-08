@@ -337,6 +337,48 @@ question.** It lasts the day, it reverses, and it touches nothing about the
 thing itself — a chore turned down in the picker is exactly as due as it was,
 because the picker's memory and the nudge's budget are two different things.
 
+**Decided on 8 September 2026: the board is the chores, and mood is beside
+them.** Four bays of four different kinds of thing asked, every time it was
+opened, which of four boxes to look in — and the chores, the only things on it
+that come back whether or not you look, were one box of four. They read as a
+list of tasks, which is the shape that goes invisible.
+
+The chores are now three racks cut by how often they come back — **daily** (up
+to 2 days), **weekly** (up to 14), **seldom** (beyond) — and the notes, the
+tasks and the agenda are three doors under them. A door opens onto what it holds
+in the racks' place, whole, with a way back. What it costs: the pile is no
+longer visible without a press. Judged worth it because the pile is a thing you
+go to when you have decided to triage, and the chores are the thing that needs
+to be seen without deciding to look.
+
+**The order inside a rack is six rules in a fixed order, and each row carries
+the sentence that puts it there.** This is principle 6 extended from the
+picker's one offer to every row on the board:
+
+1. it comes back today, and this is when you usually do it
+2. it comes back today, and you usually do it later on
+3. it comes back today
+4. not yet, but this is the day you usually do it
+5. everything else, by how far through its interval — and it says nothing
+6. never done — and it is never called due
+
+Rule 5 says nothing on purpose. *Last done a week ago* is a fact about you; the
+rhythm is a fact about the thing, and the racks have refused to print the first
+since they were built. Where there is a usual time it is printed instead.
+
+**When you usually do a thing is read from the completions already stored**, the
+newest twelve, and each half is claimed only when it holds more than half of
+them. A chore you do every day has no usual weekday and keeps its morning. Fewer
+than three completions claims nothing at all.
+
+**Mood is on the board.** Today's face, the week behind it, and the five faces
+always pressable — saying how you are stopped being something you wait to be
+asked for. Being asked is still separate and still follows principle 9.
+
+**On a wiped or frazzled reading the racks hold what comes back today and count
+the rest.** The count is never a backlog and is never phrased as one. Not on a
+*low* reading, for the reason the capacity gate already gives.
+
 **Decided on 20 August 2026: Squirrel may hold a time the world imposed.** The
 deadline rule is sharpened rather than broken, and the new wording is the one
 to hold everything against:
@@ -518,13 +560,15 @@ which pull toward a precision tool — the design has to be both, not average th
    check-in was unreadable by construction for the product's whole life: the
    store returned one reading and no function could return more, which is
    stronger than a rule someone has to remember. **That guarantee was given up
-   on 20 August 2026** and replaced with a narrower one — there is one page and
-   one command, both of which you have to go to by name. Home shows today's
-   answer and a link, never a series. Nothing else reads them: not the evening
-   message, not the picker, not Buddy, which is handed "ok" or "low" derived
-   from a single reading and cannot ask for more. And nothing anywhere totals,
-   averages or compares them. What it means is yours; the product only hands
-   back what you said.
+   on 20 August 2026** and replaced with a narrower one — there was one page and
+   one command, both of which you had to go to by name. **Widened again on 8
+   September 2026:** the board itself now shows the week behind today, as seven
+   arcs around today's face. Still nothing that totals, averages, compares or
+   trends them; still no series longer than the week you are in on the board,
+   and six weeks only on the page you go to by name. Nothing else reads them:
+   not the evening message, not Buddy, which is handed "ok" or "low" derived
+   from a single reading and cannot ask for more. What the readings mean is
+   yours; the product only hands back what you said.
 8. **Anything a model wrote is Buddy's; anything the rules produced is
    Squirrel's.** Buddy is the name of the thing you talk to, and the line is
    about authorship rather than about features. The picker's own clause, the
