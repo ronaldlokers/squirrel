@@ -449,6 +449,16 @@ not a terminal, and the ASCII direction was declined over exactly this.
 
 ### Named Rules
 
+**One hue, one meaning.** Orange is a chore, brown a fixed point the world set,
+yellow something you decided, lilac the pile. A hue answers exactly one
+question and gives the same answer on every screen.
+
+A chore is **not** coloured by its rhythm. The rack it stands in and that
+rack's own word already say which rhythm it has, and the spine was saying it a
+second time — which is what made lilac mean both *daily* and *the notes* on a
+screen that shows both. The rack signs keep a neutral cream at 36%, because a
+sign that carries a hue is a sign making a claim the column already makes.
+
 **The Printed Figure Rule.** A time, a date and a countdown are set in Inter
 Black with tabular figures, because on a board a number is a printed thing and
 not a sentence. This is the only content use of Inter in the product; everything
@@ -1020,13 +1030,39 @@ ink, beside its name — *weekly · 3* — and only when the rack holds somethin
 rack ever wears a nought. An orange disc at a tab's corner is the platform's own
 grammar for a notification demanding attention, which a rack's count is not.
 
+### What is asking for you today
+
+A rack is split in two by one question: **is this asking for you today?** It
+comes back today, or today is the day you usually do it — ranks one to four,
+the same cut the phone's *now* uses, so a thing can never be lifted on one
+screen and resting on the other.
+
+**What is asking sits on `paper`** and takes the deeper shadow. Paper is what
+this world has always used to say *this one* — it is what the pulled strip is
+made of — so nothing new was invented to say it. Its name steps up to 16.5px
+and it keeps its reason.
+
+**Below the seam, a row is its name and its rhythm.** The reason and the usual
+time are still true and still one press away on the row itself; they are not
+worth the room on something nobody is being asked about. A rack of seven was
+carrying thirty-five things and now carries about twelve.
+
+**Nothing is dimmed.** A resting chore is exactly as doable as it was
+yesterday, and greying an available control to make its neighbour louder is
+borrowing against the wrong account.
+
+**The rack's sign counts what is asking, not what it holds** — *weekly 1*, not
+*weekly 3*. A count of what wants you is the only kind this product allows.
+
+**There is no separate usual-time line.** Every rank that asks for you already
+carries a reason, and that reason names the usual time whenever the usual time
+is why the row is where it is. A second line for it said the same thing twice
+under one name, and it is gone.
+
 ### The rack row
 
-A chore's strip, and the one thing it says about itself under its name. Either
-**why it is where it is** — *it comes back today, and this is when you usually
-do it* — or, where the ordering had nothing to say, **when you usually do it**.
-One line and never two: a row carrying both said the same thing twice under the
-same name, which is how a line stops being read.
+A chore's strip carries its name, its rhythm, and — only when it is asking for
+you today — the one line saying why it is where it is.
 
 A row whose turn is simply not today says **nothing at all**, and above all not
 how long it has been waiting. That refusal is older than the racks and survived

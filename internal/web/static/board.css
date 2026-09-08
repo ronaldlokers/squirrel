@@ -145,12 +145,18 @@ body {
 .rack {
   display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden;
 }
+/* One hue, one meaning, everywhere: orange is a chore, brown a fixed point
+   the world set, yellow something you decided, lilac the pile. A chore is
+   not coloured by its rhythm any more — the rack it stands in and that
+   rack's own word say which rhythm it has, and the spine was saying it a
+   second time. That second saying is what made lilac mean both "daily" and
+   "the notes" on a screen that shows both. */
 .rack[data-bay="notes"] { --hue: var(--holder-notes); }
-.rack[data-bay="tasks"] { --hue: var(--holder-chores); }
+.rack[data-bay="tasks"] { --hue: var(--holder-tasks); }
 .rack[data-bay="agenda"] { --hue: var(--holder-agenda); }
-.rack[data-bay="daily"] { --hue: var(--holder-notes); }
-.rack[data-bay="weekly"] { --hue: var(--holder-chores); }
-.rack[data-bay="seldom"] { --hue: var(--holder-tasks); }
+.rack[data-bay="daily"], .rack[data-bay="weekly"], .rack[data-bay="seldom"] {
+  --hue: rgba(254, 214, 167, .36);
+}
 /* The phone's first tab, and a cut across the other three rather than a fourth
    thing. The desk shows all three and has no use for it. */
 .rack[data-bay="now"] { display: none; }
@@ -198,11 +204,11 @@ body {
   width: 6px; height: 14px; border-radius: var(--r); background: rgba(28, 17, 11, .28);
 }
 .h-notes .holder { background: var(--holder-notes); }
-.h-tasks .holder { background: var(--holder-chores); }
+.h-tasks .holder { background: var(--holder-tasks); }
 .h-agenda .holder { background: var(--holder-agenda); }
-.h-now .holder, .h-daily .holder { background: var(--holder-notes); }
-.h-weekly .holder { background: var(--holder-chores); }
-.h-seldom .holder { background: var(--holder-tasks); }
+.h-now .holder, .h-daily .holder, .h-weekly .holder, .h-seldom .holder {
+  background: var(--holder-chores);
+}
 .strip .words {
   padding: 8px 10px; overflow: hidden; font-size: 14.5px; line-height: 1.3;
   font-variation-settings: var(--casual), "wght" 500;
@@ -932,11 +938,10 @@ main.gate h1 + form { margin-top: 26px; }
    Three racks cut by rhythm, the dial beside them, and the other three
    places demoted to doors under the lot. */
 
-.strip .why, .strip .usual {
+.strip .why {
   margin: 4px 0 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.35;
   font-variation-settings: var(--casual), "wght" 470;
 }
-.strip .usual { color: rgba(106, 79, 62, .88); }
 
 .resting {
   flex: 0 0 auto; margin: 6px 2px 0; padding-top: 6px;
@@ -1055,3 +1060,22 @@ main.gate h1 + form { margin-top: 26px; }
   .dial { padding: 12px; }
   .dial .ring { max-width: 200px; }
 }
+
+
+/* ── What is asking for you today ──────────────────────────────────────
+   Paper is what this world has always used to say "this one" — it is what
+   the pulled strip is made of. A row at rank one to four takes it, sits on
+   the deeper shadow, and keeps its reason. Everything below the seam is
+   its name and its rhythm.
+
+   Nothing is dimmed. A resting chore is as doable as it was yesterday, and
+   greying an available control to make its neighbour louder would be
+   borrowing against the wrong account. */
+.rack .strip.wants {
+  background: var(--paper);
+  box-shadow: 0 5px 0 0 rgba(28, 17, 11, .55), 0 14px 20px -14px rgba(0, 0, 0, .7);
+}
+.rack .strip.wants .what {
+  font-size: 16.5px; font-variation-settings: var(--casual), "wght" 580;
+}
+.rack .seam { margin: 11px 0 6px; }

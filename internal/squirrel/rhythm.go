@@ -147,6 +147,14 @@ func rankOf(c Chore, u Usually, at time.Time) (int, string) {
 	}
 }
 
+// WantsYouToday is the line between a row that is asking for you and a row
+// that is merely there: it comes back today, or today is the day you usually
+// do it. Ranks one to four.
+//
+// The same cut the phone's "now" uses, so a thing cannot be lifted on one
+// screen and resting on the other.
+func (s Standing) WantsYouToday() bool { return s.rank <= standingNow }
+
 func RacksOf(chores []Chore, usually map[int64]Usually, at time.Time, quiet bool) []Rack {
 	by := map[Rhythm][]Standing{}
 	resting := map[Rhythm]int{}
