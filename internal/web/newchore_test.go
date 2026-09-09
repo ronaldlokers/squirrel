@@ -16,10 +16,9 @@ func TestTheChoresRackTeachesHowToMakeOne(t *testing.T) {
 	empty := theChores(t, &fakeStore{})
 
 	for _, body := range []string{full, empty} {
-		require.Contains(t, body, "it comes back")
-		require.Contains(t, body, `name="every" type="number"`)
-		require.Contains(t, body, `name="unit"`)
-		require.Contains(t, body, `<option value="weeks">weeks</option>`)
+		require.Contains(t, body, "comes back")
+		require.Contains(t, body, `name="every" value="7"`)
+		require.Contains(t, body, "2 weeks")
 	}
 	require.Contains(t, full, "bins out")
 }

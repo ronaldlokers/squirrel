@@ -27,7 +27,7 @@
   <span class="rail">
     {{template "findchip" .Find}}
     <span class="sep" aria-hidden="true"></span>
-    {{template "noteschip" .}}
+    {{template "noteschip" .Notes}}
     {{template "bellchip" .AnyTold}}
     {{with .Dial}}{{template "moodchip" .}}{{end}}
     {{template "youchip" .You}}
@@ -233,12 +233,11 @@
 {{template "today" .}}
 
 {{if .Racks}}
-<div class="addbar">
-  <a class="addpress" href="#add">
-    <span class="plus" aria-hidden="true">+</span>
-    <span class="says">add something</span>
-  </a>
-</div>
+<form class="addbar" method="post" action="/board/new?bay=notes">
+  <input class="words" name="words" placeholder="add something" autocomplete="off" enterkeyhint="done" aria-label="add something">
+  <button class="offscreen" type="submit">keep it as a thought</button>
+  <button class="plus" type="submit" formmethod="get" formaction="/" aria-label="say what kind it is">+</button>
+</form>
 {{end}}
 
 {{end}}
@@ -410,52 +409,47 @@
 {{end}}
 
 {{define "adder"}}
-<div class="adder{{if or .Rhythm .When}} open{{end}}" id="add">
-  <a class="veil" href="#shut" aria-label="not now"></a>
+<div class="adder{{if or .Rhythm .When .Adding}} open{{end}}" id="add">
+  <a class="veil" href="#shut" aria-label="never mind"></a>
   <form class="addform" method="post" action="/board/new">
-    <h2 class="addsign">what is it?</h2>
-    <input class="words" name="words" value="{{if .Rhythm}}{{.Rhythm}}{{else}}{{.When}}{{end}}" placeholder="say it in your own words" autocomplete="off" enterkeyhint="done" autofocus>
+    <h2 class="addsign">Add something</h2>
+    <input class="words" name="words" value="{{if .Rhythm}}{{.Rhythm}}{{else if .When}}{{.When}}{{else}}{{.Adding}}{{end}}" placeholder="say it in your own words" autocomplete="off" enterkeyhint="done" autofocus>
     <div class="kinds">
-      <label class="kind"><input type="radio" name="bay" value="notes"{{if not (or .Rhythm .When)}} checked{{end}}><span>a thought</span></label>
-      <label class="kind"><input type="radio" name="bay" value="tasks"><span>do it once</span></label>
-      <label class="kind"><input type="radio" name="bay" value="daily" id="kindcomesback"{{if .Rhythm}} checked{{end}}><span>it comes back</span></label>
-      <label class="kind"><input type="radio" name="bay" value="agenda" id="kindatatime"{{if .When}} checked{{end}}><span>at a time</span></label>
+      <label class="kind"><input type="radio" name="bay" value="notes"{{if not (or .Rhythm .When)}} checked{{end}}><span class="chip">a thought</span></label>
+      <label class="kind"><input type="radio" name="bay" value="tasks"><span class="chip">to do once</span></label>
+      <label class="kind"><input type="radio" name="bay" value="daily" id="kindcomesback"{{if .Rhythm}} checked{{end}}><span class="chip">comes back</span></label>
+      <label class="kind"><input type="radio" name="bay" value="agenda" id="kindatatime"{{if .When}} checked{{end}}><span class="chip">a time</span></label>
     </div>
+
     <div class="asks rhythmasks">
-      <span class="lead">every</span>
-      <input class="count" name="every" type="number" min="1" max="365" placeholder="7" inputmode="numeric" aria-label="how many">
-      <select class="unit" name="unit" aria-label="days, weeks or months">
-        <option value="days">days</option>
-        <option value="weeks">weeks</option>
-        <option value="months">months</option>
-      </select>
+      <p class="asksign">how often?</p>
+      <div class="picks">
+        {{range .Rhythms}}
+        <label class="pick"><input type="radio" name="every" value="{{.Days}}" aria-label="{{.Words}}"{{if eq .Days 7}} checked{{end}}><span class="chip">{{.Words}}</span></label>
+        {{end}}
+      </div>
     </div>
+
     <div class="asks whenasks">
-      <span class="dm">
-        <input class="count dd" name="dd" type="text" inputmode="numeric" maxlength="2" pattern="[0-3][0-9]" placeholder="05" aria-label="the day of the month">
-        <span class="slash">/</span>
-        <input class="count mo" name="mo" type="text" inputmode="numeric" maxlength="2" pattern="[0-1][0-9]" placeholder="09" aria-label="the month">
-      </span>
-      <span class="hm">
-        <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
-        <span class="colon">:</span>
-        <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
-      </span>
-      <span class="again">
-        <label class="lead" for="everyweeks">and again</label>
-        <select class="unit" id="everyweeks" name="weeks">
-          <option value="0">just the once</option>
-          <option value="1">every week</option>
-          <option value="2">every 2 weeks</option>
-          <option value="4">every 4 weeks</option>
-        </select>
-      </span>
+      <p class="asksign">when?</p>
+      <div class="picks">
+        <label class="pick loose"><span class="lead">day</span><input class="count dd" name="dd" type="text" inputmode="numeric" maxlength="2" pattern="[0-3][0-9]" placeholder="05" aria-label="the day of the month"><span class="at">/</span><input class="count mo" name="mo" type="text" inputmode="numeric" maxlength="2" pattern="[0-1][0-9]" placeholder="09" aria-label="the month"></label>
+        <label class="pick loose"><span class="lead">at</span><input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23"><span class="at">:</span><input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes"></label>
+      </div>
+      <p class="asksign">and again <span class="pencil">optional</span></p>
+      <div class="picks">
+        <label class="pick"><input type="radio" name="weeks" value="0" checked><span class="chip">just the once</span></label>
+        <label class="pick"><input type="radio" name="weeks" value="1"><span class="chip">every week</span></label>
+        <label class="pick"><input type="radio" name="weeks" value="2"><span class="chip">2 weeks</span></label>
+        <label class="pick"><input type="radio" name="weeks" value="4"><span class="chip">4 weeks</span></label>
+      </div>
     </div>
+
     {{if .Rhythm}}<p class="asked">how often does it come back?</p>{{end}}
     {{if .When}}<p class="asked">when is it?</p>{{end}}
     <div class="addfoot">
-      <a class="notnow" href="#shut">not now</a>
-      <button class="stamp">keep it</button>
+      <a class="stamp notnow" href="#shut">never mind</a>
+      <button class="stamp go">keep it</button>
     </div>
   </form>
 </div>
@@ -467,7 +461,58 @@
   {{with .Head}}
   <div class="atnow">
     <span class="pip"><span class="says">now</span></span>
-    {{template "strip" dict "Strip" . "Bay" .What}}
+    <div class="headcard h-{{.What}}">
+      <span class="holder"></span>
+      <div class="body">
+        {{if .Because}}<p class="pulledwhy"><b>pulled</b>{{.Because}}</p>{{end}}
+        {{if and .Wants .Why}}<p class="lead">{{.Why}}</p>{{end}}
+        <p class="name">{{.Words}}</p>
+        {{if .Late}}<p class="lateflag">late &mdash; today</p>{{end}}
+        {{with .Timer}}
+        <span class="ticking">
+          <span class="lbl">running</span>
+          {{with .Label}}<span class="what">{{.}}</span>{{end}}
+          <span class="left">{{.Left}}</span>
+          <form method="post" action="/board/now">
+            <input type="hidden" name="act" value="stop">
+            <button class="stopTimer" type="submit">stop</button>
+          </form>
+        </span>
+        {{end}}
+        {{if .Answers}}
+        <form class="bigstamps" method="post" action="/board/act">
+          <input type="hidden" name="what" value="{{.What}}">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <input type="hidden" name="bay" value="now">
+          {{range .Answers}}
+          <button class="bigstamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}</button>
+          {{end}}
+        </form>
+        {{end}}
+        {{if .Chosen}}
+        <form class="asking pickfeed" method="post" action="/board/now">
+          <input type="hidden" name="kind" value="{{.What}}">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <input type="hidden" name="from" value="/?pulled=1">
+          {{if .Blockers}}
+          <input type="hidden" name="act" value="stuck">
+          {{range .Blockers}}
+          <button class="quiet" name="why" value="{{.Why}}">{{.Words}}</button>
+          {{end}}
+          {{else if .UnstuckMinutes}}
+          <input type="hidden" name="minutes" value="{{.UnstuckMinutes}}">
+          <input type="hidden" name="label" value="{{.Words}}">
+          <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
+          <button class="quiet" name="act" value="timer">{{.UnstuckMinutes}} MIN</button>
+          {{else}}
+          <button class="quiet" name="act" value="wrong">not this one</button>
+          <button class="quiet" name="act" value="stuck">I&rsquo;m stuck</button>
+          {{end}}
+        </form>
+        {{with .Unstuck}}<p class="pencil"><span>{{.}}</span></p>{{end}}
+        {{end}}
+      </div>
+    </div>
   </div>
   {{end}}
   {{if .Hung}}
@@ -475,7 +520,7 @@
     {{range .Hung}}
     <div class="hang h-{{.What}}">
       <span class="pip"></span>
-      <span class="at">{{.When}}</span>
+      {{if .When}}<span class="at">{{.When}}</span>{{end}}
       <span class="says">{{.Words}}</span>
     </div>
     {{end}}
@@ -494,15 +539,29 @@
   {{end}}
   <p class="seam"><span class="what">whenever you like</span></p>
   <div class="offrail">
-    {{range .Off}}
-    {{template "strip" dict "Strip" . "Bay" .What}}
-    {{end}}
-    <a class="hang h-notes" href="/notes">
-      <span class="at">notes</span>
-      <span class="says">everything you wrote down</span>
+    {{range .Folded}}
+    {{if .Href}}
+    <a class="fold h-{{.Key}}" href="{{.Href}}">
+      <span class="tally">{{.Count}}</span>
+      <span class="says">{{.Words}}</span>
     </a>
+    {{else}}
+    <details class="fold h-{{.Key}}">
+      <summary>
+        <span class="tally">{{.Count}}</span>
+        <span class="says">{{.Words}}</span>
+      </summary>
+      <div class="unfolded">
+        {{range .Rows}}
+        {{template "strip" dict "Strip" . "Bay" .What}}
+        {{end}}
+        {{if not .Rows}}<p class="nothing">nothing to do just the one time</p>{{end}}
+      </div>
+    </details>
+    {{end}}
+    {{end}}
   </div>
-  {{if and (not .Head) (not .Off)}}<p class="nothing">nothing wants you today</p>{{end}}
+  {{if and (not .Head) (not .Hung)}}<p class="nothing">nothing wants you today</p>{{end}}
 </section>
 {{end}}
 {{end}}

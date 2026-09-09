@@ -91,7 +91,7 @@ func TestEveryChipInTheBarCarriesAName(t *testing.T) {
 		require.Contains(t, bar, `aria-label="`+name+`"`, "no chip is named %q", name)
 	}
 	require.Contains(t, bar, `aria-label="how you are`, "the mood chip is a picture with no name")
-	require.Equal(t, 4, strings.Count(bar, `class="chip`),
+	require.Equal(t, 3, strings.Count(bar, `class="chip`),
 		"the bar carries a different number of chips than it is named for")
 }
 
@@ -104,7 +104,7 @@ func TestAnEmptyRackIsStillAPlaceYouCanPutSomething(t *testing.T) {
 
 	// And so is an empty board, which has one writer for everything.
 	board := m.call(t, "GET", "/", nil).Body.String()
-	require.Contains(t, board, `href="#add"`, "an empty board has nowhere to put anything")
+	require.Contains(t, board, `class="addbar"`, "an empty board has nowhere to put anything")
 	require.Equal(t, 1, strings.Count(board, `class="addform`),
 		"more than one place asks what it is")
 }

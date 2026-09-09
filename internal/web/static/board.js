@@ -215,9 +215,15 @@
   var adder = document.getElementById("add");
   if (!adder) return;
 
+  // Shutting it keeps nothing. The words travel in the address when the plus
+  // opens the writer, so they have to leave with it — a draft the product held
+  // for you is a thought living in a form field.
   function shut() {
     adder.classList.remove("open");
-    location.replace(location.pathname + location.search + "#shut");
+    var keep = new URLSearchParams(location.search);
+    ["words", "rhythm", "when"].forEach(function (k) { keep.delete(k); });
+    var q = keep.toString();
+    location.replace(location.pathname + (q ? "?" + q : "") + "#shut");
   }
 
   function focusIt() {

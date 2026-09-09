@@ -35,9 +35,9 @@ func TestBrowserThePhoneIsTheRailAndNotTheRacks(t *testing.T) {
 
 	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "dentist",
 		"nothing on the rail says what is coming today")
-	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "book the MOT",
+	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "things you decided",
 		"nothing off the rail says what has no hour")
-	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "everything you wrote down",
+	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "in the notes",
 		"the phone cannot reach the notes")
 }
 

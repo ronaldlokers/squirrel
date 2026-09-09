@@ -71,7 +71,7 @@ func TestTheOnlyDoorLeftIsTheNotes(t *testing.T) {
 
 	body := m.call(t, "GET", "/board", nil).Body.String()
 	require.NotContains(t, body, `class="doors"`, "the region under the chores is still there")
-	require.Contains(t, body, `class="chip notes"`, "the notes cannot be reached from the board")
+	require.Contains(t, body, `class="notespill"`, "the notes cannot be reached from the board")
 
 	opened := m.call(t, "GET", "/notes", nil).Body.String()
 	require.Contains(t, opened, "boiler service code is 4471", "the notes chip opens onto nothing")
@@ -849,7 +849,7 @@ func TestTheWriterIsShutUntilYouAskForIt(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, `class="adder"`, "the writer arrives already open")
-	require.Contains(t, body, `href="#add"`, "there is no way to open the writer")
+	require.Contains(t, body, `class="addbar"`, "there is no way in to the writer")
 
 	asked := mounted(t, aBoardStore()).call(t, "GET", "/?bay=daily&rhythm=defrost+the+freezer", nil).Body.String()
 	require.Contains(t, asked, `class="adder open"`,
@@ -1004,7 +1004,8 @@ func TestTheWriterOffersHowOftenAFixedPointComesRound(t *testing.T) {
 	form := theChoreWriter(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String())
 
 	require.Contains(t, form, `name="weeks"`, "a fixed point cannot be told to come round")
-	require.Contains(t, form, `value="0">just the once`, "coming round is not something you can decline")
+	require.Contains(t, form, `value="0"`, "coming round is not something you can decline")
+	require.Contains(t, form, "just the once")
 	require.Equal(t, "0", whatTheBrowserWouldSend(form).Get("weeks"),
 		"a fixed point comes round unless you say otherwise")
 }

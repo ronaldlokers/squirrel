@@ -126,7 +126,12 @@ self.addEventListener("fetch", event => {
 
   if (request.method === "POST" && DOCKS.has(new URL(request.url).pathname) &&
       !(request.headers.get("Content-Type") || "").startsWith("multipart/")) {
-    const pathname = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    // The whole address, not the path. A form that carries a field in its
+    // action loses it here otherwise, and the loss is silent: the post lands,
+    // the handler finds nothing to do, and the screen looks like it worked.
+    const target = pathname + url.search;
     event.respondWith((async () => {
       const form = await request.formData();
       const captureKey = form.get("key") || self.crypto.randomUUID();
@@ -135,15 +140,15 @@ self.addEventListener("fetch", event => {
       const headers = new Headers(request.headers);
       headers.set("Content-Type", "application/x-www-form-urlencoded");
       try {
-        return await fetch(pathname, { method: "POST", headers, body, credentials: "same-origin" });
+        return await fetch(target, { method: "POST", headers, body, credentials: "same-origin" });
       } catch {
         const field = FIELDS[pathname] || "text";
         const text = form.get(field);
-        const bay = form.get("bay");
-        const back = bay ? "/?bay=" + encodeURIComponent(String(bay)) : "/";
+        const bay = form.get("bay") || url.searchParams.get("bay");
+        const back = bay === "notes" ? "/notes" : bay ? "/?bay=" + encodeURIComponent(String(bay)) : "/";
         if (!text || !String(text).trim()) return Response.redirect(back, 303);
-        await hold([...form].filter(([, v]) => typeof v === "string"), pathname, captureKey);
-        return Response.redirect(back + (bay ? "&" : "?") + "offline=1", 303);
+        await hold([...form].filter(([, v]) => typeof v === "string"), target, captureKey);
+        return Response.redirect(back + (back.includes("?") ? "&" : "?") + "offline=1", 303);
       }
     })());
     return;

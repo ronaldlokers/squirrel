@@ -79,6 +79,7 @@ func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 	sent := whatTheBrowserWouldSend(theChoreWriter(t, m.call(t, "GET", "/", nil).Body.String()))
 	sent.Set("words", "defrost the freezer")
 	sent.Set("bay", "daily")
+	sent.Del("every")
 
 	res := m.call(t, "POST", "/board/new", strings.NewReader(sent.Encode()))
 
@@ -89,9 +90,16 @@ func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 		"the words were not carried back to the question")
 }
 
-func TestTheRhythmCountShowsSevenWithoutSendingIt(t *testing.T) {
+// How often is four presets rather than a number and a unit: the answer is
+// nearly always one of four, and two decisions where one will do is the tax
+// this product exists to stop charging.
+func TestTheRhythmIsFourPresetsAndAWeekIsTheOneStanding(t *testing.T) {
 	form := theChoreWriter(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String())
 
-	require.Contains(t, form, `placeholder="7"`)
-	require.Empty(t, whatTheBrowserWouldSend(form).Get("every"), "the count sends a rhythm on its own")
+	for _, want := range []string{"every day", "every week", "2 weeks", "a month"} {
+		require.Contains(t, form, want, "the writer does not offer %q", want)
+	}
+	require.NotContains(t, form, `name="unit"`, "the writer still asks for a unit")
+	require.Equal(t, "7", whatTheBrowserWouldSend(form).Get("every"),
+		"a week is not what an unanswered rhythm means")
 }

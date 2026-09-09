@@ -19,6 +19,8 @@
     {{if .Said}}<img src="/static/mood-{{.Mood}}.png" alt="" width="34" height="27">{{else}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M9 10.5h.01M15 10.5h.01M9 15h6"/></svg>{{end}}
   </a>{{end}}
 
-{{define "noteschip"}}<a class="chip notes" href="/notes" aria-label="the notes">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h9l4 4v13H6z"/><path d="M15 3.5v4h4"/><path d="M9.5 12h6M9.5 16h4"/></svg>
+{{define "noteschip"}}<a class="notespill" href="/notes" aria-label="the notes">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="n">{{.}}</span>
+    <span class="says">notes</span>
   </a>{{end}}
