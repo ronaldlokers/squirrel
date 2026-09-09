@@ -10,15 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// On a phone one rack is on screen and the bay signs are the tabs above it.
-// Drawn as a class rather than filtered on the server, so this is the only
-// place the difference can be seen at all.
-func TestBrowserThePhoneShowsOneBayAtATime(t *testing.T) {
+// The phone is its own screen, not a fold of the desk. Both are drawn; which
+// one you get is the width, and neither needs a script.
+func TestBrowserThePhoneIsTheRailAndNotTheRacks(t *testing.T) {
 	f := &fakeStore{
-		items: []squirrel.Item{
-			{ID: 1, RawText: "kaas", State: squirrel.ItemOpen, Kind: squirrel.ItemNote, ReceivedAt: time.Now()},
-		},
-		chores: []squirrel.Chore{{ID: 7, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7}},
+		items:    []squirrel.Item{{ID: 1, RawText: "book the MOT", State: squirrel.ItemOpen, Kind: squirrel.ItemTask, ReceivedAt: time.Now()}},
+		chores:   []squirrel.Chore{{ID: 7, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7}},
+		upcoming: []squirrel.Moment{{ID: 9, Label: "dentist", Starts: time.Now().Add(3 * time.Hour)}},
 	}
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
@@ -27,22 +25,25 @@ func TestBrowserThePhoneShowsOneBayAtATime(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	c.until(t, "the tabs", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
-	require.Equal(t, float64(1), c.eval(t, `return [...document.querySelectorAll(".rack")]
-		.filter(r => getComputedStyle(r).display !== "none").length`),
-		"more than one rack is on the phone at once")
-	require.Equal(t, "now", c.eval(t, `return [...document.querySelectorAll(".rack")]
-		.find(r => getComputedStyle(r).display !== "none").dataset.bay`))
+	c.until(t, "the rail", `getComputedStyle(document.querySelector(".dayrail")).display !== "none"`)
+	require.Equal(t, float64(0), c.eval(t, `return [...document.querySelectorAll(".rack")]
+		.filter(r => r.offsetParent !== null).length`),
+		"a rack is on the phone, which is the fold this replaced")
+	require.Equal(t, float64(0), c.eval(t,
+		`return document.documentElement.scrollWidth - document.documentElement.clientWidth`),
+		"the board scrolls sideways")
 
-	c.navigate(t, srv.URL+"/?bay=weekly")
-	require.Equal(t, "weekly", c.eval(t, `return [...document.querySelectorAll(".rack")]
-		.find(r => getComputedStyle(r).display !== "none").dataset.bay`),
-		"the tab did not change which rack is on screen")
+	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "dentist",
+		"nothing on the rail says what is coming today")
+	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "book the MOT",
+		"nothing off the rail says what has no hour")
+	require.Contains(t, c.eval(t, `return document.querySelector(".dayrail").textContent`), "everything you wrote down",
+		"the phone cannot reach the notes")
 }
 
-// And the desk still shows all four, which is the other half of one page
-// serving both.
-func TestBrowserTheDeskShowsEveryBay(t *testing.T) {
+// And the desk still draws the racks and none of the rail, which is the other
+// half of one page serving both.
+func TestBrowserTheDeskIsTheRacksAndNotTheRail(t *testing.T) {
 	srv := screen(t, &fakeStore{})
 	c := browserAt(t, srv, "/")
 	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
@@ -51,29 +52,12 @@ func TestBrowserTheDeskShowsEveryBay(t *testing.T) {
 	c.navigate(t, srv.URL+"/")
 
 	require.Equal(t, float64(4), c.eval(t, `return [...document.querySelectorAll(".rack")]
-		.filter(r => getComputedStyle(r).display !== "none").length`),
+		.filter(r => r.offsetParent !== null).length`),
 		"the desk draws a rack it has no use for, or is missing one")
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector('.rack[data-bay="now"]')).display`),
 		"now is a cut across the racks that come back, and the desk is showing those")
-	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).display`))
-}
-
-func TestBrowserEveryBayIsOnTheScreen(t *testing.T) {
-	srv := screen(t, &fakeStore{})
-	c := browserAt(t, srv, "/")
-	c.send(t, "Emulation.setDeviceMetricsOverride", map[string]any{
-		"width": 390, "height": 844, "deviceScaleFactor": 2, "mobile": true,
-	})
-	c.navigate(t, srv.URL+"/")
-
-	require.Equal(t, float64(6), c.eval(t, `return document.querySelectorAll(".baytab").length`))
-	require.Empty(t, c.eval(t, `return [...document.querySelectorAll(".baytab")]
-		.filter(t => t.getBoundingClientRect().right > innerWidth + 0.5)
-		.map(t => t.textContent.trim())`),
-		"a bay sits off the right edge of the phone")
-	require.Equal(t, float64(0), c.eval(t,
-		`return document.documentElement.scrollWidth - document.documentElement.clientWidth`),
-		"the board scrolls sideways")
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".dayrail")).display`),
+		"the phone's rail is drawn on the desk as well")
 }
 
 // The field was drawn to nothing and opened by pressing its glyph, from

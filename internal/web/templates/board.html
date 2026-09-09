@@ -280,6 +280,7 @@
   {{end}}
   {{template "moodside" .}}
 </main>
+{{template "today" .}}
 
 {{if .Racks}}
 <div class="addbar">
@@ -316,17 +317,6 @@
 
 {{if .Racks}}
 {{template "adder" .}}
-{{$whole := not (or .Opened .Find)}}
-<nav class="baytabs">
-  {{range .Racks}}
-  <a class="baytab{{if and .In $whole}} in{{end}}" href="/?bay={{.Key}}"{{if and .In $whole}} aria-current="page"{{end}}>
-    <span class="says">{{.Name}}{{if .Strips}} <span class="n">&middot; {{len .Strips}}</span>{{end}}</span>
-  </a>
-  {{end}}
-  <a class="baytab" href="/notes">
-    <span class="says">notes</span>
-  </a>
-</nav>
 {{end}}
 </body>
 </html>
@@ -519,4 +509,50 @@
     </div>
   </form>
 </div>
+{{end}}
+
+{{define "today"}}
+{{with .Rail}}
+<section class="dayrail">
+  {{with .Head}}
+  <div class="atnow">
+    <span class="pip"><span class="says">now</span></span>
+    {{template "strip" dict "Strip" . "Bay" .What}}
+  </div>
+  {{end}}
+  {{if .Hung}}
+  <div class="hangs">
+    {{range .Hung}}
+    <div class="hang h-{{.What}}">
+      <span class="pip"></span>
+      <span class="at">{{.When}}</span>
+      <span class="says">{{.Words}}</span>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+  {{if .Ahead}}
+  <p class="seam"><span class="what">further ahead</span></p>
+  <div class="offrail">
+    {{range .Ahead}}
+    <div class="hang h-at">
+      <span class="at">{{.Day}}</span>
+      <span class="says">{{.Label}} &middot; {{.Time}}</span>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+  <p class="seam"><span class="what">whenever you like</span></p>
+  <div class="offrail">
+    {{range .Off}}
+    {{template "strip" dict "Strip" . "Bay" .What}}
+    {{end}}
+    <a class="hang h-notes" href="/notes">
+      <span class="at">notes</span>
+      <span class="says">everything you wrote down</span>
+    </a>
+  </div>
+  {{if and (not .Head) (not .Off)}}<p class="nothing">nothing wants you today</p>{{end}}
+</section>
+{{end}}
 {{end}}

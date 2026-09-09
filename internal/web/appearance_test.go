@@ -66,7 +66,7 @@ var appearanceScreens = map[string][]string{
 		".stamp", ".stamp .k",
 		".addbar", ".addpress", ".addpress .plus",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
-		".dial .record", ".chip.notes", ".baytab",
+		".dial .record", ".chip.notes",
 		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag", ".atagain",
 		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
@@ -83,6 +83,11 @@ var appearanceScreens = map[string][]string{
 		".addform", ".addsign", ".addform .words", ".kinds", ".kind span",
 		".addform .count", ".addform .unit", ".addform .asked", ".notnow", ".addform .again",
 	},
+
+	// The phone's own screen. Drawn at every width and shown only below 620px,
+	// so a record taken on the desk still pins its parts.
+	"/?phone=1": {".dayrail", ".dayrail .pip", ".hangs", ".hang", ".hang .at",
+		".hang .says", ".hang.h-notes .at", ".dayrail .seam"},
 
 	"/me": {".youface", ".youhead", ".weekrow"},
 }
@@ -118,8 +123,15 @@ func appearanceFixture() *fakeStore {
 	}, {
 		ID: 2, Name: "water the plants", Every: 7 * 24 * time.Hour,
 		EveryDays: 7, SinceDays: 2, Active: true, EverDone: true,
+	}, {
+		// Two with an hour, so the rail has something hanging under its head:
+		// one of them becomes the head and the record needs the other.
+		ID: 3, Name: "sort the recycling", Every: 7 * 24 * time.Hour,
+		EveryDays: 7, SinceDays: 7, Active: true, EverDone: true,
 	}}
 	f.usually = map[int64]squirrel.Usually{
+		1: {Part: squirrel.Morning},
+		3: {Part: squirrel.Evening},
 		2: {Weekday: time.Sunday, OnADay: true, Part: squirrel.Morning},
 	}
 	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}

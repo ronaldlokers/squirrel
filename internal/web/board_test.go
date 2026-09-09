@@ -300,9 +300,9 @@ func TestTheFrontDoorIsTheBoard(t *testing.T) {
 	require.NotContains(t, front, `id="thread"`)
 }
 
-// On a phone the four racks become one and the bay signs become the tabs above
-// it. The server draws all four either way — which rack you are in is a class,
-// so the desktop board is untouched and the phone needs no script.
+// The racks are the desk's shape and the rail is the phone's, and the server
+// draws both either way. Which rack is lit is still a class, because a
+// development board asked for one rack still needs to draw it lit.
 func TestTheRackYouAreInIsTheOneThatIsLit(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
@@ -310,8 +310,8 @@ func TestTheRackYouAreInIsTheOneThatIsLit(t *testing.T) {
 
 	require.Contains(t, body, `class="rack in" data-bay="weekly"`)
 	require.Contains(t, body, `class="rack" data-bay="daily"`)
-	require.Contains(t, body, `<a class="baytab in" href="/?bay=weekly" aria-current="page">`)
-	require.Contains(t, body, `<a class="baytab" href="/?bay=daily">`)
+	require.NotContains(t, body, "baytab", "the phone's tab bar is still drawn")
+	require.Contains(t, body, `class="dayrail"`, "the phone has no rail")
 }
 
 // Nothing named lands you in "now", which is the cut across all three rather

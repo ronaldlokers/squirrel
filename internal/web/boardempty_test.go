@@ -147,41 +147,37 @@ func TestOnlyTheBlankAndTheNoticesAreDrawnDashed(t *testing.T) {
 	}
 }
 
-func TestTheBarLightsNoBayWhenYouAreNotInOne(t *testing.T) {
+func TestTheRailIsNotDrawnWhereTheBoardIsNot(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	for _, where := range []string{"/?find=kaas", "/?shelf=kept", "/?open=1"} {
-		require.NotContains(t, m.call(t, "GET", where, nil).Body.String(), `class="baytab in"`,
-			"%s lights a bay you are not standing in", where)
+	for _, where := range []string{"/?find=kaas", "/?open=1"} {
+		require.NotContains(t, m.call(t, "GET", where, nil).Body.String(), `class="dayrail"`,
+			"%s draws the phone's rail behind what you came to read", where)
 	}
-	require.Contains(t, m.call(t, "GET", "/?bay=weekly", nil).Body.String(), `class="baytab in"`)
+	require.Contains(t, m.call(t, "GET", "/", nil).Body.String(), `class="dayrail"`)
 }
 
-// No pictures in the bar any more. The four bays each had a drawing; the four
-// tabs are now, daily, weekly and seldom, which are four cuts of one thing and
-// have no four pictures between them. A word and its count is what a cut can
-// honestly wear, and nothing that was drawn is still shipped.
-func TestTheBarIsWordsAndCarriesNoPicturesItCannotEarn(t *testing.T) {
+// The bay drawings went with the bays, and nothing that was drawn is still
+// shipped. The tab bar that replaced them went too, on 9 September 2026.
+func TestNoBayPictureIsStillShipped(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
-	bar := body[strings.Index(body, `<nav class="baytabs">`):]
 
-	require.NotContains(t, bar, "<img", "the bar draws a picture for a cut of a list")
+	require.NotContains(t, body, "bay-", "something still asks for a bay's drawing")
 	for _, gone := range []string{"notes", "chores", "tasks", "agenda"} {
 		_, err := staticFS.ReadFile("static/bay-" + gone + ".png")
 		require.Error(t, err, "the %s icon is still shipped and nothing asks for it", gone)
 	}
 }
 
-func TestTheCountIsBesideTheNameAndOnlyWhenThereIsOne(t *testing.T) {
+func TestARackSignCountsWhatIsAskingAndNeverNought(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
-	bar := body[strings.Index(body, `<nav class="baytabs">`):]
 
-	require.Contains(t, bar, `<span class="says">weekly <span class="n">&middot; 1</span></span>`)
-	require.Contains(t, bar, `<span class="says">daily</span>`, "an empty rack wears a badge with nothing in it")
-	require.NotContains(t, bar, `&middot; 0</span>`, "an empty rack wears a badge saying nought")
+	require.Contains(t, theRackIn(t, body, "bay=once"), `<span class="n">1</span>`)
+	require.NotContains(t, theRackIn(t, body, "bay=daily"), `<span class="n">`,
+		"an empty rack wears a badge with nothing in it")
 
 	empty := mounted(t, &fakeStore{}).call(t, "GET", "/", nil).Body.String()
-	require.NotContains(t, empty[strings.Index(empty, `<nav class="baytabs">`):], `<span class="n">`,
+	require.NotContains(t, empty[strings.Index(empty, `<main class="racks">`):], `<span class="n">`,
 		"a board with nothing on it still wears badges")
 }
 
@@ -217,19 +213,18 @@ func TestOnlyTheFootOfThePhoneClaimsTheSafeArea(t *testing.T) {
 		"more than the bar at the foot pads for the home indicator, so the phone shows a band of nothing above it")
 }
 
-func TestTheBarNamesARackWithoutAnArticle(t *testing.T) {
+func TestARackSignNamesItWithoutAnArticle(t *testing.T) {
 	m := mounted(t, aBoardStore())
 	body := m.call(t, "GET", "/", nil).Body.String()
-	bar := body[strings.Index(body, `<nav class="baytabs">`):]
 
-	for _, rack := range []string{"now", "daily", "weekly", "seldom"} {
-		require.Contains(t, bar, `<span class="says">`+rack,
-			"the bar does not name the %s rack", rack)
+	for _, rack := range []string{"now", "daily", "weekly", "seldom", "once"} {
+		require.Contains(t, body, `<h2 class="baysign">`+rack,
+			"the board does not name the %s rack", rack)
 	}
-	require.NotContains(t, bar, `<span class="says">the `,
-		"a cell in the bar still carries an article")
+	require.NotContains(t, body, `<h2 class="baysign">the `,
+		"a rack sign still carries an article")
 	require.Contains(t, m.call(t, "GET", "/notes", nil).Body.String(),
-		`<h2 class="baysign">the notes`, "the door's own sign lost its article with it")
+		`<h2 class="baysign">the notes`, "the wall's own sign lost its article")
 }
 
 func TestTheBellShowsWhatWasSaidAndSaysSoWhenNothingWas(t *testing.T) {

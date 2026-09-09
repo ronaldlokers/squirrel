@@ -420,6 +420,28 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Amended on 9 September 2026: the phone is its own screen.** The owner's words
+were that mobile *feels like an afterthought — it should focus on showing what
+is important in the moment*, and that it might need a whole other design. It
+has one.
+
+The phone is a rail: today, top to bottom, in the order today happens. The one
+thing that wants you now sits at the head with its answers out; everything else
+with an hour hangs off the line, the block on the left carrying the hour or the
+part of the day. Below it, what has no hour, and the way to the notes.
+
+The desk keeps the racks. Both are drawn at both widths and the stylesheet
+chooses, which is the same trick that served one rack per tab before.
+
+What it costs: the phone no longer has tabs, so a rack is not a place you can
+stand in on a phone. What that bought was a way to browse; what it cost was that
+the phone opened onto a rack rather than onto the day. Everything the racks held
+is still on the phone, below the rail, in the racks' own order — so nothing is
+unreachable, only unbrowsable.
+
+How it reverses: `internal/web/rail.go` and the `today` block in `board.html`.
+The racks are untouched; deleting the rail leaves the phone showing them again.
+
 **Amended on 9 September 2026: a fixed point may come round.** Every week, every
 two, every four — a number of weeks on the appointment, chosen in the writer and
 nothing by default. Refused until now as calendar machinery, and allowed by the
