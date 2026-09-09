@@ -35,9 +35,20 @@ type boardView struct {
 	Racks          []rackView
 	Rhythm         string
 	When           string
-	Dial           *dialView
-	Coming         *comingView
-	Rail           *railView
+	// Adding is what you had typed in the bar when you pressed the plus. The
+	// bar keeps a thought on its own; the plus is how you say it is something
+	// else, and the words have to travel with the press or you type them
+	// twice.
+	Adding string
+	// Notes is how many are on the wall, on the chip that leads there.
+	Notes int
+	// Rhythms is what the writer offers when a thing comes back: presets, in
+	// the product's own words, because a number box and a unit dropdown is
+	// two decisions where the answer is nearly always one of four.
+	Rhythms []rhythmView
+	Dial    *dialView
+	Coming  *comingView
+	Rail    *railView
 	// Loose is a row for the things the picker offers that have no row of their
 	// own: the breadcrumb, and a timer whose thing is not on the board. They
 	// used to share the offer's card; with the card gone they get a row, at
@@ -225,6 +236,15 @@ type rhythmView struct {
 
 const noticedKept = 6
 
+// writerRhythms is what the writer offers, which is the four the notes' own
+// promotion offers plus the weekday the bins live on.
+var writerRhythms = []rhythmView{
+	{Days: 1, Words: "every day"},
+	{Days: 7, Words: "every week"},
+	{Days: 14, Words: "2 weeks"},
+	{Days: 30, Words: "a month"},
+}
+
 var theRhythms = []rhythmView{
 	{Days: 1, Words: "a day"},
 	{Days: 7, Words: "a week"},
@@ -272,6 +292,8 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			Now:            at.Format("15:04"),
 			Day:            at.Format("Monday 2 January"),
 			Telling:        r.URL.Query().Get("told") == "1",
+			Adding:         strings.TrimSpace(r.URL.Query().Get("words")),
+			Rhythms:        writerRhythms,
 			Rhythm:         strings.TrimSpace(r.URL.Query().Get("rhythm")),
 			When:           strings.TrimSpace(r.URL.Query().Get("when")),
 		}
@@ -295,6 +317,8 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
 		g.Go(func() error { v.Dial = howYouAre(r, s, personID, at); return nil })
 		g.Go(func() error { v.Coming = whatIsComing(r, s, personID, at); return nil })
+		var notesCount int
+		g.Go(func() error { notesCount, _ = howManyFolded(r, s, personID); return nil })
 		var (
 			racksOK bool
 			usually map[int64]squirrel.Usually
@@ -309,7 +333,8 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		v.Racks = onlyOne(r, append(v.Racks, bays.once(r, opts)))
 		v.Moodful = in == "mood" && v.Dial != nil
 		v.Racks = standingIn(in, v.Racks)
-		v.Rail = railFor(v.Racks, v.Coming, usually)
+		v.Notes = notesCount
+		v.Rail = railFor(v.Racks, v.Coming, usually, notesCount)
 		theOffer(&v)
 		ticking(&v)
 		v.AnyTold = len(v.Told) > 0
@@ -403,6 +428,9 @@ func onceRack(tasks []stripView, ok, more bool) rackView {
 		Strips: tasks,
 	}
 	for i := range rack.Strips {
+		// Once, not the hour it was captured at. When a thing comes back is
+		// what a mark on this board says, and for these the answer is never.
+		rack.Strips[i].Mark = "once"
 		if i == 0 {
 			rack.Strips[i].Wants = true
 			rack.Strips[i].Why = "the last thing you decided"
@@ -1543,14 +1571,16 @@ func theOffer(v *boardView) {
 		return
 	}
 	mark(v.Rail.Hung)
-	mark(v.Rail.Off)
+	for i := range v.Rail.Folded {
+		mark(v.Rail.Folded[i].Rows)
+	}
 	if v.Rail.Head != nil && v.Rail.Head.What == v.Pulled.Kind && v.Rail.Head.ID == v.Pulled.RefID {
 		v.Rail.Head.Because, v.Rail.Head.Chosen = v.Pulled.Because, true
 		v.Rail.Head.Blockers = v.Blockers
 		v.Rail.Head.Unstuck, v.Rail.Head.UnstuckMinutes = v.Unstuck, v.UnstuckMinutes
 		return
 	}
-	for _, from := range []*[]stripView{&v.Rail.Hung, &v.Rail.Off} {
+	for _, from := range []*[]stripView{&v.Rail.Hung} {
 		for i, row := range *from {
 			if row.What != v.Pulled.Kind || row.ID != v.Pulled.RefID {
 				continue
@@ -1565,6 +1595,18 @@ func theOffer(v *boardView) {
 			return
 		}
 	}
+}
+
+// howManyFolded is the two numbers the phone's folded rows carry. A read that
+// fails counts nothing rather than failing the board: a row saying nought is a
+// smaller lie than a screen that will not draw.
+func howManyFolded(r *http.Request, s Store, personID int64) (notes, once int) {
+	notes, once, err := s.HowMany(r.Context(), personID)
+	if err != nil {
+		slog.Error("counting what is folded away", "error", err)
+		return 0, 0
+	}
+	return notes, once
 }
 
 func answersFor(kind string) []answerView {
@@ -1625,7 +1667,9 @@ func ticking(v *boardView) {
 			}
 		}
 		onto(v.Rail.Hung)
-		onto(v.Rail.Off)
+		for i := range v.Rail.Folded {
+			onto(v.Rail.Folded[i].Rows)
+		}
 	}
 	if v.Opened != nil && v.Opened.Words == label {
 		v.Opened.Timer, v.Opened.Ramping, hung = its, v.Ramp != nil, true

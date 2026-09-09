@@ -11,11 +11,19 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
+// One chore that wants you today, so the rail has a head, and five things you
+// do once behind the fold, which is where a phone's strips live now. Answered
+// just now, so the check-in is not drawn: these are tests about where things
+// sit, and the faces would move them without saying anything about either.
 func aRackOfNotes() *fakeStore {
-	// Answered just now, so the check-in is not drawn: these are tests about
-	// where the rack and the pill sit, and the faces are a second row in the
-	// tray that would move both without saying anything about either.
-	f := &fakeStore{checkin: &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()}}
+	f := &fakeStore{
+		checkin: &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: time.Now()},
+		usually: map[int64]squirrel.Usually{1: {Part: squirrel.Morning}},
+		chores: []squirrel.Chore{{
+			ID: 1, Name: "water the plants", Active: true, EverDone: true,
+			Every: 24 * time.Hour, EveryDays: 1, SinceDays: 1,
+		}},
+	}
 	for i := int64(1); i <= 5; i++ {
 		f.items = append(f.items, squirrel.Item{
 			ID: i, RawText: "note " + string(rune('a'+i-1)), State: squirrel.ItemOpen,
@@ -23,6 +31,30 @@ func aRackOfNotes() *fakeStore {
 		})
 	}
 	return f
+}
+
+// aLongRail is a day with more on it than one screen holds, so the deck has
+// somewhere to scroll to.
+func aLongRail() *fakeStore {
+	f := aRackOfNotes()
+	for i := int64(10); i < 26; i++ {
+		f.chores = append(f.chores, squirrel.Chore{
+			ID: i, Name: "one more thing", Active: true, EverDone: true,
+			Every: 24 * time.Hour, EveryDays: 1, SinceDays: 1,
+		})
+		f.usually[i] = squirrel.Usually{Part: squirrel.Morning}
+	}
+	return f
+}
+
+// unfolded opens the phone's fold, which is the only place a strip is on a
+// phone since the rail replaced the racks. The head is drawn whole and the
+// rows hanging off the line carry no answers at all, by the design.
+func unfolded(t *testing.T, c *cdp) {
+	t.Helper()
+	c.until(t, "the fold", `!!document.querySelector(".fold > summary")`)
+	c.eval(t, `document.querySelector(".fold > summary").click(); return 1`)
+	c.until(t, "the strips", `!!document.querySelector(".dayrail .strip.answerable")`)
 }
 
 func touching(t *testing.T, c *cdp) {
@@ -46,6 +78,7 @@ func TestBrowserAStripOpensWhenYouPressIt(t *testing.T) {
 	touching(t, c)
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+	unfolded(t, c)
 
 	require.Equal(t, float64(0), stampsTall(c, t, 0), "a strip arrives with its answers already out")
 	require.Equal(t, "false", c.eval(t, `return document.querySelector(".dayrail .opener").getAttribute("aria-expanded")`))
@@ -68,6 +101,7 @@ func TestBrowserPressingAStampDoesNotShutTheStrip(t *testing.T) {
 	touching(t, c)
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+	unfolded(t, c)
 
 	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[0].querySelector(".what").click(); return 1`)
 	c.until(t, "the stamps", `document.querySelectorAll(".dayrail .strip.answerable")[0]
@@ -85,6 +119,7 @@ func TestBrowserEscapeShutsTheOpenStrip(t *testing.T) {
 	touching(t, c)
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+	unfolded(t, c)
 
 	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[0].querySelector(".what").click(); return 1`)
 	c.until(t, "the stamps", `!!document.querySelector(".strip.answerable.open")`)
@@ -108,45 +143,40 @@ func TestBrowserWithNoScriptEveryStripStillCarriesItsAnswers(t *testing.T) {
 }
 
 func TestBrowserTheKeysOpenTheStripTheyReach(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, PersonID: 1, Name: "bins out", Active: true, EverDone: true, Every: 14 * 24 * time.Hour, EveryDays: 14, SinceDays: 3},
-		{ID: 2, PersonID: 1, Name: "water the ferns", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7},
+	f := &fakeStore{items: []squirrel.Item{
+		task(1, "book the MOT", squirrel.ItemOpen),
+		task(2, "ring the vet back", squirrel.ItemOpen),
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=weekly")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=weekly")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+	unfolded(t, c)
 
 	c.key(t, "d")
 	require.False(t, c.eval(t, `return !!document.querySelector(".strip.answerable.open")`).(bool),
 		"a letter opened a strip before any strip had focus")
 
 	c.key(t, "ArrowDown")
-	c.until(t, "the first chore to open", `document.querySelector(".strip.answerable.open")
-		?.querySelector(".what").textContent.trim().startsWith("bins out")`)
+	c.until(t, "the first to open", `document.querySelector(".strip.answerable.open")
+		?.querySelector(".what").textContent.trim().startsWith("book the MOT")`)
 
 	c.key(t, "ArrowDown")
-	c.until(t, "the second chore to open", `document.querySelector(".strip.answerable.open")
-		?.querySelector(".what").textContent.trim().startsWith("water the ferns")`)
+	c.until(t, "the second to open", `document.querySelector(".strip.answerable.open")
+		?.querySelector(".what").textContent.trim().startsWith("ring the vet back")`)
 
 	c.key(t, "d")
 	c.until(t, "the strike", `!!document.querySelector(".strip.struck")`)
-	require.Eventually(t, func() bool { return len(f.completed) == 1 },
-		4*time.Second, 50*time.Millisecond, "the key did not act on the chore a press had opened")
+	require.Eventually(t, func() bool { return f.states[2] != "" },
+		4*time.Second, 50*time.Millisecond, "the key did not act on the row a press had opened")
 }
 
 // The board's first screen is the work, and the deck scrolls past it. The
 // pulled strip held the top until 9 September 2026, when the offer moved onto
 // the row it is about; what has to give way now is the rail's own head.
 func TestBrowserTheRailScrollsPastItsHead(t *testing.T) {
-	f := aRackOfNotes()
-	for i := int64(10); i < 30; i++ {
-		f.items = append(f.items, squirrel.Item{
-			ID: i, RawText: "one more thing", State: squirrel.ItemOpen,
-			Kind: squirrel.ItemTask, ReceivedAt: time.Now(),
-		})
-	}
+	f := aLongRail()
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 	touching(t, c)
@@ -167,13 +197,7 @@ func TestBrowserTheRailScrollsPastItsHead(t *testing.T) {
 }
 
 func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
-	f := aRackOfNotes()
-	for i := int64(10); i < 30; i++ {
-		f.items = append(f.items, squirrel.Item{
-			ID: i, RawText: "one more thing", State: squirrel.ItemOpen,
-			Kind: squirrel.ItemTask, ReceivedAt: time.Now(),
-		})
-	}
+	f := aLongRail()
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 	touching(t, c)
@@ -191,8 +215,9 @@ func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
 		c.eval(t, `return Math.round(innerHeight - document.querySelector(".addbar").getBoundingClientRect().bottom)`),
 		"the bar scrolled away with the rack")
 
-	require.Contains(t, c.eval(t, `return document.querySelector(".addbar").textContent`), "add something",
-		"the pill at the foot is not the way in to the writer")
+	require.Equal(t, "add something", c.eval(t,
+		`return document.querySelector(".addbar .words").placeholder`),
+		"the bar at the foot is not the way in to the writer")
 }
 
 func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
@@ -212,27 +237,10 @@ func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
 		"the floating bar covers the tray rather than clearing it")
 }
 
-func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
-	f := &fakeStore{chores: []squirrel.Chore{
-		{ID: 1, Name: "remove settled dust", Active: true, Every: 7 * 24 * time.Hour, EveryDays: 7, SinceDays: 7},
-		{ID: 2, Name: "take a shower", Active: true, Every: 24 * time.Hour, EveryDays: 1, SinceDays: 1},
-		{ID: 3, Name: "wash the windows", Active: true, Every: 28 * 24 * time.Hour, EveryDays: 28, SinceDays: 28},
-		{ID: 4, Name: "water the plants", Active: true, Every: 3 * 24 * time.Hour, EveryDays: 3, SinceDays: 3},
-	}}
-	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=weekly")
-	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=weekly")
-	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
-
-	require.Greater(t, c.eval(t, `return new Set([...document.querySelectorAll(".dayrail .strip .mark")]
-		.map(m => Math.round(m.getBoundingClientRect().width))).size`).(float64), float64(1),
-		"every rhythm is the same width, so this measured nothing")
-
-	require.Equal(t, float64(1), c.eval(t, `return new Set([...document.querySelectorAll(".dayrail .opener")]
-		.map(o => Math.round(o.getBoundingClientRect().left))).size`),
-		"the chevrons step in and out with the rhythm beside them")
-}
+// The chevron column rule went with the racks on the phone. Every row behind
+// the fold is a thing you do once and wears the same mark, so there is no
+// second width for a chevron to line up against; the desk has no chevrons at
+// all. TestBrowserAStripOpensWhenYouPressIt still pins the chevron itself.
 
 func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
@@ -240,6 +248,7 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 	touching(t, c)
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
+	unfolded(t, c)
 
 	c.until(t, "the easing", `document.documentElement.classList.contains("eased")`)
 	require.NotEqual(t, "0s", c.eval(t, `return getComputedStyle(
@@ -252,25 +261,22 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 		"the collapse carries its own motion, so the strips animate shut on the way in")
 }
 
-func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
+// The writer at the foot is paper, not smoke. The floating bar was a smoked
+// purple pill while it was the tab bar's successor; the comps draw the writer
+// as a field you type into, and a field has to be stock you can read ink on.
+func TestBrowserTheWriterAtTheFootIsPaperAndRunsToTheEdges(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
 	c := browserAt(t, srv, "/")
 	touching(t, c)
 	c.navigate(t, srv.URL+"/")
 	c.until(t, "the bar", `getComputedStyle(document.querySelector(".addbar")).position === "fixed"`)
 
-	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".addpress")).backdropFilter`),
-		"the pill lets nothing through, so the board behind it is lost rather than diffused")
-	require.Contains(t, c.eval(t, `return getComputedStyle(document.querySelector(".addpress")).backgroundColor`),
-		"rgba", "the pill's tint is solid, so the blur behind it can never be seen")
-
-	c.send(t, "Emulation.setEmulatedMedia", map[string]any{"features": []map[string]string{
-		{"name": "prefers-reduced-transparency", "value": "reduce"},
-	}})
-	c.navigate(t, srv.URL+"/")
-	c.until(t, "the bar", `getComputedStyle(document.querySelector(".addbar")).position === "fixed"`)
-	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".addpress")).backdropFilter`),
-		"asking for less transparency changes nothing")
+	require.Equal(t, "12px", c.eval(t, `return getComputedStyle(document.querySelector(".addbar")).left`),
+		"the writer does not run to the phone's edges")
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".addbar")).backdropFilter`),
+		"the writer is smoked, so what you are typing sits over the board rather than on paper")
+	require.Contains(t, c.eval(t, `return getComputedStyle(document.querySelector(".addbar")).backgroundColor`),
+		"255", "the writer is not paper")
 }
 
 // The gap under the pill, measured with the inset the phone actually reports.

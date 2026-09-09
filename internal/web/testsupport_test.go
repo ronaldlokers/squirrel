@@ -562,6 +562,25 @@ func (f *fakeStore) Reword(_ context.Context, _ int64, id int64, text string) (b
 	return false, nil
 }
 
+func (f *fakeStore) HowMany(_ context.Context, _ int64) (int, int, error) {
+	if f.err != nil {
+		return 0, 0, f.err
+	}
+	notes, once := 0, 0
+	for _, it := range f.items {
+		if it.State != squirrel.ItemOpen {
+			continue
+		}
+		switch it.Kind {
+		case squirrel.ItemNote:
+			notes++
+		case squirrel.ItemTask:
+			once++
+		}
+	}
+	return notes, once, nil
+}
+
 func (f *fakeStore) Tasks(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
 	return f.ofKind(squirrel.ItemTask, squirrel.ItemOpen, limit)
 }

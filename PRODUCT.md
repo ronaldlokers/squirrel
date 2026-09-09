@@ -420,6 +420,24 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Amended on 9 September 2026: the phone prints two counts.** The two rows off
+the rail — *things you decided* and *in the notes* — each carry a number, and
+those are numbers of things you have not done yet. Principle 2's surviving
+clause says no number that counts what you did not do; this overrules it for
+these two rows, on the owner's decision.
+
+The reason it is worth the overrule: the alternative was listing every chore
+that is not asking today under the rail, which made the phone a thing you scroll
+past to find today — the exact failure the redesign started from. A folded row
+with a count is smaller and says the same thing.
+
+The rails that keep it from becoming a score: the counts are on a door rather
+than on the work, they never appear beside anything you are being asked to do,
+nothing compares them to yesterday, and no number anywhere counts a refusal.
+
+How it reverses: `foldView.Count` and `Store.HowMany`. Drop the count and the
+rows still work as doors.
+
 **Amended on 9 September 2026: the pick has no card.** The picker chose one
 thing and drew it on a card at the top of the board, above racks that were
 already showing the same thing. The card is gone; the pick is a mark and a
@@ -486,6 +504,18 @@ one.
 
 How it reverses: `every_weeks` on `moments`, migration `0044`. Drop the column
 and `MomentDone` goes back to a single update.
+
+**Amended on 9 September 2026: adding starts with a field, not a button.** The
+way in is a field floating at the foot of the board. Enter keeps a thought — one
+keystroke, which is what principle 1 is owed — and the `+` beside it opens the
+writer carrying what you typed. The writer itself is unchanged in what it does:
+one screen, four kinds, and nothing written until *keep it*.
+
+What it cost to find: the service worker was re-issuing every capture POST
+without its query string, so a form that carried a field in its action lost it
+silently — the post landed, the handler found nothing to do, and the screen
+looked like it had worked. Fixed, and it was a latent bug for every capture
+path, not only this one.
 
 **Amended on 9 September 2026: one button adds anything.** The board's three
 writers became a single modal, opened from a bar under the racks and asking the

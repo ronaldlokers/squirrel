@@ -64,9 +64,9 @@ var appearanceScreens = map[string][]string{
 		".strip", ".strip .holder", ".strip .words", ".strip .what", ".strip .mark",
 		".strip .why", ".strip.wants", ".rack .seam",
 		".stamp", ".stamp .k",
-		".addbar", ".addpress", ".addpress .plus",
+		".addbar", ".addbar .words", ".addbar .plus", ".notespill", ".notespill .n",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
-		".dial .record", ".chip.notes",
+		".dial .record",
 		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag", ".atagain",
 		".strip .pulledwhy", ".strip .pulledwhy b", ".pickfeed", ".pickfeed .quiet",
 		".tray", ".tray .strip.out .words",
@@ -81,13 +81,15 @@ var appearanceScreens = map[string][]string{
 	// own entry because a modal nothing has asked for is not on any other.
 	"/?bay=daily&rhythm=defrost+the+freezer": {
 		".addform", ".addsign", ".addform .words", ".kinds", ".kind span",
-		".addform .count", ".addform .unit", ".addform .asked", ".notnow", ".addform .again",
+		".addform .count", ".addform .asked", ".addfoot .notnow",
+		".kinds", ".kind .chip", ".asks", ".asksign", ".picks", ".pick .chip", ".pick.loose",
 	},
 
 	// The phone's own screen. Drawn at every width and shown only below 620px,
 	// so a record taken on the desk still pins its parts.
-	"/?phone=1": {".dayrail", ".dayrail .pip", ".hangs", ".hang", ".hang .at",
-		".hang .says", ".hang.h-notes .at", ".dayrail .seam"},
+	"/?phone=1": {".dayrail", ".dayrail .pip", ".headcard", ".headcard .name",
+		".headcard .lead", ".bigstamps", ".bigstamp", ".hangs", ".hang", ".hang .at",
+		".hang .says", ".fold", ".fold .tally", ".fold .says", ".dayrail .seam"},
 
 	"/me": {".youface", ".youhead", ".weekrow"},
 }

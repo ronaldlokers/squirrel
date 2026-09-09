@@ -61,26 +61,39 @@ func TestTheHeadOfTheRailIsTheOneThatWantsYouNow(t *testing.T) {
 
 	require.Contains(t, head, `class="atnow"`, "the rail has no head")
 	require.Contains(t, head, "bins out", "the head is not the thing the morning wants")
-	require.Contains(t, head, `class="stamps"`, "the head cannot be answered")
+	require.Contains(t, head, `class="bigstamps"`, "the head cannot be answered")
 	require.NotContains(t, head, "the dentist", "two things are at the head")
 }
 
-func TestEverythingElseHangsOffTheRailInTheRacksOrder(t *testing.T) {
+// Off the rail is two rows and a count each: what you decided to do once, and
+// what is on the wall. Everything behind them is not today's business, and a
+// phone that lists it is a phone you scroll past to find today.
+func TestOffTheRailIsTwoRowsAndTheirCounts(t *testing.T) {
 	atNine(t)
 	f := &fakeStore{
-		items:    []squirrel.Item{task(2, "book the MOT", squirrel.ItemOpen)},
+		items: []squirrel.Item{
+			task(2, "book the MOT", squirrel.ItemOpen),
+			task(3, "ring the vet back", squirrel.ItemOpen),
+			note(4, "the boiler code", squirrel.ItemOpen),
+		},
 		chores:   []squirrel.Chore{{ID: 1, Name: "wash the windows", Active: true, EveryDays: 28}},
-		upcoming: []squirrel.Moment{{ID: 4, Label: "the dentist", Starts: now().Add(2 * time.Hour)}},
+		upcoming: []squirrel.Moment{{ID: 5, Label: "the dentist", Starts: now().Add(2 * time.Hour)}},
 	}
 
 	rail := theRail(t, mounted(t, f).call(t, "GET", "/", nil).Body.String())
 	seam := strings.Index(rail, "whenever you like")
 
 	require.GreaterOrEqual(t, seam, 0, "nothing off the rail is named")
-	require.Greater(t, strings.Index(rail, "wash the windows"), seam,
-		"a chore with no hour is hanging at one")
+	require.Contains(t, rail[seam:], `<span class="tally">2</span>`,
+		"the row does not say how many things you decided to do once")
+	require.Contains(t, rail[seam:], "things you decided")
+	require.Contains(t, rail[seam:], `<span class="tally">1</span>`,
+		"the row does not say how many are on the wall")
+	require.Contains(t, rail[seam:], "in the notes")
+	require.Contains(t, rail[seam:], `href="/notes"`, "the notes row leads nowhere")
+
+	require.NotContains(t, rail, "wash the windows",
+		"a chore that is not asking today is on the phone")
 	require.Greater(t, strings.Index(rail, "book the MOT"), seam,
-		"a thing you do once is hanging at an hour")
-	require.Greater(t, strings.Index(rail, "everything you wrote down"), seam,
-		"the way to the notes is not off the rail")
+		"a thing you do once is hanging on the rail")
 }

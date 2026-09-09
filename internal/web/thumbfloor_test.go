@@ -18,6 +18,10 @@ const controlSizeWalker = `(() => {
   document.querySelectorAll('button, a[href], input, select, textarea, summary, label:has(input), label[for]')
     .forEach(el => {
       if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true, contentVisibilityAuto: true })) return;
+      // A control clipped for screen readers only is not one anybody taps, and
+      // the thing it duplicates carries the floor. checkVisibility calls it
+      // visible because it is not hidden — it is one pixel and clipped.
+      if (el.closest('.offscreen')) return;
       const r = el.getBoundingClientRect();
       if (r.width < 43.5 || r.height < 43.5) {
         out.push({

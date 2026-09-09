@@ -172,6 +172,26 @@ func (s *Store) OpenItems(ctx context.Context, personID int64, limit int) ([]Ite
 		`person_id = $1 and kind = 'note' and state = 'open' and `+stillMine, limit, personID)
 }
 
+// HowMany is what the phone's two folded rows say: how many thoughts are on the
+// wall and how many things you have decided to do once.
+//
+// A count, which the rest of this file refuses to give. The refusal was about a
+// backlog you are behind on, and it was retired with principle 2 on 24 August
+// 2026; what is still refused is a number of things you did not do at a moment
+// something asked you to. These two are labels on a door, not a score.
+func (s *Store) HowMany(ctx context.Context, personID int64) (notes, once int, err error) {
+	row := s.pool.QueryRow(ctx, `
+		select
+		  count(*) filter (where kind = 'note'),
+		  count(*) filter (where kind = 'task')
+		  from items
+		 where person_id = $1 and state = 'open' and has_content and `+stillMine, personID)
+	if err := row.Scan(&notes, &once); err != nil {
+		return 0, 0, fmt.Errorf("counting what is folded away: %w", err)
+	}
+	return notes, once, nil
+}
+
 // Tasks is what you decided and have not done. Newest first, like the pile: a
 // task decided this morning is the one you still remember deciding.
 func (s *Store) Tasks(ctx context.Context, personID int64, limit int) ([]Item, bool, error) {

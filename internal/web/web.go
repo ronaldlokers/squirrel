@@ -143,6 +143,9 @@ type Store interface {
 	// later author wanted it to.
 	HoldItem(ctx context.Context, personID, itemID int64, state squirrel.ItemState, because string, at time.Time) (bool, error)
 	HeldItems(ctx context.Context, personID int64, limit int) ([]squirrel.HeldItem, bool, error)
+	// HowMany is the two counts the phone's folded rows carry: thoughts on the
+	// wall, and things you decided to do once.
+	HowMany(ctx context.Context, personID int64) (notes, once int, err error)
 	Unhold(ctx context.Context, personID, itemID int64, at time.Time) (bool, error)
 	// Something you set aside that nobody has mentioned since. One, never a list: a
 	// screen handing back everything you ever parked is a second pile.

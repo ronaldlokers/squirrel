@@ -519,9 +519,12 @@ of them mattered more. Each rack is a sign and then a channel of strips. The
 channel is a recessed well that runs to the bottom of the board, so an unfilled
 rack reads as *room in the rack* rather than as dead space.
 
-**One writer for everything**, and it is a modal. Under the racks, full width to
-the dial's left edge, a dashed bar reading `+ add something`; pressing it opens
-the writer over the board.
+**One writer for everything**, and the way in is a field. Floating over the
+board at its foot — bottom right on the desk, edge to edge on the phone — paper
+stock, a pill, with a `+` at its end. **Typing and pressing enter keeps a
+thought**, which is one keystroke and is what principle 1 buys with this shape.
+**Pressing `+` opens the writer** and carries what you typed into it, so saying
+it is something else never costs the words twice.
 
 Until 9 September 2026 the board had three writers — a chore writer and an
 appointment writer under the racks, and a task inlet at the head of the once
@@ -529,13 +532,20 @@ rack. Three fields asking *what is it* in three places, so before you could
 write anything down you had to decide which one to walk to. The modal asks the
 words first and the kind second, which is the order the thought arrives in.
 
-**One screen, and it commits at the end.** Four kinds — *a thought* · *do it
-once* · *it comes back* · *at a time* — and only the fields that kind needs, so
-a thought is one field and a chore is two. Nothing is written until *keep it*:
-this is one form and one post, not a wizard with steps behind it. *not now*
-and Escape both close it, and what you typed goes with them, because a draft
-Squirrel kept for you is a thought in a form field — the one thing this product
-may never do.
+**One screen, and it commits at the end.** `Add something` in sentence case,
+then the words, then four kinds as a row of pills — *a thought* · *to do once* ·
+*comes back* · *a time*. Under them, in a nested panel of `card` stock, only
+what that kind needs, and as presets rather than fields: **how often** is *every
+day* · *every week* · *2 weeks* · *a month*, because the answer is nearly always
+one of four and a number box with a unit beside it is two decisions where one
+will do. A time asks for a day and a clock, and **and again** offers *just the
+once* · *every week* · *2 weeks* · *4 weeks*.
+
+Nothing is written until `KEEP IT`, which is the one orange stamp on the screen.
+`NEVER MIND` and Escape both close it, and what you typed goes with them — the
+words travel in the address, so shutting it clears them there too. A draft
+Squirrel kept for you is a thought in a form field, which is the one thing this
+product may never do.
 
 **It is drawn without a script.** The bar is a link to `#add` and the writer is
 `:target`, so it opens with the stylesheet alone. What the script adds is the
@@ -546,8 +556,10 @@ until this writer; it is now a rule with exactly one exception, and the reason
 is that a writer must not be reachable from four places at once and must not
 take a column of the board to sit in.
 
-**The notes are a chip in the ops bar**, beside the bell, and it leaves the
-board for `/notes`. The row of doors under the writers went with the once rack
+**The notes are a pill in the ops bar** — a lilac dot, the count, and the word
+*notes* — beside the bell, and it leaves the board for `/notes`. A pill rather
+than a glyph because it is the only thing in the bar that is a *place with
+things in it*, and the count is what makes it worth looking at. The row of doors under the writers went with the once rack
 on 9 September 2026: two doors, two signs and two questions were a second region
 under the board saying what the board already had room to hold.
 
@@ -562,26 +574,44 @@ One breakpoint, as before, and below it the phone is **its own screen rather
 than a fold of the desk**. The racks go; the rail takes their place.
 
 **The rail is today, in the order today happens.** A line down the left with a
-dot at each thing. At the head, the one thing that wants you now — a fixed
-point inside its leaving window if there is one, otherwise the first thing with
-an hour — drawn as a full strip with its answers out and `now` under its dot.
-Everything else hangs off the rail as a row: a block on the left carrying the
-hour, the words on the right. **The tab carries the time**, and it is the hour
-when there is one and the part of the day when that is all there is — an
-appointment has a clock and a chore has only *mornings*.
+dot at each thing, and a short spur from each dot to what it holds.
+
+**At the head, the one thing that wants you now**, and it is its own object
+rather than a strip: `paper` stock, a 14px holder, the reason above the name,
+the name at 25px, and **its answers as two large stamps side by side** — the
+only place on the phone where a thing can be answered. A fixed point inside its
+leaving window takes the head if there is one; otherwise the first thing with an
+hour does.
+
+**Everything else hangs off the rail as a row**: a block on the left carrying
+the hour, the words on the right, and no answers at all. **The tab carries the
+time**, and it is the hour when there is one and the part of the day when that
+is all there is — an appointment has a clock and a chore has only *mornings*. A
+thing that wants you today with neither hangs last, with no block.
 
 **It steps out as the day goes on.** Each row indents a little further than the
 one above, to four steps and then no further. The day reads as a descent rather
 than as a list.
 
-**Off the rail, whatever has no hour**, under *whenever you like*: everything
-else on the board, in the racks' own order, then the way to the notes. And
+**Off the rail, two rows and nothing else**, under *whenever you like*: *things
+you decided*, which opens in place, and *in the notes*, which leads to the wall.
+Each carries a count in a block the width of the rail's own hour blocks — orange
+for what you decided, lilac for the notes.
+
+The counts are the one place this product prints a number of things you have not
+done yet, and they are here because the alternative is worse: a phone that lists
+every chore not asking today is a phone you scroll past to find today. See
+`PRODUCT.md` for the overrule and what it costs.
+
+**A chore that is not asking today is not on the phone at all.** It is on the
+desk, in its rack, where a thing you are not being asked about belongs. And
 under *further ahead*, any fixed point that is not today, with its day rather
 than its hour.
 
-**The writer is the pill at the foot.** Fixed, smoked, 26px clear of the home
-indicator — the measurements the tab bar had, on the one control that replaced
-it. The tab bar went on 9 September 2026: with the racks gone there were no
+**The writer is the field at the foot.** Fixed, edge to edge, 26px clear of the
+home indicator — the measurements the tab bar had, on the thing that replaced
+it. Paper rather than smoke: it is stock you type ink onto, not chrome you look
+through. The tab bar went on 9 September 2026: with the racks gone there were no
 tabs to draw, and the phone's foot is better spent on the thing you came to do.
 
 The dial folds away behind today's face in the ops bar. The tray keeps its

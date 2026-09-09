@@ -51,6 +51,22 @@ func (store) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, 
 	return all, false, nil
 }
 
+func (store) HowMany(_ context.Context, _ int64) (int, int, error) {
+	notes, once := 0, 0
+	for _, it := range everything() {
+		if it.State != squirrel.ItemOpen {
+			continue
+		}
+		switch it.Kind {
+		case squirrel.ItemNote:
+			notes++
+		case squirrel.ItemTask:
+			once++
+		}
+	}
+	return notes, once, nil
+}
+
 func (store) Tasks(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
 	all := []squirrel.Item{}
 	for _, it := range everything() {
