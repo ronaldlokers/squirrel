@@ -556,10 +556,11 @@
 
 {{define "hoisted"}}
 {{with .Coming}}{{with .Hoisted}}
-<div class="hoist">
+<div class="hoist{{if .Late}} islate{{end}}">
   <p class="attime big">{{.Time}}</p>
   <p class="atlabel">{{.Label}}</p>
   {{if .LeaveBy}}<p class="leaveby">{{.LeaveBy}}</p>{{end}}
+  {{if .Late}}<p class="lateflag">late</p>{{end}}
 </div>
 {{end}}{{end}}
 {{end}}

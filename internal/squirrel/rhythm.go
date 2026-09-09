@@ -117,6 +117,21 @@ type Rack struct {
 
 func due(c Chore) bool { return c.SinceDays >= c.EveryDays }
 
+// LateToday reports whether a chore is one the world put on a day, and this is
+// that day, and it has not been done.
+//
+// Only a chore with a weekday. Chore.Weekday and Weeks exist because the bins
+// never fitted an interval — the lorry comes when it comes — so a chore on a
+// day was put there by the world and a chore on an interval was put there by
+// you. Squirrel never invents a time you can be late for.
+//
+// It never survives the day that caused it. Tomorrow the bins are an ordinary
+// chore again, unmarked, because lateness that carries forward is the accruing
+// mark principle 2 was written against.
+func (c Chore) LateToday(at time.Time) bool {
+	return c.OnADay() && c.EverDone && due(c) && c.Weekday == at.Weekday()
+}
+
 func partHasCome(part DayPart, at time.Time) bool {
 	hours, named := partHours[part]
 	return named && at.Hour() >= hours[0]
@@ -129,6 +144,10 @@ func rankOf(c Chore, u Usually, at time.Time) (int, string) {
 	today := u.OnADay && u.Weekday == at.Weekday()
 
 	switch {
+	// Rank nought. A thing the world put on a day, on that day, undone: the
+	// only chore that can be late, and the loudest claim a rack can carry.
+	case c.LateToday(at):
+		return 0, "the day it comes back is today"
 	case due(c) && today && partHasCome(u.Part, at):
 		return 1, "it comes back today, and this is when you usually do it"
 	case due(c) && today:

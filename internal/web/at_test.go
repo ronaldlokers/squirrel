@@ -146,3 +146,21 @@ func TestANotificationForAnythingLandsOnTheBoard(t *testing.T) {
 	require.Equal(t, 303, w.Code)
 	require.Equal(t, "/", w.Header().Get("Location"))
 }
+
+// A fixed point that has started is hoisted like one inside its window, says
+// late, and says nothing about how late. The leave-by comes off: there is
+// nothing left to leave for.
+func TestAFixedPointThatHasStartedIsHoistedAndSaysLate(t *testing.T) {
+	started := withUpcoming(squirrel.Moment{
+		ID: 4, Label: "dentist", Starts: now().Add(-20 * time.Minute),
+		Travel: 15 * time.Minute, Ready: 10 * time.Minute,
+	})
+	shown := mounted(t, started).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, shown, `class="hoist islate"`, "the one that has begun is down in the list")
+	require.Contains(t, shown, `class="lateflag"`)
+	require.NotContains(t, shown, "leave 1", "it is still telling you when to set off")
+	for _, banned := range []string{"20 minutes late", "overdue", "you missed"} {
+		require.NotContains(t, strings.ToLower(shown), banned)
+	}
+}

@@ -303,3 +303,50 @@ func TestNothingRestingIsAskingAndNothingAskingIsResting(t *testing.T) {
 		}
 	}
 }
+
+func TestOnlyAChoreTheWorldPutOnADayCanBeLate(t *testing.T) {
+	thursday := time.Date(2026, 9, 10, 9, 0, 0, 0, time.UTC)
+
+	bins := chore(1, "bins out", 7, 7, true)
+	bins.Weekday, bins.Weeks = time.Thursday, 1
+	require.True(t, bins.LateToday(thursday))
+
+	kettle := chore(2, "descale the kettle", 7, 7, true)
+	require.False(t, kettle.LateToday(thursday),
+		"a chore you put on a rhythm can be late, so Squirrel invented a time you can miss")
+}
+
+func TestLatenessNeverSurvivesTheDayThatCausedIt(t *testing.T) {
+	bins := chore(1, "bins out", 7, 8, true)
+	bins.Weekday, bins.Weeks = time.Thursday, 1
+
+	thursday := time.Date(2026, 9, 10, 23, 59, 0, 0, time.UTC)
+	friday := thursday.Add(2 * time.Minute)
+
+	require.True(t, bins.LateToday(thursday))
+	require.False(t, bins.LateToday(friday),
+		"yesterday's lateness is on today's board, which is a mark that accrues")
+}
+
+func TestAChoreNobodyHasEverDoneIsNotLate(t *testing.T) {
+	never := chore(1, "bins out", 7, 400, false)
+	never.Weekday, never.Weeks = time.Thursday, 1
+
+	require.False(t, never.LateToday(time.Date(2026, 9, 10, 9, 0, 0, 0, time.UTC)),
+		"a thing nobody has ever done is late, which is a sentence about the person")
+}
+
+func TestWhatIsLateLeadsItsRack(t *testing.T) {
+	thursday := time.Date(2026, 9, 10, 9, 0, 0, 0, time.UTC)
+	bins := chore(1, "bins out", 7, 7, true)
+	bins.Weekday, bins.Weeks = time.Thursday, 1
+	other := chore(2, "sort the recycling", 7, 9, true)
+
+	racks := squirrel.RacksOf([]squirrel.Chore{other, bins}, map[int64]squirrel.Usually{}, thursday, false)
+	weekly := rackFor(t, racks, squirrel.Weekly)
+
+	require.Len(t, weekly.Waiting, 2)
+	require.Equal(t, "bins out", weekly.Waiting[0].Chore.Name,
+		"a thing whose own moment has passed is behind one that is merely due")
+	require.Equal(t, "the day it comes back is today", weekly.Waiting[0].Because)
+}

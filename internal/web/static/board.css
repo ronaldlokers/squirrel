@@ -1160,3 +1160,12 @@ main.gate h1 + form { margin-top: 26px; }
 .writers .newchore, .writers .newmoment { max-width: none; }
 .doors { grid-template-columns: 1fr 1fr minmax(0, 292px); }
 .racks { grid-template-columns: 1fr 1fr 1fr minmax(0, 292px); }
+
+.lateflag {
+  display: inline-block; width: max-content; margin: 5px 0 1px; padding: 2px 7px 3px;
+  border: var(--line) solid var(--orange-lit); border-radius: var(--r);
+  color: var(--orange); font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 800;
+}
+.strip .lateflag { margin-top: 4px; }
+.hoist .lateflag { margin-top: 8px; }

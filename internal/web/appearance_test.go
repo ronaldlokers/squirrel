@@ -67,7 +67,7 @@ var appearanceScreens = map[string][]string{
 		".blankstrip .inline", ".blankstrip .count", ".newchore",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
 		".dial .record", ".doors", ".door", ".door .through",
-		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby",
+		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag",
 		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
@@ -103,6 +103,7 @@ func appearanceFixture() *fakeStore {
 	f.chores = []squirrel.Chore{{
 		ID: 1, Name: "bins out", Every: 7 * 24 * time.Hour,
 		EveryDays: 7, SinceDays: 7, Active: true, EverDone: true,
+		Weekday: time.Saturday, Weeks: 1,
 	}, {
 		ID: 2, Name: "water the plants", Every: 7 * 24 * time.Hour,
 		EveryDays: 7, SinceDays: 2, Active: true, EverDone: true,
