@@ -38,10 +38,16 @@ type boardView struct {
 	Dial           *dialView
 	Coming         *comingView
 	Rail           *railView
-	Told           []toldView
-	Telling        bool
-	AnyTold        bool
-	You            whom
+	// Loose is a row for the things the picker offers that have no row of their
+	// own: the breadcrumb, and a timer whose thing is not on the board. They
+	// used to share the offer's card; with the card gone they get a row, at
+	// the head, because a thing you cannot reach is worse than a thing in a
+	// place of its own.
+	Loose   []stripView
+	Told    []toldView
+	Telling bool
+	AnyTold bool
+	You     whom
 }
 
 type toldView struct {
@@ -166,6 +172,32 @@ type stripView struct {
 	// carrying is its reason and its usual time — both are still true, and
 	// both are one press away on the row itself.
 	Wants bool
+	// Timer is the countdown for the thing this strip is, when one is running
+	// on it. The band it used to live in went with the offer's card: a timer
+	// belongs to a thing, and the thing already has a row.
+	Timer *timerView
+	// Ramping is the check that asks whether you are still on this, on the
+	// same row for the same reason.
+	Ramping bool
+	// Because is the offer's own sentence, on the row the offer is about. The
+	// card it used to sit on went on 9 September 2026: the offer was always a
+	// thing that already had a row, and drawing it twice was the duplication
+	// the picker itself was cured of.
+	Because string
+	// Chosen says the picker chose this row. Separate from Because, which is
+	// the sentence: an offer with nothing to say for itself is still an offer,
+	// and gating the ladder on the sentence is how it disappeared once.
+	Chosen bool
+	// Blockers, Unstuck and UnstuckMinutes are the ladder, on the row the
+	// offer is about. On the row rather than reached through the board,
+	// because the strip template is its own scope and a rung that has to be
+	// threaded through every call site is a rung that gets dropped at one.
+	Blockers       []blockerView
+	Unstuck        string
+	UnstuckMinutes int
+	// Offerable says this is a thing the picker could have offered, so the
+	// opened strip may carry the two answers that used to be on its card.
+	Offerable bool
 	// When is the hour a rail row hangs at, or the part of the day when that
 	// is all there is to say. Empty everywhere but the phone's rail.
 	When string
@@ -278,6 +310,8 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		v.Moodful = in == "mood" && v.Dial != nil
 		v.Racks = standingIn(in, v.Racks)
 		v.Rail = railFor(v.Racks, v.Coming, usually)
+		theOffer(&v)
+		ticking(&v)
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
@@ -684,6 +718,18 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
+// backToTheStrip is the strip the ladder was climbed on. The ladder lived on
+// the offer's own card until 9 September 2026 and had one address; it is on the
+// opened strip now, so it has to come back to the strip it was pressed from.
+func backToTheStrip(r *http.Request) string {
+	switch from := strings.TrimSpace(r.FormValue("from")); {
+	case strings.HasPrefix(from, "/?open="):
+		return from
+	default:
+		return "/?pulled=1"
+	}
+}
+
 // backToTheBay is the rack the press was made in, so a phone that shows one bay
 // at a time does not answer a chore by putting you back in the notes.
 func backToTheBay(r *http.Request) string {
@@ -949,8 +995,9 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 			}
 		case "stuck":
 			why := r.FormValue("why")
+			back := backToTheStrip(r)
 			if why == "" {
-				http.Redirect(w, r, "/?stuck=1", http.StatusSeeOther)
+				http.Redirect(w, r, back+"&stuck=1", http.StatusSeeOther)
 				return
 			}
 			b, ok := squirrel.ParseBlocker(why)
@@ -973,7 +1020,7 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 					return
 				}
 			}
-			http.Redirect(w, r, "/?stuck="+url.QueryEscape(why), http.StatusSeeOther)
+			http.Redirect(w, r, back+"&stuck="+url.QueryEscape(why), http.StatusSeeOther)
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -1096,6 +1143,7 @@ func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripV
 		v.Mark = string(it.State)
 	case it.Kind == squirrel.ItemTask:
 		v.What, v.Answers, v.Held = "task", taskAnswers, heldAnswers
+		v.Offerable = true
 	default:
 		v.Answers = noteAnswers
 	}
@@ -1444,6 +1492,154 @@ func boardAskHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		http.Redirect(w, r, back+sep+"answered="+strconv.FormatInt(id, 10), http.StatusSeeOther)
 	}
+}
+
+// theOffer puts the picker's sentence on the row the pick is about, and lifts
+// that row to the head of the rail.
+//
+// Only a chore or a thing you do once: those are the two kinds with a row of
+// their own. What the picker offers that has no row — the breadcrumb, a fixed
+// point, a timer — is not drawn, and the record says what that cost.
+func theOffer(v *boardView) {
+	if v.Pulled == nil || v.Pulled.Running {
+		return
+	}
+	if v.Pulled.Kind == "again" {
+		v.Loose = append(v.Loose, stripView{
+			What: "again", ID: v.Pulled.RefID, Words: v.Pulled.Text,
+			Because: v.Pulled.Because, Chosen: true,
+		})
+		return
+	}
+	if v.Pulled.Kind != "chore" && v.Pulled.Kind != "task" {
+		return
+	}
+	found := false
+	mark := func(rows []stripView) {
+		for i := range rows {
+			if rows[i].What == v.Pulled.Kind && rows[i].ID == v.Pulled.RefID {
+				rows[i].Because, rows[i].Chosen = v.Pulled.Because, true
+				rows[i].Blockers, rows[i].Unstuck, rows[i].UnstuckMinutes = v.Blockers, v.Unstuck, v.UnstuckMinutes
+				found = true
+			}
+		}
+	}
+	for i := range v.Racks {
+		mark(v.Racks[i].Strips)
+		mark(v.Racks[i].Wants)
+		mark(v.Racks[i].Rest)
+	}
+	if !found {
+		// The pick is not on the board — a task further back than a rack
+		// draws, or a chore a quiet day is holding. It still has to be
+		// reachable, so it gets a row of its own.
+		v.Loose = append(v.Loose, stripView{
+			What: v.Pulled.Kind, ID: v.Pulled.RefID, Words: v.Pulled.Text,
+			Because: v.Pulled.Because, Chosen: true, Answers: answersFor(v.Pulled.Kind),
+			Blockers: v.Blockers, Unstuck: v.Unstuck, UnstuckMinutes: v.UnstuckMinutes,
+		})
+	}
+	if v.Rail == nil {
+		return
+	}
+	mark(v.Rail.Hung)
+	mark(v.Rail.Off)
+	if v.Rail.Head != nil && v.Rail.Head.What == v.Pulled.Kind && v.Rail.Head.ID == v.Pulled.RefID {
+		v.Rail.Head.Because, v.Rail.Head.Chosen = v.Pulled.Because, true
+		v.Rail.Head.Blockers = v.Blockers
+		v.Rail.Head.Unstuck, v.Rail.Head.UnstuckMinutes = v.Unstuck, v.UnstuckMinutes
+		return
+	}
+	for _, from := range []*[]stripView{&v.Rail.Hung, &v.Rail.Off} {
+		for i, row := range *from {
+			if row.What != v.Pulled.Kind || row.ID != v.Pulled.RefID {
+				continue
+			}
+			was := v.Rail.Head
+			lifted := row
+			v.Rail.Head = &lifted
+			*from = append((*from)[:i], (*from)[i+1:]...)
+			if was != nil {
+				v.Rail.Hung = append([]stripView{*was}, v.Rail.Hung...)
+			}
+			return
+		}
+	}
+}
+
+func answersFor(kind string) []answerView {
+	if kind == "chore" {
+		return choreAnswers
+	}
+	return taskAnswers
+}
+
+// ticking hangs a running timer, and the check that asks whether you are still
+// on it, on the row of the thing it is timing.
+//
+// Matched on the words, because a timer carries the label it was started with
+// and nothing else. When nothing on the board wears those words the timer is
+// still drawn — on the opened strip if that is what you are looking at, and
+// otherwise on the first row there is — because a timer you cannot stop is
+// worse than a timer in the wrong place.
+func ticking(v *boardView) {
+	if v.Timer == nil && v.Ramp == nil {
+		return
+	}
+	label := ""
+	if v.Timer != nil {
+		label = v.Timer.Label
+	} else {
+		label = v.Ramp.Label
+	}
+
+	// On the row it belongs to the label is the row's own words, so the block
+	// does not say them twice. Anywhere else it has to, or a countdown reads as
+	// belonging to whatever it landed on.
+	its := v.Timer
+	if its != nil {
+		mine := *its
+		mine.Label = ""
+		its = &mine
+	}
+
+	hung := false
+	onto := func(rows []stripView) {
+		for i := range rows {
+			if rows[i].Words != label {
+				continue
+			}
+			rows[i].Timer, rows[i].Ramping, hung = its, v.Ramp != nil, true
+		}
+	}
+	for i := range v.Racks {
+		onto(v.Racks[i].Strips)
+		onto(v.Racks[i].Wants)
+		onto(v.Racks[i].Rest)
+	}
+	if v.Rail != nil {
+		if v.Rail.Head != nil {
+			onto([]stripView{*v.Rail.Head})
+			if v.Rail.Head.Words == label {
+				v.Rail.Head.Timer, v.Rail.Head.Ramping, hung = v.Timer, v.Ramp != nil, true
+			}
+		}
+		onto(v.Rail.Hung)
+		onto(v.Rail.Off)
+	}
+	if v.Opened != nil && v.Opened.Words == label {
+		v.Opened.Timer, v.Opened.Ramping, hung = its, v.Ramp != nil, true
+	} else if v.Opened != nil && !hung {
+		v.Opened.Timer, v.Opened.Ramping, hung = v.Timer, v.Ramp != nil, true
+	}
+	if hung {
+		return
+	}
+	// Nothing on the board wears those words — a timer started in chat, or one
+	// whose thing has since been done. It gets a row of its own rather than
+	// being hung on somebody else's: a countdown on the wrong row is worse
+	// than a countdown with no row.
+	v.Loose = append(v.Loose, stripView{What: "timer", Words: label, Timer: its, Ramping: v.Ramp != nil})
 }
 
 // marginalia puts on a rack's rows the three things every other strip on the

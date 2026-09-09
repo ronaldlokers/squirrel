@@ -3,6 +3,7 @@
 <article class="strip h-{{$.Bay}}{{if .Answers}} answerable{{end}}{{if .Resting}} resting{{end}}{{if .Wants}} wants{{end}}">
   <span class="holder"></span>
   <div class="words">
+    {{if .Because}}<p class="pulledwhy"><b>pulled</b>{{.Because}}</p>{{end}}
     <p class="what">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}</p>
     {{if .Late}}<p class="lateflag">late &mdash; today</p>{{end}}
     {{if and .Wants .Why}}<p class="why">{{.Why}}</p>{{end}}
@@ -16,6 +17,32 @@
     </div>
     {{end}}
     <div class="acts">
+    {{with .Timer}}
+    <span class="ticking">
+      <span class="lbl">running</span>
+      {{with .Label}}<span class="what">{{.}}</span>{{end}}
+      <span class="left">{{.Left}}</span>
+      <form method="post" action="/board/now">
+        <input type="hidden" name="act" value="stop">
+        <button class="stopTimer" type="submit">stop</button>
+      </form>
+    </span>
+    {{end}}
+    {{if .Ramping}}
+    <span class="ramping">
+      <span class="lbl">still on this?</span>
+      
+      <form method="post" action="/board/now">
+        <input type="hidden" name="act" value="stop">
+        <button class="stamp go" type="submit">stop</button>
+      </form>
+      <a class="stamp no" href="/">keep going</a>
+      <form method="post" action="/board/now">
+        <input type="hidden" name="act" value="hush">
+        <button class="stamp no" type="submit">leave me alone</button>
+      </form>
+    </span>
+    {{end}}
     {{if .Rhythms}}
     <form class="stamps" method="post" action="/board/chore">
       <input type="hidden" name="id" value="{{.ID}}">
@@ -45,6 +72,34 @@
       <button class="quiet">ask Buddy</button>
     </form>
     {{end}}
+    {{end}}
+    {{if .Chosen}}
+    <form class="asking pickfeed" method="post" action="/board/now">
+      <input type="hidden" name="kind" value="{{.What}}">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <input type="hidden" name="from" value="/?pulled=1">
+      {{if eq .What "again"}}
+      <input type="hidden" name="minutes" value="10">
+      <input type="hidden" name="label" value="{{.Words}}">
+      <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
+      <button class="stamp go" name="act" value="start">pick it up<span class="k">D</span></button>
+      <button class="stamp no" name="act" value="later">not now<span class="k">N</span></button>
+      {{else if .Blockers}}
+      <input type="hidden" name="act" value="stuck">
+      {{range .Blockers}}
+      <button class="quiet" name="why" value="{{.Why}}">{{.Words}}</button>
+      {{end}}
+      {{else if .UnstuckMinutes}}
+      <input type="hidden" name="minutes" value="{{.UnstuckMinutes}}">
+      <input type="hidden" name="label" value="{{.Words}}">
+      <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
+      <button class="quiet" name="act" value="timer">{{.UnstuckMinutes}} MIN</button>
+      {{else}}
+      <button class="quiet" name="act" value="wrong">not this one</button>
+      <button class="quiet" name="act" value="stuck">I&rsquo;m stuck</button>
+      {{end}}
+    </form>
+    {{with .Unstuck}}<p class="pencil"><span>{{.}}</span></p>{{end}}
     {{end}}
     </div>
   </div>

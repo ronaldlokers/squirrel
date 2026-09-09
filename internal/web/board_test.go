@@ -338,16 +338,48 @@ func TestAPressComesBackToTheBayItWasMadeIn(t *testing.T) {
 	require.Equal(t, "/?bay=tasks", made.Header().Get("Location"))
 }
 
-func TestThePulledStripCarriesItsThreeAnswers(t *testing.T) {
+// The offer is on the row it is about. Its card went on 9 September 2026: the
+// picker only ever chooses a thing that already has a row, and drawing it in
+// two places is the duplication the picker itself was cured of.
+func TestTheOfferIsOnTheRowItIsAbout(t *testing.T) {
 	f := aBoardStore()
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "vet about the booster", Because: "the oldest thing you decided to do"}
 	m := mounted(t, f)
 
 	body := m.call(t, "GET", "/", nil).Body.String()
 
-	for _, want := range []string{`action="/board/now"`, `value="did"`, `value="later"`, `value="stuck"`} {
-		require.Contains(t, body, want)
-	}
+	require.NotContains(t, body, `class="pulled"`, "the offer still has a card of its own")
+	row := theRowFor(t, body, "vet about the booster")
+	require.Contains(t, row, "the oldest thing you decided to do", "the row does not say why it was chosen")
+	require.Contains(t, row, "<b>pulled</b>", "nothing on the row says it is what was chosen")
+	require.Contains(t, row, `value="wrong"`, "the row cannot say it is the wrong one")
+	require.Contains(t, row, `value="stuck"`, "the row cannot say you are stuck on it")
+}
+
+// theRowFor is one strip's whole markup, from its opening tag, so a line drawn
+// above the words is inside it.
+func theRowFor(t *testing.T, page, words string) string {
+	t.Helper()
+	at := strings.Index(page, words)
+	require.GreaterOrEqual(t, at, 0, "%q is not on the page", words)
+	from := strings.LastIndex(page[:at], "<article")
+	require.GreaterOrEqual(t, from, 0, "%q is not on a strip", words)
+	rest := page[from:]
+	return rest[:strings.Index(rest, "</article>")]
+}
+
+func TestOnlyTheChosenRowSaysItWasChosen(t *testing.T) {
+	f := aBoardStore()
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "vet about the booster", Because: "the oldest thing you decided to do"}
+
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	racks := body[strings.Index(body, `<main class="racks">`):]
+	racks = racks[:strings.Index(racks, "</main>")]
+
+	require.Equal(t, 1, strings.Count(racks, "<b>pulled</b>"),
+		"more than one row says it is what was chosen")
+	require.Equal(t, 1, strings.Count(racks, `value="wrong"`),
+		"a row nobody chose is being asked whether it was the wrong one")
 }
 
 func TestDoingTheOfferedThingRecordsIt(t *testing.T) {
@@ -380,8 +412,8 @@ func TestBeingStuckAsksWhatIsInTheWay(t *testing.T) {
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading"}
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/board/now", strings.NewReader("act=stuck&kind=task&id=3"))
-	require.Equal(t, "/?stuck=1", w.Header().Get("Location"))
+	w := m.call(t, "POST", "/board/now", strings.NewReader("act=stuck&kind=task&id=3&from=/?pulled=1"))
+	require.Equal(t, "/?pulled=1&stuck=1", w.Header().Get("Location"))
 
 	body := m.call(t, "GET", "/?stuck=1", nil).Body.String()
 	// The apostrophe arrives escaped, as it does in a browser, so the words are
@@ -423,14 +455,14 @@ func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
 // instead, once a day, where nothing waits for it.
 func TestTheBoardDrawsWithoutAskingAModel(t *testing.T) {
 	f := aBoardStore()
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "send the meter reading", Because: "the oldest thing you decided to do"}
+	f.offer = &squirrel.Offer{Kind: squirrel.OfferTask, RefID: 3, Text: "vet about the booster", Because: "the oldest thing you decided to do"}
 	c := &fakeCoach{}
 	m := mountedWith(t, f, c)
 
 	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.Contains(t, body, "the oldest thing you decided to do", "the picker's own clause is gone")
-	require.Contains(t, body, "send the meter reading")
+	require.Contains(t, body, "vet about the booster")
 	require.NotContains(t, body, "it is five minutes", "a model was asked while the board was drawn")
 	require.NotContains(t, body, "noticed", "the pulled strip still carries a mark")
 	require.NotContains(t, body, `action="/board/badly"`,

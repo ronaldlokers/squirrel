@@ -10,15 +10,24 @@ import (
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
 
-func TestOnTheBoardARunningTimerOfferCarriesNoButtons(t *testing.T) {
+// A timer the picker offers is the timer you already started, and the timer
+// draws itself on the row it belongs to. The offer's card carried it until
+// 9 September 2026, when the card went; there is nothing left for the offer to
+// say that the running timer does not say better.
+func TestOnTheBoardARunningTimerOfferIsTheTimerAndNothingElse(t *testing.T) {
 	f := aBoardStore()
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferTimer, Text: "the kitchen", Because: "you are on this"}
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 
-	require.Contains(t, body, "the kitchen")
-	require.NotContains(t, body, `name="act" value="did"`)
-	require.NotContains(t, body, `name="act" value="later"`)
-	require.NotContains(t, body, `name="act" value="stuck"`)
+	require.NotContains(t, body, "you are on this", "a timer offer is drawn as an offer")
+	for _, gone := range []string{`name="act" value="did"`, `name="act" value="later"`, `name="act" value="stuck"`} {
+		require.NotContains(t, body, gone)
+	}
+
+	f.timer = &squirrel.Timer{Label: "the kitchen", Started: time.Now(), Ends: time.Now().Add(time.Minute)}
+	running := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	require.Contains(t, running, "the kitchen", "a running timer has nowhere to be seen")
+	require.Contains(t, running, `value="stop"`, "a running timer cannot be stopped")
 }
 
 func TestOnTheBoardTheBreadcrumbOffersOnlyTheWayBackIn(t *testing.T) {

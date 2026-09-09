@@ -506,9 +506,10 @@ bare purple. Search is the only navigation in this product besides the four
 bays, and the navigation holds the middle rather than a corner; the phone bar
 already said so, and the desktop is the same bar, not a second one.
 
-**The working row.** A grid of the pulled strip and, at its right, a 292px panel
-for a running timer when one is running. When nothing is pulled and nothing is
-running, this band closes to nothing rather than showing an empty frame.
+**No working row.** The board's first line is the racks. The band that held the
+pulled card and a running timer went on 9 September 2026: the pick is on its
+own row and the timer is on the row it times, so the band was drawing two
+things that already had places.
 
 **The racks.** Three across and the dial at the right, `1fr 1fr 1fr
 minmax(0, 264px)` — *daily*, *weekly*, *seldom*, cut by how often a chore comes
@@ -760,9 +761,10 @@ seven rooms; there is one room, and the bar is the navigation. What the rail
 held last — the way back, the way to look something up, and who you are — is two
 chips and a page. The body's grid is one column again.
 
-**The pulled strip gives way.** Below 620px the board under the ops bar is one
-scrolling deck — the pulled strip, then the rack — so what you are looking at
-scrolls and the bar at the foot does not. The ledge still sits at the foot of the channel rather than after the last
+**The rail gives way.** Below 620px the board under the ops bar is one scrolling
+deck, so what you are looking at scrolls and the bar at the foot does not. The
+rail's head is the first thing in it and scrolls with everything else; nothing
+holds the top. The ledge still sits at the foot of the channel rather than after the last
 strip, because the channel still stretches to fill a short rack; the prediction
 that it would have no foot to sit on was wrong.
 
@@ -874,58 +876,60 @@ before it, because a mark is as wide as its words — *every week* against *ever
 28 days* — and a chevron placed inside that column steps in and out down the
 rack.
 
-### The pulled strip
+### The pick is on the row it is about
 
-One per board, ever. `paper` rather than `card` — the only surface in the
-product brighter than stock — with a 3px `orange-lit` ring, a 14px holder in the
-colour of the bay it came from, and its stamps down the right edge in a column.
+The picker still chooses one thing and still says why. Until 9 September 2026 it
+said so on a card of its own at the top of the board — `paper` stock, an
+`orange-lit` ring, its own copy of the words and its own four answers. The card
+is gone. What replaced it is the row the pick is already about.
 
-Above the words: the tag `PULLED` and, beside it in sentence case, the rule that
-chose it. Below them, its answers — `I'll do it` in the orange every
-make-something stamp takes, `not today` and `I'm stuck` in the fill that does
-nothing to the world, and — a chore or a task only — `not this one` beside them
-in the same fill.
+**The chosen row wears `PULLED` and the rule that chose it**, above its name, in
+the quiet register. It keeps the answers every row of its kind has: `did it`
+and `later`, or `done` and `drop`. Nothing is drawn twice, which is the whole
+reason the card went — the picker only ever chooses a thing that already has a
+row, and the board was drawing that thing in two places at once.
 
-**`not today` and `not this one` are two different no's.** `not today` concedes
-the pick and asks again tomorrow: right thing, wrong moment. `not this one`
-does not concede it — the pick itself was wrong — and does not expire at
-midnight the way `not today` does; the picker's own memory of it has no time
-floor. Neither costs a model call: both are the picker's rules recording what
-they were told, the same write `not today` already made. Nowhere does either
-answer surface as a number — not on the strip, not in the margin, not
-anywhere — because a tally of wrong picks is exactly the report card Principle
-2 forbids.
+**Its two hard answers sit under the stamps, quiet**, beside *ask Buddy*:
+`not this one` and `I'm stuck`. Quiet rather than stamped, because they are not
+what the row is for; they are what you press when the row is wrong.
 
-**`not this one` is a chore or a task only.** A fixed point is the world's
-business and cannot be the wrong pick; a running timer is what you are doing
-and has nothing to decide; the breadcrumb has its own two answers already. The
-fourth stamp exists only where the picker chose among rows of its own.
+**`not today` and `not this one` are two different no's.** `not today` — which
+is `later` on the row — concedes the pick and asks again tomorrow: right thing,
+wrong moment. `not this one` does not concede it; the pick itself was wrong, and
+it does not expire at midnight. Neither costs a model call, and neither ever
+surfaces as a number, because a tally of wrong picks is exactly the report card
+Principle 2 forbids.
 
-**Being stuck asks, and then says one sentence.** Pressing `I'm stuck` replaces
-the three answers with the product's own four — *too big*, *don't know how*,
-*boring*, *not today* — and pressing one of those replaces them with the
-ladder's fixed line. Which blocker you pressed lives in the address rather than
-in the server, so a reload shows the same sentence instead of repeating a press.
-`not today` reached this way is the same no as turning the offer down, and
-leaves the same mark.
+**`not this one` is a chore or a thing you do once only.** A fixed point is the
+world's business and cannot be the wrong pick; a running timer is what you are
+doing; the breadcrumb has its own two answers.
+
+**Being stuck asks, and then says one sentence.** `I'm stuck` replaces the two
+quiet presses with the product's own four — *too big*, *don't know how*,
+*boring*, *not today* — and pressing one replaces them with the ladder's fixed
+line. Which blocker you pressed lives in the address, so a reload shows the same
+sentence instead of repeating a press. `not today` reached this way is the same
+no as `later`, and leaves the same mark.
 
 That sentence carries **no acorn**: the ladder's lines are fixed and are
-Squirrel's own, and the acorn is what marks a sentence a model wrote. Principle
-8 decides which mark a line gets, not who is speaking on that strip.
+Squirrel's own. **And the ladder's one control is drawn** — a single `5 MIN` or
+`10 MIN`, quiet, under the line, only when the answer has one to give.
 
-**And the ladder's one control is drawn.** Two of the four answers end in a
-timer — *too big* and *boring* both offer a short one — and until now the
-sentence appeared on the board with nothing under it, so the only way to take
-the offer was the room. A single `5 MIN` or `10 MIN` stamp sits under the line,
-in the fill that does nothing to the world. One control, as the ladder's own
-rule requires: at most one, and only when the answer has one to give.
+### Two rows with nowhere else to be
 
-**A strip you are already on has nothing to decide.** A running timer's offer
-draws no answers at all — *I'll do it* under a thing you are doing is a question
-already answered — and the breadcrumb, the hour in which a finished timer's row
-survives itself, draws *pick it up* and *not now* rather than the ordinary
-three. The room had both rules; the board did not, and drew the generic answers
-on both. The ticking aside carries `stop` at its end.
+Almost everything the picker chooses has a row already. Two things do not, and
+they get a loose row at the head of the board rather than a card:
+
+**A running timer whose thing is not on the board** — one started in chat, or
+one whose thing has since been done. Everywhere else the countdown hangs on the
+row of the thing it is timing, matched on the words, saying `running`, the time
+left, and `stop`. On its own row it says the label too, because a countdown that
+does not name what it is counting is a countdown on the wrong row.
+
+**The breadcrumb** — what you were on before you got up, for the hour a finished
+timer's row survives itself. `pick it up` and `not now`, and the `catch me if I
+lose track` tick beside them, because a thing with no row of its own has nowhere
+else to carry them.
 
 ### The opened strip corrects itself
 

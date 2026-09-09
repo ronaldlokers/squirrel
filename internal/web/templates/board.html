@@ -35,81 +35,6 @@
 </header>
 
 <div class="deck">
-{{if or .Pulled .Timer .Ramp}}
-<section class="working">
-  {{with .Pulled}}
-  <article class="pulled">
-    <span class="holder"></span>
-    <div class="body">
-      <p class="why"><b>pulled</b>{{.Because}}</p>
-      <p class="said">{{.Text}}</p>
-      {{if $.Unstuck}}
-      <p class="pencil"><span>{{$.Unstuck}}</span></p>
-      {{end}}
-
-      <form class="stamps" method="post" action="/board/now">
-        <input type="hidden" name="kind" value="{{.Kind}}">
-        <input type="hidden" name="id" value="{{.RefID}}">
-        {{if $.Blockers}}
-        {{range $.Blockers}}
-        <button class="stamp no" name="why" value="{{.Why}}">{{.Words}}</button>
-        {{end}}
-        <input type="hidden" name="act" value="stuck">
-        {{else if not $.Unstuck}}
-        {{if eq .Kind "again"}}
-        <input type="hidden" name="minutes" value="10">
-        <input type="hidden" name="label" value="{{.Text}}">
-        <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
-        <button class="stamp go" name="act" value="start">pick it up<span class="k">D</span></button>
-        <button class="stamp no" name="act" value="later">not now<span class="k">N</span></button>
-        {{else if not .Running}}
-        <button class="stamp go" name="act" value="did">I'll do it<span class="k">D</span></button>
-        <button class="stamp no" name="act" value="later">not today<span class="k">N</span></button>
-        {{if or (eq .Kind "chore") (eq .Kind "task")}}
-        <button class="stamp no" name="act" value="wrong">not this one<span class="k">W</span></button>
-        {{end}}
-        <button class="stamp no" name="act" value="stuck">I'm stuck<span class="k">S</span></button>
-        {{end}}
-        {{else if $.UnstuckMinutes}}
-        <input type="hidden" name="minutes" value="{{$.UnstuckMinutes}}">
-        <input type="hidden" name="label" value="{{.Text}}">
-        <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
-        <button class="stamp go" name="act" value="timer">{{$.UnstuckMinutes}} MIN<span class="k">T</span></button>
-        {{end}}
-      </form>
-    </div>
-  </article>
-  {{end}}
-  {{with .Timer}}
-  <aside class="ticking">
-    <span class="lbl">running</span>
-    <span class="row"><span class="what">{{.Label}}</span><span class="left">{{.Left}}</span></span>
-    <form method="post" action="/board/now">
-      <input type="hidden" name="act" value="stop">
-      <button class="stopTimer" type="submit">stop</button>
-    </form>
-  </aside>
-  {{end}}
-  {{with .Ramp}}
-  <aside class="ramping">
-    <span class="lbl">still on this?</span>
-    <span class="row"><span class="what">{{.Label}}</span></span>
-    <span class="stamps">
-      <form method="post" action="/board/now">
-        <input type="hidden" name="act" value="stop">
-        <button class="stamp go" type="submit">stop</button>
-      </form>
-      <a class="stamp no" href="/">keep going</a>
-      <form method="post" action="/board/now">
-        <input type="hidden" name="act" value="hush">
-        <button class="stamp no" type="submit">leave me alone</button>
-      </form>
-    </span>
-  </aside>
-  {{end}}
-</section>
-{{end}}
-
 {{if .Kept}}
 <p class="wentto">that went to the notes — an appointment needs a time in it, and a chore needs a rhythm.</p>
 {{end}}
@@ -176,6 +101,28 @@
           <button class="stamp no" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
           {{end}}
         </form>
+        {{end}}
+        {{if .Offerable}}
+        <form class="stamps" method="post" action="/board/now">
+          <input type="hidden" name="kind" value="{{.What}}">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <input type="hidden" name="from" value="/?open={{.ID}}">
+          {{if $.Blockers}}
+          <input type="hidden" name="act" value="stuck">
+          {{range $.Blockers}}
+          <button class="stamp no" name="why" value="{{.Why}}">{{.Words}}</button>
+          {{end}}
+          {{else if $.UnstuckMinutes}}
+          <input type="hidden" name="minutes" value="{{$.UnstuckMinutes}}">
+          <input type="hidden" name="label" value="{{.Words}}">
+          <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
+          <button class="stamp go" name="act" value="timer">{{$.UnstuckMinutes}} MIN<span class="k">T</span></button>
+          {{else}}
+          <button class="stamp no" name="act" value="wrong">not this one<span class="k">W</span></button>
+          <button class="stamp no" name="act" value="stuck">I'm stuck<span class="k">S</span></button>
+          {{end}}
+        </form>
+        {{if $.Unstuck}}<p class="pencil"><span>{{$.Unstuck}}</span></p>{{end}}
         {{end}}
         {{end}}
         {{if .Back}}
@@ -257,6 +204,9 @@
   </section>
 </main>
 {{else}}
+{{range .Loose}}
+<div class="loose">{{template "strip" dict "Strip" . "Bay" .What}}</div>
+{{end}}
 <main class="racks">
   {{range $rack := .Racks}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
