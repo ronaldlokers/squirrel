@@ -37,6 +37,11 @@ type Moment struct {
 	// leaving has to admit it.
 	Guessed bool
 	Said    bool
+	// EveryWeeks is how many weeks until it comes round again, or nought for
+	// one that does not. Weeks and not days: what recurs is a day of the week
+	// at a time of day, which is what a fortnightly appointment means and what
+	// an interval in days stops meaning the moment a month is not four weeks.
+	EveryWeeks int
 }
 
 // LeaveAt is when you would have to walk out. Never called a deadline and
@@ -176,11 +181,17 @@ func (s *Store) CreateMoment(ctx context.Context, personID int64, m Moment) (Mom
 		ready = &secs
 	}
 
+	var weeks *int16
+	if m.EveryWeeks > 0 {
+		w := int16(m.EveryWeeks)
+		weeks = &w
+	}
+
 	err := s.pool.QueryRow(ctx, `
-		insert into moments (person_id, label, starts_at, travel_secs, ready_secs)
-		values ($1, $2, $3, $4, $5)
+		insert into moments (person_id, label, starts_at, travel_secs, ready_secs, every_weeks)
+		values ($1, $2, $3, $4, $5, $6)
 		returning id, person_id`,
-		personID, m.Label, m.Starts, travel, ready).Scan(&m.ID, &m.PersonID)
+		personID, m.Label, m.Starts, travel, ready, weeks).Scan(&m.ID, &m.PersonID)
 	if err != nil {
 		return Moment{}, fmt.Errorf("keeping a fixed point: %w", err)
 	}
@@ -194,7 +205,7 @@ func (s *Store) CreateMoment(ctx context.Context, personID int64, m Moment) (Mom
 func (s *Store) NextMoment(ctx context.Context, personID int64, now time.Time) (Moment, bool, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,
-		       coalesce(bring, ''), said_at is not null
+		       coalesce(bring, ''), said_at is not null, every_weeks
 		  from moments
 		 where person_id = $1 and done_at is null and starts_at > $2
 		 order by starts_at limit 1`
@@ -214,7 +225,7 @@ func (s *Store) NextMoment(ctx context.Context, personID int64, now time.Time) (
 func (s *Store) DueMoment(ctx context.Context, personID int64, now time.Time) (Moment, bool, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,
-		       coalesce(bring, ''), said_at is not null
+		       coalesce(bring, ''), said_at is not null, every_weeks
 		  from moments
 		 where person_id = $1 and done_at is null and starts_at > $2
 		   and said_at is null
@@ -242,10 +253,14 @@ func momentFrom(row scannable) (Moment, error) {
 	var (
 		m            Moment
 		travel, redy *int64
+		weeks        *int16
 	)
 	if err := row.Scan(&m.ID, &m.PersonID, &m.Label, &m.Starts,
-		&travel, &redy, &m.Bring, &m.Said); err != nil {
+		&travel, &redy, &m.Bring, &m.Said, &weeks); err != nil {
 		return Moment{}, err
+	}
+	if weeks != nil {
+		m.EveryWeeks = int(*weeks)
 	}
 	m.Travel, m.Guessed = defaultTravel, true
 	if travel != nil {
@@ -277,7 +292,7 @@ func (s *Store) scanMoment(ctx context.Context, q string, args ...any) (Moment, 
 func (s *Store) MomentByID(ctx context.Context, personID, id int64) (Moment, bool, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,
-		       coalesce(bring, ''), said_at is not null
+		       coalesce(bring, ''), said_at is not null, every_weeks
 		  from moments
 		 where id = $2 and person_id = $1`
 
@@ -296,11 +311,38 @@ func (s *Store) MarkMomentSaid(ctx context.Context, id int64, at time.Time) erro
 
 // MomentDone closes one: you left, or it stopped mattering. Either way nothing
 // will raise it again, and nothing anywhere records which of the two it was.
+//
+// One that comes round again is closed and a fresh one is made, rather than
+// having its date moved on. A moved row would make the appointment you kept and
+// the one still ahead the same object, so the record of having gone would be
+// overwritten every time it came round.
 func (s *Store) MomentDone(ctx context.Context, personID, id int64, at time.Time) error {
-	if _, err := s.pool.Exec(ctx,
-		`update moments set done_at = $3 where id = $1 and person_id = $2`,
-		id, personID, at); err != nil {
+	row := s.pool.QueryRow(ctx, `
+		update moments set done_at = $3 where id = $1 and person_id = $2 and done_at is null
+		returning label, starts_at, travel_secs, ready_secs, every_weeks`,
+		id, personID, at)
+
+	var (
+		label        string
+		starts       time.Time
+		travel, redy *int64
+		weeks        *int16
+	)
+	switch err := row.Scan(&label, &starts, &travel, &redy, &weeks); {
+	case errors.Is(err, pgx.ErrNoRows):
+		return nil
+	case err != nil:
 		return fmt.Errorf("closing a fixed point: %w", err)
+	}
+	if weeks == nil || *weeks <= 0 {
+		return nil
+	}
+
+	if _, err := s.pool.Exec(ctx, `
+		insert into moments (person_id, label, starts_at, travel_secs, ready_secs, every_weeks)
+		values ($1, $2, $3, $4, $5, $6)`,
+		personID, label, starts.AddDate(0, 0, 7*int(*weeks)), travel, redy, weeks); err != nil {
+		return fmt.Errorf("arming the next one: %w", err)
 	}
 	return nil
 }
@@ -409,7 +451,7 @@ func (m Moment) Late(now time.Time) bool {
 func (s *Store) Upcoming(ctx context.Context, personID int64, now time.Time, limit int) ([]Moment, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,
-		       coalesce(bring, ''), said_at is not null
+		       coalesce(bring, ''), said_at is not null, every_weeks
 		  from moments
 		 where person_id = $1 and done_at is null and starts_at > $2
 		 order by starts_at limit $3`

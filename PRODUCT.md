@@ -420,6 +420,31 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Amended on 9 September 2026: a fixed point may come round.** Every week, every
+two, every four — a number of weeks on the appointment, chosen in the writer and
+nothing by default. Refused until now as calendar machinery, and allowed by the
+owner alongside lateness: the physio is genuinely every fortnight, and retyping
+it every fortnight is the administration this product exists to remove.
+
+It is not a rule engine. There is no schedule to read, no series to edit, no
+exceptions, and nothing that generates a row before you have dealt with the one
+in front of you. **The next one is made when you keep the one before it**, from
+that one's own time plus the weeks — so a diary that has been ignored for a
+month holds exactly one appointment, not four.
+
+Closed and created rather than moved on, deliberately: a moved row would make
+the appointment you kept and the one still ahead the same object, and the record
+of having gone would be overwritten each time it came round. Principle 1 again,
+on the other table.
+
+What it costs: skipping one is the same press as keeping it, so the diary cannot
+tell those apart — which is the same thing it already refuses to record about a
+single appointment. And a series cannot be ended except by not keeping the last
+one.
+
+How it reverses: `every_weeks` on `moments`, migration `0044`. Drop the column
+and `MomentDone` goes back to a single update.
+
 **Amended on 9 September 2026: one button adds anything.** The board's three
 writers became a single modal, opened from a bar under the racks and asking the
 words before the kind. Three fields asking *what is it* meant that before you

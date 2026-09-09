@@ -1148,6 +1148,11 @@ one today takes 24px; the rest take 19.
 register, and it says so when the distance was a guess. It is never called a
 deadline; the time above it is the deadline.
 
+**One that comes round says how often**, in the same quiet register, above the
+leave-by: *every week*, *every 2 weeks*. Weeks and never days, because what
+comes round is a day of the week at a time of day. It never says which time this
+is or how many there have been — a fixed point is not a streak.
+
 **Inside the window where leaving matters, it is hoisted** out of the list and
 above the dial, on paper with the orange outline. It *leaves the list* when it
 does — a fixed point drawn twice in one column is the duplication the picker

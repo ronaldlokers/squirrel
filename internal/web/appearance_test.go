@@ -67,7 +67,7 @@ var appearanceScreens = map[string][]string{
 		".addbar", ".addpress", ".addpress .plus",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
 		".dial .record", ".chip.notes", ".baytab",
-		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag",
+		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag", ".atagain",
 		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
@@ -81,7 +81,7 @@ var appearanceScreens = map[string][]string{
 	// own entry because a modal nothing has asked for is not on any other.
 	"/?bay=daily&rhythm=defrost+the+freezer": {
 		".addform", ".addsign", ".addform .words", ".kinds", ".kind span",
-		".addform .count", ".addform .unit", ".addform .asked", ".notnow",
+		".addform .count", ".addform .unit", ".addform .asked", ".notnow", ".addform .again",
 	},
 
 	"/me": {".youface", ".youhead", ".weekrow"},
@@ -128,7 +128,7 @@ func appearanceFixture() *fakeStore {
 	// is a state, and a record of one state cannot hold two.
 	f.upcoming = []squirrel.Moment{
 		{ID: 21, Label: "dentist", Starts: now().Add(3 * time.Hour), Travel: 15 * time.Minute},
-		{ID: 22, Label: "the school run", Starts: now().Add(30 * time.Hour)},
+		{ID: 22, Label: "the school run", Starts: now().Add(30 * time.Hour), EveryWeeks: 1},
 	}
 	// A timer and a tray, so the board's two bands that only exist when
 	// something is happening are recorded rather than silently absent.

@@ -96,6 +96,7 @@ type apptView struct {
 	Day     string
 	Label   string
 	LeaveBy string
+	Repeats string
 	Big     bool
 	Late    bool
 }
@@ -822,6 +823,7 @@ func boardNewHandler(s Store, opts Options) http.HandlerFunc {
 				http.Redirect(w, r, "/?bay=agenda&when="+url.QueryEscape(words), http.StatusSeeOther)
 				return
 			}
+			m.EveryWeeks = weeksFrom(r.FormValue("weeks"))
 			if _, err := s.CreateMoment(r.Context(), personID, m); err != nil {
 				fail(w, err)
 				return
@@ -1239,6 +1241,18 @@ func dayFrom(r *http.Request) string {
 	return at.Format("2006-01-02")
 }
 
+// weeksFrom reads how often a fixed point comes round. Anything that is not one
+// of the offered numbers is nought, which is a fixed point that happens once —
+// the answer the writer defaults to and the only safe thing to make of a value
+// nobody offered.
+func weeksFrom(said string) int {
+	weeks, err := strconv.Atoi(strings.TrimSpace(said))
+	if err != nil || weeks < 1 || weeks > 52 {
+		return 0
+	}
+	return weeks
+}
+
 // momentFromPickers builds one out of the day and time beside the field, which
 // is what the pickers are for: a sentence with a time in it is quicker when you
 // have one, and unusable when you do not.
@@ -1463,6 +1477,16 @@ func troubled(racks []rackView, ok bool) []rackView {
 	return racks
 }
 
+func comesRoundWords(weeks int) string {
+	switch {
+	case weeks <= 0:
+		return ""
+	case weeks == 1:
+		return "every week"
+	}
+	return "every " + strconv.Itoa(weeks) + " weeks"
+}
+
 // whatIsComing is every fixed point still ahead, soonest first.
 // Not only today. The rule the list was allowed under is that it holds only
 // what is still in front of you — nothing past, nothing done, never a count of
@@ -1486,6 +1510,7 @@ func whatIsComing(r *http.Request, s Store, personID int64, at time.Time) *comin
 			one.Day = markOfMoment(m, at)
 		}
 		one.LeaveBy = leaveWords(m, at)
+		one.Repeats = comesRoundWords(m.EveryWeeks)
 		if m.Late(at) {
 			one.Late, one.LeaveBy = true, ""
 		}

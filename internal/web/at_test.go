@@ -164,3 +164,33 @@ func TestAFixedPointThatHasStartedIsHoistedAndSaysLate(t *testing.T) {
 		require.NotContains(t, strings.ToLower(shown), banned)
 	}
 }
+
+func TestAFixedPointThatComesRoundSaysHowOften(t *testing.T) {
+	f := &fakeStore{upcoming: []squirrel.Moment{
+		{ID: 4, Label: "the physio", Starts: now().Add(30 * time.Hour), EveryWeeks: 2},
+		{ID: 5, Label: "the dentist", Starts: now().Add(40 * time.Hour)},
+	}}
+
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+	physio := body[strings.Index(body, "the physio"):]
+	dentist := physio[strings.Index(physio, "the dentist"):]
+	dentist = dentist[:strings.Index(dentist, "</div>")]
+	physio = physio[:strings.Index(physio, "the dentist")]
+
+	require.Contains(t, physio, "every 2 weeks", "one that comes round says nothing about coming round")
+	require.NotContains(t, dentist, "every", "one that happens once says it comes round")
+}
+
+func TestComingRoundIsWeeksAndNeverACountOfHowManyTimes(t *testing.T) {
+	f := &fakeStore{upcoming: []squirrel.Moment{
+		{ID: 4, Label: "the physio", Starts: now().Add(30 * time.Hour), EveryWeeks: 1},
+	}}
+
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, "every week")
+	require.NotContains(t, body, "every 1 weeks", "one that comes round weekly counts its weeks")
+	for _, banned := range []string{"time so far", "times", "th time"} {
+		require.NotContains(t, body, banned, "the diary is counting how often you have been")
+	}
+}

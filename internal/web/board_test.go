@@ -967,3 +967,28 @@ func TestOnlyAWeekdayChoreWearsTheLateMark(t *testing.T) {
 	require.NotContains(t, kettle, `class="lateflag"`,
 		"a chore on a rhythm is late, so Squirrel invented a time you can miss")
 }
+
+func TestTheWriterOffersHowOftenAFixedPointComesRound(t *testing.T) {
+	form := theChoreWriter(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String())
+
+	require.Contains(t, form, `name="weeks"`, "a fixed point cannot be told to come round")
+	require.Contains(t, form, `value="0">just the once`, "coming round is not something you can decline")
+	require.Equal(t, "0", whatTheBrowserWouldSend(form).Get("weeks"),
+		"a fixed point comes round unless you say otherwise")
+}
+
+func TestAFixedPointComesRoundOnlyWhenYouSaidItDoes(t *testing.T) {
+	for said, want := range map[string]int{
+		"2": 2, "0": 0, "": 0, "nonsense": 0, "-1": 0, "99": 0,
+	} {
+		f := aBoardStore()
+		m := mounted(t, f)
+
+		m.call(t, "POST", "/board/new", strings.NewReader(
+			"bay=agenda&words=the+physio&dd=05&mo=09&hour=14&minute=30&weeks="+said))
+
+		require.Len(t, f.moments, 1, "weeks=%q kept no fixed point", said)
+		require.Equal(t, want, f.moments[0].EveryWeeks,
+			"weeks=%q became %d", said, f.moments[0].EveryWeeks)
+	}
+}
