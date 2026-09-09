@@ -49,7 +49,7 @@ func TestRewordingWithEmptyTextChangesNothing(t *testing.T) {
 
 func TestTheOpenedStripOffersTheThreeWaysItCannotBeActedOn(t *testing.T) {
 	f := aBoardStore()
-	body := mounted(t, f).call(t, "GET", "/?open=1", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/?open=3", nil).Body.String()
 
 	for _, want := range []string{
 		`name="answer" value="waiting"`, `name="answer" value="blocked"`, `name="answer" value="someday"`,

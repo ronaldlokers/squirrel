@@ -36,8 +36,6 @@ const (
 
 	// SayingDid is what Buddy says when you finished something.
 	SayingDid Saying = "did"
-	// SayingKept is a note put on the shelf rather than ended.
-	SayingKept Saying = "kept"
 	// SayingDropped is a note thrown away. Quieter than the rest: this one is
 	// never congratulated, because throwing a thought away is not an
 	// achievement and saying so would make it one.
@@ -105,13 +103,6 @@ var sayings = map[Saying][]string{
 		"Right, done.",
 		"Good — that one is finished.",
 		"Done.",
-	},
-	SayingKept: {
-		"Kept.",
-		"On the shelf.",
-		"Put away.",
-		"Kept — it is on the shelf.",
-		"Filed.",
 	},
 	SayingDropped: {
 		"Gone.",

@@ -34,8 +34,8 @@ func screenWithACamera(t *testing.T, f *fakeStore, ph *fakePhotos) *httptest.Ser
 
 func TestBrowserWordsTypedOnTheBoardWithNoNetworkAreHeld(t *testing.T) {
 	srv := screenWith(t, aPile(), nil)
-	c := browserAt(t, srv, "/?bay=notes")
-	waitForTheWorker(t, c, srv.URL+"/?bay=notes")
+	c := browserAt(t, srv, "/notes")
+	waitForTheWorker(t, c, srv.URL+"/notes")
 
 	srv.Close()
 
@@ -80,7 +80,7 @@ func TestBrowserWordsTypedOnTheBoardWithNoNetworkAreHeld(t *testing.T) {
 
 func TestBrowserAPhotographChosenOnTheBoardIsHeldOnTheDevice(t *testing.T) {
 	srv := screenWithACamera(t, aPile(), &fakePhotos{})
-	c := browserAt(t, srv, "/?bay=notes")
+	c := browserAt(t, srv, "/notes")
 
 	c.until(t, "the camera to be there", `!!document.querySelector('form.blankstrip input[name="photo"]')`)
 
@@ -119,7 +119,7 @@ func TestBrowserAPhotographChosenOnTheBoardIsHeldOnTheDevice(t *testing.T) {
 			};
 		}))()`)
 
-	c.navigate(t, srv.URL+"/?bay=notes")
+	c.navigate(t, srv.URL+"/notes")
 
 	c.until(t, "the photograph to come back after the app was reclaimed", `
 		(() => {

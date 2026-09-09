@@ -3,7 +3,7 @@ package web
 import "net/http"
 
 var theBays = map[string]string{
-	"notes":  "/?bay=notes",
+	"notes":  "/notes",
 	"chores": "/?bay=daily",
 	// The agenda stopped being a door on 9 September 2026 and became the
 	// sidebar's lower half, which is on the board itself.
@@ -13,9 +13,9 @@ var theBays = map[string]string{
 
 var placesGone = map[string]string{
 	"buddy": "/",
-	"pile":  "/?bay=notes",
-	"held":  "/?shelf=held",
-	"kept":  "/?shelf=kept",
+	"pile":  "/notes",
+	"held":  "/notes",
+	"kept":  "/notes",
 }
 
 func roomRoute(opts Options) http.HandlerFunc {

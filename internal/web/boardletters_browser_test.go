@@ -18,29 +18,27 @@ func TestBrowserTheOpenedStripsLettersAct(t *testing.T) {
 	c.until(t, "the opened strip to arrive", `!!document.querySelector(".strip.opened")`)
 
 	c.eval(t, `document.querySelector(".strip.opened .stamp").focus(); return true;`)
-	c.key(t, "d")
+	c.key(t, "x")
 
 	require.Eventually(t, func() bool { return f.states[1] != "" },
 		4*time.Second, 50*time.Millisecond,
 		"the opened strip draws D and nothing reads it")
 }
 
-func TestBrowserTheShelvesLetterActs(t *testing.T) {
-	f := &fakeStore{
-		items: []squirrel.Item{note(1, "meter reading 48213", squirrel.ItemWaiting)},
-		aside: []squirrel.HeldItem{
-			{ID: 1, Text: "meter reading 48213", State: squirrel.ItemWaiting},
-		},
-	}
+// A result that already left the pile carries the way back, and Z is what
+// presses it. The shelves were where this was proved until 9 September 2026,
+// when the notes became a wall and the shelves went with the triage.
+func TestBrowserTheWayBackLetterActs(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{note(1, "meter reading 48213", squirrel.ItemDropped)}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?shelf=held")
-	c.navigate(t, srv.URL+"/?shelf=held")
-	c.until(t, "the shelf to arrive", `!!document.querySelector(".strip .stamp")`)
+	c := browserAt(t, srv, "/?find=meter")
+	c.navigate(t, srv.URL+"/?find=meter")
+	c.until(t, "the result to arrive", `!!document.querySelector(".strip .stamp")`)
 
 	c.eval(t, `document.querySelector(".strip .stamp").focus(); return true;`)
 	c.key(t, "z")
 
 	require.Eventually(t, func() bool { return f.states[1] == squirrel.ItemOpen },
 		4*time.Second, 50*time.Millisecond,
-		"the shelf draws Z and nothing reads it")
+		"the way back draws Z and nothing reads it")
 }

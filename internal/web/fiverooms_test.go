@@ -8,9 +8,9 @@ import (
 
 func TestTheRoomsThatStoppedBeingRoomsStillLandSomewhere(t *testing.T) {
 	for from, to := range map[string]string{
-		"/r/buddy": "/", "/r/everything": "/", "/r/pile": "/?bay=notes",
-		"/r/held": "/?shelf=held", "/r/kept": "/?shelf=kept",
-		"/r/notes": "/?bay=notes", "/r/chores": "/?bay=daily", "/r/at": "/", "/r/tasks": "/?bay=once",
+		"/r/buddy": "/", "/r/everything": "/", "/r/pile": "/notes",
+		"/r/held": "/notes", "/r/kept": "/notes",
+		"/r/notes": "/notes", "/r/chores": "/?bay=daily", "/r/at": "/", "/r/tasks": "/?bay=once",
 	} {
 		res := mounted(t, &fakeStore{}).call(t, "GET", from, nil)
 

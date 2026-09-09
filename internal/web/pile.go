@@ -44,6 +44,7 @@ func Mount(m Mux, s Store, opts Options) error {
 	m.Post("/board/notuseful", posting(opts, boardNotUsefulHandler(s)))
 	m.Post("/board/ask", posting(opts, boardAskHandler(s, opts)))
 	m.Post("/board/fix", posting(opts, boardFixHandler(s, opts)))
+	m.Get("/notes", guard(opts, notesHandler(s, opts)))
 	m.Get("/me", guard(opts, meHandler(s, opts)))
 	m.Get("/me/face", guard(opts, faceHandler(s)))
 	m.Post("/me/forget", guard(opts, sameOrigin(meForgetHandler(s))))

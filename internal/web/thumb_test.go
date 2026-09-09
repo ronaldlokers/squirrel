@@ -63,16 +63,11 @@ func storeWithPhoto(id int64) *fakeStore {
 	}}}
 }
 
-// A strip asks for no copy at all. The card in a room carried a thumbnail, and
-// DESIGN.md's board says a strip never carries one: a note with a photograph is
-// a way in, and opening it shows the picture at the size a photograph needs.
-// The smaller copy still exists and is still served — the conversation's own
-// cards use it — so what left is this rack's use of it.
-func TestAStripAsksForNoCopyAtAll(t *testing.T) {
+func TestAPinAsksForTheSmallerCopyAndNeverTheWholeFile(t *testing.T) {
 	body := opened(t, storeWithPhoto(7), "notes")
 
-	require.NotContains(t, body, "/photo/7/thumb", "a strip is carrying a thumbnail")
-	require.Contains(t, body, `href="/?open=7"`, "there is no way in to the photograph")
+	require.Contains(t, body, "/photo/7/thumb", "the wall is fetching full photographs to draw thumbnails")
+	require.Contains(t, body, `href="/photo/7"`, "there is no way in to the whole photograph")
 }
 
 func TestTheThumbRouteServesTheSmallerCopy(t *testing.T) {

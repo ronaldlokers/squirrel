@@ -58,7 +58,7 @@ func TestAPhotographWithNoWordsIsStillACaptureOnTheBoard(t *testing.T) {
 
 // A strip never carries a thumbnail. It says it has one, and opening it is what
 // shows it.
-func TestAStripWithAPhotographSaysSoAndOpens(t *testing.T) {
+func TestAPinCarriesThePictureAndOpensTheWholeOne(t *testing.T) {
 	f := aBoardStore()
 	f.items = []squirrel.Item{{
 		ID: 5, RawText: "the meter", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
@@ -66,10 +66,10 @@ func TestAStripWithAPhotographSaysSoAndOpens(t *testing.T) {
 	}}
 	m := mounted(t, f)
 
-	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := m.call(t, "GET", "/notes", nil).Body.String()
 
-	require.Contains(t, body, `href="/?open=5"`)
-	require.NotContains(t, body, `/photo/5/thumb`, "the strip is carrying the photograph itself")
+	require.Contains(t, body, `/photo/5/thumb`, "the wall is a list of links to pictures")
+	require.Contains(t, body, `href="/photo/5"`, "there is no way to the whole picture")
 }
 
 func TestOpeningAStripShowsThePhotographAndItsAnswers(t *testing.T) {
@@ -84,7 +84,7 @@ func TestOpeningAStripShowsThePhotographAndItsAnswers(t *testing.T) {
 
 	require.Contains(t, body, `src="/photo/5"`)
 	require.Contains(t, body, "the meter")
-	require.Contains(t, body, `value="keep"`, "an opened note cannot be answered")
+	require.Contains(t, body, `value="drop"`, "an opened note cannot be answered")
 	require.Contains(t, body, "back to the board")
 }
 

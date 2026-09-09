@@ -81,7 +81,7 @@ func refusedPhotograph(w http.ResponseWriter, r *http.Request, err error, text s
 	if !errors.Is(err, errNotAPhotograph) {
 		return false
 	}
-	http.Redirect(w, r, "/?bay=notes&nophoto="+url.QueryEscape(text), http.StatusSeeOther)
+	http.Redirect(w, r, "/notes?nophoto="+url.QueryEscape(text), http.StatusSeeOther)
 	return true
 }
 

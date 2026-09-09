@@ -520,10 +520,9 @@ it. One rather than three, because the rack a chore lands in is what its
 interval says: asking which rack to write into would be asking how often it
 comes back twice.
 
-**The notes are a chip in the ops bar**, beside the bell. Pressing it puts the
-notes in the racks' place, whole, with a way back, the same as search and the
-shelves. The row of doors under the writers went with the once rack on
-9 September 2026: two doors, two signs and two questions were a second region
+**The notes are a chip in the ops bar**, beside the bell, and it leaves the
+board for `/notes`. The row of doors under the writers went with the once rack
+on 9 September 2026: two doors, two signs and two questions were a second region
 under the board saying what the board already had room to hold.
 
 **The tray.** Fixed to the foot, `rgba(28,17,11,.34)` over the ground, ruled off
@@ -627,9 +626,10 @@ the inset as zero, so nothing rendered in CI can see it being claimed twice —
 which is exactly how the rack came to pad for it after the bar took the foot,
 putting a band of ground between them on every phone that has one.
 
-**No bay is lit when you are not standing in one.** A shelf, a search and an
-opened strip all light nothing, because a bar that says you are in the notes
-while you are reading a search result is a bar you stop believing.
+**No bay is lit when you are not standing in one.** A search and an opened
+strip light nothing, because a bar that says you are in the once rack while you
+are reading a search result is a bar you stop believing. The wall lights its
+own tab, because it is a place you are standing.
 
 **The lit rack takes the screen it is on.** It stretches to the foot so its
 channel has a bottom edge and the ledge sits on it. The purple below a short
@@ -895,9 +895,8 @@ stays refused; this is the person's own press or it does not happen.
 
 **The three states you cannot act on.** *waiting on* · *blocked on* · *someday*
 sit under the ordinary answers, and only here — a rack strip must stay one line
-and four stamps. They are drawn only while the strip is still in the pile;
-something already done or dropped has nothing to be waiting on. The rule is printed on the strip rather than hidden behind a why,
-because an offer nobody can account for is a demand.
+and two stamps. They belong to a thing you decided to do; a note has no state
+to be waiting in since the wall replaced the shelves.
 
 ### The opened strip breaks into steps
 
@@ -946,8 +945,8 @@ today*. Never a shared sentence, and never a drawing.
 
 It is not the same thing as `.trouble`, and the two are exclusive by
 construction: a rack that could not be read says so, and does not also report a
-quiet morning. The shelf and the search have the same line — *nothing on this
-shelf*, *nothing matched "…"* — because an empty bordered box says only that
+quiet morning. The wall and the search have the same line — *nothing in the
+notes*, *nothing matched "…"* — because an empty bordered box says only that
 something has gone wrong.
 
 The line matters most on a phone, where one rack is the whole screen and there
@@ -1373,10 +1372,11 @@ say which side of that line the sentence will come from.
 
 **The letters belong to the strip you are focused in, whatever kind it is.**
 Every strip that draws a key letter answers to it: the rack's rows, the opened
-strip, the pulled strip, the shelf. Until 7 September 2026 only the rack's rows
-did — the dispatch asked for `.strip.answerable`, which the other three are not
-— so D, K, X, R, W, B, Y on the opened strip, D, N, W, S, T on the pulled strip
-and Z on the shelf were drawn and did nothing. A key hint that lies is worse
+strip, the pulled strip, a search result. Until 7 September 2026 only the
+rack's rows did — the dispatch asked for `.strip.answerable`, which the other
+three are not — so D, K, X, R, W, B, Y on the opened strip, D, N, W, S, T on the
+pulled strip and Z on a result that already left the pile were drawn and did
+nothing. A key hint that lies is worse
 than no hint: it teaches you a way of working that stops working when you move.
 
 **An answer you asked for is something you are sent to.** Asking is a whole page
@@ -1552,32 +1552,33 @@ or `frazzled` reading thins the board — see the risk noted in the strip-board
 comp; the thinning rule belongs to the picker, and until it is written this is
 the design's largest unfinished edge.
 
-### The ledge, and the two shelves
+### The wall
 
-The lip at the foot of the notes rack, below every live strip: a hairline, then
-two tabs in sentence case — `what you set aside` and `the things you kept`. They
-are not bay signs and are deliberately not set in caps, because they are a way
-through rather than a place you are standing. Solid-edged since 2 September,
-under The Blank Is Dashed.
+`/notes`, its own page since 9 September 2026, and the only screen in this
+product that is not the board. Reached from the notes chip in the ops bar, and
+on a phone from the last tab in the bar at the foot.
 
-Pressing one turns the notes rack into that shelf and nothing else on the board
-moves. The sign becomes the shelf's name in the dashed variant, and where every
-rack opens with something to write on, a shelf opens with `back to the notes`.
+**A sign, a writer, and pins.** The writer is the notes' blank strip, unchanged
+and still the only one with a camera. Under it the pins fill a grid of
+`minmax(248px, 1fr)` columns — as many as the screen has room for, one on a
+phone — top-aligned, so a long note and a short one do not stretch each other.
 
-**A held strip** is recessed rather than raised: `rgba(28,17,11,.16)` behind a
-2px dashed cream edge, cream ink, no shadow, and it does not cock. Present, and
-not a thing you can pick up. Its holder stays the colour of the bay it came
-from, and where a live strip carries a mark, a held strip carries **what would
-move it** in his own words — *when he replies*, *when the part arrives*,
-*someday*. The three ways to say you cannot act stay three, because they end
-differently.
+**A pin is not a strip.** A strip is a row you answer; a pin is a thing you
+look at. It carries its picture at the top, bled to the card's edges and ruled
+off; then the words; then when it arrived; then two quiet presses. It keeps the
+pile's lilac spine at 11px, because what a hue means does not change with the
+shape it is on.
 
-**A kept strip** is flat printed stock — `card-deep`, no shadow, no mark, no
-cocking. A fact rather than a job, which is what `kept` has always meant: a
-serial number or a link is not a task and will never be done.
+**The picture is on the pin.** A note with a photograph draws it, at the width
+of the column, from `/photo/{id}/thumb` — and the picture is the link to the
+whole one. The board's strips still never carry a thumbnail: a rack is a column
+of rows you answer at a glance, and this is a wall you read.
 
-Both carry exactly one stamp, `back in the pile`, because every transition in
-this product reverses.
+**Two presses and no filing.** *drop*, and *make a chore*. Nothing else. The
+shelves went with the triage: there is no *keep*, no *set aside*, no *done*, and
+so no ledge, no seam and no second group under the live notes. What is on the
+wall is every note you have, and the only ways off it are throwing it away or
+deciding it is a thing you do.
 
 ### Named Rules
 
@@ -1589,29 +1590,16 @@ focused and shut, or open and unfocused.
 
 **The Blank Is Dashed.** A dashed edge means *there is nothing on this yet*. It
 belongs to the blank strip and everything inside it — the camera, the four
-rhythms — and to the two notices that are not part of a rack: the trouble line
-and a shelf's sign. Nothing else. Anything you can press or follow is drawn
+rhythms — and to the trouble line, which is the one notice that is
+not part of a rack. Nothing else. Anything you can press or follow is drawn
 solid, because a dashed control reads as a placeholder, which is exactly what a
 bay tab and a ledge tab looked like until 2 September.
 
-**A Shelf Never Counts.** The sign carries the name and no number, and this is
-the one place in the product where that is a rule rather than a preference. A
-number beside stalled work is a reproach, and the point of setting something
-aside is to stop being asked about it. PRODUCT.md's retirement of the count rule
-does not reach here: it permitted counts on doors, and a shelf is not a door.
-
-**A Shelf Is Not A Bay.** Four bays, and there is no fifth sign on the board. A
-shelf borrows the notes rack for as long as you are reading it. A door for
-stalled work would put it in front of you every morning, which is precisely what
-setting it aside was for.
-
-**A Shelf Has No Blank Strip.** Nothing is kept or set aside by being typed —
-both states are reached by deciding about a strip that already exists. A shelf
-you could write into would be lying about where its contents come from.
-
-**The Holder Says Where It Came From.** A held task keeps its amber holder and a
-held note its purple one, so one shelf holds both without needing a second
-label. This is the holder rule doing real work rather than decorating.
+**The Wall Never Counts What Is Not On It.** The sign counts the pins it is
+drawing and nothing else. There is no shelf behind it to have a number, which is
+what retired *A Shelf Never Counts*, *A Shelf Is Not A Bay*, *A Shelf Has No
+Blank Strip* and *The Holder Says Where It Came From* on 9 September 2026. All
+four were about the two shelves; the shelves are gone.
 
 ### The find field, and what it finds
 
@@ -1667,8 +1655,8 @@ been a test that passes without testing.
 - **Do** keep the 1150ms hold before anything leaves the board.
 - **Do** let an empty rack look like an empty rack.
 - **Do** set times, dates and countdowns in Inter Black with tabular figures.
-- **Do** keep the shelves on the ledge, below the strips you have not decided
-  about.
+- **Do** let a note be a note: on the wall, with its picture, and with nowhere
+  to file it.
 - **Do** let a held strip carry what would move it where its mark would go.
 
 ### Don't:
@@ -1681,7 +1669,5 @@ been a test that passes without testing.
 - **Don't** use white anywhere, and don't let a surface read as neutral.
 - **Don't** add a hover elevation, a modal, or a floating panel; depth here only
   ever means distance from the rack.
-- **Don't** give a shelf a bay sign of its own, a count, or anything to type
-  into.
-- **Don't** draw a held strip so it can be picked up, or a kept strip so it
-  looks like work.
+- **Don't** give a note a state, a shelf, or a second place to be.
+- **Don't** draw a held strip so it can be picked up.

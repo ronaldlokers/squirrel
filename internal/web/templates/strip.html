@@ -4,7 +4,6 @@
   <span class="holder"></span>
   <div class="words">
     <p class="what">{{if .Photo}}<a class="opens" href="/?open={{.ID}}">{{if .Words}}{{.Words}}{{else}}a photograph{{end}}</a>{{else}}{{.Words}}{{end}}</p>
-    {{if .State}}<p class="state">{{.State}}</p>{{end}}
     {{if .Late}}<p class="lateflag">late &mdash; today</p>{{end}}
     {{if and .Wants .Why}}<p class="why">{{.Why}}</p>{{end}}
     {{if .Seen}}
@@ -16,6 +15,7 @@
       </form>
     </div>
     {{end}}
+    <div class="acts">
     {{if .Rhythms}}
     <form class="stamps" method="post" action="/board/chore">
       <input type="hidden" name="id" value="{{.ID}}">
@@ -46,6 +46,7 @@
     </form>
     {{end}}
     {{end}}
+    </div>
   </div>
   {{if .Back}}
   <form class="backtab" method="post" action="/board/undo">

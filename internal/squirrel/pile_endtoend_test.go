@@ -89,14 +89,14 @@ func TestThePileEndToEnd(t *testing.T) {
 
 	// A number typed against that search resolves to the note the search
 	// printed, not to whatever line 1 meant before it.
-	say("keep 1")
+	say("drop 1")
 	require.Contains(t, lastReply(), "boiler")
 
 	// And the pile is what is left.
 	say("!notes")
 	require.Contains(t, lastReply(), "1. buy milk")
 	require.NotContains(t, lastReply(), "boiler",
-		"kept has left the pile, and searching is how it comes back")
+		"dropped has left the pile, and searching is how it comes back")
 
 	say("done 1")
 	say("!notes")

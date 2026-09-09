@@ -13,15 +13,15 @@ import (
 func TestBrowserAnAnsweredStripStaysWhileTheUndoCouldStillBeWanted(t *testing.T) {
 	f := &fakeStore{
 		items: []squirrel.Item{
-			{ID: 1, RawText: "boiler service code is 4471", State: squirrel.ItemOpen, Kind: squirrel.ItemNote, ReceivedAt: time.Now()},
+			{ID: 1, RawText: "boiler service code is 4471", State: squirrel.ItemOpen, Kind: squirrel.ItemTask, ReceivedAt: time.Now()},
 		},
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=notes")
+	c := browserAt(t, srv, "/?bay=once")
 
 	c.until(t, "a strip with its answers", `!!document.querySelector('.strip.answerable form.stamps')`)
 	c.eval(t, `const f = document.querySelector('.strip.answerable form.stamps');
-		f.requestSubmit(f.querySelector('button[value="keep"]')); return 1`)
+		f.requestSubmit(f.querySelector('button[value="drop"]')); return 1`)
 
 	c.until(t, "the strike", `!!document.querySelector('.strip.struck')`)
 	struckAt := time.Now()

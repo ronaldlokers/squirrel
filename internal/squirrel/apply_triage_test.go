@@ -73,16 +73,19 @@ func TestDoneAgainstANoteLineMarksItDone(t *testing.T) {
 	require.Contains(t, reply, "buy milk")
 }
 
-func TestKeepAgainstANoteLineKeepsIt(t *testing.T) {
+func TestKeepAgainstANoteLineIsNotAThingYouCanSayAnyMore(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)
 
 	pileOf(t, store, p, "boiler serial is 44Q")
 	id := lineItemID(t, store, p, 1)
 
-	reply := triage(t, store, p, "keep 1")
-	require.Equal(t, "kept", stateOf(t, store, id))
-	require.Contains(t, reply, "44Q")
+	chat, _ := chatRecorder("z-1")
+	require.NoError(t, squirrel.NewApplier(store, nil, chat, nil).
+		Apply(context.Background(), itemOf("keep 1"), &p))
+
+	require.Equal(t, "open", stateOf(t, store, id),
+		"the board has no shelf to keep it on, so Campfire must not put it there")
 }
 
 func TestDropAgainstANoteLineDropsIt(t *testing.T) {
@@ -141,7 +144,7 @@ func TestARepeatedTriageIsANoOp(t *testing.T) {
 	require.Equal(t, "done", stateOf(t, store, id))
 }
 
-// Every transition reverses. `keep 1` after `done 1` is a correction, not an
+// Every transition reverses. `done 1` after `drop 1` is a correction, not an
 // error, and the pile is where corrections happen most.
 func TestATriageCanBeCorrected(t *testing.T) {
 	store := withStore(t)
@@ -152,8 +155,8 @@ func TestATriageCanBeCorrected(t *testing.T) {
 
 	triage(t, store, p, "drop 1")
 	require.Equal(t, "dropped", stateOf(t, store, id))
-	triage(t, store, p, "keep 1")
-	require.Equal(t, "kept", stateOf(t, store, id))
+	triage(t, store, p, "done 1")
+	require.Equal(t, "done", stateOf(t, store, id))
 }
 
 func TestDoneAgainstAChoreLineStillCompletesTheChore(t *testing.T) {
@@ -176,9 +179,9 @@ func TestDoneAgainstAChoreLineStillCompletesTheChore(t *testing.T) {
 	require.Empty(t, due, "completing it must have reset the chore's clock")
 }
 
-// `keep 2` aimed at a chore is a real mistake. A bot that silently does
+// `drop 2` aimed at a chore is a real mistake. A bot that silently does
 // nothing looks broken in exactly the way that stops you trusting it.
-func TestKeepAgainstAChoreLineSaysSo(t *testing.T) {
+func TestDropAgainstAChoreLineSaysSo(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
 	p := owner(t, store)
@@ -189,7 +192,7 @@ func TestKeepAgainstAChoreLineSaysSo(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, store.MarkPromptSent(ctx, promptID, "m-0", time.Now()))
 
-	reply := triage(t, store, p, "keep 1")
+	reply := triage(t, store, p, "drop 1")
 	require.Contains(t, strings.ToLower(reply), "chore")
 }
 
@@ -223,7 +226,7 @@ func TestTriageBeyondTheLastLineSaysSo(t *testing.T) {
 
 	pileOf(t, store, p, "buy milk")
 
-	for _, cmd := range []string{"done 7", "keep 7", "drop 7"} {
+	for _, cmd := range []string{"done 7", "drop 7"} {
 		require.Contains(t, triage(t, store, p, cmd), "line 7", "for %q", cmd)
 	}
 }

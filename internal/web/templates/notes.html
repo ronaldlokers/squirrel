@@ -1,0 +1,106 @@
+{{define "notes"}}<!doctype html>
+<html lang="en" style="--light: {{.Light}}%">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Squirrel</title>
+<link rel="manifest" href="/manifest.webmanifest?v={{.V}}" crossorigin="use-credentials">
+<meta name="theme-color" content="#3b2560">
+<link rel="icon" href="/static/logo.png?v={{.V}}">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Squirrel">
+<link rel="stylesheet" href="/static/board.css?v={{.V}}">
+<link rel="stylesheet" href="/static/chrome.css?v={{.V}}">
+<script src="/static/board.js?v={{.V}}" defer></script>
+<script src="/static/app.js?v={{.V}}" defer></script>
+</head>
+<body class="onthewall">
+<p id="announce" class="offscreen" role="status" aria-live="polite"></p>
+<header class="ops">
+  <span class="brand">
+    <img class="markart" src="/static/logo.png" alt="">
+    <h1 class="wordmark">Squirrel</h1>
+  </span>
+  <span class="clock"><span class="t">{{.Now}}</span><span class="d">{{.Day}}</span></span>
+  <span class="rail">
+    {{template "findchip" .Find}}
+    <span class="sep" aria-hidden="true"></span>
+    {{template "boardchip"}}
+    {{template "bellchip" .AnyTold}}
+    {{with .Dial}}{{template "moodchip" .}}{{end}}
+    {{template "youchip" .You}}
+  </span>
+</header>
+
+<div class="deck">
+<main class="wallroom">
+  <h2 class="baysign">the notes{{if .Wall}} <span class="n">{{len .Wall}}</span>{{end}}</h2>
+  {{if .Kept}}<p class="wentto">that went to the notes &mdash; an appointment needs a time in it, and a chore needs a rhythm.</p>{{end}}
+  {{template "blankstrip" .Writer}}
+  {{if .Trouble}}<p class="trouble">cannot reach the notes &mdash; nothing is lost. Your words are still here; try again in a moment.</p>{{end}}
+  {{if and (not .Wall) (not .Trouble)}}<p class="nothing">nothing in the notes</p>{{end}}
+  <div class="wall">
+    {{range .Wall}}
+    {{template "pin" .}}
+    {{end}}
+  </div>
+  {{if .More}}<p class="further">there is more further back</p>{{end}}
+</main>
+</div>
+</body>
+</html>
+{{end}}
+
+{{define "pin"}}
+<article class="pin{{if .Photo}} haspic{{end}}">
+  <span class="holder"></span>
+  <div class="body">
+  {{if .Photo}}
+  <a class="pic" href="/photo/{{.ID}}">
+    <img src="/photo/{{.ID}}/thumb" alt="{{if .Words}}{{.Words}}{{else}}a photograph{{end}}" loading="lazy">
+  </a>
+  {{end}}
+  {{if .Words}}<p class="said">{{.Words}}</p>{{end}}
+  {{if .Seen}}
+  <div class="seen"{{if .Answered}} id="justanswered" tabindex="-1"{{end}}>{{.Seen}}
+    <form method="post" action="/board/notuseful">
+      <input type="hidden" name="id" value="{{.SeenID}}">
+      <input type="hidden" name="bay" value="notes">
+      <button class="off">not useful</button>
+    </form>
+  </div>
+  {{end}}
+  <p class="when">{{.Mark}}</p>
+  {{if .Rhythms}}
+  <form class="stamps" method="post" action="/board/chore">
+    <input type="hidden" name="id" value="{{.ID}}">
+    {{range .Rhythms}}
+    <button class="stamp small" name="every" value="{{.Days}}">{{.Words}}</button>
+    {{end}}
+  </form>
+  {{else}}
+  <form class="stamps" method="post" action="/board/act">
+    <input type="hidden" name="what" value="note">
+    <input type="hidden" name="id" value="{{.ID}}">
+    <input type="hidden" name="bay" value="notes">
+    {{range .Answers}}
+    <button class="stamp{{with .Look}} {{.}}{{end}}" name="answer" value="{{.Act}}">{{.Words}}<span class="k">{{.Key}}</span></button>
+    {{end}}
+    <button class="stamp" type="submit" formmethod="get" formaction="/notes" name="chore" value="{{.ID}}">make a chore<span class="k">C</span></button>
+  </form>
+  {{if .Room}}
+  <form class="asking" method="post" action="/board/ask">
+    <input type="hidden" name="what" value="note">
+    <input type="hidden" name="id" value="{{.ID}}">
+    <input type="hidden" name="bay" value="notes">
+    <input type="hidden" name="room" value="{{.Room}}">
+    <input type="hidden" name="words" value="{{.Words}}">
+    <button class="quiet">ask Buddy</button>
+  </form>
+  {{end}}
+  {{end}}
+  </div>
+</article>
+{{end}}

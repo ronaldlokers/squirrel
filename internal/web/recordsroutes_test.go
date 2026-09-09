@@ -17,6 +17,7 @@ var saidOnPurpose = map[string]string{
 	"/buddy/badly":         "named as the press that retired with the room",
 	"/v1/responses":        "somebody else's route: the model API this calls out to",
 	"/v1/chat/completions": "somebody else's route: the model API this calls out to",
+	"/photo/{id}/thumb":    "mounted only where photographs are configured, which this fixture is not",
 }
 
 func theRoutesMounted(t *testing.T) map[string]bool {
