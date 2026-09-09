@@ -19,7 +19,18 @@ func theRail(t *testing.T, page string) string {
 	return page[from : from+to]
 }
 
+// The clock is frozen in all three: the rail orders an appointment's hour
+// against the hour a part of the day begins, so a test run at five in the
+// morning and one run at noon put the same two rows in a different order.
+func atNine(t *testing.T) {
+	t.Helper()
+	was := now
+	now = func() time.Time { return time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { now = was })
+}
+
 func TestTheRailIsTodayAndWhatIsNotTodayIsFurtherAhead(t *testing.T) {
+	atNine(t)
 	f := &fakeStore{upcoming: []squirrel.Moment{
 		{ID: 4, Label: "the dentist", Starts: now().Add(2 * time.Hour)},
 		{ID: 5, Label: "the school run", Starts: now().Add(30 * time.Hour)},
@@ -36,6 +47,7 @@ func TestTheRailIsTodayAndWhatIsNotTodayIsFurtherAhead(t *testing.T) {
 }
 
 func TestTheHeadOfTheRailIsTheOneThatWantsYouNow(t *testing.T) {
+	atNine(t)
 	f := &fakeStore{
 		chores: []squirrel.Chore{
 			{ID: 1, Name: "bins out", Active: true, EverDone: true, Every: 7 * 24 * time.Hour, EveryDays: 7, SinceDays: 7},
@@ -54,6 +66,7 @@ func TestTheHeadOfTheRailIsTheOneThatWantsYouNow(t *testing.T) {
 }
 
 func TestEverythingElseHangsOffTheRailInTheRacksOrder(t *testing.T) {
+	atNine(t)
 	f := &fakeStore{
 		items:    []squirrel.Item{task(2, "book the MOT", squirrel.ItemOpen)},
 		chores:   []squirrel.Chore{{ID: 1, Name: "wash the windows", Active: true, EveryDays: 28}},
