@@ -685,7 +685,8 @@ func TestTheRackCarriesTheQuestionAndTheWordsBack(t *testing.T) {
 	require.Contains(t, body, "how often does it come back?")
 
 	when := mounted(t, aBoardStore()).call(t, "GET", "/?bay=agenda&when=ring+the+dentist", nil).Body.String()
-	require.Contains(t, theRackIn(t, when, "bay=agenda"), "when is it?")
+	require.Contains(t, theChoreWriter(t, when), `value="ring the dentist"`)
+	require.Contains(t, when, "when is it?")
 }
 
 func TestARackAsksNothingWhenNothingWasAsked(t *testing.T) {
@@ -793,40 +794,42 @@ func TestAWordThatIsNotOneOfTheFiveKeepsNothing(t *testing.T) {
 	require.Empty(t, f.recorded)
 }
 
-// The appointment writer left the agenda door with the agenda, and pairs with
-// the chore writer under the racks. The date pickers cannot be read at a
-// sidebar's width, so it did not follow the diary into the sidebar.
-func TestTheAppointmentWriterSitsBesideTheChoreWriter(t *testing.T) {
+// One writer for everything, and it asks only what the kind you picked needs.
+// Two writers under the racks and a third in the once rack was three fields
+// asking the same first question — what is it — in three places.
+func TestOneWriterAsksWhatItIsAndThenOnlyWhatThatKindNeeds(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
-	writers := body[strings.Index(body, `class="writers"`):]
-	writers = writers[:strings.Index(writers, "</div>")]
+	form := theChoreWriter(t, body)
 
-	require.Contains(t, writers, `class="newchore`, "the chore writer is not in the row")
-	strip := body[strings.Index(body, `class="newmoment`):]
-	strip = strip[:strings.Index(strip, "</form>")]
-
-	require.Contains(t, strip, "asit", "the appointment inlet is not shaped like what it makes")
-	require.Contains(t, strip, `class="holder"`, "it does not wear the agenda's holder")
-	for _, want := range []string{`name="dd"`, `name="mo"`, `name="hour"`, `name="minute"`, `name="words"`} {
-		require.Contains(t, strip, want, "%s is outside the strip", want)
+	require.Equal(t, 1, strings.Count(body, `class="addform`), "the board has more than one writer")
+	for _, kind := range []string{"notes", "tasks", "daily", "agenda"} {
+		require.Contains(t, form, `name="bay" value="`+kind+`"`, "%s cannot be added", kind)
 	}
+	for _, want := range []string{`name="dd"`, `name="mo"`, `name="hour"`, `name="minute"`, `name="every"`, `name="words"`} {
+		require.Contains(t, form, want, "%s is outside the writer", want)
+	}
+	require.Equal(t, 1, strings.Count(form, `name="words"`), "the words are asked for more than once")
+	require.Equal(t, "notes", whatTheBrowserWouldSend(form).Get("bay"),
+		"a thought is not what an unanswered writer keeps")
 }
 
-func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {
-	m := mounted(t, aBoardStore())
-	board := m.call(t, "GET", "/", nil).Body.String()
+func TestTheWriterIsShutUntilYouAskForIt(t *testing.T) {
+	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 
-	require.NotContains(t, theChoreWriter(t, board), "asit", "the chore writer took the agenda's shape")
-	require.NotContains(t, theChoreWriter(t, board), `name="dd"`, "the chore writer asks for a day")
-	rack := m.call(t, "GET", "/notes", nil).Body.String()
+	require.Contains(t, body, `class="adder"`, "the writer arrives already open")
+	require.Contains(t, body, `href="#add"`, "there is no way to open the writer")
+
+	asked := mounted(t, aBoardStore()).call(t, "GET", "/?bay=daily&rhythm=defrost+the+freezer", nil).Body.String()
+	require.Contains(t, asked, `class="adder open"`,
+		"the writer sent you back to the board with your words and then hid them")
+}
+
+func TestTheNotesWriterAsksForNothingButTheWords(t *testing.T) {
+	rack := mounted(t, aBoardStore()).call(t, "GET", "/notes", nil).Body.String()
+
 	require.NotContains(t, rack, "asit", "the notes inlet took the agenda's shape")
 	require.NotContains(t, rack, `name="dd"`, "the notes inlet asks for a day")
-	require.NotContains(t, theTaskWriter(t, board), "asit", "the task writer took the agenda's shape")
-	require.NotContains(t, theTaskWriter(t, board), `name="dd"`, "the task writer asks for a day")
-	require.NotContains(t, theTaskWriter(t, board), `class="inline"`,
-		"a thing you do one time was asked how often it comes back")
-	require.Contains(t, theChoreWriter(t, board), `class="inline"`,
-		"the chores lost their interval")
+	require.NotContains(t, rack, `name="every"`, "the notes inlet asks how often it comes back")
 }
 
 // The notes are the only bay with a camera, so in a deployment that keeps

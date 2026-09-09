@@ -33,6 +33,9 @@ func whatTheBrowserWouldSend(form string) url.Values {
 			}
 			continue
 		}
+		if attrs["type"] == "radio" && !strings.Contains(tag, " checked") {
+			continue
+		}
 		sent.Set(name, attrs["value"])
 	}
 	return sent
@@ -48,14 +51,14 @@ func blankStripIn(t *testing.T, page, bay string) string {
 	return rack[from : from+to]
 }
 
-// The chores have one writer between the three racks, under all of them: the
-// rack a chore lands in is what its interval says.
+// One writer for the whole board since 9 September 2026: a modal that asks what
+// the thing is and then only what that kind needs.
 func theChoreWriter(t *testing.T, page string) string {
 	t.Helper()
-	from := strings.Index(page, `<form class="newchore`)
-	require.GreaterOrEqual(t, from, 0, "the board has nowhere to put a chore")
+	from := strings.Index(page, `<form class="addform`)
+	require.GreaterOrEqual(t, from, 0, "the board has nowhere to put anything")
 	to := strings.Index(page[from:], "</form>")
-	require.GreaterOrEqual(t, to, 0, "the chore writer does not close")
+	require.GreaterOrEqual(t, to, 0, "the writer does not close")
 	return page[from : from+to]
 }
 
@@ -75,6 +78,7 @@ func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 
 	sent := whatTheBrowserWouldSend(theChoreWriter(t, m.call(t, "GET", "/", nil).Body.String()))
 	sent.Set("words", "defrost the freezer")
+	sent.Set("bay", "daily")
 
 	res := m.call(t, "POST", "/board/new", strings.NewReader(sent.Encode()))
 

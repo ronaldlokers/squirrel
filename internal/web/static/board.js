@@ -208,3 +208,30 @@
     pending = null;
   });
 })();
+
+(function () {
+  var adder = document.getElementById("add");
+  if (!adder) return;
+
+  function shut() {
+    adder.classList.remove("open");
+    location.replace(location.pathname + location.search + "#shut");
+  }
+
+  function focusIt() {
+    if (!adder.matches(":target")) return;
+    var field = adder.querySelector(".words");
+    if (field) field.focus();
+  }
+
+  window.addEventListener("hashchange", focusIt);
+  focusIt();
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!adder.matches(":target") && !adder.classList.contains("open")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    shut();
+  }, true);
+})();

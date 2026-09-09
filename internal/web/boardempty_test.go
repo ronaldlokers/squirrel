@@ -102,14 +102,11 @@ func TestAnEmptyRackIsStillAPlaceYouCanPutSomething(t *testing.T) {
 	require.Contains(t, rack, "nothing in the notes")
 	require.Contains(t, rack, `placeholder="what is it"`)
 
-	// And so are the racks, which have one writer between them: the rack a
-	// chore lands in is what its interval says, so asking which one to write
-	// into would be asking how often it comes back twice.
+	// And so is an empty board, which has one writer for everything.
 	board := m.call(t, "GET", "/", nil).Body.String()
-	require.Contains(t, board, `placeholder="what comes back?"`,
-		"an empty board has nowhere to put a chore")
-	require.Equal(t, 1, strings.Count(board, `class="newchore`),
-		"more than one place asks what comes back")
+	require.Contains(t, board, `href="#add"`, "an empty board has nowhere to put anything")
+	require.Equal(t, 1, strings.Count(board, `class="addform`),
+		"more than one place asks what it is")
 }
 
 func TestOnlyTheBlankAndTheNoticesAreDrawnDashed(t *testing.T) {
@@ -129,6 +126,7 @@ func TestOnlyTheBlankAndTheNoticesAreDrawnDashed(t *testing.T) {
 		".strip.blank:focus-within": true,
 		".blankstrip .strip.blank":  true,
 		".dots i.nought":            true,
+		".addpress":                 true,
 		".moodkey b.nought":         true,
 	}
 

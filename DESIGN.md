@@ -514,11 +514,32 @@ of them mattered more. Each rack is a sign and then a channel of strips. The
 channel is a recessed well that runs to the bottom of the board, so an unfilled
 rack reads as *room in the rack* rather than as dead space.
 
-**One writer under all three**, full width to the dial's left edge, wearing the
-blank strip's own shape and asking *what comes back?* with an interval beside
-it. One rather than three, because the rack a chore lands in is what its
-interval says: asking which rack to write into would be asking how often it
-comes back twice.
+**One writer for everything**, and it is a modal. Under the racks, full width to
+the dial's left edge, a dashed bar reading `+ add something`; pressing it opens
+the writer over the board.
+
+Until 9 September 2026 the board had three writers — a chore writer and an
+appointment writer under the racks, and a task inlet at the head of the once
+rack. Three fields asking *what is it* in three places, so before you could
+write anything down you had to decide which one to walk to. The modal asks the
+words first and the kind second, which is the order the thought arrives in.
+
+**One screen, and it commits at the end.** Four kinds — *a thought* · *do it
+once* · *it comes back* · *at a time* — and only the fields that kind needs, so
+a thought is one field and a chore is two. Nothing is written until *keep it*:
+this is one form and one post, not a wizard with steps behind it. *not now*
+and Escape both close it, and what you typed goes with them, because a draft
+Squirrel kept for you is a thought in a form field — the one thing this product
+may never do.
+
+**It is drawn without a script.** The bar is a link to `#add` and the writer is
+`:target`, so it opens with the stylesheet alone. What the script adds is the
+two courtesies: focus into the field, and Escape. Neither is what makes it work.
+
+**And it is the one modal in this product.** *Don't add a modal* was a rule here
+until this writer; it is now a rule with exactly one exception, and the reason
+is that a writer must not be reachable from four places at once and must not
+take a column of the board to sit in.
 
 **The notes are a chip in the ops bar**, beside the bell, and it leaves the
 board for `/notes`. The row of doors under the writers went with the once rack
@@ -1196,10 +1217,10 @@ channel is why an empty bay looks like room rather than like absence.
 
 ### The blank strip
 
-The head of a rack, dashed, in cream at 80%, carrying that bay's own question —
-*what is it* in the notes, *what did you decide?* in the tasks. What you type
-lands in the bay you are looking at, which is what retired the composer and its
-row of destination chips together.
+The head of the wall, dashed, in cream at 80%, carrying the notes' own question
+— *what is it*. It is the only blank strip left: the board's three became the
+writer above, and this one stayed because it is the only one with a camera and
+because capture on the wall must not need a modal to open first.
 
 Typing turns it solid: `paper` stock, solid outline, the focus ring. The camera
 lives on the same row as the plus, in the notes rack and nowhere else, and only
@@ -1211,12 +1232,12 @@ reach the volume and are fsynced there before the spool entry that points at
 them exists. A photograph with no words is a capture, which is most of the point
 of having a camera.
 
-**Every bay has one, and none of them has a second step.** A chore needs a
-rhythm and an appointment needs a day, and the obvious build was to take the
-words and then ask — which would hold a thought in a form field, the one thing
-this product may never do. So the question moved into the strip instead of after
-it. The chores rack asks for its interval beside its field, a number and a unit,
-and answering it is the whole act. It carried four preset stamps under the field
+**Nothing has a second step.** A chore needs a rhythm and an appointment needs a
+day, and the obvious build was to take the words and then ask — which would hold
+a thought in a form field, the one thing this product may never do. So the
+question sits beside the field rather than after it. The writer asks for its
+interval on the same screen, a number and a unit, and answering it is the whole
+act. It carried four preset stamps under the field
 as well until v0.68.0, which removed them: the interval was already on the strip
 and the stamps were a second row saying the same thing. The agenda's field
 teaches its own grammar in the placeholder, `at 14:30 dentist`, which is the
@@ -1224,7 +1245,7 @@ sentence chat has always parsed, and its day and clock are both hand-built
 fields — a native date or time input renders in the browser's locale and no
 attribute changes that.
 
-**And the floor under all four: words that are not what the rack asked for are
+**And the floor under all four: words that are not what the kind asked for are
 still a thought.** A chore typed with no rhythm and an appointment typed with no
 time go to the notes, through the spool like any other capture, and the board
 says where they went. A bay may refuse to make what you asked for. No bay may
@@ -1667,7 +1688,8 @@ been a test that passes without testing.
 - **Don't** give Buddy a face, a column, or more than one line on an object.
 - **Don't** put a number on a bay sign that counts what you did not do.
 - **Don't** use white anywhere, and don't let a surface read as neutral.
-- **Don't** add a hover elevation, a modal, or a floating panel; depth here only
-  ever means distance from the rack.
+- **Don't** add a hover elevation or a floating panel; depth here only ever means
+  distance from the rack. One modal exists, the writer, and it is the exception
+  rather than the start of a habit.
 - **Don't** give a note a state, a shelf, or a second place to be.
 - **Don't** draw a held strip so it can be picked up.

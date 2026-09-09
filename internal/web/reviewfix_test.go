@@ -95,9 +95,29 @@ func TestBrowserTheFocusRingIsVisibleOnEveryCreamSurface(t *testing.T) {
 	// captures into rather than a card. The sheet was the third cream surface a
 	// key could reach and it went on 25 August 2026; the dock was the second
 	// and it went with the room.
-	c.navigate(t, srv.URL+"/")
+	c.navigate(t, srv.URL+"/notes")
 	tabTo(t, c, ".strip.blank .newmark")
 	onBlank := contrast(t, c, ".strip.blank .newmark", "outline-color", ".strip.blank")
 	require.GreaterOrEqual(t, onBlank, 3.0,
 		"the ring on the blank strip measures %.2f:1 against the stock it sits on", onBlank)
+
+	// And in the writer, which is paper with cream fields on it and is every
+	// control the board has for adding anything.
+	c.navigate(t, srv.URL+"/?bay=daily&rhythm=defrost+the+freezer")
+	for _, on := range []struct{ control, under string }{
+		{".addform .words", ".addform"},
+		{".addfoot .stamp", ".addform"},
+	} {
+		tabTo(t, c, on.control)
+		ratio := contrast(t, c, on.control, "outline-color", on.under)
+		require.GreaterOrEqual(t, ratio, 3.0,
+			"the ring on %s measures %.2f:1 against the stock it sits on", on.control, ratio)
+	}
+
+	// The kind a radio wears its ring on the label beside it, which is the
+	// thing the eye sees and is not what takes focus.
+	tabTo(t, c, ".kind input:checked")
+	onKind := contrast(t, c, ".kind input:checked + span", "outline-color", ".addform")
+	require.GreaterOrEqual(t, onKind, 3.0,
+		"the ring on a kind measures %.2f:1 against the stock it sits on", onKind)
 }
