@@ -1,0 +1,70 @@
+/* ── H × L ─────────────────────────────────────────────────────────────
+   The sleeve hangs off the rail. Time is the axis and you are on it; the
+   cards are the pile, stepped and coloured by kind. Anything the world
+   never gave an hour to comes off the rail entirely. */
+.crossrail { flex:1 1 auto; min-height:0; overflow-y:auto;
+  display:flex; flex-direction:column; padding:16px 12px 84px; }
+
+.railitems { position:relative; list-style:none; margin:0; padding:0;
+  display:flex; flex-direction:column; gap:10px; }
+/* The rail itself: one line, behind everything, stopping at the last hour. */
+.railitems::before { content:""; position:absolute; left:23px; top:12px; bottom:16px; width:3px;
+  background:linear-gradient(180deg, var(--orange-lit) 0 26px, rgba(254,214,167,.26) 26px);
+  border-radius:2px; }
+
+.onrail { position:relative; padding-left:56px; }
+/* Each thing's own mark on the rail, and the arm that reaches to its card. */
+.onrail::before { content:""; position:absolute; left:18px; top:20px; width:13px; height:13px;
+  background:var(--k, rgba(254,214,167,.5)); border:var(--line) solid var(--outline);
+  border-radius:50%; z-index:2; }
+.onrail::after { content:""; position:absolute; left:31px; top:26px;
+  width:calc(var(--step) * 7px + 14px); height:2px; background:rgba(254,214,167,.3); }
+.onrail .when { position:absolute; left:0; top:38px; width:44px; text-align:right;
+  font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+  color:rgba(254,214,167,.66); font-variation-settings:var(--precise),"wght" 750;
+  font-variant-numeric:tabular-nums; }
+
+/* Now: the head of the rail, and the card that sits on it. */
+.pulledrow { padding-left:56px; }
+.pulledrow::before { left:13px; top:14px; width:23px; height:23px; background:var(--orange-lit); }
+.pulledrow::after { left:36px; top:24px; width:20px; height:3px; background:var(--orange-lit); }
+.pulledrow .when.now { top:42px; width:44px; color:var(--orange-lit);
+  font-variation-settings:var(--precise),"wght" 800; }
+.pulledrow .out { box-shadow:0 6px 0 0 rgba(28,17,11,.55), 0 20px 28px -18px rgba(0,0,0,.8); }
+.pulledrow .outname { font-size:27px; }
+
+/* The cards step further from the rail as the day goes on. */
+.onrail .edge { margin-left:calc(var(--step) * 7px); border:var(--line) solid var(--outline);
+  border-radius:var(--r); min-height:56px; box-shadow:0 3px 0 0 rgba(28,17,11,.42); }
+.onrail .edge span { min-width:62px; margin-right:12px; }
+
+/* Off the rail: no hour, so no place on it. */
+.offrail { margin-top:20px; padding-top:14px; border-top:2px dashed rgba(254,214,167,.26); }
+.offsign { margin:0 0 9px 2px; font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+  color:rgba(254,214,167,.66); font-variation-settings:var(--precise),"wght" 800; }
+.offlist { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.offlist .edge { border:var(--line) solid var(--outline); border-radius:var(--r);
+  min-height:54px; box-shadow:0 3px 0 0 rgba(28,17,11,.42); }
+.offlist .edge span { min-width:62px; margin-right:12px; }
+
+
+/* ── Where the time lives ──────────────────────────────────────────────
+   It is said once. Either the rail carries it, because the rail is the
+   axis — or the tab carries it, because the tab is where you are already
+   looking. Never both. */
+
+/* 1 · the rail keeps it: the card's colour narrows to the holder the
+   whole world already uses. */
+.railtime .onrail .edge span { min-width:0; width:13px; margin-right:13px;
+  font-size:0; letter-spacing:0; }
+.railtime .offlist .edge span { min-width:56px }
+.railtime .onrail .when { color:rgba(254,214,167,.86); font-size:11.5px }
+
+/* 2 · the tab keeps it: the rail is marks only, and reads as pure distance. */
+.tabtime .onrail .when { font-size:0 }
+.tabtime .pulledrow .when.now { font-size:10.5px }
+.tabtime .railitems::before { left:23px }
+
+/* A fixed point is the one real deadline here, so it stops reading as
+   disabled next to the chores. */
+:root { --k-at: #7d5a42; --k-at-tint: #c9ab92; }

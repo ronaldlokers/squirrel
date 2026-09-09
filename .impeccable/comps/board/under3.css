@@ -1,0 +1,58 @@
+/* Whatever else changes, a group at the foot says what kind of thing it
+   holds, in the hue that kind already wears everywhere else. */
+.glabel { flex:0 0 auto; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+  font-variation-settings:var(--precise),"wght" 800 }
+.nchip { padding:8px 14px; white-space:nowrap; text-decoration:none;
+  background:#c7b6e3; color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:999px;
+  box-shadow:0 2px 0 0 rgba(28,17,11,.45);
+  font-size:14px; font-variation-settings:var(--casual),"wght" 520 }
+
+/* a · same grammar both sides, each in its own hue */
+.va { gap:0 }
+.va .grp { display:flex; align-items:center; gap:8px; min-width:0 }
+.va .grp.t { flex:0 1 auto; overflow:hidden }
+.va .grp.t .glabel { color:#ffb300 }
+.va .grp.n { flex:0 0 auto; margin-left:30px; padding-left:30px;
+  border-left:2px solid rgba(254,214,167,.2) }
+.va .grp.n .glabel { color:#b9a4dd }
+.va .tchip { overflow:hidden; text-overflow:ellipsis }
+.va .tchip.more { flex:0 0 auto }
+.va .add { margin-left:auto }
+
+/* b · each group is a block with its own sign, and the sign carries the count */
+.vb { gap:0; align-items:stretch }
+.vb .block { display:flex; align-items:center; gap:8px; min-width:0; padding:7px 14px 7px 0 }
+.vb .block.t { flex:0 1 auto; overflow:hidden }
+.vb .block.n { flex:0 0 auto; margin-left:24px; padding-left:24px;
+  border-left:2px solid rgba(254,214,167,.2) }
+.blabel { display:inline-flex; align-items:center; gap:8px; flex:0 0 auto;
+  padding:7px 12px; border:var(--line) solid var(--outline); border-radius:var(--r);
+  background:var(--purple-dark); color:var(--cream);
+  font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+  font-variation-settings:var(--precise),"wght" 800 }
+.vb .block.t .blabel { border-left:11px solid #ffb300 }
+.vb .block.n .blabel { border-left:11px solid #6c4da9 }
+.blabel b { font-family:"Inter",sans-serif; font-weight:900; font-variation-settings:normal;
+  font-size:13px; letter-spacing:-.02em; color:var(--paper); font-variant-numeric:tabular-nums }
+.vb .tchip { overflow:hidden; text-overflow:ellipsis }
+.vb .tchip.more { flex:0 0 auto }
+.vb .add { margin-left:auto }
+
+/* c · one kind of thing at the foot, so nothing has to be told apart */
+.vc { gap:9px }
+.vc .glabel { color:#ffb300; margin-right:4px }
+.vc .tchip { overflow:hidden; text-overflow:ellipsis }
+.vc .tchip.more { flex:0 0 auto }
+.vc .add { margin-left:auto }
+.barcount.notes b { color:var(--cream) }
+
+/* A count in the bar is a control, so it is shaped like the controls
+   beside it and wears the hue of the thing it counts. */
+.barcount.notes { gap:8px; padding:6px 14px 6px 11px; border-radius:999px;
+  border:var(--line) solid rgba(254,214,167,.28); background:rgba(28,17,11,.2);
+  color:var(--cream); font-size:13px }
+.barcount.notes::before { content:""; width:9px; height:9px; border-radius:50%;
+  background:#8c6fc4; border:1.5px solid var(--outline); flex:0 0 auto }
+.barcount.notes b { font-size:14px; color:var(--paper) }
+.barcount.notes:hover { border-color:rgba(254,214,167,.6); color:var(--paper) }

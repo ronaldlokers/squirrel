@@ -1,0 +1,14 @@
+/* 1 · the desk's hues, carried across exactly as they are today.
+   Lilac is a daily chore and it is also the notes. Orange is a weekly
+   chore and it is also the tasks. Both collisions are visible here. */
+.asis .k-note   { --k:#6c4da9; --kt:#c7b6e3; --kink:#fffbf3 }
+.asis .k-task2  { --k:#e66d0d; --kt:#f6c48a; --kink:#1c110b }
+.asis .k-at     { --k:#7d5a42; --kt:#c9ab92; --kink:#1c110b }
+
+/* 2 · one hue, one meaning, everywhere. Chores stop being coloured by
+   rhythm — on the desk the rack's own sign and its column already say
+   which rhythm it is, and the spine was saying it a second time. */
+.onekind .k-chore { --k:#e66d0d; --kt:#f6c48a; --kink:#1c110b }
+.onekind .k-task  { --k:#ffb300; --kt:#ffdf9a; --kink:#1c110b }
+.onekind .k-note  { --k:#6c4da9; --kt:#c7b6e3; --kink:#fffbf3 }
+.onekind .k-at    { --k:#7d5a42; --kt:#c9ab92; --kink:#1c110b }

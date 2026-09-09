@@ -28,9 +28,14 @@ base="${1:?base sha}"
 head="${2:?head sha}"
 title="${3:-}"
 
-# What counts as changing the look. The stylesheet and the templates: the two
+# What counts as changing the look. The stylesheets and the templates: the two
 # places DESIGN.md is a description of.
-looks='^internal/web/(static/pile\.css|templates/.*\.html)$'
+#
+# pile.css was the only one here until 10 September 2026, because it was the
+# only one when this was written. The room's retirement moved the product onto
+# board.css and chrome.css and nobody moved the gate, so for four days the gate
+# watched a stylesheet the board does not load.
+looks='^internal/web/(static/(board|chrome|pile)\.css|templates/.*\.html)$'
 
 changed="$(git diff --name-only "$base" "$head")"
 

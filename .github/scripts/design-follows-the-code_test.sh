@@ -33,6 +33,8 @@ git config user.email t@example.com
 git config user.name Test
 mkdir -p internal/web/static internal/web/templates
 echo 'body{}' > internal/web/static/pile.css
+echo 'body{}' > internal/web/static/board.css
+echo 'body{}' > internal/web/static/chrome.css
 echo '<p>' > internal/web/templates/home.html
 echo 'the look' > DESIGN.md
 echo 'package main' > main.go
@@ -55,6 +57,20 @@ run 'fix: restyle'
 check "css without DESIGN.md blocks" 1 "$code" "$out"
 grep -q 'internal/web/static/pile.css' <<<"$out" ||
   { echo "FAIL css-alone: does not name the file"; fails=$((fails + 1)); }
+
+# The board's own stylesheets. The gate watched only pile.css until 10 September
+# 2026, which is the stylesheet the board does not load.
+on board-css-alone
+echo 'body{color:red}' > internal/web/static/board.css
+git commit -qam 'restyle the board'
+run 'fix: restyle the board'
+check "board.css without DESIGN.md blocks" 1 "$code" "$out"
+
+on chrome-css-alone
+echo 'body{color:red}' > internal/web/static/chrome.css
+git commit -qam 'restyle the bar'
+run 'fix: restyle the bar'
+check "chrome.css without DESIGN.md blocks" 1 "$code" "$out"
 
 # A template counts too — DESIGN.md describes markup as much as style.
 on template-alone

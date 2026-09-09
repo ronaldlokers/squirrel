@@ -12,29 +12,66 @@ One person: Ronald, the owner and only user. He has ADHD, and the product exists
 because of how that specifically fails him — not as a general productivity tool
 that happens to suit him.
 
-Two situations, both confirmed, and the design has to serve them equally rather
-than optimising for one:
+Two situations, both confirmed. ~~The design has to serve them equally rather
+than optimising for one.~~ **Amended by the owner on 10 September 2026: the
+phone is primary and the desktop is first-class.**
 
+- **Phone, in gaps.** On the sofa, in a queue, one thumb. **This is where a
+  screen is decided.**
 - **Desktop, deliberately.** Sat at the machine, keyboard available, triage as a
-  chosen task.
-- **Phone, in gaps.** On the sofa, in a queue, one thumb.
+  chosen task. **This is where a screen is then allowed more room.**
+
+**What primary means, and what it does not.** It is about which surface a screen
+is designed against, not which one gets features. The desktop keeps everything
+and nothing here makes it worse. What changes is the order of the questions: a
+layout is right when it is **right at 390px**, not acceptable at 390px once it
+is right at 1280. A control is sized for a thumb first, and the reach zone
+matters as much as the 44px floor. A regression on a phone is a bug of the same
+severity as one on the desktop.
+
+This settles a contradiction that stood from 22 August to 10 September. The
+devices spec said phone primary; this file said equally; and this file wins,
+so phone primary was not in force and nothing was built against it. The
+acceptance criteria in `docs/superpowers/specs/2026-08-22-devices-design.md`
+are binding from today.
+
+The precondition is recorded under *Operating Context*: **the phone is on an
+always-on VPN into the homelab.** If that stops being true, this amendment
+stops being buildable and the answer is an architecture decision rather than a
+paragraph.
 
 A successful session is **a few notes cleared, then stopping.** Not emptying the
 pile. Stopping partway is the normal ending, not an abandoned job.
 
 ## Product Purpose
 
-Squirrel is an external memory that lives inside a Campfire chat room. You type a
-thought and it is kept; it tells you about a chore when it thinks the moment is
-right.
+Squirrel is an external memory. You type a thought and it is kept; it tells you
+about a chore when it thinks the moment is right.
 
-This surface — the pile — is the first part of Squirrel you look at rather than
-talk to. Until v0.5.0 a note was write-only: shown once in the evening message
-and never again. The pile is where notes are read back, searched, and disposed
-of.
+**The board is the whole of the app**, and Campfire is beside it rather than
+under it. On a desk the board is four racks and a sidebar; on a phone it is the
+rail — today, in order, with the one thing that wants you now drawn whole at the
+top and a place to catch a thought pinned at the foot. A thing on the board is a
+**strip**: one row, its words, its mark, and the answers behind it.
 
-Success is that opening it does not feel like opening an inbox you are behind on.
-The measure is whether it gets opened again next week.
+~~Squirrel is an external memory that lives inside a Campfire chat room.~~
+~~This surface — the pile — is the first part of Squirrel you look at rather
+than talk to.~~ **Both retired.** Chat was the whole product until the screen
+existed, and the screen was one surface among several until 6 September 2026,
+when the conversation inside the app was retired and `/r/{room}` became a
+redirect. Two rules outlived that work and bind everything built after it:
+**there is no second surface inside the app** — Buddy answers through the strip
+you are looking at, never through a box, because a box on the board is the
+refused general AI chat companion relocated rather than retired; and **no
+capability may exist only in Campfire.**
+
+The history is kept rather than deleted because it is the argument. Until v0.5.0
+a note was write-only: shown once in the evening message and never again. The
+pile was where notes were first read back, searched and disposed of, and every
+rule the board inherited was won there.
+
+Success is that opening it does not feel like opening an inbox you are behind
+on. The measure is whether it gets opened again next week.
 
 ## Positioning
 
@@ -92,23 +129,39 @@ was allowed; a streak can, and streaks stay refused.
 
 **Confirmed functionality for this surface:**
 
-- One screen, no navigation. Notes newest-first.
-- **One question per note, and the answers behind it.** The card asks *what is
-  this?*; pressing it reveals four answers — **done · keep · drop · a task** —
-  and one thing you can make from it, **make it a chore**, which takes an
-  interval. What stalls is not which of the five, it is whether you are
-  deciding about this thing at all right now, so that is what the card asks.
-  Skipping and the letter keys both work from a shut card; correcting the words
-  sits outside the question, because it is a repair rather than an answer.
+- One screen, no navigation. Search is the only navigation there is, and it is a
+  GET, so what you looked for is in the address and survives a reload. **What
+  matched takes the racks' own place** — not a fifth bay, not an overlay. On a
+  phone it is the one rack the phone keeps.
+- **One question per thing, and the answers behind it.** A **strip** is one row:
+  its words, its mark, and the answers behind it. Pressing it opens it. A note's
+  answers are **done · keep · drop · a task**, and one thing you can make from
+  it — **make it a chore**, which takes a rhythm. What stalls is not which of the
+  five, it is whether you are deciding about this thing at all right now, so
+  that is what a strip asks. The letter keys work from a shut strip; correcting
+  the words sits outside the question, because it is a repair rather than an
+  answer. ~~The card asks *what is this?*~~ — *card* was the pile's word and the
+  board does not have cards.
+- **One writer, and it does not guess.** There is a single writer on the board.
+  It asks what a thing is before it asks anything that kind needs, and an
+  unanswered one keeps a **thought** — whichever rack it was opened from. The
+  catch bar does the same from every rack. This is what closed the problem behind
+  the phone note box removed on 6 September 2026: which box you are in was a
+  decision made *before* capture, which is the moment the product exists to
+  protect, and the answer was one box that does not turn a thought into
+  something it is not.
 - **Stopping is a place.** "stop whenever you like" is a link to a screen that
   says this was a normal way to finish. Chosen, never triggered: a screen that
-  appeared after four cards would be a screen with an opinion about how many
-  cards are enough, and that number would be a count wearing a kind face. It
-  reads nothing and reports nothing about what you did.
-- Search across every state, on the same screen.
+  appeared after four strips would be a screen with an opinion about how many
+  are enough, and that number would be a count wearing a kind face. It reads
+  nothing and reports nothing about what you did.
+- Search across every state, on the same screen. What a result carries is
+  decided by where it is: something still in the pile keeps its answers, and
+  something that has already left carries `back in the pile` and nothing else.
 - Undo lives on the screen, and a row stays in place for a moment after it is
   actioned so the undo has somewhere to be.
-- Keyboard-first: move between notes, one key per action.
+- Keyboard-first on the desk: move between strips, one key per action. A keycap
+  is never drawn where there is no keyboard.
 - **Buddy**, on the strip you are looking at. There is no room and no chip: the
   conversation retired on 6 September 2026 and `/r/{room}` redirects. *ask
   Buddy* is a press on a strip, the answer hangs in that strip's margin, and
@@ -721,14 +774,48 @@ which pull toward a precision tool — the design has to be both, not average th
 
 ## Evidence on Hand
 
-- Spec: `docs/superpowers/specs/2026-08-18-pile-design.md` — the binding source
-  for this surface's behaviour.
+**The comps are binding, and they outrank any prose summary of them.** Recorded
+10 September 2026, and the reason is a mistake worth not repeating: v0.79.0 was
+built from a written *Decided* summary of a comp rather than from the comp, and
+shipped a board the owner did not recognise — the add button in the wrong place,
+a phone that looked like nothing that was drawn, and a card that had been taken
+out of the design still on the screen. It cost two rebuild pull requests. When a
+summary and a comp disagree, the comp is right.
+
+They live in the repository rather than in a scratch directory, which is the
+other half of the same lesson: until today the drawings that governed the build
+existed only in a session temp directory that gets deleted.
+
+| Comp | What it governs |
+| --- | --- |
+| `.impeccable/comps/board/merge-1.png` | The desk: four racks and the sidebar, the strip, the marks. |
+| `.impeccable/comps/board/phone-h-rail.png` | The phone: the rail, the head drawn whole, the catch bar at the foot. |
+| `.impeccable/comps/board/agree-2-onekind.png` | One writer that asks what a thing is before it asks what that kind needs. |
+| `.impeccable/comps/board/mod-2-onescreen.png` | The writer on one screen rather than stepped. |
+
+Each `.png` sits beside the `.html` that produced it and the stylesheets it
+loads, so a comp can be reopened and measured rather than only looked at.
+
+**What the comps do not cover, and what stands in for them.** The phone's folded
+rows — two rows carrying the counts — were decided in conversation on 9 September
+after the drawings stopped, so the shipped code is their only record. Search
+results, the first run, the gate and the evening message have never been drawn at
+all. Do not treat their current appearance as approved; it is inherited.
+
+- Spec: `docs/superpowers/specs/2026-09-05-the-conversation-retires-design.md` —
+  the reasoning behind the board being the whole app. ~~Spec:
+  `docs/superpowers/specs/2026-08-18-pile-design.md` — the binding source for
+  this surface's behaviour.~~ **Superseded**: it describes the pile screen, which
+  no longer exists. Kept as the argument, not as a source of behaviour.
+- Spec: `docs/superpowers/specs/2026-08-22-devices-design.md` — the five devices
+  acceptance criteria, binding from 10 September 2026.
 - Working chat implementation of the same pile: `internal/squirrel/notes.go`,
   `render.go`, `apply.go`.
 - Real content is the owner's own notes, already in production. No sample data
   exists in the repository and none may be fabricated as though it were his.
-- No screenshots, no imagery, no photography, no testimonials, no press. Nothing
-  to cite and nothing to imply.
+- ~~No screenshots, no imagery.~~ The comps above are real and are cited by path.
+  There is still **no photography, no testimonials and no press.** Nothing to
+  cite there and nothing to imply.
 
 ## Product Principles
 
@@ -845,5 +932,9 @@ Built for an ADHD brain, which sets requirements beyond the usual baseline:
   pool and every choice spends it. Fewer decisions per note beats more power.
 - **Habituation is the enemy.** A surface that looks identical every time stops
   being seen within about a week.
-- Keyboard operation is a first-class path, not a fallback.
-- The screen is used on a phone in poor conditions as often as at a desk.
+- Keyboard operation is a first-class path, not a fallback. It is the desktop's
+  path and the desktop is first-class, so *phone primary* never demotes it.
+- The screen is used on a phone in poor conditions, and from 10 September 2026
+  that is the case it is designed against rather than one of two it is checked
+  in. Every control clears 44×44, nothing scrolls sideways at 320px, and the
+  reach zone is a constraint rather than a preference.

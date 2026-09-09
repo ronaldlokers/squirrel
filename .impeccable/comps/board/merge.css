@@ -1,0 +1,8 @@
+/* Four racks and the dial: daily, weekly, seldom, once. "Once" is not a
+   different kind of thing, it is a rhythm with one beat in it. */
+.merged .racks { grid-template-columns:1fr 1fr 1fr 1fr minmax(0,268px) }
+.merged .rack[data-bay="once"] { --hue:#ffb300 }
+.merged .rack[data-bay="once"] .strip .holder { background:#ffb300 }
+.merged .rack[data-bay="once"] .baysign::before { background:rgba(254,214,167,.36) }
+.merged .under2 { justify-content:flex-end }
+.merged .add { min-width:420px }
