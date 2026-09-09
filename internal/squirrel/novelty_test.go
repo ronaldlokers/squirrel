@@ -48,7 +48,7 @@ func TestAFortnightIsNotOneSentence(t *testing.T) {
 // joined on 25 August 2026 and this is what stopped them arriving unguarded.
 var everySaying = []Saying{
 	SayingSlot, SayingOffer, SayingStop, SayingEnough,
-	SayingDid, SayingKept, SayingDropped, SayingDecided,
+	SayingDid, SayingDropped, SayingDecided,
 	SayingHere, SayingLater, SayingHeard,
 }
 
@@ -78,7 +78,6 @@ func TestTheOriginalWordingIsStillInEveryPool(t *testing.T) {
 		// The acknowledgements' own originals, which are the words the
 		// conversation shipped with.
 		SayingDid:     "Good.",
-		SayingKept:    "Kept.",
 		SayingHere:    "This one.",
 		SayingDecided: "On the list.",
 	} {

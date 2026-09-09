@@ -112,7 +112,6 @@ const (
 	IntentDrop     IntentKind = "drop"
 	IntentDefine   IntentKind = "define"
 	IntentCommand  IntentKind = "command"
-	IntentKeep     IntentKind = "keep"
 	IntentMoment   IntentKind = "moment"
 )
 
@@ -141,7 +140,6 @@ var (
 	bareNumber = regexp.MustCompile(`^(\d{1,3})$`)
 	doneNumber = regexp.MustCompile(`^done\s+(\d{1,3})$`)
 	stopNumber = regexp.MustCompile(`^stop\s+(\d{1,3})$`)
-	keepNumber = regexp.MustCompile(`^keep\s+(\d{1,3})$`)
 	dropNumber = regexp.MustCompile(`^drop\s+(\d{1,3})$`)
 
 	// A command name is a word. Without this, "!!!" is a command called "!!"
@@ -226,9 +224,6 @@ func Match(raw string) Intent {
 	}
 	if m := stopNumber.FindStringSubmatch(lower); m != nil {
 		return Intent{Kind: IntentStop, Position: atoi(m[1])}
-	}
-	if m := keepNumber.FindStringSubmatch(lower); m != nil {
-		return Intent{Kind: IntentKeep, Position: atoi(m[1])}
 	}
 	// `drop 2` and a bare `nvm` are both IntentDrop, told apart by Position.
 	// No collision: the bare forms are exactly "nvm", "forget it" and "never

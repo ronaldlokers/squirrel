@@ -31,7 +31,7 @@ func signOut(t *testing.T, c *cdp, srv string) {
 
 func TestBrowserAPhotographNeverKeptDoesNotOutliveTheSession(t *testing.T) {
 	srv := screen(t, aPile())
-	c := browserAt(t, srv, "/?bay=notes")
+	c := browserAt(t, srv, "/notes")
 
 	require.Equal(t, true, c.eval(t, `
 		await new Promise(resolve => {
@@ -55,8 +55,8 @@ func TestBrowserAPhotographNeverKeptDoesNotOutliveTheSession(t *testing.T) {
 
 func TestBrowserSigningOutDoesNotDropACaptureThatCouldNotBeDelivered(t *testing.T) {
 	srv := screen(t, aPile())
-	c := browserAt(t, srv, "/?bay=notes")
-	waitForTheWorker(t, c, srv.URL+"/?bay=notes")
+	c := browserAt(t, srv, "/notes")
+	waitForTheWorker(t, c, srv.URL+"/notes")
 
 	require.Equal(t, true, c.eval(t, `
 		await new Promise(resolve => {

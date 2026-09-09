@@ -16,8 +16,6 @@ import (
 
 type boardView struct {
 	V              string
-	Shelf          string
-	Shelved        []stripView
 	Opened         *stripView
 	Find           string
 	Found          []stripView
@@ -33,8 +31,6 @@ type boardView struct {
 	Pulled         *offerView
 	Timer          *timerView
 	Ramp           *rampView
-	Bays           []bayView
-	Door           *bayView
 	Moodful        bool
 	Racks          []rackView
 	Rhythm         string
@@ -141,14 +137,7 @@ type bayView struct {
 	Asking   string
 	Refused  bool
 	Offline  bool
-	Settled  []settledView
 	Strips   []stripView
-}
-
-type settledView struct {
-	Name   string
-	Empty  string
-	Strips []stripView
 }
 
 type stripView struct {
@@ -162,7 +151,6 @@ type stripView struct {
 	// and nothing else.
 	Back    bool
 	Resting bool
-	State   string
 	// Photo says this note has a photograph. The strip says so; opening it is
 	// what shows it.
 	Photo bool
@@ -231,14 +219,15 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		}
 		at := now().In(zoneOf(r.Context()))
 		in := r.URL.Query().Get("bay")
-		asking, _ := strconv.ParseInt(r.URL.Query().Get("chore"), 10, 64)
+		if in == "notes" || r.URL.Query().Has("shelf") {
+			http.Redirect(w, r, "/notes", http.StatusMovedPermanently)
+			return
+		}
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
-		shelf := r.URL.Query().Get("shelf")
 		blockers, unstuck, unstuckMinutes := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
 			In:             in,
 			Find:           find,
-			Shelf:          shelfNames[shelf],
 			Blockers:       blockers,
 			Unstuck:        unstuck,
 			UnstuckMinutes: unstuckMinutes,
@@ -261,7 +250,6 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 
 		var g errgroup.Group
 		g.SetLimit(squirrel.MaxConns)
-		g.Go(func() error { v.Shelved = whatIsOnTheShelf(r, s, personID, shelf, at); return nil })
 		g.Go(func() error { v.Opened = openedStrip(r, s, personID, at); return nil })
 		g.Go(func() error { v.Found = whatMatched(r, s, personID, find, at); return nil })
 		g.Go(func() error { v.Pulled = offerFor(s, r, false); return nil })
@@ -278,90 +266,12 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		_ = g.Wait()
 
 		v.Racks = marginalia(r, opts, bays.seen, troubled(v.Racks, racksOK))
-		doors, once := bays.assemble(r, opts, asking)
-		v.Racks = append(v.Racks, once)
-		v.Bays, v.Racks = onlyOne(r, doors, v.Racks)
-		v.Door = doorOpened(in, v.Bays)
+		v.Racks = onlyOne(r, append(v.Racks, bays.once(r, opts)))
 		v.Moodful = in == "mood" && v.Dial != nil
 		v.Racks = standingIn(in, v.Racks)
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
-}
-
-// shelfNames is what each shelf is called, and the map is the guard: a shelf
-// nobody named is not a shelf, so an address with anything else in it draws the
-// board.
-var shelfNames = map[string]string{
-	"kept": "the things you kept",
-	"held": "what you set aside",
-}
-
-// whatIsOnTheShelf is a shelf, opened. It takes the racks' place the way search
-// does — the board has one place where things are — and what it holds carries
-// the way back and nothing else, because a thing on a shelf has already been
-// decided about.
-func whatIsOnTheShelf(r *http.Request, s Store, personID int64, shelf string, at time.Time) []stripView {
-	switch shelf {
-	case "kept":
-		items, _, err := s.KeptItems(r.Context(), personID, boardDeep)
-		if err != nil {
-			slog.Error("reading what you kept", "error", err)
-			return nil
-		}
-		out := make([]stripView, 0, len(items))
-		for _, it := range items {
-			out = append(out, stripView{
-				ID: it.ID, What: "note", Words: it.RawText,
-				State: markOfDay(it.ReceivedAt, at), Back: true, Photo: it.PhotoName != "",
-			})
-		}
-		return out
-	case "held":
-		items, _, err := s.HeldItems(r.Context(), personID, boardDeep)
-		if err != nil {
-			slog.Error("reading what you set aside", "error", err)
-			return nil
-		}
-		out := make([]stripView, 0, len(items))
-		for _, it := range items {
-			// The mark is what would move it, in his own words. A shelf that
-			// counted them would be a reproach; a shelf that says when each
-			// one ends is the reason there are three of these rather than one.
-			out = append(out, stripView{
-				ID: it.ID, What: "note", Words: it.Text,
-				State: it.Words(), Back: true, Photo: it.PhotoName != "",
-			})
-		}
-		return out
-	}
-	return nil
-}
-
-// whatIsSettled is what has already been decided about, under the notes that
-// have not. Both shelves in the rack rather than behind a tab at the foot of
-// it: a place you have to travel to is a place that stops being read, and what
-// you set aside is exactly the thing that must not disappear.
-func whatIsSettled(r *http.Request, s Store, personID int64, at time.Time) []settledView {
-	out := make([]settledView, 0, 2)
-	for _, shelf := range []struct{ key, empty string }{
-		{"held", "nothing set aside"},
-		{"kept", "nothing kept yet"},
-	} {
-		out = append(out, settledView{
-			Name:   shelfNames[shelf.key],
-			Empty:  shelf.empty,
-			Strips: resting(whatIsOnTheShelf(r, s, personID, shelf.key, at)),
-		})
-	}
-	return out
-}
-
-func resting(strips []stripView) []stripView {
-	for i := range strips {
-		strips[i].Resting = true
-	}
-	return strips
 }
 
 // whatMatched is the search, which takes the racks' place rather than opening
@@ -425,41 +335,22 @@ func askedForARhythm(strips []stripView, asking int64) []stripView {
 
 type bayFetch struct {
 	seen               map[string]squirrel.Noticed
-	settled            []settledView
-	notes, tasks       []stripView
-	notesOK, moreNotes bool
+	tasks              []stripView
 	tasksOK, moreTasks bool
 }
 
 func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at time.Time) *bayFetch {
 	f := &bayFetch{}
 	g.Go(func() error { f.seen = whatWasNoticed(r, s, personID); return nil })
-	if wantsBay(r, "notes") {
-		g.Go(func() error { f.settled = whatIsSettled(r, s, personID, at); return nil })
-	}
-	g.Go(func() error { f.notes, f.notesOK, f.moreNotes = noteStrips(r, s, personID, at); return nil })
 	g.Go(func() error { f.tasks, f.tasksOK, f.moreTasks = taskStrips(r, s, personID, at); return nil })
 	return f
 }
 
-func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) ([]bayView, rackView) {
-	refused := r.URL.Query().Has("nophoto")
-	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
-	offline := r.URL.Query().Get("offline") == "1"
+func (f *bayFetch) once(r *http.Request, opts Options) rackView {
 	justAsked, _ := strconv.ParseInt(r.URL.Query().Get("answered"), 10, 64)
-
-	askOn := coachAvailable(opts)
-	notes := marked(f.notes, "note", f.seen)
-	notes = askable(notes, "notes", askOn)
-	notes = answered(marked(notes, "ask:note", f.seen), justAsked)
-	tasks := askable(f.tasks, "tasks", askOn)
+	tasks := askable(f.tasks, "tasks", coachAvailable(opts))
 	tasks = answered(marked(tasks, "ask:task", f.seen), justAsked)
-	return []bayView{
-		{Key: "notes", Name: "the notes", Question: "what is it", Writes: true,
-			Camera: opts.Photos != nil, Trouble: !f.notesOK, More: f.moreNotes,
-			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
-			Asking: saidAnyway, Refused: refused, Offline: offline, Settled: f.settled},
-	}, onceRack(tasks, f.tasksOK, f.moreTasks)
+	return onceRack(tasks, f.tasksOK, f.moreTasks)
 }
 
 func onceRack(tasks []stripView, ok, more bool) rackView {
@@ -482,48 +373,23 @@ func onceRack(tasks []stripView, ok, more bool) rackView {
 	return rack
 }
 
-// wantsBay is the same ?only= as onlyOne, asked early enough to skip a read
-// nothing is going to draw. Inert in a shipped binary.
-func wantsBay(r *http.Request, key string) bool {
-	if devDir == "" {
-		return true
-	}
-	only := strings.TrimSpace(r.URL.Query().Get("only"))
-	if only == "" || !boardKeys[only] {
-		return true
-	}
-	return only == key
-}
-
-var boardKeys = map[string]bool{
-	"notes": true,
-	"now":   true, "daily": true, "weekly": true, "seldom": true, "once": true,
-}
-
-// onlyOne is the development board answering ?only= with a single region, so
-// an element can be picked without five others on the screen. It is inert in a
+// onlyOne is the development board answering ?only= with a single rack, so an
+// element can be picked without four others on the screen. It is inert in a
 // shipped binary, which is what the first test in onebay_test.go is for.
-// Both lists at once, because a rack and a door are two shapes of the same
-// thing to whoever is pointing at one.
-func onlyOne(r *http.Request, bays []bayView, racks []rackView) ([]bayView, []rackView) {
+func onlyOne(r *http.Request, racks []rackView) []rackView {
 	if devDir == "" {
-		return bays, racks
+		return racks
 	}
 	only := strings.TrimSpace(r.URL.Query().Get("only"))
 	if only == "" {
-		return bays, racks
-	}
-	for _, bay := range bays {
-		if bay.Key == only {
-			return []bayView{bay}, nil
-		}
+		return racks
 	}
 	for _, rack := range racks {
 		if rack.Key == only {
-			return nil, []rackView{rack}
+			return []rackView{rack}
 		}
 	}
-	return bays, racks
+	return racks
 }
 
 // baysIn lights the rack you are standing in, which is only ever one and is the
@@ -541,23 +407,6 @@ func baysIn(in string, bays []bayView) []bayView {
 		bays[0].In = true
 	}
 	return bays
-}
-
-func noteStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool, bool) {
-	items, more, err := s.OpenItems(r.Context(), personID, boardDeep)
-	if err != nil {
-		slog.Error("reading the notes for the board", "error", err)
-		return nil, false, false
-	}
-	out := make([]stripView, 0, len(items))
-	for _, it := range items {
-		out = append(out, stripView{
-			ID: it.ID, What: "note", Words: it.RawText,
-			Mark: markOfDay(it.ReceivedAt, at), Answers: noteAnswers,
-			Photo: it.PhotoName != "",
-		})
-	}
-	return out, true, more
 }
 
 func taskStrips(r *http.Request, s Store, personID int64, at time.Time) ([]stripView, bool, bool) {
@@ -692,8 +541,6 @@ func standingIn(in string, racks []rackView) []rackView {
 }
 
 var noteAnswers = []answerView{
-	{Act: "done", Words: "done", Key: "D", Look: "did"},
-	{Act: "keep", Words: "keep", Key: "K"},
 	{Act: "drop", Words: "drop", Key: "X", Look: "no"},
 }
 
@@ -832,7 +679,9 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 // at a time does not answer a chore by putting you back in the notes.
 func backToTheBay(r *http.Request) string {
 	switch bay := r.FormValue("bay"); bay {
-	case "notes", "tasks", "now", "daily", "weekly", "seldom", "once", "mood":
+	case "notes":
+		return "/notes"
+	case "tasks", "now", "daily", "weekly", "seldom", "once", "mood":
 		return "/?bay=" + bay
 	}
 	return "/"
@@ -877,7 +726,6 @@ func answerOnTheBoard(r *http.Request, s Store, personID int64, what, answer str
 
 var boardStates = map[string]squirrel.ItemState{
 	"done":    squirrel.ItemDone,
-	"keep":    squirrel.ItemKept,
 	"drop":    squirrel.ItemDropped,
 	"waiting": squirrel.ItemWaiting,
 	"blocked": squirrel.ItemBlocked,
@@ -1206,7 +1054,7 @@ func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 			fail(w, err)
 			return
 		}
-		http.Redirect(w, r, "/?bay=notes&kept=1", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes?kept=1", http.StatusSeeOther)
 	}
 }
 
@@ -1239,7 +1087,7 @@ func openedStrip(r *http.Request, s Store, personID int64, at time.Time) *stripV
 	case it.Kind == squirrel.ItemTask:
 		v.What, v.Answers, v.Held = "task", taskAnswers, heldAnswers
 	default:
-		v.Answers, v.Held = noteAnswers, heldAnswers
+		v.Answers = noteAnswers
 	}
 	v.Reword = r.URL.Query().Get("reword") == "1"
 	if !v.Back {

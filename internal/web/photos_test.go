@@ -103,7 +103,7 @@ func TestAKindThisDoesNotKeepIsRefused(t *testing.T) {
 	w := postPhoto(t, m, kind, body)
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/?bay=notes&nophoto=the+tax+letter", w.Header().Get("Location"),
+	require.Equal(t, "/notes?nophoto=the+tax+letter", w.Header().Get("Location"),
 		"the words went down with the photograph")
 	require.Empty(t, ph.kept, "it kept something it does not keep")
 	require.Empty(t, sp.written, "it captured a note referencing nothing")
@@ -136,14 +136,14 @@ func TestWordsAloneStillPostWithACameraPresent(t *testing.T) {
 
 // Nowhere to put one is a supported state, and the camera is simply not drawn.
 func TestNoVolumeMeansNoCamera(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/notes", nil).Body.String()
 	require.NotContains(t, body, `name="photo"`)
 	require.NotContains(t, body, "Add a photograph")
 }
 
 func TestAVolumeMeansACamera(t *testing.T) {
 	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
-	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := m.call(t, "GET", "/notes", nil).Body.String()
 
 	require.Contains(t, body, `name="photo"`)
 	require.Contains(t, body, `accept="image/*"`)
@@ -156,7 +156,7 @@ func TestAVolumeMeansACamera(t *testing.T) {
 // release and that is exactly what it did.
 func TestTheCameraDoesNotForbidTheGallery(t *testing.T) {
 	m := mountedWithCamera(t, &fakeStore{}, &fakeSpool{}, &fakePhotos{})
-	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := m.call(t, "GET", "/notes", nil).Body.String()
 
 	require.NotContains(t, body, "capture=")
 }
@@ -178,7 +178,8 @@ func TestThePileShowsAPhotographByTheNotesID(t *testing.T) {
 		PhotoName: "photo-1.jpg", PhotoType: "image/jpeg",
 	}}}
 	body := opened(t, f, "notes")
-	require.Contains(t, body, `href="/?open=7"`)
+	require.Contains(t, body, `href="/photo/7"`)
+	require.Contains(t, body, `src="/photo/7/thumb"`)
 	require.NotContains(t, body, "photo-1.jpg")
 }
 

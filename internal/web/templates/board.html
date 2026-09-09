@@ -212,31 +212,6 @@
     </div>
   </section>
 </main>
-{{else if .Shelf}}
-<main class="racks found">
-  <section class="rack in">
-    <h2 class="baysign shelf">{{.Shelf}}</h2>
-    <a class="strip back" href="/"><span class="words">back to the board</span></a>
-    <div class="channel">
-      {{if not .Shelved}}<p class="nothing">nothing on this shelf</p>{{end}}
-      <div class="strips">
-        {{range .Shelved}}
-        <article class="strip h-notes">
-          <span class="holder"></span>
-          <div class="words">
-            <p class="what">{{.Words}}</p>
-            <form class="stamps" method="post" action="/board/undo">
-              <input type="hidden" name="id" value="{{.ID}}">
-              <button class="stamp">back in the pile<span class="k">Z</span></button>
-            </form>
-          </div>
-          <span class="mark">{{.Mark}}</span>
-        </article>
-        {{end}}
-      </div>
-    </div>
-  </section>
-</main>
 {{else if .Find}}
 <main class="racks found">
   <section class="rack in">
@@ -280,37 +255,6 @@
     <a class="strip back" href="/"><span class="words">back to the board</span></a>
     {{template "moodside" .}}
   </section>
-</main>
-{{else if .Door}}
-<main class="racks found">
-  {{with .Door}}
-  <section class="rack in" data-bay="{{.Key}}">
-    <h2 class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</h2>
-    <a class="strip back" href="/"><span class="words">back to the board</span></a>
-    {{template "blankstrip" .}}
-    <div class="channel">
-      {{if .Trouble}}<p class="trouble">cannot reach {{.Name}} — nothing is lost. Your words are still here; try again in a moment.</p>{{end}}
-      {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
-      <div class="strips">
-        {{$bay := .Key}}
-        {{range .Strips}}
-        {{template "strip" dict "Strip" . "Bay" $bay}}
-        {{end}}
-        {{range .Settled}}
-        <p class="seam"><span class="what">{{.Name}}</span>{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</p>
-        {{if .Strips}}
-        {{range .Strips}}
-        {{template "strip" dict "Strip" . "Bay" $bay}}
-        {{end}}
-        {{else}}
-        <p class="nothing quiet">{{.Empty}}</p>
-        {{end}}
-        {{end}}
-      </div>
-      {{if .More}}<p class="further">there is more further back</p>{{end}}
-    </div>
-  </section>
-  {{end}}
 </main>
 {{else}}
 <main class="racks">
@@ -421,14 +365,14 @@
 {{end}}
 
 {{if .Racks}}
-{{$whole := not (or .Opened .Find .Shelf .Door)}}
+{{$whole := not (or .Opened .Find)}}
 <nav class="baytabs">
   {{range .Racks}}
   <a class="baytab{{if and .In $whole}} in{{end}}" href="/?bay={{.Key}}"{{if and .In $whole}} aria-current="page"{{end}}>
     <span class="says">{{.Name}}{{if .Strips}} <span class="n">&middot; {{len .Strips}}</span>{{end}}</span>
   </a>
   {{end}}
-  <a class="baytab{{if eq .In "notes"}} in{{end}}" href="/?bay=notes"{{if eq .In "notes"}} aria-current="page"{{end}}>
+  <a class="baytab" href="/notes">
     <span class="says">notes</span>
   </a>
 </nav>

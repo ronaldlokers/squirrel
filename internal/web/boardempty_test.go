@@ -28,8 +28,8 @@ func TestARackWithNothingInItSaysSoInItsOwnWords(t *testing.T) {
 			"an empty %s rack says nothing about being empty", rack)
 	}
 
-	behind := m.call(t, "GET", "/?bay=notes", nil).Body.String()
-	require.Contains(t, theRackIn(t, behind, "bay=notes"), "nothing in the notes",
+	behind := m.call(t, "GET", "/notes", nil).Body.String()
+	require.Contains(t, behind, "nothing in the notes",
 		"an empty notes says nothing about being empty")
 }
 
@@ -38,7 +38,7 @@ func TestARackThatHoldsSomethingSaysNothingAboutBeingEmpty(t *testing.T) {
 	body := m.call(t, "GET", "/", nil).Body.String()
 
 	require.NotContains(t, theRackIn(t, body, "bay=weekly"), "nothing this often")
-	require.NotContains(t, theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes"),
+	require.NotContains(t, m.call(t, "GET", "/notes", nil).Body.String(),
 		"nothing in the notes")
 }
 
@@ -57,10 +57,19 @@ func TestNothingMatchedIsSaidRatherThanDrawnAsAnEmptyChannel(t *testing.T) {
 	require.Contains(t, body, "nothing matched")
 }
 
-func TestAnEmptyShelfSaysSo(t *testing.T) {
-	body := mounted(t, &fakeStore{}).call(t, "GET", "/?shelf=kept", nil).Body.String()
+func TestAnEmptyWallSaysSo(t *testing.T) {
+	body := mounted(t, &fakeStore{}).call(t, "GET", "/notes", nil).Body.String()
 
-	require.Contains(t, body, "nothing on this shelf")
+	require.Contains(t, body, "nothing in the notes")
+}
+
+func TestAShelfIsNotSomewhereYouCanStillGo(t *testing.T) {
+	for _, gone := range []string{"/?shelf=kept", "/?shelf=held", "/?bay=notes"} {
+		res := mounted(t, &fakeStore{}).call(t, "GET", gone, nil)
+
+		require.Equal(t, 301, res.Code, "%s still draws something", gone)
+		require.Equal(t, "/notes", res.Header().Get("Location"), "%s lands in the wrong place", gone)
+	}
 }
 
 func TestTheFindFieldStaysOpenWhenItCarriesAQuery(t *testing.T) {
@@ -89,7 +98,7 @@ func TestEveryChipInTheBarCarriesAName(t *testing.T) {
 func TestAnEmptyRackIsStillAPlaceYouCanPutSomething(t *testing.T) {
 	m := mounted(t, &fakeStore{})
 
-	rack := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	rack := m.call(t, "GET", "/notes", nil).Body.String()
 	require.Contains(t, rack, "nothing in the notes")
 	require.Contains(t, rack, `placeholder="what is it"`)
 
@@ -221,7 +230,7 @@ func TestTheBarNamesARackWithoutAnArticle(t *testing.T) {
 	}
 	require.NotContains(t, bar, `<span class="says">the `,
 		"a cell in the bar still carries an article")
-	require.Contains(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(),
+	require.Contains(t, m.call(t, "GET", "/notes", nil).Body.String(),
 		`<h2 class="baysign">the notes`, "the door's own sign lost its article with it")
 }
 
@@ -280,7 +289,7 @@ func TestAStripCarriesWhatWasNoticedAboutIt(t *testing.T) {
 	f.noticed = []squirrel.Noticed{
 		{ID: 9, Kind: "note", RefID: 1, Words: "The code you need for this is in the other note."},
 	}
-	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	rack := mounted(t, f).call(t, "GET", "/notes", nil).Body.String()
 
 	require.Contains(t, rack, "The code you need for this is in the other note.")
 	require.Contains(t, rack, `<input type="hidden" name="id" value="9">`,
@@ -293,7 +302,7 @@ func TestALineIsHungOnTheStripItNames(t *testing.T) {
 	f.noticed = []squirrel.Noticed{
 		{ID: 9, Kind: "note", RefID: 2, Words: "about the second one"},
 	}
-	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	rack := mounted(t, f).call(t, "GET", "/notes", nil).Body.String()
 
 	// By the words of the strips themselves rather than by their ids: an id
 	// appears in half a dozen hidden fields per strip, which is what made the
@@ -309,7 +318,7 @@ func TestALineIsHungOnTheStripItNames(t *testing.T) {
 }
 
 func TestAStripWithNothingNoticedCarriesNoLine(t *testing.T) {
-	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	rack := mounted(t, aBoardStore()).call(t, "GET", "/notes", nil).Body.String()
 
 	require.NotContains(t, rack, "not useful",
 		"a strip nothing was noticed about still offers a way to refuse it")
@@ -322,14 +331,14 @@ func TestARefusalIsRecordedAgainstTheLine(t *testing.T) {
 		strings.NewReader("id=9&bay=notes"))
 
 	require.Equal(t, 303, res.Code)
-	require.Equal(t, "/?bay=notes", res.Header().Get("Location"))
+	require.Equal(t, "/notes", res.Header().Get("Location"))
 	require.Equal(t, []int64{9}, f.unuseful, "nothing was refused")
 }
 
 func TestARackThatCannotReadWhatWasNoticedStillDraws(t *testing.T) {
 	f := aBoardStore()
 	f.noticeErr = errTest
-	body := mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/notes", nil).Body.String()
 
 	require.Contains(t, body, "boiler service code is 4471",
 		"a read that failed took the rack with it")

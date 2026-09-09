@@ -27,7 +27,7 @@ func TestDroppingANoteSurvivesLeavingTheBay(t *testing.T) {
 	require.NotEmpty(t, items)
 	note := items[0]
 
-	shown := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	shown := m.call(t, "GET", "/notes", nil).Body.String()
 	require.Contains(t, shown, note.RawText, "the rack does not offer it to begin with")
 
 	form := url.Values{
@@ -47,7 +47,7 @@ func TestDroppingANoteSurvivesLeavingTheBay(t *testing.T) {
 		"the press said it was handled and the note is still %s", after.State)
 
 	m.call(t, "GET", "/?bay=weekly", nil)
-	back := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	back := m.call(t, "GET", "/notes", nil).Body.String()
 	require.NotContains(t, back, `name="id" value="`+strconv.FormatInt(note.ID, 10)+`"`,
 		"the rack offers the dropped note again after leaving and coming back")
 }

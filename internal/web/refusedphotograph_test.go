@@ -29,14 +29,14 @@ func TestABoardCaptureWhosePhotographIsRefusedKeepsTheWords(t *testing.T) {
 
 	require.Equal(t, http.StatusSeeOther, w.Code,
 		"the failure page says nothing has been lost, and the words had been")
-	require.Equal(t, "/?bay=notes&nophoto=the+tax+letter", w.Header().Get("Location"))
+	require.Equal(t, "/notes?nophoto=the+tax+letter", w.Header().Get("Location"))
 	require.Empty(t, ph.kept)
 }
 
 func TestTheRefusedPhotographsWordsComeBackIntoTheBoxWithTheReason(t *testing.T) {
 	body := mounted(t, aBoardStore()).
-		call(t, "GET", "/?bay=notes&nophoto=the+tax+letter", nil).Body.String()
-	rack := theRackIn(t, body, "bay=notes")
+		call(t, "GET", "/notes?nophoto=the+tax+letter", nil).Body.String()
+	rack := body
 
 	require.Contains(t, rack, `value="the tax letter"`, "the words were not carried back")
 	require.Contains(t, rack, "that photograph was not kept")
@@ -44,7 +44,7 @@ func TestTheRefusedPhotographsWordsComeBackIntoTheBoxWithTheReason(t *testing.T)
 }
 
 func TestARackSaysNothingAboutAPhotographWhenNoneWasRefused(t *testing.T) {
-	rack := theRackIn(t, mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String(), "bay=notes")
+	rack := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 
 	require.NotContains(t, rack, "that photograph was not kept")
 }

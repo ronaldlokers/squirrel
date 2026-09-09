@@ -20,7 +20,7 @@ const putAPhotographOnTheInput = `
 func TestBrowserAPhotographChosenOnTheBoardReachesTheStore(t *testing.T) {
 	f, ph := &fakeStore{}, &fakePhotos{}
 	srv := screenWithACamera(t, f, ph)
-	c := browserAt(t, srv, "/?bay=notes")
+	c := browserAt(t, srv, "/notes")
 	c.until(t, "the camera", `!!document.querySelector('form.blankstrip input[name="photo"]')`)
 
 	require.Equal(t, true, c.eval(t, putAPhotographOnTheInput))
@@ -50,7 +50,7 @@ func TestBrowserAPhotographChosenOnTheBoardReachesTheStore(t *testing.T) {
 func TestBrowserTakingThePhotographOffSendsTheWordsAlone(t *testing.T) {
 	f, ph := &fakeStore{}, &fakePhotos{}
 	srv := screenWithACamera(t, f, ph)
-	c := browserAt(t, srv, "/?bay=notes")
+	c := browserAt(t, srv, "/notes")
 	c.until(t, "the camera", `!!document.querySelector('form.blankstrip input[name="photo"]')`)
 
 	require.Equal(t, true, c.eval(t, putAPhotographOnTheInput))

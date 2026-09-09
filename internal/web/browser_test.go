@@ -262,9 +262,9 @@ func layer(t *testing.T, v any) int {
 }
 
 // A redirecting press went with the shelf chip on 2 September 2026, and the
-// shelves themselves went into the notes rack on 3 September: there is no press
-// that redirects and no page for the script to paste a whole document into.
-// TestTheNotesShowEverythingWithTheUndecidedFirst is where they are proved.
+// shelves themselves went on 9 September when the notes became a wall: there is
+// no press that redirects and no page for the script to paste a whole document
+// into. TestTheNotesHaveNoShelvesAndNothingToSortInto is where that is proved.
 
 // The worker holding a capture is the nearest honest substitute for a spool, and
 // this is the test that it actually holds.

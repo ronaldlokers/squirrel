@@ -230,7 +230,9 @@ evening message — never its own message, never more than one, and never when
 there was nothing else to say. A shelf that taps you on the shoulder is a
 second inbox, which is the thing this product exists not to have. Roughly one
 evening in three, chosen at random rather than from a queue: a queue would give
-the shelf a front, and a front is a place to be behind.
+the shelf a front, and a front is a place to be behind. *Kept notes stopped
+existing on 9 September 2026; what still rides along is what is set aside, which
+is now only ever a thing you decided to do.*
 
 **Three ways to say you cannot act on it:** *waiting on someone*, *blocked on a
 thing*, *someday*. Three rather than one because they end differently — a
@@ -251,9 +253,36 @@ it out of the pile, because the pile holds what you have not decided about and
 that is what makes triage mean anything. A task that is done is archived, not
 deleted, and every step of that reverses.
 
-**Four states:** `open` (the pile), `done`, `dropped`, `kept`. `kept` is
-load-bearing — a serial number or a link is not a task and will never be done, so
-without it every reference note sits in triage forever.
+**Four states:** `open` (the pile), `done`, `dropped`, `kept`. `kept` was
+load-bearing while notes were triaged — a serial number or a link is not a task
+and will never be done, so without it every reference note sat in triage forever.
+
+**Amended on 9 September 2026: a note has no state, and the notes are a wall.**
+The owner asked for the notes to be *way easier — no triage, no kept, no set
+aside, just notes of text and maybe a picture*. `/notes` is now a page of its
+own: every note you have, newest first, each drawing its photograph, and two
+presses under it — *drop*, and *make a chore*. There is no shelf.
+
+What `kept` was solving is solved better by not asking. A serial number does not
+need a state that means "not a task": it needs a place that never asked whether
+it was one. The wall is that place, and the reference note that used to sit in
+triage forever now simply sits on the wall, where looking at it is the whole
+point.
+
+The state values survive in the database and in search, because capture is
+sacred and a row that was kept was kept. Nothing writes them any more: the
+board's *keep* press, Campfire's `keep N`, the two shelves and the settled seams
+are gone, and migration `0043_notes_are_a_wall.sql` opens every note that was
+kept, waiting, blocked or someday. A task can still be set aside — that is a
+thing you decided to do and cannot, which is a real state — and `!stuck` still
+lists them.
+
+What it costs: a wall grows, and the only way a note leaves it is *drop*. If
+that becomes a problem the answer is a search, not a shelf. And a note can no
+longer be marked *waiting on the landlord*; if that mattered, it was a task.
+
+How it reverses: restore `noteAnswers`, `whatIsSettled` and the `?shelf=` route,
+and put `IntentKeep` back in `intent.go` and `apply.go`. The states never left.
 
 **Feature parity relaxes in one direction, and only one.** Amended 22 August
 2026, because the rule as written and the roadmap had been contradicting each

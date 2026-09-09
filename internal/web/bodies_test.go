@@ -30,8 +30,8 @@ func TestTheKindsAreDistinguishable(t *testing.T) {
 	}
 	m := mounted(t, f)
 
-	require.Contains(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(),
-		`class="strip h-notes`, "h-notes draws no strip")
+	require.Contains(t, m.call(t, "GET", "/notes", nil).Body.String(),
+		`class="pin`, "a note draws no pin")
 
 	board := m.call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, board, `class="strip h-weekly`, "a chore draws in no rack's colour")

@@ -20,12 +20,12 @@ func TestBrowserTheLineSitsInTheMarginOfItsOwnStrip(t *testing.T) {
 			{ID: 9, Kind: "note", RefID: 1, Words: "The code you need for this is in the other note."},
 		},
 	}
-	c := browserAt(t, screen(t, f), "/?bay=notes")
-	c.until(t, "the line", `!!document.querySelector('.strip .seen')`)
+	c := browserAt(t, screen(t, f), "/notes")
+	c.until(t, "the line", `!!document.querySelector('.pin .seen')`)
 
 	num := func(expr string) float64 {
-		return c.eval(t, `const s = document.querySelector('.strip:has(.seen)'),
-				w = s.querySelector('.what'), n = s.querySelector('.seen');
+		return c.eval(t, `const s = document.querySelector('.pin:has(.seen)'),
+				w = s.querySelector('.said'), n = s.querySelector('.seen');
 			const sb = s.getBoundingClientRect(), wb = w.getBoundingClientRect(),
 				nb = n.getBoundingClientRect();
 			const textOf = el => { const r = document.createRange();
@@ -55,13 +55,13 @@ func TestBrowserRefusingALineTakesItOffTheStrip(t *testing.T) {
 			{ID: 9, Kind: "note", RefID: 1, Words: "The code you need for this is in the other note."},
 		},
 	}
-	c := browserAt(t, screen(t, f), "/?bay=notes")
-	c.until(t, "the line", `!!document.querySelector('.strip .seen')`)
+	c := browserAt(t, screen(t, f), "/notes")
+	c.until(t, "the line", `!!document.querySelector('.pin .seen')`)
 
 	f.noticed = nil
-	c.eval(t, `const f = document.querySelector('.strip .seen form'); f.requestSubmit(); return 1`)
+	c.eval(t, `const f = document.querySelector('.pin .seen form'); f.requestSubmit(); return 1`)
 
-	c.until(t, "the strip without its line", `!document.querySelector('.strip .seen')`)
+	c.until(t, "the strip without its line", `!document.querySelector('.pin .seen')`)
 	require.Equal(t, []int64{9}, f.unuseful, "nothing was refused")
 	require.Contains(t, c.eval(t, `return document.body.innerText`), "boiler service code is 4471",
 		"refusing the line took the strip with it")

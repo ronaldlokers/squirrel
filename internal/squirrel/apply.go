@@ -311,9 +311,6 @@ func (a *Applier) replyFor(ctx context.Context, in Intent, personID int64, conve
 		a.pending = id
 		return ListMessage(chores), nil
 
-	case IntentKeep:
-		return a.triage(ctx, in.Position, personID, ItemKept, "Kept —")
-
 	case IntentDrop:
 		// A bare `nvm` undoes a chore the matcher just made from a note, which
 		// is what phase 2 built and what it still means. `drop 2` is the

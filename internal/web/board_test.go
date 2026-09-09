@@ -73,7 +73,7 @@ func TestTheOnlyDoorLeftIsTheNotes(t *testing.T) {
 	require.NotContains(t, body, `class="doors"`, "the region under the chores is still there")
 	require.Contains(t, body, `class="chip notes"`, "the notes cannot be reached from the board")
 
-	opened := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	opened := m.call(t, "GET", "/notes", nil).Body.String()
 	require.Contains(t, opened, "boiler service code is 4471", "the notes chip opens onto nothing")
 	require.Contains(t, opened, "back to the board", "there is no way out of the notes")
 }
@@ -88,14 +88,21 @@ func TestTheBoardIsNotAConversation(t *testing.T) {
 	}
 }
 
-func TestTheShelvesAreReachedFromTheNotesRackAndCountNothing(t *testing.T) {
-	m := mounted(t, aBoardStore())
+func TestTheNotesHaveNoShelvesAndNothingToSortInto(t *testing.T) {
+	f := aBoardStore()
+	f.items = append(f.items, squirrel.Item{
+		ID: 41, RawText: "the boiler serial plate", State: squirrel.ItemKept, Kind: squirrel.ItemNote,
+	})
+	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting}}
 
-	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/notes", nil).Body.String()
 
-	require.Contains(t, body, "what you set aside")
-	require.Contains(t, body, "the things you kept")
-	require.NotContains(t, body, "ledge\"><span class=\"tab\">what you set aside <span")
+	for _, gone := range []string{"what you set aside", "the things you kept", "waiting on", "someday"} {
+		require.NotContains(t, body, gone, "%q is still a place a note can be put", gone)
+	}
+	require.NotContains(t, body, "the boiler serial plate",
+		"a shelf is gone and what was on it is still being drawn as settled")
+	require.NotContains(t, body, `class="seam"`, "the wall is still cut into groups")
 }
 
 func TestAStripCarriesTheAnswersItsBayAllows(t *testing.T) {
@@ -106,9 +113,10 @@ func TestAStripCarriesTheAnswersItsBayAllows(t *testing.T) {
 		require.Contains(t, board, want)
 	}
 
-	notes := m.call(t, "GET", "/?bay=notes", nil).Body.String()
-	for _, want := range []string{">done<", ">keep<", ">drop<"} {
-		require.Contains(t, notes, want)
+	notes := m.call(t, "GET", "/notes", nil).Body.String()
+	require.Contains(t, notes, ">drop<")
+	for _, gone := range []string{">done<", ">keep<"} {
+		require.NotContains(t, notes, gone, "a note is still being triaged")
 	}
 }
 
@@ -116,11 +124,11 @@ func TestAnsweringAStripMovesItAndComesBackToTheBoard(t *testing.T) {
 	f := aBoardStore()
 	m := mounted(t, f)
 
-	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=1&answer=keep&bay=notes"))
+	w := m.call(t, "POST", "/board/act", strings.NewReader("what=note&id=1&answer=drop&bay=notes"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/?bay=notes", w.Header().Get("Location"))
-	require.Equal(t, squirrel.ItemKept, f.states[1], "the note is kept")
+	require.Equal(t, "/notes", w.Header().Get("Location"))
+	require.Equal(t, squirrel.ItemDropped, f.states[1], "the note is dropped")
 }
 
 func TestTheTrayHoldsWhatLeftTheBoardTodayAndOffersTheWayBack(t *testing.T) {
@@ -182,7 +190,7 @@ func TestWritingOnABlankStripKeepsTheWords(t *testing.T) {
 	w := m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=meter+reading+48213"))
 
 	require.Equal(t, http.StatusSeeOther, w.Code)
-	require.Equal(t, "/?bay=notes", w.Header().Get("Location"))
+	require.Equal(t, "/notes", w.Header().Get("Location"))
 	require.Len(t, sp.written, 1, "the words were not kept")
 	require.Equal(t, "meter reading 48213", sp.written[0].Text)
 	require.Contains(t, f.inserted, "meter reading 48213",
@@ -218,7 +226,7 @@ func TestABlankStripWithNothingOnItKeepsNothing(t *testing.T) {
 func TestTheBlankStripIsAFieldYouCanType(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := m.call(t, "GET", "/notes", nil).Body.String()
 
 	require.Contains(t, body, `action="/board/new"`)
 	require.Contains(t, body, `name="words"`)
@@ -510,7 +518,7 @@ func TestMakingAChoreAsksForTheRhythmOnThatStripOnly(t *testing.T) {
 	f := aBoardStore()
 	m := mounted(t, f)
 
-	body := m.call(t, "GET", "/?bay=notes&chore=1", nil).Body.String()
+	body := m.call(t, "GET", "/notes?chore=1", nil).Body.String()
 
 	require.Contains(t, body, `name="every" value="7"`)
 	require.Equal(t, 1, strings.Count(body, `action="/board/chore"`),
@@ -531,9 +539,9 @@ func TestPressingARhythmMakesTheChore(t *testing.T) {
 func TestANoteOffersToBecomeAChore(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	body := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := m.call(t, "GET", "/notes", nil).Body.String()
 
-	require.Contains(t, body, `formaction="/" name="chore" value="1"`)
+	require.Contains(t, body, `formaction="/notes" name="chore" value="1"`)
 }
 
 // The same guard every press has: a note that is not yours is not yours to
@@ -551,41 +559,17 @@ func TestPromotingWhatIsNotYoursMakesNothing(t *testing.T) {
 	require.Zero(t, f.promoted.id, "a note that is not yours became a chore")
 }
 
-// The ledge opens a shelf where the racks are, the way search does. Its links
-// pointed at rooms until now, which meant the two shelves were the one part of
-// the board that left the board.
-func TestTheNotesShowEverythingWithTheUndecidedFirst(t *testing.T) {
-	f := aBoardStore()
-	f.items = append(f.items, squirrel.Item{ID: 41, RawText: "the boiler serial plate", State: squirrel.ItemKept, Kind: squirrel.ItemNote})
-	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
-	m := mounted(t, f)
+func TestTheWallIsEveryNoteAndNothingElse(t *testing.T) {
+	m := mounted(t, aBoardStore())
 
-	rack := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
-	undecided := strings.Index(rack, "boiler service code is 4471")
-	aside := strings.Index(rack, "chase the landlord")
-	kept := strings.Index(rack, "the boiler serial plate")
+	body := m.call(t, "GET", "/notes", nil).Body.String()
 
-	require.Positive(t, undecided, "the notes needing a decision are not on the rack")
-	require.Greater(t, aside, undecided, "what you set aside is above what needs deciding")
-	require.Greater(t, kept, aside, "what you kept is above what you set aside")
-	require.Contains(t, rack, `class="seam"`, "the three groups run together")
-	require.NotContains(t, rack, `href="/?shelf=held"`, "the ledge is still there")
-
-	require.Contains(t, rack, "he replies", "the rack does not say what would move it")
-	require.Contains(t, rack, "back in the pile", "a settled strip carries no way back")
-}
-
-// A shelf never counts, and the sign is where that would show.
-func TestAShelfCountsNothing(t *testing.T) {
-	f := aBoardStore()
-	f.items = append(f.items,
-		squirrel.Item{ID: 41, RawText: "one kept thing", State: squirrel.ItemKept, Kind: squirrel.ItemNote},
-		squirrel.Item{ID: 42, RawText: "another kept thing", State: squirrel.ItemKept, Kind: squirrel.ItemNote},
-	)
-	body := mounted(t, f).call(t, "GET", "/?shelf=kept", nil).Body.String()
-
-	require.Contains(t, body, "the things you kept")
-	require.NotContains(t, body, `the things you kept <span class="n"`)
+	require.Contains(t, body, "boiler service code is 4471")
+	require.Contains(t, body, "kaas")
+	require.NotContains(t, body, "vet about the booster",
+		"a thing you decided to do is on the wall")
+	require.NotContains(t, body, "bins out", "a chore is on the wall")
+	require.Contains(t, body, `class="pin`, "the notes are not drawn as pins")
 }
 
 // An empty rack and a rack that could not be read look identical, and one of
@@ -598,7 +582,7 @@ func TestARackThatCannotBeReadSaysSo(t *testing.T) {
 	require.Contains(t, board, "cannot reach the chores")
 	require.Contains(t, board, "nothing is lost")
 
-	require.Contains(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(),
+	require.Contains(t, m.call(t, "GET", "/notes", nil).Body.String(),
 		"cannot reach the notes", "an unreachable door looks exactly like an empty one")
 }
 
@@ -623,7 +607,7 @@ func TestARackSaysThereIsMoreWithoutSayingHowMuch(t *testing.T) {
 			State: squirrel.ItemOpen, Kind: squirrel.ItemNote, ReceivedAt: time.Now(),
 		})
 	}
-	body := mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String()
+	body := mounted(t, f).call(t, "GET", "/notes", nil).Body.String()
 
 	require.Contains(t, body, "there is more further back")
 	for _, count := range []string{"60 more", "more (", "of 63"} {
@@ -720,7 +704,7 @@ func TestACaptureIsOnTheBoardYouAreSentBackTo(t *testing.T) {
 	m.call(t, "POST", "/board/new", strings.NewReader("bay=notes&words=the+boiler+code"))
 
 	require.Contains(t, f.inserted, "the boiler code", "the capture was not written")
-	require.Contains(t, theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes"),
+	require.Contains(t, m.call(t, "GET", "/notes", nil).Body.String(),
 		"the boiler code", "the strip is not behind the door that was drawn next")
 }
 
@@ -809,23 +793,6 @@ func TestAWordThatIsNotOneOfTheFiveKeepsNothing(t *testing.T) {
 	require.Empty(t, f.recorded)
 }
 
-func TestASettledStripSaysWhyBesideItsWordsRatherThanInTheMark(t *testing.T) {
-	f := aBoardStore()
-	f.aside = []squirrel.HeldItem{{ID: 42, Text: "chase the landlord", State: squirrel.ItemWaiting, Because: "he replies"}}
-
-	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
-	settled := rack[strings.Index(rack, "chase the landlord"):]
-	settled = settled[:strings.Index(settled, "</article>")]
-
-	require.Contains(t, settled, `<p class="state">waiting on he replies`,
-		"the reason is not on the words, so it is forcing the mark column wide")
-	require.NotContains(t, settled, `class="mark`,
-		"a settled strip still carries a mark it cannot fit")
-	require.Contains(t, settled, `class="backtab"`)
-	require.Contains(t, settled, `aria-label="back in the pile"`,
-		"the way back is a picture with no name")
-}
-
 // The appointment writer left the agenda door with the agenda, and pairs with
 // the chore writer under the racks. The date pickers cannot be read at a
 // sidebar's width, so it did not follow the diary into the sidebar.
@@ -851,7 +818,7 @@ func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {
 
 	require.NotContains(t, theChoreWriter(t, board), "asit", "the chore writer took the agenda's shape")
 	require.NotContains(t, theChoreWriter(t, board), `name="dd"`, "the chore writer asks for a day")
-	rack := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	rack := m.call(t, "GET", "/notes", nil).Body.String()
 	require.NotContains(t, rack, "asit", "the notes inlet took the agenda's shape")
 	require.NotContains(t, rack, `name="dd"`, "the notes inlet asks for a day")
 	require.NotContains(t, theTaskWriter(t, board), "asit", "the task writer took the agenda's shape")

@@ -34,12 +34,3 @@ func TestOnlyOneBaySkipsTheShelves(t *testing.T) {
 	require.Equal(t, int32(0), atomic.LoadInt32(&f.shelfReads),
 		"the shelves were read for a single-bay draw that cannot show them")
 }
-
-func TestAShippedBoardStillReadsTheShelves(t *testing.T) {
-	f := &fakeStore{items: []squirrel.Item{note(1, "the boiler makes a noise", squirrel.ItemOpen)}}
-
-	mounted(t, f).call(t, "GET", "/?only=weekly", nil)
-
-	require.Greater(t, atomic.LoadInt32(&f.shelfReads), int32(0),
-		"a shipped board skipped the shelves outside development, where ?only= has no effect")
-}

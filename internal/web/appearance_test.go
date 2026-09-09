@@ -72,10 +72,9 @@ var appearanceScreens = map[string][]string{
 		".ticking .left", ".tray", ".tray .strip.out .words",
 	},
 
-	// What a door opens onto. The notes are the only place the seam and the
-	// settled strip are drawn, and they left the board when the doors did — a
-	// selector recorded against a screen that no longer draws it pins nothing.
-	"/?bay=notes": {".seam", ".strip.resting", ".strip.back", ".blankstrip"},
+	// The wall. The only screen that draws a pin, and the only one that draws
+	// a photograph at a size you can read without opening it.
+	"/notes": {".wall", ".pin", ".pin .said", ".pin .when", ".pin .pic img", ".blankstrip"},
 
 	"/me": {".youface", ".youhead", ".weekrow"},
 }
@@ -97,6 +96,10 @@ const appearanceFile = "testdata/appearance.json"
 // is missing, which pins nothing.
 func appearanceFixture() *fakeStore {
 	f := aPile()
+	f.items = append(f.items, squirrel.Item{
+		ID: 4, RawText: "the tax letter", State: squirrel.ItemOpen, Kind: squirrel.ItemNote,
+		ReceivedAt: now(), PhotoName: "photo-1.jpg", PhotoType: "image/jpeg",
+	})
 	// Two, so both of a rack row's shapes are drawn: one whose rhythm came
 	// round and says so, and one whose turn is not today and says instead when
 	// you usually do it.
