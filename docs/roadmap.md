@@ -295,10 +295,18 @@ one screen asking different questions is the same decision it was meant to
 remove, wearing a label — and it is the third capture surface this list already
 refuses.
 
-**The problem it was aimed at is still real and is still open.** The answer is
-not another box; it is that a bay should not turn a thought into something it
-is not. Whatever comes next is a change to what the chores field does with words
-it was not expecting, not an addition to the screen.
+**The problem it was aimed at is closed, and not by a box.** The answer was
+that a bay should not turn a thought into something it is not, and the writer
+redesign of 9 September is what delivered it: there is **one** writer on the
+board, it asks what a thing is before it asks anything that kind needs, and an
+unanswered one keeps a thought — `bay` is `notes` whichever rack you opened it
+from. The add bar lands in the notes from every rack for the same reason. Which
+box you are in is no longer a decision made before capture, because there is
+one box and it does not guess.
+
+Pinned by `TestOneWriterAsksWhatItIsAndThenOnlyWhatThatKindNeeds`, whose last
+assertion is the whole card: *a thought is not what an unanswered writer
+keeps*.
 
 **Because they import a shape the product does not have:** calendar import ·
 two-way calendar sync · a browsable list of appointments · deadlines on tasks ·
