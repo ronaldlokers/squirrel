@@ -282,6 +282,11 @@ it was not expecting, not an addition to the screen.
 two-way calendar sync · a browsable list of appointments · deadlines on tasks ·
 "someday" as a note state rather than a task state.
 
+*A fixed point that comes round is no longer on this list.* Refused as calendar
+machinery until 9 September 2026; the owner allowed it with lateness, and what
+was built is not a rule engine — a number of weeks, and the next one is made
+when you keep the one before it.
+
 **Because the local hardware cannot serve them well:** a local model for the
 coach — 4-core arm64, no GPU, 10–20 s replies against under a second hosted, to
 save about €3 a year.
