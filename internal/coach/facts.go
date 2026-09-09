@@ -55,14 +55,6 @@ type Facts interface {
 	NextFixed(ctx context.Context, personID int64) (Fixed, bool, error)
 	Lately(ctx context.Context, personID int64, limit int) ([]Happened, error)
 	Item(ctx context.Context, personID, id int64) (Work, bool, error)
-	// Typically is how long something usually takes, measured from timers that
-	// reached their end, or false when there are too few runs to say.
-	//
-	// Migration 0017 refused a timer history in writing; 0022 narrows that
-	// refusal rather than reversing it. Only runs that finished are recorded, so
-	// there is no failure rate in the table and the median is a fact about the
-	// bins rather than about you.
-	Typically(ctx context.Context, personID int64, label string) (int, bool, error)
 }
 
 // The caps. Ten is the number the pile screen already uses for a page of

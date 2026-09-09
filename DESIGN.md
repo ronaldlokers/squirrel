@@ -286,9 +286,10 @@ and a pill to sign in with.
 They are drawn from the board's own tokens now. The corners are `--r`, the
 outline is `--line`, the stock is `--card` on the outline's 3px cast, and the
 one register that survives the move unchanged is the underlined quiet action.
-Two shapes were deliberately not carried over: the running timer is a strip
-rather than a pill, and *let me in* is a stamp — the same rectangle, cast and
-caps every press on the board is drawn with.
+One shape was deliberately not carried over: *let me in* is a stamp — the same
+rectangle, cast and caps every press on the board is drawn with. The other was
+the running timer, which is moot since the body double left on 9 September
+2026.
 
 **A face stays round.** The board's own `.chip.face` is a circle and always has
 been, and a picture of a person is the one place this product draws one. The
@@ -471,9 +472,9 @@ sign that carries a hue is a sign making a claim the column already makes.
 **The Printed Figure Rule.** A time, a date and a countdown are set in Inter
 Black with tabular figures, because on a board a number is a printed thing and
 not a sentence. This is the only content use of Inter in the product; everything
-else that Inter used to do belongs to the wordmark. A duration you can watch
-change — the running timer — takes `figure-large`, and it is the second largest
-type on the board after the pulled strip.
+else that Inter used to do belongs to the wordmark. `figure-large` was the
+running timer's, and nothing takes it since the body double left on 9 September
+2026; the largest printed figure now is a fixed point's time in the diary.
 
 **Two Axes, One Face.** His words and Buddy's are casual; the furniture is
 precise. A sign, a stamp or a mark set in the casual axis reads as somebody
@@ -507,9 +508,9 @@ bays, and the navigation holds the middle rather than a corner; the phone bar
 already said so, and the desktop is the same bar, not a second one.
 
 **No working row.** The board's first line is the racks. The band that held the
-pulled card and a running timer went on 9 September 2026: the pick is on its
-own row and the timer is on the row it times, so the band was drawing two
-things that already had places.
+pulled card and a running timer went on 9 September 2026 — the pick is on its
+own row — and the timer went with it the same day, when the body double was
+retired.
 
 **The racks.** Three across and the dial at the right, `1fr 1fr 1fr
 minmax(0, 264px)` — *daily*, *weekly*, *seldom*, cut by how often a chore comes
@@ -931,8 +932,8 @@ surfaces as a number, because a tally of wrong picks is exactly the report card
 Principle 2 forbids.
 
 **`not this one` is a chore or a thing you do once only.** A fixed point is the
-world's business and cannot be the wrong pick; a running timer is what you are
-doing; the breadcrumb has its own two answers.
+world's business and cannot be the wrong pick, and those two are the only kinds
+the picker now chooses among.
 
 **Being stuck asks, and then says one sentence.** `I'm stuck` replaces the two
 quiet presses with the product's own four — *too big*, *don't know how*,
@@ -942,24 +943,21 @@ sentence instead of repeating a press. `not today` reached this way is the same
 no as `later`, and leaves the same mark.
 
 That sentence carries **no acorn**: the ladder's lines are fixed and are
-Squirrel's own. **And the ladder's one control is drawn** — a single `5 MIN` or
-`10 MIN`, quiet, under the line, only when the answer has one to give.
+Squirrel's own. **And it is the whole answer.** The ladder offered a `5 MIN` or
+`10 MIN` beside two of its four sentences until the body double left on
+9 September 2026; the sentences stayed, and *boring* says what its alarm used to
+— a short go, ended by you rather than by a bell.
 
-### Two rows with nowhere else to be
+### A row with nowhere else to be
 
-Almost everything the picker chooses has a row already. Two things do not, and
-they get a loose row at the head of the board rather than a card:
+Almost everything the picker chooses has a row already. One case does not: a
+pick further back than a rack draws — a thing you decided weeks ago, behind
+`there is more further back`. It gets a loose row at the head of the board
+rather than a card, because a choice you cannot see is not a choice.
 
-**A running timer whose thing is not on the board** — one started in chat, or
-one whose thing has since been done. Everywhere else the countdown hangs on the
-row of the thing it is timing, matched on the words, saying `running`, the time
-left, and `stop`. On its own row it says the label too, because a countdown that
-does not name what it is counting is a countdown on the wrong row.
-
-**The breadcrumb** — what you were on before you got up, for the hour a finished
-timer's row survives itself. `pick it up` and `not now`, and the `catch me if I
-lose track` tick beside them, because a thing with no row of its own has nowhere
-else to carry them.
+The other two cases that used to live here — a running timer whose thing was not
+on the board, and the breadcrumb — went with the body double on 9 September
+2026.
 
 ### The opened strip corrects itself
 
@@ -1714,8 +1712,8 @@ dock, the transcript — and nothing on the board inherits them, because a strip
 is printed and a conversation was not.
 
 What it did lives on the board now. A strip can be asked about and the answer
-hangs in the margin; the ladder and the timer are on the pulled strip; search
-takes the racks' place; the opened strip corrects its own words. What it held —
+hangs in the margin; the ladder is on the row the pick is about; search takes
+the racks' place; the opened strip corrects its own words. What it held —
 the turns — is untouched: the record is kept, and what went is the thing that
 drew it.
 

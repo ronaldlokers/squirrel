@@ -420,6 +420,35 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Amended on 9 September 2026: the body double is retired.** Timers are gone
+from the product — not moved, removed. There is no countdown on any screen, no
+`!timer`, no `!start`, no `!stop`, no `start_timer` tool for the coach, and no
+push that says *time*.
+
+The owner's call. What it was for — going, with something alongside you — the
+product does with its rules rather than with a clock, and a clock that has to be
+watched is one more thing to manage.
+
+Four things could not survive it and went the same day:
+
+- **The breadcrumb** — *what you were on before you got up* — was made from a
+  finished timer, so with no timers there is nothing to make one from.
+- **The exit ramp** — *catch me if I lose track* and *still on this?* — was a
+  property of a running timer.
+- **The stuck ladder's one control.** Its four sentences stay; *boring* now says
+  what its alarm used to, a short go ended by you rather than by a bell.
+- **The coach's `typically` fact** — how long something usually takes — was
+  measured from finished runs, so it would answer *absent* forever.
+
+What it costs, and it is not nothing: the one thing in this product that started
+you rather than asked you is gone, and *boring* and *too big* now end in a
+sentence rather than in something to press.
+
+The `timers`, `timer_runs` and `exit_ramp` tables and their rows are untouched.
+Nothing reads or writes them; nothing was dropped. That is the whole of the
+reversal too: `internal/squirrel/timer.go` and `internal/web/timer.go` are what
+went, and `git show v0.80.0` still holds both.
+
 **Amended on 9 September 2026: the phone prints two counts.** The two rows off
 the rail — *things you decided* and *in the notes* — each carry a number, and
 those are numbers of things you have not done yet. Principle 2's surviving

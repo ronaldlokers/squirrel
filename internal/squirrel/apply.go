@@ -464,15 +464,6 @@ func (a *Applier) command(ctx context.Context, in Intent, personID int64, conver
 	case "fix":
 		return a.fix(ctx, in.Arg, personID)
 
-	case "timer", "start":
-		return a.timer(ctx, in.Arg, personID)
-
-	case "stop":
-		if err := a.store.StopTimer(ctx, personID); err != nil {
-			return Message{}, err
-		}
-		return Message{Text: "Stopped."}, nil
-
 	case "unsay":
 		return a.unsay(ctx, personID)
 
@@ -811,16 +802,6 @@ func (a *Applier) andNext(ctx context.Context, m Message, personID int64, conver
 		// The thing was done; that is the message.
 		return m, err
 	}
-	// Already on something. Finishing one thing while a timer runs is not a
-	// moment to be handed a second — the picker names what you are doing, and
-	// saying it back here would read as a suggestion to abandon it.
-	//
-	// A breadcrumb is excluded for a different reason: it names a label rather
-	// than a row, so there is nothing for these buttons to resolve against.
-	if o.Kind == OfferTimer || o.Kind == OfferAgain {
-		return m, nil
-	}
-
 	m.Text += "\n\nNext, if you want it:\n" + o.Text
 	m.SelectionMode = "single"
 	m.Actions = []Action{
@@ -1102,39 +1083,6 @@ func (a *Applier) fix(ctx context.Context, arg string, personID int64) (Message,
 // timerMinutes reads "10", "10m", "10 minutes" — the ways a person writes a
 // number of minutes when they are not thinking about formats.
 var timerMinutes = regexp.MustCompile(`^(\d{1,3})\s*(?:m|min|mins|minute|minutes)?$`)
-
-// timer starts a body double: `!timer 10 the kitchen`. Nothing is kept about it
-// afterwards, and a second one replaces the first.
-func (a *Applier) timer(ctx context.Context, arg string, personID int64) (Message, error) {
-	number, label, _ := strings.Cut(strings.TrimSpace(arg), " ")
-	label = strings.TrimSpace(label)
-
-	m := timerMinutes.FindStringSubmatch(strings.ToLower(number))
-	if m == nil {
-		return Message{Text: "How long, and on what? Try !timer 10 the kitchen."}, nil
-	}
-	mins, err := strconv.Atoi(m[1])
-	if err != nil || mins < 1 || mins > 180 {
-		// Three hours is not a body double, it is an afternoon. Past that the
-		// thing being asked for is a chore.
-		return Message{Text: "Somewhere between a minute and three hours. Try !timer 10 the kitchen."}, nil
-	}
-	if label == "" {
-		label = "it"
-	}
-
-	t, err := a.store.StartTimer(ctx, personID, label, time.Duration(mins)*time.Minute, time.Now())
-	if err != nil {
-		return Message{}, err
-	}
-	return Message{Text: fmt.Sprintf("%d minutes on %s. Go — I'll say when.", mins, t.Label)}, nil
-}
-
-// TimerUpMessage is the one thing a timer says, at the end. It asks nothing:
-// "did you finish?" would turn a body double into a supervisor.
-func TimerUpMessage(t Timer) Message {
-	return Message{Text: fmt.Sprintf("That's %s. Stop wherever you are.", t.Label)}
-}
 
 // task is the third promotion, beside !chore: a note becomes a thing you decided
 // to do, once. A number promotes that line; words make one outright.

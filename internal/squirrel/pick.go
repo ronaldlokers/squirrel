@@ -20,7 +20,11 @@ const (
 	// OfferMoment is a fixed point the world imposed, inside the window where
 	// leaving matters. See moments.go for the rule it is allowed under.
 	OfferMoment OfferKind = "moment"
-	// OfferTimer is the thing you are already doing. Nothing is chosen: you
+	// OfferAgain and OfferTimer went with the body double on 9 September 2026.
+	// The constants stay because `refusals` and `answers` hold rows that name
+	// them, and a value nothing writes is still a value something read.
+	//
+	// OfferTimer was the thing you are already doing. Nothing was chosen: you
 	// chose, and the picker's job is to not talk over you.
 	OfferTimer OfferKind = "timer"
 	// OfferAgain is the breadcrumb — what you were on before you got up.
@@ -87,25 +91,7 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 		return Offer{}, false, err
 	}
 
-	// Rule 2 — what you are already doing. Ahead of everything Squirrel would
-	// raise, because a product that suggests a second thing while you are in
-	// the middle of the first is the interruption it exists to reduce.
-	if t, found, err := s.CurrentTimer(ctx, personID); err != nil {
-		return Offer{}, false, err
-	} else if found {
-		return Offer{
-			Kind:    OfferTimer,
-			Text:    t.Label,
-			Because: "you are on this",
-		}, true, nil
-	}
-
-	// Rule 3 — the breadcrumb: what you were on before you got up.
-	if o, found, err := s.pickAgain(ctx, personID, now); err != nil || found {
-		return o, found, err
-	}
-
-	// Rule 4 is Squirrel's own initiative, and the gate stops here.
+	// Rule 2 is Squirrel's own initiative, and the gate stops here.
 	if capacity == CapacityLow && !showAnyway {
 		return Offer{}, false, nil
 	}
@@ -134,37 +120,6 @@ func (s *Store) PickNow(ctx context.Context, personID int64, now time.Time, show
 	// caller renders no region at all rather than an encouraging sentence:
 	// there is nothing here to be behind on.
 	return Offer{}, false, nil
-}
-
-// pickAgain is rule 3: what you were on before you got up. Ahead of anything
-// Squirrel would raise and behind a running timer, and it survives the capacity
-// gate because it is your initiative from an hour ago.
-//
-// The words never mention finishing: "you were on this" is a fact.
-func (s *Store) pickAgain(ctx context.Context, personID int64, now time.Time) (Offer, bool, error) {
-	t, found, err := s.LastFocus(ctx, personID, now)
-	if err != nil || !found {
-		return Offer{}, false, err
-	}
-	// Turned down, like anything else. This rule sits above the shared refusal set,
-	// so "not now" on a breadcrumb once wrote the refusal and handed the same thing
-	// straight back — reported as "the button does nothing".
-	//
-	// Asked as a time rather than through that set: a breadcrumb names a label, so
-	// its key is `again:0` however many things you were on today, and suppressing on
-	// the key would cost you everything you touched for the rest of the day.
-	refused, err := s.RefusedSince(ctx, personID, OfferAgain, t.Ended)
-	if err != nil {
-		return Offer{}, false, err
-	}
-	if refused {
-		return Offer{}, false, nil
-	}
-	return Offer{
-		Kind:    OfferAgain,
-		Text:    t.Label,
-		Because: "you were on this " + agoWords(now.Sub(t.Ended)),
-	}, true, nil
 }
 
 // agoWords says how long ago, softly, and stops at the hour because the

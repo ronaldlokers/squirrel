@@ -74,30 +74,6 @@ func TestWhatToTakeAttachesToTheNextOne(t *testing.T) {
 	require.Equal(t, "keys, wallet", m.Bring)
 }
 
-// It outranks everything, including a running timer, and the capacity gate
-// never touches it: a low day is the day you most need telling to leave.
-func TestAFixedPointOutranksEverythingInsideItsWindow(t *testing.T) {
-	store := withStore(t)
-	ctx := context.Background()
-	p := owner(t, store)
-
-	taskOf(t, store, p, "ring the vet")
-	require.NoError(t, store.RecordCheckin(ctx, p, squirrel.MoodWiped, "chat", time.Now()))
-	_, err := store.StartTimer(ctx, p, "the kitchen", 30*time.Minute, time.Now())
-	require.NoError(t, err)
-
-	m, ok := squirrel.ParseMoment("at 14:30 dentist, 20 minutes away", time.Now())
-	require.True(t, ok)
-	kept, err := store.CreateMoment(ctx, p, m)
-	require.NoError(t, err)
-
-	o, found, err := store.PickNow(ctx, p, kept.WarnAt().Add(time.Minute), false)
-	require.NoError(t, err)
-	require.True(t, found)
-	require.Equal(t, squirrel.OfferMoment, o.Kind)
-	require.Equal(t, "dentist", o.Text)
-}
-
 // Outside its window it is nobody's business, which is what makes it safe to
 // hold one at all.
 func TestAFixedPointIsInvisibleOutsideItsWindow(t *testing.T) {

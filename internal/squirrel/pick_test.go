@@ -92,24 +92,6 @@ func TestPickNowOffersTheOldestTask(t *testing.T) {
 	require.Equal(t, "ring the vet", o.Text)
 }
 
-// Rule 2: what you are already doing outranks anything Squirrel would raise.
-func TestPickNowYieldsToARunningTimer(t *testing.T) {
-	store := withStore(t)
-	ctx := context.Background()
-	p := owner(t, store)
-
-	taskOf(t, store, p, "ring the vet")
-	_, err := store.StartTimer(ctx, p, "the kitchen", 10*time.Minute, time.Now())
-	require.NoError(t, err)
-
-	o, found, err := store.PickNow(ctx, p, time.Now(), false)
-	require.NoError(t, err)
-	require.True(t, found)
-	require.Equal(t, squirrel.OfferTimer, o.Kind)
-	require.Equal(t, "the kitchen", o.Text)
-	require.Zero(t, o.RefID, "a timer names no row")
-}
-
 func TestRefusingSuppressesForTheRestOfTheDay(t *testing.T) {
 	store := withStore(t)
 	ctx := context.Background()
@@ -178,22 +160,6 @@ func TestShowMeAnywayLiftsTheGate(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found, "saying you are wiped must not be a wall")
 	require.Equal(t, "ring the vet", o.Text)
-}
-
-// The gate stops at rules 4 and 5. What you were already doing is yours.
-func TestALowDayStillSaysWhatYouAreOn(t *testing.T) {
-	store := withStore(t)
-	ctx := context.Background()
-	p := owner(t, store)
-
-	require.NoError(t, store.RecordCheckin(ctx, p, squirrel.MoodWiped, "screen", time.Now()))
-	_, err := store.StartTimer(ctx, p, "the kitchen", 10*time.Minute, time.Now())
-	require.NoError(t, err)
-
-	o, found, err := store.PickNow(ctx, p, time.Now(), false)
-	require.NoError(t, err)
-	require.True(t, found)
-	require.Equal(t, squirrel.OfferTimer, o.Kind)
 }
 
 // Never a count, on the newest surface, in the shape the deck's own test uses.

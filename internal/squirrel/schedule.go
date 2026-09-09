@@ -588,12 +588,6 @@ func (s *Scheduler) Run(ctx context.Context) {
 		if err := s.Once(ctx, time.Now()); err != nil {
 			s.opts.OnError(err)
 		}
-		// Separate from Once on purpose. Once returns early for the rest of
-		// the day as soon as the evening message has gone, and a timer started
-		// at eight in the evening has to be answered anyway.
-		if err := s.TimerTick(ctx, time.Now()); err != nil {
-			s.opts.OnError(err)
-		}
 		// Separate for the same reason, and more sharply: a fixed point at
 		// nine in the evening is the one message in this product that must not
 		// be skipped because something earlier in the day already ran.
@@ -657,20 +651,6 @@ func (s *Scheduler) MomentTick(ctx context.Context, now time.Time) error {
 			s.opts.OnError(fmt.Errorf("pushing a leave-by warning: %w", pushErr))
 		}
 	}
-	return err
-}
-
-// TimerTick says "time" when a timer's time is up, once. A minute's granularity,
-// which is the tick's own.
-//
-// The claim deletes the row as it reads it, so two overlapping ticks cannot both
-// announce the same timer.
-func (s *Scheduler) TimerTick(ctx context.Context, now time.Time) error {
-	t, found, err := s.opts.Store.ClaimFinishedTimer(ctx, s.opts.PersonID, now)
-	if err != nil || !found {
-		return err
-	}
-	_, err = s.sendMessage(ctx, TimerUpMessage(t))
 	return err
 }
 

@@ -57,15 +57,6 @@ func (h *hands) CompleteChore(ctx context.Context, personID, choreID int64) (str
 	return name, nil
 }
 
-func (h *hands) StartTimer(ctx context.Context, personID int64, label string, minutes int) error {
-	if label == "" {
-		label = "it"
-	}
-	_, err := h.store.StartTimer(ctx, personID, label,
-		time.Duration(minutes)*time.Minute, h.now())
-	return err
-}
-
 func (h *hands) Refuse(ctx context.Context, personID int64, kind string, refID int64) error {
 	k := squirrel.OfferKind(kind)
 	if k != squirrel.OfferTask && k != squirrel.OfferChore {

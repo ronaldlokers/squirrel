@@ -173,8 +173,6 @@ type view struct {
 	// PushKey is the VAPID public key, or empty when pushing is not
 	// configured. The script offers to subscribe only when there is one.
 	PushKey string
-	// Timer is what is running, on every screen, or nil.
-	Timer *timerView
 	// V stamps every asset URL on the page. render fills it, so no handler can
 	// forget it and no template has to know where it comes from.
 	V string
@@ -309,7 +307,6 @@ func renderWith(w http.ResponseWriter, r *http.Request, s Store, opts Options, n
 			}
 		}
 	}
-	v.Timer = runningTimer(s, opts, r)
 	v.PushKey = opts.PushKey
 	v.Camera = opts.Photos != nil
 	render(w, name, v)

@@ -112,11 +112,6 @@
           {{range $.Blockers}}
           <button class="stamp no" name="why" value="{{.Why}}">{{.Words}}</button>
           {{end}}
-          {{else if $.UnstuckMinutes}}
-          <input type="hidden" name="minutes" value="{{$.UnstuckMinutes}}">
-          <input type="hidden" name="label" value="{{.Words}}">
-          <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
-          <button class="stamp go" name="act" value="timer">{{$.UnstuckMinutes}} MIN<span class="k">T</span></button>
           {{else}}
           <button class="stamp no" name="act" value="wrong">not this one<span class="k">W</span></button>
           <button class="stamp no" name="act" value="stuck">I'm stuck<span class="k">S</span></button>
@@ -468,17 +463,6 @@
         {{if and .Wants .Why}}<p class="lead">{{.Why}}</p>{{end}}
         <p class="name">{{.Words}}</p>
         {{if .Late}}<p class="lateflag">late &mdash; today</p>{{end}}
-        {{with .Timer}}
-        <span class="ticking">
-          <span class="lbl">running</span>
-          {{with .Label}}<span class="what">{{.}}</span>{{end}}
-          <span class="left">{{.Left}}</span>
-          <form method="post" action="/board/now">
-            <input type="hidden" name="act" value="stop">
-            <button class="stopTimer" type="submit">stop</button>
-          </form>
-        </span>
-        {{end}}
         {{if .Answers}}
         <form class="bigstamps" method="post" action="/board/act">
           <input type="hidden" name="what" value="{{.What}}">
@@ -499,11 +483,6 @@
           {{range .Blockers}}
           <button class="quiet" name="why" value="{{.Why}}">{{.Words}}</button>
           {{end}}
-          {{else if .UnstuckMinutes}}
-          <input type="hidden" name="minutes" value="{{.UnstuckMinutes}}">
-          <input type="hidden" name="label" value="{{.Words}}">
-          <label class="ramp">catch me if I lose track <input type="checkbox" name="ramp" value="1"></label>
-          <button class="quiet" name="act" value="timer">{{.UnstuckMinutes}} MIN</button>
           {{else}}
           <button class="quiet" name="act" value="wrong">not this one</button>
           <button class="quiet" name="act" value="stuck">I&rsquo;m stuck</button>

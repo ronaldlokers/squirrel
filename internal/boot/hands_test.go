@@ -93,20 +93,6 @@ func TestActingOnAChoreThatIsNotYoursDoesNothing(t *testing.T) {
 	require.ErrorIs(t, err, errNotYours)
 }
 
-func TestStartingATimerStartsTheOneInTheLid(t *testing.T) {
-	ctx := context.Background()
-	store := factsStore(t)
-	p := factsOwner(t, store)
-	now := time.Now()
-
-	require.NoError(t, handsFor(t, store, now).StartTimer(ctx, p, "the kitchen", 15))
-
-	timer, found, err := store.CurrentTimer(ctx, p)
-	require.NoError(t, err)
-	require.True(t, found)
-	require.Equal(t, "the kitchen", timer.Label)
-}
-
 // A snooze is bounded in code, at both ends. A model asked not to silence
 // something for a year is a model that can, and one asked for zero hours is a
 // model that can hand back a deadline already in the past.
