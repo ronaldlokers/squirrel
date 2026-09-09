@@ -168,3 +168,18 @@
 @media (max-width: 620px) {
   .ops .notespill { display: none; }
 }
+
+/* The bar at a tablet's width. Brand, clock, field, the notes and three chips
+   do not fit at 834, and what gives is the date: the time is the thing you
+   glance at, and the day is on every other surface you are holding. */
+@media (min-width: 621px) and (max-width: 1000px) {
+  .ops .clock .d, .lid .clock .d { display: none; }
+}
+
+/* Narrower still and the brand goes too. A wordmark beside a logo is the one
+   thing on this bar that names nothing you can press. */
+@media (min-width: 621px) and (max-width: 820px) {
+  .ops .wordmark { display: none; }
+  .ops .notespill .says { display: none; }
+  .ops .notespill { padding: 0 12px; }
+}

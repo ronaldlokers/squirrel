@@ -420,6 +420,13 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Corrected on 9 September 2026: the notes count counts notes.** The chip and
+the phone's folded row said 41 where the wall showed 2. What a note is is
+decided in Go — `itemsWhere` drops any row the matcher reads as a command — and
+every `!at` and `!action` typed in Campfire is stored before it is applied,
+because capture is sacred. A `count(*)` over the same clause counted all of
+them. Both numbers now come from the same read the wall uses.
+
 **Amended on 9 September 2026: the body double is retired.** Timers are gone
 from the product — not moved, removed. There is no countdown on any screen, no
 `!timer`, no `!start`, no `!stop`, no `start_timer` tool for the coach, and no

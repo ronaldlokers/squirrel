@@ -278,3 +278,32 @@ func TestFindStillReachesANoteOnAFixedPoint(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, hits, 1, "a note with somewhere to be is still a note you can find")
 }
+
+// The count and the wall have to agree, and they only do if they are the same
+// read. The first HowMany was a count(*) over the same clause, which said 41
+// where the wall showed 2: what a note is is decided in Go, and every command
+// typed in Campfire is stored before it is applied, so the pile is full of
+// rows the matcher reads as intents and the wall never draws.
+func TestHowManyCountsWhatTheWallActuallyShows(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+
+	pileOf(t, store, p, "the boiler code is 4471", "kaas")
+	for _, echoed := range []string{"!at 14:46 test", "!at 10:49 test", "!notes", "done 1"} {
+		_, err := store.InsertItem(ctx, squirrel.Item{
+			Transport: "campfire", PersonID: &p, RawText: echoed,
+			Payload: []byte(`{}`), ReceivedAt: time.Now(),
+		})
+		require.NoError(t, err)
+	}
+
+	shown, _, err := store.OpenItems(ctx, p, 100)
+	require.NoError(t, err)
+	require.Len(t, shown, 2, "the wall is drawing rows that are commands")
+
+	notes, _, err := store.HowMany(ctx, p)
+	require.NoError(t, err)
+	require.Equal(t, len(shown), notes,
+		"the chip says %d and the wall shows %d", notes, len(shown))
+}
