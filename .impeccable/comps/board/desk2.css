@@ -1,0 +1,136 @@
+/* ── B: what the desk learns from the phone ────────────────────────────
+   Three things came back from building twelve phones: colour should carry
+   the kind wherever kinds mix, time reads better as a distance than as a
+   list, and the mood dial does not need to be big to be first. */
+
+/* Mood, small. The phone proved a face at 34px is enough to be a first
+   citizen; the ring's whole point was history, and seven cells carry it. */
+.slimmood { display:flex; align-items:center; gap:11px; flex:0 0 auto;
+  padding:9px 11px; background:var(--card); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:var(--r);
+  box-shadow:0 2px 0 0 rgba(28,17,11,.55); }
+.slimface { width:34px; height:28px; object-fit:contain; flex:0 0 auto; }
+.slimweek { display:flex; gap:3px; flex:1 1 auto; }
+.slimweek i { flex:1; height:22px; border:var(--line) solid rgba(28,17,11,.5); border-radius:2px; }
+.slimweek i.nought { background:repeating-linear-gradient(135deg, transparent 0 3px, rgba(28,17,11,.16) 3px 5px); }
+.slimweek i.mgood { background:var(--mood-good) } .slimweek i.mcalm { background:var(--mood-calm) }
+.slimweek i.mlow { background:var(--mood-low) } .slimweek i.mfrazzled { background:var(--mood-frazzled) }
+.slimweek i.mwiped { background:var(--mood-wiped) }
+.slimmood .record { flex:0 0 auto; font-size:12px; color:var(--ink-soft); }
+.checkin.slim { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; flex:0 0 auto;
+  padding:8px; background:var(--card); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:var(--r);
+  box-shadow:0 2px 0 0 rgba(28,17,11,.55); }
+.checkin.slim .face { padding:3px 1px 4px }
+.checkin.slim .face img { width:100%; max-width:28px; height:22px }
+.checkin.slim .face span { font-size:9px; letter-spacing:.02em }
+
+/* The day as a rail, in the sidebar. The gap between you and the next
+   thing is a distance rather than a row in a list. */
+.dayrail { flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+  padding:11px 11px 10px; background:var(--card); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:var(--r);
+  box-shadow:0 2px 0 0 rgba(28,17,11,.55); overflow:hidden; }
+.dayrail .comingsign { color:var(--outline); border-bottom-color:rgba(28,17,11,.18) }
+.dayrail .comingsign .n { color:var(--ink-soft) }
+.railscroll { flex:1 1 auto; min-height:0; overflow-y:auto; padding-right:2px }
+.dayrail .railitems { position:relative; list-style:none; margin:9px 0 0; padding:0;
+  display:flex; flex-direction:column; gap:7px; }
+.dayrail .railitems::before { content:""; position:absolute; left:6px; top:9px; bottom:9px; width:3px;
+  background:linear-gradient(180deg, var(--orange-lit) 0 18px, rgba(28,17,11,.2) 18px); border-radius:2px; }
+.dayrail .onrail { position:relative; padding-left:22px; }
+.dayrail .onrail::before { content:""; position:absolute; left:1px; top:17px; width:12px; height:12px;
+  background:var(--k); border:var(--line) solid var(--outline); border-radius:50%; z-index:2 }
+.dayrail .onrail::after { content:none }
+.dayrail .onrail .when { display:none }
+.dayrail .pulledrow::before { left:-1px; top:14px; width:17px; height:17px; background:var(--orange-lit) }
+.dayrail .edge { margin-left:calc(var(--step) * 4px); min-height:46px; border-radius:var(--r);
+  border:var(--line) solid var(--outline); box-shadow:0 2px 0 0 rgba(28,17,11,.4);
+  font-size:14px; }
+.dayrail .edge span { min-width:52px; margin-right:10px; font-size:10.5px }
+.dayrail .edge.islate { border-color:var(--orange-lit); border-width:3px }
+.dayrail .further { margin:8px 0 0; color:var(--ink-soft) }
+
+/* Colour where kinds mix: the band and the doors, never the racks —
+   the racks are cut by rhythm and that is a different question. */
+.band.kinded .tabtime { display:inline-grid; place-items:center; align-self:stretch; min-width:64px;
+  background:var(--k-task); color:var(--outline);
+  border-right:var(--line) solid var(--outline);
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  font-variation-settings:var(--precise),"wght" 800; font-variant-numeric:tabular-nums }
+.band.kinded .strip { grid-template-columns:max-content minmax(0,1fr) }
+.band.kinded .bandsign::before { background:var(--k-task) }
+.door.kinded .baysign::before { background:var(--k) !important }
+.door.kinded[data-bay="tasks"] { --k:var(--k-task) }
+.door.kinded[data-bay="notes"] { --k:var(--k-note) }
+.door.kinded .through { border-color:rgba(254,214,167,.28) }
+
+/* A fixed point is the one real deadline, so it stops reading as disabled. */
+.deskb { --k-at:#7d5a42; --k-at-tint:#c9ab92 }
+.deska .attime, .deska .platetime { font-variant-numeric:tabular-nums }
+
+.dayrail .laterline { margin:11px 0 7px; padding-top:9px;
+  border-top:var(--line) dashed rgba(28,17,11,.22);
+  font-size:10.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--brown);
+  font-variation-settings:var(--precise),"wght" 800 }
+.dayrail .laterlist { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px }
+.slimmood .record { white-space:nowrap }
+
+/* ── One hue per kind, on the desk ─────────────────────────────────────
+   A chore is orange wherever it appears. Which rhythm it has is carried
+   by the rack it is standing in and by that rack's own word — the spine
+   was saying it a second time, and that second saying is what made lilac
+   mean both "daily" and "the notes". */
+.onekind .rack[data-bay="daily"]  .strip .holder,
+.onekind .rack[data-bay="weekly"] .strip .holder,
+.onekind .rack[data-bay="seldom"] .strip .holder { background:#e66d0d }
+
+/* The rack signs stop carrying a hue and carry their word, which they
+   already did. Nothing else on the desk changes shape. */
+.onekind .rack .baysign::before { background:rgba(254,214,167,.36) }
+
+/* Tasks move to yellow so orange means one thing; notes keep lilac. */
+.onekind .doors .door[data-bay="tasks"] .baysign::before { background:#ffb300 }
+.onekind .doors .door[data-bay="notes"] .baysign::before { background:#6c4da9 }
+.onekind .band .bandsign::before { background:#ffb300 }
+.onekind .band .strip .holder { background:#ffb300 }
+.onekind .coming .appt { border-bottom-color:rgba(125,90,66,.3) }
+.onekind .comingsign::before { content:""; display:inline-block; width:11px; height:14px;
+  margin-right:9px; background:#7d5a42; border:var(--line) solid var(--outline); border-radius:1px }
+.onekind .comingsign { align-items:center }
+
+/* Cut by when it next wants you. Today leads and is lit; later is quiet. */
+.whencut .rack[data-bay="daily"] .baysign::before { background:var(--orange-lit) }
+.whencut .rack[data-bay="daily"] .baysign { color:var(--paper) }
+.whencut .rack[data-bay="seldom"] .baysign { color:rgba(254,214,167,.6) }
+.whencut .rack[data-bay="seldom"] .baysign::before { background:rgba(254,214,167,.22) }
+
+/* ── Today, lifted ─────────────────────────────────────────────────────
+   The predicate is the one the phone's "now" already uses: it comes back
+   today, or today is the day you usually do it. Ranks one to four.
+   Everything here is vocabulary the world already owns — paper is what
+   the pulled strip is made of, and the deeper shadow is what "on top"
+   has always meant. */
+.lift1 .strip.wants, .lift2 .strip.wants, .lift3 .strip.wants {
+  background:var(--paper);
+  box-shadow:0 5px 0 0 rgba(28,17,11,.55), 0 14px 20px -14px rgba(0,0,0,.7);
+}
+.lift1 .strip.wants .what, .lift2 .strip.wants .what, .lift3 .strip.wants .what {
+  font-size:16px; font-variation-settings:var(--casual),"wght" 580;
+}
+/* The seam is the notes rack's own device, borrowed. */
+.lift1 .seam, .lift2 .seam { margin:11px 0 6px }
+
+/* 2 · and the rest recedes: the spine loses its colour, because a thing
+   that is not asking today is not a chore-orange thing today. */
+.lift2 .strip.resting { background:rgba(253,236,212,.72) }
+.lift2 .strip.resting .holder { background:rgba(230,109,13,.34) !important }
+.lift2 .strip.resting .what { color:rgba(28,17,11,.82) }
+.lift2 .strip.resting .stamp { opacity:.9 }
+
+/* 3 · the rest is not shown at all, only counted — the same shape the
+   quiet day already uses, and the same wording guard applies. */
+.restline { margin:10px 2px 0; padding-top:9px;
+  border-top:var(--line) solid rgba(254,214,167,.2);
+  color:rgba(255,251,243,.66); font-size:12.5px;
+  font-variation-settings:var(--casual),"wght" 470 }

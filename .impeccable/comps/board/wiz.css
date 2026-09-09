@@ -1,0 +1,67 @@
+body { padding:0; margin:0; min-height:100vh; overflow:auto }
+.film { padding:34px 32px 40px }
+.filmsign { margin:0 0 22px; font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  color:rgba(254,214,167,.66); font-variation-settings:var(--precise),"wght" 800 }
+.frames { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; align-items:start }
+.frame { display:flex; flex-direction:column; gap:10px }
+.flabel { margin:0; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--orange-lit); font-variation-settings:var(--precise),"wght" 800 }
+
+.panel { display:flex; flex-direction:column; gap:12px; padding:18px 18px 17px;
+  background:var(--paper); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:var(--r);
+  box-shadow:0 6px 0 0 rgba(28,17,11,.55), 0 22px 30px -20px rgba(0,0,0,.8) }
+.panel.closed { background:none; border:0; box-shadow:none; padding:0 }
+.panel.tall { gap:14px }
+
+.add { display:flex; align-items:center; gap:8px; padding:5px 5px 5px 16px;
+  background:var(--paper); border:var(--line) solid var(--outline); border-radius:999px;
+  box-shadow:0 3px 0 0 rgba(28,17,11,.5) }
+.add input { flex:1; min-height:40px; border:0; background:none; padding:0; color:var(--outline);
+  font:400 15px/1 "Recursive",sans-serif; font-variation-settings:var(--casual),"wght" 500 }
+.add input::placeholder { color:var(--placeholder) }
+.add .newmark { min-width:44px; min-height:40px }
+.add .newmark.on { background:var(--orange-lit); color:var(--outline) }
+
+.kept { margin:0; display:inline-block; width:max-content; padding:3px 9px 4px;
+  background:#dff0d0; border:var(--line) solid var(--outline); border-radius:var(--r);
+  font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#2c4a18;
+  font-variation-settings:var(--precise),"wght" 800 }
+.said { margin:0; font-size:24px; line-height:1.15; font-variation-settings:var(--casual),"wght" 560 }
+.said.small { font-size:19px }
+.ask { margin:0; color:var(--ink-soft); font-size:15px;
+  font-variation-settings:var(--casual),"wght" 500 }
+.ask.thin { font-size:13px }
+.sq { margin:0; font-size:21px; line-height:1.25; color:var(--outline);
+  font-variation-settings:var(--casual),"wght" 540 }
+.sq b { font-variation-settings:var(--casual),"wght" 700 }
+.hint { margin:0; color:var(--ink-soft); font-size:12.5px }
+.hint b { font-variation-settings:var(--precise),"wght" 750 }
+
+.bigin { width:100%; min-height:52px; padding:0 12px; color:var(--outline);
+  background:var(--card); border:var(--line) solid var(--outline); border-radius:var(--r);
+  font:400 19px/1 "Recursive",sans-serif; font-variation-settings:var(--casual),"wght" 500 }
+
+.kinds { display:flex; flex-wrap:wrap; gap:7px }
+.kind { padding:10px 13px; cursor:pointer; background:var(--card-deep); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:999px;
+  box-shadow:0 2px 0 0 rgba(28,17,11,.4);
+  font:400 13.5px/1 "Recursive",sans-serif; font-variation-settings:var(--casual),"wght" 520 }
+.kind.on { box-shadow:0 3px 0 0 rgba(28,17,11,.55) }
+.kind.k-note.on { background:#c7b6e3 } .kind.k-task.on { background:#ffdf9a }
+.kind.k-chore.on { background:#f6c48a } .kind.k-at.on { background:#c9ab92 }
+
+.rowfields { display:flex; flex-wrap:wrap; align-items:center; gap:6px }
+.fchip { padding:8px 12px; background:var(--card); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:999px;
+  font-size:13px; font-variation-settings:var(--casual),"wght" 500 }
+.fchip.on { background:var(--orange-lit) }
+.fchip b { font-variation-settings:var(--precise),"wght" 800; margin:0 2px }
+.fchip.ghost { background:none; border-style:dashed; color:var(--ink-soft) }
+.fdiv { width:2px; align-self:stretch; margin:0 4px; background:rgba(28,17,11,.18) }
+.sub { display:flex; flex-direction:column; gap:9px; padding-top:12px;
+  border-top:var(--line) solid rgba(28,17,11,.16) }
+.acts { display:flex; gap:8px; padding-top:4px }
+.acts.wide { flex-wrap:wrap }
+.acts .stamp { min-height:44px }
+.acts .stamp.go { background:var(--orange-lit); color:var(--outline) }

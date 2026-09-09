@@ -1,0 +1,39 @@
+/* Everything under the chores, in one row rather than four bands. */
+.under1, .under2 { flex:0 0 auto; display:flex; align-items:center; gap:26px;
+  padding:18px 18px calc(20px + env(safe-area-inset-bottom));
+  border-top:2px solid rgba(28,17,11,.28) }
+.footline { color:rgba(254,214,167,.72); font-size:15px; text-decoration:none; white-space:nowrap }
+.footline b { font-family:"Inter",sans-serif; font-weight:900; font-variation-settings:normal;
+  font-size:17px; letter-spacing:-.02em; color:var(--cream); margin-right:6px;
+  font-variant-numeric:tabular-nums }
+.footline:hover { color:var(--paper) }
+.footline.right { margin-left:auto }
+.add { margin-left:auto; display:flex; align-items:center; gap:8px; padding:5px 5px 5px 16px;
+  background:var(--paper); border:var(--line) solid var(--outline); border-radius:999px;
+  box-shadow:0 3px 0 0 rgba(28,17,11,.5); min-width:360px }
+.under2 .add { margin-left:0 }
+.add input { flex:1; min-height:38px; border:0; background:none; padding:0; color:var(--outline);
+  font:400 15px/1 "Recursive",sans-serif; font-variation-settings:var(--casual),"wght" 500 }
+.add input::placeholder { color:var(--placeholder) }
+.add .newmark { min-width:42px; min-height:38px }
+
+/* 2 · the tasks are named, in one line, as chips rather than cards. */
+.ulabel { margin:0; flex:0 0 auto; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:rgba(254,214,167,.6); font-variation-settings:var(--precise),"wght" 800 }
+.chips { display:flex; gap:7px; flex:0 1 auto; min-width:0 }
+.chips .tchip { overflow:hidden; text-overflow:ellipsis }
+.chips .tchip.more { flex:0 0 auto }
+.tchip { padding:8px 14px; white-space:nowrap; text-decoration:none;
+  background:var(--k-task,#ffb300); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:999px;
+  box-shadow:0 2px 0 0 rgba(28,17,11,.45);
+  font-size:14px; font-variation-settings:var(--casual),"wght" 520 }
+.tchip.more { background:none; color:rgba(254,214,167,.72); box-shadow:none;
+  border-color:rgba(254,214,167,.32) }
+
+/* 3 · the region is gone; capture and the counts live in the bar. */
+.barcount { display:flex; align-items:center; gap:6px; padding:0 4px; text-decoration:none;
+  color:rgba(254,214,167,.72); font-size:13.5px; white-space:nowrap }
+.barcount b { font-family:"Inter",sans-serif; font-weight:900; font-variation-settings:normal;
+  font-size:15px; letter-spacing:-.02em; color:var(--cream); font-variant-numeric:tabular-nums }
+.barcount:hover { color:var(--paper) }

@@ -1,0 +1,70 @@
+/* ── The Sleeve ────────────────────────────────────────────────────────
+   One strip pulled clear, the rest of the pile legible as edges behind it.
+   Colour carries the kind, exactly as the holder spine does on the desk —
+   it is not decoration and there is no hue that means nothing. */
+:root {
+  --k-at:      #8a6a55;  --k-at-tint:    #d9c4b3;
+  --k-chore:   #e66d0d;  --k-chore-tint: #f6c48a;
+  --k-task:    #ffb300;  --k-task-tint:  #ffdf9a;
+  --k-note:    #6c4da9;  --k-note-tint:  #c7b6e3;
+}
+.k-at      { --k: var(--k-at);    --kt: var(--k-at-tint);    --kink: var(--outline) }
+.k-chore, .k-chore2, .k-chore3 { --k: var(--k-chore); --kt: var(--k-chore-tint); --kink: var(--outline) }
+.k-task    { --k: var(--k-task);  --kt: var(--k-task-tint);  --kink: var(--outline) }
+.k-note    { --k: var(--k-note);  --kt: var(--k-note-tint);  --kink: var(--paper) }
+
+.sleeve { flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
+  padding:14px 12px 84px; }
+
+/* The one that is out. Paper, because it is the one you read. */
+.out { display:grid; grid-template-columns:14px minmax(0,1fr); flex:0 0 auto; position:relative; z-index:6;
+  background:var(--paper); color:var(--outline);
+  border:var(--line) solid var(--outline); border-radius:var(--r);
+  box-shadow:0 7px 0 0 rgba(28,17,11,.55), 0 22px 30px -18px rgba(0,0,0,.8); }
+.out .holder { background:var(--k); border-right:var(--line) solid var(--outline); }
+.out.islate .holder, .out:has(.lateflag) .holder { background:var(--orange-lit); }
+.outbody { padding:16px 15px 15px; }
+.outwhy { margin:0; font-size:13.5px; color:var(--ink-soft);
+  font-variation-settings:var(--casual),"wght" 470; }
+.outname { margin:6px 0 0; font-size:30px; line-height:1.08; color:var(--outline);
+  font-variation-settings:var(--casual),"wght" 560; }
+.out .stamps { display:flex; gap:8px; margin-top:14px; }
+.out .stamp { flex:1; min-height:50px; }
+.out .stamp.go { background:var(--orange-lit); color:var(--outline); }
+
+/* The pile. Each edge steps in a little further, so the stack is a stack. */
+.pile { display:flex; flex-direction:column; }
+.edge { display:flex; align-items:center; gap:0; min-height:54px; padding:0 14px 0 0;
+  text-decoration:none; color:var(--outline);
+  border:var(--line) solid var(--outline); border-top:0; border-radius:0 0 var(--r) var(--r);
+  font-size:15.5px; font-variation-settings:var(--casual),"wght" 520;
+  box-shadow:0 2px 0 0 rgba(28,17,11,.4); overflow:hidden; }
+.edge span { display:inline-grid; place-items:center; align-self:stretch; min-width:66px;
+  margin-right:13px; border-right:var(--line) solid var(--outline);
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  font-variation-settings:var(--precise),"wght" 800; font-variant-numeric:tabular-nums; }
+/* Stepped from the left with the right edge flush: cards in a sleeve seen
+   from above, not a funnel. Each one is a tab you can still hit. */
+.edge:nth-child(1) { margin-left:5px }
+.edge:nth-child(2) { margin-left:12px }
+.edge:nth-child(3) { margin-left:19px }
+.edge:nth-child(4) { margin-left:26px }
+.edge:nth-child(5) { margin-left:33px }
+.edge:nth-child(6) { margin-left:40px }
+.edge:last-child { border-radius:0 0 var(--r) var(--r) }
+
+/* 1 · tinted — the kind reads from the tab, the card stays cream family */
+.tinted .edge { background:var(--card-deep) }
+.tinted .edge span { background:var(--kt); color:var(--outline) }
+
+/* 2 · full colour — the whole edge is its kind */
+.full .edge { background:var(--kt) }
+.full .edge span { background:var(--k); color:var(--kink) }
+
+/* 3 · colour throughout — the pulled card takes its kind's ground too */
+.deep .edge { background:var(--kt) }
+.deep .edge span { background:var(--k); color:var(--kink) }
+/* 3 keeps the ground of the world and colours the tab column instead. */
+.deep .out { background:var(--card) }
+.deep .edge span { min-width:78px }
+.deep .pile .edge { border-left-width:0 }
