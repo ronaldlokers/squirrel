@@ -261,18 +261,6 @@
   {{range $rack := .Racks}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Wants}} <span class="n">{{len .Wants}}</span>{{end}}</h2>
-    {{if eq .Key "once"}}
-    <form class="newtask blankstrip" method="post" action="/board/new">
-      <input type="hidden" name="bay" value="tasks">
-      <p class="strip blank">
-        <span class="holder"></span>
-        <span class="said">
-          <input class="words" name="words" placeholder="what did you decide?" autocomplete="off" enterkeyhint="done">
-        </span>
-        <button class="newmark" aria-label="keep it">+</button>
-      </p>
-    </form>
-    {{end}}
     <div class="channel">
       {{if .Trouble}}<p class="trouble">cannot reach the chores — nothing is lost. Try again in a moment.</p>{{end}}
       {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
@@ -294,49 +282,11 @@
 </main>
 
 {{if .Racks}}
-<div class="writers">
-<form class="newchore blankstrip" method="post" action="/board/new">
-  <input type="hidden" name="bay" value="daily">
-  <p class="strip blank">
-    <span class="said">
-      <input class="words" name="words" value="{{.Rhythm}}" placeholder="what comes back?" autocomplete="off" enterkeyhint="done"{{if .Rhythm}} autofocus{{end}}>
-      <span class="inline">
-        <span class="lead">every</span>
-        <input class="count" name="every" type="number" min="1" max="365" placeholder="7" inputmode="numeric" aria-label="how many">
-        <select class="unit" name="unit" aria-label="days, weeks or months">
-          <option value="days">days</option>
-          <option value="weeks">weeks</option>
-          <option value="months">months</option>
-        </select>
-      </span>
-    </span>
-    <button class="newmark" aria-label="keep it">+</button>
-  </p>
-  {{if .Rhythm}}<p class="asked">how often does it come back?</p>{{end}}
-</form>
-<form class="newmoment blankstrip" method="post" action="/board/new">
-  <input type="hidden" name="bay" value="agenda">
-  <p class="strip blank asit">
-    <span class="holder"></span>
-    <span class="said">
-      <input class="words" name="words" value="{{.When}}" placeholder="at 14:30 dentist" autocomplete="off" enterkeyhint="done"{{if .When}} autofocus{{end}}>
-      <span class="when">
-        <span class="dm">
-          <input class="count dd" name="dd" type="text" inputmode="numeric" maxlength="2" pattern="[0-3][0-9]" placeholder="05" aria-label="the day of the month">
-          <span class="slash">/</span>
-          <input class="count mo" name="mo" type="text" inputmode="numeric" maxlength="2" pattern="[0-1][0-9]" placeholder="09" aria-label="the month">
-        </span>
-        <span class="hm">
-          <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
-          <span class="colon">:</span>
-          <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
-        </span>
-      </span>
-    </span>
-    <button class="newmark" aria-label="keep it">+</button>
-  </p>
-  {{if .When}}<p class="asked">when is it?</p>{{end}}
-</form>
+<div class="addbar">
+  <a class="addpress" href="#add">
+    <span class="plus" aria-hidden="true">+</span>
+    <span class="says">add something</span>
+  </a>
 </div>
 {{end}}
 
@@ -365,6 +315,7 @@
 {{end}}
 
 {{if .Racks}}
+{{template "adder" .}}
 {{$whole := not (or .Opened .Find)}}
 <nav class="baytabs">
   {{range .Racks}}
@@ -514,4 +465,47 @@
   {{if .Late}}<p class="lateflag">late</p>{{end}}
 </div>
 {{end}}{{end}}
+{{end}}
+
+{{define "adder"}}
+<div class="adder{{if or .Rhythm .When}} open{{end}}" id="add">
+  <a class="veil" href="#shut" aria-label="not now"></a>
+  <form class="addform" method="post" action="/board/new">
+    <h2 class="addsign">what is it?</h2>
+    <input class="words" name="words" value="{{if .Rhythm}}{{.Rhythm}}{{else}}{{.When}}{{end}}" placeholder="say it in your own words" autocomplete="off" enterkeyhint="done" autofocus>
+    <div class="kinds">
+      <label class="kind"><input type="radio" name="bay" value="notes"{{if not (or .Rhythm .When)}} checked{{end}}><span>a thought</span></label>
+      <label class="kind"><input type="radio" name="bay" value="tasks"><span>do it once</span></label>
+      <label class="kind"><input type="radio" name="bay" value="daily" id="kindcomesback"{{if .Rhythm}} checked{{end}}><span>it comes back</span></label>
+      <label class="kind"><input type="radio" name="bay" value="agenda" id="kindatatime"{{if .When}} checked{{end}}><span>at a time</span></label>
+    </div>
+    <div class="asks rhythmasks">
+      <span class="lead">every</span>
+      <input class="count" name="every" type="number" min="1" max="365" placeholder="7" inputmode="numeric" aria-label="how many">
+      <select class="unit" name="unit" aria-label="days, weeks or months">
+        <option value="days">days</option>
+        <option value="weeks">weeks</option>
+        <option value="months">months</option>
+      </select>
+    </div>
+    <div class="asks whenasks">
+      <span class="dm">
+        <input class="count dd" name="dd" type="text" inputmode="numeric" maxlength="2" pattern="[0-3][0-9]" placeholder="05" aria-label="the day of the month">
+        <span class="slash">/</span>
+        <input class="count mo" name="mo" type="text" inputmode="numeric" maxlength="2" pattern="[0-1][0-9]" placeholder="09" aria-label="the month">
+      </span>
+      <span class="hm">
+        <input class="count hh" name="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-2][0-9]" placeholder="14" aria-label="the hour, 00 to 23">
+        <span class="colon">:</span>
+        <input class="count mm" name="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-5][0-9]" placeholder="30" aria-label="the minutes">
+      </span>
+    </div>
+    {{if .Rhythm}}<p class="asked">how often does it come back?</p>{{end}}
+    {{if .When}}<p class="asked">when is it?</p>{{end}}
+    <div class="addfoot">
+      <a class="notnow" href="#shut">not now</a>
+      <button class="stamp">keep it</button>
+    </div>
+  </form>
+</div>
 {{end}}

@@ -420,6 +420,25 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Amended on 9 September 2026: one button adds anything.** The board's three
+writers became a single modal, opened from a bar under the racks and asking the
+words before the kind. Three fields asking *what is it* meant that before you
+could write a thing down you had to decide what sort of thing it was and walk to
+the right box; the modal asks in the order the thought arrives.
+
+It saves only when it is done — one form, one post, nothing written until *keep
+it*, and nothing kept when you close it. That is the owner's requirement and it
+is also principle 1 read strictly: a draft Squirrel held for you would be a
+thought living in a form field instead of in the pile.
+
+What it costs: adding something is now two presses rather than one, and the
+board no longer shows you a field you can type straight into. The wall keeps its
+own, because that one has the camera and because capture must not need a modal
+to open first.
+
+How it reverses: the `adder` block in `board.html`. `/board/new` is unchanged
+and still routes on `bay`, which is what the four kinds set.
+
 **The order inside a rack is six rules in a fixed order, and each row carries
 the sentence that puts it there.** This is principle 6 extended from the
 picker's one offer to every row on the board:

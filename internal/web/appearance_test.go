@@ -63,10 +63,10 @@ var appearanceScreens = map[string][]string{
 		".baysign", ".baysign .n", ".channel",
 		".strip", ".strip .holder", ".strip .words", ".strip .what", ".strip .mark",
 		".strip .why", ".strip.wants", ".rack .seam",
-		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
-		".blankstrip .inline", ".blankstrip .count", ".newchore",
+		".stamp", ".stamp .k",
+		".addbar", ".addpress", ".addpress .plus",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
-		".dial .record", ".chip.notes", ".newtask", ".baytab",
+		".dial .record", ".chip.notes", ".baytab",
 		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag",
 		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",
@@ -74,7 +74,15 @@ var appearanceScreens = map[string][]string{
 
 	// The wall. The only screen that draws a pin, and the only one that draws
 	// a photograph at a size you can read without opening it.
-	"/notes": {".wall", ".pin", ".pin .said", ".pin .when", ".pin .pic img", ".blankstrip"},
+	"/notes": {".wall", ".pin", ".pin .said", ".pin .when", ".pin .pic img",
+		".blankstrip", ".strip.blank", ".strip.blank .words"},
+
+	// The writer, open, which is the only screen that draws it. Kept as its
+	// own entry because a modal nothing has asked for is not on any other.
+	"/?bay=daily&rhythm=defrost+the+freezer": {
+		".addform", ".addsign", ".addform .words", ".kinds", ".kind span",
+		".addform .count", ".addform .unit", ".addform .asked", ".notnow",
+	},
 
 	"/me": {".youface", ".youhead", ".weekrow"},
 }

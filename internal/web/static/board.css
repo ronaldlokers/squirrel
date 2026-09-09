@@ -944,14 +944,6 @@ main.gate h1 + form { margin-top: 26px; }
   font-variation-settings: var(--casual), "wght" 470;
 }
 
-/* One writer for a new chore, under all three racks: the rack a thing lands in
-   is what its interval says, so asking which rack to write into would be
-   asking the same question twice. */
-/* One writer for a new chore, under all three racks, wearing the same shape as
-   every other blank strip on the board. The dial's column is left clear of it:
-   what comes back is a thing about the racks. */
-.newchore { padding: 12px 18px 0; max-width: calc(100% - 264px - 14px); }
-.rack .newtask { flex: 0 0 auto; }
 
 
 /* How you have been, beside the racks. */
@@ -1018,8 +1010,7 @@ main.gate h1 + form { margin-top: 26px; }
   .rack[data-bay="now"].in { display: flex; }
   .racks > .dial { display: none; }
   .racks.found .dial { display: flex; }
-  .newchore { max-width: none; padding: 0 12px 12px; }
-  .baytab .says { font-size: 12px; }
+    .baytab .says { font-size: 12px; }
   .dial { padding: 12px; }
   .dial .ring { max-width: 200px; }
 }
@@ -1114,13 +1105,6 @@ main.gate h1 + form { margin-top: 26px; }
   box-shadow: 0 5px 0 0 rgba(28, 17, 11, .55), 0 18px 26px -18px rgba(0, 0, 0, .8);
 }
 
-/* Two writers, one row: the thing that comes back, and the thing the world
-   set. The date pickers cannot be read at a sidebar's width. */
-.writers {
-  flex: 0 0 auto; display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px;
-  padding: 12px 18px 0; max-width: calc(100% - 292px - 14px);
-}
-.writers .newchore, .writers .newmoment { max-width: none; }
 .racks { grid-template-columns: repeat(4, 1fr) minmax(0, 292px); }
 
 .lateflag {
@@ -1175,4 +1159,119 @@ main.gate h1 + form { margin-top: 26px; }
   .wallroom { padding: 12px 12px 14px; }
   .wall { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .wallroom > .blankstrip { max-width: none; }
+}
+
+.addbar {
+  flex: 0 0 auto; padding: 12px 18px 0; max-width: calc(100% - 292px - 14px);
+}
+.addpress {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 12px 16px; text-decoration: none;
+  background: var(--card); color: var(--outline);
+  border: var(--line) dashed var(--outline); border-radius: var(--r);
+}
+.addpress:hover { background: var(--paper); border-style: solid; }
+.addpress:focus-visible { outline: 3px solid var(--orange-lit); outline-offset: 3px; }
+.addpress .plus {
+  display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 auto;
+  background: var(--orange); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: 999px;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 900; font-size: 19px; line-height: 1; font-variation-settings: normal;
+}
+.addpress .says {
+  font-size: 14.5px; font-variation-settings: var(--casual), "wght" 560;
+}
+
+.adder { display: none; }
+.adder:target, .adder.open {
+  display: grid; place-items: center; padding: 18px;
+  position: fixed; inset: 0; z-index: 20;
+}
+.adder .veil {
+  position: absolute; inset: 0; background: rgba(28, 17, 11, .62);
+}
+.addform {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; gap: 12px;
+  width: min(520px, 100%); max-height: 100%; overflow-y: auto;
+  padding: 18px; background: var(--paper); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  box-shadow: 0 6px 0 0 rgba(28, 17, 11, .55), 0 26px 40px -18px rgba(0, 0, 0, .8);
+}
+.addsign {
+  margin: 0; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 800;
+}
+.addform .words {
+  width: 100%; box-sizing: border-box; padding: 10px 12px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  font: 400 16px/1.3 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.addform .words:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
+.kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kind { display: block; cursor: pointer; }
+.kind input { position: absolute; opacity: 0; width: 0; height: 0; }
+.kind span {
+  display: block; min-height: 44px; padding: 11px 12px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  font-size: 14px; font-variation-settings: var(--casual), "wght" 520;
+}
+.kind input:checked + span {
+  background: var(--orange); font-variation-settings: var(--casual), "wght" 700;
+  box-shadow: 0 2px 0 0 rgba(28, 17, 11, .55);
+}
+.kind input:focus-visible + span { outline: 3px solid var(--violet); outline-offset: 2px; }
+.asks { display: none; align-items: center; gap: 8px; }
+.addform:has(#kindcomesback:checked) .rhythmasks { display: flex; }
+.addform:has(#kindatatime:checked) .whenasks { display: flex; }
+.addfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notnow {
+  color: var(--ink-soft); font-size: 13px; text-decoration: underline;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.notnow:hover { color: var(--outline); }
+.notnow:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
+.addfoot .stamp { min-height: 44px; padding: 0 18px; }
+
+@media (max-width: 620px) {
+  .addbar { max-width: none; padding: 0 12px; margin-bottom: calc(var(--foot) + 72px); }
+  .kinds { grid-template-columns: 1fr; }
+}
+
+.addform .lead {
+  color: var(--ink-soft); font-size: 11px;
+  letter-spacing: .07em; text-transform: uppercase;
+  font-variation-settings: var(--precise), "wght" 750;
+}
+.addform .count {
+  width: 44px; min-height: 34px; padding: 4px 6px; text-align: center;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  font: 400 15px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.addform .count::placeholder { color: var(--placeholder); }
+.addform .unit {
+  min-height: 34px; padding: 4px 8px;
+  background: var(--card); color: var(--outline);
+  border: var(--line) solid var(--outline); border-radius: var(--r);
+  font: 400 14px/1 "Recursive", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variation-settings: var(--casual), "wght" 500;
+}
+.addform .unit option { color: var(--outline); background: var(--paper); }
+.addform .count:focus-visible, .addform .unit:focus-visible {
+  outline: 3px solid var(--violet); outline-offset: 2px;
+}
+.addform .dm, .addform .hm {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.addform .slash, .addform .colon { color: var(--ink-soft); font-size: 14px; }
+.addform .asked {
+  margin: 0; color: var(--ink-soft); font-size: 13.5px;
+  font-variation-settings: var(--casual), "wght" 560;
 }
