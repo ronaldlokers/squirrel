@@ -569,6 +569,31 @@ at the top. What left the board today, struck through, oldest first, with the
 newest carrying `PUT IT BACK`. Nothing else lives here now — the check-in left
 it for the dial.
 
+### Breakpoint: 1240px — the tablet
+
+A tablet is a desk you hold, and until 9 September 2026 it got the desk's
+layout at half the desk's width. Four racks and a sidebar need about 1240px
+before a rack is wide enough to read a chore beside its mark; an iPad has 1180
+in landscape and 834 in portrait, so every rack was about 170px and the words
+were being cut mid-letter.
+
+Between 621px and 1239px the four racks are **two across**, in a square, and
+**the sidebar is a band under them** — the dial and what is coming side by side,
+sharing the width. Three across was tried and rejected: at 1180 it leaves the
+fourth rack alone beside an empty half-screen.
+
+**The board scrolls, not each rack.** On the desk every channel scrolls inside
+itself; at this width the deck scrolls and the channels do not, because four
+channels with their own scrollbars is four places to lose your position on a
+screen you are holding.
+
+**A strip measures itself against its rack, not the window.** The mark took a
+`max-content` column beside the words, so `EVERY 365 DAYS` won it and left the
+words a gutter. Below 265px of rack — a container query on the channel, because
+no viewport breakpoint knows a rack's width — the mark drops under the words
+instead. And a word with nowhere to break breaks anywhere rather than running
+out of the strip.
+
 ### Breakpoint: 620px
 
 One breakpoint, as before, and below it the phone is **its own screen rather
