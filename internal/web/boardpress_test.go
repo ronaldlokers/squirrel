@@ -136,7 +136,10 @@ func TestBrowserTheKeysOpenTheStripTheyReach(t *testing.T) {
 		4*time.Second, 50*time.Millisecond, "the key did not act on the chore a press had opened")
 }
 
-func TestBrowserThePulledStripGivesWay(t *testing.T) {
+// The board's first screen is the work, and the deck scrolls past it. The
+// pulled strip held the top until 9 September 2026, when the offer moved onto
+// the row it is about; what has to give way now is the rail's own head.
+func TestBrowserTheRailScrollsPastItsHead(t *testing.T) {
 	f := aRackOfNotes()
 	for i := int64(10); i < 30; i++ {
 		f.items = append(f.items, squirrel.Item{
@@ -144,25 +147,23 @@ func TestBrowserThePulledStripGivesWay(t *testing.T) {
 			Kind: squirrel.ItemTask, ReceivedAt: time.Now(),
 		})
 	}
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"}
-	f.chores = []squirrel.Chore{{ID: 4, Name: "water the plants", Active: true, EveryDays: 7, SinceDays: 7}}
 	srv := screen(t, f)
 	c := browserAt(t, srv, "/")
 	touching(t, c)
 	c.navigate(t, srv.URL+"/")
-	c.until(t, "the pulled strip", `!!document.querySelector(".pulled")`)
+	c.until(t, "the head", `!!document.querySelector(".atnow")`)
 
 	deckTop := c.eval(t, `return Math.round(document.querySelector(".deck").getBoundingClientRect().top)`)
 	require.Greater(t,
-		c.eval(t, `return Math.round(document.querySelector(".pulled").getBoundingClientRect().bottom)`).(float64),
-		deckTop.(float64), "the pulled strip is not on screen, so this measured nothing")
+		c.eval(t, `return Math.round(document.querySelector(".atnow").getBoundingClientRect().bottom)`).(float64),
+		deckTop.(float64), "the head is not on screen, so this measured nothing")
 
 	c.eval(t, `document.querySelector(".deck").scrollTop = 600; return 1`)
 	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
 
 	require.LessOrEqual(t,
-		c.eval(t, `return Math.round(document.querySelector(".pulled").getBoundingClientRect().bottom)`).(float64),
-		deckTop.(float64), "the pulled strip held the top of the board instead of giving way")
+		c.eval(t, `return Math.round(document.querySelector(".atnow").getBoundingClientRect().bottom)`).(float64),
+		deckTop.(float64), "the head held the top of the board instead of giving way")
 }
 
 func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {

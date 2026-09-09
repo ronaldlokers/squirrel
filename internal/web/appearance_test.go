@@ -68,8 +68,8 @@ var appearanceScreens = map[string][]string{
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
 		".dial .record", ".chip.notes",
 		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag", ".atagain",
-		".pulled", ".pulled .why b", ".pulled .said",
-		".ticking .left", ".tray", ".tray .strip.out .words",
+		".strip .pulledwhy", ".strip .pulledwhy b", ".pickfeed", ".pickfeed .quiet",
+		".tray", ".tray .strip.out .words",
 	},
 
 	// The wall. The only screen that draws a pin, and the only one that draws

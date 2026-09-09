@@ -51,7 +51,7 @@ func TestTooBigWithNothingBrokenDownFallsBackToTheFixedLine(t *testing.T) {
 	w := post(t, m, "/board/now", url.Values{"act": {"stuck"}, "why": {"big"}, "kind": {"task"}, "id": {"3"}})
 
 	require.Equal(t, 1, c.broke)
-	require.Equal(t, "/?stuck=big", w.Header().Get("Location"))
+	require.Equal(t, "/?pulled=1&stuck=big", w.Header().Get("Location"))
 }
 
 func TestOnlyTooBigAsksTheBoardForABreakdown(t *testing.T) {

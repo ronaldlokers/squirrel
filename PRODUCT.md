@@ -420,6 +420,26 @@ principle 2 still refuses.
 How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
 the racks. Give the tasks a `bayView` again and the door comes back with them.
 
+**Amended on 9 September 2026: the pick has no card.** The picker chose one
+thing and drew it on a card at the top of the board, above racks that were
+already showing the same thing. The card is gone; the pick is a mark and a
+sentence on the row it is about, and its two hard answers — *not this one* and
+*I'm stuck* — sit quietly under that row's stamps.
+
+Nothing about the picker changed. It still chooses, still says why, and still
+records `not today` and `not this one` the same way. What changed is that the
+board stopped drawing the chosen thing twice.
+
+What it costs: the pick no longer has the loudest object on the screen, so on a
+long board it can be below the fold. Two things that never had a row of their
+own — a timer whose thing is not on the board, and the breadcrumb — now get a
+loose row at the head rather than sharing the card. The running timer's band
+went with it; a countdown hangs on the row of the thing it is timing.
+
+How it reverses: `theOffer` and `ticking` in `internal/web/board.go`, and the
+`working` section that `git show v0.79.0:internal/web/templates/board.html`
+still holds.
+
 **Amended on 9 September 2026: the phone is its own screen.** The owner's words
 were that mobile *feels like an afterthought — it should focus on showing what
 is important in the moment*, and that it might need a whole other design. It
