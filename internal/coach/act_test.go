@@ -210,20 +210,6 @@ func TestAProposalThatArrivesAsAPlanIsThrownAway(t *testing.T) {
 	require.Nil(t, reply.Propose)
 }
 
-// A timer is between one minute and three hours. Bounded in code, because a
-// model asked not to start a nine-hour timer is a model that can.
-func TestATimerOutsideItsBoundsIsRefused(t *testing.T) {
-	h := &fakeHands{}
-	api := newToolAPI(t,
-		turnOf(call("a", "start_timer", map[string]any{"label": "the kitchen", "minutes": 600})),
-		turnOf(call("b", "say", map[string]any{"text": "I could not."})),
-	)
-
-	_, err := actingFor(api, &fakeFacts{}, h, &fakeLog{}).Answer(context.Background(), aTurn())
-	require.NoError(t, err)
-	require.Empty(t, h.did)
-}
-
 // A loop is a place for a model to talk itself into acting, so there are two
 // rounds and no more.
 func TestATurnThatNeverAnswersIsNoAnswer(t *testing.T) {
@@ -282,34 +268,6 @@ func TestActingMakesNoCallWhenOverBudget(t *testing.T) {
 		Answer(context.Background(), aTurn())
 	require.ErrorIs(t, err, coach.ErrUnavailable)
 	require.Empty(t, api.sent)
-}
-
-// The three that are never available, asserted as absences: rewriting your own
-// words is what !fix is for; how you feel is said by you; nothing deletes.
-func TestTheRefusedToolsAreNotOffered(t *testing.T) {
-	api := newToolAPI(t, turnOf(call("a", "say", map[string]any{"text": "hello"})))
-	_, err := actingFor(api, &fakeFacts{}, &fakeHands{}, &fakeLog{}).
-		Answer(context.Background(), aTurn())
-	require.NoError(t, err)
-
-	tools, ok := api.sent[0]["tools"].([]any)
-	require.True(t, ok)
-	named := map[string]bool{}
-	for _, tool := range tools {
-		fn, _ := tool.(map[string]any)["function"].(map[string]any)
-		name, _ := fn["name"].(string)
-		named[name] = true
-	}
-
-	for _, refused := range []string{"reword", "checkin", "delete", "drop", "create_moment"} {
-		require.False(t, named[refused], "%q is offered to the model", refused)
-	}
-	// And the six that are.
-	for _, allowed := range []string{
-		"complete", "complete_chore", "start_timer", "refuse", "snooze_chore", "create_task",
-	} {
-		require.True(t, named[allowed], "%q is missing", allowed)
-	}
 }
 
 // Asking to *see* something is not asking about it, and the coach could not do

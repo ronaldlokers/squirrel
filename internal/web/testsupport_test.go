@@ -72,13 +72,9 @@ type fakeStore struct {
 	whoFace     []byte
 	whoFaceType string
 	// The exit ramp, and what the screen did about it.
-	ramp        squirrel.Timer
-	hasRamp     bool
-	rampErr     error
 	rampSaidErr error
 	rampSaid    int
 	hushed      int
-	armed       []bool
 	capacity    squirrel.Capacity
 	// Something set aside that has gone quiet, and what the screen did about
 	// it.
@@ -106,7 +102,6 @@ type fakeStore struct {
 	checkin    *squirrel.Checkin
 	// readings is what the moods page reads, newest first.
 	readings []squirrel.Checkin
-	timer    *squirrel.Timer
 	err      error
 
 	// offer is what the picker hands back, and nil is "nothing to hand you" —
@@ -281,33 +276,6 @@ func (f *fakeStore) UpsertChoreAsking(_ context.Context, _ int64, name string, e
 	}
 	f.chores = append(f.chores, c)
 	return c, nil
-}
-
-// The timer. One per person, replaced each time — the fake keeps exactly what
-// the store keeps, which is the current one and nothing else.
-func (f *fakeStore) StartTimer(_ context.Context, _ int64, label string, d time.Duration, at time.Time) (squirrel.Timer, error) {
-	if f.err != nil {
-		return squirrel.Timer{}, f.err
-	}
-	t := squirrel.Timer{Label: label, Started: at, Ends: at.Add(d)}
-	f.timer = &t
-	return t, nil
-}
-
-func (f *fakeStore) CurrentTimer(_ context.Context, _ int64) (squirrel.Timer, bool, error) {
-	f.probe.hit()
-	if f.err != nil || f.timer == nil {
-		return squirrel.Timer{}, false, f.err
-	}
-	return *f.timer, true, nil
-}
-
-func (f *fakeStore) StopTimer(_ context.Context, _ int64) error {
-	if f.err != nil {
-		return f.err
-	}
-	f.timer = nil
-	return nil
 }
 
 func (f *fakeStore) OpenItems(_ context.Context, _ int64, limit int) ([]squirrel.Item, bool, error) {
@@ -1571,32 +1539,6 @@ func (f *fakeStore) GoneQuiet(_ context.Context, _ int64, _ time.Time) (squirrel
 func (f *fakeStore) StillHolding(_ context.Context, _, itemID int64, _ time.Time) (bool, error) {
 	f.stilled = append(f.stilled, itemID)
 	return true, nil
-}
-
-// The exit ramp, faked. The four conditions on it are proved against Postgres
-// in internal/squirrel; what the screen has to be tested for is that it speaks
-// once, what it says, and what the three answers do.
-func (f *fakeStore) ArmRamp(_ context.Context, _ int64, on bool) error {
-	f.armed = append(f.armed, on)
-	return nil
-}
-
-func (f *fakeStore) RampDue(_ context.Context, _ int64, _ time.Time) (squirrel.Timer, bool, error) {
-	if f.rampErr != nil {
-		return squirrel.Timer{}, false, f.rampErr
-	}
-	return f.ramp, f.hasRamp, nil
-}
-
-func (f *fakeStore) RampSaid(_ context.Context, _ int64, _ time.Time) error {
-	f.rampSaid++
-	f.hasRamp = false
-	return f.rampSaidErr
-}
-
-func (f *fakeStore) HushRamp(_ context.Context, _ int64, _ time.Time) error {
-	f.hushed++
-	return nil
 }
 
 func (f *fakeStore) Capacity(_ context.Context, _ int64, _ time.Time) squirrel.Capacity {

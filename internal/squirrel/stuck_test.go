@@ -15,7 +15,7 @@ import (
 // The failure mode being designed against is the twelve-step productivity
 // answer. Every branch produces one sentence and at most one control, and this
 // is the test that says so.
-func TestEveryAnswerIsOneLineAndAtMostOneControl(t *testing.T) {
+func TestEveryAnswerIsOneSentenceAndNothingElse(t *testing.T) {
 	for _, b := range squirrel.Blockers {
 		u := squirrel.UnstuckFor(b)
 		if u.Refuse {
@@ -25,17 +25,15 @@ func TestEveryAnswerIsOneLineAndAtMostOneControl(t *testing.T) {
 		require.NotContains(t, u.Line, "\n", "one sentence, never a plan")
 		require.NotContains(t, u.Line, "1.", "never numbered")
 		require.NotContains(t, u.Line, "•")
-		require.False(t, u.Ask && u.Minutes > 0,
-			"a question and a timer at once is two things to do")
 	}
 }
 
-// Making it smaller ends in something you can see from where you are standing,
-// and a short timer to do it in.
-func TestTooBigOffersASmallerPieceAndAShortTimer(t *testing.T) {
+// Making it smaller ends in something you can see from where you are standing.
+// It offered a five-minute timer beside that until the body double went on
+// 9 September 2026; the sentence was always the part that did the work.
+func TestTooBigOffersTheSmallestPieceYouCanSee(t *testing.T) {
 	u := squirrel.UnstuckFor(squirrel.BlockerBig)
 	require.Contains(t, u.Line, "smallest")
-	require.Equal(t, 5, u.Minutes)
 }
 
 // Not knowing how ends in a question whose answer is a thought — and thoughts
@@ -43,13 +41,16 @@ func TestTooBigOffersASmallerPieceAndAShortTimer(t *testing.T) {
 func TestNotKnowingHowAsksAndCaptures(t *testing.T) {
 	u := squirrel.UnstuckFor(squirrel.BlockerHow)
 	require.True(t, u.Ask)
-	require.Zero(t, u.Minutes)
 }
 
-func TestBoringIsJustTheBodyDouble(t *testing.T) {
+// Boring was the one an alarm answered. Without the body double the sentence
+// carries it alone, and what it says is the same thing: a short go, ended by
+// you rather than by a bell.
+func TestBoringAsksForAShortGoAndNoBell(t *testing.T) {
 	u := squirrel.UnstuckFor(squirrel.BlockerBoring)
-	require.Equal(t, 10, u.Minutes)
+	require.Contains(t, u.Line, "short go")
 	require.False(t, u.Ask)
+	require.NotContains(t, u.Line, "minutes", "the sentence still promises an alarm")
 }
 
 func TestNotTodayRefusesAndSaysNothingElse(t *testing.T) {

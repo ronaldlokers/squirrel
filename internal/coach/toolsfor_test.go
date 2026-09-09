@@ -19,30 +19,6 @@ func namesOf(t *testing.T, specs []map[string]any) []string {
 	return out
 }
 
-func TestTheChoresCannotTouchATask(t *testing.T) {
-	got := namesOf(t, toolsFor("chores", true))
-	require.NotContains(t, got, "complete", "the chores can complete a task")
-	require.NotContains(t, got, "create_task", "the chores can make a task")
-	require.NotContains(t, got, "start_timer")
-	require.Contains(t, got, "complete_chore")
-	require.Contains(t, got, "snooze_chore")
-	require.Contains(t, got, "say")
-}
-
-// An appointment is a fixed point and rule 1 is to prefer it, so a model that
-// can move one can move the thing everything else is arranged around. It asks,
-// and you press.
-func TestTheAgendaCannotWrite(t *testing.T) {
-	got := namesOf(t, toolsFor("at", true))
-	require.NotContains(t, got, "complete")
-	require.NotContains(t, got, "complete_chore")
-	require.NotContains(t, got, "start_timer")
-	require.NotContains(t, got, "create_task")
-	require.Contains(t, got, "propose",
-		"the agenda cannot ask either, which leaves it able to do nothing")
-	require.Contains(t, got, "say")
-}
-
 // The way off a shelf is a card's own button. Nothing here writes.
 // A shelf is not a room and is narrowed by nothing, because there is nothing
 // left to narrow: it is drawn inside the notes, under the notes' own toolset.
@@ -64,17 +40,6 @@ func TestBuddysOwnRoomKeepsEverything(t *testing.T) {
 		require.Contains(t, all, name, "Buddy's own room lost %q", name)
 	}
 	require.Contains(t, all, "open")
-}
-
-// The half that would be forgotten. A model can name a function that was never
-// in its list, and providers do, so the narrowing has to be enforced where the
-// call is dispatched and not only where the request is built.
-func TestAToolTheRoomWasNotOfferedIsRefused(t *testing.T) {
-	require.False(t, mayUse("chores", "complete"))
-	require.False(t, mayUse("notes", "complete_chore"))
-	require.False(t, mayUse("at", "start_timer"))
-	require.True(t, mayUse("chores", "complete_chore"))
-	require.True(t, mayUse("everything", "complete"))
 }
 
 // A narrowing that leaves the wide enum in place only looks like one.

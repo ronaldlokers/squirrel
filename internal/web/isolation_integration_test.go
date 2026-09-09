@@ -217,7 +217,6 @@ func TestNoScreenShowsSomebodyElsesPile(t *testing.T) {
 		{"starting fresh", "POST", "/place/fresh", nil},
 		{"their parked note, kept waiting", "POST", "/held/act",
 			url.Values{"id": {theirNote}, "act": {"still"}}},
-		{"a timer", "POST", "/timer", url.Values{"minutes": {"5"}}},
 	} {
 		var body string
 		if read.form == nil {

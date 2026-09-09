@@ -182,18 +182,20 @@ still enforced.
 Both are dated to roughly late September, because they need a month of ordinary
 use before they have anything to say:
 
-- **Durations** from real timer runs, correcting your own estimates. Used for
-  fit arithmetic, never rendered as a comparison.
+- ~~**Durations** from real timer runs, correcting your own estimates.~~
+  **Withdrawn 9 September 2026** with the body double: there are no runs to
+  learn from.
 - **Asking windows** shifting toward the hours you actually complete things.
 
 ### Experiments, kept on the list
 
-Body-double follow-along micro-steps for two or three chores · ~~novelty in
+~~Body-double follow-along micro-steps for two or three chores~~ · ~~novelty in
 **art and phrasing only**~~ **— phrasing shipped 22 August.** ~~Hyperfocus exit
-ramp (opt-in at timer start)~~ **— shipped 7 September:** ticking the box when
-you start a timer from the screen puts up a quiet on-screen check-in half an
-hour after it ends, if you have not already stopped it and it is not night or
-a low day; "leave me alone" silences it for the rest of today.
+ramp (opt-in at timer start) — shipped 7 September.~~
+
+**The body double was retired on 9 September 2026, and the ramp with it.** No
+timers anywhere: no countdown on a screen, no `!timer`, no `start_timer` tool,
+no push that says *time*. `PRODUCT.md` carries the decision and what it cost.
 
 The four sentences met most often — the empty slot, the offer's label, the way
 out of the deck, and the stopping screen's own line — have several wordings
@@ -254,7 +256,8 @@ trade and what it would take to reverse it.
 
 **Because they are administration, which is what the product exists to avoid:**
 projects · tags · folders · sub-tasks · priority levels · recurring tasks (that
-is a chore).
+is a chore) · a body double, retired 9 September 2026 rather than refused —
+a clock that has to be watched is one more thing to manage.
 
 **Because they duplicate or dilute a working surface:** a third capture surface
 · voice capture (the phone keyboard already dictates into Campfire) · a general

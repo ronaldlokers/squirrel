@@ -36,7 +36,8 @@ func TestStuckAnswersAboutTheThingYouWouldBeHanded(t *testing.T) {
 	reply := triage(t, store, p, "!stuck too big")
 
 	require.Contains(t, reply, "smallest piece")
-	require.Contains(t, reply, "ring the vet", "the timer names the thing")
+	require.NotContains(t, reply, "!timer",
+		"the ladder still offers a body double, and there is none to offer")
 }
 
 // Not today turns that same thing down, and it is the same write "not now"
@@ -63,5 +64,5 @@ func TestStuckWorksOnALowDay(t *testing.T) {
 	taskOf(t, store, p, "ring the vet")
 	require.NoError(t, store.RecordCheckin(ctx, p, squirrel.MoodWiped, "chat", time.Now()))
 
-	require.Contains(t, triage(t, store, p, "!stuck boring"), "ten minutes")
+	require.Contains(t, triage(t, store, p, "!stuck boring"), "short go")
 }

@@ -15,26 +15,23 @@ import (
 )
 
 type boardView struct {
-	V              string
-	Opened         *stripView
-	Find           string
-	Found          []stripView
-	Blockers       []blockerView
-	Unstuck        string
-	UnstuckMinutes int
-	In             string
-	Light          int
-	Tray           []trayView
-	Kept           bool
-	Now            string
-	Day            string
-	Pulled         *offerView
-	Timer          *timerView
-	Ramp           *rampView
-	Moodful        bool
-	Racks          []rackView
-	Rhythm         string
-	When           string
+	V        string
+	Opened   *stripView
+	Find     string
+	Found    []stripView
+	Blockers []blockerView
+	Unstuck  string
+	In       string
+	Light    int
+	Tray     []trayView
+	Kept     bool
+	Now      string
+	Day      string
+	Pulled   *offerView
+	Moodful  bool
+	Racks    []rackView
+	Rhythm   string
+	When     string
 	// Adding is what you had typed in the bar when you pressed the plus. The
 	// bar keeps a thought on its own; the plus is how you say it is something
 	// else, and the words have to travel with the press or you type them
@@ -183,13 +180,6 @@ type stripView struct {
 	// carrying is its reason and its usual time — both are still true, and
 	// both are one press away on the row itself.
 	Wants bool
-	// Timer is the countdown for the thing this strip is, when one is running
-	// on it. The band it used to live in went with the offer's card: a timer
-	// belongs to a thing, and the thing already has a row.
-	Timer *timerView
-	// Ramping is the check that asks whether you are still on this, on the
-	// same row for the same reason.
-	Ramping bool
 	// Because is the offer's own sentence, on the row the offer is about. The
 	// card it used to sit on went on 9 September 2026: the offer was always a
 	// thing that already had a row, and drawing it twice was the duplication
@@ -199,13 +189,12 @@ type stripView struct {
 	// the sentence: an offer with nothing to say for itself is still an offer,
 	// and gating the ladder on the sentence is how it disappeared once.
 	Chosen bool
-	// Blockers, Unstuck and UnstuckMinutes are the ladder, on the row the
-	// offer is about. On the row rather than reached through the board,
-	// because the strip template is its own scope and a rung that has to be
-	// threaded through every call site is a rung that gets dropped at one.
-	Blockers       []blockerView
-	Unstuck        string
-	UnstuckMinutes int
+	// Blockers and Unstuck are the ladder, on the row the offer is about. On
+	// the row rather than reached through the board, because the strip
+	// template is its own scope and a rung that has to be threaded through
+	// every call site is a rung that gets dropped at one.
+	Blockers []blockerView
+	Unstuck  string
 	// Offerable says this is a thing the picker could have offered, so the
 	// opened strip may carry the two answers that used to be on its card.
 	Offerable bool
@@ -281,21 +270,20 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 			return
 		}
 		find := strings.TrimSpace(r.URL.Query().Get("find"))
-		blockers, unstuck, unstuckMinutes := stuckView(r.URL.Query().Get("stuck"))
+		blockers, unstuck := stuckView(r.URL.Query().Get("stuck"))
 		v := boardView{
-			In:             in,
-			Find:           find,
-			Blockers:       blockers,
-			Unstuck:        unstuck,
-			UnstuckMinutes: unstuckMinutes,
-			Kept:           r.URL.Query().Get("kept") == "1",
-			Now:            at.Format("15:04"),
-			Day:            at.Format("Monday 2 January"),
-			Telling:        r.URL.Query().Get("told") == "1",
-			Adding:         strings.TrimSpace(r.URL.Query().Get("words")),
-			Rhythms:        writerRhythms,
-			Rhythm:         strings.TrimSpace(r.URL.Query().Get("rhythm")),
-			When:           strings.TrimSpace(r.URL.Query().Get("when")),
+			In:       in,
+			Find:     find,
+			Blockers: blockers,
+			Unstuck:  unstuck,
+			Kept:     r.URL.Query().Get("kept") == "1",
+			Now:      at.Format("15:04"),
+			Day:      at.Format("Monday 2 January"),
+			Telling:  r.URL.Query().Get("told") == "1",
+			Adding:   strings.TrimSpace(r.URL.Query().Get("words")),
+			Rhythms:  writerRhythms,
+			Rhythm:   strings.TrimSpace(r.URL.Query().Get("rhythm")),
+			When:     strings.TrimSpace(r.URL.Query().Get("when")),
 		}
 		// The same gate the picker reads, and CapacityLow is wiped or
 		// frazzled rather than the mood called low — capacity.go says why.
@@ -312,8 +300,6 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Opened = openedStrip(r, s, personID, at); return nil })
 		g.Go(func() error { v.Found = whatMatched(r, s, personID, find, at); return nil })
 		g.Go(func() error { v.Pulled = offerFor(s, r, false); return nil })
-		g.Go(func() error { v.Timer = runningTimer(s, opts, r); return nil })
-		g.Go(func() error { v.Ramp = rampFor(s, r, personID, at); return nil })
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
 		g.Go(func() error { v.Dial = howYouAre(r, s, personID, at); return nil })
 		g.Go(func() error { v.Coming = whatIsComing(r, s, personID, at); return nil })
@@ -336,7 +322,6 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		v.Notes = notesCount
 		v.Rail = railFor(v.Racks, v.Coming, usually, notesCount)
 		theOffer(&v)
-		ticking(&v)
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
@@ -1001,26 +986,6 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 				fail(w, err)
 				return
 			}
-		case "start":
-			if err := startFromOffer(s, r, personID); err != nil {
-				fail(w, err)
-				return
-			}
-		case "stop":
-			if err := s.StopTimer(r.Context(), personID); err != nil {
-				fail(w, err)
-				return
-			}
-		case "hush":
-			if err := s.HushRamp(r.Context(), personID, now()); err != nil {
-				fail(w, err)
-				return
-			}
-		case "timer":
-			if err := startTimerFromTheLadder(r, s, personID); err != nil {
-				fail(w, err)
-				return
-			}
 		case "stuck":
 			why := r.FormValue("why")
 			back := backToTheStrip(r)
@@ -1055,24 +1020,6 @@ func boardNowHandler(s Store, opts Options) http.HandlerFunc {
 	}
 }
 
-func startTimerFromTheLadder(r *http.Request, s Store, personID int64) error {
-	mins, err := strconv.Atoi(r.FormValue("minutes"))
-	if err != nil || mins < shortestTimer || mins > longestTimer {
-		return nil
-	}
-	label := strings.TrimSpace(r.FormValue("label"))
-	if label == "" {
-		label = "it"
-	}
-	if len(label) > choreNameLimit {
-		label = label[:choreNameLimit]
-	}
-	if _, err := s.StartTimer(r.Context(), personID, label, time.Duration(mins)*time.Minute, now()); err != nil {
-		return err
-	}
-	return armRampIfTicked(r, s, personID)
-}
-
 func refuseTheOffer(r *http.Request, s Store, personID int64, kind squirrel.OfferKind, refID int64) error {
 	if !offerKinds[kind] {
 		return nil
@@ -1088,18 +1035,17 @@ func notThisOne(r *http.Request, s Store, personID int64, kind squirrel.OfferKin
 }
 
 // stuckView is what the pulled strip says while you are stuck: the four answers
-func stuckView(asked string) (blockers []blockerView, said string, minutes int) {
+func stuckView(asked string) (blockers []blockerView, said string) {
 	if asked == "" {
-		return nil, "", 0
+		return nil, ""
 	}
 	if b, ok := squirrel.ParseBlocker(asked); ok {
-		u := squirrel.UnstuckFor(b)
-		return nil, u.Line, u.Minutes
+		return nil, squirrel.UnstuckFor(b).Line
 	}
 	for _, b := range squirrel.Blockers {
 		blockers = append(blockers, blockerView{Why: squirrel.BlockerWords[b], Words: squirrel.BlockerWords[b]})
 	}
-	return blockers, "", 0
+	return blockers, ""
 }
 
 type blockerView struct {
@@ -1526,17 +1472,9 @@ func boardAskHandler(s Store, opts Options) http.HandlerFunc {
 // that row to the head of the rail.
 //
 // Only a chore or a thing you do once: those are the two kinds with a row of
-// their own. What the picker offers that has no row — the breadcrumb, a fixed
-// point, a timer — is not drawn, and the record says what that cost.
+// their own. A fixed point is the world's business and is drawn in the diary.
 func theOffer(v *boardView) {
-	if v.Pulled == nil || v.Pulled.Running {
-		return
-	}
-	if v.Pulled.Kind == "again" {
-		v.Loose = append(v.Loose, stripView{
-			What: "again", ID: v.Pulled.RefID, Words: v.Pulled.Text,
-			Because: v.Pulled.Because, Chosen: true,
-		})
+	if v.Pulled == nil {
 		return
 	}
 	if v.Pulled.Kind != "chore" && v.Pulled.Kind != "task" {
@@ -1547,7 +1485,7 @@ func theOffer(v *boardView) {
 		for i := range rows {
 			if rows[i].What == v.Pulled.Kind && rows[i].ID == v.Pulled.RefID {
 				rows[i].Because, rows[i].Chosen = v.Pulled.Because, true
-				rows[i].Blockers, rows[i].Unstuck, rows[i].UnstuckMinutes = v.Blockers, v.Unstuck, v.UnstuckMinutes
+				rows[i].Blockers, rows[i].Unstuck = v.Blockers, v.Unstuck
 				found = true
 			}
 		}
@@ -1564,7 +1502,7 @@ func theOffer(v *boardView) {
 		v.Loose = append(v.Loose, stripView{
 			What: v.Pulled.Kind, ID: v.Pulled.RefID, Words: v.Pulled.Text,
 			Because: v.Pulled.Because, Chosen: true, Answers: answersFor(v.Pulled.Kind),
-			Blockers: v.Blockers, Unstuck: v.Unstuck, UnstuckMinutes: v.UnstuckMinutes,
+			Blockers: v.Blockers, Unstuck: v.Unstuck,
 		})
 	}
 	if v.Rail == nil {
@@ -1576,8 +1514,7 @@ func theOffer(v *boardView) {
 	}
 	if v.Rail.Head != nil && v.Rail.Head.What == v.Pulled.Kind && v.Rail.Head.ID == v.Pulled.RefID {
 		v.Rail.Head.Because, v.Rail.Head.Chosen = v.Pulled.Because, true
-		v.Rail.Head.Blockers = v.Blockers
-		v.Rail.Head.Unstuck, v.Rail.Head.UnstuckMinutes = v.Unstuck, v.UnstuckMinutes
+		v.Rail.Head.Blockers, v.Rail.Head.Unstuck = v.Blockers, v.Unstuck
 		return
 	}
 	for _, from := range []*[]stripView{&v.Rail.Hung} {
@@ -1614,76 +1551,6 @@ func answersFor(kind string) []answerView {
 		return choreAnswers
 	}
 	return taskAnswers
-}
-
-// ticking hangs a running timer, and the check that asks whether you are still
-// on it, on the row of the thing it is timing.
-//
-// Matched on the words, because a timer carries the label it was started with
-// and nothing else. When nothing on the board wears those words the timer is
-// still drawn — on the opened strip if that is what you are looking at, and
-// otherwise on the first row there is — because a timer you cannot stop is
-// worse than a timer in the wrong place.
-func ticking(v *boardView) {
-	if v.Timer == nil && v.Ramp == nil {
-		return
-	}
-	label := ""
-	if v.Timer != nil {
-		label = v.Timer.Label
-	} else {
-		label = v.Ramp.Label
-	}
-
-	// On the row it belongs to the label is the row's own words, so the block
-	// does not say them twice. Anywhere else it has to, or a countdown reads as
-	// belonging to whatever it landed on.
-	its := v.Timer
-	if its != nil {
-		mine := *its
-		mine.Label = ""
-		its = &mine
-	}
-
-	hung := false
-	onto := func(rows []stripView) {
-		for i := range rows {
-			if rows[i].Words != label {
-				continue
-			}
-			rows[i].Timer, rows[i].Ramping, hung = its, v.Ramp != nil, true
-		}
-	}
-	for i := range v.Racks {
-		onto(v.Racks[i].Strips)
-		onto(v.Racks[i].Wants)
-		onto(v.Racks[i].Rest)
-	}
-	if v.Rail != nil {
-		if v.Rail.Head != nil {
-			onto([]stripView{*v.Rail.Head})
-			if v.Rail.Head.Words == label {
-				v.Rail.Head.Timer, v.Rail.Head.Ramping, hung = v.Timer, v.Ramp != nil, true
-			}
-		}
-		onto(v.Rail.Hung)
-		for i := range v.Rail.Folded {
-			onto(v.Rail.Folded[i].Rows)
-		}
-	}
-	if v.Opened != nil && v.Opened.Words == label {
-		v.Opened.Timer, v.Opened.Ramping, hung = its, v.Ramp != nil, true
-	} else if v.Opened != nil && !hung {
-		v.Opened.Timer, v.Opened.Ramping, hung = v.Timer, v.Ramp != nil, true
-	}
-	if hung {
-		return
-	}
-	// Nothing on the board wears those words — a timer started in chat, or one
-	// whose thing has since been done. It gets a row of its own rather than
-	// being hung on somebody else's: a countdown on the wrong row is worse
-	// than a countdown with no row.
-	v.Loose = append(v.Loose, stripView{What: "timer", Words: label, Timer: its, Ramping: v.Ramp != nil})
 }
 
 // marginalia puts on a rack's rows the three things every other strip on the

@@ -20,8 +20,6 @@ var toolSpecs = []map[string]any{
 		map[string]any{"limit": map[string]any{"type": "integer", "description": "How many, at most ten."}}),
 	spec("item", "One thing, by id.",
 		map[string]any{"id": map[string]any{"type": "integer", "description": "The id."}}),
-	spec("typically", "How many minutes something usually takes, measured from timers that finished. Absent when it has not been timed enough to say.",
-		map[string]any{"label": map[string]any{"type": "string", "description": "What it is called."}}),
 }
 
 // requiredArgs is empty for every tool but choose, whose arguments all matter.
@@ -125,14 +123,6 @@ func (p *Provider) answerTool(ctx context.Context, personID int64, room string, 
 		remember(handed, w)
 		return asJSON(w)
 
-	case "typically":
-		mins, found, err := p.Facts.Typically(ctx, personID, args.Label)
-		if err != nil || !found {
-			// Absent rather than zero. Zero is a measurement and this is the
-			// absence of one, and a model told "0 minutes" will believe it.
-			return "{}"
-		}
-		return asJSON(map[string]int{"minutes": mins})
 	}
 
 	return "{}"

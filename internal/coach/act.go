@@ -3,7 +3,6 @@ package coach
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"strings"
 )
@@ -294,14 +293,6 @@ func (p *Provider) runTool(ctx context.Context, personID int64, room string, cal
 		what, err := p.Hands.CompleteChore(ctx, personID, args.ChoreID)
 		return outcome(err), didSay(err, what+" is done")
 
-	case "start_timer":
-		if args.Minutes < 1 || args.Minutes > 180 {
-			return refused("a timer is between 1 and 180 minutes"), ""
-		}
-		err := p.Hands.StartTimer(ctx, personID, args.Label, args.Minutes)
-		return outcome(err), didSay(err,
-			fmt.Sprintf("%d minutes on %s, running", args.Minutes, args.Label))
-
 	case "refuse":
 		if _, ok := handed[key(args.Kind, args.RefID)]; !ok {
 			return refused("that is not something you were shown"), ""
@@ -331,7 +322,7 @@ func (p *Provider) runTool(ctx context.Context, personID int64, room string, cal
 // writes names the tools that change something, so runTool can tell them from
 // the reads without a second switch that could disagree with the first.
 var writes = map[string]bool{
-	"complete": true, "complete_chore": true, "start_timer": true,
+	"complete": true, "complete_chore": true,
 	"refuse": true, "snooze_chore": true, "create_task": true,
 }
 

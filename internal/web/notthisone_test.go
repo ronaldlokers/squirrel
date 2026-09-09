@@ -27,22 +27,6 @@ func TestThePulledStripOffersNotThisOneForAChore(t *testing.T) {
 	require.Contains(t, body, `value="wrong"`)
 }
 
-func TestThePulledStripHasNoNotThisOneForABreadcrumb(t *testing.T) {
-	f := aBoardStore()
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferAgain, Text: "the kitchen"}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
-
-	require.NotContains(t, body, `value="wrong"`)
-}
-
-func TestThePulledStripHasNoNotThisOneForARunningTimer(t *testing.T) {
-	f := aBoardStore()
-	f.offer = &squirrel.Offer{Kind: squirrel.OfferTimer, Text: "the kitchen", Because: "you are on this"}
-	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
-
-	require.NotContains(t, body, `value="wrong"`)
-}
-
 func TestPressingNotThisOneRecordsItDistinctlyFromADeferral(t *testing.T) {
 	f := aBoardStore()
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 7, Text: "bins out"}

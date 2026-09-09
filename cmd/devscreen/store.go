@@ -294,19 +294,6 @@ func (store) RecordAnswer(_ context.Context, _ int64, _ squirrel.OfferKind, _ in
 	return nil
 }
 func (store) SaveSubscription(_ context.Context, _ int64, _ squirrel.Subscription) error { return nil }
-func (store) StartTimer(_ context.Context, _ int64, _ string, _ time.Duration, _ time.Time) (squirrel.Timer, error) {
-	return squirrel.Timer{}, nil
-}
-func (store) CurrentTimer(_ context.Context, _ int64) (squirrel.Timer, bool, error) {
-	return squirrel.Timer{Label: "the kitchen", Started: now(), Ends: now().Add(6*time.Minute + 12*time.Second)}, true, nil
-}
-func (store) StopTimer(_ context.Context, _ int64) error       { return nil }
-func (store) ArmRamp(_ context.Context, _ int64, _ bool) error { return nil }
-func (store) RampDue(_ context.Context, _ int64, _ time.Time) (squirrel.Timer, bool, error) {
-	return squirrel.Timer{}, false, nil
-}
-func (store) RampSaid(_ context.Context, _ int64, _ time.Time) error { return nil }
-func (store) HushRamp(_ context.Context, _ int64, _ time.Time) error { return nil }
 func (store) Capacity(_ context.Context, _ int64, _ time.Time) squirrel.Capacity {
 	return squirrel.CapacityOK
 }

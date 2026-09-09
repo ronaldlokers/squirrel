@@ -251,19 +251,6 @@ func EveningMessage(handled Handled, captures []string, nudge *Chore, kept strin
 // Two buttons, matching the nudge's shape exactly.
 func NowMessage(o Offer) Message {
 	m := Message{Text: fmt.Sprintf("%s\n%s.", o.Text, o.Because)}
-	// A timer names no row, so there is nothing for a button to resolve
-	// against — and nothing to press, either. You are already doing it.
-	if o.Kind == OfferTimer {
-		return m
-	}
-	// A breadcrumb names a label rather than a row, so it cannot be marked
-	// done: Squirrel does not know what that label was. Picking it back up is
-	// the whole of what it can offer, and in chat that is one line naming the
-	// command rather than a button that would have to resolve against nothing.
-	if o.Kind == OfferAgain {
-		m.Text += fmt.Sprintf("\n!timer 10 %s to pick it up.", o.Text)
-		return m
-	}
 	m.SelectionMode = "single"
 	m.Actions = []Action{
 		{Label: doneWord(o), Value: "done:1", Emoji: "✅"},
@@ -426,15 +413,11 @@ func moodDay(at, now time.Time) string {
 }
 
 // StuckMessage is the answer, and it never grows into a plan.
-func StuckMessage(u Unstuck, subject string) Message {
+func StuckMessage(u Unstuck, _ string) Message {
 	if u.Ask {
 		return Message{Text: u.Line + "\nTell me and I will keep it."}
 	}
-	m := Message{Text: u.Line}
-	if u.Minutes > 0 && subject != "" {
-		m.Text += fmt.Sprintf("\n!timer %d %s when you are ready.", u.Minutes, subject)
-	}
-	return m
+	return Message{Text: u.Line}
 }
 
 // NothingNowMessage is what the picker says when it has nothing.

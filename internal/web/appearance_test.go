@@ -144,9 +144,8 @@ func appearanceFixture() *fakeStore {
 		{ID: 21, Label: "dentist", Starts: now().Add(3 * time.Hour), Travel: 15 * time.Minute},
 		{ID: 22, Label: "the school run", Starts: now().Add(30 * time.Hour), EveryWeeks: 1},
 	}
-	// A timer and a tray, so the board's two bands that only exist when
-	// something is happening are recorded rather than silently absent.
-	f.timer = &squirrel.Timer{Label: "the kitchen", Started: now(), Ends: now().Add(11 * time.Minute)}
+	// A tray, so the one band that only exists when something has happened is
+	// recorded rather than silently absent.
 	f.triaged = []squirrel.Item{
 		{ID: 91, RawText: "the washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote},
 	}

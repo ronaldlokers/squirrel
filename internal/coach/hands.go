@@ -20,9 +20,6 @@ type Hands interface {
 	// CompleteChore records a completion. Reverses through retraction —
 	// events are never deleted in this product.
 	CompleteChore(ctx context.Context, personID, choreID int64) (string, error)
-	// StartTimer starts the body double. Reverses through the stop control,
-	// which is in the lid on every screen.
-	StartTimer(ctx context.Context, personID int64, label string, minutes int) error
 	// Refuse turns something down for today. Reverses through UnrefuseToday.
 	Refuse(ctx context.Context, personID int64, kind string, refID int64) error
 	// SnoozeChore stops a chore being raised for a while. Reverses by saying

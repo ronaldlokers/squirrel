@@ -101,24 +101,6 @@ func TestNoHandOffOnALowDay(t *testing.T) {
 	require.NotContains(t, reply, "book the car in")
 }
 
-// Already on something. Being handed a second thing mid-timer would read as a
-// suggestion to abandon the first.
-func TestNoHandOffWhileATimerIsRunning(t *testing.T) {
-	store := withStore(t)
-	ctx := context.Background()
-	p := owner(t, store)
-
-	taskOf(t, store, p, "ring the vet")
-	taskOf(t, store, p, "book the car in")
-	triage(t, store, p, "!now")
-	_, err := store.StartTimer(ctx, p, "the kitchen", 10*time.Minute, time.Now())
-	require.NoError(t, err)
-
-	reply := triage(t, store, p, "done 1")
-	require.NotContains(t, reply, "book the car in")
-	require.NotContains(t, reply, "the kitchen")
-}
-
 func TestTriagingANoteHandsYouNothing(t *testing.T) {
 	store := withStore(t)
 	p := owner(t, store)

@@ -60,14 +60,13 @@ func ParseBlocker(s string) (Blocker, bool) {
 	return "", false
 }
 
-// Unstuck is one answer: a line, and at most one thing to press. The shape of the
-// struct is what makes a twelve-step productivity answer impossible — one
-// sentence and one number, with nowhere to put a second step.
+// Unstuck is one answer: one sentence, and nowhere to put a second step. It
+// offered a timer beside the sentence until the body double was retired on
+// 9 September 2026; what is left is the sentence, which was always the part
+// that did the work.
 type Unstuck struct {
 	// Line is what Squirrel says. One sentence, lower case, no exclamation.
 	Line string
-	// Minutes is a timer worth offering, or zero for none.
-	Minutes int
 	// Ask means the answer is a question, and the reply becomes a note. It is
 	// the only branch that captures, and it captures because "what would I
 	// have to find out first" is a thought, and thoughts go in the pile.
@@ -96,10 +95,7 @@ func UnstuckFor(b Blocker) Unstuck {
 		// Not "break it down", which is a second job. The smallest visible
 		// piece is a thing you can see from where you are standing, and seeing
 		// it is most of starting it.
-		return Unstuck{
-			Line:    "forget the rest of it. just do the smallest piece you can see.",
-			Minutes: 5,
-		}
+		return Unstuck{Line: "forget the rest of it. just do the smallest piece you can see."}
 	case BlockerHow:
 		// The answer to not knowing how is not an instruction, it is the
 		// question underneath — and that question is a thought, so it goes
@@ -109,12 +105,10 @@ func UnstuckFor(b Blocker) Unstuck {
 			Ask:  true,
 		}
 	case BlockerBoring:
-		// The only branch where a timer is the whole answer. Boring is what a
-		// body double is for, and the going is the point.
-		return Unstuck{
-			Line:    "ten minutes, and I will say when. stop wherever you are.",
-			Minutes: 10,
-		}
+		// Boring is the one an alarm used to answer. Without it the sentence
+		// has to carry it alone, and what it says is the same thing: a short
+		// go, ended by you rather than by a bell.
+		return Unstuck{Line: "give it a short go and stop wherever you get to."}
 	case BlockerNotToday:
 		return Unstuck{Refuse: true}
 	}

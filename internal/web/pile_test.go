@@ -41,7 +41,6 @@ func TestTheRouteTable(t *testing.T) {
 		"GET /moods",
 		"GET /knowing",
 		"GET /pile/chores",
-		"POST /timer",
 		// The way in, and the three routes that work it. The only routes
 		// outside the guard besides the manifest, the worker and the static
 		// files — necessarily, since a person with no session has to be able
@@ -56,7 +55,7 @@ func TestTheRouteTable(t *testing.T) {
 	} {
 		require.Contains(t, m.routes, route, "the route table lost %s", route)
 	}
-	require.Len(t, m.routes, 33, "a route was added without being pinned here")
+	require.Len(t, m.routes, 32, "a route was added without being pinned here")
 }
 
 // And the count above is the whole table rather than a number somebody bumped.

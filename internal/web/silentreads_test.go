@@ -30,9 +30,6 @@ func TestAReadThatFailsIsNotSilent(t *testing.T) {
 		{"an opened strip's step", func(s Store) any {
 			return stepForItem(s, withWho(httptest.NewRequest("GET", "/", nil), 1, "sub"), 7)
 		}, "reading the step in progress"},
-		{"the timer", func(s Store) any {
-			return runningTimer(s, Options{}, withWho(httptest.NewRequest("GET", "/", nil), 1, "sub"))
-		}, "reading the timer"},
 	} {
 		t.Run(one.what, func(t *testing.T) {
 			said := whatWasLogged(t)
@@ -56,7 +53,6 @@ func TestAReadThatFoundNothingIsSilent(t *testing.T) {
 
 	require.Nil(t, stepFor(f, Options{}, r))
 	require.Nil(t, stepForItem(f, r, 7))
-	require.Nil(t, runningTimer(f, Options{}, r))
 
 	require.Empty(t, said.String(),
 		"nothing to show is not a failure and must not be logged as one")
