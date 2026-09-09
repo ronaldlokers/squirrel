@@ -24,39 +24,58 @@ func aBoardStore() *fakeStore {
 	}
 }
 
-// The board is the chores. What is on it is three racks and the doors to the
-// other three places, and the chores themselves are the only strips.
-func TestTheBoardIsTheChoresAndThreeDoors(t *testing.T) {
+func TestTheBoardIsEveryRhythmAndOnceIsOneOfThem(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
 	body := m.call(t, "GET", "/board", nil).Body.String()
 
-	for _, want := range []string{"daily", "weekly", "seldom", "bins out"} {
+	for _, want := range []string{"daily", "weekly", "seldom", "once", "bins out"} {
 		require.Contains(t, body, want)
 	}
-	for _, door := range []string{"the notes", "the tasks"} {
-		require.Contains(t, body, door, "the %s cannot be reached from the board", door)
-	}
+	require.Contains(t, body, "vet about the booster",
+		"a thing you do one time is behind a door again")
+	require.Contains(t, body, `data-bay="once"`)
 	require.Contains(t, body, "what is coming",
 		"the agenda stopped being a door and is not in the sidebar either")
-	for _, behind := range []string{"boiler service code is 4471", "kaas", "vet about the booster"} {
+	for _, behind := range []string{"boiler service code is 4471", "kaas"} {
 		require.NotContains(t, body, behind,
-			"%q is on the board, so the doors did not demote anything", behind)
+			"%q is on the board, and the notes are a chip rather than a rack", behind)
 	}
 }
 
-// And what is behind a door is behind it, whole.
-func TestADoorOpensOntoWhatItHolds(t *testing.T) {
+func TestTheThingYouDecidedLastIsTheOneAskingAndTheRestAreNot(t *testing.T) {
+	f := &fakeStore{items: []squirrel.Item{
+		task(9, "book the MOT", squirrel.ItemOpen),
+		task(8, "ring the vet back", squirrel.ItemOpen),
+		task(7, "post the form", squirrel.ItemOpen),
+	}}
+
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=once")
+
+	newest := strings.Index(rack, "book the MOT")
+	seam := strings.Index(rack, "the rest of the rack")
+	require.GreaterOrEqual(t, newest, 0, "the thing you decided last is not in the rack")
+	require.GreaterOrEqual(t, seam, 0, "the rack has no seam, so nothing in it is asking")
+	require.Less(t, newest, seam, "the thing you decided last is below the seam")
+	require.Less(t, seam, strings.Index(rack, "ring the vet back"),
+		"a second thing you did not decide last is asking too")
+
+	require.Equal(t, 1, strings.Count(rack, "the last thing you decided"),
+		"more than one thing in the rack says it was the last")
+	require.Equal(t, 1, strings.Count(rack, `class="strip h-once answerable wants"`),
+		"a once-thing that is not the last one you decided is still asking")
+}
+
+func TestTheOnlyDoorLeftIsTheNotes(t *testing.T) {
 	m := mounted(t, aBoardStore())
 
-	for door, want := range map[string]string{
-		"notes": "boiler service code is 4471",
-		"tasks": "vet about the booster",
-	} {
-		body := m.call(t, "GET", "/?bay="+door, nil).Body.String()
-		require.Contains(t, body, want, "the %s door opens onto nothing", door)
-		require.Contains(t, body, "back to the board", "there is no way out of the %s", door)
-	}
+	body := m.call(t, "GET", "/board", nil).Body.String()
+	require.NotContains(t, body, `class="doors"`, "the region under the chores is still there")
+	require.Contains(t, body, `class="chip notes"`, "the notes cannot be reached from the board")
+
+	opened := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	require.Contains(t, opened, "boiler service code is 4471", "the notes chip opens onto nothing")
+	require.Contains(t, opened, "back to the board", "there is no way out of the notes")
 }
 
 func TestTheBoardIsNotAConversation(t *testing.T) {
@@ -430,7 +449,7 @@ func TestSearchingTakesTheRacksPlace(t *testing.T) {
 	require.Contains(t, body, "the boiler serial plate is behind the panel")
 	require.Contains(t, body, "the boiler pressure thing")
 	require.Contains(t, body, "bleed the boiler", "chores are not searched")
-	require.NotContains(t, body, `data-bay="tasks"`, "the racks are still drawn behind the results")
+	require.NotContains(t, body, `data-bay="once"`, "the racks are still drawn behind the results")
 	require.Contains(t, body, "back to the board")
 }
 
@@ -451,7 +470,7 @@ func TestAnEmptySearchIsJustTheBoard(t *testing.T) {
 
 	body := m.call(t, "GET", "/?find=+", nil).Body.String()
 
-	require.Contains(t, body, `data-bay="tasks"`)
+	require.Contains(t, body, `data-bay="once"`)
 	require.NotContains(t, body, "back to the board")
 }
 
@@ -832,11 +851,13 @@ func TestOnlyTheAgendaIsShapedLikeItsThing(t *testing.T) {
 
 	require.NotContains(t, theChoreWriter(t, board), "asit", "the chore writer took the agenda's shape")
 	require.NotContains(t, theChoreWriter(t, board), `name="dd"`, "the chore writer asks for a day")
-	for _, door := range []string{"notes", "tasks"} {
-		rack := theRackIn(t, m.call(t, "GET", "/?bay="+door, nil).Body.String(), "bay="+door)
-		require.NotContains(t, rack, "asit", "the %s inlet took the agenda's shape", door)
-		require.NotContains(t, rack, `name="dd"`, "the %s inlet asks for a day", door)
-	}
+	rack := theRackIn(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(), "bay=notes")
+	require.NotContains(t, rack, "asit", "the notes inlet took the agenda's shape")
+	require.NotContains(t, rack, `name="dd"`, "the notes inlet asks for a day")
+	require.NotContains(t, theTaskWriter(t, board), "asit", "the task writer took the agenda's shape")
+	require.NotContains(t, theTaskWriter(t, board), `name="dd"`, "the task writer asks for a day")
+	require.NotContains(t, theTaskWriter(t, board), `class="inline"`,
+		"a thing you do one time was asked how often it comes back")
 	require.Contains(t, theChoreWriter(t, board), `class="inline"`,
 		"the chores lost their interval")
 }

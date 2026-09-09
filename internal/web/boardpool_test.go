@@ -10,7 +10,7 @@ import (
 
 func TestOneBoardRenderNeverAsksForMoreConnectionsThanThePoolHas(t *testing.T) {
 	probe := &concurrencyProbe{sleep: 20 * time.Millisecond}
-	f := aBoardOfSevenPlaces()
+	f := aBoardOfFiveRacks()
 	f.probe = probe
 
 	mounted(t, f).call(t, "GET", "/", nil)

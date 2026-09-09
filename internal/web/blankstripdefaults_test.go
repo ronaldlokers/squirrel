@@ -59,6 +59,15 @@ func theChoreWriter(t *testing.T, page string) string {
 	return page[from : from+to]
 }
 
+func theTaskWriter(t *testing.T, page string) string {
+	t.Helper()
+	from := strings.Index(page, `<form class="newtask`)
+	require.GreaterOrEqual(t, from, 0, "the board has nowhere to put a thing you do one time")
+	to := strings.Index(page[from:], "</form>")
+	require.GreaterOrEqual(t, to, 0, "the task writer does not close")
+	return page[from : from+to]
+}
+
 func TestTypingAChoreAndPressingEnterAsksForTheRhythm(t *testing.T) {
 	f := aBoardStore()
 	sp := &fakeSpool{}

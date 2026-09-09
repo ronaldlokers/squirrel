@@ -365,6 +365,32 @@ longer visible without a press. Judged worth it because the pile is a thing you
 go to when you have decided to triage, and the chores are the thing that needs
 to be seen without deciding to look.
 
+**Amended on 9 September 2026: a task is a chore whose rhythm is once.** The
+tasks stopped being a kind and became a fourth rack, *once*, standing after
+*seldom* because the columns run by how long until a thing comes back and a
+once-thing never does. The row of doors under the writers went with it; the
+notes are a chip in the ops bar and, on the phone, the last tab.
+
+The argument is that the distinction was never about the thing. *Ring the vet
+back* and *water the plants* are the same object — something you decided to do —
+and the only difference is whether it returns. A product that files them in two
+places asks you, at capture, to answer a question about filing rather than about
+the thing.
+
+What it costs: a task no longer has a place of its own to be read as a list, and
+the once rack shows only what fits the column, saying *there is more further
+back* rather than how much. Judged worth it because a list of tasks is the shape
+that goes invisible, which is the same finding that retired the four bays a day
+earlier.
+
+What asks for you in that rack is the one you decided last, and it says so.
+Nothing about today makes a once-thing due, so the alternative — the oldest one
+— would be the board reporting how long something has waited, which is the count
+principle 2 still refuses.
+
+How it reverses: `onceRack` in `internal/web/board.go` and the `once` case in
+the racks. Give the tasks a `bayView` again and the door comes back with them.
+
 **The order inside a rack is six rules in a fixed order, and each row carries
 the sentence that puts it there.** This is principle 6 extended from the
 picker's one offer to every row on the board:

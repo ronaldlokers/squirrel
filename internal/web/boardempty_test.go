@@ -22,19 +22,15 @@ func TestARackWithNothingInItSaysSoInItsOwnWords(t *testing.T) {
 		"daily":  "nothing every day",
 		"weekly": "nothing this often",
 		"seldom": "nothing that comes back slowly",
+		"once":   "nothing to do just the one time",
 	} {
 		require.Contains(t, theRackIn(t, body, "bay="+rack), says,
 			"an empty %s rack says nothing about being empty", rack)
 	}
 
-	for door, says := range map[string]string{
-		"notes": "nothing in the notes",
-		"tasks": "nothing in the tasks",
-	} {
-		behind := m.call(t, "GET", "/?bay="+door, nil).Body.String()
-		require.Contains(t, theRackIn(t, behind, "bay="+door), says,
-			"an empty %s says nothing about being empty", door)
-	}
+	behind := m.call(t, "GET", "/?bay=notes", nil).Body.String()
+	require.Contains(t, theRackIn(t, behind, "bay=notes"), "nothing in the notes",
+		"an empty notes says nothing about being empty")
 }
 
 func TestARackThatHoldsSomethingSaysNothingAboutBeingEmpty(t *testing.T) {
@@ -82,11 +78,11 @@ func TestEveryChipInTheBarCarriesAName(t *testing.T) {
 	body := mounted(t, aBoardStore()).call(t, "GET", "/", nil).Body.String()
 	bar := body[strings.Index(body, `<header class="ops">`):strings.Index(body, "</header>")]
 
-	for _, name := range []string{"what Squirrel told you", "who you are, and what this can be told to do"} {
+	for _, name := range []string{"what Squirrel told you", "who you are, and what this can be told to do", "the notes"} {
 		require.Contains(t, bar, `aria-label="`+name+`"`, "no chip is named %q", name)
 	}
 	require.Contains(t, bar, `aria-label="how you are`, "the mood chip is a picture with no name")
-	require.Equal(t, 3, strings.Count(bar, `class="chip`),
+	require.Equal(t, 4, strings.Count(bar, `class="chip`),
 		"the bar carries a different number of chips than it is named for")
 }
 

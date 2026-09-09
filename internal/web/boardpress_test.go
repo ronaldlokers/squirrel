@@ -190,9 +190,9 @@ func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
 		c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
 		"the bar scrolled away with the rack")
 
-	require.Nil(t, c.eval(t, `return document.querySelector(".baytab.in")`),
-		"the bar lights a rack while you are standing behind a door")
-	require.Equal(t, `["now","daily","weekly","seldom"]`, c.eval(t, `return JSON.stringify(
+	require.Equal(t, "notes", c.eval(t, `return document.querySelector(".baytab.in").textContent.trim()`),
+		"the bar lights a rack while you are standing in the notes")
+	require.Equal(t, `["now","daily","weekly","seldom","once","notes"]`, c.eval(t, `return JSON.stringify(
 		[...document.querySelectorAll(".baytab")].map(a => a.getAttribute("href").split("=")[1]))`),
 		"the bar names the racks in some other order")
 }
@@ -315,7 +315,7 @@ func TestBrowserThePillClearsTheHomeIndicator(t *testing.T) {
 	// band of ground between the two on 2 September.
 	require.LessOrEqual(t, c.eval(t,
 		`return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top -
-			document.querySelector(".doors").getBoundingClientRect().bottom)`).(float64),
+			document.querySelector(".racks").getBoundingClientRect().bottom)`).(float64),
 		float64(24), "something above the pill is reserving the indicator's band as well")
 }
 
@@ -327,11 +327,11 @@ func TestBrowserTheBarReservesTheTopInsetAndNoMore(t *testing.T) {
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
 	})
 	c.navigate(t, srv.URL+"/?bay=notes")
-	c.until(t, "the bar", `!!document.querySelector(".ops .chip")`)
+	c.until(t, "the bar", `!!document.querySelector(".ops .chip.bell")`)
 
 	// The inset and nothing on top of it: the status bar's own band is the
 	// margin, and a second one under it is space this screen cannot spare.
 	require.Equal(t, float64(59), c.eval(t,
-		`return Math.round(document.querySelector(".ops .chip").getBoundingClientRect().top)`),
+		`return Math.round(document.querySelector(".ops .chip.bell").getBoundingClientRect().top)`),
 		"the bar reserves something other than exactly the top inset")
 }

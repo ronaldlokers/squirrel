@@ -66,7 +66,7 @@ var appearanceScreens = map[string][]string{
 		".strip.blank", ".strip.blank .words", ".stamp", ".stamp .k",
 		".blankstrip .inline", ".blankstrip .count", ".newchore",
 		".dial", ".dial .ring", ".dial .today", ".dial .checkin", ".dial .checkin .face",
-		".dial .record", ".doors", ".door", ".door .through",
+		".dial .record", ".chip.notes", ".newtask", ".baytab",
 		".coming", ".comingsign", ".attime", ".atlabel", ".leaveby", ".lateflag",
 		".pulled", ".pulled .why b", ".pulled .said",
 		".ticking .left", ".tray", ".tray .strip.out .words",

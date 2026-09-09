@@ -449,9 +449,14 @@ not a terminal, and the ASCII direction was declined over exactly this.
 
 ### Named Rules
 
-**One hue, one meaning.** Orange is a chore, brown a fixed point the world set,
-yellow something you decided, lilac the pile. A hue answers exactly one
-question and gives the same answer on every screen.
+**One hue, one meaning.** Orange is a thing to do, brown a fixed point the
+world set, lilac the pile. A hue answers exactly one question and gives the
+same answer on every screen.
+
+Yellow retired on 9 September 2026, when a thing you do one time became a
+rhythm rather than a kind. A chore and a once-thing are the same object cut by
+how often it comes back, so a second hue for one of them was drawing a line the
+product no longer holds.
 
 A chore is **not** coloured by its rhythm. The rack it stands in and that
 rack's own word already say which rhythm it has, and the spine was saying it a
@@ -515,11 +520,11 @@ it. One rather than three, because the rack a chore lands in is what its
 interval says: asking which rack to write into would be asking how often it
 comes back twice.
 
-**The doors.** Two across under the writers — *the notes*, *the tasks* — a sign
-over the question that place asks. A door is a link, not a
-rack: pressing one puts what it holds in the racks' place, whole, with a way
-back, the same as search and the shelves. What is behind a door is behind it;
-the board is the chores.
+**The notes are a chip in the ops bar**, beside the bell. Pressing it puts the
+notes in the racks' place, whole, with a way back, the same as search and the
+shelves. The row of doors under the writers went with the once rack on
+9 September 2026: two doors, two signs and two questions were a second region
+under the board saying what the board already had room to hold.
 
 **The tray.** Fixed to the foot, `rgba(28,17,11,.34)` over the ground, ruled off
 at the top. What left the board today, struck through, oldest first, with the
@@ -528,13 +533,14 @@ it for the dial.
 
 ### Breakpoint: 620px
 
-One breakpoint, as before. Below it the three racks become one of four tabs —
-*now · daily · weekly · seldom* — and *now* is the cut the desk has no use for:
-everything with something to say for itself today, across all three, in the
-same order. The pulled strip stays above the tabs because it belongs to no
-rack. The doors sit in a row of three above the bar, sign and count only. The
-dial folds away behind today's face in the ops bar. The tray keeps its place at
-the foot.
+One breakpoint, as before. Below it the racks become one of six tabs —
+*now · daily · weekly · seldom · once · notes* — and *now* is the cut the desk
+has no use for: everything with something to say for itself today, across the
+racks that come back, in the same order. The pulled strip stays above the tabs
+because it belongs to no rack. The notes chip leaves the ops bar at this width
+and becomes the last tab, because five chips leave the find field too narrow to
+type in. The dial folds away behind today's face in the ops bar. The tray keeps
+its place at the foot.
 
 There is no second layout. The phone shows one rack of the same board, and a
 strip is a strip at both sizes.
@@ -1058,6 +1064,24 @@ borrowing against the wrong account.
 carries a reason, and that reason names the usual time whenever the usual time
 is why the row is where it is. A second line for it said the same thing twice
 under one name, and it is gone.
+
+### Once
+
+The fourth rack, and the last column before the sidebar. A chore comes back and
+a once-thing does not, which makes *never again* a rhythm like any other — and
+the racks are already where a rhythm is drawn. It stands last because the
+columns run by how long until a thing returns, and a once-thing never does.
+
+**The one you decided last is what asks for you.** Nothing about today makes a
+once-thing due, so the only claim the board can honestly make is which one is
+freshest, and it says exactly that: *the last thing you decided*. Never the
+oldest — how long a thing has been waiting is the count the racks have always
+refused to draw.
+
+**It is the only rack with a writer in it.** The three that come back share one
+writer under the board, because the rack a chore lands in is what its interval
+says. A once-thing has no interval to say it, so its writer sits at the head of
+its own column, where the thing goes.
 
 ### The rack row
 

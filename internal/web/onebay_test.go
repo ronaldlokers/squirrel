@@ -19,19 +19,19 @@ func developing(t *testing.T) {
 	t.Cleanup(func() { devDir = was })
 }
 
-func aBoardOfSevenPlaces() *fakeStore {
+func aBoardOfFiveRacks() *fakeStore {
 	return &fakeStore{items: []squirrel.Item{note(1, "the boiler makes a noise", squirrel.ItemOpen)}}
 }
 
 func TestAShippedBinaryDrawsEveryBayWhateverIsAsked(t *testing.T) {
-	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=weekly"); got != 6 {
-		t.Fatalf("a shipped board drew %d places for ?only=weekly, and the query is not its business", got)
+	if got := racksIn(t, aBoardOfFiveRacks(), "/?only=weekly"); got != 5 {
+		t.Fatalf("a shipped board drew %d racks for ?only=weekly, and the query is not its business", got)
 	}
 }
 
 func TestTheDevelopmentBoardDrawsTheOneBayItWasAskedFor(t *testing.T) {
 	developing(t)
-	f := aBoardOfSevenPlaces()
+	f := aBoardOfFiveRacks()
 
 	body := mounted(t, f).call(t, "GET", "/?only=weekly", nil).Body.String()
 
@@ -49,7 +49,7 @@ func TestTheDevelopmentBoardDrawsTheOneBayItWasAskedFor(t *testing.T) {
 func TestTheOneBayIsTheOneYouAreStandingIn(t *testing.T) {
 	developing(t)
 
-	body := mounted(t, aBoardOfSevenPlaces()).call(t, "GET", "/?only=seldom", nil).Body.String()
+	body := mounted(t, aBoardOfFiveRacks()).call(t, "GET", "/?only=seldom", nil).Body.String()
 
 	if !strings.Contains(body, `class="rack in" data-bay="seldom"`) {
 		t.Fatal("the only rack on the page is not lit, so a phone width shows nothing")
@@ -59,15 +59,15 @@ func TestTheOneBayIsTheOneYouAreStandingIn(t *testing.T) {
 func TestABayNobodyHasDrawsThemAll(t *testing.T) {
 	developing(t)
 
-	if got := racksIn(t, aBoardOfSevenPlaces(), "/?only=nonsense"); got != 6 {
-		t.Fatalf("asking for a place that does not exist drew %d of them", got)
+	if got := racksIn(t, aBoardOfFiveRacks(), "/?only=nonsense"); got != 5 {
+		t.Fatalf("asking for a place that does not exist drew %d racks", got)
 	}
 }
 
 func TestTheDevelopmentBoardIsStillTheWholeBoardWhenNothingIsAsked(t *testing.T) {
 	developing(t)
 
-	if got := racksIn(t, aBoardOfSevenPlaces(), "/"); got != 6 {
-		t.Fatalf("development mode drew %d places on its own", got)
+	if got := racksIn(t, aBoardOfFiveRacks(), "/"); got != 5 {
+		t.Fatalf("development mode drew %d racks on its own", got)
 	}
 }

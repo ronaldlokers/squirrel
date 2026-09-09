@@ -73,6 +73,7 @@ type rackView struct {
 	Wants  []stripView
 	Rest   []stripView
 	Strips []stripView
+	More   bool
 }
 
 // comingView is what is ahead of you, in the sidebar. Everything still to
@@ -277,7 +278,9 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		_ = g.Wait()
 
 		v.Racks = marginalia(r, opts, bays.seen, troubled(v.Racks, racksOK))
-		v.Bays, v.Racks = onlyOne(r, bays.assemble(r, opts, asking), v.Racks)
+		doors, once := bays.assemble(r, opts, asking)
+		v.Racks = append(v.Racks, once)
+		v.Bays, v.Racks = onlyOne(r, doors, v.Racks)
 		v.Door = doorOpened(in, v.Bays)
 		v.Moodful = in == "mood" && v.Dial != nil
 		v.Racks = standingIn(in, v.Racks)
@@ -439,7 +442,7 @@ func fetchBays(g *errgroup.Group, r *http.Request, s Store, personID int64, at t
 	return f
 }
 
-func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayView {
+func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) ([]bayView, rackView) {
 	refused := r.URL.Query().Has("nophoto")
 	saidAnyway := strings.TrimSpace(r.URL.Query().Get("nophoto"))
 	offline := r.URL.Query().Get("offline") == "1"
@@ -456,10 +459,27 @@ func (f *bayFetch) assemble(r *http.Request, opts Options, asking int64) []bayVi
 			Camera: opts.Photos != nil, Trouble: !f.notesOK, More: f.moreNotes,
 			Empty: "nothing in the notes", Strips: askedForARhythm(notes, asking),
 			Asking: saidAnyway, Refused: refused, Offline: offline, Settled: f.settled},
-		{Key: "tasks", Name: "the tasks", Question: "what did you decide?", Writes: true,
-			Trouble: !f.tasksOK, More: f.moreTasks, Offline: offline,
-			Empty: "nothing in the tasks", Strips: tasks},
+	}, onceRack(tasks, f.tasksOK, f.moreTasks)
+}
+
+func onceRack(tasks []stripView, ok, more bool) rackView {
+	rack := rackView{
+		Key: "once", Name: "once", Trouble: !ok, More: more,
+		Empty:  "nothing to do just the one time",
+		Strips: tasks,
 	}
+	for i := range rack.Strips {
+		if i == 0 {
+			rack.Strips[i].Wants = true
+			rack.Strips[i].Why = "the last thing you decided"
+		}
+		if rack.Strips[i].Wants {
+			rack.Wants = append(rack.Wants, rack.Strips[i])
+		} else {
+			rack.Rest = append(rack.Rest, rack.Strips[i])
+		}
+	}
+	return rack
 }
 
 // wantsBay is the same ?only= as onlyOne, asked early enough to skip a read
@@ -476,8 +496,8 @@ func wantsBay(r *http.Request, key string) bool {
 }
 
 var boardKeys = map[string]bool{
-	"notes": true, "tasks": true,
-	"now": true, "daily": true, "weekly": true, "seldom": true,
+	"notes": true,
+	"now":   true, "daily": true, "weekly": true, "seldom": true, "once": true,
 }
 
 // onlyOne is the development board answering ?only= with a single region, so
@@ -812,7 +832,7 @@ func boardActHandler(s Store, opts Options) http.HandlerFunc {
 // at a time does not answer a chore by putting you back in the notes.
 func backToTheBay(r *http.Request) string {
 	switch bay := r.FormValue("bay"); bay {
-	case "notes", "tasks", "now", "daily", "weekly", "seldom", "mood":
+	case "notes", "tasks", "now", "daily", "weekly", "seldom", "once", "mood":
 		return "/?bay=" + bay
 	}
 	return "/"
