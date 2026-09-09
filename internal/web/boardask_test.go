@@ -37,12 +37,10 @@ func TestWithNoCoachTheBoardOffersNoWayToAsk(t *testing.T) {
 func TestWithACoachEveryLiveStripCanBeAsked(t *testing.T) {
 	m := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{})
 
-	require.Equal(t, 1, strings.Count(m.call(t, "GET", "/board", nil).Body.String(), "ask Buddy"),
-		"the board is the chores, and there is one chore on it")
-	for _, door := range []string{"notes", "tasks"} {
-		require.Equal(t, 1, strings.Count(m.call(t, "GET", "/?bay="+door, nil).Body.String(), "ask Buddy"),
-			"the one strip behind the %s cannot be asked about", door)
-	}
+	require.Equal(t, 2, strings.Count(m.call(t, "GET", "/board", nil).Body.String(), "ask Buddy"),
+		"the board is one chore and one thing you do once, and both can be asked about")
+	require.Equal(t, 1, strings.Count(m.call(t, "GET", "/?bay=notes", nil).Body.String(), "ask Buddy"),
+		"the one strip behind the notes cannot be asked about")
 }
 
 func TestDrawingTheBoardCallsNoModel(t *testing.T) {
@@ -90,7 +88,7 @@ func TestEachBaysDrawnAskButtonNarrowsToItsOwnRoom(t *testing.T) {
 
 	require.Equal(t, "notes", roomFieldNear(t, m.call(t, "GET", "/?bay=notes", nil).Body.String(),
 		"boiler service code is 4471"))
-	require.Equal(t, "tasks", roomFieldNear(t, m.call(t, "GET", "/?bay=tasks", nil).Body.String(),
+	require.Equal(t, "tasks", roomFieldNear(t, m.call(t, "GET", "/", nil).Body.String(),
 		"vet about the booster"))
 	// The room is the model's toolset and not a place on the screen, so a
 	// chore in the weekly rack still opens the chores one.

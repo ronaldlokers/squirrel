@@ -89,7 +89,7 @@
     gap: 9px; padding: env(safe-area-inset-top) 12px 5px;
     background: none; border-bottom: 0;
   }
-  .ops .brand, .ops .clock, .ops .rail .sep,
+  .ops .brand, .ops .clock, .ops .rail .sep, .ops .chip.notes,
   .lid .markart, .lid .wordmark, .lid .clock { display: none; }
   .ops .chip, .lid .chip { width: 44px; height: 44px; min-height: 44px; }
   .ops .rail { flex: 1; gap: 9px; padding: 0; background: none; border: 0; }

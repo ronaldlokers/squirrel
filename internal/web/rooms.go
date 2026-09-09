@@ -8,7 +8,7 @@ var theBays = map[string]string{
 	// The agenda stopped being a door on 9 September 2026 and became the
 	// sidebar's lower half, which is on the board itself.
 	"at":    "/",
-	"tasks": "/?bay=tasks",
+	"tasks": "/?bay=once",
 }
 
 var placesGone = map[string]string{

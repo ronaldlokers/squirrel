@@ -50,11 +50,11 @@ func TestBrowserTheDeskShowsEveryBay(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	require.Equal(t, float64(3), c.eval(t, `return [...document.querySelectorAll(".rack")]
+	require.Equal(t, float64(4), c.eval(t, `return [...document.querySelectorAll(".rack")]
 		.filter(r => getComputedStyle(r).display !== "none").length`),
 		"the desk draws a rack it has no use for, or is missing one")
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector('.rack[data-bay="now"]')).display`),
-		"now is a cut across the three, and the desk is showing all three")
+		"now is a cut across the racks that come back, and the desk is showing those")
 	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).display`))
 }
 
@@ -66,7 +66,7 @@ func TestBrowserEveryBayIsOnTheScreen(t *testing.T) {
 	})
 	c.navigate(t, srv.URL+"/")
 
-	require.Equal(t, float64(4), c.eval(t, `return document.querySelectorAll(".baytab").length`))
+	require.Equal(t, float64(6), c.eval(t, `return document.querySelectorAll(".baytab").length`))
 	require.Empty(t, c.eval(t, `return [...document.querySelectorAll(".baytab")]
 		.filter(t => t.getBoundingClientRect().right > innerWidth + 0.5)
 		.map(t => t.textContent.trim())`),

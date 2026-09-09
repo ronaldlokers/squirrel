@@ -27,6 +27,7 @@
   <span class="rail">
     {{template "findchip" .Find}}
     <span class="sep" aria-hidden="true"></span>
+    {{template "noteschip" .}}
     {{template "bellchip" .AnyTold}}
     {{with .Dial}}{{template "moodchip" .}}{{end}}
     {{template "youchip" .You}}
@@ -316,6 +317,18 @@
   {{range $rack := .Racks}}
   <section class="rack{{if .In}} in{{end}}" data-bay="{{.Key}}">
     <h2 class="baysign">{{.Name}}{{if .Wants}} <span class="n">{{len .Wants}}</span>{{end}}</h2>
+    {{if eq .Key "once"}}
+    <form class="newtask blankstrip" method="post" action="/board/new">
+      <input type="hidden" name="bay" value="tasks">
+      <p class="strip blank">
+        <span class="holder"></span>
+        <span class="said">
+          <input class="words" name="words" placeholder="what did you decide?" autocomplete="off" enterkeyhint="done">
+        </span>
+        <button class="newmark" aria-label="keep it">+</button>
+      </p>
+    </form>
+    {{end}}
     <div class="channel">
       {{if .Trouble}}<p class="trouble">cannot reach the chores — nothing is lost. Try again in a moment.</p>{{end}}
       {{if and (not .Strips) (not .Trouble)}}<p class="nothing">{{.Empty}}</p>{{end}}
@@ -329,6 +342,7 @@
         {{end}}
       </div>
       {{if .Resting}}<p class="resting">{{.Resting}} more further into the week</p>{{end}}
+      {{if .More}}<p class="further">there is more further back</p>{{end}}
     </div>
   </section>
   {{end}}
@@ -382,16 +396,6 @@
 </div>
 {{end}}
 
-{{if .Bays}}
-<aside class="doors">
-  {{range .Bays}}
-  <a class="door" href="/?bay={{.Key}}" data-bay="{{.Key}}">
-    <span class="baysign">{{.Name}}{{if .Strips}} <span class="n">{{len .Strips}}</span>{{end}}</span>
-    <span class="through">{{.Question}}</span>
-  </a>
-  {{end}}
-</aside>
-{{end}}
 {{end}}
 </div>
 
@@ -424,6 +428,9 @@
     <span class="says">{{.Name}}{{if .Strips}} <span class="n">&middot; {{len .Strips}}</span>{{end}}</span>
   </a>
   {{end}}
+  <a class="baytab{{if eq .In "notes"}} in{{end}}" href="/?bay=notes"{{if eq .In "notes"}} aria-current="page"{{end}}>
+    <span class="says">notes</span>
+  </a>
 </nav>
 {{end}}
 </body>
