@@ -36,27 +36,27 @@ func touching(t *testing.T, c *cdp) {
 
 func stampsTall(c *cdp, t *testing.T, nth int) float64 {
 	t.Helper()
-	return c.eval(t, `return Math.round(document.querySelectorAll(".rack.in .strip.answerable")[`+
+	return c.eval(t, `return Math.round(document.querySelectorAll(".dayrail .strip.answerable")[`+
 		string(rune('0'+nth))+`].querySelector(".stamps").getBoundingClientRect().height)`).(float64)
 }
 
 func TestBrowserAStripOpensWhenYouPressIt(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	require.Equal(t, float64(0), stampsTall(c, t, 0), "a strip arrives with its answers already out")
-	require.Equal(t, "false", c.eval(t, `return document.querySelector(".opener").getAttribute("aria-expanded")`))
+	require.Equal(t, "false", c.eval(t, `return document.querySelector(".dayrail .opener").getAttribute("aria-expanded")`))
 
-	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
-	c.until(t, "the stamps", `document.querySelectorAll(".rack.in .strip.answerable")[0]
+	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[0].querySelector(".what").click(); return 1`)
+	c.until(t, "the stamps", `document.querySelectorAll(".dayrail .strip.answerable")[0]
 		.querySelector(".stamps").getBoundingClientRect().height > 30`)
-	require.Equal(t, "true", c.eval(t, `return document.querySelector(".opener").getAttribute("aria-expanded")`))
+	require.Equal(t, "true", c.eval(t, `return document.querySelector(".dayrail .opener").getAttribute("aria-expanded")`))
 
-	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[1].querySelector(".what").click(); return 1`)
-	c.until(t, "the first to shut", `document.querySelectorAll(".rack.in .strip.answerable")[0]
+	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[1].querySelector(".what").click(); return 1`)
+	c.until(t, "the first to shut", `document.querySelectorAll(".dayrail .strip.answerable")[0]
 		.querySelector(".stamps").getBoundingClientRect().height < 1`)
 	require.Equal(t, float64(1), c.eval(t, `return document.querySelectorAll(".strip.answerable.open").length`),
 		"two strips are open at once")
@@ -64,16 +64,16 @@ func TestBrowserAStripOpensWhenYouPressIt(t *testing.T) {
 
 func TestBrowserPressingAStampDoesNotShutTheStrip(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
-	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
-	c.until(t, "the stamps", `document.querySelectorAll(".rack.in .strip.answerable")[0]
+	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[0].querySelector(".what").click(); return 1`)
+	c.until(t, "the stamps", `document.querySelectorAll(".dayrail .strip.answerable")[0]
 		.querySelector(".stamps").getBoundingClientRect().height > 30`)
 
-	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".stamp").click(); return 1`)
+	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[0].querySelector(".stamp").click(); return 1`)
 	c.until(t, "the strike", `!!document.querySelector(".strip.struck")`)
 	require.Equal(t, float64(1), c.eval(t, `return document.querySelectorAll(".strip.answerable.open").length`),
 		"pressing a stamp shut the strip it was on")
@@ -81,12 +81,12 @@ func TestBrowserPressingAStampDoesNotShutTheStrip(t *testing.T) {
 
 func TestBrowserEscapeShutsTheOpenStrip(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
-	c.eval(t, `document.querySelectorAll(".rack.in .strip.answerable")[0].querySelector(".what").click(); return 1`)
+	c.eval(t, `document.querySelectorAll(".dayrail .strip.answerable")[0].querySelector(".what").click(); return 1`)
 	c.until(t, "the stamps", `!!document.querySelector(".strip.answerable.open")`)
 
 	c.key(t, "Escape")
@@ -95,10 +95,10 @@ func TestBrowserEscapeShutsTheOpenStrip(t *testing.T) {
 
 func TestBrowserWithNoScriptEveryStripStillCarriesItsAnswers(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
 	c.send(t, "Emulation.setScriptExecutionDisabled", map[string]any{"value": true})
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 
 	require.False(t, c.eval(t, `return document.documentElement.classList.contains("presses")`).(bool),
 		"the script ran, so this measured nothing")
@@ -147,9 +147,9 @@ func TestBrowserThePulledStripGivesWay(t *testing.T) {
 	f.offer = &squirrel.Offer{Kind: squirrel.OfferChore, RefID: 4, Text: "water the plants"}
 	f.chores = []squirrel.Chore{{ID: 4, Name: "water the plants", Active: true, EveryDays: 7, SinceDays: 7}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "the pulled strip", `!!document.querySelector(".pulled")`)
 
 	deckTop := c.eval(t, `return Math.round(document.querySelector(".deck").getBoundingClientRect().top)`)
@@ -174,27 +174,24 @@ func TestBrowserTheBaysAreABarAtTheFoot(t *testing.T) {
 		})
 	}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
-	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".addbar")).position === "fixed"`)
 
-	foot := c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`)
+	foot := c.eval(t, `return Math.round(innerHeight - document.querySelector(".addbar").getBoundingClientRect().bottom)`)
 	require.Less(t, foot.(float64), float64(16), "the bar is not floating at the foot of the screen")
-	require.Greater(t, c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().left)`).(float64),
+	require.Greater(t, c.eval(t, `return Math.round(document.querySelector(".addbar").getBoundingClientRect().left)`).(float64),
 		float64(0), "the bar runs edge to edge rather than floating clear of them")
 
 	c.eval(t, `document.querySelector(".deck").scrollTop = 600; return 1`)
 	c.until(t, "the scroll", `document.querySelector(".deck").scrollTop > 0`)
 	require.Equal(t, foot,
-		c.eval(t, `return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
+		c.eval(t, `return Math.round(innerHeight - document.querySelector(".addbar").getBoundingClientRect().bottom)`),
 		"the bar scrolled away with the rack")
 
-	require.Contains(t, c.eval(t, `return document.querySelector(".baytab.in").textContent.trim()`), "once",
-		"the bar lights a rack other than the one you are standing in")
-	require.Equal(t, `["now","daily","weekly","seldom","once","notes"]`, c.eval(t, `return JSON.stringify(
-		[...document.querySelectorAll(".baytab")].map(a => a.textContent.trim().split(" ")[0]))`),
-		"the bar names the racks in some other order")
+	require.Contains(t, c.eval(t, `return document.querySelector(".addbar").textContent`), "add something",
+		"the pill at the foot is not the way in to the writer")
 }
 
 func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
@@ -203,14 +200,14 @@ func TestBrowserTheBarSitsUnderTheTray(t *testing.T) {
 		ID: 91, RawText: "the washing machine one", State: squirrel.ItemDone, Kind: squirrel.ItemNote,
 	}}
 	srv := screen(t, f)
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "the tray", `!!document.querySelector(".tray")`)
 
 	require.LessOrEqual(t,
 		c.eval(t, `return Math.round(document.querySelector(".tray").getBoundingClientRect().bottom)`).(float64),
-		c.eval(t, `return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top)`).(float64),
+		c.eval(t, `return Math.round(document.querySelector(".addbar").getBoundingClientRect().top)`).(float64),
 		"the floating bar covers the tray rather than clearing it")
 }
 
@@ -227,20 +224,20 @@ func TestBrowserEveryChevronSitsInTheSameColumn(t *testing.T) {
 	c.navigate(t, srv.URL+"/?bay=weekly")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
-	require.Greater(t, c.eval(t, `return new Set([...document.querySelectorAll(".rack.in .strip .mark")]
+	require.Greater(t, c.eval(t, `return new Set([...document.querySelectorAll(".dayrail .strip .mark")]
 		.map(m => Math.round(m.getBoundingClientRect().width))).size`).(float64), float64(1),
 		"every rhythm is the same width, so this measured nothing")
 
-	require.Equal(t, float64(1), c.eval(t, `return new Set([...document.querySelectorAll(".rack.in .opener")]
+	require.Equal(t, float64(1), c.eval(t, `return new Set([...document.querySelectorAll(".dayrail .opener")]
 		.map(o => Math.round(o.getBoundingClientRect().left))).size`),
 		"the chevrons step in and out with the rhythm beside them")
 }
 
 func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "press mode", `document.documentElement.classList.contains("presses")`)
 
 	c.until(t, "the easing", `document.documentElement.classList.contains("eased")`)
@@ -256,24 +253,22 @@ func TestBrowserTheStampsDoNotFlashOpenOnTheWayIn(t *testing.T) {
 
 func TestBrowserThePillIsSmokedRatherThanSolid(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
-	c.navigate(t, srv.URL+"/?bay=once")
-	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".addbar")).position === "fixed"`)
 
-	require.Equal(t, "capitalize", c.eval(t, `return getComputedStyle(document.querySelector(".baytab .says")).textTransform`),
-		"the bay's name is not capitalised in the bar")
-	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
+	require.NotEqual(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".addpress")).backdropFilter`),
 		"the pill lets nothing through, so the board behind it is lost rather than diffused")
-	require.Contains(t, c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backgroundColor`),
+	require.Contains(t, c.eval(t, `return getComputedStyle(document.querySelector(".addpress")).backgroundColor`),
 		"rgba", "the pill's tint is solid, so the blur behind it can never be seen")
 
 	c.send(t, "Emulation.setEmulatedMedia", map[string]any{"features": []map[string]string{
 		{"name": "prefers-reduced-transparency", "value": "reduce"},
 	}})
-	c.navigate(t, srv.URL+"/?bay=once")
-	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
-	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".baytabs")).backdropFilter`),
+	c.navigate(t, srv.URL+"/")
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".addbar")).position === "fixed"`)
+	require.Equal(t, "none", c.eval(t, `return getComputedStyle(document.querySelector(".addpress")).backdropFilter`),
 		"asking for less transparency changes nothing")
 }
 
@@ -302,31 +297,33 @@ func TestBrowserThePillClearsTheHomeIndicator(t *testing.T) {
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
 	})
 	c.navigate(t, srv.URL+"/")
-	c.until(t, "the bar", `getComputedStyle(document.querySelector(".baytabs")).display === "grid"`)
+	c.until(t, "the bar", `getComputedStyle(document.querySelector(".addbar")).position === "fixed"`)
 
 	// The reference app leaves 21 CSS px of ground under its bar, measured off
 	// two screenshots. The 5px hard shadow is part of the object, so the box
 	// sits 26 from the foot and the eye sees 21.
 	require.Equal(t, float64(26), c.eval(t,
-		`return Math.round(innerHeight - document.querySelector(".baytabs").getBoundingClientRect().bottom)`),
+		`return Math.round(innerHeight - document.querySelector(".addbar").getBoundingClientRect().bottom)`),
 		"the pill sits at a different height above the home indicator than it was measured to")
 
-	// And the rack does not pad for the indicator as well, which is what put a
-	// band of ground between the two on 2 September.
+	// And the rail does not pad for the indicator as well, which is what put a
+	// band of ground between the two on 2 September. The rail clears the pill
+	// and nothing more, so the last row scrolls out from under it.
 	require.LessOrEqual(t, c.eval(t,
-		`return Math.round(document.querySelector(".baytabs").getBoundingClientRect().top -
-			document.querySelector(".racks").getBoundingClientRect().bottom)`).(float64),
+		`const rail = document.querySelector(".dayrail");
+		 return Math.round(parseFloat(getComputedStyle(rail).paddingBottom) -
+			(innerHeight - document.querySelector(".addbar").getBoundingClientRect().top))`).(float64),
 		float64(24), "something above the pill is reserving the indicator's band as well")
 }
 
 func TestBrowserTheBarReservesTheTopInsetAndNoMore(t *testing.T) {
 	srv := screen(t, aRackOfNotes())
-	c := browserAt(t, srv, "/?bay=once")
+	c := browserAt(t, srv, "/")
 	touching(t, c)
 	c.send(t, "Emulation.setSafeAreaInsetsOverride", map[string]any{
 		"insets": map[string]any{"top": 59, "left": 0, "right": 0, "bottom": 34},
 	})
-	c.navigate(t, srv.URL+"/?bay=once")
+	c.navigate(t, srv.URL+"/")
 	c.until(t, "the bar", `!!document.querySelector(".ops .chip.bell")`)
 
 	// The inset and nothing on top of it: the status bar's own band is the

@@ -55,6 +55,15 @@ func PartOfDay(now time.Time) DayPart {
 	return AnyPart
 }
 
+// PartStarts is the hour a part of the day begins, and whether it is a part
+// with hours at all. The screen orders a day by it: an appointment has a clock
+// and a chore has only the part you usually do it in, and the two have to hang
+// on one rail in one order.
+func PartStarts(p DayPart) (int, bool) {
+	hours, ok := partHours[p]
+	return hours[0], ok
+}
+
 // PartWords is what each part is called, for the screen and the chat.
 var PartWords = map[DayPart]string{
 	AnyPart:   "any time",

@@ -142,6 +142,10 @@ rounded:
   mark: "2px"
   # The holder's grip, and a face tile in the tray.
   grip: "3px"
+  # A pill or a disc: the ops bar's chips and rail, the find field on a phone,
+  # the writer's pill at the foot, and the dots down the rail. Never on
+  # anything printed — a rounded slip of paper is a sticker.
+  pill: "999px"
 spacing:
   # The outline weight. Two, not the old three: a strip is printed, not drawn.
   line: "2px"
@@ -553,17 +557,40 @@ it for the dial.
 
 ### Breakpoint: 620px
 
-One breakpoint, as before. Below it the racks become one of six tabs —
-*now · daily · weekly · seldom · once · notes* — and *now* is the cut the desk
-has no use for: everything with something to say for itself today, across the
-racks that come back, in the same order. The pulled strip stays above the tabs
-because it belongs to no rack. The notes chip leaves the ops bar at this width
-and becomes the last tab, because five chips leave the find field too narrow to
-type in. The dial folds away behind today's face in the ops bar. The tray keeps
-its place at the foot.
+One breakpoint, as before, and below it the phone is **its own screen rather
+than a fold of the desk**. The racks go; the rail takes their place.
 
-There is no second layout. The phone shows one rack of the same board, and a
-strip is a strip at both sizes.
+**The rail is today, in the order today happens.** A line down the left with a
+dot at each thing. At the head, the one thing that wants you now — a fixed
+point inside its leaving window if there is one, otherwise the first thing with
+an hour — drawn as a full strip with its answers out and `now` under its dot.
+Everything else hangs off the rail as a row: a block on the left carrying the
+hour, the words on the right. **The tab carries the time**, and it is the hour
+when there is one and the part of the day when that is all there is — an
+appointment has a clock and a chore has only *mornings*.
+
+**It steps out as the day goes on.** Each row indents a little further than the
+one above, to four steps and then no further. The day reads as a descent rather
+than as a list.
+
+**Off the rail, whatever has no hour**, under *whenever you like*: everything
+else on the board, in the racks' own order, then the way to the notes. And
+under *further ahead*, any fixed point that is not today, with its day rather
+than its hour.
+
+**The writer is the pill at the foot.** Fixed, smoked, 26px clear of the home
+indicator — the measurements the tab bar had, on the one control that replaced
+it. The tab bar went on 9 September 2026: with the racks gone there were no
+tabs to draw, and the phone's foot is better spent on the thing you came to do.
+
+The dial folds away behind today's face in the ops bar. The tray keeps its
+place. The notes stay a chip in the ops bar on the desk and a row off the rail
+on the phone, because five chips leave the find field too narrow to type in.
+
+**Both screens are drawn at both widths**, and which one you get is the
+stylesheet. A strip is still a strip at both sizes, and every letter and press
+that works on one works on the other — the script skips whichever set is not on
+screen, which is what `offsetParent` is for in `board.js`.
 
 **The ops bar becomes chips on no ground.** The mark, the wordmark and the clock
 all go: a monogram where the mark was, then the find field across the middle,

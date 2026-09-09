@@ -37,8 +37,12 @@ func TestWithNoCoachTheBoardOffersNoWayToAsk(t *testing.T) {
 func TestWithACoachEveryLiveStripCanBeAsked(t *testing.T) {
 	m := mountedWith(t, aRackWithoutAgenda(), &fakeCoach{})
 
-	require.Equal(t, 2, strings.Count(m.call(t, "GET", "/board", nil).Body.String(), "ask Buddy"),
-		"the board is one chore and one thing you do once, and both can be asked about")
+	board := m.call(t, "GET", "/board", nil).Body.String()
+	for _, both := range []string{"bins out", "vet about the booster"} {
+		asked := board[strings.Index(board, both):]
+		require.Contains(t, asked[:strings.Index(asked, "</article>")], "ask Buddy",
+			"%q cannot be asked about", both)
+	}
 	require.Equal(t, 1, strings.Count(m.call(t, "GET", "/notes", nil).Body.String(), "ask Buddy"),
 		"the one strip behind the notes cannot be asked about")
 }

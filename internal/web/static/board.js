@@ -16,7 +16,9 @@
   // them. Focus is the platform's own selection model — the strip you are in —
   // which is what the chores screen used before the board existed.
   var strips = function () {
-    return [].slice.call(document.querySelectorAll(".strip.answerable"));
+    return [].slice.call(document.querySelectorAll(".strip.answerable")).filter(function (s) {
+      return s.offsetParent !== null;
+    });
   };
 
   var focused = function () {

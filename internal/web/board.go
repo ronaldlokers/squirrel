@@ -37,6 +37,7 @@ type boardView struct {
 	When           string
 	Dial           *dialView
 	Coming         *comingView
+	Rail           *railView
 	Told           []toldView
 	Telling        bool
 	AnyTold        bool
@@ -165,6 +166,9 @@ type stripView struct {
 	// carrying is its reason and its usual time — both are still true, and
 	// both are one press away on the row itself.
 	Wants bool
+	// When is the hour a rail row hangs at, or the part of the day when that
+	// is all there is to say. Empty everywhere but the phone's rail.
+	When string
 	// because a colour is a thing you have to already know how to read.
 	Due      bool
 	Late     bool
@@ -259,8 +263,11 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		g.Go(func() error { v.Tray = trayStrips(r, s, opts, personID, at); return nil })
 		g.Go(func() error { v.Dial = howYouAre(r, s, personID, at); return nil })
 		g.Go(func() error { v.Coming = whatIsComing(r, s, personID, at); return nil })
-		var racksOK bool
-		g.Go(func() error { v.Racks, racksOK = choreRacks(r, s, personID, at, quiet); return nil })
+		var (
+			racksOK bool
+			usually map[int64]squirrel.Usually
+		)
+		g.Go(func() error { v.Racks, usually, racksOK = choreRacks(r, s, personID, at, quiet); return nil })
 		bays := fetchBays(&g, r, s, personID, at)
 		g.Go(func() error { v.You = youFor(r.Context(), s, personID); return nil })
 		g.Go(func() error { v.Told = whatWasSaid(r, s, personID, at, deep); return nil })
@@ -270,6 +277,7 @@ func boardHandler(s Store, opts Options) http.HandlerFunc {
 		v.Racks = onlyOne(r, append(v.Racks, bays.once(r, opts)))
 		v.Moodful = in == "mood" && v.Dial != nil
 		v.Racks = standingIn(in, v.Racks)
+		v.Rail = railFor(v.Racks, v.Coming, usually)
 		v.AnyTold = len(v.Told) > 0
 		renderBoard(w, v)
 	}
@@ -432,11 +440,11 @@ func taskStrips(r *http.Request, s Store, personID int64, at time.Time) ([]strip
 // One read of the chores and one of when you usually do them, for all three
 // racks: a query per rack would be three times the work for the same rows, and
 // the racks are a cut of one list rather than three lists.
-func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bool) ([]rackView, bool) {
+func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bool) ([]rackView, map[int64]squirrel.Usually, bool) {
 	chores, err := s.ActiveChores(r.Context(), personID)
 	if err != nil {
 		slog.Error("reading the chores for the board", "error", err)
-		return nil, false
+		return nil, nil, false
 	}
 	usually, err := s.WhenYouUsuallyDo(r.Context(), personID)
 	if err != nil {
@@ -465,7 +473,7 @@ func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bo
 			Strips: choreRows(rack.Waiting, at),
 		})
 	}
-	return out, true
+	return out, usually, true
 }
 
 // emptyRack is what each rack says when it is holding nothing. Three sentences
