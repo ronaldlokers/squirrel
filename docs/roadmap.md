@@ -148,7 +148,26 @@ exist only there**.
 | ~~**Mood series**~~ | **Shipped 20 August.** One page and one command, both asked for by name. Nothing else reads them. |
 | ~~**Resurfacing**~~ | **Shipped 20 August.** One kept note, roughly one evening in three, riding along with the evening message. |
 | ~~**Attachments**~~ | **Shipped 20 August.** From the PWA — camera or gallery — one per note, on a volume beside the pod. Shown back before it is kept, and held on the device from the moment it is picked. |
-| **Devices** | Phone primary and better; desktop first-class. **Spec settled 22 August**: `docs/superpowers/specs/2026-08-22-devices-design.md`. Five acceptance criteria, and the lid question is answered: three icons, the wordmark stays, a fourth is a redesign rather than an addition. |
+| **Devices** | Phone primary and better; desktop first-class. **Spec settled 22 August**: `docs/superpowers/specs/2026-08-22-devices-design.md`. **Four of its five criteria are met, 9 September; the fifth needs a decision** — see *Devices: what is left* below. |
+
+### Devices: what is left
+
+Reconciled 9 September 2026 against the five criteria in the spec. The spec was
+written on 22 August, before the conversation retired, so two of its criteria
+had to be read against a phone that is now the rail rather than the bays.
+
+| | Criterion | State |
+| --- | --- | --- |
+| **1** | Every interactive element clears 44×44, including ones added later | **Met.** `TestBrowserEveryControlClearsFortyFourOnAPhone` walks the rendered page rather than a hand-kept list of selectors, which is what the criterion asked for. Three controls are knowingly under the floor and skip by name. |
+| **2** | No horizontal scroll at 320px | **Met.** `TestBrowserNothingScrollsSidewaysAtThreeTwenty`. |
+| **3** | Every screen's primary action is in the thumb band from a cold open | **Open, and it needs an owner decision.** At 390×844 the rail's head answers sit at 144–202px, which is the reach/stretch line rather than the bottom 45%; the capture bar is at 780 and is in the band. The head is at the top because the comps put it there, so meeting this criterion means changing an approved comp, not fixing a defect. |
+| **4** | The lid holds three icons and does not grow | **Met, and now pinned.** `TestBrowserTheLidHoldsThreeAndDoesNotGrow` fails if a fourth chip is added, if the find field falls under 120px, or if the bar holds more than it fits, at 320, 375, 390 and 430. |
+| **5** | The known-open phone items are closed or re-affirmed in writing | **Closed.** The wrapping views nav went with the room — there is no nav element in any template. The find field is a plain `input`, not `type="search"`, and the way out of a search is `back to the board` on the screen rather than a key on the keyboard. The zoom trade-off was already recorded and accepted. |
+
+**One defect the reconciliation found and fixed the same day:** looking for
+something on a phone showed a blank screen. *What matched* takes the racks'
+place by design, so it wore the class the rail's layout hid — the page rendered
+eight matches, the count and the way back, and drew none of them.
 
 ### Structural
 
