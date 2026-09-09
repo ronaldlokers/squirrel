@@ -1728,6 +1728,13 @@ its four answers, and something that already left carries `back in the pile` and
 nothing else — offering the exits to a note that has taken one is asking a
 question that has been answered. Its mark is the state it went to.
 
+**On a phone, what matched is the whole screen.** The phone draws the rail
+rather than the racks, but *what matched* is the racks' own place, so it is the
+one rack the phone keeps: full width, the way back at the top, scrolling in the
+deck like the rail does. The rule that hides the racks below 620px reads
+`.racks:not(.found)` for exactly that reason — search is in the bar on every
+screen, and a bar control that leads to a blank screen is worse than no control.
+
 ## Buddy's room — retired
 
 The room is gone. It was the second conversation inside the app, and the
