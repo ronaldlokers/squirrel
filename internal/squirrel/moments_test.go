@@ -120,7 +120,6 @@ func TestMatchRecognisesADeliberateFixedPoint(t *testing.T) {
 }
 
 // The same sentence, on a day you chose.
-//
 // ParseMoment builds from today's date, so there is no way to say a date at
 // all. Rather than widen the grammar — the "at" or "tomorrow" bar exists so a
 // stray thought is never silently turned into something that interrupts you —
@@ -175,7 +174,6 @@ func TestAChosenDayDoesNotLowerTheBar(t *testing.T) {
 }
 
 // The clock a container happens to run on is not where the person is.
-//
 // This is the test issue #148 asked for, and it is the point of the fix: the
 // fault was invisible because a confirmation restates your own time in the
 // wrong zone, so a booking two hours late reads byte-for-byte like a correct
@@ -201,7 +199,6 @@ func TestAFixedPointIsBookedWhereThePersonIs(t *testing.T) {
 }
 
 // And the day a refusal belongs to is the person's day, not the process's.
-//
 // "Not now means today, because tomorrow is a fresh question." On a UTC process
 // in summer, today ended at 02:00 local — so after 02:00 it meant about an hour.
 func TestTodayIsThePersonsDay(t *testing.T) {
@@ -215,4 +212,17 @@ func TestTodayIsThePersonsDay(t *testing.T) {
 
 	require.Equal(t, 25, squirrel.StartOfDayIn(here, now).Day(),
 		"the refusal window followed the process rather than the person")
+}
+
+func TestAFixedPointStaysOnScreenAWhileAfterItStarts(t *testing.T) {
+	at := time.Date(2026, 9, 9, 14, 30, 0, 0, time.UTC)
+	m := squirrel.Moment{Label: "dentist", Starts: at}
+
+	require.False(t, m.Late(at.Add(-time.Minute)), "it is late before it has begun")
+	require.True(t, m.Late(at), "it began and said nothing")
+	require.True(t, m.Late(at.Add(90*time.Minute)))
+	require.False(t, m.Late(at.Add(6*time.Hour)),
+		"it is still on the screen hours later, which is a thing you can be behind on")
+	require.False(t, m.Late(at.AddDate(0, 0, 1)),
+		"yesterday's appointment is on today's board")
 }

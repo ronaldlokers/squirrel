@@ -16,7 +16,6 @@ import (
 // rule this is allowed under and the three things it still refuses.
 
 // Defaults for the two halves of the chain nobody wants to type.
-//
 // Fifteen minutes of travel and ten of getting ready are guesses, and the
 // message says they are guesses. A default that presents itself as a fact is
 // how someone ends up late while trusting the machine.
@@ -59,7 +58,6 @@ func (m Moment) Open(now time.Time) bool {
 }
 
 // momentPattern is deliberately narrow: when in doubt, capture.
-//
 // The prefix is mandatory and is the whole of the bar — one of "at" or "tomorrow"
 // has to be there. Without it "14:30 dentist" parsed as a fixed point, which is a
 // note somebody wrote quickly, silently turned into something that interrupts
@@ -72,11 +70,9 @@ var momentPattern = regexp.MustCompile(
 var travelSuffix = regexp.MustCompile(`(?i)^(.*?)[,\s]+(\d{1,3})\s*(?:m|min|mins|minute|minutes)\s+away$`)
 
 // ParseMoment reads a fixed point out of a sentence, in the process's own zone.
-//
 // It never guesses a date beyond tomorrow: a calendar is a thing you are behind
 // on. A time that has already passed today means tomorrow, which is what a person
 // means when they type it.
-//
 // Kept for callers that only ask whether a message has the shape of a fixed point
 // — Match does, on stored rows. Anything that books one calls ParseMomentIn: a
 // container's zone is an accident of its deployment. See issue #148.
@@ -192,7 +188,6 @@ func (s *Store) CreateMoment(ctx context.Context, personID int64, m Moment) (Mom
 }
 
 // NextMoment is the soonest one still to come, or nothing.
-//
 // One, never a list. There is deliberately no function here that returns
 // several — the same guarantee the check-in keeps, and for a related reason: a
 // list of what is coming is a day you are already behind on before it starts.
@@ -208,15 +203,12 @@ func (s *Store) NextMoment(ctx context.Context, personID int64, now time.Time) (
 }
 
 // DueMoment is the next one whose warning has not been given and is due to be.
-//
 // Its own query rather than NextMoment's, which answers "what is the next fixed
 // point". Answering this with that left an already-warned moment at the head of
 // the queue and every later one invisible until it started.
-//
 // The cost was not a missed test: a moment blocked past its own warn point is
 // never warned about at all, because the scheduler refuses to send one late — so
 // two appointments half an hour apart meant the second arrived in silence.
-//
 // `said_at is null` is what makes it a queue rather than a peek. The upper bound
 // stays `starts_at > $2`: once a thing has started, its warning is over.
 func (s *Store) DueMoment(ctx context.Context, personID int64, now time.Time) (Moment, bool, error) {
@@ -243,7 +235,6 @@ type scannable interface {
 }
 
 // momentFrom is the column order and the defaulting, in one place.
-//
 // A fixed point with no travel time recorded guesses fifteen minutes and says
 // so with Guessed, because anything printed about leaving has to admit it was
 // a guess.
@@ -280,7 +271,6 @@ func (s *Store) scanMoment(ctx context.Context, q string, args ...any) (Moment, 
 }
 
 // MomentByID is one fixed point, yours or nobody's.
-//
 // The person is in the where clause rather than checked after, so a stranger's
 // id and a missing id are the same answer and neither leaks that the row
 // exists.
@@ -316,7 +306,6 @@ func (s *Store) MomentDone(ctx context.Context, personID, id int64, at time.Time
 }
 
 // SetMomentBring attaches what to take to the next moment.
-//
 // The next one rather than a named one, because the question is only ever
 // asked a moment after making it — and asking which appointment you mean, of
 // the one you just typed, is the tax this product exists to stop charging.
@@ -410,8 +399,13 @@ const notesForLimit = 50
 // Upcoming is what is still ahead, soonest first. What makes a list of
 // appointments allowed here is that it holds nothing you can be behind on —
 // `starts_at > $2` and `done_at is null`.
-//
 // It returns rows and never a total.
+const StillLate = 2 * time.Hour
+
+func (m Moment) Late(now time.Time) bool {
+	return !now.Before(m.Starts) && now.Before(m.Starts.Add(StillLate))
+}
+
 func (s *Store) Upcoming(ctx context.Context, personID int64, now time.Time, limit int) ([]Moment, error) {
 	const q = `
 		select id, person_id, label, starts_at, travel_secs, ready_secs,
@@ -420,7 +414,7 @@ func (s *Store) Upcoming(ctx context.Context, personID int64, now time.Time, lim
 		 where person_id = $1 and done_at is null and starts_at > $2
 		 order by starts_at limit $3`
 
-	rows, err := s.pool.Query(ctx, q, personID, now, limit)
+	rows, err := s.pool.Query(ctx, q, personID, now.Add(-StillLate), limit)
 	if err != nil {
 		return nil, fmt.Errorf("reading what is coming: %w", err)
 	}

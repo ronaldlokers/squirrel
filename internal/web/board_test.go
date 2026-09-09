@@ -388,7 +388,6 @@ func TestNotTodayFromTheLadderIsStillARefusal(t *testing.T) {
 }
 
 // Opening the board spends nothing, and neither does pressing anything on it.
-//
 // A model wrote the pulled strip's clause between 3 and 4 September 2026, one
 // call per newly picked thing, made inside the render. NOT TODAY invalidates
 // that decision by design, so the next card could not be drawn until a tool
@@ -952,4 +951,28 @@ func TestARestingRowCarriesItsNameAndItsRhythmAndNothingElse(t *testing.T) {
 	require.NotContains(t, rack, "you have not started this one yet",
 		"a row nobody is being asked about is explaining itself anyway")
 	require.NotContains(t, rack, `class="why"`)
+}
+
+func TestOnlyAWeekdayChoreWearsTheLateMark(t *testing.T) {
+	at := time.Date(2026, 9, 10, 9, 0, 0, 0, time.UTC) // a Thursday
+	was := now
+	now = func() time.Time { return at }
+	t.Cleanup(func() { now = was })
+
+	f := aBoardStore()
+	f.chores = []squirrel.Chore{
+		{ID: 1, Name: "bins out", Active: true, EveryDays: 7, SinceDays: 7, EverDone: true,
+			Weekday: time.Thursday, Weeks: 1},
+		{ID: 2, Name: "descale the kettle", Active: true, EveryDays: 7, SinceDays: 9, EverDone: true},
+	}
+	rack := theRackIn(t, mounted(t, f).call(t, "GET", "/", nil).Body.String(), "bay=weekly")
+
+	bins := rack[strings.Index(rack, "bins out"):]
+	kettle := bins[strings.Index(bins, "descale the kettle"):]
+	bins = bins[:strings.Index(bins, "descale the kettle")]
+
+	require.Contains(t, bins, `class="lateflag"`, "the lorry has been and the board says nothing")
+	require.Contains(t, bins, "late &mdash; today")
+	require.NotContains(t, kettle, `class="lateflag"`,
+		"a chore on a rhythm is late, so Squirrel invented a time you can miss")
 }

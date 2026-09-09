@@ -199,6 +199,21 @@ func TestUpcomingHoldsOnlyWhatIsStillAhead(t *testing.T) {
 	require.Equal(t, later.ID, got[1].ID)
 }
 
+func TestUpcomingStillHoldsAFixedPointThatHasJustStarted(t *testing.T) {
+	store := withStore(t)
+	ctx := context.Background()
+	p := owner(t, store)
+	now := time.Now()
+
+	started := aFixedPoint(t, store, p, "the dentist you are sitting outside of", -30*time.Minute)
+
+	got, err := store.Upcoming(ctx, p, now, 20)
+	require.NoError(t, err)
+	require.Len(t, got, 1, "it left the screen the moment it began, which is when it matters most")
+	require.Equal(t, started.ID, got[0].ID)
+	require.True(t, got[0].Late(now))
+}
+
 // The defaults survive the second scan path. A fixed point read through
 // Upcoming with no travel recorded must guess the same fifteen minutes one read
 // through NextMoment does, or the two screens disagree about when to leave.

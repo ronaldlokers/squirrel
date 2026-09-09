@@ -342,6 +342,25 @@
       "transform": "none",
       "width": "1280px"
     },
+    ".lateflag": {
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border-radius": "3px",
+      "border-width": "2px",
+      "box-shadow": "none",
+      "color": "rgb(230, 109, 13)",
+      "display": "block",
+      "font-size": "11px",
+      "font-variation-settings": "\"CASL\" 0, \"MONO\" 0, \"wght\" 800",
+      "letter-spacing": "0.99px",
+      "margin": "4px 0px 1px",
+      "min-height": "0px",
+      "outline-color": "rgb(230, 109, 13)",
+      "padding": "2px 7px 3px",
+      "text-decoration-line": "none",
+      "text-transform": "uppercase",
+      "transform": "none",
+      "width": "max-content"
+    },
     ".leaveby": {
       "background-color": "rgba(0, 0, 0, 0)",
       "border-radius": "0px",

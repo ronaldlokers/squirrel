@@ -78,7 +78,6 @@ type rackView struct {
 // comingView is what is ahead of you, in the sidebar. Everything still to
 // come, not only today: this took the agenda door's place, and the door held
 // the same.
-//
 // Hoisted is the one inside its leave-by window, lifted above the dial. It is
 // the only thing that reorders that column, and it does so on the same rule
 // the picker's first rule already uses — so nothing new decides when the
@@ -101,6 +100,7 @@ type apptView struct {
 	Label   string
 	LeaveBy string
 	Big     bool
+	Late    bool
 }
 
 // dialView is how you have been, on the board rather than only on the page
@@ -175,9 +175,9 @@ type stripView struct {
 	// carrying is its reason and its usual time — both are still true, and
 	// both are one press away on the row itself.
 	Wants bool
-	// Due says its rhythm came round. A word on the row rather than a colour,
 	// because a colour is a thing you have to already know how to read.
 	Due      bool
+	Late     bool
 	ID       int64
 	What     string
 	Words    string
@@ -364,7 +364,6 @@ func resting(strips []stripView) []stripView {
 // whatMatched is the search, which takes the racks' place rather than opening
 // anywhere else: search is the only navigation on this board besides the four
 // bays.
-//
 // Every state, on one screen, which is what the pile has always promised. What
 // a result carries is decided by where it is: something still in the pile keeps
 // its four answers, and something that already left carries the way back and
@@ -484,7 +483,6 @@ var boardKeys = map[string]bool{
 // onlyOne is the development board answering ?only= with a single region, so
 // an element can be picked without five others on the screen. It is inert in a
 // shipped binary, which is what the first test in onebay_test.go is for.
-//
 // Both lists at once, because a rack and a door are two shapes of the same
 // thing to whoever is pointing at one.
 func onlyOne(r *http.Request, bays []bayView, racks []rackView) ([]bayView, []rackView) {
@@ -561,7 +559,6 @@ func taskStrips(r *http.Request, s Store, personID int64, at time.Time) ([]strip
 
 // choreRacks is the whole of the chores, cut into three by how often they come
 // back and ordered inside each by the rules in rhythm.go.
-//
 // One read of the chores and one of when you usually do them, for all three
 // racks: a query per rack would be three times the work for the same rows, and
 // the racks are a cut of one list rather than three lists.
@@ -585,7 +582,7 @@ func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bo
 	// The phone's first tab, built here rather than in the template: it is the
 	// same rows under the same rules, cut differently, and a cut the screen
 	// invented would be a fourth place the order could go wrong.
-	now := choreRows(squirrel.Now(racks))
+	now := choreRows(squirrel.Now(racks), at)
 	out := []rackView{{
 		Key: "now", Name: "now",
 		Empty: "nothing comes back today",
@@ -595,7 +592,7 @@ func choreRacks(r *http.Request, s Store, personID int64, at time.Time, quiet bo
 		out = append(out, rackView{
 			Key: string(rack.Rhythm), Name: string(rack.Rhythm),
 			Empty: emptyRack[rack.Rhythm], Resting: rack.Resting,
-			Strips: choreRows(rack.Waiting),
+			Strips: choreRows(rack.Waiting, at),
 		})
 	}
 	return out, true
@@ -611,14 +608,15 @@ var emptyRack = map[squirrel.Rhythm]string{
 	squirrel.Seldom: "nothing that comes back slowly",
 }
 
-func choreRows(standing []squirrel.Standing) []stripView {
+func choreRows(standing []squirrel.Standing, at time.Time) []stripView {
 	out := make([]stripView, 0, len(standing))
 	for _, one := range standing {
 		row := stripView{
 			ID: one.Chore.ID, What: "chore", Words: one.Chore.Name,
 			Mark: squirrel.Cadence(one.Chore.EveryDays), Answers: choreAnswers,
 			Why: one.Because, Wants: one.WantsYouToday(),
-			Due: one.Chore.EverDone && one.Chore.SinceDays >= one.Chore.EveryDays,
+			Due:  one.Chore.EverDone && one.Chore.SinceDays >= one.Chore.EveryDays,
+			Late: one.Chore.LateToday(at),
 		}
 		// No second line. Every rank that asks for you already carries a
 		// reason, and that reason names the usual time whenever the usual
@@ -657,7 +655,6 @@ func halved(rows []stripView, want bool) []stripView {
 // standingIn lights the rack the phone is standing in. Same shape as baysIn
 // and for the same reason: one page, drawn whole on the desk and one rack at a
 // time on the phone, and no script deciding which.
-//
 // Nothing lit is the ordinary case and not a fallback: the phone's first tab
 // is "now", which is a cut across all three rather than any one of them.
 func standingIn(in string, racks []rackView) []rackView {
@@ -902,12 +899,10 @@ func boardUndoHandler(s Store, opts Options) http.HandlerFunc {
 
 // boardNewHandler is what a blank strip does. Its bay decides what the words
 // become, which is the whole reason each rack asks its own question.
-//
 // The notes bay writes to the spool rather than to the database, because that
 // is what capture is: the words reach fsynced disk before anything answers, and
 // the drain resolves whose they are. The tasks bay does not — a task is a
 // decision you already made about something, and a decision has no spool.
-//
 // The chores and agenda bays are not here. Both need a second answer before
 // there is anything to keep — a rhythm, a day — and a blank strip that quietly
 // dropped the words while it asked would be the one thing this product may
@@ -995,7 +990,6 @@ func keepAsANote(r *http.Request, s Store, personID int64, words string) error {
 
 // keptOnTheBoard is the whole of capture from the screen: one row, written
 // before the redirect, so the board you are sent back to has it on it.
-//
 // It went through the spool and a drain until 4 September 2026. The spool is
 // still what Campfire's captures land in, because that path has no person in
 // front of it and nothing to tell when a write fails. This one has both: it
@@ -1021,7 +1015,6 @@ func keptOnTheBoard(r *http.Request, s Store, personID int64, words, photo, kind
 
 // boardNowHandler is the pulled strip's own three answers, and the ladder
 // behind the third.
-//
 // Nothing is stored between being asked what is in the way and answering it:
 // the blocker is in the address, so a reload shows the same sentence rather
 // than repeating a press. The sentences are the core's, unchanged — a second
@@ -1199,7 +1192,6 @@ func boardCaptureHandler(s Store, opts Options) http.HandlerFunc {
 
 // opened is the one strip you asked to see, drawn whole: its photograph at the
 // size a photograph needs, and the answers it would carry in its rack.
-//
 // A strip in a rack never carries the picture — it says it has one and this is
 // what opening it does. Reading it back as yours is the same guard every other
 // press has: a row that is not yours is not yours to look at either.
@@ -1397,7 +1389,6 @@ func momentFromPickers(loc *time.Location, words, day, clock string) (squirrel.M
 }
 
 // boardMoodHandler keeps a reading and puts you back on the board.
-//
 // Nothing is said back. The conversation answers a check-in with a turn because
 // a conversation is a record of what was said; the board is a record of what
 // there is, and a reading is neither a strip nor something to answer.
@@ -1429,7 +1420,6 @@ func boardMoodHandler(s Store) http.HandlerFunc {
 }
 
 // whatWasNoticed is every line not refused, keyed by the thing it is about.
-//
 // One read for the whole board rather than one per strip: the lines are few by
 // construction, and a query per row would be the thing that makes a rack slow.
 func whatWasNoticed(r *http.Request, s Store, personID int64) map[string]squirrel.Noticed {
@@ -1500,7 +1490,6 @@ func askable(strips []stripView, room string, on bool) []stripView {
 }
 
 // boardNotUsefulHandler is how a line is refused.
-//
 // It does not hide the line so much as answer it: the words stay, and the next
 // pass is shown them as something not to write again. A refusal that only
 // cleared the screen would leave the same line to be written tomorrow.
@@ -1570,7 +1559,6 @@ func boardAskHandler(s Store, opts Options) http.HandlerFunc {
 // marginalia puts on a rack's rows the three things every other strip on the
 // board carries: what was noticed about it, the press that asks Buddy, and the
 // focus that lands on an answer just given.
-//
 // Separate from assemble because the racks are read separately, and the reason
 // it is not simply left out is that leaving it out is what happened first: the
 // chores lost their marginalia and their ask press the moment they stopped
@@ -1608,7 +1596,6 @@ func troubled(racks []rackView, ok bool) []rackView {
 }
 
 // whatIsComing is every fixed point still ahead, soonest first.
-//
 // Not only today. The rule the list was allowed under is that it holds only
 // what is still in front of you — nothing past, nothing done, never a count of
 // what you did not do — and that rule does not care how far ahead it reaches.
@@ -1631,10 +1618,13 @@ func whatIsComing(r *http.Request, s Store, personID int64, at time.Time) *comin
 			one.Day = markOfMoment(m, at)
 		}
 		one.LeaveBy = leaveWords(m, at)
+		if m.Late(at) {
+			one.Late, one.LeaveBy = true, ""
+		}
 		// Inside the window where leaving matters it comes out of the list and
 		// sits above the dial. One thing, in one place — a fixed point shown
 		// twice in one column is the duplication the picker was cured of.
-		if m.Open(at) && c.Hoisted == nil {
+		if (m.Open(at) || one.Late) && c.Hoisted == nil {
 			lifted := one
 			lifted.Big = true
 			c.Hoisted = &lifted
@@ -1665,7 +1655,6 @@ func leaveWords(m squirrel.Moment, at time.Time) string {
 
 // howYouAre is the dial: today's face, the seven days behind it, and the way
 // to the whole record.
-//
 // Always pressable, which is the change. The faces used to appear only when
 // Squirrel wanted an answer, so saying how you were was something you waited to
 // be asked for. Being asked is still a separate thing — Faces is what carries

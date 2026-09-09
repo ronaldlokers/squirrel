@@ -341,8 +341,9 @@ because the picker's memory and the nudge's budget are two different things.
 coming moved into the sidebar, under how you have been, where it holds
 everything still ahead rather than a door's worth of it. The guard rails that
 made the list allowed are untouched and are what still make it allowed: only
-what is in front of you, nothing past, nothing marked late, and a fixed point
-that is over is simply over.
+what is in front of you, nothing past, and a fixed point that is over is simply
+over. The *nothing marked late* rail is the one that moved; see the amendment
+below.
 
 What it cost: the four answers on an agenda strip. The diary is read now, not
 worked — a fixed point that has started leaves the list on its own, and closing
@@ -530,8 +531,31 @@ which pull toward a precision tool — the design has to be both, not average th
    percentage — not on any surface, in any form.~~ **Retired by the owner on
    24 August 2026**, with the *Never a count* constraint above; see there for
    what it protected and what reverses it. What survives: **nothing here is a
-   score.** No streak, no percentage, nothing marked late, and no number that
-   counts what you did not do.
+   score.** No streak, no percentage, and no number that counts what you did not
+   do. **Amended again on 9 September 2026**, below: two things may say *late*.
+   **Amended on 9 September 2026: two things may say they are late.** A fixed
+   point that has started, for two hours; and a chore the world put on a weekday,
+   on that weekday, if it has been done before. The owner's argument is that an
+   appointment is the only thing in this product that is genuinely a deadline —
+   *why else does it have a date and time?* — and that some chores are the same
+   kind of thing: the bins go out when the lorry comes, not when you decided.
+   Squirrel may hold a time the world imposed. It still may not invent one.
+
+   So the rule now reads: **Squirrel never marks you late against a time you
+   set yourself.** A chore on an interval — every seven days, every three — is a
+   rhythm you chose, and it says only that it is due. A chore on a weekday, and
+   an appointment, carry a time you did not choose.
+
+   What it costs: the mark exists, and a mark is a judgement. Three rails keep
+   it from becoming a score. It says *late* and never how late. It never
+   survives the day or the window that caused it — no accrual, nothing to look
+   back at. And it is never a number: no count of what you missed, no history,
+   nothing to compare against.
+
+   How it reverses: `Chore.LateToday` and `Moment.Late` are the whole of it.
+   Return false from both and every mark goes; the rank-nought case in
+   `rankOf` and the `.lateflag` chip go with them.
+
 3. **Stopping partway is a normal ending.** The design must never make leaving
    look like failure.
 4. **Two views, one pile.** Chat and screen must agree about what a note is and

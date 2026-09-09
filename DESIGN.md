@@ -1068,6 +1068,25 @@ A row whose turn is simply not today says **nothing at all**, and above all not
 how long it has been waiting. That refusal is older than the racks and survived
 them intact.
 
+### The late mark
+
+One chore in the product can say it is late: the kind the world put on a
+weekday. `late — today`, in an outlined orange chip above the why-line, and the
+row leads its rack.
+
+**Only a chore with a weekday wears it.** A chore on an interval — every seven
+days, every three — was put on that rhythm by you, and Squirrel marking you
+late against a time you invented is the accruing judgement the product refuses.
+A chore on a weekday was put there by the bin lorry.
+
+**It says late and never how late.** No count, no days-since, no second colour
+for worse. And it does not survive the day that caused it: tomorrow the bins
+are an ordinary chore again, unmarked, because a mark that carries forward is a
+mark that accrues.
+
+**A chore nobody has ever done is not late.** It is new, and the sentence about
+a thing you have never done is a sentence about you.
+
 ### What is coming
 
 The sidebar's lower half, and the agenda's home since 9 September 2026. Every
@@ -1090,10 +1109,16 @@ above the dial, on paper with the orange outline. It *leaves the list* when it
 does — a fixed point drawn twice in one column is the duplication the picker
 was cured of. Nothing else reorders that column.
 
+**A fixed point that has started stays for two hours and says `late`.** It
+hoists exactly as one inside its leaving window does, and its leave-by comes
+off — there is nothing left to leave for. The time the world set is the one
+time in this product you can genuinely miss, so holding it is not Squirrel
+inventing a deadline. After two hours it goes on its own, unpressed, which is
+what keeps this from becoming something that piles up.
+
 **The diary is read, not worked.** There are no answers on it. A fixed point
-that has started leaves on its own, because `Upcoming` only ever returns what
-is still ahead, and closing one is what the pulled strip is for during the
-window. The agenda's four answers went with the door.
+leaves on its own once its window is out, and closing one is what the pulled
+strip is for while it is open. The agenda's four answers went with the door.
 
 **The writer did not follow it.** Day, month, hour and minute cannot be read at
 a sidebar's width — the comp proved it — so the appointment writer pairs with
