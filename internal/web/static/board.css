@@ -1315,7 +1315,7 @@ main.gate h1 + form { margin-top: 26px; }
 .dayrail { display: none; }
 
 @media (max-width: 620px) {
-  .racks { display: none; }
+  .racks:not(.found) { display: none; }
   .dayrail {
     display: flex; flex-direction: column; gap: 10px; flex: 0 0 auto;
     padding: 12px 12px calc(var(--foot) + 78px);
