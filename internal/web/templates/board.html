@@ -338,7 +338,7 @@
     </svg>
     <div class="today">
       {{if .Said}}
-      <img class="isface" alt="{{.Word}}" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+      <img class="isface" alt="{{.Word}}" src="/static/{{face .Mood}}?v={{$.V}}" width="260" height="209">
       {{else}}
       <p class="isword">nothing<br>said today</p>
       {{end}}
@@ -349,7 +349,7 @@
     {{if .Asking}}<span class="ask">how do you feel?</span>{{end}}
     {{range .Faces}}
     <button class="face" name="mood" value="{{.Mood}}" aria-label="{{.Word}}">
-      <img alt="" src="/static/mood-{{.Mood}}.png?v={{$.V}}" width="260" height="209">
+      <img alt="" src="/static/{{face .Mood}}?v={{$.V}}" width="260" height="209">
       <span>{{.Word}}</span>
     </button>
     {{end}}

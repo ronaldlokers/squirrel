@@ -227,8 +227,9 @@ deterministic floor never needs a key to speak.
 Principle 6's "the same every time" protects: a sentence you read is worth
 varying, a button you press without reading is not.
 
-The art half is still open — the alternate mood faces and the stopping
-screen's own pose need drawings.
+The art half is done too. The stopping screen has its own pose, and since 11
+September 2026 every mood face has a second drawing, chosen from the date the
+same way.
 
 ---
 

@@ -793,11 +793,30 @@ func TestTodaysFaceIsInTheOpsBar(t *testing.T) {
 
 	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
 	require.Contains(t, body, `class="chip mood" href="/?bay=mood"`)
-	require.Contains(t, body, `src="/static/mood-calm.png"`, "the chip does not wear today's face")
+	require.Contains(t, body, `src="/static/`+squirrel.Face(squirrel.MoodCalm, time.Now())+`"`, "the chip does not wear today's face")
 
 	dial := mounted(t, f).call(t, "GET", "/?bay=mood", nil).Body.String()
 	require.Contains(t, dial, `<aside class="dial">`, "the chip leads nowhere")
 	require.Contains(t, dial, "back to the board")
+}
+
+func TestTheBoardWearsTheDrawingTheDayChose(t *testing.T) {
+	day := time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC)
+	was := now
+	now = func() time.Time { return day }
+	t.Cleanup(func() { now = was })
+	require.Equal(t, "mood-calm-2.png", squirrel.Face(squirrel.MoodCalm, day))
+	require.Equal(t, "mood-low.png", squirrel.Face(squirrel.MoodLow, day))
+
+	f := aBoardStore()
+	f.checkin = &squirrel.Checkin{Mood: squirrel.MoodCalm, SaidAt: day}
+	body := mounted(t, f).call(t, "GET", "/", nil).Body.String()
+
+	require.Contains(t, body, `<img src="/static/mood-calm-2.png" alt=""`, "the chip wears the other drawing")
+	require.Contains(t, body, `class="isface" alt="calm" src="/static/mood-calm-2.png?v=`, "the dial wears the other drawing")
+	for _, m := range squirrel.Moods {
+		require.Contains(t, body, `<img alt="" src="/static/`+squirrel.Face(m, day)+`?v=`, "the %s press wears the other drawing", m)
+	}
 }
 
 func TestAnsweringOnTheBoardKeepsAReadingAndSaysNothing(t *testing.T) {

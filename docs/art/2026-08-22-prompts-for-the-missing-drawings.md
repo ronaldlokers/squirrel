@@ -118,7 +118,14 @@ Transparent background. No text of any kind.
 
 ---
 
-## 2. One alternate per mood face — **not doing it, 23 August 2026**
+## 2. One alternate per mood face — **drawn, 11 September 2026**
+
+Asked for again once an image model could be given the five as references. Each
+alternate was generated with its own face as a style-only reference, cut out
+with `scripts/cutout.sh`, and re-rolled where the expression left the mood:
+the first *frazzled* came back angry and the first *wiped* came back
+unimpressed. What follows is the record of the earlier decline, kept because
+its brief is what the prompts were held to.
 
 Declined by the owner, who likes the five as they are. Recorded here rather
 than deleted, because the reasoning that asked for it is still true and
