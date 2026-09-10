@@ -33,6 +33,7 @@ var helpers = template.FuncMap{
 		}
 		return out
 	},
+	"face": func(mood string) string { return squirrel.Face(squirrel.Mood(mood), now()) },
 }
 
 // templatesFS is the embedded copy, or the working tree in development. See

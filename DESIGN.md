@@ -1286,6 +1286,16 @@ wrong. Furniture — a scribble, a bolt, a raincloud — attaches above and to t
 right of the head and never below or left of it, which is the only reason the
 head's own corner can be found once the two are drawn as one shape.
 
+**Every face has a second drawing, and the day chooses.** Since 11 September
+2026 each mood has `mood-<mood>-2.png` beside it: same colour, same tile, same
+outline, same family of furniture, and only the expression moves — never so far
+that *low* reads as *wiped* or *frazzled* as angry. `squirrel.Face` picks
+between the two with the hash the sentences and the stamp use, so the dial, the
+chip in the ops bar and the five presses agree all day and a reload is not a
+slot machine. Because the pick is two-way it mostly alternates day to day, and
+good, calm and wiped move together while low and frazzled take the other
+drawing.
+
 **The five faces are always pressable.** This is the change of 8 September 2026:
 they used to appear only when Squirrel wanted an answer, so saying how you were
 was something you waited to be asked for. Being asked is still separate — the
@@ -1666,7 +1676,7 @@ history you can be behind on.
 
 ### The check-in
 
-The five faces, unchanged artwork, in 3px-radius tiles at the tray's right end —
+The five faces, each in the drawing the day chose, in 3px-radius tiles at the tray's right end —
 and on a phone, on their own row above the day's departures, because the tray
 scrolls sideways and a question sharing that row is a question you can push off
 the screen. Asked once an hour, drawn at the edge, and nothing is said back:

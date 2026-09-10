@@ -169,6 +169,13 @@ func pick(salt string, on time.Time, from, to int) int {
 	return from + int(h.Sum32()%uint32(to-from+1))
 }
 
+func Face(m Mood, on time.Time) string {
+	if pick("face "+string(m), on, 1, 2) == 2 {
+		return "mood-" + string(m) + "-2.png"
+	}
+	return "mood-" + string(m) + ".png"
+}
+
 // TiltRange is how far the stamp can lean, in degrees. Exported so the test
 // that holds this to "a few degrees" reads the number rather than repeating it.
 const (

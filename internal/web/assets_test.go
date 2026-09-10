@@ -8,11 +8,25 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/ronaldlokers/squirrel/internal/squirrel"
 )
+
+func TestEveryDrawingAFaceCanWearIsEmbedded(t *testing.T) {
+	start := time.Date(2026, 8, 22, 9, 0, 0, 0, time.UTC)
+
+	for _, m := range squirrel.Moods {
+		for d := 0; d < 14; d++ {
+			name := squirrel.Face(m, start.AddDate(0, 0, d))
+			b, err := staticFS.ReadFile("static/" + name)
+			require.NoError(t, err, name)
+			require.NotEmpty(t, b, name)
+		}
+	}
+}
 
 func TestStaticServesTheStylesheetWithALongCache(t *testing.T) {
 	h := staticHandler()
