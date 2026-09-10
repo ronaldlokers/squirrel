@@ -1271,6 +1271,21 @@ day, and each carries the day and the word as its title. A day you said nothing
 is drawn in `rgba(28,17,11,.13)`, because the gaps are the honest part here
 exactly as they are there.
 
+**A face is 260x209, and the head sits in the same place on every one.** Its
+bottom-left corner within a pixel or two of (58, 205), its bottom edge 115 to
+123 pixels wide. That is what makes five drawings read as one set when the mood
+changes, and it is a contract rather than a preference: the templates carry
+`width="260" height="209"` on the `img`, so a face of another size makes the
+markup a lie and the row jump as it loads.
+
+Nothing enforced this until 10 September 2026, when a sixth face had to be made
+and the numbers had to be measured off the five to find out what they were.
+`scripts/cutout.sh` now holds them, places a new drawing to match, and prints
+its measurements beside the five so one sitting wrong can be seen sitting
+wrong. Furniture — a scribble, a bolt, a raincloud — attaches above and to the
+right of the head and never below or left of it, which is the only reason the
+head's own corner can be found once the two are drawn as one shape.
+
 **The five faces are always pressable.** This is the change of 8 September 2026:
 they used to appear only when Squirrel wanted an answer, so saying how you were
 was something you waited to be asked for. Being asked is still separate — the
