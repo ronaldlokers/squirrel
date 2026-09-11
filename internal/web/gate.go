@@ -9,9 +9,8 @@ import (
 // The way in.
 //
 // Squirrel's one screen of its own, and the first thing anybody ever sees of
-// this product. Built the way /enough is built, which DESIGN.md describes as a
-// treatment rather than a page: the mascot, a headline in the casual axis, a
-// screen that is an absence. Nothing new is invented for it.
+// this product. A treatment rather than a page: the mascot, a headline in the
+// casual axis, a screen that is an absence. Nothing new is invented for it.
 //
 // Why a screen at all, when a straight redirect to Authentik would be one
 // press fewer:

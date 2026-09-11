@@ -131,11 +131,6 @@ type view struct {
 	// top-aligned: a list that grows from the middle of the screen is a list
 	// that is hard to read.
 	Scrolling bool
-	// The sentences met most often, in today's wording: habituation is the
-	// documented enemy, and phrasing is one of the two things allowed to move.
-	// Every control label is deliberately absent from this list.
-	SaySlot   string
-	SayEnough string
 	// You is who the screen is talking to: the name at the foot of the rooms
 	// and the face on your own turns. Zero when there is no person, which is
 	// every screen the gate serves.
@@ -452,10 +447,6 @@ func render(w http.ResponseWriter, name string, v view) {
 		panic("no such page: " + name)
 	}
 	v.V = stamp()
-	// What the sentences say today. Chosen from the day, so both viewports
-	// agree and a reload is not a slot machine — see squirrel.Say.
-	v.SaySlot = squirrel.Say(squirrel.SayingSlot, now())
-	v.SayEnough = squirrel.Say(squirrel.SayingEnough, now())
 	v.Tilt = squirrel.Tilt(now())
 	v.Light = squirrel.Light(now())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

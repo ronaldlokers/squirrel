@@ -1290,7 +1290,7 @@ head's own corner can be found once the two are drawn as one shape.
 2026 each mood has `mood-<mood>-2.png` beside it: same colour, same tile, same
 outline, same family of furniture, and only the expression moves — never so far
 that *low* reads as *wiped* or *frazzled* as angry. `squirrel.Face` picks
-between the two with the hash the sentences and the stamp use, so the dial, the
+between the two with the hash the stamp and the light use, so the dial, the
 chip in the ops bar and the five presses agree all day and a reload is not a
 slot machine. Because the pick is two-way it mostly alternates day to day, and
 good, calm and wiped move together while low and frazzled take the other
