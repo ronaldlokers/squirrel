@@ -216,20 +216,22 @@ ramp (opt-in at timer start) — shipped 7 September.~~
 timers anywhere: no countdown on a screen, no `!timer`, no `start_timer` tool,
 no push that says *time*. `PRODUCT.md` carries the decision and what it cost.
 
-The four sentences met most often — the empty slot, the offer's label, the way
-out of the deck, and the stopping screen's own line — have several wordings
-each, chosen from the date. Deterministic rather than random, so both viewports
-agree all day and a reload is not a slot machine; and produced by rules rather
-than by a model, so it is Squirrel's voice under Principle 8 and the
-deterministic floor never needs a key to speak.
+**The varied wordings retired with the conversation.** The four sentences met
+most often — the empty slot, the offer's label, the way out of the deck, and
+the stopping screen's own line — had several wordings each, chosen from the
+date. All four surfaces went with the room in #307 and the board never drew any
+of them, so the pools were computed on every page and shown nowhere. They were
+deleted on 11 September 2026; git holds them if phrasing ever comes to the
+board. What still moves with the date is the stamp's lean, the field's light
+and the mood faces, all from the same hash.
 
 **Every control label is untouched and stays that way.** Muscle memory is what
 Principle 6's "the same every time" protects: a sentence you read is worth
 varying, a button you press without reading is not.
 
-The art half is done too. The stopping screen has its own pose, and since 11
-September 2026 every mood face has a second drawing, chosen from the date the
-same way.
+The art half is done. The resting pose drawn for the stopping screen outlived
+it and is the way in now, on the gate. Since 11 September 2026 every mood face
+has a second drawing, chosen from the date.
 
 ---
 
